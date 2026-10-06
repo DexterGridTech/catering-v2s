@@ -11,6 +11,7 @@ import {
   type KeyboardRegion,
 } from '../foundations/keyboardLayout';
 import {INPUT_LAYOUT_CONSTANTS} from '../foundations/keyboardHeight';
+import {inputTestIds} from '../foundations/inputTestIds';
 
 export type VirtualKeyboardProps = Readonly<{
   readonly layout: KeyboardLayout;
@@ -20,6 +21,8 @@ export type VirtualKeyboardProps = Readonly<{
   readonly cellWidth: number;
   /** Compact mobile presentation; direct callers derive it from the rendered dock width when omitted. */
   readonly compact?: boolean;
+  /** Whether this rendered layer can accept key presses in the current presentation phase. */
+  readonly interactive?: boolean;
   readonly shift: boolean;
   readonly hasNextField: boolean;
   readonly testIDSuffix?: string;
@@ -149,6 +152,7 @@ export const VirtualKeyboard = memo(
     frameWidth,
     cellWidth,
     compact: compactOverride,
+    interactive = true,
     shift,
     hasNextField,
     testIDSuffix,
@@ -165,7 +169,8 @@ export const VirtualKeyboard = memo(
       ? INPUT_LAYOUT_CONSTANTS.COMPACT_DOCK_PADDING_VERTICAL
       : INPUT_LAYOUT_CONSTANTS.DOCK_PADDING_VERTICAL;
     const regions = useMemo(() => groupRowsByRegion(definition.rows), [definition]);
-    const testIDOf = (testID: string): string => (testIDSuffix === undefined ? testID : `${testID}:${testIDSuffix}`);
+    const testIDOf = (testID: string) =>
+      inputTestIds.node(`${testID}${testIDSuffix === undefined ? '' : `:${testIDSuffix}`}`);
     const handlers = useMemo(
       () =>
         new Map(
@@ -178,13 +183,13 @@ export const VirtualKeyboard = memo(
 
     return (
       <PrimitiveKeyboardSurface
-        testID={testIDOf('ui.base.input:virtual-keyboard')}
+        testID={testIDOf('virtual-keyboard')}
         style={[{height, width: frameWidth, borderRadius: 0}]}
         onTouchEnd={stopSurfaceDismiss}
         onClick={stopSurfaceDismiss}
       >
         <View
-          testID={testIDOf('ui.base.input:virtual-keyboard:content')}
+          testID={testIDOf('virtual-keyboard:content')}
           style={[
             styles.content,
             {
@@ -198,7 +203,7 @@ export const VirtualKeyboard = memo(
           {regions.map(region => (
             <View
               key={`region-${region.region}`}
-              testID={testIDOf(`ui.base.input:virtual-keyboard:region:${region.region}`)}
+              testID={testIDOf(`virtual-keyboard:region:${region.region}`)}
               style={[styles.region, {gap: rowGap}]}
             >
               {region.rows.map((row, rowIndex) => (
@@ -226,7 +231,7 @@ export const VirtualKeyboard = memo(
                         return (
                           <View
                             key={`${rowIndex}-${zone}-${groupIndex}`}
-                            testID={testIDOf(`ui.base.input:virtual-keyboard:segment:${zone}:${groupIndex}`)}
+                            testID={testIDOf(`virtual-keyboard:segment:${zone}:${groupIndex}`)}
                             style={[
                               styles.keyGroup,
                               {width: groupWidth(group.length, rowCellWidth, columnGap), gap: columnGap},
@@ -238,10 +243,11 @@ export const VirtualKeyboard = memo(
                               return (
                                 <PrimitiveButton
                                   key={keyId}
-                                  testID={testIDOf(`ui.base.input:virtual-keyboard:${keyId}`)}
+                                  testID={testIDOf(`virtual-keyboard:${keyId}`)}
                                   accessibilityLabel={accessibilityLabelOf(key, label)}
                                   icon={iconOf(key)}
                                   variant={key.zone === 'actions' ? 'key-action' : 'key'}
+                                  disabled={!interactive}
                                   compact={compact}
                                   selected={selectedOf(key, shift)}
                                   onPress={handlers.get(keyId)}
@@ -256,7 +262,7 @@ export const VirtualKeyboard = memo(
                     : row.grid.columns.map((column, columnIndex) => (
                         <View
                           key={`${rowIndex}-grid-column-${columnIndex}`}
-                          testID={testIDOf(`ui.base.input:virtual-keyboard:segment:grid:${columnIndex}`)}
+                          testID={testIDOf(`virtual-keyboard:segment:grid:${columnIndex}`)}
                           style={[
                             styles.gridColumn,
                             {
@@ -272,10 +278,11 @@ export const VirtualKeyboard = memo(
                             return (
                               <PrimitiveButton
                                 key={keyId}
-                                testID={testIDOf(`ui.base.input:virtual-keyboard:${keyId}`)}
+                                testID={testIDOf(`virtual-keyboard:${keyId}`)}
                                 accessibilityLabel={accessibilityLabelOf(key, label)}
                                 icon={iconOf(key)}
                                 variant={key.zone === 'actions' ? 'key-action' : 'key'}
+                                disabled={!interactive}
                                 compact={compact}
                                 selected={selectedOf(key, shift)}
                                 onPress={handlers.get(keyId)}

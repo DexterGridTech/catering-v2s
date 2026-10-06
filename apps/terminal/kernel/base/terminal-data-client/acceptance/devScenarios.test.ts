@@ -2,8 +2,15 @@ import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import {createServer} from 'node:net';
 import {appendFileSync, readFileSync} from 'node:fs';
 import {randomBytes, randomUUID} from 'node:crypto';
-import {Agent, ProxyAgent, WebSocket, request} from 'undici';
+import {WebSocket} from 'undici';
 import {createAwaitableDisposal} from './asyncDisposal';
+import {
+  createAcceptanceDispatcher,
+  createOperationsFixtureClient,
+  httpJson,
+  type OperationsFixture,
+  type OperationsFixtureSession,
+} from './operationsFixture';
 import {
   createNodeId,
   createRequestId,
@@ -60,7 +67,7 @@ const storeCode = 'S-OP';
 const storeName = '河畔茶里店';
 const clientMaxPayloadBytes = 65_536;
 const clientMaxFragments = 1_024;
-const fixtureTerminals = Object.freeze([
+const fixtureTerminals: readonly OperationsFixture[] = Object.freeze([
   {activationCode: '62000001', name: '前台收银终端', surfaceForm: 'laptop' as const},
   {activationCode: '62000002', name: '后厨多打印终端', surfaceForm: 'laptop' as const},
   {activationCode: '62000003', name: '后厨显示终端', surfaceForm: 'laptop' as const},
@@ -152,61 +159,6 @@ const dispatch = async <TPayload extends StateJsonValue>(
   return actorResult.result;
 };
 
-const makeDispatcher = (
-  proxy: Readonly<{host: string; port: number; username?: string; password?: string}> | undefined,
-  timeoutMs: number,
-): Agent | ProxyAgent => {
-  const limits = {
-    connectTimeout: Math.min(timeoutMs, 5_000),
-    headersTimeout: timeoutMs,
-    bodyTimeout: timeoutMs,
-    maxResponseSize: clientMaxPayloadBytes,
-    webSocket: {maxPayloadSize: clientMaxPayloadBytes, maxFragments: clientMaxFragments},
-  };
-  if (proxy) {
-    const token =
-      proxy.username && proxy.password
-        ? `Basic ${Buffer.from(`${proxy.username}:${proxy.password}`).toString('base64')}`
-        : undefined;
-    return new ProxyAgent({
-      uri: `http://${proxy.host}:${proxy.port}`,
-      ...(token ? {token} : {}),
-      proxyTunnel: true,
-      ...limits,
-    });
-  }
-  return new Agent(limits);
-};
-
-const httpJson = async (
-  base: string,
-  pathAndQuery: string,
-  init: Readonly<{
-    method?: string;
-    headers?: Readonly<Record<string, string>>;
-    body?: unknown;
-    timeoutMs?: number;
-    proxy?: Readonly<{host: string; port: number; username?: string; password?: string}>;
-  }> = {},
-): Promise<Readonly<{status: number; headers: Record<string, string | string[] | undefined>; body: any}>> => {
-  const timeoutMs = init.timeoutMs ?? 5_000;
-  const dispatcher = makeDispatcher(init.proxy, timeoutMs);
-  try {
-    const result = await request(new URL(pathAndQuery, `${base.replace(/\/$/, '')}/`), {
-      method: init.method ?? 'GET',
-      headers: {...(init.headers ?? {}), ...(init.body === undefined ? {} : {'content-type': 'application/json'})},
-      ...(init.body === undefined ? {} : {body: JSON.stringify(init.body)}),
-      dispatcher,
-      headersTimeout: timeoutMs,
-      bodyTimeout: timeoutMs,
-    });
-    const body = result.statusCode === 204 ? null : await result.body.json();
-    return {status: result.statusCode, headers: result.headers, body};
-  } finally {
-    await dispatcher.close();
-  }
-};
-
 const createWebSocketConnection = async (
   addressName: string,
   url: string,
@@ -214,7 +166,7 @@ const createWebSocketConnection = async (
   timeoutMs: number,
   requireCompression = false,
 ): Promise<TransportManagedConnection> => {
-  const dispatcher = makeDispatcher(proxy, timeoutMs);
+  const dispatcher = createAcceptanceDispatcher(proxy, timeoutMs);
   const dispatcherDisposal = createAwaitableDisposal(
     () => dispatcher.close(),
     'TERMINAL_DEV_WS_DISPATCHER_CLOSE_FAILED',
@@ -407,6 +359,7 @@ const createScenarioClient = async (alias: string, requireCompression = false): 
     businessServerName: 'terminal-business-api',
     transport: transportModule.commandGateway,
     createCredentialSecret: () => randomBytes(32).toString('base64url'),
+    createProtocolUuid: randomUUID,
     now: Date.now,
     appVersion: 'batch-2-managed-dev-acceptance',
     surfaceForm: 'laptop',
@@ -523,117 +476,27 @@ const connect = async (
   return {nodeId: state.nodeId, addressName: state.addressName};
 };
 
-type OperationsSession = Readonly<{cookie: string; contextVersion: number; storeRef: string}>;
-const operationsSession = async (): Promise<OperationsSession> => {
-  const password = required('V2S_SEED_OPERATIONS_DEFAULT_PASSWORD');
-  const login = await httpJson(httpBaseUrl(), `/api/operations/group-workspaces/${workspaceKey}/password-login`, {
-    method: 'POST',
-    body: {loginName: 'r5-account-multi-role', password},
+type OperationsSession = OperationsFixtureSession;
+const operationsFixtureClient = () =>
+  createOperationsFixtureClient({
+    httpBaseUrl: httpBaseUrl(),
+    workspaceKey,
+    storeCode,
+    loginName: 'r5-account-multi-role',
+    password: required('V2S_SEED_OPERATIONS_DEFAULT_PASSWORD'),
+    fixtures: fixtureTerminals,
   });
-  if (login.status !== 200) throw new Error(`TERMINAL_DEV_OPERATIONS_LOGIN_FAILED:${login.status}`);
-  const cookieValue = login.headers['set-cookie'];
-  const cookie = (Array.isArray(cookieValue) ? cookieValue[0] : cookieValue)?.split(';', 1)[0];
-  if (!cookie) throw new Error('TERMINAL_DEV_OPERATIONS_COOKIE_MISSING');
-  const session = await httpJson(httpBaseUrl(), `/api/operations/group-workspaces/${workspaceKey}/session/entry`, {
-    headers: {cookie},
-  });
-  if (session.status !== 200) throw new Error(`TERMINAL_DEV_OPERATIONS_SESSION_FAILED:${session.status}`);
-  const projectIdentities = (session.body.candidates ?? []).filter(
-    (candidate: {roleNodeType?: string}) => candidate.roleNodeType === 'PROJECT',
-  );
-  if (projectIdentities.length !== 1) throw new Error('TERMINAL_DEV_PROJECT_IDENTITY_INVALID');
-  const projectContext = await httpJson(
-    httpBaseUrl(),
-    `/api/operations/group-workspaces/${workspaceKey}/session/context`,
-    {
-      method: 'POST',
-      headers: {cookie, 'Idempotency-Key': randomUUID()},
-      body: {
-        roleAssignmentRef: projectIdentities[0].roleAssignmentRef,
-        requiredContextVersion: session.body.contextVersion,
-      },
-    },
-  );
-  if (projectContext.status !== 200)
-    throw new Error(`TERMINAL_DEV_PROJECT_CONTEXT_SELECT_FAILED:${projectContext.status}`);
-  const targetStores = (projectContext.body.dataNodeCandidates ?? []).filter(
-    (candidate: {dataNodeType?: string; dataNodeCode?: string}) =>
-      candidate.dataNodeType === 'STORE' && candidate.dataNodeCode === storeCode,
-  );
-  if (targetStores.length !== 1 || typeof targetStores[0].dataNodeRef !== 'string')
-    throw new Error('TERMINAL_DEV_TARGET_STORE_CANDIDATE_INVALID');
-  const project = await httpJson(httpBaseUrl(), `/api/operations/group-workspaces/${workspaceKey}/session/data-node`, {
-    method: 'POST',
-    headers: {cookie, 'Idempotency-Key': randomUUID()},
-    body: {
-      dataNodeRef: targetStores[0].dataNodeRef,
-      dataNodeType: 'STORE',
-      requiredContextVersion: projectContext.body.contextVersion,
-    },
-  });
-  if (project.status !== 200) throw new Error(`TERMINAL_DEV_STORE_CONTEXT_SELECT_FAILED:${project.status}`);
-  const selectedStore = project.body.scopeContext?.store;
-  if (selectedStore?.dataNodeType !== 'STORE' || selectedStore.dataNodeCode !== storeCode || !selectedStore.dataNodeRef)
-    throw new Error('TERMINAL_DEV_STORE_CONTEXT_READBACK_INVALID');
-  return {cookie, contextVersion: project.body.contextVersion, storeRef: selectedStore.dataNodeRef};
-};
-
-const operationsTerminalByRef = async (session: OperationsSession, terminalRef: string): Promise<any> => {
-  const response = await httpJson(
-    httpBaseUrl(),
-    `/api/operations/group-workspaces/${workspaceKey}/stores/${session.storeRef}/terminals/${terminalRef}`,
-    {
-      headers: {cookie: session.cookie},
-    },
-  );
-  if (response.status !== 200) throw new Error(`TERMINAL_DEV_TERMINAL_DETAIL_FAILED:${response.status}`);
-  return response.body;
-};
-
-const operationsTerminal = async (session: OperationsSession, fixtureIndex: number): Promise<any> => {
-  const fixture = fixtureTerminals[fixtureIndex];
-  if (!fixture) throw new Error('TERMINAL_DEV_FIXTURE_INDEX_INVALID');
-  const list = await httpJson(
-    httpBaseUrl(),
-    `/api/operations/group-workspaces/${workspaceKey}/stores/${session.storeRef}/terminals?query=${encodeURIComponent(fixture.name)}&pageSize=20`,
-    {
-      headers: {cookie: session.cookie},
-    },
-  );
-  if (list.status !== 200) throw new Error(`TERMINAL_DEV_TERMINAL_LIST_FAILED:${list.status}`);
-  const details = await Promise.all(
-    (list.body.items ?? []).map((item: {terminalRef: string}) => operationsTerminalByRef(session, item.terminalRef)),
-  );
-  const detail = details.find(value => value.activationCode === fixture.activationCode);
-  if (!detail) throw new Error('TERMINAL_DEV_SEEDED_TERMINAL_NOT_FOUND');
-  return detail;
-};
-
-const cancelByOperations = async (
+const operationsSession = (): Promise<OperationsSession> => operationsFixtureClient().operationsSession();
+const operationsTerminalByRef = (session: OperationsSession, terminalRef: string) =>
+  operationsFixtureClient().operationsTerminalByRef(session, terminalRef);
+const operationsTerminal = (session: OperationsSession, fixtureIndex: number) =>
+  operationsFixtureClient().operationsTerminal(session, fixtureIndex);
+const cancelByOperations = (
   session: OperationsSession,
-  terminal: {terminalRef: string; binding: {status: string; generation?: number}},
-): Promise<void> => {
-  if (terminal.binding?.status === 'INACTIVE') return;
-  if (terminal.binding?.status !== 'ACTIVE') throw new Error('TERMINAL_DEV_BINDING_STATE_INVALID');
-  const result = await httpJson(
-    httpBaseUrl(),
-    `/api/operations/group-workspaces/${workspaceKey}/stores/${session.storeRef}/terminals/${terminal.terminalRef}/activation/cancel`,
-    {
-      method: 'POST',
-      headers: {cookie: session.cookie, 'Idempotency-Key': randomUUID()},
-      body: {expectedBindingGeneration: terminal.binding.generation},
-    },
-  );
-  if (result.status !== 200) throw new Error(`TERMINAL_DEV_BACKEND_CANCEL_FAILED:${result.status}`);
-  const readback = await operationsTerminalByRef(session, terminal.terminalRef);
-  if (readback.terminalRef !== terminal.terminalRef) throw new Error('TERMINAL_DEV_BINDING_READBACK_MISMATCH');
-  if (readback.binding?.status !== 'INACTIVE') throw new Error('TERMINAL_DEV_BINDING_NOT_INACTIVE');
-};
-
-const prepareFixture = async (session: OperationsSession, fixtureIndex: number): Promise<void> => {
-  const terminal = await operationsTerminal(session, fixtureIndex);
-  await cancelByOperations(session, terminal);
-};
+  terminal: Parameters<ReturnType<typeof operationsFixtureClient>['cancelByOperations']>[1],
+) => operationsFixtureClient().cancelByOperations(session, terminal);
+const prepareFixture = (session: OperationsSession, fixtureIndex: number) =>
+  operationsFixtureClient().prepareFixture(session, fixtureIndex);
 
 const latestState = (terminalRef: string) =>
   readManagedTdsLatestState({manifestPath: devManifestPath(), runId: managedDevRunId(), terminalRef});

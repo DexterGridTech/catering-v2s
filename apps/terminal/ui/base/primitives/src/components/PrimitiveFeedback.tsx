@@ -1,12 +1,13 @@
 import {RnrActivityIndicator, RnrView, RnrText} from '../foundations/nativeSlots';
 import {baseTokens} from '../theme/tokens';
 import {assertTestID} from '../foundations/assertTestID';
+import {deriveTestId, testIdProps} from '../foundations/testId';
 import {toneClassName, toneForegroundClassName} from '../foundations/toneClassName';
 import type {PrimitiveBadgeProps, PrimitiveFeedbackProps, PrimitiveProgressProps} from '../types/types';
 
 export const PrimitiveSpinner = ({testID, accessibilityLabel = '正在加载'}: PrimitiveFeedbackProps) => (
   <RnrActivityIndicator
-    testID={assertTestID(testID)}
+    {...testIdProps(assertTestID(testID))}
     accessibilityRole="progressbar"
     accessibilityLabel={accessibilityLabel}
   />
@@ -19,7 +20,7 @@ export const PrimitiveInlineAlert = ({
   tone = 'error',
 }: PrimitiveFeedbackProps) => (
   <RnrView
-    testID={assertTestID(testID)}
+    {...testIdProps(assertTestID(testID))}
     accessibilityRole="alert"
     accessibilityLabel={accessibilityLabel}
     className={toneClassName(tone, 'w-full rounded-md border px-3 py-3')}
@@ -35,7 +36,7 @@ export const PrimitiveEmptyState = ({
   tone = 'neutral',
 }: PrimitiveFeedbackProps) => (
   <RnrView
-    testID={assertTestID(testID)}
+    {...testIdProps(assertTestID(testID))}
     accessibilityRole="text"
     accessibilityLabel={accessibilityLabel}
     className={toneClassName(tone, 'w-full items-center justify-center gap-3 rounded-md border px-4 py-6')}
@@ -48,14 +49,14 @@ export const PrimitiveProgress = ({testID, accessibilityLabel, value}: Primitive
   const boundedValue = Math.max(0, Math.min(1, value));
   return (
     <RnrView
-      testID={assertTestID(testID)}
+      {...testIdProps(assertTestID(testID))}
       accessibilityRole="progressbar"
       accessibilityLabel={accessibilityLabel}
       accessibilityValue={{min: 0, max: 1, now: boundedValue}}
       className="w-full h-3 overflow-hidden rounded-full bg-surface"
     >
       <RnrView
-        testID={`${assertTestID(testID)}:value`}
+        {...testIdProps(deriveTestId(testID, 'value'))}
         className="h-full bg-action"
         style={{width: `${boundedValue * 100}%`}}
       />
@@ -65,7 +66,7 @@ export const PrimitiveProgress = ({testID, accessibilityLabel, value}: Primitive
 
 export const PrimitiveSkeleton = ({testID, accessibilityLabel = '内容加载中'}: PrimitiveFeedbackProps) => (
   <RnrView
-    testID={assertTestID(testID)}
+    {...testIdProps(assertTestID(testID))}
     accessibilityRole="progressbar"
     accessibilityLabel={accessibilityLabel}
     className="w-full h-6 rounded-md bg-surface"
@@ -80,7 +81,7 @@ export const PrimitiveBadge = ({
   tone = 'neutral',
 }: PrimitiveBadgeProps) => (
   <RnrView
-    testID={assertTestID(testID)}
+    {...testIdProps(assertTestID(testID))}
     accessibilityRole="text"
     accessibilityLabel={accessibilityLabel}
     className={toneClassName(

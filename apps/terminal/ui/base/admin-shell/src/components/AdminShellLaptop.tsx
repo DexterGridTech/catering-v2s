@@ -112,9 +112,9 @@ const AdminShellLaptopContent = ({onClose}: AdminShellProps) => {
         status={adminPanelStatusFromRuntime(runtimeStatus)}
       >
         {runtimeStatus === 'started' ? <PowerConfirmationBridge /> : null}
-        <PrimitiveGrid testID="terminal.admin:workspace" style={workspaceStyle}>
+        <PrimitiveGrid testID={adminTestIds.node('terminal.admin:workspace')} style={workspaceStyle}>
           <PrimitiveContainer
-            testID="terminal.admin:navigation-frame"
+            testID={adminTestIds.node('terminal.admin:navigation-frame')}
             layout="content"
             appearance="admin-nav"
             style={navigationFrameStyle}

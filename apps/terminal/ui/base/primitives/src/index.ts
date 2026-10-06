@@ -1,5 +1,20 @@
 export {moduleName} from './moduleName';
+export {createTestId, deriveTestId, testIdProps} from './foundations/testId';
+export type {TestId} from './foundations/testId';
 export {dependencyModuleNames, devDependencyModuleNames} from './dependencies';
+export {
+  AutomationNodeProvider,
+  AutomationSurfaceProvider,
+  noAutomationNodeSink,
+} from './contexts/AutomationNodeContext';
+export type {
+  AutomationNodeDescription,
+  AutomationNodeProviderProps,
+  AutomationNodeSink,
+  AutomationSurfaceScope,
+} from './contexts/AutomationNodeContext';
+export {useAutomationNode} from './hooks/useAutomationNode';
+export type {UseAutomationNodeInput} from './hooks/useAutomationNode';
 export {PrimitiveActions} from './components/PrimitiveActions';
 export {PrimitiveButton} from './components/PrimitiveButton';
 export {PrimitiveIcon, PrimitiveIconBadge} from './components/PrimitiveIcon';

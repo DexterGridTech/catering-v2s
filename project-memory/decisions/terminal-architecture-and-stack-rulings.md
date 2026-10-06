@@ -60,7 +60,7 @@ TER = `apps/terminal`，v2s 仓内的终端产品工程。设计输入是对 POC
   [`doc/decisions/2026-09-28-ter-third-party-usage-remediation.md`](../../doc/decisions/2026-09-28-ter-third-party-usage-remediation.md)。
   **不使用 RTK Query**（OpenAPI → 类型化 client + transport 执行全部策略）· automation 完全自研 ·
   vitest 单一 runner · TDP 用 WS（放弃 SSE）· adapter/android 用 expo-module ·
-  持久化后端由 adapter 决定 · 虚拟键盘按「单表面命中测试」（Reanimated 随之进入既定依赖集）· 引入 turbo。
+  持久化后端由 adapter 决定 · 虚拟键盘的自动化输入沿 input owner 的强类型 `TestId` 注册与查询路径完成，driver 使用注册节点和 bounds，不另建键盘寻址机制（细则见正本 `doc/platform/terminal-coding-standard.md` 的 TR-15/TR-17）· 引入 turbo。
 - `TER_SCRIPT_EXECUTE_UNRESTRICTED`：`scripts.execute` **保留，且必须支持运行期从远端下发脚本源**，
   **不设来源限制**；安全由业务侧保障，平台层不设卡。
   ⚠️ 该能力**不属于**"调试面编译期剔除"的范围，写门时不得误剔。

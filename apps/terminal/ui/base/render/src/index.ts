@@ -1,4 +1,5 @@
 export {moduleName} from './moduleName';
+export {renderTestIds} from './foundations/renderTestIds';
 export {dependencyModuleNames, devDependencyModuleNames} from './dependencies';
 export type {LayerGuard, LayerTier, RendererBinding, RendererCatalog} from './types/catalog';
 export type {
@@ -18,6 +19,7 @@ export type {
   DebugMode,
   DebugModeResolutionInput,
   DebugModeSource,
+  AutomationBuildFacts,
   RenderRuntimeFacts,
   RuntimeSurfaceCanvasSizes,
   RuntimeDeviceIdentity,

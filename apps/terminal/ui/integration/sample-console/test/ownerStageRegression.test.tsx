@@ -16,6 +16,7 @@ import {
   setNativeTestRefFactory,
   type NativeTestHostProps,
 } from '../../../../../../tools/terminal-shared/rntl-native-test-host';
+import {sampleMemberDeskTestId} from '../../../feature/sample-member-desk/src/foundations/sampleMemberDeskTestIds';
 
 vi.mock('react-native', async importOriginal => {
   const actual = await importOriginal<typeof import('react-native')>();
@@ -26,9 +27,13 @@ vi.mock('react-native', async importOriginal => {
   return installHosts(actual, reactRuntime);
 });
 
-vi.mock('expo-crypto', () => ({
-  getRandomBytesAsync: vi.fn(async (length: number) => new Uint8Array(length)),
-}));
+vi.mock('expo-crypto', () => {
+  let sequence = 0;
+  return {
+    getRandomBytesAsync: vi.fn(async (length: number) => new Uint8Array(length)),
+    randomUUID: vi.fn(() => `00000000-0000-4000-8000-${String(++sequence).padStart(12, '0')}`),
+  };
+});
 
 const DEVICE_INFO = Object.freeze({
   deviceId: 'DEVICE-OWNER-STAGE-REGRESSION',
@@ -176,18 +181,23 @@ describe('sample-console integration owner-stage regressions', () => {
         return hostName === 'View' ? {} : undefined;
       });
       renderer = await render(createSurfaceForDisplayIndex(assembly, 0));
-      fireEvent.press(renderer.getByTestId('sample.desk.member-list:empty-action'));
+      fireEvent.press(renderer.getByTestId(sampleMemberDeskTestId('sample.desk.member-list:empty-action')));
       await waitFor(() =>
         expect(selectScreen(assembly.runtime.getState(), 'PRIMARY', 'main')?.partKey).toBe('sample.desk.member-form'),
       );
-      fireEvent.changeText(renderer.getByTestId('sample.desk.member-form:name'), 'Alice pending');
+      fireEvent.changeText(
+        renderer.getByTestId(sampleMemberDeskTestId('sample.desk.member-form:name')),
+        'Alice pending',
+      );
 
       await act(async () => {
         assembly.runtime.getStore().dispatch(terminalDataClientActions.recordRtt({rttMs: 47, observedAt: Date.now()}));
       });
 
       expect(selectScreen(assembly.runtime.getState(), 'PRIMARY', 'main')?.partKey).toBe('sample.desk.member-form');
-      expect(renderer.getByTestId('sample.desk.member-form:name').props.value).toBe('Alice pending');
+      expect(renderer.getByTestId(sampleMemberDeskTestId('sample.desk.member-form:name')).props.value).toBe(
+        'Alice pending',
+      );
     } finally {
       renderer?.unmount();
       await releaseRuntimeForTestAsync(assembly.runtime);

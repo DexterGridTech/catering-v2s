@@ -15,6 +15,14 @@ export type {
   DispatchedCommand,
 } from './types/command';
 export {defineCommand, createCommand} from './foundations/defineCommand';
+export {defineStateSelector} from './foundations/defineStateSelector';
+export type {
+  SelectorParameterSchema,
+  StateSelectorParameters,
+  StateSelectorMetadata,
+  StateSelector,
+  AnyStateSelector,
+} from './types/selector';
 
 export type {
   ActorInfo,

@@ -2,6 +2,8 @@ import type {RuntimeModule, RuntimeModuleContext} from '@catering-v2s/kernel-bas
 import type {SurfaceForm} from '@catering-v2s/kernel-base-contracts';
 import {runtimeModuleDependencyNames} from '../dependencies';
 import {moduleKind, moduleName} from '../moduleName';
+import {selectDisplayRole} from '../selectors/selectDisplayRole';
+import {selectPowerConfirmation} from '../selectors/selectPowerConfirmation';
 import {displayRoleSlice, displayRoleSliceName} from '../features/slices/displayRole';
 import {
   powerStatusChangedCommand,
@@ -55,6 +57,7 @@ export const createDisplayContextModule = (
       cancelPowerRoleChangeCommand,
       validateHydratedDisplayRoleCommand,
     ],
+    selectorDefinitions: [selectDisplayRole, selectPowerConfirmation],
     actors: [
       {name: switchDisplayRoleActor.actorName},
       {name: switchInstanceModeActor.actorName},

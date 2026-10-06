@@ -1,3 +1,4 @@
+import {testIdProps} from '../foundations/testId';
 import {RnrText} from '../foundations/nativeSlots';
 import {baseTokens} from '../theme/tokens';
 import {toneForegroundClassName} from '../foundations/toneClassName';
@@ -14,7 +15,7 @@ export const PrimitiveStatus = ({
   style,
 }: PrimitiveStatusProps) => (
   <RnrText
-    testID={assertTestID(testID)}
+    {...testIdProps(assertTestID(testID))}
     accessibilityLiveRegion="polite"
     className={
       appearance === 'login' && tone === 'neutral'

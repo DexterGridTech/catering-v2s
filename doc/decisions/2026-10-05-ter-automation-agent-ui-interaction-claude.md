@@ -80,7 +80,7 @@ owner-definition 字段槽位 N/A：无定义驱动表单，也无 mutation。
 | 两屏 | 自动化 | PrimitiveFactGrid 只读项 / assembly.enabled | `adminTestIds.automation.enabled`→`ui.base.admin-shell:runtime:automation-enabled` | 实际文本节点，不是 wrapper 冒充 | 无动作 |
 | 两屏 | 连接地址 | PrimitiveFactGrid 只读项 / assembly.url | `adminTestIds.automation.address`→`ui.base.admin-shell:runtime:automation-address` | 实际文本节点 | 长值换行，无复制按钮 |
 
-PrimitiveFactGrid新增可选item.valueTestID：本两行必填并挂value RnrText，现有item.testID保留在外框；adminTestIds.automation.enabled/address用于valueTestID。CP-05所有FactGrid调用点与转发props同品牌TestId/构造器迁移；组件proof分别断言外框和文本。
+PrimitiveFactGrid新增可选item.valueTestID：本两行必填并挂value RnrText，现有item.testID保留在外框；adminTestIds.automation.enabled/address用于valueTestID。CP-05所有FactGrid调用点与转发props改用强类型TestId/构造器；组件proof分别断言外框和文本。
 先用现有 ID 完成首个旅途，后由统一构造函数生成以上 ID；不保留旧别名。surface 在注册上下文里，不能拼到 ID 内。
 输入依赖图、mutation 字段矩阵、主从集合、搜索与候选协议：全部 N/A，无输入、写操作、搜索或业务集合。
 

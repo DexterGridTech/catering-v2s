@@ -28,6 +28,10 @@ describe('admin launcher gesture', () => {
       }),
     ).toEqual({pageX: 50, pageY: 60});
     expect(adminLauncherPointFromEvent({clientX: 70, clientY: 80})).toEqual({pageX: 70, pageY: 80});
+    expect(adminLauncherPointFromEvent({nativeEvent: {pageX: 170, pageY: 260, clientX: 70, clientY: 80}})).toEqual({
+      pageX: 70,
+      pageY: 80,
+    });
     expect(adminLauncherPointFromEvent({nativeEvent: {changedTouches: []}})).toBeNull();
   });
 

@@ -69,7 +69,7 @@ export type AdminFrameDefinition = Readonly<{
   readonly renderer: AdminFrameRendererKey;
   readonly bindingKind: AdminFrameBindingKind;
   readonly fixture: AdminFrameFixtureKey;
-  readonly rootTestID: string;
+  readonly rootTestID: import('@catering-v2s/ui-base-primitives').TestId;
   readonly controlTestIDs: readonly string[];
   readonly variants: readonly AdminFrameVariant[];
 }>;
@@ -168,7 +168,7 @@ export const adminFrameFixtures = Object.freeze({
 
 export type AdminFrameFixtureKey = keyof typeof adminFrameFixtures;
 
-const frameTestId = (id: AdminFrameId): string => `terminal.admin:frame:${id}`;
+const frameTestId = (id: AdminFrameId) => adminTestIds.node(`terminal.admin:frame:${id}`);
 
 const panelControls = Object.freeze([
   adminTestIds.panel.frame,
@@ -800,7 +800,8 @@ export const getAdminFrameDefinition = (id: AdminFrameId): AdminFrameDefinition 
 export const getAdminFrameFixture = (id: AdminFrameId): AdminFrameFixture =>
   adminFrameFixtures[getAdminFrameDefinition(id).fixture];
 
-export const adminFrameTestId = (id: AdminFrameId): string => getAdminFrameDefinition(id).rootTestID;
+export const adminFrameTestId = (id: AdminFrameId): AdminFrameDefinition['rootTestID'] =>
+  getAdminFrameDefinition(id).rootTestID;
 
 export type AdminFrameReporter = (frameId: AdminFrameId) => void;
 

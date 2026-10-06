@@ -1,3 +1,5 @@
+import {inputTestIds} from '../src/foundations/inputTestIds';
+import {testId} from './testIds';
 import {useLayoutEffect, type RefObject} from 'react';
 import {act, render, type RenderResult} from '@testing-library/react-native';
 import {afterEach, describe, expect, it, vi} from 'vitest';
@@ -52,7 +54,7 @@ const queryTestNodes = (renderer: RenderResult, type: string): NativeTestNode[] 
 const Field = ({onScrollReady}: Readonly<{readonly onScrollReady?: (request: ScrollRequest) => void}>) => {
   const field = useInputField({
     fieldId: 'scroll-field',
-    testID: 'sample:scroll-field',
+    testID: testId('sample:scroll-field'),
     accessibilityLabel: 'scroll-field',
     keyboardKind: 'virtual',
     layout: 'numeric',
@@ -74,7 +76,7 @@ const KeyboardStateProbe = ({
 };
 
 const measureIncomingKeyboard = async (renderer: RenderResult): Promise<void> => {
-  const layer = getTestNode(renderer, 'ui.base.input:keyboard-layer-position:measure');
+  const layer = getTestNode(renderer, inputTestIds.node('keyboard-layer-position:measure'));
   await act(async () => {
     layer.props.onLayout({nativeEvent: {layout: {height: 246}}});
   });
@@ -100,8 +102,8 @@ const mountWithNativeGeometry = async (
     requestScroll.current = request;
   };
   setNativeTestRefFactory((hostName, props) => {
-    if (hostName === 'View' && props.testID === 'ui.base.input:surface-frame') return surfaceRootNode;
-    if (props.testID === 'sample:scroll-field') {
+    if (hostName === 'View' && props.testID === testId(inputTestIds.node('surface-frame'))) return surfaceRootNode;
+    if (props.testID === testId('sample:scroll-field')) {
       return {
         measureInWindow: () => {
           throw new Error('window coordinates must not drive scroll delta');
@@ -117,7 +119,7 @@ const mountWithNativeGeometry = async (
         blur: () => undefined,
       };
     }
-    if (props.testID === 'sample:scroll-area' && hostName === 'ScrollView') {
+    if (props.testID === testId('sample:scroll-area') && hostName === 'ScrollView') {
       return {
         measureInWindow: () => {
           throw new Error('window coordinates must not drive scroll delta');
@@ -139,9 +141,9 @@ const mountWithNativeGeometry = async (
     return {};
   });
   const renderer = await render(
-    <View testID="sample:scaled-host" style={{transform: [{scaleX: 1.25}, {scaleY: 0.5}]}}>
+    <View testID={testId('sample:scaled-host')} style={{transform: [{scaleX: 1.25}, {scaleY: 0.5}]}}>
       <InputSurfaceFrame>
-        <InputScrollArea testID="sample:scroll-area">
+        <InputScrollArea testID={testId('sample:scroll-area')}>
           <Field onScrollReady={onScrollReady} />
         </InputScrollArea>
         <KeyboardStateProbe
@@ -153,11 +155,13 @@ const mountWithNativeGeometry = async (
     </View>,
   );
   await act(async () => {
-    getTestNode(renderer, 'ui.base.input:surface-frame').props.onLayout({
+    getTestNode(renderer, inputTestIds.node('surface-frame')).props.onLayout({
       nativeEvent: {layout: TEST_FRAME},
     });
   });
-  const scrollView = queryTestNodes(renderer, 'ScrollView').find(node => node.props.testID === 'sample:scroll-area')!;
+  const scrollView = queryTestNodes(renderer, 'ScrollView').find(
+    node => node.props.testID === testId('sample:scroll-area'),
+  )!;
   await act(async () => {
     scrollView.props.onLayout({nativeEvent: {layout: {x: 0, y: 0, width: 300, height: 270}}});
     scrollView.props.onContentSizeChange(300, contentHeight);
@@ -171,12 +175,12 @@ afterEach(resetNativeTestRefFactory);
 describe('InputScrollArea', () => {
   it('forwards a presentation-only trailing content inset to the shared scroll primitive', async () => {
     const renderer = await render(
-      <InputScrollArea testID="sample:scroll-padding" contentPaddingBottom={64}>
-        <View testID="sample:scroll-child" />
+      <InputScrollArea testID={testId('sample:scroll-padding')} contentPaddingBottom={64}>
+        <View testID={testId('sample:scroll-child')} />
       </InputScrollArea>,
     );
     const scrollView = queryTestNodes(renderer, 'ScrollView').find(
-      node => node.props.testID === 'sample:scroll-padding',
+      node => node.props.testID === testId('sample:scroll-padding'),
     )!;
     expect(scrollView.props.contentContainerStyle).toEqual({gap: 12, paddingBottom: 64});
     await renderer.unmount();
@@ -188,9 +192,13 @@ describe('InputScrollArea', () => {
     expect(
       (getTestNode(renderer, 'sample:scaled-host').props.style as {readonly transform: unknown}).transform,
     ).toEqual([{scaleX: 1.25}, {scaleY: 0.5}]);
-    const scrollView = queryTestNodes(renderer, 'ScrollView').find(node => node.props.testID === 'sample:scroll-area')!;
+    const scrollView = queryTestNodes(renderer, 'ScrollView').find(
+      node => node.props.testID === testId('sample:scroll-area'),
+    )!;
     expect(requestScroll.current).not.toBeNull();
-    const input = queryTestNodes(renderer, 'TextInput').find(node => node.props.testID === 'sample:scroll-field')!;
+    const input = queryTestNodes(renderer, 'TextInput').find(
+      node => node.props.testID === testId('sample:scroll-field'),
+    )!;
     try {
       setAnimatedTimingAutoFinishForTests(false);
       await act(async () => {
@@ -220,8 +228,12 @@ describe('InputScrollArea', () => {
   it('starts exactly one animated scroll request with the measured keyboard entrance and commits after readback', async () => {
     const scrollTo = vi.fn();
     const {renderer, keyboardState} = await mountWithNativeGeometry(scrollTo);
-    const input = queryTestNodes(renderer, 'TextInput').find(node => node.props.testID === 'sample:scroll-field')!;
-    const scrollView = queryTestNodes(renderer, 'ScrollView').find(node => node.props.testID === 'sample:scroll-area')!;
+    const input = queryTestNodes(renderer, 'TextInput').find(
+      node => node.props.testID === testId('sample:scroll-field'),
+    )!;
+    const scrollView = queryTestNodes(renderer, 'ScrollView').find(
+      node => node.props.testID === testId('sample:scroll-area'),
+    )!;
 
     try {
       setAnimatedTimingAutoFinishForTests(false);
@@ -231,7 +243,7 @@ describe('InputScrollArea', () => {
       expect(scrollTo).not.toHaveBeenCalled();
       expect(keyboardState.current).toMatchObject({activeFieldId: null, owner: 'none'});
 
-      const measureLayer = getTestNode(renderer, 'ui.base.input:keyboard-layer-position:measure');
+      const measureLayer = getTestNode(renderer, inputTestIds.node('keyboard-layer-position:measure'));
       await act(async () => {
         measureLayer.props.onLayout({nativeEvent: {layout: {height: 246}}});
       });
@@ -260,15 +272,19 @@ describe('InputScrollArea', () => {
   it('keeps readback pending at keyboard animation completion until the final scroll event proves visibility', async () => {
     const scrollTo = vi.fn();
     const {renderer, keyboardState} = await mountWithNativeGeometry(scrollTo);
-    const input = queryTestNodes(renderer, 'TextInput').find(node => node.props.testID === 'sample:scroll-field')!;
-    const scrollView = queryTestNodes(renderer, 'ScrollView').find(node => node.props.testID === 'sample:scroll-area')!;
+    const input = queryTestNodes(renderer, 'TextInput').find(
+      node => node.props.testID === testId('sample:scroll-field'),
+    )!;
+    const scrollView = queryTestNodes(renderer, 'ScrollView').find(
+      node => node.props.testID === testId('sample:scroll-area'),
+    )!;
 
     try {
       setAnimatedTimingAutoFinishForTests(false);
       await act(async () => {
         input.props.onFocus({nativeEvent: {}});
       });
-      const measureLayer = getTestNode(renderer, 'ui.base.input:keyboard-layer-position:measure');
+      const measureLayer = getTestNode(renderer, inputTestIds.node('keyboard-layer-position:measure'));
       await act(async () => {
         measureLayer.props.onLayout({nativeEvent: {layout: {height: 246}}});
       });
@@ -284,7 +300,7 @@ describe('InputScrollArea', () => {
       expect(keyboardState.current).toMatchObject({activeFieldId: null, owner: 'none'});
       expect(
         queryRenderedByProps(renderer, {
-          testID: 'ui.base.input:focus-visibility-error:scroll-ended-before-visible',
+          testID: testId(inputTestIds.node('focus-visibility-error:scroll-ended-before-visible')),
         }),
       ).toHaveLength(0);
       await act(async () => {
@@ -302,15 +318,19 @@ describe('InputScrollArea', () => {
   it('settles an invisible readback from a terminal drag event even when no onScroll arrives', async () => {
     const scrollTo = vi.fn();
     const {renderer, keyboardState} = await mountWithNativeGeometry(scrollTo, 550);
-    const input = queryTestNodes(renderer, 'TextInput').find(node => node.props.testID === 'sample:scroll-field')!;
-    const scrollView = queryTestNodes(renderer, 'ScrollView').find(node => node.props.testID === 'sample:scroll-area')!;
+    const input = queryTestNodes(renderer, 'TextInput').find(
+      node => node.props.testID === testId('sample:scroll-field'),
+    )!;
+    const scrollView = queryTestNodes(renderer, 'ScrollView').find(
+      node => node.props.testID === testId('sample:scroll-area'),
+    )!;
 
     try {
       setAnimatedTimingAutoFinishForTests(false);
       await act(async () => {
         input.props.onFocus({nativeEvent: {}});
       });
-      const measureLayer = getTestNode(renderer, 'ui.base.input:keyboard-layer-position:measure');
+      const measureLayer = getTestNode(renderer, inputTestIds.node('keyboard-layer-position:measure'));
       await act(async () => {
         measureLayer.props.onLayout({nativeEvent: {layout: {height: 246}}});
       });
@@ -325,7 +345,7 @@ describe('InputScrollArea', () => {
       });
       expect(keyboardState.current).toMatchObject({activeFieldId: null, owner: 'none'});
       expect(
-        getTestNode(renderer, 'ui.base.input:focus-visibility-error:scroll-ended-before-visible').props.children,
+        getTestNode(renderer, inputTestIds.node('focus-visibility-error:scroll-ended-before-visible')).props.children,
       ).toBe('焦点框无法完整显示，请调整窗口尺寸或退出输入');
     } finally {
       setAnimatedTimingAutoFinishForTests(true);
@@ -339,14 +359,16 @@ describe('InputScrollArea', () => {
     vi.useFakeTimers();
     const scrollTo = vi.fn();
     const {renderer, keyboardState} = await mountWithNativeGeometry(scrollTo, 550);
-    const input = queryTestNodes(renderer, 'TextInput').find(node => node.props.testID === 'sample:scroll-field')!;
+    const input = queryTestNodes(renderer, 'TextInput').find(
+      node => node.props.testID === testId('sample:scroll-field'),
+    )!;
 
     try {
       setAnimatedTimingAutoFinishForTests(false);
       await act(async () => {
         input.props.onFocus({nativeEvent: {}});
       });
-      const measureLayer = getTestNode(renderer, 'ui.base.input:keyboard-layer-position:measure');
+      const measureLayer = getTestNode(renderer, inputTestIds.node('keyboard-layer-position:measure'));
       await act(async () => {
         measureLayer.props.onLayout({nativeEvent: {layout: {height: 246}}});
       });
@@ -355,9 +377,9 @@ describe('InputScrollArea', () => {
         vi.advanceTimersByTime(1_500);
       });
       expect(keyboardState.current).toMatchObject({activeFieldId: null, owner: 'none'});
-      expect(getTestNode(renderer, 'ui.base.input:focus-visibility-error:scroll-readback-timeout').props.children).toBe(
-        '焦点框无法完整显示，请调整窗口尺寸或退出输入',
-      );
+      expect(
+        getTestNode(renderer, inputTestIds.node('focus-visibility-error:scroll-readback-timeout')).props.children,
+      ).toBe('焦点框无法完整显示，请调整窗口尺寸或退出输入');
     } finally {
       setAnimatedTimingAutoFinishForTests(true);
       vi.useRealTimers();
@@ -370,15 +392,19 @@ describe('InputScrollArea', () => {
   it('accepts a half-unit readback difference when the field is fully visible', async () => {
     const scrollTo = vi.fn();
     const {renderer, keyboardState} = await mountWithNativeGeometry(scrollTo);
-    const input = queryTestNodes(renderer, 'TextInput').find(node => node.props.testID === 'sample:scroll-field')!;
-    const scrollView = queryTestNodes(renderer, 'ScrollView').find(node => node.props.testID === 'sample:scroll-area')!;
+    const input = queryTestNodes(renderer, 'TextInput').find(
+      node => node.props.testID === testId('sample:scroll-field'),
+    )!;
+    const scrollView = queryTestNodes(renderer, 'ScrollView').find(
+      node => node.props.testID === testId('sample:scroll-area'),
+    )!;
 
     try {
       setAnimatedTimingAutoFinishForTests(false);
       await act(async () => {
         input.props.onFocus({nativeEvent: {}});
       });
-      const measureLayer = getTestNode(renderer, 'ui.base.input:keyboard-layer-position:measure');
+      const measureLayer = getTestNode(renderer, inputTestIds.node('keyboard-layer-position:measure'));
       await act(async () => {
         measureLayer.props.onLayout({nativeEvent: {layout: {height: 246}}});
       });
@@ -402,8 +428,12 @@ describe('InputScrollArea', () => {
   it('releases focus and shows recovery when the scroll clamp is reached but the field remains clipped', async () => {
     const scrollTo = vi.fn();
     const {renderer, requestScroll, keyboardState} = await mountWithNativeGeometry(scrollTo, 550);
-    const input = queryTestNodes(renderer, 'TextInput').find(node => node.props.testID === 'sample:scroll-field')!;
-    const scrollView = queryTestNodes(renderer, 'ScrollView').find(node => node.props.testID === 'sample:scroll-area')!;
+    const input = queryTestNodes(renderer, 'TextInput').find(
+      node => node.props.testID === testId('sample:scroll-field'),
+    )!;
+    const scrollView = queryTestNodes(renderer, 'ScrollView').find(
+      node => node.props.testID === testId('sample:scroll-area'),
+    )!;
 
     await act(async () => {
       input.props.onFocus({nativeEvent: {}});
@@ -418,7 +448,7 @@ describe('InputScrollArea', () => {
     });
 
     expect(
-      getTestNode(renderer, 'ui.base.input:focus-visibility-error:scroll-clamped-before-visible').props.children,
+      getTestNode(renderer, inputTestIds.node('focus-visibility-error:scroll-clamped-before-visible')).props.children,
     ).toBe('焦点框无法完整显示，请调整窗口尺寸或退出输入');
     expect(keyboardState.current).toMatchObject({activeFieldId: null, owner: 'none'});
     await act(async () => {
@@ -428,7 +458,7 @@ describe('InputScrollArea', () => {
 
   it('does not require a scroll ancestor when a field is focused', async () => {
     setNativeTestRefFactory((hostName, props) =>
-      props.testID === 'sample:scroll-field'
+      props.testID === testId('sample:scroll-field')
         ? {
             focus: () => undefined,
             blur: () => undefined,
@@ -445,11 +475,13 @@ describe('InputScrollArea', () => {
       </InputSurfaceFrame>,
     );
     await act(async () => {
-      getTestNode(renderer, 'ui.base.input:surface-frame').props.onLayout({
+      getTestNode(renderer, inputTestIds.node('surface-frame')).props.onLayout({
         nativeEvent: {layout: TEST_FRAME},
       });
     });
-    const input = queryTestNodes(renderer, 'TextInput').find(node => node.props.testID === 'sample:scroll-field')!;
+    const input = queryTestNodes(renderer, 'TextInput').find(
+      node => node.props.testID === testId('sample:scroll-field'),
+    )!;
     await act(async () => {
       input.props.onFocus({nativeEvent: {}});
     });

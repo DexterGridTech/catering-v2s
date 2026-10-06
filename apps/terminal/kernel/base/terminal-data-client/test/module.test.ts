@@ -30,6 +30,7 @@ const createDependencies = () => ({
     reportHttpAddressAvailable: async () => undefined,
   },
   createCredentialSecret: () => 'A'.repeat(43),
+  createProtocolUuid: () => '00000000-0000-4000-8000-000000000005',
   now: () => 1,
   appVersion: 'test',
   surfaceForm: 'laptop' as const,

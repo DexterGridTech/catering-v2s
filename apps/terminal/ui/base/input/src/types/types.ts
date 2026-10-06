@@ -7,6 +7,7 @@ import type {
 import type {EditResult, EditState, KeyboardKey} from '../foundations/editText';
 import type {KeyboardCapacity, LocalFrameMetrics} from '../foundations/keyboardHeight';
 import type {KeyboardLayout} from '../foundations/keyboardLayout';
+import type {TestId} from '@catering-v2s/ui-base-primitives';
 import type {InputRegistrationToken, InputSnapshot} from '../foundations/snapshot';
 
 export type {KeyboardLayout} from '../foundations/keyboardLayout';
@@ -14,7 +15,7 @@ export type {InputSnapshot, InputRegistrationToken} from '../foundations/snapsho
 
 type InputFieldOptionsBase = Readonly<{
   readonly fieldId: string;
-  readonly testID: string;
+  readonly testID: TestId;
   readonly accessibilityLabel?: string;
   readonly editable?: boolean;
   readonly initialValue?: string;
@@ -57,7 +58,7 @@ export type InputProviderProps = Readonly<{
 
 export type InputFieldController = Readonly<{
   readonly fieldId: string;
-  readonly testID: string;
+  readonly testID: TestId;
   readonly token: InputRegistrationToken;
   readonly keyboardKind: 'virtual';
   readonly layout: KeyboardLayout;
@@ -72,7 +73,7 @@ export type InputFieldController = Readonly<{
 
 export type InputFieldRegistration = Readonly<{
   readonly fieldId: string;
-  readonly testID: string;
+  readonly testID: TestId;
   readonly value: string;
   readonly selection: PrimitiveInputSelection;
   readonly keyboardKind: 'virtual';

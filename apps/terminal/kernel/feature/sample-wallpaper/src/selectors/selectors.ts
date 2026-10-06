@@ -1,3 +1,5 @@
+import {defineStateSelector} from '@catering-v2s/kernel-base-runtime';
+import {moduleName} from '../moduleName';
 import type {StateRoot} from '@catering-v2s/kernel-base-state';
 import {selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
 import {wallpaperSliceName} from '../features/slices/slice';
@@ -16,9 +18,9 @@ const readWallpaperState = (root: StateRoot): WallpaperState => {
   return value as WallpaperState;
 };
 
-export const selectWallpaperId = (root: StateRoot): WallpaperId => readWallpaperState(root).wallpaperId;
+const selectWallpaperIdImplementation = (root: StateRoot): WallpaperId => readWallpaperState(root).wallpaperId;
 
-export const selectHostConfirmedWallpaperId = (root: StateRoot): WallpaperId | null => {
+const selectHostConfirmedWallpaperIdImplementation = (root: StateRoot): WallpaperId | null => {
   const state = readWallpaperState(root);
   if (selectRuntimeInstanceMode(root) === 'MASTER') return state.wallpaperId;
   const projected = state.hostConfirmedWallpaperId;
@@ -27,8 +29,21 @@ export const selectHostConfirmedWallpaperId = (root: StateRoot): WallpaperId | n
   return projected;
 };
 
-export const selectPendingWallpaperId = (root: StateRoot): WallpaperId | undefined =>
+const selectPendingWallpaperIdImplementation = (root: StateRoot): WallpaperId | undefined =>
   readWallpaperState(root).pendingWallpaperId;
 
 export const isWallpaperId = (value: unknown): value is WallpaperId =>
   value === 'none' || value === 'w1' || value === 'w2' || value === 'w3';
+
+export const selectHostConfirmedWallpaperId = defineStateSelector(moduleName, 'selectHostConfirmedWallpaperId', {
+  parameters: [],
+  selector: selectHostConfirmedWallpaperIdImplementation,
+});
+export const selectPendingWallpaperId = defineStateSelector(moduleName, 'selectPendingWallpaperId', {
+  parameters: [],
+  selector: selectPendingWallpaperIdImplementation,
+});
+export const selectWallpaperId = defineStateSelector(moduleName, 'selectWallpaperId', {
+  parameters: [],
+  selector: selectWallpaperIdImplementation,
+});

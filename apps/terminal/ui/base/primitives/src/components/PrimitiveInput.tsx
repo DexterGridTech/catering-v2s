@@ -1,3 +1,4 @@
+import {testIdProps} from '../foundations/testId';
 import {useImperativeHandle, useRef} from 'react';
 import {RnrTextInput, type RnrTextInputRef} from '../foundations/nativeSlots';
 import {baseTokens} from '../theme/tokens';
@@ -53,7 +54,7 @@ export const PrimitiveInput = ({
   return (
     <RnrTextInput
       ref={nativeInputRef}
-      testID={assertTestID(testID)}
+      {...testIdProps(assertTestID(testID))}
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{disabled: editable === false}}
       editable={editable}

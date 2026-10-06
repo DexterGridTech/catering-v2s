@@ -1,7 +1,9 @@
+import {inputTestIds} from '../src/foundations/inputTestIds';
 import {act, fireEvent, render, type RenderResult} from '@testing-library/react-native';
 import {useCallback, useState} from 'react';
 import {StyleSheet} from 'react-native';
 import {describe, expect, it, vi} from 'vitest';
+import {deriveTestId} from '@catering-v2s/ui-base-primitives';
 import {VirtualKeyboard} from '../src/components/VirtualKeyboard';
 
 const TEST_FRAME_WIDTH = 960;
@@ -25,6 +27,50 @@ const KeyboardHarness = () => {
 };
 
 describe('VirtualKeyboard render boundary', () => {
+  it('exposes the same interaction readiness used by the real key handlers', async () => {
+    let renderer: RenderResult | undefined;
+    await act(async () => {
+      renderer = await render(
+        <VirtualKeyboard
+          layout="numeric"
+          height={250}
+          frameWidth={TEST_FRAME_WIDTH}
+          cellWidth={310}
+          interactive={false}
+          shift={false}
+          hasNextField={false}
+          onKey={() => undefined}
+        />,
+      );
+    });
+
+    const key = renderer!.getByTestId(inputTestIds.node('virtual-keyboard:text-1'));
+    expect(key.props.disabled).toBe(true);
+    expect(key.props.accessibilityState.disabled).toBe(true);
+
+    await act(async () => {
+      renderer!.rerender(
+        <VirtualKeyboard
+          layout="numeric"
+          height={250}
+          frameWidth={TEST_FRAME_WIDTH}
+          cellWidth={310}
+          interactive
+          shift={false}
+          hasNextField={false}
+          onKey={() => undefined}
+        />,
+      );
+    });
+
+    const interactiveKey = renderer!.getByTestId(inputTestIds.node('virtual-keyboard:text-1'));
+    expect(interactiveKey.props.disabled).toBe(false);
+    expect(interactiveKey.props.accessibilityState.disabled).toBe(false);
+    await act(async () => {
+      await renderer!.unmount();
+    });
+  });
+
   it('owns a semantic surface background instead of inheriting the host background', async () => {
     let renderer: RenderResult | undefined;
     await act(async () => {
@@ -41,7 +87,7 @@ describe('VirtualKeyboard render boundary', () => {
       );
     });
 
-    const keyboard = renderer!.getByTestId('ui.base.input:virtual-keyboard');
+    const keyboard = renderer!.getByTestId(inputTestIds.node('virtual-keyboard'));
     expect(keyboard.props.className).toContain('bg-keyboard-surface');
     expect(keyboard.props.className).not.toContain('rounded-');
     expect(StyleSheet.flatten(keyboard.props.style)).toMatchObject({
@@ -71,7 +117,7 @@ describe('VirtualKeyboard render boundary', () => {
           />,
         );
       });
-      const nativeKeyboard = nativeRenderer!.getByTestId('ui.base.input:virtual-keyboard');
+      const nativeKeyboard = nativeRenderer!.getByTestId(inputTestIds.node('virtual-keyboard'));
       expect(typeof nativeKeyboard.props.onTouchEnd).toBe('function');
       expect(nativeKeyboard.props.onClick).toBeUndefined();
       await act(async () => {
@@ -93,7 +139,7 @@ describe('VirtualKeyboard render boundary', () => {
           />,
         );
       });
-      const webKeyboard = webRenderer!.getByTestId('ui.base.input:virtual-keyboard');
+      const webKeyboard = webRenderer!.getByTestId(inputTestIds.node('virtual-keyboard'));
       expect(typeof webKeyboard.props.onClick).toBe('function');
       expect(webKeyboard.props.onTouchEnd).toBeUndefined();
       await act(async () => {
@@ -113,10 +159,10 @@ describe('VirtualKeyboard render boundary', () => {
     await act(async () => {
       renderer = await render(<KeyboardHarness />);
     });
-    const firstKey = renderer!.getByTestId('ui.base.input:virtual-keyboard:text-1');
+    const firstKey = renderer!.getByTestId(inputTestIds.node('virtual-keyboard:text-1'));
     const firstOnPress = firstKey.props.onPress;
     await fireEvent.press(firstKey);
-    const secondKey = renderer!.getByTestId('ui.base.input:virtual-keyboard:text-1');
+    const secondKey = renderer!.getByTestId(inputTestIds.node('virtual-keyboard:text-1'));
     expect(secondKey.props.onPress).toBe(firstOnPress);
     await act(async () => {
       await renderer!.unmount();
@@ -170,14 +216,14 @@ describe('VirtualKeyboard render boundary', () => {
     });
 
     for (const [region, keys] of Object.entries(regionKeys)) {
-      const regionNode = renderer!.getByTestId(`ui.base.input:virtual-keyboard:region:${region}`);
+      const regionNode = renderer!.getByTestId(inputTestIds.node(`virtual-keyboard:region:${region}`));
       expect(regionNode).toBeDefined();
       for (const key of keys) {
-        expect(renderer!.getByTestId(`ui.base.input:virtual-keyboard:${key}`)).toBeDefined();
+        expect(renderer!.getByTestId(inputTestIds.node(`virtual-keyboard:${key}`))).toBeDefined();
       }
     }
     const renderedRegions = Object.keys(regionKeys).flatMap(region =>
-      renderer!.getAllByTestId(`ui.base.input:virtual-keyboard:region:${region}`),
+      renderer!.getAllByTestId(inputTestIds.node(`virtual-keyboard:region:${region}`)),
     );
     expect(renderedRegions).toHaveLength(Object.keys(regionKeys).length);
     await act(async () => {
@@ -201,13 +247,12 @@ describe('VirtualKeyboard render boundary', () => {
         />,
       );
     });
-    const complete = renderer!.getByTestId('ui.base.input:virtual-keyboard:complete');
-    expect(renderer!.getByTestId('ui.base.input:virtual-keyboard:complete')).toBeDefined();
-    expect(renderer!.getByTestId('ui.base.input:virtual-keyboard:complete:icon')).toBeDefined();
+    const complete = renderer!.getByTestId(inputTestIds.node('virtual-keyboard:complete'));
+    expect(renderer!.getByTestId(inputTestIds.node('virtual-keyboard:complete'))).toBeDefined();
+    expect(renderer!.getByTestId(deriveTestId(inputTestIds.node('virtual-keyboard:complete'), 'icon')!)).toBeDefined();
     expect(complete.props.accessibilityLabel).toBe('回车');
-    const backspace = renderer!.getByTestId('ui.base.input:virtual-keyboard:backspace');
-    expect(renderer!.getByTestId('ui.base.input:virtual-keyboard:backspace:icon')).toBeDefined();
-    expect(renderer!.getByTestId('ui.base.input:virtual-keyboard:backspace:icon')).toBeDefined();
+    const backspace = renderer!.getByTestId(inputTestIds.node('virtual-keyboard:backspace'));
+    expect(renderer!.getByTestId(deriveTestId(inputTestIds.node('virtual-keyboard:backspace'), 'icon')!)).toBeDefined();
     expect(backspace.props.accessibilityLabel).toBe('删除');
     await fireEvent.press(complete);
     expect(onKey).toHaveBeenCalledWith({kind: 'complete', hasNextField: false});
@@ -234,7 +279,7 @@ describe('VirtualKeyboard render boundary', () => {
     expect(renderer!.getByText('q')).toBeDefined();
     expect(renderer!.getByText('SHIFT')).toBeDefined();
     expect(renderer!.getByText('SPACE')).toBeDefined();
-    expect(renderer!.getByTestId('ui.base.input:virtual-keyboard:complete')).toBeDefined();
+    expect(renderer!.getByTestId(inputTestIds.node('virtual-keyboard:complete'))).toBeDefined();
     await act(async () => {
       await renderer!.unmount();
     });
@@ -302,8 +347,8 @@ describe('VirtualKeyboard render boundary', () => {
         />,
       );
     });
-    const minus = renderer!.getByTestId('ui.base.input:virtual-keyboard:text--');
-    const dot = renderer!.getByTestId('ui.base.input:virtual-keyboard:text-.');
+    const minus = renderer!.getByTestId(inputTestIds.node('virtual-keyboard:text--'));
+    const dot = renderer!.getByTestId(inputTestIds.node('virtual-keyboard:text-.'));
     expect(renderer!.getByText('−')).toBeDefined();
     expect(renderer!.getByText('·')).toBeDefined();
     await fireEvent.press(minus);
@@ -335,12 +380,12 @@ describe('VirtualKeyboard render boundary', () => {
     });
 
     for (const [index, symbol] of symbols.entries()) {
-      const key = renderer!.getByTestId(`ui.base.input:virtual-keyboard:text-${digits[index]}`);
+      const key = renderer!.getByTestId(inputTestIds.node(`virtual-keyboard:text-${digits[index]}`));
       expect(renderer!.getByText(symbol)).toBeDefined();
       await fireEvent.press(key);
       expect(onKey).toHaveBeenNthCalledWith(index + 1, {kind: 'text', text: symbol});
     }
-    const space = renderer!.getByTestId('ui.base.input:virtual-keyboard:space');
+    const space = renderer!.getByTestId(inputTestIds.node('virtual-keyboard:space'));
     expect(renderer!.getByText('SPACE')).toBeDefined();
     expect(space.props.accessibilityLabel).toBe('空格');
     await fireEvent.press(space);
@@ -365,8 +410,8 @@ describe('VirtualKeyboard render boundary', () => {
         />,
       );
     });
-    const shift = renderer!.getByTestId('ui.base.input:virtual-keyboard:shift');
-    const shiftButton = renderer!.getByTestId('ui.base.input:virtual-keyboard:shift');
+    const shift = renderer!.getByTestId(inputTestIds.node('virtual-keyboard:shift'));
+    const shiftButton = renderer!.getByTestId(inputTestIds.node('virtual-keyboard:shift'));
     expect(shift.props.accessibilityState).toMatchObject({selected: true});
     expect(shiftButton.props.className).toContain('border-keyboard-focus');
     await act(async () => {
@@ -394,16 +439,16 @@ describe('VirtualKeyboard render boundary', () => {
     };
 
     const numeric = await renderLayout('numeric');
-    const numericBackspaceColumn = numeric.getByTestId('ui.base.input:virtual-keyboard:segment:grid:0');
-    const numericZeroColumn = numeric.getByTestId('ui.base.input:virtual-keyboard:segment:grid:1');
-    const numericCompleteColumn = numeric.getByTestId('ui.base.input:virtual-keyboard:segment:grid:2');
-    expect(numeric.getByTestId('ui.base.input:virtual-keyboard:backspace')).toBeDefined();
-    expect(numeric.getByTestId('ui.base.input:virtual-keyboard:text-0')).toBeDefined();
-    expect(numeric.getByTestId('ui.base.input:virtual-keyboard:complete')).toBeDefined();
+    const numericBackspaceColumn = numeric.getByTestId(inputTestIds.node('virtual-keyboard:segment:grid:0'));
+    const numericZeroColumn = numeric.getByTestId(inputTestIds.node('virtual-keyboard:segment:grid:1'));
+    const numericCompleteColumn = numeric.getByTestId(inputTestIds.node('virtual-keyboard:segment:grid:2'));
+    expect(numeric.getByTestId(inputTestIds.node('virtual-keyboard:backspace'))).toBeDefined();
+    expect(numeric.getByTestId(inputTestIds.node('virtual-keyboard:text-0'))).toBeDefined();
+    expect(numeric.getByTestId(inputTestIds.node('virtual-keyboard:complete'))).toBeDefined();
     expect(numericBackspaceColumn.props.style.at(-1)).toMatchObject({width: 310, flexDirection: 'row', gap: 8});
     expect(numericZeroColumn.props.style.at(-1)).toMatchObject({width: 310, flexDirection: 'row', gap: 8});
     expect(numericCompleteColumn.props.style.at(-1)).toMatchObject({width: 310, flexDirection: 'row', gap: 8});
-    expect(numeric.getByTestId('ui.base.input:virtual-keyboard').props.style.at(-1)).toMatchObject({
+    expect(numeric.getByTestId(inputTestIds.node('virtual-keyboard')).props.style.at(-1)).toMatchObject({
       height: 244,
     });
     await act(async () => {
@@ -411,14 +456,14 @@ describe('VirtualKeyboard render boundary', () => {
     });
 
     const financial = await renderLayout('financial');
-    const financialSymbolColumn = financial.getByTestId('ui.base.input:virtual-keyboard:segment:grid:0');
-    const financialZeroColumn = financial.getByTestId('ui.base.input:virtual-keyboard:segment:grid:1');
-    const financialActionColumn = financial.getByTestId('ui.base.input:virtual-keyboard:segment:grid:2');
-    expect(financial.getByTestId('ui.base.input:virtual-keyboard:text--')).toBeDefined();
-    expect(financial.getByTestId('ui.base.input:virtual-keyboard:text-.')).toBeDefined();
-    expect(financial.getByTestId('ui.base.input:virtual-keyboard:text-0')).toBeDefined();
-    expect(financial.getByTestId('ui.base.input:virtual-keyboard:backspace')).toBeDefined();
-    expect(financial.getByTestId('ui.base.input:virtual-keyboard:complete')).toBeDefined();
+    const financialSymbolColumn = financial.getByTestId(inputTestIds.node('virtual-keyboard:segment:grid:0'));
+    const financialZeroColumn = financial.getByTestId(inputTestIds.node('virtual-keyboard:segment:grid:1'));
+    const financialActionColumn = financial.getByTestId(inputTestIds.node('virtual-keyboard:segment:grid:2'));
+    expect(financial.getByTestId(inputTestIds.node('virtual-keyboard:text--'))).toBeDefined();
+    expect(financial.getByTestId(inputTestIds.node('virtual-keyboard:text-.'))).toBeDefined();
+    expect(financial.getByTestId(inputTestIds.node('virtual-keyboard:text-0'))).toBeDefined();
+    expect(financial.getByTestId(inputTestIds.node('virtual-keyboard:backspace'))).toBeDefined();
+    expect(financial.getByTestId(inputTestIds.node('virtual-keyboard:complete'))).toBeDefined();
     expect(financialSymbolColumn.props.style.at(-1)).toMatchObject({width: 310, flexDirection: 'row', gap: 8});
     expect(financialZeroColumn.props.style.at(-1)).toMatchObject({width: 310, flexDirection: 'row', gap: 8});
     expect(financialActionColumn.props.style.at(-1)).toMatchObject({width: 310, flexDirection: 'row', gap: 8});

@@ -5,6 +5,7 @@ import {
   PrimitiveInlineAlert,
   PrimitiveSkeleton,
   PrimitiveSpinner,
+  testIdProps,
 } from '@catering-v2s/ui-base-primitives';
 import {adminTestIds} from '../foundations/adminTestIds';
 
@@ -23,7 +24,10 @@ export const AdminPanelStateCardMobile = ({
         appearance="admin-content"
         style={{flex: 1}}
       >
-        <PrimitiveEmptyState testID={`${adminTestIds.panel.empty}:reason`} accessibilityLabel="暂无可显示内容">
+        <PrimitiveEmptyState
+          {...testIdProps(adminTestIds.child(adminTestIds.panel.empty, 'reason'))}
+          accessibilityLabel="暂无可显示内容"
+        >
           暂无可显示内容；请先完成运行时准备
         </PrimitiveEmptyState>
       </PrimitiveContainer>
@@ -38,17 +42,22 @@ export const AdminPanelStateCardMobile = ({
         style={{minHeight: 160, width: '100%'}}
       >
         <PrimitiveContainer
-          testID={`${adminTestIds.panel.loading}:content`}
+          {...testIdProps(adminTestIds.child(adminTestIds.panel.loading, 'content'))}
           layout="transparent"
           appearance="admin-content"
           style={{width: '100%'}}
         >
-          <PrimitiveSpinner testID={`${adminTestIds.panel.loading}:spinner`} accessibilityLabel="正在加载终端管理" />
+          <PrimitiveSpinner
+            {...testIdProps(adminTestIds.child(adminTestIds.panel.loading, 'spinner'))}
+            accessibilityLabel="正在加载终端管理"
+          />
           <PrimitiveSkeleton
-            testID={`${adminTestIds.panel.loading}:skeleton`}
+            {...testIdProps(adminTestIds.child(adminTestIds.panel.loading, 'skeleton'))}
             accessibilityLabel="终端管理内容加载中"
           />
-          <PrimitiveEmptyState testID={`${adminTestIds.panel.loading}:message`}>正在加载终端管理</PrimitiveEmptyState>
+          <PrimitiveEmptyState {...testIdProps(adminTestIds.child(adminTestIds.panel.loading, 'message'))}>
+            正在加载终端管理
+          </PrimitiveEmptyState>
         </PrimitiveContainer>
       </PrimitiveContainer>
     );
@@ -61,12 +70,15 @@ export const AdminPanelStateCardMobile = ({
       style={{minHeight: 160, width: '100%'}}
     >
       <PrimitiveContainer
-        testID={`${adminTestIds.panel.error}:content`}
+        {...testIdProps(adminTestIds.child(adminTestIds.panel.error, 'content'))}
         layout="transparent"
         appearance="admin-content"
         style={{width: '100%'}}
       >
-        <PrimitiveInlineAlert testID={`${adminTestIds.panel.error}:reason`} accessibilityLabel="终端管理加载失败">
+        <PrimitiveInlineAlert
+          {...testIdProps(adminTestIds.child(adminTestIds.panel.error, 'reason'))}
+          accessibilityLabel="终端管理加载失败"
+        >
           终端管理暂不可用，请重试
         </PrimitiveInlineAlert>
         <PrimitiveButton

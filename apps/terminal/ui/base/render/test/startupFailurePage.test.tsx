@@ -8,6 +8,7 @@ import type {
   NativeLoadingCapability,
 } from '@catering-v2s/kernel-base-platform-ports';
 import {StandaloneStartupFailurePage} from '../src';
+import {renderTestIds} from '../src';
 
 (globalThis as {IS_REACT_ACT_ENVIRONMENT?: boolean}).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -50,12 +51,12 @@ describe('StandaloneStartupFailurePage', () => {
       />,
     );
 
-    expect(renderer.getByTestId('ui.base.render:startup-failure')).toBeTruthy();
-    expect(renderer.getByTestId('ui.base.render:startup-failure:title').props.children).toBe('终端启动失败');
-    expect(renderer.getByTestId('ui.base.render:startup-failure:message').props.children).toBe(
+    expect(renderer.getByTestId(renderTestIds.startupFailure)).toBeTruthy();
+    expect(renderer.getByTestId(renderTestIds.startupFailureTitle).props.children).toBe('终端启动失败');
+    expect(renderer.getByTestId(renderTestIds.startupFailureMessage).props.children).toBe(
       '请重启终端，如仍失败请联系管理员',
     );
-    expect(renderer.getByTestId('ui.base.render:startup-failure:code').props.children).toBe(
+    expect(renderer.getByTestId(renderTestIds.startupFailureCode).props.children).toBe(
       'assembly-rejection:Error:UnknownError',
     );
     expect(hideReasons).toEqual(['startup-failure']);

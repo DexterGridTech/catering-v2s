@@ -32,7 +32,7 @@ describe('ActivationGuide', () => {
 
     expect(renderer.getByText('设备已激活成功')).toBeDefined();
     expect(renderer.queryByText('请先在主机上完成设备激活')).toBeNull();
-    expect(renderer.queryByTestId('terminal.activation.guide:continue')).toBeNull();
+    expect(renderer.queryByText('继续')).toBeNull();
     await renderer.unmount();
   });
 });

@@ -1,3 +1,5 @@
+import {inputTestIds} from '../src/foundations/inputTestIds';
+import {testId} from './testIds';
 import {act, render, type RenderResult} from '@testing-library/react-native';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {StyleSheet, View} from 'react-native';
@@ -51,14 +53,14 @@ const renderWithTestRefs = async (element: ReactElement, factory: NativeTestRefF
 };
 const applySurfaceLayout = async (renderer: TestRenderer, width: number, height: number): Promise<void> => {
   await act(async () => {
-    getNode(renderer, 'ui.base.input:surface-frame').props.onLayout({nativeEvent: {layout: {width, height}}});
+    getNode(renderer, inputTestIds.node('surface-frame')).props.onLayout({nativeEvent: {layout: {width, height}}});
   });
 };
 
 const measureKeyboardLayers = async (renderer: TestRenderer): Promise<void> => {
-  const measurementLayers = queryNodes(renderer, 'ui.base.input:keyboard-layer-position:measure');
+  const measurementLayers = queryNodes(renderer, inputTestIds.node('keyboard-layer-position:measure'));
   for (const layer of measurementLayers) {
-    const backdrop = getDescendant(layer, 'ui.base.input:virtual-keyboard:backdrop');
+    const backdrop = getDescendant(layer, inputTestIds.node('virtual-keyboard:backdrop'));
     const layout = StyleSheet.flatten(backdrop.props.style) as Readonly<{
       readonly width: number;
       readonly height: number;
@@ -72,7 +74,7 @@ const measureKeyboardLayers = async (renderer: TestRenderer): Promise<void> => {
 const finishKeyboardPresentation = async (renderer: TestRenderer): Promise<void> => {
   setAnimatedTimingAutoFinishForTests(true);
   for (let attempt = 0; attempt < 4; attempt += 1) {
-    if (queryNodes(renderer, 'ui.base.input:keyboard-layer-position:measure').length === 0) break;
+    if (queryNodes(renderer, inputTestIds.node('keyboard-layer-position:measure')).length === 0) break;
     await measureKeyboardLayers(renderer);
     await act(async () => {
       advanceAnimatedTimingsForTests(1);
@@ -90,7 +92,7 @@ const focusAndFinishKeyboard = async (renderer: TestRenderer, input: TestNode): 
 const Field = ({onReady}: Readonly<{readonly onReady: (field: InputFieldResult) => void}>) => {
   const field = useInputField({
     fieldId: 'measurement-field',
-    testID: 'sample:measurement-field',
+    testID: testId('sample:measurement-field'),
     accessibilityLabel: 'measurement-field',
     keyboardKind: 'virtual',
     layout: 'numeric',
@@ -108,7 +110,7 @@ const NativeLessPinField = ({
 }>) => {
   const field = useInputField({
     fieldId: 'measurement-pin',
-    testID: 'sample:measurement-pin',
+    testID: testId('sample:measurement-pin'),
     keyboardKind: 'virtual',
     layout: 'numeric',
     nativeLess: true,
@@ -118,8 +120,8 @@ const NativeLessPinField = ({
   onOffset(useSurfacePresentationOffset());
   return (
     <PrimitivePinInput
-      testID="sample:measurement-pin-root"
-      cellTestIDPrefix="sample:measurement-pin"
+      testID={testId('sample:measurement-pin-root')}
+      cellTestIDPrefix={testId('sample:measurement-pin')}
       value={field.inputProps.value ?? ''}
       length={6}
       measureRef={visibleAnchorRef}
@@ -143,7 +145,7 @@ const FieldWithPresentationProbe = ({
 }>) => {
   const field = useInputField({
     fieldId: 'presentation-field',
-    testID: 'sample:presentation-field',
+    testID: testId('sample:presentation-field'),
     keyboardKind: 'virtual',
     layout: 'numeric',
   });
@@ -169,7 +171,7 @@ const PositionedField = ({
 }>) => {
   const field = useInputField({
     fieldId,
-    testID: `sample:${fieldId}`,
+    testID: testId(`sample:${fieldId}`),
     keyboardKind: 'virtual',
     layout: 'numeric',
   });
@@ -202,8 +204,8 @@ const mountNativeLessPin = async (pinRoot: unknown) => {
       />
     </InputSurfaceFrame>,
     (hostName, props) => {
-      if (hostName === 'View' && props.testID === 'ui.base.input:surface-frame') return {};
-      if (props.testID === 'sample:measurement-pin-root') return pinRoot;
+      if (hostName === 'View' && props.testID === testId(inputTestIds.node('surface-frame'))) return {};
+      if (props.testID === testId('sample:measurement-pin-root')) return pinRoot;
       return {};
     },
   );
@@ -231,8 +233,8 @@ describe('InputSurfaceFrame measured frame owner', () => {
         />
       </InputSurfaceFrame>,
       (hostName, props) => {
-        if (hostName === 'View' && props.testID === 'ui.base.input:surface-frame') return surfaceRoot;
-        if (props.testID === 'sample:measurement-field') {
+        if (hostName === 'View' && props.testID === testId(inputTestIds.node('surface-frame'))) return surfaceRoot;
+        if (props.testID === testId('sample:measurement-field')) {
           return {
             measureLayout: (
               relativeTo: unknown,
@@ -248,8 +250,8 @@ describe('InputSurfaceFrame measured frame owner', () => {
         return {};
       },
     );
-    expect(queryNodes(renderer, 'ui.base.input:virtual-keyboard')).toHaveLength(0);
-    const frame = getNode(renderer, 'ui.base.input:surface-frame');
+    expect(queryNodes(renderer, inputTestIds.node('virtual-keyboard'))).toHaveLength(0);
+    const frame = getNode(renderer, inputTestIds.node('surface-frame'));
     await act(() => {
       frame.props.onLayout({nativeEvent: {layout: {width: 360, height: 640}}});
       frame.props.onLayout({nativeEvent: {layout: {width: 360, height: 640}}});
@@ -263,10 +265,10 @@ describe('InputSurfaceFrame measured frame owner', () => {
       {width: 420, height: 700, ready: true, orientation: 'portrait'},
     ]);
     const input = queryNodesByType(renderer, 'TextInput').find(
-      node => node.props.testID === 'sample:measurement-field',
+      node => node.props.testID === testId('sample:measurement-field'),
     )!;
     await focusAndFinishKeyboard(renderer, input);
-    expect(getNode(renderer, 'ui.base.input:virtual-keyboard')).toBeDefined();
+    expect(getNode(renderer, inputTestIds.node('virtual-keyboard'))).toBeDefined();
     await act(() => {
       field?.blur();
     });
@@ -315,8 +317,8 @@ describe('InputSurfaceFrame measured frame owner', () => {
         />
       </InputSurfaceFrame>,
       (hostName, props) => {
-        if (hostName === 'View' && props.testID === 'ui.base.input:surface-frame') return surfaceRoot;
-        if (props.testID === 'sample:presentation-field') {
+        if (hostName === 'View' && props.testID === testId(inputTestIds.node('surface-frame'))) return surfaceRoot;
+        if (props.testID === testId('sample:presentation-field')) {
           return {
             measureInWindow: () => {
               throw new Error('window coordinates must not drive field geometry');
@@ -332,7 +334,7 @@ describe('InputSurfaceFrame measured frame owner', () => {
     await applySurfaceLayout(renderer, 960, 800);
     expect(measuredRoot).toBe(surfaceRoot);
     const input = queryNodesByType(renderer, 'TextInput').find(
-      node => node.props.testID === 'sample:presentation-field',
+      node => node.props.testID === testId('sample:presentation-field'),
     )!;
     const nativeInputHandle = inputHandle as PrimitiveInputHandle;
     nativeInputHandle.measureLayout(surfaceRoot as never, vi.fn());
@@ -375,9 +377,9 @@ describe('InputSurfaceFrame measured frame owner', () => {
         />
       </InputSurfaceFrame>,
       (hostName, props) => {
-        if (hostName === 'View' && props.testID === 'ui.base.input:surface-frame') return surfaceRoot;
-        if (props.testID === 'sample:first-positioned' || props.testID === 'sample:second-positioned') {
-          const y = props.testID === 'sample:first-positioned' ? 600 : 400;
+        if (hostName === 'View' && props.testID === testId(inputTestIds.node('surface-frame'))) return surfaceRoot;
+        if (props.testID === testId('sample:first-positioned') || props.testID === testId('sample:second-positioned')) {
+          const y = props.testID === testId('sample:first-positioned') ? 600 : 400;
           return {
             measureLayout: (
               relativeTo: unknown,
@@ -395,10 +397,10 @@ describe('InputSurfaceFrame measured frame owner', () => {
     );
     await applySurfaceLayout(renderer, 960, 800);
     const first = queryNodesByType(renderer, 'TextInput').find(
-      node => node.props.testID === 'sample:first-positioned',
+      node => node.props.testID === testId('sample:first-positioned'),
     )!;
     const second = queryNodesByType(renderer, 'TextInput').find(
-      node => node.props.testID === 'sample:second-positioned',
+      node => node.props.testID === testId('sample:second-positioned'),
     )!;
     await focusAndFinishKeyboard(renderer, first);
     expect(presentationOffset).toBe(-246);
@@ -432,7 +434,7 @@ describe('InputSurfaceFrame measured frame owner', () => {
     let presentationOffset: unknown = null;
     const renderer = await renderWithTestRefs(
       <InputSurfaceFrame>
-        <View testID="sample:pin-card">
+        <View testID={testId('sample:pin-card')}>
           <NativeLessPinField
             onReady={value => {
               field = value;
@@ -444,15 +446,15 @@ describe('InputSurfaceFrame measured frame owner', () => {
         </View>
       </InputSurfaceFrame>,
       (hostName, props) => {
-        if (hostName === 'View' && props.testID === 'ui.base.input:surface-frame') return surfaceRoot;
-        if (hostName === 'View' && props.testID === 'sample:pin-card') return cardRoot;
-        if (props.testID === 'sample:measurement-pin-root') return pinRoot;
+        if (hostName === 'View' && props.testID === testId(inputTestIds.node('surface-frame'))) return surfaceRoot;
+        if (hostName === 'View' && props.testID === testId('sample:pin-card')) return cardRoot;
+        if (props.testID === testId('sample:measurement-pin-root')) return pinRoot;
         return {};
       },
     );
     await applySurfaceLayout(renderer, 960, 800);
     const pin = queryNodesByType(renderer, 'Pressable').find(
-      node => node.props.testID === 'sample:measurement-pin-root',
+      node => node.props.testID === testId('sample:measurement-pin-root'),
     )!;
     await act(() => {
       pin.props.onPress();
@@ -466,7 +468,7 @@ describe('InputSurfaceFrame measured frame owner', () => {
     expect(presentationOffset).toBe(-143);
     pinY = 300;
     await act(() => {
-      getNode(renderer, 'ui.base.input:surface-frame').props.onLayout({
+      getNode(renderer, inputTestIds.node('surface-frame')).props.onLayout({
         nativeEvent: {layout: {width: 800, height: 800}},
       });
     });
@@ -491,14 +493,14 @@ describe('InputSurfaceFrame measured frame owner', () => {
     const {renderer, getField, getKeyboardState} = await mountNativeLessPin(invalidPinRoot);
     const before = getField()!.captureInputSnapshot();
     const pin = queryNodesByType(renderer, 'Pressable').find(
-      node => node.props.testID === 'sample:measurement-pin-root',
+      node => node.props.testID === testId('sample:measurement-pin-root'),
     )!;
 
     await act(() => {
       pin.props.onPress();
     });
 
-    expect(getNode(renderer, 'ui.base.input:focus-visibility-error:invalid-focus-rectangle').props.children).toBe(
+    expect(getNode(renderer, inputTestIds.node('focus-visibility-error:invalid-focus-rectangle')).props.children).toBe(
       '焦点框无法完整显示，请调整窗口尺寸或退出输入',
     );
     expect(getKeyboardState()).toMatchObject({activeFieldId: null, owner: 'none'});
@@ -512,16 +514,16 @@ describe('InputSurfaceFrame measured frame owner', () => {
     const {renderer, getField, getKeyboardState} = await mountNativeLessPin(null);
     const before = getField()!.captureInputSnapshot();
     const pin = queryNodesByType(renderer, 'Pressable').find(
-      node => node.props.testID === 'sample:measurement-pin-root',
+      node => node.props.testID === testId('sample:measurement-pin-root'),
     )!;
 
     await act(() => {
       pin.props.onPress();
     });
 
-    expect(getNode(renderer, 'ui.base.input:focus-visibility-error:visible-anchor-unavailable').props.children).toBe(
-      '焦点框无法完整显示，请调整窗口尺寸或退出输入',
-    );
+    expect(
+      getNode(renderer, inputTestIds.node('focus-visibility-error:visible-anchor-unavailable')).props.children,
+    ).toBe('焦点框无法完整显示，请调整窗口尺寸或退出输入');
     expect(getKeyboardState()).toMatchObject({activeFieldId: null, owner: 'none'});
     expect(getField()!.captureInputSnapshot().fields).toEqual(before.fields);
     await act(async () => {

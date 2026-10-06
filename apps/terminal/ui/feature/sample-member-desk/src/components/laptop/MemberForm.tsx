@@ -8,15 +8,16 @@ import {
 import {InputScrollArea} from '@catering-v2s/ui-base-input';
 import {MemberFormScrollContent} from '../MemberFormScrollContent';
 import {useMemberForm} from '../../hooks/useMemberForm';
+import {sampleMemberDeskTestId} from '../../foundations/sampleMemberDeskTestIds';
 
 const laptopRootStyle = Object.freeze({width: '100%', maxWidth: 960, alignSelf: 'center' as const});
 
 export const MemberForm = ({prefix = 'sample.desk.member-form'}: Readonly<{readonly prefix?: string}>) => {
   const form = useMemberForm(prefix);
   return (
-    <PrimitiveContainer testID={prefix} style={laptopRootStyle}>
-      <PrimitiveHeading testID={`${prefix}:title`}>新增会员</PrimitiveHeading>
-      <InputScrollArea testID={`${prefix}:scroll`}>
+    <PrimitiveContainer testID={sampleMemberDeskTestId(prefix)} style={laptopRootStyle}>
+      <PrimitiveHeading testID={sampleMemberDeskTestId(`${prefix}:title`)}>新增会员</PrimitiveHeading>
+      <InputScrollArea testID={sampleMemberDeskTestId(`${prefix}:scroll`)}>
         <MemberFormScrollContent
           initialName={form.nameInitialValue}
           initialPhone={form.phoneInitialValue}
@@ -24,9 +25,9 @@ export const MemberForm = ({prefix = 'sample.desk.member-form'}: Readonly<{reado
           prefix={prefix}
         />
       </InputScrollArea>
-      <PrimitiveActions testID={`${prefix}:actions`}>
+      <PrimitiveActions testID={sampleMemberDeskTestId(`${prefix}:actions`)}>
         <PrimitiveButton
-          testID={`${prefix}:submit`}
+          testID={sampleMemberDeskTestId(`${prefix}:submit`)}
           accessibilityLabel="提交"
           disabled={form.requestInFlight}
           onPress={form.submit}
@@ -34,7 +35,7 @@ export const MemberForm = ({prefix = 'sample.desk.member-form'}: Readonly<{reado
           {form.requestInFlight ? '提交中' : '提交'}
         </PrimitiveButton>
         <PrimitiveButton
-          testID={`${prefix}:cancel`}
+          testID={sampleMemberDeskTestId(`${prefix}:cancel`)}
           accessibilityLabel="取消录入"
           disabled={form.requestInFlight}
           onPress={form.cancel}
@@ -42,7 +43,9 @@ export const MemberForm = ({prefix = 'sample.desk.member-form'}: Readonly<{reado
           取消
         </PrimitiveButton>
       </PrimitiveActions>
-      {form.requestInFlight ? <PrimitiveStatus testID={`${prefix}:loading`}>提交中</PrimitiveStatus> : null}
+      {form.requestInFlight ? (
+        <PrimitiveStatus testID={sampleMemberDeskTestId(`${prefix}:loading`)}>提交中</PrimitiveStatus>
+      ) : null}
     </PrimitiveContainer>
   );
 };

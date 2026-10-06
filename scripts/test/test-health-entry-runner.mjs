@@ -59,16 +59,11 @@ const nodeTestFiles = Object.freeze([
   'scripts/test/store-terminal-l2-p1.test.mjs',
   'scripts/test/standards-enforcement-execution-catalog.test.mjs',
   'scripts/test/standards-enforcement-verify.test.mjs',
-  'scripts/test/ter-persist-kv-prechange-android.test.mjs',
-  'scripts/test/ter-admin-display-web.test.mjs',
-  'scripts/test/ter-virtual-keyboard-android.test.mjs',
   'scripts/test/terminal-ws-wire-client.test.mjs',
-  'scripts/test/terminal-topology-device-identity.test.mjs',
-  'scripts/test/terminal-topology-heartbeat-window.test.mjs',
-  'scripts/test/terminal-topology-runner-guards.test.mjs',
   'scripts/test/terminal-owned-test-report.test.mjs',
   'scripts/test/terminal-client-generation.test.mjs',
   'scripts/test/terminal-client-dev-acceptance.test.mjs',
+  'scripts/test/terminal-automation.test.mjs',
   'scripts/test/test-health-entry-runner.test.mjs',
 ]);
 

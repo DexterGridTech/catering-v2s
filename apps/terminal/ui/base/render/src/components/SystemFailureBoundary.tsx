@@ -6,6 +6,7 @@ import {dispatchWithRequestId} from '../foundations/dispatchWithRequestId';
 import {useDispatchCommand} from '../hooks/useDispatchCommand';
 import {useRenderContext} from '../contexts/RenderContext';
 import {SystemFailureNotice} from './SystemFailureNotice';
+import {renderTestIds} from '../foundations/renderTestIds';
 
 // Expo inlines this public build flag. Keep its type local to this source
 // module so downstream workspace typechecks do not depend on @types/node.
@@ -125,7 +126,7 @@ export const SystemFailureNoticeWithReset = ({ownerId}: Readonly<{readonly owner
     }).catch(() => undefined);
   }, [dispatchCommand]);
 
-  return <SystemFailureNotice testIDPrefix={`ui-base-render:system-failure:${ownerId}`} onDismiss={onDismiss} />;
+  return <SystemFailureNotice testIDPrefix={renderTestIds.systemFailure(ownerId)} onDismiss={onDismiss} />;
 };
 
 export const SystemFailureBoundary = ({

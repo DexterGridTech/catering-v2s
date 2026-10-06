@@ -2,6 +2,20 @@ import type {RuntimeModule, RuntimeModuleContext} from '@catering-v2s/kernel-bas
 import {createRequestId} from '@catering-v2s/kernel-base-contracts';
 import {runtimeModuleDependencyNames} from '../dependencies';
 import {moduleKind, moduleName} from '../moduleName';
+import {
+  selectActiveContracts,
+  selectServicePointAreas,
+  selectServicePoints,
+  selectStore,
+  selectStoreBasicBinding,
+  selectStoreBasicState,
+  selectStoreBasicTopicState,
+  selectStoreCommercialGroup,
+  selectStoreOperatingRules,
+  selectStoreOrganizationPath,
+  selectStoreProject,
+  selectStoreRegion,
+} from '../selectors/selectors';
 import {createStoreBasicActors} from '../features/actors/actors';
 import {
   initializeStoreBasicCommand,
@@ -34,6 +48,20 @@ export const createStoreBasicModule = (): RuntimeModule => {
     dependencies: runtimeModuleDependencyNames.map(name => ({moduleName: name})),
     commands: commands.map(command => ({name: command.commandName, visibility: command.visibility})),
     commandDefinitions: commands,
+    selectorDefinitions: [
+      selectActiveContracts,
+      selectServicePointAreas,
+      selectServicePoints,
+      selectStore,
+      selectStoreBasicBinding,
+      selectStoreBasicState,
+      selectStoreBasicTopicState,
+      selectStoreCommercialGroup,
+      selectStoreOperatingRules,
+      selectStoreOrganizationPath,
+      selectStoreProject,
+      selectStoreRegion,
+    ],
     actors: actors.map(actor => ({name: actor.actorName})),
     actorDefinitions: actors,
     slices: [{name: storeBasicStateRegistration.name, persistIntent: storeBasicStateRegistration.persistIntent}],

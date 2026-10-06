@@ -4,6 +4,7 @@ import type {ContainerKey, DisplayMode, UiCatalogContext, UiCatalog} from '@cate
 import {isUiCatalogEntryAvailable} from '@catering-v2s/kernel-base-ui-state';
 import type {RendererCatalog} from '../types/catalog';
 import type {RenderPartDiagnostic, RenderPartDiagnosticReporter} from '../foundations/diagnostics';
+import {renderTestIds} from '../foundations/renderTestIds';
 import type {ContentFailureReason, RenderFailure, SystemFailureReason, TransitionFailureReason} from '../types/props';
 
 type RenderFailureReason = ContentFailureReason | SystemFailureReason | TransitionFailureReason;
@@ -13,18 +14,6 @@ type ContentRenderFailureFor<Reason extends ContentFailureReason> = Omit<Content
   Readonly<{readonly reason: Reason}>;
 type SystemRenderFailureFor<Reason extends SystemFailureReason> = Omit<SystemRenderFailure, 'reason'> &
   Readonly<{readonly reason: Reason}>;
-
-const fallbackTestIds: Readonly<Record<RenderFailureReason, string>> = Object.freeze({
-  'runtime-not-started': 'ui-base-render:fallback:runtime-not-started',
-  'runtime-start-failed': 'ui-base-render:fallback:runtime-start-failed',
-  'surface-host-unavailable': 'ui-base-render:fallback:surface-host-unavailable',
-  'container-empty': 'ui-base-render:fallback:container-empty',
-  'missing-catalog-entry': 'ui-base-render:fallback:missing-catalog-entry',
-  'missing-renderer': 'ui-base-render:fallback:missing-renderer',
-  'invalid-props': 'ui-base-render:fallback:invalid-props',
-  'incompatible-catalog-entry': 'ui-base-render:fallback:incompatible-catalog-entry',
-  'render-error': 'ui-base-render:fallback:render-error',
-});
 
 const fallbackMessage = (failure: RenderFailure): string => {
   if (failure.category === 'content') {
@@ -36,7 +25,7 @@ const fallbackMessage = (failure: RenderFailure): string => {
 };
 
 export const RenderFallback = ({failure}: Readonly<{readonly failure: RenderFailure}>) => {
-  const testID = fallbackTestIds[failure.reason];
+  const testID = renderTestIds.fallback(failure.reason);
   return createElement(
     Text,
     {

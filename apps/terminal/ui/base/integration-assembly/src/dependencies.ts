@@ -5,8 +5,10 @@ import {moduleName as runtime} from '@catering-v2s/kernel-base-runtime';
 import {moduleName as state} from '@catering-v2s/kernel-base-state';
 import {moduleName as transport} from '@catering-v2s/kernel-base-transport';
 import {moduleName as uiState} from '@catering-v2s/kernel-base-ui-state';
+import {moduleName as automationAgent} from '@catering-v2s/ui-base-automation-agent';
 import {moduleName as adminShell} from '@catering-v2s/ui-base-admin-shell';
 import {moduleName as input} from '@catering-v2s/ui-base-input';
+import {moduleName as primitives} from '@catering-v2s/ui-base-primitives';
 import {moduleName as render} from '@catering-v2s/ui-base-render';
 
 export const dependencyModuleNames = [
@@ -17,8 +19,10 @@ export const dependencyModuleNames = [
   state,
   transport,
   uiState,
+  automationAgent,
   adminShell,
   input,
+  primitives,
   render,
 ] as const;
 export const devDependencyModuleNames = [] as const;

@@ -23,7 +23,12 @@ import {
 import {memberErrorDefinitions} from '../foundations/errors';
 import {moduleKind, moduleName} from '../moduleName';
 import {memberStateRegistration} from '../features/slices/slice';
-import {selectBranchPendingMember, selectMembers} from '../selectors/selectors';
+import {
+  selectBranchPendingMember,
+  selectHostPendingMember,
+  selectMembers,
+  selectPendingMember,
+} from '../selectors/selectors';
 
 const commands = [
   submitMemberCommand,
@@ -55,6 +60,7 @@ export const createSampleMemberRegistryModule = (
     errorDefinitions: memberErrorDefinitions,
     commands: commands.map(command => ({name: command.commandName, visibility: command.visibility})),
     commandDefinitions: commands,
+    selectorDefinitions: [selectMembers, selectPendingMember, selectHostPendingMember, selectBranchPendingMember],
     actors: actors.map(actor => ({name: actor.actorName})),
     actorDefinitions: actors,
     slices: [{name: memberStateRegistration.name, persistIntent: memberStateRegistration.persistIntent}],

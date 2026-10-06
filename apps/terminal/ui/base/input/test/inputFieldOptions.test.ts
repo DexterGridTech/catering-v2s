@@ -1,3 +1,4 @@
+import {testId} from './testIds';
 import {describe, expect, it} from 'vitest';
 import type {InputFieldOptions} from '../src/types/types';
 import invariant from '../terminal-invariants.json';
@@ -6,7 +7,7 @@ describe('InputFieldOptions', () => {
   it('keeps the virtual layout contract and supports a native-less field', () => {
     const virtualField: InputFieldOptions = {
       fieldId: 'virtual',
-      testID: 'virtual',
+      testID: testId('virtual'),
       keyboardKind: 'virtual',
       layout: 'numeric',
       nativeLess: true,

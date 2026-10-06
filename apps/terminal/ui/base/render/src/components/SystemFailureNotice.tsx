@@ -8,6 +8,8 @@ import {
   PrimitiveHeading,
   PrimitiveText,
 } from '@catering-v2s/ui-base-primitives';
+import {renderTestIds} from '../foundations/renderTestIds';
+import type {TestId} from '@catering-v2s/ui-base-primitives';
 
 export type SystemFailureNoticePresentation = Readonly<{
   readonly rootStyle?: StyleProp<ViewStyle>;
@@ -17,7 +19,7 @@ export type SystemFailureNoticePresentation = Readonly<{
 }>;
 
 export type SystemFailureNoticeProps = Readonly<{
-  readonly testIDPrefix: string;
+  readonly testIDPrefix: TestId;
   readonly onDismiss: () => unknown;
   readonly title?: string;
   readonly message?: string;
@@ -36,15 +38,23 @@ export const SystemFailureNotice = ({
   presentation,
 }: SystemFailureNoticeProps) => (
   <PrimitiveCenter testID={testIDPrefix} style={presentation?.rootStyle ?? {flex: 1, minHeight: 0, padding: 24}}>
-    <PrimitiveContainer testID={`${testIDPrefix}:card`} layout="card" bounded style={presentation?.cardStyle}>
-      <PrimitiveHeading testID={`${testIDPrefix}:title`}>{title}</PrimitiveHeading>
-      <PrimitiveText testID={`${testIDPrefix}:message`} accessibilityRole="alert">
+    <PrimitiveContainer
+      testID={renderTestIds.child(testIDPrefix, 'card')}
+      layout="card"
+      bounded
+      style={presentation?.cardStyle}
+    >
+      <PrimitiveHeading testID={renderTestIds.child(testIDPrefix, 'title')}>{title}</PrimitiveHeading>
+      <PrimitiveText testID={renderTestIds.child(testIDPrefix, 'message')} accessibilityRole="alert">
         {message}
       </PrimitiveText>
       {children}
-      <PrimitiveActions testID={`${testIDPrefix}:actions`} orientation={presentation?.actionsOrientation}>
+      <PrimitiveActions
+        testID={renderTestIds.child(testIDPrefix, 'actions')}
+        orientation={presentation?.actionsOrientation}
+      >
         <PrimitiveButton
-          testID={`${testIDPrefix}:dismiss`}
+          testID={renderTestIds.child(testIDPrefix, 'dismiss')}
           accessibilityLabel="关闭系统提示"
           onPress={onDismiss}
           style={presentation?.dismissButtonStyle}

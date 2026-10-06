@@ -1,3 +1,5 @@
+import {defineStateSelector} from '@catering-v2s/kernel-base-runtime';
+import {moduleName} from '../moduleName';
 import type {TransportHttpProxy, TransportServerConfig} from '@catering-v2s/kernel-base-contracts';
 import type {StateRoot} from '@catering-v2s/kernel-base-state';
 import {serverConfigSliceName} from '../features/slices/serverConfig';
@@ -44,7 +46,7 @@ const mergeProxy = (
   });
 };
 
-export const resolveServerNetworkSnapshot = (
+const resolveServerNetworkSnapshotImplementation = (
   state: StateRoot,
   defaults: TransportServerConfig,
   serverName: string,
@@ -66,7 +68,7 @@ export const resolveServerNetworkSnapshot = (
   });
 };
 
-export const selectServerConfiguration = (
+const selectServerConfigurationImplementation = (
   state: StateRoot,
   defaults: TransportServerConfig,
 ): EffectiveServerConfigView => {
@@ -108,3 +110,107 @@ export const selectServerConfiguration = (
     overriddenServerNames: Object.freeze(Object.keys(current.overrides).sort()),
   });
 };
+
+export const selectServerConfiguration = defineStateSelector(moduleName, 'selectServerConfiguration', {
+  parameters: [
+    {
+      kind: 'object',
+      properties: {
+        selectedSpace: {kind: 'string'},
+        spaces: {
+          kind: 'array',
+          items: {
+            kind: 'object',
+            properties: {
+              name: {kind: 'string'},
+              servers: {
+                kind: 'array',
+                items: {
+                  kind: 'object',
+                  properties: {
+                    serverName: {kind: 'string'},
+                    addresses: {
+                      kind: 'array',
+                      items: {
+                        kind: 'object',
+                        properties: {
+                          addressName: {kind: 'string'},
+                          baseUrl: {kind: 'string'},
+                          timeoutMs: {kind: 'number', optional: true},
+                        },
+                      },
+                    },
+                    proxy: {
+                      kind: 'object',
+                      properties: {
+                        protocol: {kind: 'enum', values: ['http']},
+                        host: {kind: 'string'},
+                        port: {kind: 'number'},
+                        username: {kind: 'string', optional: true},
+                        password: {kind: 'string', optional: true},
+                      },
+                      optional: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  ],
+  selector: selectServerConfigurationImplementation,
+});
+export const resolveServerNetworkSnapshot = defineStateSelector(moduleName, 'resolveServerNetworkSnapshot', {
+  parameters: [
+    {
+      kind: 'object',
+      properties: {
+        selectedSpace: {kind: 'string'},
+        spaces: {
+          kind: 'array',
+          items: {
+            kind: 'object',
+            properties: {
+              name: {kind: 'string'},
+              servers: {
+                kind: 'array',
+                items: {
+                  kind: 'object',
+                  properties: {
+                    serverName: {kind: 'string'},
+                    addresses: {
+                      kind: 'array',
+                      items: {
+                        kind: 'object',
+                        properties: {
+                          addressName: {kind: 'string'},
+                          baseUrl: {kind: 'string'},
+                          timeoutMs: {kind: 'number', optional: true},
+                        },
+                      },
+                    },
+                    proxy: {
+                      kind: 'object',
+                      properties: {
+                        protocol: {kind: 'enum', values: ['http']},
+                        host: {kind: 'string'},
+                        port: {kind: 'number'},
+                        username: {kind: 'string', optional: true},
+                        password: {kind: 'string', optional: true},
+                      },
+                      optional: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    {kind: 'string'},
+  ],
+  selector: resolveServerNetworkSnapshotImplementation,
+});

@@ -71,6 +71,16 @@ P3 当前字节复跑 `scripts/check/frontend-architecture` 时，商品与库�
 - `L2_UNCOVERED_SURFACES`：audit-history、platform-admin 的密码找回/改密、workspace-administration 的源码文本断言已按本包规则删除；本次不得据此宣称这些 UI 行为已由日常回归覆盖，缺口保留为未来行为验证范围。
 - `STATIC_ONLY_BOUNDARY`：本包的静态 checker、Node/Vitest/foundation proof、fixture contract cross-check 和 `--validate-only` 均不等于 Testcontainers、DEV、seed、受管 L2、浏览器、业务、cleanup 或性能成功；这些状态仍须独立授权与各自 runner evidence。
 
+## TER automation-agent 本批保留的验证空窗
+
+下列项目是当前自动化 agent 主旅途之外的已知边界，不代表本批主旅途失败，也不得被其 PASS 覆盖：
+
+| item | currentBoundary | activationTrigger | futureAcceptanceEvidence |
+|---|---|---|---|
+| `TER_AUTOMATION_NON_PRIMARY_JOURNEYS` | 本批只执行两个 sample application/integration 的批准主旅途；R-17 其余拒绝、撤回、并发、年龄与拓扑分支，以及 F-2/额外 presentation 形态保持未验证。 | Dexter 对应分支的验收授权 | 同一受管 driver、逐个获准场景的真实 Web/Android 业务断言与独立 cleanup 结果。 |
+| `TER_AUTOMATION_FAILURE_DIAGNOSIS` | automation-agent 自身失败注入与生产化诊断边界未证明；当前仅保留受管 run 日志、manifest 和明确失败码，不扩展失败注入能力。 | 获准的 failure-injection 设计或生产化诊断目标 | 对指定故障提供可复现触发、首败日志、owner 边界、根因修复和同档 focused proof。 |
+| `TER_AUTOMATION_ADAPTER_COVERAGE` | Expo Web 不证明 Android adapter 的窗口、输入和双屏行为；任何未实际执行的 adapter 场景仍为 `NOT_RUN`。 | 获准且具备目标虚拟机/设备的 adapter 验收 | 按 TR-16 使用同一场景清单完成真实 Android application 结果与 runner cleanup。 |
+
 ## Backend acceptance 未完成项
 
 - `BACKEND_ACCEPTANCE_NEXT_OPERATIONS`：下次扩覆盖时，按 `doc/decisions/2026-08-14-v2s-backend-acceptance-business-scenario-standard.md` 在 acceptance 目录下对应业务域的 `*AcceptanceScenarios.java` 增加真实 fixture、HTTP 请求与业务 oracle，由 `BackendAcceptanceScenarioCatalog` 自动发现；DB 操作数只供人工观察，不设预算门。

@@ -76,6 +76,7 @@ const createComposition = (
     businessServerName: 'terminal-business-api',
     transport: transportModule.commandGateway,
     createCredentialSecret: () => 'A'.repeat(43),
+    createProtocolUuid: () => '00000000-0000-4000-8000-000000000006',
     now: () => 1_000,
     appVersion: 'runtime-startup-test',
     surfaceForm: 'laptop',

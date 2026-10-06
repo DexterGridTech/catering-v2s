@@ -3,6 +3,7 @@ import {act, render, type RenderResult} from '@testing-library/react-native';
 import {StyleSheet} from 'react-native';
 import * as renderHooks from '@catering-v2s/ui-base-render';
 import {InputSurfaceFrame, useInputController} from '@catering-v2s/ui-base-input';
+import {inputTestIds} from '@catering-v2s/ui-base-input/test-ids';
 import {
   advanceAnimatedTimingsForTests,
   setAnimatedTimingAutoFinishForTests,
@@ -93,8 +94,8 @@ const mount = async (
   const scrollContent = {};
   setNativeTestRefFactory((hostName: string, props: NativeTestHostProps) => {
     const testID = props.testID;
-    if (hostName === 'View' && testID === 'ui.base.input:surface-frame') return surfaceRoot;
-    if (hostName === 'ScrollView' && testID === 'terminal.admin:topology:scroll') {
+    if (hostName === 'View' && testID === inputTestIds.node('surface-frame')) return surfaceRoot;
+    if (hostName === 'ScrollView' && testID === adminTestIds.node('terminal.admin:topology:scroll')) {
       return {
         measureLayout: (
           relativeTo: unknown,
@@ -107,7 +108,7 @@ const mount = async (
         scrollTo: () => undefined,
       };
     }
-    if (testID === 'terminal.admin:topology:host') {
+    if (testID === adminTestIds.node('terminal.admin:topology:host')) {
       return {
         measureLayout: (
           relativeTo: unknown,
@@ -129,8 +130,10 @@ const mount = async (
     </InputSurfaceFrame>,
   );
   await act(async () => {
-    getNode(renderer, 'ui.base.input:surface-frame').props.onLayout({nativeEvent: {layout: {width: 960, height: 540}}});
-    const scrollView = getNode(renderer, 'terminal.admin:topology:scroll');
+    getNode(renderer, inputTestIds.node('surface-frame')).props.onLayout({
+      nativeEvent: {layout: {width: 960, height: 540}},
+    });
+    const scrollView = getNode(renderer, adminTestIds.node('terminal.admin:topology:scroll'));
     scrollView.props.onLayout({nativeEvent: {layout: {x: 0, y: 0, width: 960, height: 540}}});
     scrollView.props.onContentSizeChange(960, 900);
     scrollView.props.onScroll({nativeEvent: {contentOffset: {y: 0}}});
@@ -139,9 +142,9 @@ const mount = async (
 };
 
 const measureKeyboardLayers = async (renderer: TestRenderer): Promise<void> => {
-  const measurementLayers = queryNodes(renderer, 'ui.base.input:keyboard-layer-position:measure');
+  const measurementLayers = queryNodes(renderer, inputTestIds.node('keyboard-layer-position:measure'));
   for (const layer of measurementLayers) {
-    const backdrop = getRenderedDescendantByProps(layer, {testID: 'ui.base.input:virtual-keyboard:backdrop'});
+    const backdrop = getRenderedDescendantByProps(layer, {testID: inputTestIds.node('virtual-keyboard:backdrop')});
     const layout = StyleSheet.flatten(backdrop.props.style) as Readonly<{
       readonly width: number;
       readonly height: number;
@@ -155,7 +158,7 @@ const measureKeyboardLayers = async (renderer: TestRenderer): Promise<void> => {
 const finishKeyboardPresentation = async (renderer: TestRenderer): Promise<void> => {
   setAnimatedTimingAutoFinishForTests(true);
   for (let attempt = 0; attempt < 4; attempt += 1) {
-    if (queryNodes(renderer, 'ui.base.input:keyboard-layer-position:measure').length === 0) break;
+    if (queryNodes(renderer, inputTestIds.node('keyboard-layer-position:measure')).length === 0) break;
     await measureKeyboardLayers(renderer);
     await act(async () => {
       advanceAnimatedTimingsForTests(1);
@@ -172,7 +175,7 @@ describe('TopologySection host input', () => {
   it('routes host address through the shared financial virtual keyboard', async () => {
     const renderer = await mount();
     const input = queryNodesByType(renderer, 'TextInput').find(
-      node => node.props.testID === 'terminal.admin:topology:host',
+      node => node.props.testID === adminTestIds.node('terminal.admin:topology:host'),
     );
     expect(input).toBeDefined();
 
@@ -184,14 +187,14 @@ describe('TopologySection host input', () => {
 
     for (const character of '127.0.0.1') {
       await act(() => {
-        getNode(renderer, `ui.base.input:virtual-keyboard:text-${character}`).props.onPress();
+        getNode(renderer, inputTestIds.node(`virtual-keyboard:text-${character}`)).props.onPress();
       });
     }
 
     expect(queryNodesByType(renderer, 'TextInput')[0].props.value).toBe('127.0.0.1');
-    expect(getNode(renderer, 'ui.base.input:virtual-keyboard')).toBeDefined();
+    expect(getNode(renderer, inputTestIds.node('virtual-keyboard'))).toBeDefined();
     await act(() => {
-      getNode(renderer, 'ui.base.input:virtual-keyboard:complete').props.onPress();
+      getNode(renderer, inputTestIds.node('virtual-keyboard:complete')).props.onPress();
     });
     await act(async () => {
       renderer.unmount();
@@ -205,7 +208,7 @@ describe('TopologySection host input', () => {
     expect(getNode(renderer, adminTestIds.topology.goalSlave)).toBeDefined();
     expect(renderer.getByText('尚未配对 · 请选择当前机器的用途')).toBeDefined();
     expect(queryNodes(renderer, adminTestIds.topology.operationFeedback)).toHaveLength(0);
-    expect(queryNodes(renderer, 'terminal.admin:topology:identity-query')).toHaveLength(0);
+    expect(queryNodes(renderer, adminTestIds.node('terminal.admin:topology:identity-query'))).toHaveLength(0);
     await act(async () => {
       renderer.unmount();
     });
@@ -266,7 +269,7 @@ describe('TopologySection host input', () => {
     } as unknown as AdminSectionProps['context'];
     const renderer = await mount(undefined, pairErrorContext);
     const input = queryNodesByType(renderer, 'TextInput').find(
-      node => node.props.testID === 'terminal.admin:topology:host',
+      node => node.props.testID === adminTestIds.node('terminal.admin:topology:host'),
     );
     expect(input).toBeDefined();
 
@@ -277,11 +280,11 @@ describe('TopologySection host input', () => {
     await finishKeyboardPresentation(renderer);
     for (const character of '127.0.0.1') {
       await act(() => {
-        getNode(renderer, `ui.base.input:virtual-keyboard:text-${character}`).props.onPress();
+        getNode(renderer, inputTestIds.node(`virtual-keyboard:text-${character}`)).props.onPress();
       });
     }
     await act(async () => {
-      getNode(renderer, 'terminal.admin:topology:pair').props.onPress();
+      getNode(renderer, adminTestIds.node('terminal.admin:topology:pair')).props.onPress();
       await new Promise(resolve => setTimeout(resolve, 2_900));
     });
 
@@ -384,7 +387,7 @@ describe('TopologySection host input', () => {
   it('submits the entered host directly through the owner capability', async () => {
     const renderer = await mount();
     const input = queryNodesByType(renderer, 'TextInput').find(
-      node => node.props.testID === 'terminal.admin:topology:host',
+      node => node.props.testID === adminTestIds.node('terminal.admin:topology:host'),
     );
     expect(input).toBeDefined();
 
@@ -395,11 +398,11 @@ describe('TopologySection host input', () => {
     await finishKeyboardPresentation(renderer);
     for (const character of '127.0.0.1') {
       await act(() => {
-        getNode(renderer, `ui.base.input:virtual-keyboard:text-${character}`).props.onPress();
+        getNode(renderer, inputTestIds.node(`virtual-keyboard:text-${character}`)).props.onPress();
       });
     }
     await act(async () => {
-      getNode(renderer, 'terminal.admin:topology:pair').props.onPress();
+      getNode(renderer, adminTestIds.node('terminal.admin:topology:pair')).props.onPress();
       await new Promise(resolve => setTimeout(resolve, 850));
     });
 
@@ -428,19 +431,19 @@ describe('TopologySection host input', () => {
     } as unknown as AdminSectionProps['context'];
     const renderer = await mount(undefined, unavailableContext);
 
-    expect(getNode(renderer, 'terminal.admin:topology:page-gate')).toBeDefined();
+    expect(getNode(renderer, adminTestIds.node('terminal.admin:topology:page-gate'))).toBeDefined();
     expect(renderer.getByLabelText('功能不可用')).toBeDefined();
     expect(renderer.getByText('当前功能不可用')).toBeDefined();
     expect(renderer.getByText('双机拓扑要求本机只有一个物理屏')).toBeDefined();
-    expect(getNode(renderer, 'terminal.admin:topology:page-gate').props.style).toEqual(
+    expect(getNode(renderer, adminTestIds.node('terminal.admin:topology:page-gate')).props.style).toEqual(
       expect.objectContaining({justifyContent: 'center'}),
     );
-    expect(getNode(renderer, 'terminal.admin:topology:page-gate-reason').props.style).toEqual(
+    expect(getNode(renderer, adminTestIds.node('terminal.admin:topology:page-gate-reason')).props.style).toEqual(
       expect.objectContaining({textAlign: 'center'}),
     );
-    expect(queryNodes(renderer, 'terminal.admin:topology:host')).toHaveLength(0);
-    expect(queryNodes(renderer, 'terminal.admin:topology:pair')).toHaveLength(0);
-    expect(queryNodes(renderer, 'terminal.admin:topology:unpair')).toHaveLength(0);
+    expect(queryNodes(renderer, adminTestIds.node('terminal.admin:topology:host'))).toHaveLength(0);
+    expect(queryNodes(renderer, adminTestIds.node('terminal.admin:topology:pair'))).toHaveLength(0);
+    expect(queryNodes(renderer, adminTestIds.node('terminal.admin:topology:unpair'))).toHaveLength(0);
     expect(queryNodes(renderer, adminTestIds.topology.hostService)).toHaveLength(0);
     expect(queryNodes(renderer, adminTestIds.topology.pairing)).toHaveLength(0);
     expect(queryNodes(renderer, adminTestIds.topology.counterparty)).toHaveLength(0);
@@ -469,10 +472,10 @@ describe('TopologySection host input', () => {
     const selectorSpy = vi.spyOn(renderHooks, 'useUiStateSelector').mockReturnValue(pairedSlaveFacts);
     const renderer = await mount(selectorSpy, pairedSlaveContext);
 
-    expect(queryNodes(renderer, 'terminal.admin:topology:host')).toHaveLength(0);
-    expect(queryNodes(renderer, 'terminal.admin:topology:pair')).toHaveLength(0);
-    expect(getNode(renderer, 'terminal.admin:topology:unpair')).toBeDefined();
-    expect(queryNodes(renderer, 'terminal.admin:topology:enable')).toHaveLength(0);
+    expect(queryNodes(renderer, adminTestIds.node('terminal.admin:topology:host'))).toHaveLength(0);
+    expect(queryNodes(renderer, adminTestIds.node('terminal.admin:topology:pair'))).toHaveLength(0);
+    expect(getNode(renderer, adminTestIds.node('terminal.admin:topology:unpair'))).toBeDefined();
+    expect(queryNodes(renderer, adminTestIds.node('terminal.admin:topology:enable'))).toHaveLength(0);
     await act(async () => {
       renderer.unmount();
     });

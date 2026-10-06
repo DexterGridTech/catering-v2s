@@ -14,7 +14,7 @@ import {
 } from '@catering-v2s/kernel-base-platform-ports';
 import {defineCommand} from '@catering-v2s/kernel-base-runtime';
 import {AdminLauncher} from '@catering-v2s/ui-base-admin-shell';
-import {SurfaceRoot} from '@catering-v2s/ui-base-render';
+import {RenderProvider, SurfaceRoot} from '@catering-v2s/ui-base-render';
 import {
   createIntegrationAssembly,
   getSurfaceDeclarations,
@@ -124,6 +124,7 @@ describe('shared terminal surface declarations', () => {
       },
     });
 
+    const automationAddress = 'ws://127.0.0.1:19090/automation';
     const assembly = await createIntegrationAssembly({
       appName: 'test-console-surface',
       errorPrefix: 'test-console-surface',
@@ -139,6 +140,11 @@ describe('shared terminal surface declarations', () => {
       startupReadyCommand,
       createStartupReadyPayload: () => ({ready: true}),
       createApplicationModules: () => [],
+      terminalAutomation: {
+        enabled: true,
+        url: automationAddress,
+        sessionToken: 'test-token',
+      },
     });
 
     const providerElement = assembly.createSurface({
@@ -147,7 +153,16 @@ describe('shared terminal surface declarations', () => {
       surfaceForm: 'laptop',
     });
     const providerProps = providerElement.props as Readonly<{readonly children: ReactElement<Record<string, unknown>>}>;
-    const surfaceRootElement = providerProps.children;
+    const renderProviderElement = providerProps.children;
+    expect(renderProviderElement.type).toBe(RenderProvider);
+    const renderProviderProps = renderProviderElement.props as Readonly<{
+      readonly children: ReactElement<Record<string, unknown>>;
+      readonly runtimeFacts: Readonly<{
+        readonly automation: Readonly<{readonly enabled: boolean; readonly address: string}>;
+      }>;
+    }>;
+    expect(renderProviderProps.runtimeFacts.automation).toEqual({enabled: true, address: automationAddress});
+    const surfaceRootElement = renderProviderProps.children;
     expect(surfaceRootElement.type).toBe(SurfaceRoot);
 
     const contentMarker = createElement('integration-assembly-content');

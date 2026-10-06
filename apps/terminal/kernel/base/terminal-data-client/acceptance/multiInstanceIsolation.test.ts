@@ -1,4 +1,5 @@
 import {appendFileSync} from 'node:fs';
+import {randomUUID} from 'node:crypto';
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import {createNodeId, createRequestId, moduleName as contractsModuleName} from '@catering-v2s/kernel-base-contracts';
 import {
@@ -120,6 +121,7 @@ const createComposition = (
     businessServerName: 'terminal-business-api',
     transport: transportModule.commandGateway,
     createCredentialSecret: () => input.secret,
+    createProtocolUuid: randomUUID,
     now: () => 1_000,
     appVersion: 'acceptance-test',
     surfaceForm: 'laptop',

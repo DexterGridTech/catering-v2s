@@ -8115,11 +8115,11 @@
     ],
     "redFixtures": [
       "<View testID=\"x\"> rejected by point gate even though RN string prop compiles",
-      "literal/template/legacy string to branded project prop compilation fails",
+      "literal/template/legacy string to strongly typed project prop compilation fails",
       "cast outside constructor rejected"
     ],
     "greenFixtures": [
-      "createTestId branded value to native View and branded project prop"
+      "createTestId strongly typed value to native View and strongly typed project prop"
     ],
     "evidenceTier": "static inventory only; future gates NOT_RUN"
   },

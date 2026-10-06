@@ -9,6 +9,7 @@ import {
 } from '../features/commands/commands';
 import {wallpaperErrorDefinitions} from '../foundations/errors';
 import {moduleKind, moduleName} from '../moduleName';
+import {selectHostConfirmedWallpaperId, selectPendingWallpaperId, selectWallpaperId} from '../selectors/selectors';
 import {wallpaperStateRegistration} from '../features/slices/slice';
 
 const commands = [selectWallpaperCommand, confirmWallpaperCommand, cancelWallpaperSelectionCommand] as const;
@@ -24,6 +25,7 @@ export const createSampleWallpaperModule = (
     errorDefinitions: wallpaperErrorDefinitions,
     commands: commands.map(command => ({name: command.commandName, visibility: command.visibility})),
     commandDefinitions: commands,
+    selectorDefinitions: [selectHostConfirmedWallpaperId, selectPendingWallpaperId, selectWallpaperId],
     actors: actors.map(actor => ({name: actor.actorName})),
     actorDefinitions: actors,
     slices: [{name: wallpaperStateRegistration.name, persistIntent: wallpaperStateRegistration.persistIntent}],

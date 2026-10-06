@@ -72,10 +72,10 @@ const coordinateOf = (
   const pageKey = axis === 'X' ? 'pageX' : 'pageY';
   const clientKey = axis === 'X' ? 'clientX' : 'clientY';
   return (
-    finiteNumber(primary?.[pageKey]) ??
-    finiteNumber(fallback?.[pageKey]) ??
     finiteNumber(primary?.[clientKey]) ??
-    finiteNumber(fallback?.[clientKey])
+    finiteNumber(fallback?.[clientKey]) ??
+    finiteNumber(primary?.[pageKey]) ??
+    finiteNumber(fallback?.[pageKey])
   );
 };
 

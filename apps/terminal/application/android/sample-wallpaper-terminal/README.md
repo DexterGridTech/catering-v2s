@@ -18,7 +18,6 @@ surface 由 `ui.integration.sample-wallpaper-console` 持有；本包不复制�
 
 ```text
 App.tsx                         Expo React 根组件；等待 assembly 后呈现指定 displayIndex，注入 render-owned failure page
-src/components/controlledKeyboardHarness.tsx  只供受管键盘验证的 full-layout 空输入 harness；默认启动不进入
 index.ts                        Expo registerRootComponent 入口
 src/assembly/platformPorts.ts   Android port binding、logger 与 sample2 assembly 连接
 src/dependencies.ts             assembly、render 与 integration 的 workspace module 依赖声明
@@ -45,9 +44,6 @@ Android 正常入口由 adapter 传入 `displayIndex` 与 `surfaceForm`。App �
 options 的受批准 fallback 使用 `displayIndex=0`、`surfaceForm='laptop'`；它不按窗口宽度
 重新判断设备形态。mobile 不创建副屏，laptop 的副屏由 adapter 的既有 Presentation 路径
 创建并使用相同的 integration assembly。
-受管键盘验证器可向已运行的主屏 Activity 发送精确 URI `ter-vk://controlled/full`，进入
-`InputSurfaceFrame` 内的空 full-layout harness，用于验证 URL 符号实际插入；副屏和正常启动
-不进入该页面。它不是业务 part、字段或提交路径，harness 截图也不计入生产 IA 帧分母。
 Android 运行时使用本包 `package.json` 的 `terminalSurfaces` 整份覆盖 integration 默认值；integration 仍按 `surfaceForm` 选择对应声明。
 本 Android application 的 `package.json.serverSpaces` 是该入口唯一的内置服务配置。`platformPorts.ts`
 在创建 integration assembly 时显式传入它；它不继承或合并 `sample-wallpaper-console` integration 的默认列表。

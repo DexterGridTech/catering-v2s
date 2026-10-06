@@ -1,4 +1,5 @@
 import packageJson from '../../package.json';
+import * as Crypto from 'expo-crypto';
 import {moduleName as integrationModuleName} from '../moduleName';
 import type {EnvironmentMode, NativeLoadingCapability, PlatformPorts} from '@catering-v2s/kernel-base-platform-ports';
 import {definePart, type SurfaceHostMeasurementSource} from '@catering-v2s/ui-base-render';
@@ -10,6 +11,7 @@ import {
   PairReadinessInterlock,
   selectStateSyncSlices,
   type IntegrationAssembly,
+  type AutomationAgentConfig,
 } from '@catering-v2s/ui-base-integration-assembly';
 import {sampleMemberDeskAssembly} from '@catering-v2s/ui-feature-sample-member-desk';
 import {sampleStaffAuthAssembly} from '@catering-v2s/ui-feature-sample-staff-auth';
@@ -104,6 +106,7 @@ type SampleAssemblyInput = Readonly<{
   readonly packagingDebugMode?: boolean;
   readonly startupDebugMode?: boolean;
   readonly showAdminPassword?: boolean;
+  readonly terminalAutomation?: AutomationAgentConfig;
   readonly serverSpaces?: TransportServerConfig;
   readonly surfaceHostSourcesByDisplayIndex?: Readonly<Partial<Record<0 | 1, SurfaceHostMeasurementSource>>>;
   readonly topologyPeerChannel?: TopologyPeerChannel;
@@ -119,6 +122,8 @@ export async function createSampleAssembly(input: SampleAssemblyInput): Promise<
   const environmentMode: EnvironmentMode = input.environmentMode ?? (__DEV__ ? 'DEV' : 'PROD');
   return createIntegrationAssembly<SampleConsoleReadyPayload>({
     appName: 'sample-console',
+    appVersion: input.appVersion ?? 'dev',
+    terminalAutomation: input.terminalAutomation ?? packageJson.terminalAutomation,
     errorPrefix: 'sample-console',
     runtimeName: 'sample-console',
     defaultPersistenceKey,
@@ -167,6 +172,7 @@ export async function createSampleAssembly(input: SampleAssemblyInput): Promise<
         transport: transportModule.commandGateway,
         businessServerName: 'business',
         createCredentialSecret,
+        createProtocolUuid: () => Crypto.randomUUID(),
         now: () => Date.now(),
         surfaceForm,
         appVersion: input.appVersion ?? '1.0.0',

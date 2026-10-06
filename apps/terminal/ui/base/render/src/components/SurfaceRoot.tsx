@@ -1,5 +1,6 @@
-import {useCallback, useEffect, useMemo, useRef, type ReactNode} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState, type ReactNode} from 'react';
 import {Animated, StyleSheet, View, type LayoutChangeEvent} from 'react-native';
+import {AutomationSurfaceProvider} from '@catering-v2s/ui-base-primitives';
 import {LayerStack} from './LayerStack';
 import {ScreenContainer} from './ScreenContainer';
 import {SurfaceContext} from '../contexts/SurfaceContext';
@@ -8,6 +9,7 @@ import {SurfaceHostController} from './SurfaceHostController';
 import {useSurfaceHostAvailability, useSurfaceHostSnapshot} from './SurfaceHostController';
 import {useUiStateSelector} from '../hooks/useUiStateSelector';
 import {useSurfacePresentationOffset} from '../contexts/SurfacePresentationOffsetContext';
+import {renderTestIds} from '../foundations/renderTestIds';
 import type {RenderStateRoot, SurfaceRootProps} from '../types/props';
 import {SystemFailureBoundary} from './SystemFailureBoundary';
 
@@ -104,13 +106,16 @@ export const SurfaceRoot = ({
     ],
   );
   const previousLayout = useRef<string | null>(null);
+  const previousAutomationSurfaceKey = useRef<string | null>(null);
+  const [layoutRevision, setLayoutRevision] = useState(0);
   const reportLayout = useCallback(
     (event: LayoutChangeEvent) => {
-      if (!__DEV__) return;
       const {x, y, width, height} = event.nativeEvent.layout;
       const signature = JSON.stringify({x, y, width, height});
       if (previousLayout.current === signature) return;
       previousLayout.current = signature;
+      setLayoutRevision(revision => revision + 1);
+      if (!__DEV__) return;
       logger.info({
         category: 'display-diagnostics',
         event: 'render.surface-root-layout',
@@ -129,6 +134,32 @@ export const SurfaceRoot = ({
       });
     },
     [containerKey, displayMode, logger, renderContentFrame],
+  );
+  useEffect(() => {
+    const surfaceKey = JSON.stringify({
+      surfaceHostAvailability,
+      displayIndex: surfaceIdentity?.displayIndex ?? null,
+      surfaceKey: surfaceIdentity?.surfaceKey ?? null,
+      hostLogicalSize: surfaceValue.hostLogicalSize,
+    });
+    const previousSurfaceKey = previousAutomationSurfaceKey.current;
+    previousAutomationSurfaceKey.current = surfaceKey;
+    if (previousSurfaceKey === null || previousSurfaceKey === surfaceKey) return;
+    setLayoutRevision(revision => revision + 1);
+  }, [
+    surfaceHostAvailability,
+    surfaceIdentity?.displayIndex,
+    surfaceIdentity?.surfaceKey,
+    surfaceValue.hostLogicalSize,
+  ]);
+  const automationSurfaceScope = useMemo(
+    () =>
+      Object.freeze({
+        surface: surfaceIdentity?.surfaceKey ?? displayMode,
+        displayIndex: surfaceIdentity?.displayIndex ?? null,
+        layoutRevision,
+      }),
+    [displayMode, layoutRevision, surfaceIdentity?.displayIndex, surfaceIdentity?.surfaceKey],
   );
   useEffect(() => {
     if (!__DEV__) return;
@@ -155,11 +186,13 @@ export const SurfaceRoot = ({
       </SurfaceHostController>
     );
   return (
-    <SurfaceContext.Provider value={surfaceValue}>
-      <View testID="ui-base-render:surface-root" style={styles.root} onLayout={reportLayout}>
-        <RenderContext.Provider value={scopedRenderContext}>{hostedContent}</RenderContext.Provider>
-      </View>
-    </SurfaceContext.Provider>
+    <AutomationSurfaceProvider scope={automationSurfaceScope}>
+      <SurfaceContext.Provider value={surfaceValue}>
+        <View testID={renderTestIds.surfaceRoot} style={styles.root} onLayout={reportLayout}>
+          <RenderContext.Provider value={scopedRenderContext}>{hostedContent}</RenderContext.Provider>
+        </View>
+      </SurfaceContext.Provider>
+    </AutomationSurfaceProvider>
   );
 };
 

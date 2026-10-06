@@ -14,6 +14,7 @@ import {
   PrimitiveLabel,
   PrimitiveStatus,
 } from '@catering-v2s/ui-base-primitives';
+import {terminalActivationTestIds} from '../foundations/terminalActivationTestIds';
 
 const fieldId = 'terminal.activation.code';
 const errors: Readonly<Record<string, string>> = Object.freeze({
@@ -35,7 +36,7 @@ type ActivationCodeFieldProps = Readonly<{
 const ActivationCodeField = ({onValueChange}: ActivationCodeFieldProps) => {
   const field = useInputField({
     fieldId,
-    testID: fieldId,
+    testID: terminalActivationTestIds.codeInput,
     accessibilityLabel: '8位激活码',
     keyboardKind: 'virtual',
     layout: 'numeric',
@@ -45,7 +46,7 @@ const ActivationCodeField = ({onValueChange}: ActivationCodeFieldProps) => {
 
   return (
     <>
-      <PrimitiveLabel testID="terminal.activation:code-label" nativeID={fieldId}>
+      <PrimitiveLabel testID={terminalActivationTestIds.codeLabel} nativeID={fieldId}>
         8位激活码
       </PrimitiveLabel>
       <PrimitiveInput
@@ -101,24 +102,24 @@ export const ActivationCodeForm = ({defaults}: Props) => {
 
   if (activation?.status === 'active') {
     return (
-      <PrimitiveStatus testID="terminal.activation.result" appearance="login">
+      <PrimitiveStatus testID={terminalActivationTestIds.result} appearance="login">
         设备已激活成功
       </PrimitiveStatus>
     );
   }
 
   return (
-    <PrimitiveContainer testID="terminal.activation.screen">
-      <InputScrollArea testID="terminal.activation:scroll">
-        <PrimitiveHeading testID="terminal.activation:title">设备激活</PrimitiveHeading>
-        <PrimitiveStatus testID="terminal.activation:service-space">
+    <PrimitiveContainer testID={terminalActivationTestIds.screen}>
+      <InputScrollArea testID={terminalActivationTestIds.scroll}>
+        <PrimitiveHeading testID={terminalActivationTestIds.title}>设备激活</PrimitiveHeading>
+        <PrimitiveStatus testID={terminalActivationTestIds.serviceSpace}>
           服务空间：{config?.selectedSpace ?? '正在读取'}
         </PrimitiveStatus>
         <ActivationCodeField onValueChange={setValue} />
       </InputScrollArea>
-      <PrimitiveActions testID="terminal.activation:actions">
+      <PrimitiveActions testID={terminalActivationTestIds.actions}>
         <PrimitiveButton
-          testID="terminal.activation.submit"
+          testID={terminalActivationTestIds.submit}
           accessibilityLabel="激活设备"
           disabled={value.length !== 8 || tracked.requestInFlight || activation?.status === 'cancelling'}
           busy={tracked.requestInFlight}
@@ -128,7 +129,7 @@ export const ActivationCodeForm = ({defaults}: Props) => {
         </PrimitiveButton>
       </PrimitiveActions>
       {resultMessage.length > 0 ? (
-        <PrimitiveStatus testID="terminal.activation.result" tone="error">
+        <PrimitiveStatus testID={terminalActivationTestIds.result} tone="error">
           {resultMessage}
         </PrimitiveStatus>
       ) : null}

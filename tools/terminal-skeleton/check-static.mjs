@@ -10,6 +10,7 @@ import {
   resolveAliasedSymbol,
   resolveValueExpressionSymbol,
 } from '../terminal-shared/typescript-analysis.mjs';
+import {runTestIdTypeGate} from './test-id-type-gate.mjs';
 import {
   repoRoot,
   terminalRoot,
@@ -34,6 +35,9 @@ export const RULE_NAMES = Object.freeze([
   'tr01-reducer-boundary',
   'state-reset-retention-only',
   'kernel-platform-independence',
+  'selector-registration',
+  'test-id-type-safety',
+  'retired-ui-runner-absence',
 ]);
 
 export const SUPPORT_CHECK_COUNT = 1;
@@ -50,8 +54,91 @@ const REQUIRED_IGNORE_LINES = Object.freeze([
   '**/.kotlin/',
 ]);
 
+const RETIRED_UI_RUNNER_PATHS = Object.freeze([
+  'scripts/test/ter-admin-display-android.mjs',
+  'scripts/test/ter-admin-display-web-contract.mjs',
+  'scripts/test/ter-admin-display-web-stage.mjs',
+  'scripts/test/ter-admin-display-web.mjs',
+  'scripts/test/ter-persist-kv-prechange-android.mjs',
+  'scripts/test/ter-virtual-keyboard-android.mjs',
+  'scripts/test/terminal-business-fixtures.mjs',
+  'tools/terminal-sample2/run-a9-runtime.mjs',
+  'tools/terminal-sample2/run-sample1-frozen-journey.mjs',
+  'tools/terminal-sample2/run-sample2-frozen-journey.mjs',
+  'tools/terminal-sample2/run-u8-release-cold-start.mjs',
+  'tools/terminal-sample2/wallpaperCatalog.mjs',
+  'tools/terminal-topology/android-ui-prompts.mjs',
+  'tools/terminal-topology/android/NoIdleUiDump.java',
+  'tools/terminal-topology/device-identity.mjs',
+  'tools/terminal-topology/heartbeat-window.mjs',
+  'tools/terminal-topology/journey-acceptance.mjs',
+  'tools/terminal-topology/member-form-submit.mjs',
+  'tools/terminal-topology/member-journey-admission.mjs',
+  'tools/terminal-topology/process-identity.mjs',
+  'tools/terminal-topology/role-occupancy-probe.mjs',
+  'tools/terminal-topology/run-dual-device.mjs',
+  'tools/terminal-topology/tcp-bridge.mjs',
+  'apps/terminal/application/android/sample-terminal/src/components/controlledKeyboardHarness.tsx',
+  'apps/terminal/application/android/sample-wallpaper-terminal/src/components/controlledKeyboardHarness.tsx',
+]);
+
+const RETIRED_UI_SOURCE_ROOTS = Object.freeze([
+  'scripts/test',
+  'tools/terminal-sample2',
+  'tools/terminal-shared',
+  'tools/terminal-topology',
+  'apps/terminal/application/android/sample-terminal',
+  'apps/terminal/application/android/sample-wallpaper-terminal',
+]);
+const SOURCE_EXTENSIONS = new Set(['.cjs', '.java', '.js', '.json', '.md', '.mjs', '.ts', '.tsx']);
+
 function sorted(values) {
   return [...new Set(values)].sort();
+}
+
+function walkSourceFiles(directory) {
+  if (!fs.existsSync(directory)) return [];
+  const files = [];
+  for (const entry of fs
+    .readdirSync(directory, {withFileTypes: true})
+    .sort((left, right) => left.name.localeCompare(right.name))) {
+    const candidate = path.join(directory, entry.name);
+    if (entry.isDirectory()) files.push(...walkSourceFiles(candidate));
+    else if (entry.isFile() && SOURCE_EXTENSIONS.has(path.extname(entry.name))) files.push(candidate);
+  }
+  return files;
+}
+
+export function findRetiredUiRunnerReferences(sources) {
+  const retiredNames = RETIRED_UI_RUNNER_PATHS.map(value => path.posix.basename(value));
+  const violations = [];
+  for (const source of sources) {
+    for (const name of retiredNames) {
+      if (source.text.includes(name)) violations.push(`${source.name}:${name}`);
+    }
+  }
+  return sorted(violations);
+}
+
+function runRetiredUiRunnerAbsence({root}) {
+  const remaining = RETIRED_UI_RUNNER_PATHS.filter(relativePath => fs.existsSync(path.join(root, relativePath)));
+  const files = RETIRED_UI_SOURCE_ROOTS.flatMap(relativePath => walkSourceFiles(path.join(root, relativePath)));
+  files.push(path.join(root, 'package.json'), path.join(root, 'scripts/README.md'));
+  const references = findRetiredUiRunnerReferences(
+    files
+      .filter(file => fs.existsSync(file))
+      .map(file => ({name: path.relative(root, file), text: fs.readFileSync(file, 'utf8')})),
+  );
+  if (remaining.length > 0 || references.length > 0) {
+    throw new Error(
+      `retired TER UI runner remains; paths=${JSON.stringify(remaining)} references=${JSON.stringify(references)}`,
+    );
+  }
+}
+
+function analysisFor(context) {
+  context.analysis ??= createAnalysisProgram(context.root);
+  return context.analysis;
 }
 
 function difference(left, right) {
@@ -610,6 +697,21 @@ function runGraphComparison(context) {
   assertAcyclic(projected);
   const entries = leafPackageEntries(readPackageCensus(root), root);
   if (!entries.length) throw new Error('TER leaf package census is empty at CP-1; package graph is not built yet');
+  const resolveSourceImport = (specifier, importingModule) => {
+    const exactModule = packageNameToModuleName(specifier, spec);
+    if (exactModule) return exactModule;
+    const owningPackage = entries.find(
+      candidate => typeof candidate.package.name === 'string' && specifier.startsWith(`${candidate.package.name}/`),
+    );
+    if (!owningPackage) return null;
+    const packageName = owningPackage.package.name;
+    const publicSubpath = `.${specifier.slice(packageName.length)}`;
+    const exports = owningPackage.package.exports;
+    if (typeof exports !== 'object' || exports === null || !Object.hasOwn(exports, publicSubpath)) {
+      throw new Error(`${importingModule} imports undeclared workspace export ${specifier}`);
+    }
+    return owningPackage.moduleName;
+  };
   const expectedNames = Object.keys(projected);
   const actualNames = entries.map(entry => entry.moduleName).filter(Boolean);
   assertEqualSet('active TER package census', actualNames, expectedNames);
@@ -632,16 +734,16 @@ function runGraphComparison(context) {
       entry.packageDirectory && fs.existsSync(path.join(entry.packageDirectory, 'src'))
         ? collectStaticImportSpecifiers(entry.packageDirectory)
         : [];
+    const sourceImports = sourceSpecifiers.map(value => resolveSourceImport(value, moduleName));
     const nonRootWorkspaceImports = sourceSpecifiers.filter(
-      value => value.startsWith(packageScope) && !packageNameToModuleName(value, spec),
+      (value, index) => value.startsWith(packageScope) && sourceImports[index] === null,
     );
     if (nonRootWorkspaceImports.length) {
       throw new Error(
         `${moduleName} source contains non-root workspace import(s): ${nonRootWorkspaceImports.join(', ')}`,
       );
     }
-    const sourceImports = sourceSpecifiers.map(value => packageNameToModuleName(value, spec)).filter(Boolean);
-    assertEqualSet(`${moduleName} source imports`, sourceImports, declared);
+    assertEqualSet(`${moduleName} source imports`, sourceImports.filter(Boolean), declared);
   }
   runApplicationEntryReachability(context);
   // The package-local invariant files own the closed-union denominator.  Do
@@ -910,7 +1012,7 @@ function tr01ExceptionBaseKey(exception) {
 
 function runTr01Boundary(context) {
   const {root, projected} = context;
-  const analysis = createAnalysisProgram(root);
+  const analysis = analysisFor(context);
   assertNoCompilerOptionsDiagnostics(analysis, root);
   assertNoSyntacticDiagnostics(analysis, root);
   const checker = analysis.program.getTypeChecker();
@@ -1185,12 +1287,94 @@ function runKernelPlatformIndependence(context) {
   }
 }
 
+function runSelectorRegistration(context) {
+  const {root, projected} = context;
+  // This public helper consumes StateRoot only to compose a render context; it
+  // is not a Runtime reader. Keep this narrow exception explicit so a new
+  // StateRoot-shaped export cannot silently escape selector registration.
+  const excludedRootExports = new Set(['ui.base.render:createCatalogContext']);
+  const analysis = analysisFor(context);
+  assertNoCompilerOptionsDiagnostics(analysis, root);
+  assertNoSyntacticDiagnostics(analysis, root);
+  const checker = analysis.program.getTypeChecker();
+  const isStateRootSelector = symbol => {
+    const resolved = resolveAliasedSymbol(checker, symbol);
+    if (!resolved) return false;
+    const declaration = resolved.valueDeclaration ?? resolved.declarations?.[0];
+    if (!declaration) return false;
+    const signatures = checker.getTypeOfSymbolAtLocation(resolved, declaration).getCallSignatures();
+    return signatures.some(signature => {
+      const parameter = signature.getParameters()[0];
+      if (!parameter) return false;
+      const parameterDeclaration = parameter.valueDeclaration ?? parameter.declarations?.[0];
+      if (!parameterDeclaration) return false;
+      const parameterType = checker.getTypeOfSymbolAtLocation(parameter, parameterDeclaration);
+      const parameterSymbol = parameterType.aliasSymbol ?? parameterType.getSymbol();
+      return parameterSymbol?.name === 'StateRoot' && parameterType.getCallSignatures().length === 0;
+    });
+  };
+  const registrationSources = packageDirectory => {
+    const registered = [];
+    for (const sourcePath of collectSourceFiles(packageDirectory)) {
+      const sourceFile = analysis.program.getSourceFile(sourcePath);
+      if (!sourceFile) throw new Error(`TER_SELECTOR_SOURCE_UNANALYZED ${path.relative(root, sourcePath)}`);
+      const visit = node => {
+        if (ts.isPropertyAssignment(node) && ts.isIdentifier(node.name) && node.name.text === 'selectorDefinitions') {
+          if (!ts.isArrayLiteralExpression(node.initializer)) {
+            throw new Error(`TER_SELECTOR_REGISTRATION_DYNAMIC ${path.relative(root, sourcePath)}`);
+          }
+          for (const element of node.initializer.elements) {
+            if (!ts.isIdentifier(element) && !ts.isPropertyAccessExpression(element)) {
+              throw new Error(`TER_SELECTOR_REGISTRATION_DYNAMIC ${path.relative(root, sourcePath)}`);
+            }
+            const symbol = resolveAliasedSymbol(checker, checker.getSymbolAtLocation(element));
+            if (!symbol) throw new Error(`TER_SELECTOR_REGISTRATION_UNRESOLVED ${path.relative(root, sourcePath)}`);
+            registered.push(symbol);
+          }
+        }
+        ts.forEachChild(node, visit);
+      };
+      visit(sourceFile);
+    }
+    return registered;
+  };
+
+  const mismatches = [];
+  for (const moduleName of Object.keys(projected)) {
+    const packageDirectory = moduleNameToPath(moduleName, root);
+    const indexPath = path.join(packageDirectory, 'src/index.ts');
+    if (!fs.existsSync(indexPath)) continue;
+    const indexFile = analysis.program.getSourceFile(indexPath);
+    const moduleSymbol = indexFile && checker.getSymbolAtLocation(indexFile);
+    if (!indexFile || !moduleSymbol) continue;
+    const expected = new Set(
+      checker.getExportsOfModule(moduleSymbol).flatMap(exported => {
+        const symbol = resolveAliasedSymbol(checker, exported);
+        if (symbol && excludedRootExports.has(`${moduleName}:${symbol.getName()}`)) return [];
+        return symbol && isStateRootSelector(symbol) ? [symbol] : [];
+      }),
+    );
+    const registrations = registrationSources(packageDirectory);
+    const registered = new Set(registrations);
+    const duplicates = [...registered].filter(symbol => registrations.filter(item => item === symbol).length > 1);
+    const missing = [...expected].filter(symbol => !registered.has(symbol));
+    const extra = [...registered].filter(symbol => !isStateRootSelector(symbol) || !expected.has(symbol));
+    if (missing.length || extra.length || duplicates.length) {
+      const name = symbol => symbol.getName();
+      mismatches.push(
+        `${moduleName}:missing=[${missing.map(name).sort().join(',')}] extra=[${extra.map(name).sort().join(',')}] duplicates=[${duplicates.map(name).sort().join(',')}]`,
+      );
+    }
+  }
+  if (mismatches.length) throw new Error(`TER_SELECTOR_REGISTRATION_MISMATCH ${mismatches.join('; ')}`);
+}
+
 function runStateResetRetentionOnly(context) {
   const {root, projected} = context;
   const approvedModule = 'kernel.base.server-config';
   const approvedSource = 'src/features/slices/serverConfig.ts';
   const retainedDeclarations = [];
-  const analysis = createAnalysisProgram(root);
+  const analysis = analysisFor(context);
   const checker = analysis.program.getTypeChecker();
   for (const moduleName of Object.keys(projected)) {
     const packageDirectory = moduleNameToPath(moduleName, root);
@@ -1320,6 +1504,9 @@ export function runStaticChecks({root = repoRoot, batch} = {}) {
     ['tr01-reducer-boundary', () => runTr01Boundary(context)],
     ['state-reset-retention-only', () => runStateResetRetentionOnly(context)],
     ['kernel-platform-independence', () => runKernelPlatformIndependence(context)],
+    ['selector-registration', () => runSelectorRegistration(context)],
+    ['test-id-type-safety', () => runTestIdTypeGate({root, analysis: analysisFor(context)})],
+    ['retired-ui-runner-absence', () => runRetiredUiRunnerAbsence({root})],
   ];
   const results = [];
   for (const [name, check] of checks) {
@@ -1342,7 +1529,7 @@ export function runStaticChecks({root = repoRoot, batch} = {}) {
 
 function printUsage() {
   console.log('Usage: node tools/terminal-skeleton/check-static.mjs [--root <repo-root>] [--help]');
-  console.log('Runs eight TER static rule gates and one separately reported scaffold hygiene check.');
+  console.log('Runs eleven TER static rule gates and one separately reported scaffold hygiene check.');
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

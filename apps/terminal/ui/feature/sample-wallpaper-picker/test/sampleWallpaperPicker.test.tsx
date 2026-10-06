@@ -26,7 +26,10 @@ import {
   confirmWallpaperRequestedCommand,
   wallpaperPickerExitRequestedCommand,
   wallpaperOptionTestId,
+  wallpaperThumbnailTestId,
   wallpaperPickerTestIds,
+  wallpaperContentTestIds,
+  wallpaperSystemNoticeTestIds,
   sampleWallpaperPickerAssembly,
 } from '../src/index';
 import {WallpaperPicker} from '../src/components/laptop/WallpaperPicker';
@@ -274,12 +277,9 @@ describe('sample wallpaper picker', () => {
     expect(renderer.getByTestId(wallpaperPickerTestIds.optionsScroll)).toBeTruthy();
     const options = renderer.getByTestId(wallpaperPickerTestIds.options);
     expect(options.props.style).toEqual({flexShrink: 0});
-    expect(
-      queryRenderedTree(
-        renderer,
-        node => typeof node.props.testID === 'string' && (node.props.testID as string).endsWith(':thumbnail'),
-      ),
-    ).toHaveLength(3);
+    for (const wallpaperId of ['w1', 'w2', 'w3'] as const) {
+      expect(renderer.getByTestId(wallpaperThumbnailTestId(wallpaperId))).toBeTruthy();
+    }
     await renderer.unmount();
   });
 
@@ -287,13 +287,13 @@ describe('sample wallpaper picker', () => {
     const none = await mount(
       renderProvider(rootFor('none', 'w2'), commandDispatch([]), createElement(WallpaperBackground)),
     );
-    expect(queryRenderedTree(none, node => node.props.testID === 'sample.wallpaper.background')).toHaveLength(0);
+    expect(queryRenderedTree(none, node => node.props.testID === wallpaperContentTestIds.background)).toHaveLength(0);
     await none.unmount();
 
     const selected = await mount(
       renderProvider(rootFor('w3'), commandDispatch([]), createElement(WallpaperBackground)),
     );
-    const image = selected.getByTestId('sample.wallpaper.background');
+    const image = selected.getByTestId(wallpaperContentTestIds.background);
     expect(image.props.source).toBe(expectedW3);
     expect(image.props.accessibilityLabel).toBe('当前壁纸：海滩');
     expect(image.props.resizeMode).toBe('cover');
@@ -309,7 +309,7 @@ describe('sample wallpaper picker', () => {
       const renderer = await mount(
         renderProvider(rootFor(wallpaperId), commandDispatch([]), createElement(WallpaperBackground)),
       );
-      expect(renderer.getByTestId('sample.wallpaper.background').props.source).toBe(expectedSource);
+      expect(renderer.getByTestId(wallpaperContentTestIds.background).props.source).toBe(expectedSource);
       await renderer.unmount();
     }
   });
@@ -438,31 +438,30 @@ describe('sample wallpaper picker', () => {
         ),
       );
       expect(
-        queryRenderedTree(renderer, node => node.props.testID === 'sample.wallpaper.system-notice:message').some(node =>
+        queryRenderedTree(renderer, node => node.props.testID === wallpaperSystemNoticeTestIds.message).some(node =>
           node.children?.includes('壁纸已更换，但系统未能确认，无需重复操作'),
         ),
       ).toBe(true);
       expect(
-        queryRenderedTree(renderer, node => node.props.testID === 'sample.wallpaper.system-notice').map(
+        queryRenderedTree(renderer, node => node.props.testID === wallpaperSystemNoticeTestIds.root).map(
           node => node.props.style,
         ),
       ).toContainEqual(
         isMobile ? {flex: 1, minHeight: 0, padding: 16, alignItems: 'stretch'} : {flex: 1, minHeight: 0, padding: 24},
       );
       expect(
-        queryRenderedTree(renderer, node => node.props.testID === 'sample.wallpaper.system-notice:card')[0]?.props
-          .style,
+        queryRenderedTree(renderer, node => node.props.testID === wallpaperSystemNoticeTestIds.card)[0]?.props.style,
       ).toEqual(
         expect.arrayContaining([expect.objectContaining(isMobile ? {width: '100%'} : {width: '100%', maxWidth: 720})]),
       );
       expect(
-        queryRenderedTree(renderer, node => node.props.testID === 'sample.wallpaper.system-notice:actions').map(
+        queryRenderedTree(renderer, node => node.props.testID === wallpaperSystemNoticeTestIds.actions).map(
           node => node.props.className,
         ),
       ).toContain(isMobile ? 'w-full items-center gap-3' : 'flex-row flex-wrap items-start gap-3');
       const dismissStyles = queryRenderedTree(
         renderer,
-        node => node.props.testID === 'sample.wallpaper.system-notice:dismiss',
+        node => node.props.testID === wallpaperSystemNoticeTestIds.dismiss,
       )[0]?.props.style;
       if (isMobile) expect(dismissStyles).toEqual(expect.arrayContaining([expect.objectContaining({width: '100%'})]));
       else expect(dismissStyles).toBeUndefined();
@@ -480,7 +479,7 @@ describe('sample wallpaper picker', () => {
       ),
     );
 
-    await fireEvent.press(renderer.getByTestId('sample.wallpaper.system-notice:dismiss'));
+    await fireEvent.press(renderer.getByTestId(wallpaperSystemNoticeTestIds.dismiss));
     expect(calls).toEqual([
       {
         name: wallpaperSystemFailureDismissedCommand.commandName,

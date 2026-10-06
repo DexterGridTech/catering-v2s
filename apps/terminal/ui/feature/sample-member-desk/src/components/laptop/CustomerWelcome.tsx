@@ -1,12 +1,17 @@
 import {PrimitiveContainer, PrimitiveStatus} from '@catering-v2s/ui-base-primitives';
 import {useCustomerWelcome} from '../../hooks/useCustomerWelcome';
+import {sampleMemberDeskTestId} from '../../foundations/sampleMemberDeskTestIds';
 
 export const CustomerWelcome = () => {
   const welcome = useCustomerWelcome();
   return (
-    <PrimitiveContainer testID="sample.desk.customer-welcome" layout="centered" style={{padding: 24}}>
+    <PrimitiveContainer
+      testID={sampleMemberDeskTestId('sample.desk.customer-welcome')}
+      layout="centered"
+      style={{padding: 24}}
+    >
       <PrimitiveStatus
-        testID="sample.desk.customer-welcome:message"
+        testID={sampleMemberDeskTestId('sample.desk.customer-welcome:message')}
         onLayout={welcome.onLayout}
         onTextLayout={welcome.onTextLayout}
       >

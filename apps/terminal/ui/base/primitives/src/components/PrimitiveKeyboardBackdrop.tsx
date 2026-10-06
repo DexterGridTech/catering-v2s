@@ -1,3 +1,4 @@
+import {testIdProps} from '../foundations/testId';
 import {RnrView} from '../foundations/nativeSlots';
 import {baseTokens} from '../theme/tokens';
 import {assertTestID} from '../foundations/assertTestID';
@@ -8,7 +9,7 @@ import type {PrimitiveKeyboardBackdropProps} from '../types/types';
  * The surface colour remains integration-owned through the semantic token.
  */
 export const PrimitiveKeyboardBackdrop = ({testID, children, style}: PrimitiveKeyboardBackdropProps) => (
-  <RnrView testID={assertTestID(testID)} className={baseTokens.keyboardBackdrop} style={style}>
+  <RnrView {...testIdProps(assertTestID(testID))} className={baseTokens.keyboardBackdrop} style={style}>
     {children}
   </RnrView>
 );

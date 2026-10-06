@@ -28,6 +28,11 @@
     }
   },
   "showAdminPassword": true,
+  "terminalAutomation": {
+    "enabled": false,
+    "url": "ws://127.0.0.1:19090/automation",
+    "sessionToken": ""
+  },
   "serverSpaces": {
     "selectedSpace": "development",
     "spaces": [

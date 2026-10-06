@@ -1,3 +1,4 @@
+import {testIdProps} from '../foundations/testId';
 import {RnrText} from '../foundations/nativeSlots';
 import {baseTokens} from '../theme/tokens';
 import {assertTestID} from '../foundations/assertTestID';
@@ -12,7 +13,7 @@ export const PrimitiveText = ({
   style,
 }: PrimitiveTextProps) => (
   <RnrText
-    testID={assertTestID(testID)}
+    {...testIdProps(assertTestID(testID))}
     accessibilityLabel={accessibilityLabel}
     className={
       appearance === 'login'

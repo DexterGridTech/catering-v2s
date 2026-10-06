@@ -1,3 +1,4 @@
+import {testIdProps} from '../foundations/testId';
 import {RnrView} from '../foundations/nativeSlots';
 import {baseTokens} from '../theme/tokens';
 import {assertTestID} from '../foundations/assertTestID';
@@ -5,7 +6,7 @@ import type {PrimitiveGridProps, PrimitiveLayoutProps} from '../types/types';
 
 export const PrimitiveCard = ({testID, children, style, appearance = 'default'}: PrimitiveLayoutProps) => (
   <RnrView
-    testID={assertTestID(testID)}
+    {...testIdProps(assertTestID(testID))}
     className={
       appearance === 'admin'
         ? baseTokens.adminCard
@@ -20,11 +21,16 @@ export const PrimitiveCard = ({testID, children, style, appearance = 'default'}:
 );
 
 export const PrimitiveDivider = ({testID, style}: PrimitiveLayoutProps) => (
-  <RnrView testID={assertTestID(testID)} accessibilityRole="none" className={baseTokens.divider} style={style} />
+  <RnrView
+    {...testIdProps(assertTestID(testID))}
+    accessibilityRole="none"
+    className={baseTokens.divider}
+    style={style}
+  />
 );
 
 export const PrimitiveStack = ({testID, children, style}: PrimitiveLayoutProps) => (
-  <RnrView testID={assertTestID(testID)} className={baseTokens.stack} style={style}>
+  <RnrView {...testIdProps(assertTestID(testID))} className={baseTokens.stack} style={style}>
     {children}
   </RnrView>
 );
@@ -38,7 +44,7 @@ export const PrimitiveGrid = ({
   appearance = 'default',
 }: PrimitiveGridProps) => (
   <RnrView
-    testID={assertTestID(testID)}
+    {...testIdProps(assertTestID(testID))}
     accessibilityRole={accessibilityRole}
     accessibilityLabel={accessibilityLabel}
     className={
@@ -57,7 +63,7 @@ export const PrimitiveGrid = ({
 );
 
 export const PrimitiveCenter = ({testID, children, style}: PrimitiveLayoutProps) => (
-  <RnrView testID={assertTestID(testID)} className={baseTokens.center} style={style}>
+  <RnrView {...testIdProps(assertTestID(testID))} className={baseTokens.center} style={style}>
     {children}
   </RnrView>
 );

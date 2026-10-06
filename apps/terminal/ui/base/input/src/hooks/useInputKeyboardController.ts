@@ -23,8 +23,9 @@ export const useInputKeyboardController = ({
       if (field === undefined) return;
       const before = field.getEditState();
       const result = field.applyKey(key);
-      if (__DEV__ && field.testID === 'terminal.admin:password') {
-        console.info('TER_ADMIN_INPUT_TRACE key-applied', {
+      if (__DEV__) {
+        console.info('TER_INPUT_TRACE key-applied', {
+          fieldId: field.fieldId,
           keyKind: key.kind,
           beforeLength: before.value.length,
           afterLength: result.state.value.length,

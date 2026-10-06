@@ -1,3 +1,5 @@
+import {defineStateSelector} from '@catering-v2s/kernel-base-runtime';
+import {moduleName} from '../moduleName';
 import type {DisplayMode} from '@catering-v2s/kernel-base-display-context';
 import {resolveWorkspace, selectDisplayRole} from '@catering-v2s/kernel-base-display-context';
 import {selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
@@ -29,7 +31,7 @@ const selectCurrentContentState = (root: StateRoot) =>
     }),
   );
 
-export const selectScreen = (
+const selectScreenImplementation = (
   root: StateRoot,
   displayMode: DisplayMode,
   containerKey: ContainerKey,
@@ -39,7 +41,7 @@ export const selectScreen = (
   ];
 };
 
-export const selectLayers = (
+const selectLayersImplementation = (
   root: StateRoot,
   displayMode: DisplayMode,
   workspace?: WorkspaceKey,
@@ -47,3 +49,15 @@ export const selectLayers = (
   const content = workspace === undefined ? selectCurrentContentState(root) : readContentState(root, workspace);
   return content.contentSets[requireDisplayMode(displayMode)].layers;
 };
+
+export const selectLayers = defineStateSelector(moduleName, 'selectLayers', {
+  parameters: [
+    {kind: 'enum', values: ['PRIMARY', 'SECONDARY']},
+    {kind: 'enum', values: ['MAIN', 'BRANCH'], optional: true},
+  ],
+  selector: selectLayersImplementation,
+});
+export const selectScreen = defineStateSelector(moduleName, 'selectScreen', {
+  parameters: [{kind: 'enum', values: ['PRIMARY', 'SECONDARY']}, {kind: 'string'}],
+  selector: selectScreenImplementation,
+});

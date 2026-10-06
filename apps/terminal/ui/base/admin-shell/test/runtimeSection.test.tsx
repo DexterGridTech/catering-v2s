@@ -40,6 +40,7 @@ const contextFor = (
     runtimeFacts: {
       environmentMode: 'TEST',
       debugMode: {enabled: false, source: 'default'},
+      automation: {enabled: false, address: '—'},
       deviceIdentity: {available: false, deviceId: null},
       platformPortCapabilities: [],
       displayFacts: facts,
@@ -69,6 +70,37 @@ const node = (renderer: Awaited<ReturnType<typeof render>>, testID: string) =>
 afterEach(() => vi.restoreAllMocks());
 
 describe('RuntimeSection display-facts controls', () => {
+  it.each(['laptop', 'mobile'] as const)(
+    'renders build-time automation facts as text-node values on %s without moving the existing item identity',
+    async surfaceForm => {
+      const context = contextFor(singleFacts, surfaceForm);
+      const enabledContext = {
+        ...context,
+        runtimeFacts: {
+          ...context.runtimeFacts,
+          automation: {enabled: true, address: 'ws://127.0.0.1:19090/automation'},
+        },
+      } as AdminSectionProps['context'];
+      const renderer = await renderSection(enabledContext, surfaceForm);
+
+      expect(node(renderer, 'admin.console.runtime:facts:item:automation-enabled')).toBeDefined();
+      expect(node(renderer, 'admin.console.runtime:facts:item:automation-address')).toBeDefined();
+      expect(node(renderer, adminTestIds.runtime.automation.enabled).props.children).toBe('已启用');
+      expect(node(renderer, adminTestIds.runtime.automation.address).props.children).toBe(
+        'ws://127.0.0.1:19090/automation',
+      );
+      await renderer.unmount();
+    },
+  );
+
+  it('renders the disabled address as a dash and does not expose connection state', async () => {
+    const renderer = await renderSection(contextFor(singleFacts));
+
+    expect(node(renderer, adminTestIds.runtime.automation.enabled).props.children).toBe('未启用');
+    expect(node(renderer, adminTestIds.runtime.automation.address).props.children).toBe('—');
+    await renderer.unmount();
+  });
+
   it('renders one current surface with logical, physical and readiness fields', async () => {
     const renderer = await renderSection(contextFor(singleFacts));
     const surface = node(renderer, `${adminTestIds.runtime.surfaceMap}:surface:PRIMARY`);

@@ -1,18 +1,19 @@
-import type {StateRoot} from '@catering-v2s/kernel-base-state';
+import {defineStateSelector} from '@catering-v2s/kernel-base-runtime';
 import {moduleName} from '../moduleName';
+import type {StateRoot} from '@catering-v2s/kernel-base-state';
 import type {TopologyState} from '../types/state';
 
 export type {TopologyState} from '../types/state';
 
 export const topologySliceName = `${moduleName}.state` as const;
 
-export const selectTopologyState = (state: StateRoot): TopologyState => {
+const selectTopologyStateImplementation = (state: StateRoot): TopologyState => {
   const value = state[topologySliceName];
   if (value === undefined || value === null) throw new Error(`Missing topology slice: ${topologySliceName}`);
   return value as TopologyState;
 };
 
-export const selectTopologyRequiredProjectionsReady = (
+const selectTopologyRequiredProjectionsReadyImplementation = (
   state: StateRoot,
   requiredSliceNames: readonly string[],
 ): boolean => {
@@ -25,3 +26,16 @@ export const selectTopologyRequiredProjectionsReady = (
     return appliedRevision !== undefined && (failedRevision === undefined || appliedRevision >= failedRevision);
   });
 };
+
+export const selectTopologyRequiredProjectionsReady = defineStateSelector(
+  moduleName,
+  'selectTopologyRequiredProjectionsReady',
+  {
+    parameters: [{kind: 'array', items: {kind: 'string'}}],
+    selector: selectTopologyRequiredProjectionsReadyImplementation,
+  },
+);
+export const selectTopologyState = defineStateSelector(moduleName, 'selectTopologyState', {
+  parameters: [],
+  selector: selectTopologyStateImplementation,
+});

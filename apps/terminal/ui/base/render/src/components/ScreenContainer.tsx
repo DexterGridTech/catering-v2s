@@ -7,11 +7,10 @@ import {ContainerDiagnosticEffect, RenderFallback, resolvePartWithStatus} from '
 import {useRenderStatus} from '../hooks/useRenderStatus';
 import {useUiCatalogContext} from '../hooks/useUiCatalogContext';
 import {useUiStateSelector} from '../hooks/useUiStateSelector';
+import {renderTestIds} from '../foundations/renderTestIds';
 import {ScreenReadyBoundary, StartupFailurePage} from './ScreenReadyBoundary';
 import type {RenderFailure} from '../types/props';
 import {SystemFailureBoundary, SystemFailureNoticeWithReset} from './SystemFailureBoundary';
-
-const SCREEN_CONTAINER_TEST_ID = 'ui-base-render:screen-container';
 
 const ScreenRenderErrorFallback = ({
   ownerId,
@@ -81,7 +80,7 @@ export const ScreenContainer = () => {
   if (surfaceHostAvailability === 'unavailable') {
     const failure: RenderFailure = {category: 'system', reason: 'surface-host-unavailable'};
     return (
-      <View testID={SCREEN_CONTAINER_TEST_ID} style={styles.container}>
+      <View testID={renderTestIds.screenContainer} style={styles.container}>
         {isTargetPrimarySurface ? (
           <StartupFailurePage reason={failure.reason} failureStage={failureStage} fallbackReason={failure.reason} />
         ) : (
@@ -94,7 +93,7 @@ export const ScreenContainer = () => {
     if (runtimeStatus === 'failed') {
       const failure: RenderFailure = {category: 'system', reason: 'runtime-start-failed'};
       return (
-        <View testID={SCREEN_CONTAINER_TEST_ID} style={styles.container}>
+        <View testID={renderTestIds.screenContainer} style={styles.container}>
           <RenderFallback failure={failure} />
           {isTargetPrimarySurface ? (
             <StartupFailurePage reason={failure.reason} failureStage={failureStage} fallbackReason={failure.reason} />
@@ -104,7 +103,7 @@ export const ScreenContainer = () => {
     }
     const failure: RenderFailure = {category: 'transition', reason: 'runtime-not-started'};
     return (
-      <View testID={SCREEN_CONTAINER_TEST_ID} style={styles.container}>
+      <View testID={renderTestIds.screenContainer} style={styles.container}>
         <RenderFallback failure={failure} />
       </View>
     );
@@ -132,7 +131,7 @@ export const ScreenContainer = () => {
       },
     } as const;
     return (
-      <View testID={SCREEN_CONTAINER_TEST_ID} style={styles.container}>
+      <View testID={renderTestIds.screenContainer} style={styles.container}>
         <ContainerDiagnosticEffect diagnostic={diagnostic} report={reportPartDiagnostic} />
         <ScreenReadyBoundary key={`${containerKey}:container-empty`} partKey={null} contentFailure={failure.reason}>
           <RenderFallback failure={failure} />
@@ -154,7 +153,7 @@ export const ScreenContainer = () => {
   });
 
   return (
-    <View testID={SCREEN_CONTAINER_TEST_ID} style={styles.container}>
+    <View testID={renderTestIds.screenContainer} style={styles.container}>
       {resolution.kind === 'resolved' ? (
         <SystemFailureBoundary
           ownerId={`screen:${containerKey}:${placement.instanceId ?? placement.partKey}`}

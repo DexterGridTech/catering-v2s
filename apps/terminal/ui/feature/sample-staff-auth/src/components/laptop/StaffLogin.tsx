@@ -11,6 +11,7 @@ import {StaffLoginPasscodeInput} from '../StaffLoginPasscodeInput';
 import {StaffLoginOperatorNameInput} from '../StaffLoginOperatorNameInput';
 import {StaffLoginForm} from '../StaffLoginForm';
 import {useStaffLogin} from '../../hooks/useStaffLogin';
+import {sampleStaffAuthTestIds as testIds} from '../sampleStaffAuthTestIds';
 
 const laptopRootStyle = Object.freeze({width: '100%', maxWidth: 720, alignSelf: 'center' as const});
 
@@ -19,18 +20,18 @@ export const StaffLogin = () => {
   const login = useStaffLogin();
   return (
     <StaffLoginForm>
-      <PrimitiveContainer testID="sample.auth.login" style={laptopRootStyle}>
-        <InputScrollArea testID="sample.auth.login:scroll">
-          <PrimitiveHeading testID="sample.auth.login:title">店员登录</PrimitiveHeading>
+      <PrimitiveContainer testID={testIds.login} style={laptopRootStyle}>
+        <InputScrollArea testID={testIds.loginScroll}>
+          <PrimitiveHeading testID={testIds.loginTitle}>店员登录</PrimitiveHeading>
           <StaffLoginOperatorNameInput editable={!login.requestInFlight} />
-          <PrimitiveLabel testID="sample.auth.login:passcode-label" nativeID="sample.auth.login:passcode">
+          <PrimitiveLabel testID={testIds.passcodeLabel} nativeID="sample.auth.login:passcode">
             密码
           </PrimitiveLabel>
           <StaffLoginPasscodeInput key={login.passcodeResetKey} editable={!login.requestInFlight} />
         </InputScrollArea>
-        <PrimitiveActions testID="sample.auth.login:actions">
+        <PrimitiveActions testID={testIds.loginActions}>
           <PrimitiveButton
-            testID="sample.auth.login:submit"
+            testID={testIds.loginSubmit}
             accessibilityLabel="登录"
             disabled={login.requestInFlight}
             onPress={login.submit}
@@ -38,7 +39,7 @@ export const StaffLogin = () => {
             {login.requestInFlight ? '登录中' : '登录'}
           </PrimitiveButton>
         </PrimitiveActions>
-        {login.requestInFlight ? <PrimitiveStatus testID="sample.auth.login:loading">登录中</PrimitiveStatus> : null}
+        {login.requestInFlight ? <PrimitiveStatus testID={testIds.loginLoading}>登录中</PrimitiveStatus> : null}
       </PrimitiveContainer>
     </StaffLoginForm>
   );

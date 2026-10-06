@@ -13,9 +13,13 @@ export {parts} from './parts/parts';
 export {sampleWallpaperPickerAssembly} from './assembly/assembly';
 export {
   branchWallpaperOptionTestId,
+  branchWallpaperThumbnailTestId,
   branchWallpaperPickerTestIds,
   wallpaperOptionTestId,
+  wallpaperThumbnailTestId,
   wallpaperPickerTestIds,
+  wallpaperContentTestIds,
+  wallpaperSystemNoticeTestIds,
 } from './foundations/wallpaperPickerTestIds';
 export type {WallpaperPickerAssembly} from './assembly/assembly';
 export type {WallpaperPickerCommandPayload} from './features/commands/commands';

@@ -1,6 +1,7 @@
 import {RnrSvgIcon, RnrView, primitiveIconPaths} from '../foundations/nativeSlots';
 import {baseTokens} from '../theme/tokens';
 import {assertTestID} from '../foundations/assertTestID';
+import {deriveTestId, testIdProps} from '../foundations/testId';
 import {toneClassName, toneForegroundClassName} from '../foundations/toneClassName';
 import type {PrimitiveIconBadgeProps, PrimitiveIconProps} from '../types/types';
 
@@ -14,7 +15,7 @@ export const PrimitiveIcon = ({
   style,
 }: PrimitiveIconProps) => (
   <RnrSvgIcon
-    testID={assertTestID(testID)}
+    {...testIdProps(assertTestID(testID))}
     accessibilityLabel={accessibilityLabel}
     path={primitiveIconPaths[icon]}
     size={size}
@@ -37,11 +38,11 @@ export const PrimitiveIcon = ({
 
 export const PrimitiveIconBadge = ({testID, accessibilityLabel, icon, size = 16, tone}: PrimitiveIconBadgeProps) => (
   <RnrView
-    testID={assertTestID(testID)}
+    {...testIdProps(assertTestID(testID))}
     className={tone === undefined ? baseTokens.adminBrand : toneClassName(tone, baseTokens.adminGateIcon)}
   >
     <PrimitiveIcon
-      testID={`${assertTestID(testID)}:icon`}
+      {...testIdProps(deriveTestId(testID, 'icon'))}
       accessibilityLabel={accessibilityLabel}
       appearance={tone === undefined ? 'admin-shell' : undefined}
       icon={icon}

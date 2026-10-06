@@ -94,6 +94,7 @@ const createRemoteOperationHarness = (options?: {
   flushPersistence?: ActorExecutionContext['flushPersistence'];
 }) => {
   const secret = 'R'.repeat(43);
+  let protocolUuidSequence = 0;
   let state = terminalDataClientReducer(undefined, {type: 'test/init'});
   state = terminalDataClientReducer(
     state,
@@ -146,6 +147,7 @@ const createRemoteOperationHarness = (options?: {
     transport,
     businessServerName: 'terminal-business-api',
     createCredentialSecret: () => secret,
+    createProtocolUuid: () => `00000000-0000-4000-8000-${String(++protocolUuidSequence).padStart(12, '0')}`,
     now: () => 1_799_999_640_000,
     appVersion: 'test',
     surfaceForm: 'laptop',
@@ -402,6 +404,7 @@ describe('terminal-data-client activation command actor', () => {
       transport,
       businessServerName: 'terminal-business-api',
       createCredentialSecret: () => secret,
+      createProtocolUuid: () => '00000000-0000-4000-8000-000000000003',
       now: () => 1_000,
       appVersion: '1.0.0',
       surfaceForm: 'laptop',
@@ -1466,6 +1469,7 @@ describe('terminal-data-client activation command actor', () => {
     let flushGate: Promise<void> | undefined;
     let markDeferredFlushStarted: (() => void) | undefined;
     let rejectDeferredFlush = false;
+    let protocolUuidSequence = 0;
     const transport = {
       start: vi.fn(async () => connection),
       ready: vi.fn(async () => undefined),
@@ -1478,6 +1482,7 @@ describe('terminal-data-client activation command actor', () => {
       transport,
       businessServerName: 'terminal-business-api',
       createCredentialSecret: () => secret,
+      createProtocolUuid: () => `00000000-0000-4000-8000-${String(++protocolUuidSequence).padStart(12, '0')}`,
       now: () => 1_000,
       appVersion: '1.0.0',
       surfaceForm: 'laptop',
@@ -1814,6 +1819,7 @@ describe('terminal-data-client activation command actor', () => {
       transport,
       businessServerName: 'terminal-business-api',
       createCredentialSecret: () => secret,
+      createProtocolUuid: () => '00000000-0000-4000-8000-000000000004',
       now: () => 1_000,
       appVersion: '1.0.0',
       surfaceForm: 'laptop',
@@ -2678,6 +2684,7 @@ describe('terminal-data-client activation command actor', () => {
       transport,
       businessServerName: 'terminal-business-api',
       createCredentialSecret: () => secret,
+      createProtocolUuid: () => '00000000-0000-4000-8000-000000000007',
       now: () => 1_799_999_640_000,
       appVersion: 'test',
       surfaceForm: 'laptop',

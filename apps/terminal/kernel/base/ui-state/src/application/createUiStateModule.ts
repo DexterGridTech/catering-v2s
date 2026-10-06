@@ -28,6 +28,9 @@ import {selectSurfaceForm as selectSurfaceFormFromState} from '../selectors/sele
 import {assertUiVariableDeclaration} from '../foundations/uiVariable';
 import {runtimeModuleDependencyNames} from '../dependencies';
 import {moduleKind, moduleName} from '../moduleName';
+import {isCurrentWorkspaceOwnedByInstance} from '../foundations/workspaceOwnership';
+import {selectLayers, selectScreen} from '../selectors/selectContent';
+import {selectSurfaceForm} from '../selectors/selectSurfaceForm';
 import {isSurfaceForm, type SurfaceForm, type UiCatalog} from '../types/catalog';
 import type {UiStateModule} from '../types/module';
 import type {UiVariableDeclaration} from '../types/variable';
@@ -112,6 +115,7 @@ export const createUiStateModule = (input: CreateUiStateModuleInput): UiStateMod
     dependencies: runtimeModuleDependencyNames.map(name => ({moduleName: name})),
     commands: commands.map(command => ({name: command.commandName, visibility: command.visibility})),
     commandDefinitions: commands,
+    selectorDefinitions: [selectSurfaceForm, selectLayers, selectScreen, isCurrentWorkspaceOwnedByInstance],
     actors: actors.map(actor => ({name: actor.actorName})),
     actorDefinitions: actors,
     slices: stateSlices.map(registration => ({

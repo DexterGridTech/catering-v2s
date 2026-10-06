@@ -2,6 +2,8 @@ import {act, fireEvent, render, waitFor, type RenderResult} from '@testing-libra
 import type {ReactElement} from 'react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {createRequestId} from '@catering-v2s/kernel-base-contracts';
+import {renderTestIds} from '@catering-v2s/ui-base-render';
+import {inputTestIds} from '@catering-v2s/ui-base-input/test-ids';
 import type {TransportServerConfig} from '@catering-v2s/kernel-base-contracts';
 import {switchDisplayRoleCommand, switchInstanceModeCommand} from '@catering-v2s/kernel-base-display-context';
 import {selectServerConfiguration} from '@catering-v2s/kernel-base-server-config';
@@ -42,9 +44,10 @@ import {
 import {
   sampleWallpaperPickerAssembly,
   wallpaperPickerExitRequestedCommand,
+  wallpaperContentTestIds,
   wallpaperPickerTestIds,
 } from '@catering-v2s/ui-feature-sample-wallpaper-picker';
-import {sampleStaffAuthAssembly} from '@catering-v2s/ui-feature-sample-staff-auth';
+import {sampleStaffAuthAssembly, sampleStaffAuthTestIds} from '@catering-v2s/ui-feature-sample-staff-auth';
 import {needToActivateTerminalCommand} from '@catering-v2s/ui-base-terminal-activation';
 import {activateTerminalCommand} from '@catering-v2s/kernel-base-terminal-data-client';
 import {
@@ -75,9 +78,13 @@ vi.mock('react-native', async importOriginal => {
   return withNativeTestHosts(actual, reactRuntime);
 });
 
-vi.mock('expo-crypto', () => ({
-  getRandomBytesAsync: vi.fn(async (length: number) => new Uint8Array(length)),
-}));
+vi.mock('expo-crypto', () => {
+  let sequence = 0;
+  return {
+    getRandomBytesAsync: vi.fn(async (length: number) => new Uint8Array(length)),
+    randomUUID: vi.fn(() => `00000000-0000-4000-8000-${String(++sequence).padStart(12, '0')}`),
+  };
+});
 
 vi.mock('@catering-v2s/ui-base-terminal-activation', async importOriginal => {
   const actual = await importOriginal<typeof import('@catering-v2s/ui-base-terminal-activation')>();
@@ -215,7 +222,7 @@ const mount = async (element: ReactElement): Promise<TestRenderer> => {
         },
       };
     }
-    if (typeof testID === 'string' && testID.endsWith(':scroll')) {
+    if (typeof testID === 'string' && testID.endsWith('%3Ascroll')) {
       const contentNode = {};
       return {
         getInnerViewRef: () => contentNode,
@@ -247,7 +254,7 @@ const mount = async (element: ReactElement): Promise<TestRenderer> => {
     renderer,
     node =>
       typeof node.props.testID === 'string' &&
-      node.props.testID.endsWith(':scroll') &&
+      node.props.testID.endsWith('%3Ascroll') &&
       typeof node.props.onLayout === 'function' &&
       typeof node.props.onContentSizeChange === 'function' &&
       typeof node.props.onScroll === 'function',
@@ -272,7 +279,7 @@ const mount = async (element: ReactElement): Promise<TestRenderer> => {
 };
 
 const measurePrimarySurface = async (renderer: TestRenderer): Promise<void> => {
-  const frames = queryNodes(renderer, 'ui.base.input:surface-frame');
+  const frames = queryNodes(renderer, inputTestIds.node('surface-frame'));
   await act(async () => {
     for (const frame of frames) {
       (frame.props.onLayout as (event: unknown) => void)({
@@ -286,7 +293,7 @@ const reportPrimaryReadyLayout = async (
   renderer: TestRenderer,
   frame: Readonly<{readonly width: number; readonly height: number}>,
 ): Promise<void> => {
-  const boundaries = queryNodes(renderer, 'ui-base-render:screen-ready-boundary');
+  const boundaries = queryNodes(renderer, renderTestIds.screenReadyBoundary);
   await act(async () => {
     for (const boundary of boundaries) {
       (boundary.props.onLayout as (event: unknown) => void)({nativeEvent: {layout: frame}});
@@ -341,7 +348,7 @@ const authenticateAdmin = async (renderer: TestRenderer): Promise<void> => {
   await finishKeyboardPresentation(renderer);
   for (const digit of ['1', '2', '3', '4', '5', '6']) {
     await act(async () => {
-      await press(renderer, `ui.base.input:virtual-keyboard:text-${digit}`);
+      await press(renderer, inputTestIds.node(`virtual-keyboard:text-${digit}`));
       await new Promise(resolve => setTimeout(resolve, 0));
     });
   }
@@ -353,10 +360,10 @@ const authenticateAdmin = async (renderer: TestRenderer): Promise<void> => {
 };
 
 const measureKeyboardLayers = async (renderer: TestRenderer): Promise<void> => {
-  const measurementLayers = queryNodes(renderer, 'ui.base.input:keyboard-layer-position:measure');
+  const measurementLayers = queryNodes(renderer, inputTestIds.node('keyboard-layer-position:measure'));
   for (const layer of measurementLayers) {
     const backdrop = getRenderedDescendantByProps(layer, {
-      testID: 'ui.base.input:virtual-keyboard:backdrop',
+      testID: inputTestIds.node('virtual-keyboard:backdrop'),
     }) as TestNode;
     const layout = StyleSheet.flatten(backdrop.props.style) as Readonly<{
       readonly width: number;
@@ -373,7 +380,7 @@ const measureKeyboardLayers = async (renderer: TestRenderer): Promise<void> => {
 const finishKeyboardPresentation = async (renderer: TestRenderer): Promise<void> => {
   setAnimatedTimingAutoFinishForTests(true);
   for (let attempt = 0; attempt < 4; attempt += 1) {
-    if (queryNodes(renderer, 'ui.base.input:keyboard-layer-position:measure').length === 0) break;
+    if (queryNodes(renderer, inputTestIds.node('keyboard-layer-position:measure')).length === 0) break;
     await measureKeyboardLayers(renderer);
     await act(async () => {
       advanceAnimatedTimingsForTests(1);
@@ -389,6 +396,32 @@ const dispatchOptions = (displayMode: 'PRIMARY' | 'SECONDARY' = 'PRIMARY') => ({
 afterEach(resetNativeTestRefFactory);
 
 describe('sample2 wallpaper console assembly', () => {
+  it('includes one disabled automation agent in the wallpaper Runtime without opening a connection', async () => {
+    const events: LogEvent[] = [];
+    const assembly = await createSampleWallpaperConsoleAssembly({
+      platformPorts: createTestPlatformPorts({events}),
+      persistenceKey: `sample-wallpaper-automation-disabled-${Date.now()}`,
+      surfaceForm: 'laptop',
+    });
+
+    try {
+      const automationModules = assembly.runtime.descriptors.filter(
+        descriptor => descriptor.moduleName === 'ui.base.automation-agent',
+      );
+      expect(automationModules).toHaveLength(1);
+      expect(assembly.runtimeFacts.automation.enabled).toBe(false);
+      expect(events).toContainEqual(
+        expect.objectContaining({
+          event: 'connection.disabled',
+          scope: expect.objectContaining({moduleName: 'ui.base.automation-agent'}),
+        }),
+      );
+      expect(events.some(event => event.event === 'connection.opened')).toBe(false);
+    } finally {
+      await releaseRuntimeForTestAsync(assembly.runtime);
+    }
+  });
+
   it('routes terminal activation intent through its own runtime owner for the LMS and LSP faces', async () => {
     const assembly = await createSampleWallpaperConsoleAssembly({
       platformPorts: createTestPlatformPorts(),
@@ -628,13 +661,13 @@ describe('sample2 wallpaper console assembly', () => {
       laptopPrimary = await mount(createSurfaceForDisplayIndex(laptop, 0));
       laptopSecondary = await mount(createSurfaceForDisplayIndex(laptop, 1));
       mobilePrimary = await mount(createSurfaceForDisplayIndex(mobile, 0));
-      expect(getNode(laptopPrimary, 'ui-base-render:surface-host-canvas').props.style).toEqual(
+      expect(getNode(laptopPrimary, renderTestIds.surfaceHostCanvas).props.style).toEqual(
         expect.arrayContaining([expect.objectContaining({width: 1280, height: 720})]),
       );
-      expect(getNode(laptopSecondary, 'ui-base-render:surface-host-canvas').props.style).toEqual(
+      expect(getNode(laptopSecondary, renderTestIds.surfaceHostCanvas).props.style).toEqual(
         expect.arrayContaining([expect.objectContaining({width: 1280, height: 720})]),
       );
-      expect(getNode(mobilePrimary, 'ui-base-render:surface-host-canvas').props.style).toEqual(
+      expect(getNode(mobilePrimary, renderTestIds.surfaceHostCanvas).props.style).toEqual(
         expect.arrayContaining([expect.objectContaining({width: 360, height: 640})]),
       );
       expect(() => createSurfaceForDisplayIndex(mobile, 1)).toThrow(/unavailable for mobile/);
@@ -657,7 +690,7 @@ describe('sample2 wallpaper console assembly', () => {
     });
     let renderer: TestRenderer | undefined;
     const layoutReadyBoundary = async () => {
-      const boundaries = queryNodes(renderer!, 'ui-base-render:screen-ready-boundary');
+      const boundaries = queryNodes(renderer!, renderTestIds.screenReadyBoundary);
       await act(async () => {
         for (const boundary of boundaries) {
           (boundary.props.onLayout as (event: unknown) => void)({
@@ -861,16 +894,17 @@ describe('sample2 wallpaper console assembly', () => {
         expect(renderer.getByText(/^（\d{6}）$/)).toBeDefined();
         await authenticateAdmin(renderer);
         if (assembly.surfaceForm === 'mobile') {
-          expect(getNode(renderer, 'terminal.admin:navigation')).toBeDefined();
+          const navigationId = adminTestIds.node('terminal.admin:navigation');
+          expect(getNode(renderer, navigationId)).toBeDefined();
           await act(async () => {
-            await press(renderer, 'terminal.admin:navigation:trigger');
+            await press(renderer, adminTestIds.child(navigationId, 'trigger'));
             await new Promise(resolve => setTimeout(resolve, 0));
           });
           for (const partKey of ['admin.console.platform-ports', 'admin.console.runtime', 'admin.console.topology']) {
-            expect(getNode(renderer, `terminal.admin:navigation:option:${partKey}`)).toBeDefined();
+            expect(getNode(renderer, adminTestIds.child(navigationId, 'option', partKey))).toBeDefined();
           }
           await act(async () => {
-            await press(renderer, 'terminal.admin:navigation:option:admin.console.runtime');
+            await press(renderer, adminTestIds.child(navigationId, 'option', 'admin.console.runtime'));
             await new Promise(resolve => setTimeout(resolve, 0));
           });
         } else {
@@ -1113,15 +1147,15 @@ describe('sample2 wallpaper console assembly', () => {
       expect(selectPendingWallpaperId(assembly.runtime.getState())).toBeUndefined();
       primary = await mount(createSurfaceForDisplayIndex(assembly, 0));
       secondary = await mount(createSurfaceForDisplayIndex(assembly, 1));
-      expect(queryNodes(primary, 'sample.wallpaper.background')).toHaveLength(1);
-      expect(queryNodes(secondary, 'sample.wallpaper.background')).toHaveLength(1);
-      expect(getNode(primary, 'sample.wallpaper.background').props.source).toBe(
-        getNode(secondary, 'sample.wallpaper.background').props.source,
+      expect(queryNodes(primary, wallpaperContentTestIds.background)).toHaveLength(1);
+      expect(queryNodes(secondary, wallpaperContentTestIds.background)).toHaveLength(1);
+      expect(getNode(primary, wallpaperContentTestIds.background).props.source).toBe(
+        getNode(secondary, wallpaperContentTestIds.background).props.source,
       );
       expect(queryNodes(primary, wallpaperPickerTestIds.root)).toHaveLength(1);
       expect(queryNodes(secondary, wallpaperPickerTestIds.root)).toHaveLength(0);
 
-      const firstSource = getNode(primary, 'sample.wallpaper.background').props.source;
+      const firstSource = getNode(primary, wallpaperContentTestIds.background).props.source;
       await primary.unmount();
       await secondary.unmount();
       primary = undefined;
@@ -1131,9 +1165,9 @@ describe('sample2 wallpaper console assembly', () => {
       await assembly.runtime.dispatchCommand(confirmWallpaperCommand, {}, dispatchOptions());
       primary = await mount(createSurfaceForDisplayIndex(assembly, 0));
       secondary = await mount(createSurfaceForDisplayIndex(assembly, 1));
-      const nextPrimarySource = getNode(primary, 'sample.wallpaper.background').props.source;
+      const nextPrimarySource = getNode(primary, wallpaperContentTestIds.background).props.source;
       expect(nextPrimarySource).not.toBe(firstSource);
-      expect(nextPrimarySource).toBe(getNode(secondary, 'sample.wallpaper.background').props.source);
+      expect(nextPrimarySource).toBe(getNode(secondary, wallpaperContentTestIds.background).props.source);
     } finally {
       if (primary !== undefined) await primary.unmount();
       if (secondary !== undefined) await secondary.unmount();
@@ -1156,7 +1190,7 @@ describe('sample2 wallpaper console assembly', () => {
     try {
       await readyAndActivateForTest(assembly);
       waiting = await mount(createSurfaceForDisplayIndex(assembly, 1));
-      expect(getNode(waiting, 'sample.auth.guide:message').children.join('')).toBe('请在主屏登录');
+      expect(getNode(waiting, sampleStaffAuthTestIds.guideMessage).children.join('')).toBe('请在主屏登录');
       await waiting.unmount();
       waiting = undefined;
 
@@ -1164,7 +1198,9 @@ describe('sample2 wallpaper console assembly', () => {
       primary = await mount(createSurfaceForDisplayIndex(assembly, 0));
       secondary = await mount(createSurfaceForDisplayIndex(assembly, 1));
       expect(containerFor(primary, wallpaperPickerTestIds.root).props.className).toContain('flex-1 p-6 gap-4');
-      expect(containerFor(secondary, 'sample.wallpaper.host-display').props.className).toContain('flex-1 p-6 gap-4');
+      expect(containerFor(secondary, wallpaperContentTestIds.hostDisplay).props.className).toContain(
+        'flex-1 p-6 gap-4',
+      );
     } finally {
       if (waiting !== undefined) await waiting.unmount();
       if (primary !== undefined) await primary.unmount();

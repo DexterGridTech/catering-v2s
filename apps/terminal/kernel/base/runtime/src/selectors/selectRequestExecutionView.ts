@@ -1,3 +1,5 @@
+import {defineStateSelector} from '../foundations/defineStateSelector';
+import {moduleName} from '../moduleName';
 import {createSelector} from '@reduxjs/toolkit';
 import type {CommandId, RequestId} from '@catering-v2s/kernel-base-contracts';
 import type {StateJsonValue, StateRoot, SyncValueEnvelope} from '@catering-v2s/kernel-base-state';
@@ -147,6 +149,14 @@ const selectRequestExecutionViewMemoized = createSelector(
   },
 );
 
-export const selectRequestExecutionView = (state: StateRoot, requestId: RequestId): RequestExecutionView | null => {
+const selectRequestExecutionViewImplementation = (
+  state: StateRoot,
+  requestId: RequestId,
+): RequestExecutionView | null => {
   return selectRequestExecutionViewMemoized(state, requestId);
 };
+
+export const selectRequestExecutionView = defineStateSelector(moduleName, 'selectRequestExecutionView', {
+  parameters: [{kind: 'string'}],
+  selector: selectRequestExecutionViewImplementation,
+});

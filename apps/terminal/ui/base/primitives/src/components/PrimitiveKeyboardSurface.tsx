@@ -1,3 +1,4 @@
+import {testIdProps} from '../foundations/testId';
 import {StyleSheet} from 'react-native';
 import {RnrView} from '../foundations/nativeSlots';
 import {baseTokens} from '../theme/tokens';
@@ -17,7 +18,7 @@ export const PrimitiveKeyboardSurface = ({
   onClick,
 }: PrimitiveKeyboardSurfaceProps) => (
   <RnrView
-    testID={assertTestID(testID)}
+    {...testIdProps(assertTestID(testID))}
     className={baseTokens.keyboardDock}
     style={[styles.shadow, StyleSheet.flatten(style)]}
     {...interactionPropsOf(onTouchEnd, onClick)}

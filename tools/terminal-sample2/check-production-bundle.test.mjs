@@ -8,10 +8,21 @@ import {inspectProductionBundleTexts} from './check-production-bundle.mjs'
 const fixtureDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'terminal-production-bundle-'))
 try {
   const baseline = inspectProductionBundleTexts([
-    {name: 'baseline.bundle', text: 'function product() { return "scripts.execute" }'},
+    {
+      name: 'baseline.bundle',
+      text: 'function product() { return "scripts.execute @catering-v2s/ui-base-automation-agent ui.base.automation-agent" }',
+    },
   ])
   assert.equal(baseline.bundleCount, 1)
   console.log('TERMINAL_PRODUCTION_BUNDLE_BASELINE=PASS')
+
+  for (const legacyToken of ['@catering-v2s/ui-base-automation', 'ui.base.automation:']) {
+    assert.throws(
+      () => inspectProductionBundleTexts([{name: 'legacy-automation.bundle', text: `const entry = "${legacyToken}"`}]),
+      /forbidden production surface/,
+    )
+  }
+  console.log('TERMINAL_PRODUCTION_BUNDLE_RED_LEGACY_AUTOMATION=PASS')
 
   assert.throws(
     () => inspectProductionBundleTexts([
@@ -32,4 +43,3 @@ try {
 }
 assert.equal(fs.existsSync(fixtureDirectory), false)
 console.log('TERMINAL_PRODUCTION_BUNDLE_RED_MUTATION_CLEANUP=PASS')
-

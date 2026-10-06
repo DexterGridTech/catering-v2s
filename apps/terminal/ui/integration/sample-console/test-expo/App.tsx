@@ -12,6 +12,8 @@ const managedGroupWorkspaceBaseUrl = process.env.EXPO_PUBLIC_TER_MANAGED_GROUP_W
 const managedTdsEntryOneWebSocketBaseUrl = process.env.EXPO_PUBLIC_TER_MANAGED_TDS_ENTRY_ONE_WS_URL;
 const managedTdsEntryTwoWebSocketBaseUrl = process.env.EXPO_PUBLIC_TER_MANAGED_TDS_ENTRY_TWO_WS_URL;
 const managedDeviceId = process.env.EXPO_PUBLIC_TER_MANAGED_DEVICE_ID;
+const testAutomationUrl = process.env.EXPO_PUBLIC_TER_AUTOMATION_URL;
+const testAutomationToken = process.env.EXPO_PUBLIC_TER_AUTOMATION_TOKEN;
 if (managedDeviceId !== undefined && !/^[A-Za-z0-9:._-]{1,128}$/.test(managedDeviceId)) {
   throw new Error('TEST_EXPO_MANAGED_DEVICE_ID_INVALID');
 }
@@ -87,10 +89,29 @@ const testServerSpaces = (): TransportServerConfig => {
   return Object.freeze({...defaultServerSpaces, spaces: Object.freeze(spaces)});
 };
 
+const testAutomationConfig = () => {
+  if (testAutomationUrl === undefined && testAutomationToken === undefined) return undefined;
+  if (
+    typeof testAutomationUrl !== 'string' ||
+    testAutomationUrl.length === 0 ||
+    typeof testAutomationToken !== 'string' ||
+    testAutomationToken.length === 0
+  ) {
+    throw new Error('TEST_EXPO_AUTOMATION_CONFIG_INCOMPLETE');
+  }
+  return Object.freeze({enabled: true, url: testAutomationUrl, sessionToken: testAutomationToken});
+};
+const testAutomation = testAutomationConfig();
+const testSurfaceForm = process.env.EXPO_PUBLIC_TER_AUTOMATION_SURFACE_FORM;
+if (testSurfaceForm !== undefined && testSurfaceForm !== 'laptop' && testSurfaceForm !== 'mobile') {
+  throw new Error('TEST_EXPO_TERMINAL_SURFACE_FORM_INVALID');
+}
+
 const App = createTestExpoApp({
   appName: 'sample-console',
   title: '真实业务画布',
   persistenceKey: 'sample-console-web',
+  ...(testAutomation === undefined || testSurfaceForm === undefined ? {} : {surfaceForm: testSurfaceForm}),
   webPlatformOptions: {
     protectedStorage: createProcessMemoryStateStoragePort(),
     ...(managedDeviceId === undefined
@@ -107,7 +128,12 @@ const App = createTestExpoApp({
         }),
   },
   terminalSurfaces,
-  createAssembly: input => createSampleAssembly({...input, serverSpaces: testServerSpaces()}),
+  createAssembly: input =>
+    createSampleAssembly({
+      ...input,
+      serverSpaces: testServerSpaces(),
+      ...(testAutomation === undefined ? {} : {terminalAutomation: testAutomation}),
+    }),
   getRuntimeStatus: assembly => assembly.runtime.status,
   onSurfaceModeChanged: async ({assembly}) => {
     await assembly.runtime.dispatchCommand(refreshTopologyDisplayCommand, {}, {requestId: createRequestId()});

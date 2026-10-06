@@ -14,9 +14,11 @@
     "moduleKind",
     "moduleName",
     "needToLoginStaffCommand",
-    "sampleStaffAuthAssembly"
+    "sampleStaffAuthAssembly",
+    "sampleStaffAuthTestIds"
   ],
   "publicExportMap": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./test-ids": "./src/components/sampleStaffAuthTestIds.ts"
   }
 }

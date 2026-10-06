@@ -14,6 +14,7 @@ import {
 import {useState} from 'react';
 import type {CommandDispatchResult} from '@catering-v2s/kernel-base-runtime';
 import {selectActivationStatusView} from '../selectors/selectActivationStatusView';
+import {terminalActivationTestIds} from '../foundations/terminalActivationTestIds';
 
 const readableActivation = (status: string): string =>
   status === 'active' ? '已激活' : status === 'activating' ? '激活中' : status === 'cancelling' ? '正在取消' : '未激活';
@@ -51,47 +52,52 @@ export const ActivationStatusSection = (_context: AdminSectionProps) => {
   const hostCanManage =
     instanceMode === 'MASTER' && (activation?.status === 'active' || activation?.status === 'cancelling');
   return (
-    <PrimitiveContainer testID="terminal.activation.admin.status" layout="content" appearance="admin-content" bounded>
-      <PrimitiveScrollView testID="terminal.activation.admin:scroll" contentPaddingBottom={48}>
-        <PrimitiveHeading appearance="admin-page" testID="terminal.activation.admin:title">
+    <PrimitiveContainer
+      testID={terminalActivationTestIds.adminScreen}
+      layout="content"
+      appearance="admin-content"
+      bounded
+    >
+      <PrimitiveScrollView testID={terminalActivationTestIds.adminScroll} contentPaddingBottom={48}>
+        <PrimitiveHeading appearance="admin-page" testID={terminalActivationTestIds.adminTitle}>
           设备激活状态
         </PrimitiveHeading>
-        <PrimitiveCard appearance="admin" testID="terminal.activation.admin:card">
-          <PrimitiveStatus testID="terminal.activation.admin:state">
+        <PrimitiveCard appearance="admin" testID={terminalActivationTestIds.adminCard}>
+          <PrimitiveStatus testID={terminalActivationTestIds.adminState}>
             激活状态：{activation === null ? '主机状态待同步' : readableActivation(activation.status)}
           </PrimitiveStatus>
           {hostStatus !== null && hostStatus !== undefined && !hostStatus.currentPeerValue ? (
-            <PrimitiveStatus testID="terminal.activation.admin:projection-status" tone="warn">
+            <PrimitiveStatus testID={terminalActivationTestIds.adminProjectionStatus} tone="warn">
               上次主机状态（待同步）
             </PrimitiveStatus>
           ) : null}
-          <PrimitiveText testID="terminal.activation.admin:terminal">
+          <PrimitiveText testID={terminalActivationTestIds.adminTerminal}>
             终端：
             {activation?.terminalRef ?? (hostStatus === null || hostStatus === undefined ? '等待主机状态' : '暂无')}
           </PrimitiveText>
-          <PrimitiveText testID="terminal.activation.admin:store">
+          <PrimitiveText testID={terminalActivationTestIds.adminStore}>
             门店：{activation?.storeRef ?? (hostStatus === null || hostStatus === undefined ? '等待主机状态' : '暂无')}
           </PrimitiveText>
-          <PrimitiveText testID="terminal.activation.admin:workspace">
+          <PrimitiveText testID={terminalActivationTestIds.adminWorkspace}>
             集团空间：
             {activation?.groupWorkspaceKey ??
               (hostStatus === null || hostStatus === undefined ? '等待主机状态' : '暂无')}
           </PrimitiveText>
-          <PrimitiveText testID="terminal.activation.admin:connection">
+          <PrimitiveText testID={terminalActivationTestIds.adminConnection}>
             连接状态：{connection === null ? '主机状态待同步' : readableConnection(connection.status)}
           </PrimitiveText>
-          <PrimitiveText testID="terminal.activation.admin:latency">
+          <PrimitiveText testID={terminalActivationTestIds.adminLatency}>
             连接延时：{hostStatus?.lastRttMs ?? '等待主机状态'}
             {hostStatus === null || hostStatus === undefined ? '' : ' ms'}
           </PrimitiveText>
           {connection?.lastCloseReason === null || connection?.lastCloseReason === undefined ? null : (
-            <PrimitiveStatus testID="terminal.activation.admin:last-error" tone="warn">
+            <PrimitiveStatus testID={terminalActivationTestIds.adminLastError} tone="warn">
               最近连接结果：{connection.lastCloseReason}
             </PrimitiveStatus>
           )}
           {hostCanManage ? (
             <PrimitiveButton
-              testID="terminal.activation.admin.cancel"
+              testID={terminalActivationTestIds.adminCancel}
               appearance="admin-secondary"
               disabled={tracked.requestInFlight || activation?.status === 'cancelling'}
               onPress={() => {
@@ -115,7 +121,7 @@ export const ActivationStatusSection = (_context: AdminSectionProps) => {
             </PrimitiveButton>
           ) : null}
           {message.length === 0 ? null : (
-            <PrimitiveStatus testID="terminal.activation.admin.result">{message}</PrimitiveStatus>
+            <PrimitiveStatus testID={terminalActivationTestIds.adminResult}>{message}</PrimitiveStatus>
           )}
         </PrimitiveCard>
       </PrimitiveScrollView>

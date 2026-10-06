@@ -1,3 +1,5 @@
+import {defineStateSelector} from '@catering-v2s/kernel-base-runtime';
+import {moduleName} from '../moduleName';
 import type {StateRoot} from '@catering-v2s/kernel-base-state';
 import {terminalDataClientSliceName} from '../features/slices/terminalDataClient';
 import type {
@@ -14,7 +16,7 @@ const readState = (state: StateRoot): TerminalClientState => {
   return slice as TerminalClientState;
 };
 
-export const selectActivationState = (state: StateRoot): TerminalActivationView => {
+const selectActivationStateImplementation = (state: StateRoot): TerminalActivationView => {
   const current = readState(state);
   const credential = current.credential;
   const status =
@@ -36,9 +38,9 @@ export const selectActivationState = (state: StateRoot): TerminalActivationView 
   });
 };
 
-export const selectConnectionState = (state: StateRoot): TerminalConnectionView => readState(state).connection;
+const selectConnectionStateImplementation = (state: StateRoot): TerminalConnectionView => readState(state).connection;
 
-export const selectConnectionLatency = (
+const selectConnectionLatencyImplementation = (
   state: StateRoot,
   now: number = Date.now(),
 ): Readonly<{lastRttMs: number; samples: readonly TerminalLatencySample[]}> => {
@@ -51,5 +53,22 @@ export const selectConnectionLatency = (
   return Object.freeze({lastRttMs: current.lastRttMs, samples: Object.freeze(samples)});
 };
 
-export const selectTerminalTopicSubscriptions = (state: StateRoot): readonly TerminalTopicSubscription[] =>
+const selectTerminalTopicSubscriptionsImplementation = (state: StateRoot): readonly TerminalTopicSubscription[] =>
   Object.freeze(Object.values(readState(state).topicSubscriptions));
+
+export const selectActivationState = defineStateSelector(moduleName, 'selectActivationState', {
+  parameters: [],
+  selector: selectActivationStateImplementation,
+});
+export const selectConnectionState = defineStateSelector(moduleName, 'selectConnectionState', {
+  parameters: [],
+  selector: selectConnectionStateImplementation,
+});
+export const selectConnectionLatency = defineStateSelector(moduleName, 'selectConnectionLatency', {
+  parameters: [{kind: 'number', optional: true}],
+  selector: selectConnectionLatencyImplementation,
+});
+export const selectTerminalTopicSubscriptions = defineStateSelector(moduleName, 'selectTerminalTopicSubscriptions', {
+  parameters: [],
+  selector: selectTerminalTopicSubscriptionsImplementation,
+});

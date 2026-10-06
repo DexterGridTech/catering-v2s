@@ -1,3 +1,4 @@
+import {testIdProps} from '../foundations/testId';
 import {RnrImage} from '../foundations/nativeSlots';
 import {baseTokens} from '../theme/tokens';
 import {assertTestID} from '../foundations/assertTestID';
@@ -14,7 +15,7 @@ export const PrimitiveImage = ({
   if (source === undefined) return null;
   return (
     <RnrImage
-      testID={assertTestID(testID)}
+      {...testIdProps(assertTestID(testID))}
       accessible={accessibilityLabel !== undefined}
       accessibilityLabel={accessibilityLabel}
       source={source}

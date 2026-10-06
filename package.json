@@ -16,7 +16,8 @@
     "apps/terminal/ui/integration/*",
     "apps/terminal/adapter/android/*",
     "apps/terminal/application/base/*",
-    "apps/terminal/application/android/*"
+    "apps/terminal/application/android/*",
+    "tools/terminal-automation"
   ],
   "devDependencies": {
     "ajv": "^8.20.0",

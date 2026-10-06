@@ -12,6 +12,7 @@ import {
   validateHydratedServerConfigCommand,
 } from '../features/commands';
 import {defaultServiceNames, validateServerConfigDefaults} from '../foundations/validateServerConfigDefaults';
+import {resolveServerNetworkSnapshot, selectServerConfiguration} from '../selectors/selectServerConfiguration';
 
 /** Creates the server-configuration owner with immutable assembly defaults. */
 export const createServerConfigModule = (defaults: TransportServerConfig): RuntimeModule => {
@@ -32,6 +33,7 @@ export const createServerConfigModule = (defaults: TransportServerConfig): Runti
     dependencies: runtimeModuleDependencyNames.map(name => ({moduleName: name})),
     commands: commandDefinitions.map(command => ({name: command.commandName, visibility: command.visibility})),
     commandDefinitions,
+    selectorDefinitions: [selectServerConfiguration, resolveServerNetworkSnapshot],
     actors: [{name: actor.actorName}],
     actorDefinitions: [actor],
     slices: [{name: slice.registration.name, persistIntent: 'owner-only' as const, resetIntent: 'retain' as const}],

@@ -61,4 +61,5 @@ export interface Runtime {
     payload: TPayload,
     options?: CommandDispatchOptions,
   ): Promise<CommandDispatchResult>;
+  evaluateSelector(name: string, argsTuple: readonly unknown[]): unknown;
 }

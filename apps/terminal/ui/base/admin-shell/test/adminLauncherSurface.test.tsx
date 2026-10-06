@@ -2,6 +2,7 @@ import {createElement, type ComponentProps} from 'react';
 import {Text} from 'react-native';
 import {render} from '@testing-library/react-native';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {AutomationNodeProvider, AutomationSurfaceProvider} from '@catering-v2s/ui-base-primitives';
 
 const harness = vi.hoisted(() => ({
   dispatch: vi.fn(),
@@ -74,5 +75,55 @@ describe('AdminLauncher surface locality', () => {
         data: expect.objectContaining({handlerAttached: true, isHostPrimaryDisplay: false}),
       }),
     );
+  });
+
+  it('registers the measured launcher view in its current automation surface', async () => {
+    const sink = {
+      register: vi.fn(),
+      update: vi.fn(),
+      unregister: vi.fn(),
+      invalidateSurface: vi.fn(),
+      interaction: vi.fn(),
+    };
+    const renderer = await render(
+      createElement(
+        AutomationNodeProvider,
+        {sink},
+        createElement(
+          AutomationSurfaceProvider,
+          {scope: {surface: 'PRIMARY', displayIndex: 2, layoutRevision: 7}},
+          createElement(AdminLauncher, {
+            canvas: {width: 1280, height: 720},
+            children: createElement(Text, null, 'business content'),
+          }),
+        ),
+      ),
+    );
+
+    const launcher = renderer.getByTestId(adminTestIds.launcher);
+    expect(sink.register).toHaveBeenCalledWith(
+      expect.objectContaining({
+        testID: adminTestIds.launcher,
+        role: 'container',
+        surface: {surface: 'PRIMARY', displayIndex: 2, layoutRevision: 7},
+      }),
+    );
+    const touchEvent = {nativeEvent: {pageX: 20, pageY: 30, locationX: 4, locationY: 5}};
+    launcher.props.onTouchStart(touchEvent);
+    launcher.props.onTouchEnd(touchEvent);
+    expect(sink.interaction).toHaveBeenNthCalledWith(1, expect.any(String), {
+      phase: 'press-in',
+      pageX: 20,
+      pageY: 30,
+      locationX: 4,
+      locationY: 5,
+    });
+    expect(sink.interaction).toHaveBeenNthCalledWith(2, expect.any(String), {
+      phase: 'press-out',
+      pageX: 20,
+      pageY: 30,
+      locationX: 4,
+      locationY: 5,
+    });
   });
 });

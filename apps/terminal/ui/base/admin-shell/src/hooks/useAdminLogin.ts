@@ -1,6 +1,7 @@
 import {useEffect, useRef, useState} from 'react';
 import {useInputController, useInputField, useInputKeyboardState} from '@catering-v2s/ui-base-input';
 import type {DebugMode, RuntimeDeviceIdentity} from '@catering-v2s/ui-base-render';
+import {useRenderLogger} from '@catering-v2s/ui-base-render';
 import type {PrimitivePinInputInteractionEvent} from '@catering-v2s/ui-base-primitives';
 import {ADMIN_CONSOLE_FOCUS_SCOPE_ID} from '../foundations/adminIdentity';
 import {adminTestIds} from '../foundations/adminTestIds';
@@ -27,6 +28,7 @@ export const useAdminLogin = ({
 }: AdminLoginProps) => {
   const inputController = useInputController();
   const keyboardState = useInputKeyboardState();
+  const logger = useRenderLogger();
   const didAutoFocus = useRef(false);
   const field = useInputField({
     fieldId: PASSWORD_FIELD_ID,
@@ -59,14 +61,17 @@ export const useAdminLogin = ({
     const focusState = `${keyboardState.activeFieldId === PASSWORD_FIELD_ID}:${keyboardState.owner}:${keyboardState.capacity}`;
     if (lastLoggedFocusState.current === focusState) return;
     lastLoggedFocusState.current = focusState;
-    if (__DEV__) {
-      console.info('TER_ADMIN_AUTH_TRACE focus-state', {
+    logger.info({
+      category: 'admin.auth',
+      event: 'admin.password-focus-state',
+      message: 'Admin password field focus state changed',
+      data: {
         passwordFieldActive: keyboardState.activeFieldId === PASSWORD_FIELD_ID,
         owner: keyboardState.owner,
         capacity: keyboardState.capacity,
-      });
-    }
-  }, [keyboardState.activeFieldId, keyboardState.capacity, keyboardState.owner]);
+      },
+    });
+  }, [keyboardState.activeFieldId, keyboardState.capacity, keyboardState.owner, logger]);
 
   useEffect(() => {
     if (keyboardState.activeFieldId === PASSWORD_FIELD_ID) {
@@ -109,6 +114,12 @@ export const useAdminLogin = ({
       return;
     }
     const accepted = verifyAdminPassword({identity, attempt: password, localDate: submittedDate});
+    logger.info({
+      category: 'admin.auth',
+      event: accepted ? 'admin.password-authenticated' : 'admin.password-rejected',
+      message: accepted ? 'Admin password authentication succeeded' : 'Admin password authentication failed',
+      data: {attemptLength: password.length, identityAvailable: identity.available},
+    });
     if (__DEV__ && debugPassword !== null) {
       const differingDigits = [...password].reduce(
         (count, digit, index) => count + Number(digit !== debugPassword[index]),
@@ -131,6 +142,12 @@ export const useAdminLogin = ({
   };
 
   const focusPassword = () => {
+    logger.info({
+      category: 'admin.auth',
+      event: 'admin.password-focus-requested',
+      message: 'Admin password input press requested focus',
+      data: {fieldId: PASSWORD_FIELD_ID, keyboardCapacity: keyboardState.capacity},
+    });
     field.focus();
   };
 

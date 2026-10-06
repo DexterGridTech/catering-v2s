@@ -2,7 +2,7 @@ import {useEffect} from 'react';
 import {act, render, type RenderResult} from '@testing-library/react-native';
 import {StyleSheet, Text} from 'react-native';
 import {describe, expect, it, vi} from 'vitest';
-import {createTestExpoApp, type SurfaceForm, type TestExpoAssembly} from '../src';
+import {createTestExpoApp, testExpoTestIds, type SurfaceForm, type TestExpoAssembly} from '../src';
 
 type Lifecycle = Record<'PRIMARY' | 'SECONDARY', {mounts: number; unmounts: number}>;
 type LayoutHandler = (event: {nativeEvent: {layout: {width: number; height: number}}}) => void;
@@ -77,35 +77,35 @@ describe('ui.base.dev-host surface lifecycle', () => {
     });
 
     const mountedRenderer = await render(<App />);
-    await waitFor(mountedRenderer, () => mountedRenderer.queryAllByTestId('dev-host-test:test-expo:canvas').length > 0);
-    const canvas = mountedRenderer.getByTestId('dev-host-test:test-expo:canvas');
-    const previewViewport = mountedRenderer.getByTestId('dev-host-test:test-expo:canvas:preview-viewport');
+    await waitFor(mountedRenderer, () => mountedRenderer.queryAllByTestId(testExpoTestIds.canvas).length > 0);
+    const canvas = mountedRenderer.getByTestId(testExpoTestIds.canvas);
+    const previewViewport = mountedRenderer.getByTestId(testExpoTestIds.previewViewport);
     const previewViewportStyles = (
       Array.isArray(previewViewport.props.style) ? previewViewport.props.style : [previewViewport.props.style]
     ).filter((value): value is StyleRecord => typeof value === 'object' && value !== null);
     expect(previewViewportStyles.some(style => style.margin === 10 && style.borderWidth === undefined)).toBe(true);
-    expect(mountedRenderer.queryAllByTestId('dev-host-test:test-expo:canvas:measure-pending')).toHaveLength(1);
-    expect(mountedRenderer.queryAllByTestId('dev-host-test:test-expo:surface:PRIMARY')).toHaveLength(0);
+    expect(mountedRenderer.queryAllByTestId(testExpoTestIds.measurePending)).toHaveLength(1);
+    expect(mountedRenderer.queryAllByTestId(testExpoTestIds.surface('PRIMARY'))).toHaveLength(0);
     await act(async () => {
       (canvas.props.onLayout as LayoutHandler)({nativeEvent: {layout: {width: 1300, height: 96}}});
       (previewViewport.props.onLayout as LayoutHandler)({nativeEvent: {layout: {width: 1276, height: 76}}});
     });
     await waitFor(
       mountedRenderer,
-      () => mountedRenderer.queryAllByTestId('dev-host-test:test-expo:surface:PRIMARY').length > 0,
+      () => mountedRenderer.queryAllByTestId(testExpoTestIds.surface('PRIMARY')).length > 0,
     );
-    const toolbarActions = mountedRenderer.getByTestId('dev-host-test:test-expo:toolbar-actions');
+    const toolbarActions = mountedRenderer.getByTestId(testExpoTestIds.toolbarActions);
     expect(StyleSheet.flatten(toolbarActions.props.style)).toEqual(
       expect.objectContaining({width: '100%', justifyContent: 'center'}),
     );
-    const primarySurface = mountedRenderer.getByTestId('dev-host-test:test-expo:surface:PRIMARY');
+    const primarySurface = mountedRenderer.getByTestId(testExpoTestIds.surface('PRIMARY'));
     const primaryStyles = (
       Array.isArray(primarySurface.props.style) ? primarySurface.props.style : [primarySurface.props.style]
     ).filter((value): value is StyleRecord => typeof value === 'object' && value !== null);
     expect(primaryStyles.some(style => style.width === 1920 && style.height === 1080)).toBe(true);
     expect(primaryStyles.some(style => style.flexShrink === 0)).toBe(true);
     expect(primaryStyles.some(style => style.aspectRatio !== undefined)).toBe(false);
-    const logicalStage = mountedRenderer.getByTestId('dev-host-test:test-expo:canvas:logical-stage');
+    const logicalStage = mountedRenderer.getByTestId(testExpoTestIds.logicalStage);
     const logicalStyles = (
       Array.isArray(logicalStage.props.style) ? logicalStage.props.style : [logicalStage.props.style]
     ).filter((value): value is StyleRecord => typeof value === 'object' && value !== null);
@@ -115,19 +115,19 @@ describe('ui.base.dev-host surface lifecycle', () => {
         style => style.width === 1920 && style.height === 1080 + 0 && style.transform?.[0]?.scale === scale,
       ),
     ).toBe(true);
-    const scaledStage = mountedRenderer.getByTestId('dev-host-test:test-expo:canvas:scaled-stage');
+    const scaledStage = mountedRenderer.getByTestId(testExpoTestIds.scaledStage);
     const scaledStyles = (
       Array.isArray(scaledStage.props.style) ? scaledStage.props.style : [scaledStage.props.style]
     ).filter((value): value is StyleRecord => typeof value === 'object' && value !== null);
     expect(scaledStyles.some(style => style.width === 1276 && style.height === 1276 * (1080 / 1920))).toBe(true);
-    const primaryDecoration = mountedRenderer.getByTestId('dev-host-test:test-expo:surface:PRIMARY:decoration');
+    const primaryDecoration = mountedRenderer.getByTestId(testExpoTestIds.surfaceDecoration('PRIMARY'));
     const primaryDecorationStyles = (
       Array.isArray(primaryDecoration.props.style) ? primaryDecoration.props.style : [primaryDecoration.props.style]
     ).filter((value): value is StyleRecord => typeof value === 'object' && value !== null);
     expect(primaryDecorationStyles.some(style => style.position === 'absolute' && style.borderWidth === 1)).toBe(true);
     expect(primaryStyles.some(style => style.borderWidth !== undefined)).toBe(false);
     expect(primaryStyles.some(style => style.position === 'relative')).toBe(true);
-    const surfaceWidthSlider = mountedRenderer.getByTestId('dev-host-test:test-expo:surface-width-slider');
+    const surfaceWidthSlider = mountedRenderer.getByTestId(testExpoTestIds.surfaceWidthSlider);
     expect(surfaceWidthSlider.props).toMatchObject({
       accessibilityRole: 'adjustable',
       accessibilityValue: {min: 30, max: 100, now: 100, text: '100%'},
@@ -136,12 +136,12 @@ describe('ui.base.dev-host surface lifecycle', () => {
     await act(async () => {
       changeSurfaceWidth({nativeEvent: {locationX: 0}});
     });
-    const narrowStage = mountedRenderer.getByTestId('dev-host-test:test-expo:canvas:scaled-stage');
+    const narrowStage = mountedRenderer.getByTestId(testExpoTestIds.scaledStage);
     const narrowStageStyles = (
       Array.isArray(narrowStage.props.style) ? narrowStage.props.style : [narrowStage.props.style]
     ).filter((value): value is StyleRecord => typeof value === 'object' && value !== null);
     expect(narrowStageStyles.some(style => style.width === 1276 * 0.3)).toBe(true);
-    const narrowedLogicalStage = mountedRenderer.getByTestId('dev-host-test:test-expo:canvas:logical-stage');
+    const narrowedLogicalStage = mountedRenderer.getByTestId(testExpoTestIds.logicalStage);
     const narrowedLogicalStyles = (
       Array.isArray(narrowedLogicalStage.props.style)
         ? narrowedLogicalStage.props.style
@@ -152,42 +152,40 @@ describe('ui.base.dev-host surface lifecycle', () => {
         style => style.width === 1920 && style.height === 1080 && style.transform?.[0]?.scale === (1276 * 0.3) / 1920,
       ),
     ).toBe(true);
-    expect(mountedRenderer.getByTestId('dev-host-test:test-expo:surface:PRIMARY').props.style).toEqual(
+    expect(mountedRenderer.getByTestId(testExpoTestIds.surface('PRIMARY')).props.style).toEqual(
       expect.arrayContaining([expect.objectContaining({width: 1920, height: 1080})]),
     );
     await act(async () => {
       changeSurfaceWidth({nativeEvent: {locationX: 132}});
     });
-    const surfaceModeRadio = mountedRenderer.getByTestId('dev-host-test:test-expo:surface-toggle');
+    const surfaceModeRadio = mountedRenderer.getByTestId(testExpoTestIds.surfaceToggle);
     expect(surfaceModeRadio.props.accessibilityLabel).toBe('屏幕模式');
-    const singleModeRadio = mountedRenderer.getByTestId('dev-host-test:test-expo:surface-mode:single');
-    const dualModeRadio = mountedRenderer.getByTestId('dev-host-test:test-expo:surface-mode:dual');
+    const singleModeRadio = mountedRenderer.getByTestId(testExpoTestIds.surfaceMode('single'));
+    const dualModeRadio = mountedRenderer.getByTestId(testExpoTestIds.surfaceMode('dual'));
     expect(singleModeRadio.props.accessibilityRole).toBe('radio');
     expect(singleModeRadio.props.accessibilityState).toEqual({selected: true});
     expect(singleModeRadio.props['aria-checked']).toBe(true);
     expect(dualModeRadio.props.accessibilityRole).toBe('radio');
     expect(dualModeRadio.props.accessibilityState).toEqual({selected: false});
     expect(dualModeRadio.props['aria-checked']).toBe(false);
-    expect(mountedRenderer.queryAllByTestId('dev-host-test:test-expo:surface-form:mobile')).toHaveLength(0);
+    expect(mountedRenderer.queryAllByTestId(testExpoTestIds.surfaceForm('mobile'))).toHaveLength(0);
     await act(async () => {
       (dualModeRadio.props.onPress as () => void)();
       await nextTurn();
     });
     await waitFor(
       mountedRenderer,
-      () => mountedRenderer.queryAllByTestId('dev-host-test:test-expo:surface:SECONDARY').length > 0,
+      () => mountedRenderer.queryAllByTestId(testExpoTestIds.surface('SECONDARY')).length > 0,
     );
-    expect(mountedRenderer.getByTestId('dev-host-test:test-expo:surface-mode:single').props.accessibilityState).toEqual(
-      {selected: false},
-    );
-    expect(mountedRenderer.getByTestId('dev-host-test:test-expo:surface-mode:single').props['aria-checked']).toBe(
-      false,
-    );
-    expect(mountedRenderer.getByTestId('dev-host-test:test-expo:surface-mode:dual').props.accessibilityState).toEqual({
+    expect(mountedRenderer.getByTestId(testExpoTestIds.surfaceMode('single')).props.accessibilityState).toEqual({
+      selected: false,
+    });
+    expect(mountedRenderer.getByTestId(testExpoTestIds.surfaceMode('single')).props['aria-checked']).toBe(false);
+    expect(mountedRenderer.getByTestId(testExpoTestIds.surfaceMode('dual')).props.accessibilityState).toEqual({
       selected: true,
     });
-    expect(mountedRenderer.getByTestId('dev-host-test:test-expo:surface-mode:dual').props['aria-checked']).toBe(true);
-    const secondarySurface = mountedRenderer.getByTestId('dev-host-test:test-expo:surface:SECONDARY');
+    expect(mountedRenderer.getByTestId(testExpoTestIds.surfaceMode('dual')).props['aria-checked']).toBe(true);
+    const secondarySurface = mountedRenderer.getByTestId(testExpoTestIds.surface('SECONDARY'));
     const secondaryStyles = (
       Array.isArray(secondarySurface.props.style) ? secondarySurface.props.style : [secondarySurface.props.style]
     ).filter((value): value is Readonly<Record<string, unknown>> => typeof value === 'object' && value !== null);
@@ -198,7 +196,7 @@ describe('ui.base.dev-host surface lifecycle', () => {
     await act(async () => {
       (previewViewport.props.onLayout as LayoutHandler)({nativeEvent: {layout: {width: 936, height: 76}}});
     });
-    const resizedLogicalStage = mountedRenderer.getByTestId('dev-host-test:test-expo:canvas:logical-stage');
+    const resizedLogicalStage = mountedRenderer.getByTestId(testExpoTestIds.logicalStage);
     const resizedStyles = (
       Array.isArray(resizedLogicalStage.props.style)
         ? resizedLogicalStage.props.style
@@ -251,23 +249,20 @@ describe('ui.base.dev-host surface lifecycle', () => {
     });
 
     const mountedRenderer = await render(<App />);
-    await waitFor(
-      mountedRenderer,
-      () => mountedRenderer.queryAllByTestId('dev-host-form-test:test-expo:canvas').length > 0,
-    );
-    const canvas = mountedRenderer.getByTestId('dev-host-form-test:test-expo:canvas');
-    const previewViewport = mountedRenderer.getByTestId('dev-host-form-test:test-expo:canvas:preview-viewport');
+    await waitFor(mountedRenderer, () => mountedRenderer.queryAllByTestId(testExpoTestIds.canvas).length > 0);
+    const canvas = mountedRenderer.getByTestId(testExpoTestIds.canvas);
+    const previewViewport = mountedRenderer.getByTestId(testExpoTestIds.previewViewport);
     await act(async () => {
       (canvas.props.onLayout as LayoutHandler)({nativeEvent: {layout: {width: 1300, height: 96}}});
       (previewViewport.props.onLayout as LayoutHandler)({nativeEvent: {layout: {width: 1276, height: 76}}});
     });
     await waitFor(
       mountedRenderer,
-      () => mountedRenderer.queryAllByTestId('dev-host-form-test:test-expo:surface:PRIMARY').length > 0,
+      () => mountedRenderer.queryAllByTestId(testExpoTestIds.surface('PRIMARY')).length > 0,
     );
 
-    const mobileButton = mountedRenderer.getByTestId('dev-host-form-test:test-expo:surface-form:mobile');
-    const laptopButton = mountedRenderer.getByTestId('dev-host-form-test:test-expo:surface-form:laptop');
+    const mobileButton = mountedRenderer.getByTestId(testExpoTestIds.surfaceForm('mobile'));
+    const laptopButton = mountedRenderer.getByTestId(testExpoTestIds.surfaceForm('laptop'));
     expect(laptopButton.props.accessibilityState).toEqual({selected: true});
     expect(mobileButton.props.accessibilityState).toEqual({selected: false});
     expect(createdForms).toEqual(['laptop']);
@@ -281,13 +276,13 @@ describe('ui.base.dev-host surface lifecycle', () => {
       () =>
         createdForms.length === 2 &&
         (
-          mountedRenderer.getByTestId('dev-host-form-test:test-expo:surface-form:mobile').props as {
+          mountedRenderer.getByTestId(testExpoTestIds.surfaceForm('mobile')).props as {
             accessibilityState?: {selected?: boolean};
           }
         ).accessibilityState?.selected === true,
     );
-    const mobileCanvas = mountedRenderer.getByTestId('dev-host-form-test:test-expo:canvas');
-    const mobilePreviewViewport = mountedRenderer.getByTestId('dev-host-form-test:test-expo:canvas:preview-viewport');
+    const mobileCanvas = mountedRenderer.getByTestId(testExpoTestIds.canvas);
+    const mobilePreviewViewport = mountedRenderer.getByTestId(testExpoTestIds.previewViewport);
     await act(async () => {
       (mobileCanvas.props.onLayout as LayoutHandler)({nativeEvent: {layout: {width: 1300, height: 96}}});
       (mobilePreviewViewport.props.onLayout as LayoutHandler)({
@@ -296,15 +291,15 @@ describe('ui.base.dev-host surface lifecycle', () => {
     });
     await waitFor(
       mountedRenderer,
-      () => mountedRenderer.queryAllByTestId('dev-host-form-test:test-expo:surface:PRIMARY').length > 0,
+      () => mountedRenderer.queryAllByTestId(testExpoTestIds.surface('PRIMARY')).length > 0,
     );
-    const mobilePrimary = mountedRenderer.getByTestId('dev-host-form-test:test-expo:surface:PRIMARY');
+    const mobilePrimary = mountedRenderer.getByTestId(testExpoTestIds.surface('PRIMARY'));
     const mobilePrimaryStyles = (
       Array.isArray(mobilePrimary.props.style) ? mobilePrimary.props.style : [mobilePrimary.props.style]
     ).filter((value): value is StyleRecord => typeof value === 'object' && value !== null);
     expect(mobilePrimaryStyles.some(style => style.width === 360 && style.height === 800)).toBe(true);
-    expect(mountedRenderer.queryAllByTestId('dev-host-form-test:test-expo:surface:SECONDARY')).toHaveLength(0);
-    expect(mountedRenderer.queryAllByTestId('dev-host-form-test:test-expo:surface-toggle')).toHaveLength(0);
+    expect(mountedRenderer.queryAllByTestId(testExpoTestIds.surface('SECONDARY'))).toHaveLength(0);
+    expect(mountedRenderer.queryAllByTestId(testExpoTestIds.surfaceToggle)).toHaveLength(0);
     expect(lifecycle.PRIMARY).toEqual({mounts: 2, unmounts: 1});
     expect(lifecycle.SECONDARY).toEqual({mounts: 0, unmounts: 0});
 

@@ -21,6 +21,9 @@ import {createResetRuntimeAfterSystemFailureActor} from '../features/actors/rese
 import {createHelloWorldActor} from '../features/actors/helloWorldActor';
 import {resetRuntimeAfterSystemFailureCommand} from '../features/commands/resetRuntimeAfterSystemFailure';
 import {defaultRequestMaxResidenceMs, defaultRequestRetentionMs, type RuntimeLimits} from '../types/limits';
+import {selectRequestExecutionView} from '../selectors/selectRequestExecutionView';
+import {selectRequestExecutionCommands, selectRequestExecutionViews} from '../selectors/selectRequestExecutionViews';
+import {selectRuntimeInstanceMode} from '../selectors/selectRuntimeInstanceMode';
 
 export const createInternalRuntimeModule = (
   onRoleChange?: (signal: RuntimeRoleChangeSignal) => void,
@@ -54,6 +57,12 @@ export const createInternalRuntimeModule = (
       runtimeInstanceModeChangedCommand,
       resetRuntimeAfterSystemFailureCommand,
       helloWorldCommand,
+    ],
+    selectorDefinitions: [
+      selectRequestExecutionView,
+      selectRequestExecutionViews,
+      selectRequestExecutionCommands,
+      selectRuntimeInstanceMode,
     ],
     actors: [
       {name: 'instance-mode'},

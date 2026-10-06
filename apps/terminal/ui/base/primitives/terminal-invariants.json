@@ -7,6 +7,12 @@
     "clean": {"kind": "ABSENT"}
   },
   "publicExports": [
+    "AutomationNodeDescription",
+    "AutomationNodeProvider",
+    "AutomationNodeProviderProps",
+    "AutomationNodeSink",
+    "AutomationSurfaceProvider",
+    "AutomationSurfaceScope",
     "LIST_MAX_MOUNTED",
     "LIST_OVERSCAN_AFTER",
     "LIST_OVERSCAN_BEFORE",
@@ -118,13 +124,19 @@
     "PrimitiveTextareaProps",
     "PrimitiveText",
     "PrimitiveTextProps",
+    "TestId",
     "PrimitiveTone",
+    "UseAutomationNodeInput",
     "dependencyModuleNames",
     "devDependencyModuleNames",
-    "moduleName"
+    "createTestId",
+    "moduleName",
+    "noAutomationNodeSink",
+    "useAutomationNode"
   ],
   "publicExportMap": {
     ".": "./src/index.ts",
+    "./test-id": "./src/foundations/testId.ts",
     "./config/semantic-color-keys": "./config/semantic-color-keys.cjs"
   }
 }

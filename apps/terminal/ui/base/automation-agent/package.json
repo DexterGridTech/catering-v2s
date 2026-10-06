@@ -1,0 +1,26 @@
+{
+  "name": "@catering-v2s/ui-base-automation-agent",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./protocol": "./src/foundations/protocol/index.ts"
+  },
+  "scripts": {
+    "lint": "node ../../../../../tools/terminal-shared/run-owned-lint.mjs",
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "test": "node ../../../../../tools/terminal-shared/run-owned-tests.mjs"
+  },
+  "dependencies": {
+    "@catering-v2s/kernel-base-contracts": "workspace:*",
+    "@catering-v2s/kernel-base-runtime": "workspace:*",
+    "@catering-v2s/ui-base-primitives": "workspace:*",
+    "dequal": "^2.0.3",
+    "rxjs": "7.8.2",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.3",
+    "vitest": "4.1.10"
+  }
+}

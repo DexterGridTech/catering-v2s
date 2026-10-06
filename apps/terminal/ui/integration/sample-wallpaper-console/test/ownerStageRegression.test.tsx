@@ -5,6 +5,7 @@ import {createProcessMemoryStateStoragePort} from '@catering-v2s/kernel-base-pla
 import {selectScreen} from '@catering-v2s/kernel-base-ui-state';
 import {releaseRuntimeForTestAsync} from '@catering-v2s/kernel-base-runtime/testing';
 import {selectSessionState, loginCommand, sessionSliceName} from '@catering-v2s/kernel-feature-sample-staff-session';
+import {sampleStaffAuthTestIds} from '@catering-v2s/ui-feature-sample-staff-auth';
 import {activateTerminalCommand} from '@catering-v2s/kernel-base-terminal-data-client';
 import {terminalDataClientActions} from '../../../../../terminal/kernel/base/terminal-data-client/src/features/slices/terminalDataClient';
 import {createSurfaceForDisplayIndex, createSampleWallpaperConsoleAssembly} from '../src';
@@ -26,9 +27,13 @@ vi.mock('react-native', async importOriginal => {
   return withNativeTestHosts(actual, reactRuntime);
 });
 
-vi.mock('expo-crypto', () => ({
-  getRandomBytesAsync: vi.fn(async (length: number) => new Uint8Array(length)),
-}));
+vi.mock('expo-crypto', () => {
+  let sequence = 0;
+  return {
+    getRandomBytesAsync: vi.fn(async (length: number) => new Uint8Array(length)),
+    randomUUID: vi.fn(() => `00000000-0000-4000-8000-${String(++sequence).padStart(12, '0')}`),
+  };
+});
 
 const DEVICE_INFO = Object.freeze({
   deviceId: 'DEVICE-WALLPAPER-STAGE-REGRESSION',
@@ -173,14 +178,14 @@ describe('sample-wallpaper-console integration owner-stage regressions', () => {
         return hostName === 'View' ? {} : undefined;
       });
       renderer = await render(createSurfaceForDisplayIndex(assembly, 0));
-      fireEvent.changeText(renderer.getByTestId('sample.auth.login:operator-name'), 'A001 pending');
+      fireEvent.changeText(renderer.getByTestId(sampleStaffAuthTestIds.operatorName), 'A001 pending');
 
       await act(async () => {
         assembly.runtime.getStore().dispatch(terminalDataClientActions.recordRtt({rttMs: 47, observedAt: Date.now()}));
       });
 
       expect(selectScreen(assembly.runtime.getState(), 'PRIMARY', 'main')?.partKey).toBe('sample.auth.login');
-      expect(renderer.getByTestId('sample.auth.login:operator-name').props.value).toBe('A001 pending');
+      expect(renderer.getByTestId(sampleStaffAuthTestIds.operatorName).props.value).toBe('A001 pending');
     } finally {
       renderer?.unmount();
       await releaseRuntimeForTestAsync(assembly.runtime);

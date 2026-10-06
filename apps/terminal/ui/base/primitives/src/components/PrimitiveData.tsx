@@ -2,6 +2,7 @@ import {useMemo, useState} from 'react';
 import {RnrPressable, RnrText, RnrView, RnrVirtualizedList} from '../foundations/nativeSlots';
 import {baseTokens} from '../theme/tokens';
 import {assertTestID} from '../foundations/assertTestID';
+import {deriveTestId, testIdProps} from '../foundations/testId';
 import {toneClassName, toneForegroundClassName} from '../foundations/toneClassName';
 import type {
   PrimitiveBadgeProps,
@@ -21,7 +22,7 @@ export const LIST_MAX_MOUNTED = 24 as const;
 
 export const PrimitiveKeyValueRow = ({testID, label, value, appearance = 'default'}: PrimitiveKeyValueRowProps) => (
   <RnrView
-    testID={assertTestID(testID)}
+    {...testIdProps(assertTestID(testID))}
     className={appearance === 'admin' ? baseTokens.adminDataRow : baseTokens.dataRow}
   >
     <RnrText className={appearance === 'admin' ? baseTokens.adminDataLabel : baseTokens.dataLabel}>{label}</RnrText>
@@ -37,7 +38,7 @@ export const PrimitiveStatusRow = ({
   tone = 'neutral',
 }: PrimitiveStatusRowProps) => (
   <RnrView
-    testID={assertTestID(testID)}
+    {...testIdProps(assertTestID(testID))}
     className={appearance === 'admin' ? baseTokens.adminDataRow : baseTokens.dataRow}
   >
     <RnrText className={appearance === 'admin' ? baseTokens.adminDataLabel : baseTokens.dataLabel}>{label}</RnrText>
@@ -55,18 +56,24 @@ export const PrimitiveStatusRow = ({
 export const PrimitivePortItem = ({testID, name, status, reason, source, tone}: PrimitivePortItemProps) => {
   const address = assertTestID(testID);
   return (
-    <RnrView testID={address} className={baseTokens.adminPortItem}>
-      <RnrView testID={`${address}:indicator`} className={toneClassName(tone, baseTokens.adminPortItemDot)} />
-      <RnrText testID={`${address}:name`} className={baseTokens.adminPortItemName}>
+    <RnrView {...testIdProps(address)} className={baseTokens.adminPortItem}>
+      <RnrView
+        {...testIdProps(deriveTestId(testID, 'indicator'))}
+        className={toneClassName(tone, baseTokens.adminPortItemDot)}
+      />
+      <RnrText {...testIdProps(deriveTestId(testID, 'name'))} className={baseTokens.adminPortItemName}>
         {name}
       </RnrText>
-      <RnrText testID={`${address}:status`} className={toneForegroundClassName(tone, baseTokens.adminPortItemStatus)}>
+      <RnrText
+        {...testIdProps(deriveTestId(testID, 'status'))}
+        className={toneForegroundClassName(tone, baseTokens.adminPortItemStatus)}
+      >
         {status}
       </RnrText>
-      <RnrText testID={`${address}:reason`} className={baseTokens.adminPortItemMeta}>
+      <RnrText {...testIdProps(deriveTestId(testID, 'reason'))} className={baseTokens.adminPortItemMeta}>
         原因：{reason}
       </RnrText>
-      <RnrText testID={`${address}:source`} className={baseTokens.adminPortItemMeta}>
+      <RnrText {...testIdProps(deriveTestId(testID, 'source'))} className={baseTokens.adminPortItemMeta}>
         来源：{source}
       </RnrText>
     </RnrView>
@@ -98,7 +105,7 @@ export const PrimitiveList = <ItemT,>({
 
   return (
     <RnrVirtualizedList
-      testID={assertTestID(testID)}
+      {...testIdProps(assertTestID(testID))}
       className={baseTokens.list}
       accessibilityRole="list"
       accessibilityLabel={accessibilityLabel}
@@ -118,7 +125,7 @@ export const PrimitiveList = <ItemT,>({
         const key = getItemKey(item, index);
         return (
           <RnrView
-            testID={isInRenderWindow ? `${assertTestID(testID)}:row:${key}` : undefined}
+            {...testIdProps(isInRenderWindow ? deriveTestId(testID, 'row', key) : undefined)}
             style={{height: rowHeight}}
           >
             {isInRenderWindow ? renderItem(item, index) : null}
@@ -130,8 +137,8 @@ export const PrimitiveList = <ItemT,>({
 };
 
 export const PrimitiveTable = <ItemT,>({testID, columns, rows}: PrimitiveTableProps<ItemT>) => (
-  <RnrView testID={assertTestID(testID)} accessibilityRole="none" className={baseTokens.table}>
-    <RnrView testID={`${testID}:header`} className={baseTokens.tableRow}>
+  <RnrView {...testIdProps(assertTestID(testID))} accessibilityRole="none" className={baseTokens.table}>
+    <RnrView {...testIdProps(deriveTestId(testID, 'header'))} className={baseTokens.tableRow}>
       {columns.map(column => (
         <RnrText key={column.key} className={baseTokens.tableCell}>
           {column.header}
@@ -139,7 +146,11 @@ export const PrimitiveTable = <ItemT,>({testID, columns, rows}: PrimitiveTablePr
       ))}
     </RnrView>
     {rows.map((row, rowIndex) => (
-      <RnrView key={String(rowIndex)} testID={`${testID}:row:${rowIndex}`} className={baseTokens.tableRow}>
+      <RnrView
+        key={String(rowIndex)}
+        {...testIdProps(deriveTestId(testID, 'row', String(rowIndex)))}
+        className={baseTokens.tableRow}
+      >
         {columns.map(column => (
           <RnrText key={column.key} className={baseTokens.tableCell}>
             {column.render(row)}
@@ -160,7 +171,7 @@ export const PrimitiveSegmentedControl = ({
   busy,
 }: PrimitiveSegmentedControlProps) => (
   <RnrView
-    testID={assertTestID(testID)}
+    {...testIdProps(assertTestID(testID))}
     accessibilityRole="tablist"
     accessibilityLabel={accessibilityLabel}
     className={baseTokens.tabRow}
@@ -170,7 +181,7 @@ export const PrimitiveSegmentedControl = ({
       return (
         <RnrPressable
           key={item.value}
-          testID={`${testID}:${item.value}`}
+          {...testIdProps(deriveTestId(testID, 'item', item.value))}
           accessibilityRole="tab"
           accessibilityLabel={item.label}
           accessibilityState={{selected, disabled: disabled === true, busy: busy === true}}

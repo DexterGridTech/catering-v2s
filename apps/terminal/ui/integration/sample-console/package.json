@@ -29,6 +29,11 @@
     }
   },
   "showAdminPassword": true,
+  "terminalAutomation": {
+    "enabled": false,
+    "url": "ws://127.0.0.1:19090/automation",
+    "sessionToken": ""
+  },
   "serverSpaces": {
     "selectedSpace": "development",
     "spaces": [
@@ -92,6 +97,7 @@
     "@catering-v2s/ui-base-terminal-activation": "workspace:*",
     "@catering-v2s/ui-feature-sample-member-desk": "workspace:*",
     "@catering-v2s/ui-feature-sample-staff-auth": "workspace:*",
+    "expo-crypto": "~57.0.2",
     "react-native-reanimated": "4.5.1",
     "react-native-worklets": "0.10.1"
   },

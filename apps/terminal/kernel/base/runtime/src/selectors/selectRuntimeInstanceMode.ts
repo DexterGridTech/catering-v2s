@@ -1,8 +1,10 @@
+import {defineStateSelector} from '../foundations/defineStateSelector';
+import {moduleName} from '../moduleName';
 import type {StateRoot} from '@catering-v2s/kernel-base-state';
 import type {RuntimeInstanceMode} from '../types/role';
 import {runtimeInstanceModeSliceName} from '../features/slices/runtimeInstanceMode';
 
-export const selectRuntimeInstanceMode = (state: StateRoot): RuntimeInstanceMode => {
+const selectRuntimeInstanceModeImplementation = (state: StateRoot): RuntimeInstanceMode => {
   const slice = state[runtimeInstanceModeSliceName];
   if (slice === undefined || slice === null) {
     throw new Error(`Missing runtime instance mode slice: ${runtimeInstanceModeSliceName}`);
@@ -13,3 +15,8 @@ export const selectRuntimeInstanceMode = (state: StateRoot): RuntimeInstanceMode
   }
   return value;
 };
+
+export const selectRuntimeInstanceMode = defineStateSelector(moduleName, 'selectRuntimeInstanceMode', {
+  parameters: [],
+  selector: selectRuntimeInstanceModeImplementation,
+});

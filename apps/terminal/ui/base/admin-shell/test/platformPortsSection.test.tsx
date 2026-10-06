@@ -32,20 +32,20 @@ afterEach(() => vi.restoreAllMocks());
 describe('PlatformPortsSection high-fidelity summary', () => {
   it('places the status line and ratio bar before the three summary facts', async () => {
     const renderer = await renderSection();
-    const summary = renderer.getByTestId('admin.console.platform-ports:summary-card');
+    const summary = renderer.getByTestId(adminTestIds.node('admin.console.platform-ports:summary-card'));
     const directChildren = (Array.isArray(summary.props.children) ? summary.props.children : [summary.props.children])
       .filter(Boolean)
       .map((child: {props?: {testID?: string}}) => child.props?.testID);
 
     expect(directChildren).toEqual([
       adminTestIds.ports.overallStatus,
-      'admin.console.platform-ports:total',
+      adminTestIds.node('admin.console.platform-ports:total'),
       adminTestIds.ports.summary.ratioBar,
-      'terminal.admin:ports:summary-grid',
+      adminTestIds.ports.summary.grid,
     ]);
     expect(renderer.getByTestId(adminTestIds.ports.overallStatus)).toBeDefined();
     expect(renderer.getByTestId(adminTestIds.ports.summary.ratioBar)).toBeDefined();
-    expect(renderer.getByTestId('terminal.admin:ports:summary-grid')).toBeDefined();
+    expect(renderer.getByTestId(adminTestIds.ports.summary.grid)).toBeDefined();
     await renderer.unmount();
   });
 
@@ -66,7 +66,7 @@ describe('PlatformPortsSection high-fidelity summary', () => {
     } as unknown as AdminSectionProps['context'];
     const renderer = await render(<PlatformPortsSectionMobile context={mobileContext} />);
 
-    const summaryGrid = renderer.getByTestId('terminal.admin:ports:summary-grid');
+    const summaryGrid = renderer.getByTestId(adminTestIds.ports.summary.grid);
     const summaryItems = [
       renderer.getByTestId(adminTestIds.ports.summary.available),
       renderer.getByTestId(adminTestIds.ports.summary.unavailable),

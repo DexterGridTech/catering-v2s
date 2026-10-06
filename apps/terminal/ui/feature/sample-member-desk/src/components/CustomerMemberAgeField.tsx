@@ -1,6 +1,7 @@
 import {useInputField} from '@catering-v2s/ui-base-input';
 import {PrimitiveInput, PrimitiveLabel} from '@catering-v2s/ui-base-primitives';
 import {ageFieldId} from '../hooks/useCustomerMember';
+import {sampleMemberDeskTestId} from '../foundations/sampleMemberDeskTestIds';
 
 export const CustomerMemberAgeField = ({
   editable,
@@ -9,7 +10,7 @@ export const CustomerMemberAgeField = ({
   const fieldId = ageFieldId(prefix);
   const field = useInputField({
     fieldId,
-    testID: fieldId,
+    testID: sampleMemberDeskTestId(fieldId),
     accessibilityLabel: '年龄',
     keyboardKind: 'virtual',
     layout: 'numeric',
@@ -18,7 +19,10 @@ export const CustomerMemberAgeField = ({
 
   return (
     <>
-      <PrimitiveLabel testID={`${prefix ?? 'sample.desk.customer-member'}:age-label`} nativeID={fieldId}>
+      <PrimitiveLabel
+        testID={sampleMemberDeskTestId(`${prefix ?? 'sample.desk.customer-member'}:age-label`)}
+        nativeID={fieldId}
+      >
         年龄（可选）
       </PrimitiveLabel>
       <PrimitiveInput {...field.inputProps} editable={editable} />

@@ -13,6 +13,7 @@ import {SurfacePresentationOffsetProvider} from '@catering-v2s/ui-base-render';
 import {useInputController, useInputKeyboardState, useInputPendingFocusCommit} from '../contexts/context';
 import {InputSurfaceGeometryContext, type InputSurfaceGeometry} from '../contexts/InputSurfaceGeometryContext';
 import {calculatePresentationOffsetY, type LayoutRect} from '../foundations/scrollIntoView';
+import {inputTestIds} from '../foundations/inputTestIds';
 import {InputProvider} from './InputProvider';
 import {InputKeyboard, type InputKeyboardSnapshot} from './InputKeyboard';
 import {handoffTrackOf, type KeyboardHandoffTrack} from '../foundations/keyboardPresentation';
@@ -65,7 +66,7 @@ export const InputSurfaceFrame = ({onMeasuredFrame, children}: InputSurfaceFrame
   );
 
   return (
-    <View ref={setSurfaceRoot} testID="ui.base.input:surface-frame" style={styles.frame} onLayout={handleSurfaceLayout}>
+    <View ref={setSurfaceRoot} testID={inputTestIds.surfaceFrame} style={styles.frame} onLayout={handleSurfaceLayout}>
       <InputProvider frameMetrics={frameMetrics}>
         <InputSurfaceFrameContents frameMetrics={frameMetrics} surfaceRoot={surfaceRoot}>
           {children}
@@ -1062,10 +1063,10 @@ const InputSurfaceFrameContents = ({
     <InputSurfaceGeometryContext.Provider value={geometry}>
       <SurfacePresentationOffsetProvider offset={animatedOffset}>
         {/* Passive touch/click observation keeps ScrollView and business descendants' responder negotiation intact. */}
-        <View testID="ui.base.input:surface-content" style={styles.content} {...surfaceInteractionProps}>
+        <View testID={inputTestIds.surfaceContent} style={styles.content} {...surfaceInteractionProps}>
           {children}
           {showUnsupportedNotice ? (
-            <PrimitiveStatus testID="ui.base.input:unsupported-size">
+            <PrimitiveStatus testID={inputTestIds.node('unsupported-size')}>
               {unsupportedMessageOf(state.blockedCapacity)}
             </PrimitiveStatus>
           ) : null}
@@ -1073,7 +1074,7 @@ const InputSurfaceFrameContents = ({
       </SurfacePresentationOffsetProvider>
       {frameMetrics?.ready === true ? (
         <View
-          testID="ui.base.input:keyboard-overlay"
+          testID={inputTestIds.keyboardOverlay}
           style={[styles.keyboardOverlay, {pointerEvents: Platform.OS === 'web' ? 'none' : 'box-none'}]}
         >
           {renderedLayers.map(item => {
@@ -1086,7 +1087,7 @@ const InputSurfaceFrameContents = ({
             return (
               <Animated.View
                 key={item.layerKey}
-                testID={`ui.base.input:keyboard-layer-position:${item.suffix ?? 'active'}`}
+                testID={inputTestIds.keyboardLayerPosition(item.suffix)}
                 nativeID={item.layerKey}
                 accessibilityElementsHidden={!interactive || item.hidden === true}
                 importantForAccessibility={interactive ? 'auto' : 'no-hide-descendants'}
@@ -1111,7 +1112,7 @@ const InputSurfaceFrameContents = ({
           })}
           {hitShield !== null ? (
             <Animated.View
-              testID="ui.base.input:keyboard-hit-shield"
+              testID={inputTestIds.keyboardHitShield}
               accessible={false}
               onStartShouldSetResponder={consumeKeyboardAreaTouch}
               onMoveShouldSetResponder={consumeKeyboardAreaTouch}
@@ -1130,7 +1131,7 @@ const InputSurfaceFrameContents = ({
       ) : null}
       {focusVisibilityFailure !== null ? (
         <View style={[styles.focusVisibilityError, {pointerEvents: 'none'}]}>
-          <PrimitiveStatus testID={`ui.base.input:focus-visibility-error:${focusVisibilityFailure.reason}`}>
+          <PrimitiveStatus testID={inputTestIds.node(`focus-visibility-error:${focusVisibilityFailure.reason}`)}>
             焦点框无法完整显示，请调整窗口尺寸或退出输入
           </PrimitiveStatus>
         </View>

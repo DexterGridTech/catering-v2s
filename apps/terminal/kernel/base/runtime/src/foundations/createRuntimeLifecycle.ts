@@ -1,4 +1,4 @@
-import type {NodeId} from '@catering-v2s/kernel-base-contracts';
+import type {NodeId, RuntimeInstanceId} from '@catering-v2s/kernel-base-contracts';
 import type {PlatformPorts} from '@catering-v2s/kernel-base-platform-ports';
 import type {PersistenceOperationResult, StateRoot, StateRuntime} from '@catering-v2s/kernel-base-state';
 import type {
@@ -11,6 +11,7 @@ import type {
 } from '../types/module';
 import type {PeerDispatchGateway} from '../types/peer';
 import type {RuntimeUnknownAction} from '../types/runtime';
+import type {RuntimeJournal} from '../types/journal';
 import {createStateSubscription} from './createStateSubscription';
 
 type DispatchCommand = RuntimeModuleDispatch;
@@ -18,6 +19,8 @@ type DispatchCommand = RuntimeModuleDispatch;
 type RuntimeLifecycleInput = Readonly<{
   modules: readonly RuntimeModule[];
   descriptors: readonly RuntimeModuleDescriptor[];
+  journal: RuntimeJournal;
+  runtimeId: RuntimeInstanceId;
   localNodeId: NodeId;
   platformPorts: PlatformPorts;
   requestMaxResidenceMs: number;
@@ -27,6 +30,7 @@ type RuntimeLifecycleInput = Readonly<{
   dispatchAction: (action: RuntimeUnknownAction) => RuntimeUnknownAction;
   registerResource: (cleanup: () => void) => () => void;
   registerAsyncResource: (cleanup: () => Promise<void>) => () => void;
+  evaluateSelector: (name: string, argsTuple: readonly unknown[]) => unknown;
 }>;
 
 const requireStateRuntime = (input: RuntimeLifecycleInput): StateRuntime => {
@@ -41,9 +45,11 @@ const createModuleContext = (input: RuntimeLifecycleInput, module: RuntimeModule
   const stateRuntime = requireStateRuntime(input);
   return Object.freeze({
     moduleName: module.moduleName,
+    runtimeId: input.runtimeId,
     localNodeId: input.localNodeId,
     platformPorts: input.platformPorts,
     descriptors: input.descriptors,
+    journal: input.journal,
     requestMaxResidenceMs: input.requestMaxResidenceMs,
     getState: (): StateRoot => stateRuntime.getState(),
     flushPersistence: (): Promise<PersistenceOperationResult> => stateRuntime.flushPersistence(),
@@ -55,6 +61,7 @@ const createModuleContext = (input: RuntimeLifecycleInput, module: RuntimeModule
     applyAuthoritativeSync: (sliceName: string, payload: import('@catering-v2s/kernel-base-state').SyncStateDiff) =>
       stateRuntime.applyAuthoritativeSync(sliceName, payload),
     dispatchCommand: input.dispatchCommand,
+    evaluateSelector: input.evaluateSelector,
     installPeerDispatchGateway: input.installPeerDispatchGateway,
   });
 };
@@ -67,6 +74,7 @@ export const createRuntimeLifecycle = (input: RuntimeLifecycleInput) => {
         localNodeId: input.localNodeId,
         platformPorts: input.platformPorts,
         descriptors: input.descriptors,
+        journal: input.journal,
       });
       await module.preSetup?.(context);
     }

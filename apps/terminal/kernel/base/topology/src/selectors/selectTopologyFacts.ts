@@ -1,8 +1,9 @@
+import {defineStateSelector} from '@catering-v2s/kernel-base-runtime';
+import {moduleName} from '../moduleName';
 import type {StateRoot} from '@catering-v2s/kernel-base-state';
 import {selectDisplayRole} from '@catering-v2s/kernel-base-display-context';
 import {selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
 import {hasTopologySecondarySurface} from '../foundations/evaluateTopologyOperation';
-import {moduleName} from '../moduleName';
 import type {TopologyFacts} from '@catering-v2s/kernel-base-contracts';
 
 export const areTopologyFactsEqual = (
@@ -29,7 +30,7 @@ export const areTopologyFactsEqual = (
   );
 };
 
-export const selectTopologyFacts = (state: StateRoot): TopologyFacts | undefined => {
+const selectTopologyFactsImplementation = (state: StateRoot): TopologyFacts | undefined => {
   const topology = state[`${moduleName}.state`] as unknown;
   if (topology === undefined || topology === null) return undefined;
   const typedTopology = topology as import('../types/state').TopologyState;
@@ -61,3 +62,8 @@ export const selectTopologyFacts = (state: StateRoot): TopologyFacts | undefined
     payloadFailure: typedTopology.payloadFailure,
   });
 };
+
+export const selectTopologyFacts = defineStateSelector(moduleName, 'selectTopologyFacts', {
+  parameters: [],
+  selector: selectTopologyFactsImplementation,
+});

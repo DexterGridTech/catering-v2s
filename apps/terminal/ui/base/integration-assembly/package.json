@@ -19,7 +19,9 @@
     "@catering-v2s/kernel-base-transport": "workspace:*",
     "@catering-v2s/kernel-base-ui-state": "workspace:*",
     "@catering-v2s/ui-base-admin-shell": "workspace:*",
+    "@catering-v2s/ui-base-automation-agent": "workspace:*",
     "@catering-v2s/ui-base-input": "workspace:*",
+    "@catering-v2s/ui-base-primitives": "workspace:*",
     "@catering-v2s/ui-base-render": "workspace:*"
   },
   "peerDependencies": {

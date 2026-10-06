@@ -13,7 +13,8 @@
   "dependencies": {
     "@catering-v2s/kernel-base-contracts": "workspace:*",
     "@catering-v2s/kernel-base-display-context": "workspace:*",
-    "@catering-v2s/kernel-base-platform-ports": "workspace:*"
+    "@catering-v2s/kernel-base-platform-ports": "workspace:*",
+    "@catering-v2s/ui-base-primitives": "workspace:*"
   },
   "peerDependencies": {
     "react": "19.2.3",

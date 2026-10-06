@@ -10,6 +10,7 @@ import {useInputController, useInputKeyboardState} from '../contexts/context';
 import {VirtualKeyboard} from './VirtualKeyboard';
 import type {KeyboardLayout} from '../foundations/keyboardLayout';
 import type {KeyboardKey} from '../foundations/editText';
+import {inputTestIds} from '../foundations/inputTestIds';
 
 export type InputKeyboardSnapshot = Readonly<{
   readonly fieldId: string;
@@ -46,8 +47,9 @@ export const InputKeyboard = ({snapshot, interactive, onKey, onLayout, testIDSuf
   const handleKey = useCallback(
     (key: KeyboardKey): void => {
       const target = onKey ?? controller.handleKeyboardKey;
-      if (__DEV__ && current.fieldId === 'terminal.admin:password-field') {
-        console.info('TER_ADMIN_INPUT_TRACE key-dispatched', {
+      if (__DEV__) {
+        console.info('TER_INPUT_TRACE key-dispatched', {
+          fieldId: current.fieldId,
           keyKind: key.kind,
           interactive: canInteract,
         });
@@ -67,6 +69,7 @@ export const InputKeyboard = ({snapshot, interactive, onKey, onLayout, testIDSuf
       frameWidth={frameWidth}
       cellWidth={cellWidth}
       compact={compact}
+      interactive={canInteract}
       shift={current.shift}
       hasNextField={current.hasNextField}
       testIDSuffix={testIDSuffix}
@@ -74,16 +77,13 @@ export const InputKeyboard = ({snapshot, interactive, onKey, onLayout, testIDSuf
     />
   );
   const backdrop = (
-    <PrimitiveKeyboardBackdrop
-      testID="ui.base.input:virtual-keyboard:backdrop"
-      style={{height: current.height, width: frameWidth}}
-    >
+    <PrimitiveKeyboardBackdrop testID={inputTestIds.backdrop} style={{height: current.height, width: frameWidth}}>
       {keyboard}
     </PrimitiveKeyboardBackdrop>
   );
   return (
     <View
-      testID={`ui.base.input:keyboard-layer:${canInteract ? 'interactive' : 'inactive'}${testIDSuffix === undefined ? '' : `:${testIDSuffix}`}`}
+      testID={inputTestIds.keyboardLayer(canInteract, testIDSuffix)}
       onLayout={onLayout}
       style={{width: frameWidth, pointerEvents: canInteract ? 'auto' : 'none'}}
       accessibilityElementsHidden={!canInteract}

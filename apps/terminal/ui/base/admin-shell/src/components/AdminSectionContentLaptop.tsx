@@ -8,6 +8,7 @@ import {
   PrimitiveScrollView,
   PrimitiveStatusLine,
   PrimitiveText,
+  testIdProps,
 } from '@catering-v2s/ui-base-primitives';
 import type {TopologyAdminCapability} from '@catering-v2s/kernel-base-contracts';
 import {adminTestIds} from '../foundations/adminTestIds';
@@ -27,23 +28,23 @@ export type AdminSectionContentLaptopProps = Readonly<{
 }>;
 
 const AdminPanelNormalStateLaptop = () => (
-  <PrimitiveScrollView testID="terminal.admin:panel:normal:scroll">
-    <PrimitiveHeading appearance="admin-page" testID="terminal.admin:panel:normal:title">
+  <PrimitiveScrollView testID={adminTestIds.node('terminal.admin:panel:normal:scroll')}>
+    <PrimitiveHeading appearance="admin-page" testID={adminTestIds.node('terminal.admin:panel:normal:title')}>
       面板状态
     </PrimitiveHeading>
-    <PrimitiveCard appearance="admin" testID="terminal.admin:panel:normal:card">
-      <PrimitiveStatusLine testID="terminal.admin:panel:normal:status" tone="ok">
+    <PrimitiveCard appearance="admin" testID={adminTestIds.node('terminal.admin:panel:normal:card')}>
+      <PrimitiveStatusLine testID={adminTestIds.node('terminal.admin:panel:normal:status')} tone="ok">
         终端状态：可操作
       </PrimitiveStatusLine>
       <PrimitiveFactGrid
-        testID="terminal.admin:panel:normal:facts"
+        testID={adminTestIds.node('terminal.admin:panel:normal:facts')}
         columns={2}
         items={[
           {key: 'current-tab', label: '当前页面', value: '未选择'},
           {key: 'content-area', label: '内容区', value: '可滚动'},
         ]}
       />
-      <PrimitiveText appearance="admin-muted" testID="terminal.admin:panel:normal:hint">
+      <PrimitiveText appearance="admin-muted" testID={adminTestIds.node('terminal.admin:panel:normal:hint')}>
         选择左侧导航项后显示对应管理内容。
       </PrimitiveText>
     </PrimitiveCard>
@@ -70,7 +71,10 @@ export const AdminSectionContentLaptop = ({
   if (selectedSection === undefined || activeSection === undefined || activeContext === undefined) {
     if (selectedSection === undefined) return <AdminPanelNormalStateLaptop />;
     return (
-      <PrimitiveEmptyState testID={`${adminTestIds.content}:empty`} accessibilityLabel="暂无可用诊断节">
+      <PrimitiveEmptyState
+        {...testIdProps(adminTestIds.child(adminTestIds.content, 'empty'))}
+        accessibilityLabel="暂无可用诊断节"
+      >
         暂无可用诊断节；请检查当前运行时配置后重试
       </PrimitiveEmptyState>
     );

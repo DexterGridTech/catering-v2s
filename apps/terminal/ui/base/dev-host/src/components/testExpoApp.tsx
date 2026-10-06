@@ -17,7 +17,9 @@ import {
 import type {NativeLoadingCapability, PlatformPorts} from '@catering-v2s/kernel-base-platform-ports';
 import {createWebPlatformPorts, type SurfaceMode, type WebPlatformOptions} from '../implementations/webPlatform';
 import type {SurfaceForm} from '@catering-v2s/kernel-base-contracts';
+import type {TestId} from '@catering-v2s/ui-base-primitives';
 import {createWebSurfaceHostSource, type WebSurfaceHostSource} from '../implementations/webSurfaceHost';
+import {testExpoTestIds} from '../foundations/testExpoTestIds';
 import {
   calculateSurfacePreviewGeometry,
   SURFACE_PREVIEW_CONSTANTS,
@@ -150,7 +152,7 @@ type SurfaceCanvasProps = Readonly<{
   readonly surfaceWidthPercent: number;
   readonly surfaceForm: SurfaceForm;
   readonly terminalSurfaces: TerminalSurfaces;
-  readonly testIdPrefix: string;
+  readonly makeTestId: (element: string, key?: string) => TestId;
 }>;
 
 type SurfaceGroup = Readonly<{
@@ -287,7 +289,7 @@ const SurfaceCanvas = ({
   surfaceWidthPercent,
   surfaceForm,
   terminalSurfaces,
-  testIdPrefix,
+  makeTestId,
 }: SurfaceCanvasProps) => {
   const {primary, secondary} = resolveSurfaceGroup(terminalSurfaces, surfaceForm);
   const [previewViewportSize, setPreviewViewportSize] = useState<PreviewViewportSize | null>(null);
@@ -408,7 +410,7 @@ const SurfaceCanvas = ({
   });
   return (
     <View
-      testID={`${testIdPrefix}:canvas`}
+      testID={makeTestId('canvas')}
       style={[styles.canvas, {overflow: 'scroll'}]}
       onLayout={handleCanvasLayout}
       ref={node => {
@@ -416,7 +418,7 @@ const SurfaceCanvas = ({
       }}
     >
       <View
-        testID={`${testIdPrefix}:canvas:preview-viewport`}
+        testID={makeTestId('canvas', 'preview-viewport')}
         style={styles.previewViewport}
         onLayout={handlePreviewViewportLayout}
         ref={node => {
@@ -424,10 +426,10 @@ const SurfaceCanvas = ({
         }}
       >
         {geometry === null ? (
-          <View testID={`${testIdPrefix}:canvas:measure-pending`} style={styles.measurePending} />
+          <View testID={makeTestId('canvas', 'measure-pending')} style={styles.measurePending} />
         ) : (
           <View
-            testID={`${testIdPrefix}:canvas:scaled-stage`}
+            testID={makeTestId('canvas', 'scaled-stage')}
             onLayout={event => reportReactLayout('scaled-stage', event)}
             ref={node => {
               scaledStageNodeRef.current = node;
@@ -441,7 +443,7 @@ const SurfaceCanvas = ({
             ]}
           >
             <View
-              testID={`${testIdPrefix}:canvas:logical-stage`}
+              testID={makeTestId('canvas', 'logical-stage')}
               onLayout={event => reportReactLayout('logical-stage', event)}
               ref={node => {
                 logicalStageNodeRef.current = node;
@@ -462,7 +464,7 @@ const SurfaceCanvas = ({
             >
               <View
                 style={[styles.surface, styles.primarySurface, surfaceStyle(primary)]}
-                testID={`${testIdPrefix}:surface:PRIMARY`}
+                testID={makeTestId('surface', 'PRIMARY')}
                 onLayout={event => reportReactLayout('surface-PRIMARY', event)}
                 ref={node => {
                   surfaceNodeRefs.current.PRIMARY = node;
@@ -470,14 +472,14 @@ const SurfaceCanvas = ({
               >
                 {assembly.createSurface({displayIndex: 0, displayMode: 'PRIMARY', surfaceForm})}
                 <View
-                  testID={`${testIdPrefix}:surface:PRIMARY:decoration`}
+                  testID={makeTestId('surface-decoration', 'PRIMARY')}
                   style={[styles.surfaceDecoration, styles.primarySurfaceDecoration, {pointerEvents: 'none'}]}
                 />
               </View>
               {showSecondary ? (
                 <View
                   style={[styles.surface, styles.secondarySurface, surfaceStyle(secondary)]}
-                  testID={`${testIdPrefix}:surface:SECONDARY`}
+                  testID={makeTestId('surface', 'SECONDARY')}
                   onLayout={event => reportReactLayout('surface-SECONDARY', event)}
                   ref={node => {
                     surfaceNodeRefs.current.SECONDARY = node;
@@ -485,7 +487,7 @@ const SurfaceCanvas = ({
                 >
                   {assembly.createSurface({displayIndex: 1, displayMode: 'SECONDARY', surfaceForm})}
                   <View
-                    testID={`${testIdPrefix}:surface:SECONDARY:decoration`}
+                    testID={makeTestId('surface-decoration', 'SECONDARY')}
                     style={[styles.surfaceDecoration, styles.secondarySurfaceDecoration, {pointerEvents: 'none'}]}
                   />
                 </View>
@@ -503,21 +505,21 @@ type HeaderStatusProps = Readonly<{
   readonly showSecondary: boolean | undefined;
   readonly surfaceForm: SurfaceForm;
   readonly terminalSurfaces: TerminalSurfaces;
-  readonly testIdPrefix: string;
+  readonly makeTestId: (element: string, key?: string) => TestId;
 }>;
 
 type SurfaceFormSwitcherProps = Readonly<{
   readonly surfaceForm: SurfaceForm;
   readonly supportsMobile: boolean;
   readonly onSelect: (surfaceForm: SurfaceForm) => void;
-  readonly testIdPrefix: string;
+  readonly makeTestId: (element: string, key?: string) => TestId;
 }>;
 
 type SurfaceRadioOptionProps = Readonly<{
   readonly label: string;
   readonly selected: boolean;
   readonly onPress: () => void;
-  readonly optionTestID: string;
+  readonly optionTestID: TestId;
 }>;
 
 const SurfaceRadioOption = ({label, selected, onPress, optionTestID}: SurfaceRadioOptionProps) => (
@@ -541,18 +543,18 @@ const SurfaceRadioOption = ({label, selected, onPress, optionTestID}: SurfaceRad
   </Pressable>
 );
 
-const SurfaceFormSwitcher = ({surfaceForm, supportsMobile, onSelect, testIdPrefix}: SurfaceFormSwitcherProps) => (
-  <View style={styles.surfaceRadioGroup} testID={`${testIdPrefix}:surface-form-switcher`} accessibilityLabel="终端视角">
+const SurfaceFormSwitcher = ({surfaceForm, supportsMobile, onSelect, makeTestId}: SurfaceFormSwitcherProps) => (
+  <View style={styles.surfaceRadioGroup} testID={makeTestId('surface-form-switcher')} accessibilityLabel="终端视角">
     <Text style={styles.surfaceRadioGroupLabel}>视角</Text>
     <SurfaceRadioOption
-      optionTestID={`${testIdPrefix}:surface-form:laptop`}
+      optionTestID={makeTestId('surface-form', 'laptop')}
       label="laptop 视角"
       selected={surfaceForm === 'laptop'}
       onPress={() => onSelect('laptop')}
     />
     {supportsMobile ? (
       <SurfaceRadioOption
-        optionTestID={`${testIdPrefix}:surface-form:mobile`}
+        optionTestID={makeTestId('surface-form', 'mobile')}
         label="mobile 视角"
         selected={surfaceForm === 'mobile'}
         onPress={() => onSelect('mobile')}
@@ -564,7 +566,7 @@ const SurfaceFormSwitcher = ({surfaceForm, supportsMobile, onSelect, testIdPrefi
 type SurfaceWidthControlProps = Readonly<{
   readonly surfaceWidthPercent: number;
   readonly onChange: (value: number) => void;
-  readonly testIdPrefix: string;
+  readonly makeTestId: (element: string, key?: string) => TestId;
 }>;
 
 const SURFACE_WIDTH_SLIDER_TRACK_WIDTH = 132;
@@ -580,7 +582,7 @@ const surfaceWidthPercentFromLocation = (locationX: number): number =>
       (locationX / SURFACE_WIDTH_SLIDER_TRACK_WIDTH) * (SURFACE_WIDTH_MAX_PERCENT - SURFACE_WIDTH_MIN_PERCENT),
   );
 
-const SurfaceWidthSlider = ({surfaceWidthPercent, onChange, testIdPrefix}: SurfaceWidthControlProps) => {
+const SurfaceWidthSlider = ({surfaceWidthPercent, onChange, makeTestId}: SurfaceWidthControlProps) => {
   const handleLocation = (event: GestureResponderEvent): void => {
     const locationX = event.nativeEvent.locationX;
     if (Number.isFinite(locationX)) onChange(surfaceWidthPercentFromLocation(locationX));
@@ -615,7 +617,7 @@ const SurfaceWidthSlider = ({surfaceWidthPercent, onChange, testIdPrefix}: Surfa
     onPressIn: handleLocation,
     onPressMove: handleLocation,
     style: styles.surfaceWidthSlider,
-    testID: `${testIdPrefix}:surface-width-slider`,
+    testID: makeTestId('surface-width-slider'),
   };
   return (
     <Pressable {...pressableProps}>
@@ -630,20 +632,20 @@ const SurfaceWidthSlider = ({surfaceWidthPercent, onChange, testIdPrefix}: Surfa
 type SurfaceModeRadioProps = Readonly<{
   readonly surfaceMode: SurfaceMode;
   readonly onSelect: (surfaceMode: SurfaceMode) => void;
-  readonly testIdPrefix: string;
+  readonly makeTestId: (element: string, key?: string) => TestId;
 }>;
 
-const SurfaceModeRadio = ({surfaceMode, onSelect, testIdPrefix}: SurfaceModeRadioProps) => (
-  <View style={styles.surfaceRadioGroup} testID={`${testIdPrefix}:surface-toggle`} accessibilityLabel="屏幕模式">
+const SurfaceModeRadio = ({surfaceMode, onSelect, makeTestId}: SurfaceModeRadioProps) => (
+  <View style={styles.surfaceRadioGroup} testID={makeTestId('surface-toggle')} accessibilityLabel="屏幕模式">
     <Text style={styles.surfaceRadioGroupLabel}>屏幕</Text>
     <SurfaceRadioOption
-      optionTestID={`${testIdPrefix}:surface-mode:single`}
+      optionTestID={makeTestId('surface-mode', 'single')}
       label="单屏模式"
       selected={surfaceMode === 'single'}
       onPress={() => onSelect('single')}
     />
     <SurfaceRadioOption
-      optionTestID={`${testIdPrefix}:surface-mode:dual`}
+      optionTestID={makeTestId('surface-mode', 'dual')}
       label="双屏模式"
       selected={surfaceMode === 'dual'}
       onPress={() => onSelect('dual')}
@@ -651,30 +653,24 @@ const SurfaceModeRadio = ({surfaceMode, onSelect, testIdPrefix}: SurfaceModeRadi
   </View>
 );
 
-const SurfaceWidthControl = ({surfaceWidthPercent, onChange, testIdPrefix}: SurfaceWidthControlProps) => (
+const SurfaceWidthControl = ({surfaceWidthPercent, onChange, makeTestId}: SurfaceWidthControlProps) => (
   <View
     style={styles.surfaceWidthControl}
-    testID={`${testIdPrefix}:surface-width-control`}
+    testID={makeTestId('surface-width-control')}
     accessibilityLabel="surface 宽度"
   >
     <Text style={styles.surfaceWidthControlLabel}>surface 宽度</Text>
-    <SurfaceWidthSlider surfaceWidthPercent={surfaceWidthPercent} onChange={onChange} testIdPrefix={testIdPrefix} />
-    <Text style={styles.surfaceWidthControlValue} testID={`${testIdPrefix}:surface-width-value`}>
+    <SurfaceWidthSlider surfaceWidthPercent={surfaceWidthPercent} onChange={onChange} makeTestId={makeTestId} />
+    <Text style={styles.surfaceWidthControlValue} testID={makeTestId('surface-width-value')}>
       {surfaceWidthPercent}%
     </Text>
   </View>
 );
 
-const HeaderStatus = ({
-  runtimeStatus,
-  showSecondary,
-  surfaceForm,
-  terminalSurfaces,
-  testIdPrefix,
-}: HeaderStatusProps) => {
+const HeaderStatus = ({runtimeStatus, showSecondary, surfaceForm, terminalSurfaces, makeTestId}: HeaderStatusProps) => {
   const {primary, secondary} = resolveSurfaceGroup(terminalSurfaces, surfaceForm);
   return (
-    <View style={styles.headerInfo} testID={`${testIdPrefix}:header-status`}>
+    <View style={styles.headerInfo} testID={makeTestId('header-status')}>
       <View style={styles.headerMetricRow}>
         <View style={styles.headerMetric}>
           <View
@@ -684,7 +680,7 @@ const HeaderStatus = ({
             ]}
           />
           <Text style={styles.headerMetricLabel}>RUNTIME</Text>
-          <Text style={styles.headerMetricValue} testID={`${testIdPrefix}:runtime-status`}>
+          <Text style={styles.headerMetricValue} testID={makeTestId('runtime-status')}>
             {runtimeStatus === 'started' ? 'Started' : runtimeStatus === 'failed' ? 'Failed' : 'Starting'}
           </Text>
         </View>
@@ -711,7 +707,7 @@ const HeaderStatus = ({
       <View style={styles.headerSurfaceRow}>
         <View
           style={[styles.headerSurface, styles.headerPrimarySurface]}
-          testID={`${testIdPrefix}:surface-summary:PRIMARY`}
+          testID={makeTestId('surface-summary', 'PRIMARY')}
         >
           <View style={[styles.surfaceDot, styles.primaryDot]} />
           <Text style={styles.headerSurfaceText}>
@@ -722,7 +718,7 @@ const HeaderStatus = ({
         {surfaceForm === 'laptop' ? (
           <View
             style={[styles.headerSurface, showSecondary ? styles.headerSecondarySurface : styles.headerInactiveSurface]}
-            testID={`${testIdPrefix}:surface-summary:SECONDARY`}
+            testID={makeTestId('surface-summary', 'SECONDARY')}
           >
             <View style={[styles.surfaceDot, showSecondary ? styles.secondaryDot : styles.inactiveDot]} />
             <Text style={styles.headerSurfaceText}>
@@ -747,7 +743,7 @@ const HostStateCard = ({
   readonly kind: 'error' | 'pending';
   readonly title: string;
   readonly description: string;
-  readonly testID: string;
+  readonly testID: TestId;
 }>) => (
   <View style={[styles.hostStateCard, kind === 'error' ? styles.hostErrorCard : styles.hostPendingCard]}>
     <View style={[styles.stateGlyph, kind === 'error' ? styles.errorGlyph : styles.pendingGlyph]}>
@@ -767,7 +763,7 @@ const HostStateCard = ({
 );
 
 export const createTestExpoApp = <TAssembly extends TestExpoAssembly>(options: TestExpoAppOptions<TAssembly>): FC => {
-  const testIdPrefix = `${options.appName}:test-expo`;
+  const makeTestId = testExpoTestIds.node;
   const persistenceKey = options.persistenceKey ?? `${options.appName}-web`;
   const defaultSurfaceForm = options.surfaceForm ?? 'laptop';
   const supportsMobile = options.terminalSurfaces.orientations.portrait !== undefined;
@@ -902,11 +898,11 @@ export const createTestExpoApp = <TAssembly extends TestExpoAssembly>(options: T
         ? 'starting'
         : options.getRuntimeStatus(assembly);
     return (
-      <View style={styles.root} testID={`${testIdPrefix}:root`}>
+      <View style={styles.root} testID={makeTestId('root')}>
         <View style={styles.scroll}>
           <View style={styles.content}>
             <View style={styles.stageHeader}>
-              <View style={styles.stageHeaderTopRow} testID={`${testIdPrefix}:stage-header-top`}>
+              <View style={styles.stageHeaderTopRow} testID={makeTestId('stage-header-top')}>
                 <View>
                   <Text style={styles.sectionEyebrow}>LIVE SURFACE PREVIEW</Text>
                   <Text style={styles.stageTitle}>{options.title}</Text>
@@ -916,19 +912,19 @@ export const createTestExpoApp = <TAssembly extends TestExpoAssembly>(options: T
                   showSecondary={showSecondary}
                   surfaceForm={surfaceForm}
                   terminalSurfaces={options.terminalSurfaces}
-                  testIdPrefix={testIdPrefix}
+                  makeTestId={makeTestId}
                 />
               </View>
-              <View style={styles.toolbarActions} testID={`${testIdPrefix}:toolbar-actions`}>
+              <View style={styles.toolbarActions} testID={makeTestId('toolbar-actions')}>
                 <SurfaceWidthControl
                   surfaceWidthPercent={surfaceWidthPercent}
                   onChange={setSurfaceWidthPercent}
-                  testIdPrefix={testIdPrefix}
+                  makeTestId={makeTestId}
                 />
                 <SurfaceFormSwitcher
                   surfaceForm={surfaceForm}
                   supportsMobile={supportsMobile}
-                  testIdPrefix={testIdPrefix}
+                  makeTestId={makeTestId}
                   onSelect={nextSurfaceForm => {
                     if (nextSurfaceForm === surfaceForm) return;
                     const restarted = restartWebSurfaceWithForm(nextSurfaceForm);
@@ -949,32 +945,28 @@ export const createTestExpoApp = <TAssembly extends TestExpoAssembly>(options: T
                   }}
                 />
                 {surfaceForm === 'laptop' ? (
-                  <SurfaceModeRadio
-                    surfaceMode={surfaceMode}
-                    onSelect={changeSurfaceMode}
-                    testIdPrefix={testIdPrefix}
-                  />
+                  <SurfaceModeRadio surfaceMode={surfaceMode} onSelect={changeSurfaceMode} makeTestId={makeTestId} />
                 ) : null}
               </View>
             </View>
             {startupError ? (
               <HostStateCard
                 kind="error"
-                testID={`${testIdPrefix}:start-error`}
+                testID={makeTestId('start-error')}
                 title={`${options.appName} 启动失败`}
                 description="请查看启动日志后重试；业务 surface 尚未挂载。"
               />
             ) : assembly === undefined ? (
               <HostStateCard
                 kind="pending"
-                testID={`${testIdPrefix}:start-pending`}
+                testID={makeTestId('start-pending')}
                 title={`${options.appName} 启动中`}
                 description="正在组装 runtime、目录与业务模块，完成后会挂载主屏。"
               />
             ) : showSecondary === undefined ? (
               <HostStateCard
                 kind="pending"
-                testID={`${testIdPrefix}:display-pending`}
+                testID={makeTestId('display-pending')}
                 title="正在读取屏幕信息"
                 description="外壳正在决定是否挂载客显；这一步不改变业务模块与 runtime。"
               />
@@ -988,7 +980,7 @@ export const createTestExpoApp = <TAssembly extends TestExpoAssembly>(options: T
                   surfaceWidthPercent={surfaceWidthPercent}
                   surfaceForm={surfaceForm}
                   terminalSurfaces={options.terminalSurfaces}
-                  testIdPrefix={testIdPrefix}
+                  makeTestId={makeTestId}
                 />
                 <Text style={styles.stageFooter}>逻辑尺寸固定 · 外层按配置排布 · 内部由业务组件负责内容</Text>
               </>

@@ -1,6 +1,14 @@
+import {inputTestIds} from '../src/foundations/inputTestIds';
+import {testId} from './testIds';
 import {act, render, type RenderResult} from '@testing-library/react-native';
 import {afterEach, describe, expect, it, vi} from 'vitest';
-import {PrimitiveButton, PrimitiveHeading, PrimitiveInput, PrimitivePinInput} from '@catering-v2s/ui-base-primitives';
+import {
+  PrimitiveButton,
+  PrimitiveHeading,
+  PrimitiveInput,
+  PrimitivePinInput,
+  type TestId,
+} from '@catering-v2s/ui-base-primitives';
 import {useSurfaceFocusBoundary, type SurfaceFocusBoundaryListener} from '@catering-v2s/ui-base-render';
 import {InputSurfaceFrame} from '../src/components/InputSurfaceFrame';
 import {InputKeyboard} from '../src/components/InputKeyboard';
@@ -51,7 +59,7 @@ const queryNodesByProps = (renderer: TestRenderer, expected: Readonly<Record<str
 const queryNodes = (renderer: TestRenderer, type: unknown): NativeTestNode[] =>
   queryRenderedByType(renderer, type) as NativeTestNode[];
 const getKeyboardKey = (renderer: TestRenderer, keyId: string): NativeTestNode => {
-  const testID = `ui.base.input:virtual-keyboard:${keyId}`;
+  const testID = inputTestIds.node(`virtual-keyboard:${keyId}`);
   const [node] = queryRenderedTree(
     renderer,
     candidate => typeof candidate.props.testID === 'string' && candidate.props.testID.startsWith(testID),
@@ -68,16 +76,20 @@ const applyLayout = async (
   height: number = TEST_FRAME.height,
 ): Promise<void> => {
   await act(async () => {
-    getNode(renderer, 'ui.base.input:surface-frame').props.onLayout({
+    getNode(renderer, inputTestIds.node('surface-frame')).props.onLayout({
       nativeEvent: {layout: {width, height}},
     });
   });
 };
 
 const measureKeyboardLayers = async (renderer: TestRenderer): Promise<void> => {
-  const measurementLayers = queryNodesByProps(renderer, {testID: 'ui.base.input:keyboard-layer-position:measure'});
+  const measurementLayers = queryNodesByProps(renderer, {
+    testID: testId(inputTestIds.node('keyboard-layer-position:measure')),
+  });
   for (const layer of measurementLayers) {
-    const backdrop = getRenderedDescendantByProps(layer, {testID: 'ui.base.input:virtual-keyboard:backdrop'});
+    const backdrop = getRenderedDescendantByProps(layer, {
+      testID: testId(inputTestIds.node('virtual-keyboard:backdrop')),
+    });
     const layout = StyleSheet.flatten(backdrop.props.style) as Readonly<{
       readonly width: number;
       readonly height: number;
@@ -91,13 +103,17 @@ const measureKeyboardLayers = async (renderer: TestRenderer): Promise<void> => {
 const keyboardPositionLayers = (renderer: TestRenderer) =>
   queryNodes(renderer, 'AnimatedView').filter(
     layer =>
-      typeof layer.props.testID === 'string' && layer.props.testID.startsWith('ui.base.input:keyboard-layer-position:'),
+      typeof layer.props.testID === 'string' &&
+      layer.props.testID.startsWith(inputTestIds.node('keyboard-layer-position')),
   );
 
 const finishKeyboardPresentation = async (renderer: TestRenderer): Promise<void> => {
   setAnimatedTimingAutoFinishForTests(true);
   for (let attempt = 0; attempt < 4; attempt += 1) {
-    if (queryNodesByProps(renderer, {testID: 'ui.base.input:keyboard-layer-position:measure'}).length === 0) break;
+    if (
+      queryNodesByProps(renderer, {testID: testId(inputTestIds.node('keyboard-layer-position:measure'))}).length === 0
+    )
+      break;
     await measureKeyboardLayers(renderer);
     await act(async () => {
       advanceAnimatedTimingsForTests(1);
@@ -235,7 +251,7 @@ const Field = ({
   onReady,
 }: Readonly<{
   readonly fieldId: string;
-  readonly testID: string;
+  readonly testID: TestId;
   readonly nativeLess?: boolean;
   readonly layout?: 'full' | 'alpha' | 'numeric' | 'financial';
   readonly focusScopeId?: string;
@@ -259,7 +275,7 @@ const Field = ({
       <PrimitivePinInput
         testID={testID}
         accessibilityLabel={fieldId}
-        cellTestIDPrefix={`${testID}:digit`}
+        cellTestIDPrefix={testId(`${testID}:digit`)}
         length={6}
         measureRef={result.visibleAnchorRef}
         onPress={result.focus}
@@ -279,7 +295,7 @@ const SessionField = ({
 }>) => {
   const result = useInputField({
     fieldId,
-    testID: `sample:${fieldId}`,
+    testID: testId(`sample:${fieldId}`),
     accessibilityLabel: fieldId,
     keyboardKind: 'virtual',
     layout: 'full',
@@ -288,9 +304,9 @@ const SessionField = ({
   onReady(result);
   return (
     <PrimitivePinInput
-      testID={`sample:${fieldId}`}
+      testID={testId(`sample:${fieldId}`)}
       accessibilityLabel={fieldId}
-      cellTestIDPrefix={`sample:${fieldId}:digit`}
+      cellTestIDPrefix={testId(`sample:${fieldId}:digit`)}
       length={6}
       measureRef={result.visibleAnchorRef}
       onPress={result.focus}
@@ -329,7 +345,7 @@ const RenderCountingField = ({
   onRender,
 }: Readonly<{
   readonly fieldId: string;
-  readonly testID: string;
+  readonly testID: TestId;
   readonly keyboardKind?: 'virtual';
   readonly onRender: (count: number) => void;
 }>) => {
@@ -351,7 +367,7 @@ const StateProbe = ({
 }: Readonly<{readonly onState: (state: ReturnType<typeof useInputKeyboardState>) => void}>) => {
   onState(useInputKeyboardState());
   return (
-    <PrimitiveButton testID="sample:decision" onPress={() => undefined}>
+    <PrimitiveButton testID={testId('sample:decision')} onPress={() => undefined}>
       继续
     </PrimitiveButton>
   );
@@ -374,7 +390,7 @@ const PassiveKeyboardHarness = () => {
         testIDSuffix={String(revision)}
       />
       <PrimitiveButton
-        testID="sample:rerender-passive"
+        testID={testId('sample:rerender-passive')}
         onPress={() => {
           setRevision(value => value + 1);
         }}
@@ -389,10 +405,10 @@ describe('input provider', () => {
   it('keeps the content full-size and the keyboard overlay above render layers', async () => {
     const renderer = await mount(<InputSurfaceFrame />);
     const contentStyle = StyleSheet.flatten(
-      getNodeByProps(renderer, {testID: 'ui.base.input:surface-content'}).props.style,
+      getNodeByProps(renderer, {testID: testId(inputTestIds.node('surface-content'))}).props.style,
     ) as Record<string, any>;
     const overlayStyle = StyleSheet.flatten(
-      getNodeByProps(renderer, {testID: 'ui.base.input:keyboard-overlay'}).props.style,
+      getNodeByProps(renderer, {testID: testId(inputTestIds.node('keyboard-overlay'))}).props.style,
     ) as Record<string, any>;
 
     expect(contentStyle).toMatchObject({flex: 1, width: '100%'});
@@ -410,24 +426,28 @@ describe('input provider', () => {
     const renderer = await render(
       <>
         <InputSurfaceFrame>
-          <Field fieldId="primary-width" testID="sample:primary-width" onReady={() => undefined} />
+          <Field fieldId="primary-width" testID={testId('sample:primary-width')} onReady={() => undefined} />
         </InputSurfaceFrame>
         <InputSurfaceFrame>
-          <Field fieldId="secondary-width" testID="sample:secondary-width" onReady={() => undefined} />
+          <Field fieldId="secondary-width" testID={testId('sample:secondary-width')} onReady={() => undefined} />
         </InputSurfaceFrame>
       </>,
     );
-    const frames = queryNodesByProps(renderer, {testID: 'ui.base.input:surface-frame'});
+    const frames = queryNodesByProps(renderer, {testID: testId(inputTestIds.node('surface-frame'))});
     await act(async () => {
       frames[0]!.props.onLayout({nativeEvent: {layout: {width: 1280, height: 800}}});
       frames[1]!.props.onLayout({nativeEvent: {layout: {width: 360, height: 720}}});
     });
-    const primary = queryNodes(renderer, 'TextInput').find(node => node.props.testID === 'sample:primary-width')!;
-    const secondary = queryNodes(renderer, 'TextInput').find(node => node.props.testID === 'sample:secondary-width')!;
+    const primary = queryNodes(renderer, 'TextInput').find(
+      node => node.props.testID === testId('sample:primary-width'),
+    )!;
+    const secondary = queryNodes(renderer, 'TextInput').find(
+      node => node.props.testID === testId('sample:secondary-width'),
+    )!;
     await focusAndFinishKeyboard(renderer, primary);
     await focusAndFinishKeyboard(renderer, secondary);
     const keyboards = queryNodes(renderer, 'View').filter(
-      node => node.props.testID === 'ui.base.input:virtual-keyboard',
+      node => node.props.testID === testId(inputTestIds.node('virtual-keyboard')),
     );
     expect(keyboards.map(node => (StyleSheet.flatten(node.props.style) as Record<string, any>).width)).toEqual([
       1280, 360,
@@ -466,7 +486,7 @@ describe('input provider', () => {
       firstField!.focus();
     });
     await finishKeyboardPresentation(renderer);
-    const shift = getNodeByProps(renderer, {testID: 'ui.base.input:virtual-keyboard:shift'});
+    const shift = getNodeByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard:shift'))});
     await act(() => {
       shift.props.onPress();
     });
@@ -500,24 +520,29 @@ describe('input provider', () => {
             state = value;
           }}
         />
-        <Field fieldId="unmeasured" testID="sample:unmeasured" keyboardKind="virtual" onReady={() => undefined} />
+        <Field
+          fieldId="unmeasured"
+          testID={testId('sample:unmeasured')}
+          keyboardKind="virtual"
+          onReady={() => undefined}
+        />
       </InputSurfaceFrame>,
     );
 
-    expect(getNodeByProps(renderer, {testID: 'sample:decision'})).toBeDefined();
-    expect(queryNodesByProps(renderer, {testID: 'ui.base.input:virtual-keyboard'})).toHaveLength(0);
+    expect(getNodeByProps(renderer, {testID: testId('sample:decision')})).toBeDefined();
+    expect(queryNodesByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard'))})).toHaveLength(0);
     expect(state?.capacity).toBe('unmeasured');
-    const input = queryNodes(renderer, 'TextInput').find(node => node.props.testID === 'sample:unmeasured')!;
+    const input = queryNodes(renderer, 'TextInput').find(node => node.props.testID === testId('sample:unmeasured'))!;
     await act(async () => {
       input.props.onFocus({nativeEvent: {}});
     });
     expect(state?.activeFieldId).toBeNull();
-    expect(queryNodesByProps(renderer, {testID: 'ui.base.input:virtual-keyboard'})).toHaveLength(0);
+    expect(queryNodesByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard'))})).toHaveLength(0);
 
     await applyLayout(renderer);
     await focusAndFinishKeyboard(renderer, input);
     expect(state?.activeFieldId).toBe('unmeasured');
-    expect(getNodeByProps(renderer, {testID: 'ui.base.input:virtual-keyboard'})).toBeDefined();
+    expect(getNodeByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard'))})).toBeDefined();
     await act(async () => {
       await renderer.unmount();
     });
@@ -532,24 +557,28 @@ describe('input provider', () => {
             state = value;
           }}
         />
-        <Field fieldId="resized" testID="sample:resized" keyboardKind="virtual" onReady={() => undefined} />
+        <Field fieldId="resized" testID={testId('sample:resized')} keyboardKind="virtual" onReady={() => undefined} />
       </InputSurfaceFrame>,
     );
-    const input = queryNodes(renderer, 'TextInput').find(node => node.props.testID === 'sample:resized')!;
+    const input = queryNodes(renderer, 'TextInput').find(node => node.props.testID === testId('sample:resized'))!;
     await focusAndFinishKeyboard(renderer, input);
-    expect(getNodeByProps(renderer, {testID: 'ui.base.input:virtual-keyboard'})).toBeDefined();
+    expect(getNodeByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard'))})).toBeDefined();
 
     try {
       setAnimatedTimingAutoFinishForTests(false);
       await applyLayout(renderer!, 360, 300);
       expect(state?.owner).toBe('none');
-      expect(getNodeByProps(renderer!, {testID: 'ui.base.input:unsupported-size'})).toBeDefined();
-      expect(getNodeByProps(renderer!, {testID: 'ui.base.input:keyboard-layer-position:outgoing-0'})).toBeDefined();
-      expect(getNodeByProps(renderer!, {testID: 'ui.base.input:keyboard-hit-shield'})).toBeDefined();
+      expect(getNodeByProps(renderer!, {testID: testId(inputTestIds.node('unsupported-size'))})).toBeDefined();
+      expect(
+        getNodeByProps(renderer!, {testID: testId(inputTestIds.node('keyboard-layer-position:outgoing-0'))}),
+      ).toBeDefined();
+      expect(getNodeByProps(renderer!, {testID: testId(inputTestIds.node('keyboard-hit-shield'))})).toBeDefined();
       await act(() => {
         advanceAnimatedTimingsForTests(0.5);
       });
-      expect(getNodeByProps(renderer!, {testID: 'ui.base.input:keyboard-layer-position:outgoing-0'})).toBeDefined();
+      expect(
+        getNodeByProps(renderer!, {testID: testId(inputTestIds.node('keyboard-layer-position:outgoing-0'))}),
+      ).toBeDefined();
       await act(() => {
         advanceAnimatedTimingsForTests(1);
       });
@@ -577,14 +606,18 @@ describe('input provider', () => {
             state = value;
           }}
         />
-        <Field fieldId="exit-transition" testID="sample:exit-transition" onReady={() => undefined} />
+        <Field fieldId="exit-transition" testID={testId('sample:exit-transition')} onReady={() => undefined} />
       </InputSurfaceFrame>,
     );
-    const input = queryNodes(renderer, 'TextInput').find(node => node.props.testID === 'sample:exit-transition')!;
+    const input = queryNodes(renderer, 'TextInput').find(
+      node => node.props.testID === testId('sample:exit-transition'),
+    )!;
 
     try {
       await focusAndFinishKeyboard(renderer, input);
-      expect(queryNodesByProps(renderer, {testID: 'ui.base.input:virtual-keyboard'}).length).toBeGreaterThan(0);
+      expect(
+        queryNodesByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard'))}).length,
+      ).toBeGreaterThan(0);
 
       setAnimatedTimingAutoFinishForTests(false);
       await act(() => {
@@ -593,25 +626,33 @@ describe('input provider', () => {
 
       expect(state?.owner).toBe('none');
       expect(state?.visible).toBe(false);
-      expect(getNodeByProps(renderer, {testID: 'ui.base.input:virtual-keyboard:outgoing-0'})).toBeDefined();
-      expect(getNodeByProps(renderer, {testID: 'ui.base.input:keyboard-layer-position:outgoing-0'})).toBeDefined();
-      expect(getNodeByProps(renderer, {testID: 'ui.base.input:keyboard-hit-shield'})).toBeDefined();
+      expect(
+        getNodeByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard:outgoing-0'))}),
+      ).toBeDefined();
+      expect(
+        getNodeByProps(renderer, {testID: testId(inputTestIds.node('keyboard-layer-position:outgoing-0'))}),
+      ).toBeDefined();
+      expect(getNodeByProps(renderer, {testID: testId(inputTestIds.node('keyboard-hit-shield'))})).toBeDefined();
       await act(() => {
         advanceAnimatedTimingsForTests(0.5);
       });
       expect(state?.owner).toBe('none');
-      expect(getNodeByProps(renderer, {testID: 'ui.base.input:virtual-keyboard:outgoing-0'})).toBeDefined();
+      expect(
+        getNodeByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard:outgoing-0'))}),
+      ).toBeDefined();
       expect(
         (
-          getNodeByProps(renderer, {testID: 'ui.base.input:keyboard-layer-position:outgoing-0'}).props
+          getNodeByProps(renderer, {testID: testId(inputTestIds.node('keyboard-layer-position:outgoing-0'))}).props
             .style as readonly unknown[]
         ).some(style => (style as {pointerEvents?: string} | null)?.pointerEvents === 'none'),
       ).toBe(true);
-      expect(getNodeByProps(renderer, {testID: 'ui.base.input:keyboard-hit-shield'})).toBeDefined();
+      expect(getNodeByProps(renderer, {testID: testId(inputTestIds.node('keyboard-hit-shield'))})).toBeDefined();
       await act(() => {
         advanceAnimatedTimingsForTests(1);
       });
-      expect(queryNodesByProps(renderer, {testID: 'ui.base.input:keyboard-layer-position:outgoing-0'})).toHaveLength(0);
+      expect(
+        queryNodesByProps(renderer, {testID: testId(inputTestIds.node('keyboard-layer-position:outgoing-0'))}),
+      ).toHaveLength(0);
     } finally {
       setAnimatedTimingAutoFinishForTests(true);
       await act(() => {
@@ -629,8 +670,8 @@ describe('input provider', () => {
             state = value;
           }}
         />
-        <Field fieldId="handoff-a" testID="sample:handoff-a" layout="alpha" onReady={() => undefined} />
-        <Field fieldId="handoff-b" testID="sample:handoff-b" layout="full" onReady={() => undefined} />
+        <Field fieldId="handoff-a" testID={testId('sample:handoff-a')} layout="alpha" onReady={() => undefined} />
+        <Field fieldId="handoff-b" testID={testId('sample:handoff-b')} layout="full" onReady={() => undefined} />
       </InputSurfaceFrame>,
     );
     const input = (testID: string) => queryNodes(renderer, 'TextInput').find(node => node.props.testID === testID)!;
@@ -638,9 +679,11 @@ describe('input provider', () => {
     try {
       await focusAndFinishKeyboard(renderer, input('sample:handoff-a'));
       await act(() => {
-        getNodeByProps(renderer, {testID: 'ui.base.input:virtual-keyboard:shift'}).props.onPress();
+        getNodeByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard:shift'))}).props.onPress();
       });
-      expect(textContent(getNodeByProps(renderer, {testID: 'ui.base.input:virtual-keyboard:text-a'}))).toBe('A');
+      expect(
+        textContent(getNodeByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard:text-a'))})),
+      ).toBe('A');
       setAnimatedTimingAutoFinishForTests(false);
       const target = input('sample:handoff-b');
       await act(() => {
@@ -657,17 +700,23 @@ describe('input provider', () => {
       expect(state?.owner).toBe('none');
       expect(state?.activeFieldId).toBeNull();
       await measureKeyboardLayers(renderer);
-      expect(queryNodesByProps(renderer, {testID: 'ui.base.input:virtual-keyboard'}).length).toBeGreaterThan(0);
+      expect(
+        queryNodesByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard'))}).length,
+      ).toBeGreaterThan(0);
       const positionLayers = keyboardPositionLayers(renderer);
       expect(positionLayers.map(layer => layer.props.testID)).toEqual([
-        'ui.base.input:keyboard-layer-position:active',
-        'ui.base.input:keyboard-layer-position:outgoing-0',
+        inputTestIds.node('keyboard-layer-position:active'),
+        inputTestIds.node('keyboard-layer-position:outgoing-0'),
       ]);
       expect(
-        textContent(getNodeByProps(renderer, {testID: 'ui.base.input:virtual-keyboard:text-a:outgoing-0'})).trim(),
+        textContent(
+          getNodeByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard:text-a:outgoing-0'))}),
+        ).trim(),
       ).toBe('A');
-      expect(textContent(getNodeByProps(renderer, {testID: 'ui.base.input:virtual-keyboard:text-1'}))).toBe('1');
-      const shield = getNodeByProps(renderer, {testID: 'ui.base.input:keyboard-hit-shield'});
+      expect(
+        textContent(getNodeByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard:text-1'))})),
+      ).toBe('1');
+      const shield = getNodeByProps(renderer, {testID: testId(inputTestIds.node('keyboard-hit-shield'))});
       expect(shield.props.style).toEqual(expect.arrayContaining([expect.objectContaining({pointerEvents: 'auto'})]));
       expect(shield.props.onStartShouldSetResponder()).toBe(true);
       expect(shield.props.onMoveShouldSetResponder()).toBe(true);
@@ -684,16 +733,20 @@ describe('input provider', () => {
       });
       expect(state?.owner).toBe('none');
       expect(
-        textContent(getNodeByProps(renderer, {testID: 'ui.base.input:virtual-keyboard:text-a:outgoing-0'})).trim(),
+        textContent(
+          getNodeByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard:text-a:outgoing-0'))}),
+        ).trim(),
       ).toBe('A');
-      expect(getNodeByProps(renderer, {testID: 'ui.base.input:virtual-keyboard:text-1'})).toBeDefined();
-      expect(getNodeByProps(renderer, {testID: 'ui.base.input:keyboard-hit-shield'})).toBeDefined();
+      expect(getNodeByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard:text-1'))})).toBeDefined();
+      expect(getNodeByProps(renderer, {testID: testId(inputTestIds.node('keyboard-hit-shield'))})).toBeDefined();
       await act(() => {
         advanceAnimatedTimingsForTests(1);
       });
       expect(state?.activeFieldId).toBe('handoff-b');
       expect(state?.owner).toBe('virtual');
-      expect(queryNodesByProps(renderer, {testID: 'ui.base.input:virtual-keyboard'}).length).toBeGreaterThan(0);
+      expect(
+        queryNodesByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard'))}).length,
+      ).toBeGreaterThan(0);
     } finally {
       setAnimatedTimingAutoFinishForTests(true);
       await act(() => {
@@ -711,14 +764,15 @@ describe('input provider', () => {
             state = value;
           }}
         />
-        <Field fieldId="retarget-a" testID="sample:retarget-a" layout="alpha" onReady={() => undefined} />
-        <Field fieldId="retarget-b" testID="sample:retarget-b" layout="full" onReady={() => undefined} />
-        <Field fieldId="retarget-c" testID="sample:retarget-c" layout="financial" onReady={() => undefined} />
+        <Field fieldId="retarget-a" testID={testId('sample:retarget-a')} layout="alpha" onReady={() => undefined} />
+        <Field fieldId="retarget-b" testID={testId('sample:retarget-b')} layout="full" onReady={() => undefined} />
+        <Field fieldId="retarget-c" testID={testId('sample:retarget-c')} layout="financial" onReady={() => undefined} />
       </InputSurfaceFrame>,
     );
     const input = (testID: string) => queryNodes(renderer, 'TextInput').find(node => node.props.testID === testID)!;
     const renderedKeyboardCount = () =>
-      queryNodes(renderer, 'View').filter(node => node.props.testID === 'ui.base.input:virtual-keyboard').length;
+      queryNodes(renderer, 'View').filter(node => node.props.testID === testId(inputTestIds.node('virtual-keyboard')))
+        .length;
     const requestFocus = async (testID: string): Promise<void> => {
       const target = input(testID);
       await act(() => {
@@ -744,7 +798,7 @@ describe('input provider', () => {
       expect(state?.activeFieldId).toBeNull();
       expect(state?.blockedFieldId).toBe('retarget-c');
       expect(
-        queryNodesByProps(renderer, {testID: 'ui.base.input:keyboard-layer-position:measure'}).length,
+        queryNodesByProps(renderer, {testID: testId(inputTestIds.node('keyboard-layer-position:measure'))}).length,
       ).toBeGreaterThan(0);
       await measureKeyboardLayers(renderer);
       await act(() => {
@@ -774,9 +828,9 @@ describe('input provider', () => {
             state = value;
           }}
         />
-        <Field fieldId="rapid-a" testID="sample:rapid-a" layout="alpha" onReady={() => undefined} />
-        <Field fieldId="rapid-b" testID="sample:rapid-b" layout="full" onReady={() => undefined} />
-        <Field fieldId="rapid-c" testID="sample:rapid-c" layout="financial" onReady={() => undefined} />
+        <Field fieldId="rapid-a" testID={testId('sample:rapid-a')} layout="alpha" onReady={() => undefined} />
+        <Field fieldId="rapid-b" testID={testId('sample:rapid-b')} layout="full" onReady={() => undefined} />
+        <Field fieldId="rapid-c" testID={testId('sample:rapid-c')} layout="financial" onReady={() => undefined} />
       </InputSurfaceFrame>,
     );
     const input = (testID: string) => queryNodes(renderer, 'TextInput').find(node => node.props.testID === testID)!;
@@ -847,10 +901,10 @@ describe('input provider', () => {
             commitPendingFocus = value;
           }}
         />
-        <Field fieldId="same-serial" testID="sample:same-serial" onReady={() => undefined} />
+        <Field fieldId="same-serial" testID={testId('sample:same-serial')} onReady={() => undefined} />
       </InputSurfaceFrame>,
     );
-    const input = queryNodes(renderer, 'TextInput').find(node => node.props.testID === 'sample:same-serial')!;
+    const input = queryNodes(renderer, 'TextInput').find(node => node.props.testID === testId('sample:same-serial'))!;
 
     try {
       setAnimatedTimingAutoFinishForTests(false);
@@ -879,10 +933,10 @@ describe('input provider', () => {
   it('keeps a rendered key handler stable across keyboard measurement', async () => {
     const renderer = await mount(
       <InputSurfaceFrame>
-        <Field fieldId="stable-layer" testID="sample:stable-layer" layout="full" onReady={() => undefined} />
+        <Field fieldId="stable-layer" testID={testId('sample:stable-layer')} layout="full" onReady={() => undefined} />
       </InputSurfaceFrame>,
     );
-    const input = queryNodes(renderer, 'TextInput').find(node => node.props.testID === 'sample:stable-layer')!;
+    const input = queryNodes(renderer, 'TextInput').find(node => node.props.testID === testId('sample:stable-layer'))!;
     const keyboardNode = () => getKeyboardKey(renderer, 'text-a');
 
     try {
@@ -912,7 +966,7 @@ describe('input provider', () => {
     );
     const keyboardKey = () => getKeyboardKey(renderer, 'text-1');
     expect(keyboardKey().props.onPress).toEqual(expect.any(Function));
-    const rerender = getNodeByProps(renderer, {testID: 'sample:rerender-passive'});
+    const rerender = getNodeByProps(renderer, {testID: testId('sample:rerender-passive')});
     await act(() => {
       rerender.props.onPress();
     });
@@ -937,8 +991,8 @@ describe('input provider', () => {
             state = value;
           }}
         />
-        <Field fieldId="cancel-a" testID="sample:cancel-a" layout="alpha" onReady={() => undefined} />
-        <Field fieldId="cancel-b" testID="sample:cancel-b" layout="full" onReady={() => undefined} />
+        <Field fieldId="cancel-a" testID={testId('sample:cancel-a')} layout="alpha" onReady={() => undefined} />
+        <Field fieldId="cancel-b" testID={testId('sample:cancel-b')} layout="full" onReady={() => undefined} />
       </InputSurfaceFrame>,
     );
     const input = (testID: string) => queryNodes(renderer, 'TextInput').find(node => node.props.testID === testID)!;
@@ -964,19 +1018,19 @@ describe('input provider', () => {
       expect(state?.owner).toBe('none');
       expect(state?.activeFieldId).toBeNull();
       expect(state?.blockedFieldId).toBeNull();
-      expect(queryNodesByProps(renderer, {testID: 'ui.base.input:keyboard-hit-shield'})).toHaveLength(1);
+      expect(queryNodesByProps(renderer, {testID: testId(inputTestIds.node('keyboard-hit-shield'))})).toHaveLength(1);
       expect(
-        queryNodesByProps(renderer, {testID: 'ui.base.input:keyboard-layer-position:outgoing-0'}).length,
+        queryNodesByProps(renderer, {testID: testId(inputTestIds.node('keyboard-layer-position:outgoing-0'))}).length,
       ).toBeGreaterThan(0);
       await act(() => {
         advanceAnimatedTimingsForTests(0.5);
       });
-      expect(queryNodesByProps(renderer, {testID: 'ui.base.input:keyboard-hit-shield'})).toHaveLength(1);
+      expect(queryNodesByProps(renderer, {testID: testId(inputTestIds.node('keyboard-hit-shield'))})).toHaveLength(1);
       await act(() => {
         advanceAnimatedTimingsForTests(1);
       });
       expect(keyboardPositionLayers(renderer)).toHaveLength(0);
-      expect(queryNodesByProps(renderer, {testID: 'ui.base.input:keyboard-hit-shield'})).toHaveLength(0);
+      expect(queryNodesByProps(renderer, {testID: testId(inputTestIds.node('keyboard-hit-shield'))})).toHaveLength(0);
     } finally {
       setAnimatedTimingAutoFinishForTests(true);
       await act(() => {
@@ -994,13 +1048,14 @@ describe('input provider', () => {
             state = value;
           }}
         />
-        <Field fieldId="stable-a" testID="sample:stable-a" layout="full" onReady={() => undefined} />
-        <Field fieldId="stable-b" testID="sample:stable-b" layout="full" onReady={() => undefined} />
+        <Field fieldId="stable-a" testID={testId('sample:stable-a')} layout="full" onReady={() => undefined} />
+        <Field fieldId="stable-b" testID={testId('sample:stable-b')} layout="full" onReady={() => undefined} />
       </InputSurfaceFrame>,
     );
     const input = (testID: string) => queryNodes(renderer, 'TextInput').find(node => node.props.testID === testID)!;
     const renderedKeyboardCount = () =>
-      queryNodes(renderer, 'View').filter(node => node.props.testID === 'ui.base.input:virtual-keyboard').length;
+      queryNodes(renderer, 'View').filter(node => node.props.testID === testId(inputTestIds.node('virtual-keyboard')))
+        .length;
 
     await focusAndFinishKeyboard(renderer, input('sample:stable-a'));
     const target = input('sample:stable-b');
@@ -1013,15 +1068,21 @@ describe('input provider', () => {
     await finishKeyboardPresentation(renderer);
     expect(state?.activeFieldId).toBe('stable-b');
     expect(renderedKeyboardCount()).toBe(1);
-    expect(queryNodesByProps(renderer, {testID: 'ui.base.input:keyboard-layer-position:measure'})).toHaveLength(0);
+    expect(
+      queryNodesByProps(renderer, {testID: testId(inputTestIds.node('keyboard-layer-position:measure'))}),
+    ).toHaveLength(0);
 
     await act(() => {
-      getNodeByProps(renderer, {testID: 'ui.base.input:virtual-keyboard:shift'}).props.onPress();
+      getNodeByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard:shift'))}).props.onPress();
     });
     expect(state?.shift).toBe(true);
-    expect(textContent(getNodeByProps(renderer, {testID: 'ui.base.input:virtual-keyboard:text-a'}))).toBe('A');
+    expect(textContent(getNodeByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard:text-a'))}))).toBe(
+      'A',
+    );
     expect(renderedKeyboardCount()).toBe(1);
-    expect(queryNodesByProps(renderer, {testID: 'ui.base.input:keyboard-layer-position:measure'})).toHaveLength(0);
+    expect(
+      queryNodesByProps(renderer, {testID: testId(inputTestIds.node('keyboard-layer-position:measure'))}),
+    ).toHaveLength(0);
     await act(() => {
       renderer.unmount();
     });
@@ -1036,10 +1097,12 @@ describe('input provider', () => {
             state = value;
           }}
         />
-        <Field fieldId="initial-pending" testID="sample:initial-pending" onReady={() => undefined} />
+        <Field fieldId="initial-pending" testID={testId('sample:initial-pending')} onReady={() => undefined} />
       </InputSurfaceFrame>,
     );
-    const input = queryNodes(renderer, 'TextInput').find(node => node.props.testID === 'sample:initial-pending')!;
+    const input = queryNodes(renderer, 'TextInput').find(
+      node => node.props.testID === testId('sample:initial-pending'),
+    )!;
 
     try {
       await act(() => {
@@ -1066,7 +1129,7 @@ describe('input provider', () => {
       <InputSurfaceFrame>
         <Field
           fieldId="age"
-          testID="sample:age"
+          testID={testId('sample:age')}
           keyboardKind="virtual"
           onReady={value => {
             field = value;
@@ -1074,12 +1137,12 @@ describe('input provider', () => {
         />
       </InputSurfaceFrame>,
     );
-    const input = () => queryNodes(renderer, 'TextInput').find(node => node.props.testID === 'sample:age')!;
+    const input = () => queryNodes(renderer, 'TextInput').find(node => node.props.testID === testId('sample:age'))!;
 
     await focusAndFinishKeyboard(renderer, input());
-    expect(getNodeByProps(renderer, {testID: 'ui.base.input:virtual-keyboard'})).toBeDefined();
+    expect(getNodeByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard'))})).toBeDefined();
 
-    const one = getNodeByProps(renderer, {testID: 'ui.base.input:virtual-keyboard:text-1'});
+    const one = getNodeByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard:text-1'))});
     await act(() => {
       one.props.onPress();
     });
@@ -1100,7 +1163,7 @@ describe('input provider', () => {
       <InputSurfaceFrame>
         <Field
           fieldId="reported-value"
-          testID="sample:reported-value"
+          testID={testId('sample:reported-value')}
           onValueChange={onValueChange}
           onReady={value => {
             field = value;
@@ -1108,11 +1171,12 @@ describe('input provider', () => {
         />
       </InputSurfaceFrame>,
     );
-    const input = () => queryNodes(renderer, 'TextInput').find(node => node.props.testID === 'sample:reported-value')!;
+    const input = () =>
+      queryNodes(renderer, 'TextInput').find(node => node.props.testID === testId('sample:reported-value'))!;
 
     await focusAndFinishKeyboard(renderer, input());
     await act(() => {
-      getNodeByProps(renderer, {testID: 'ui.base.input:virtual-keyboard:text-1'}).props.onPress();
+      getNodeByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard:text-1'))}).props.onPress();
     });
     expect(onValueChange).toHaveBeenLastCalledWith('1');
     expect(onValueChange).toHaveBeenCalledTimes(1);
@@ -1145,7 +1209,7 @@ describe('input provider', () => {
         />
         <Field
           fieldId="native-less"
-          testID="sample:native-less"
+          testID={testId('sample:native-less')}
           nativeLess
           onReady={value => {
             field = value;
@@ -1161,7 +1225,7 @@ describe('input provider', () => {
     await finishKeyboardPresentation(renderer);
     expect(state?.activeFieldId).toBe('native-less');
     expect(state?.owner).toBe('virtual');
-    expect(getNodeByProps(renderer, {testID: 'ui.base.input:virtual-keyboard'})).toBeDefined();
+    expect(getNodeByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard'))})).toBeDefined();
     await act(() => {
       renderer.unmount();
     });
@@ -1176,12 +1240,12 @@ describe('input provider', () => {
             capture = value;
           }}
         />
-        <Field fieldId="snapshot" testID="sample:snapshot" keyboardKind="virtual" onReady={() => undefined} />
+        <Field fieldId="snapshot" testID={testId('sample:snapshot')} keyboardKind="virtual" onReady={() => undefined} />
       </InputSurfaceFrame>,
     );
-    const input = queryNodes(renderer, 'TextInput').find(node => node.props.testID === 'sample:snapshot')!;
+    const input = queryNodes(renderer, 'TextInput').find(node => node.props.testID === testId('sample:snapshot'))!;
     await focusAndFinishKeyboard(renderer, input);
-    const one = getNodeByProps(renderer, {testID: 'ui.base.input:virtual-keyboard:text-1'});
+    const one = getNodeByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard:text-1'))});
     await act(() => {
       one.props.onPress();
     });
@@ -1200,7 +1264,7 @@ describe('input provider', () => {
       <InputSurfaceFrame>
         <Field
           fieldId="virtual"
-          testID="sample:virtual"
+          testID={testId('sample:virtual')}
           keyboardKind="virtual"
           onReady={value => {
             ready.virtual = value;
@@ -1208,7 +1272,7 @@ describe('input provider', () => {
         />
         <Field
           fieldId="second"
-          testID="sample:second"
+          testID={testId('sample:second')}
           keyboardKind="virtual"
           onReady={value => {
             ready.second = value;
@@ -1219,10 +1283,10 @@ describe('input provider', () => {
     const input = (testID: string) => queryNodes(renderer, 'TextInput').find(node => node.props.testID === testID)!;
 
     await focusAndFinishKeyboard(renderer, input('sample:virtual'));
-    expect(getNodeByProps(renderer, {testID: 'ui.base.input:virtual-keyboard'})).toBeDefined();
+    expect(getNodeByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard'))})).toBeDefined();
     await focusAndFinishKeyboard(renderer, input('sample:second'));
     expect(
-      queryNodes(renderer, 'View').filter(node => node.props.testID === 'ui.base.input:virtual-keyboard'),
+      queryNodes(renderer, 'View').filter(node => node.props.testID === testId(inputTestIds.node('virtual-keyboard'))),
     ).toHaveLength(1);
     await act(() => {
       renderer.unmount();
@@ -1233,36 +1297,46 @@ describe('input provider', () => {
     const focusHarness = createNativeFocusHarness();
     const renderer = await mountWithNodeMock(
       <InputSurfaceFrame>
-        <Field fieldId="owner-virtual" testID="sample:owner-virtual" keyboardKind="virtual" onReady={() => undefined} />
-        <Field fieldId="owner-second" testID="sample:owner-second" keyboardKind="virtual" onReady={() => undefined} />
+        <Field
+          fieldId="owner-virtual"
+          testID={testId('sample:owner-virtual')}
+          keyboardKind="virtual"
+          onReady={() => undefined}
+        />
+        <Field
+          fieldId="owner-second"
+          testID={testId('sample:owner-second')}
+          keyboardKind="virtual"
+          onReady={() => undefined}
+        />
       </InputSurfaceFrame>,
       focusHarness.nativeRefFactory,
     );
 
     await focusNativeHarnessAndFinish(renderer, focusHarness, 'sample:owner-virtual');
     expect(
-      queryNodes(renderer, 'View').filter(node => node.props.testID === 'ui.base.input:virtual-keyboard'),
+      queryNodes(renderer, 'View').filter(node => node.props.testID === testId(inputTestIds.node('virtual-keyboard'))),
     ).toHaveLength(1);
     expect(focusHarness.isFocused('sample:owner-virtual')).toBe(true);
 
     await focusNativeHarnessAndFinish(renderer, focusHarness, 'sample:owner-second');
     expect(
-      queryNodes(renderer, 'View').filter(node => node.props.testID === 'ui.base.input:virtual-keyboard'),
+      queryNodes(renderer, 'View').filter(node => node.props.testID === testId(inputTestIds.node('virtual-keyboard'))),
     ).toHaveLength(1);
     expect(focusHarness.isFocused('sample:owner-second')).toBe(true);
 
     await focusNativeHarnessAndFinish(renderer, focusHarness, 'sample:owner-virtual');
     expect(
-      queryNodes(renderer, 'View').filter(node => node.props.testID === 'ui.base.input:virtual-keyboard'),
+      queryNodes(renderer, 'View').filter(node => node.props.testID === testId(inputTestIds.node('virtual-keyboard'))),
     ).toHaveLength(1);
     expect(focusHarness.isFocused('sample:owner-virtual')).toBe(true);
     expect(
-      queryNodes(renderer, 'View').filter(node => node.props.testID === 'ui.base.input:virtual-keyboard'),
+      queryNodes(renderer, 'View').filter(node => node.props.testID === testId(inputTestIds.node('virtual-keyboard'))),
     ).toHaveLength(1);
 
     await focusNativeHarnessAndFinish(renderer, focusHarness, 'sample:owner-second');
     expect(
-      queryNodes(renderer, 'View').filter(node => node.props.testID === 'ui.base.input:virtual-keyboard'),
+      queryNodes(renderer, 'View').filter(node => node.props.testID === testId(inputTestIds.node('virtual-keyboard'))),
     ).toHaveLength(1);
     expect(focusHarness.isFocused('sample:owner-second')).toBe(true);
     await act(() => {
@@ -1282,13 +1356,13 @@ describe('input provider', () => {
         />
         <Field
           fieldId="owner-first-pointer"
-          testID="sample:owner-first-pointer"
+          testID={testId('sample:owner-first-pointer')}
           keyboardKind="virtual"
           onReady={() => undefined}
         />
         <Field
           fieldId="owner-virtual-pointer"
-          testID="sample:owner-virtual-pointer"
+          testID={testId('sample:owner-virtual-pointer')}
           keyboardKind="virtual"
           onReady={() => undefined}
         />
@@ -1296,7 +1370,7 @@ describe('input provider', () => {
       focusHarness.nativeRefFactory,
     );
     const virtualInput = queryNodes(renderer, 'TextInput').find(
-      node => node.props.testID === 'sample:owner-virtual-pointer',
+      node => node.props.testID === testId('sample:owner-virtual-pointer'),
     )!;
 
     await focusNativeHarnessAndFinish(renderer, focusHarness, 'sample:owner-first-pointer');
@@ -1310,7 +1384,7 @@ describe('input provider', () => {
     expect(focusHarness.isFocused('sample:owner-virtual-pointer')).toBe(true);
     expect(state?.activeFieldId).toBe('owner-virtual-pointer');
     expect(state?.owner).toBe('virtual');
-    expect(getNodeByProps(renderer, {testID: 'ui.base.input:virtual-keyboard'})).toBeDefined();
+    expect(getNodeByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard'))})).toBeDefined();
     await act(() => {
       renderer.unmount();
     });
@@ -1329,7 +1403,7 @@ describe('input provider', () => {
         />
         <Field
           fieldId="complete-owner-first"
-          testID="sample:owner-first-pointer-next"
+          testID={testId('sample:owner-first-pointer-next')}
           keyboardKind="virtual"
           onReady={value => {
             ready.first = value;
@@ -1337,7 +1411,7 @@ describe('input provider', () => {
         />
         <Field
           fieldId="complete-owner-virtual"
-          testID="sample:owner-virtual-pointer-next"
+          testID={testId('sample:owner-virtual-pointer-next')}
           keyboardKind="virtual"
           onReady={value => {
             ready.virtual = value;
@@ -1355,7 +1429,7 @@ describe('input provider', () => {
     expect(focusHarness.isFocused('sample:owner-virtual-pointer-next')).toBe(true);
     expect(state?.activeFieldId).toBe('complete-owner-virtual');
     expect(state?.owner).toBe('virtual');
-    expect(getNodeByProps(renderer, {testID: 'ui.base.input:virtual-keyboard'})).toBeDefined();
+    expect(getNodeByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard'))})).toBeDefined();
     await act(() => {
       renderer.unmount();
     });
@@ -1368,7 +1442,7 @@ describe('input provider', () => {
       <InputSurfaceFrame>
         <Field
           fieldId="virtual-native-blur"
-          testID="sample:virtual-native-blur"
+          testID={testId('sample:virtual-native-blur')}
           keyboardKind="virtual"
           onReady={value => {
             field = value;
@@ -1376,19 +1450,21 @@ describe('input provider', () => {
         />
       </InputSurfaceFrame>,
     );
-    const input = queryNodes(renderer, 'TextInput').find(node => node.props.testID === 'sample:virtual-native-blur')!;
+    const input = queryNodes(renderer, 'TextInput').find(
+      node => node.props.testID === testId('sample:virtual-native-blur'),
+    )!;
     await focusAndFinishKeyboard(renderer, input);
-    expect(getNodeByProps(renderer, {testID: 'ui.base.input:virtual-keyboard'})).toBeDefined();
+    expect(getNodeByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard'))})).toBeDefined();
 
     await act(() => {
       input.props.onBlur();
     });
-    expect(getNodeByProps(renderer, {testID: 'ui.base.input:virtual-keyboard'})).toBeDefined();
+    expect(getNodeByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard'))})).toBeDefined();
 
     await act(() => {
       field?.blur();
     });
-    expect(queryNodesByProps(renderer, {testID: 'ui.base.input:virtual-keyboard'})).toHaveLength(0);
+    expect(queryNodesByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard'))})).toHaveLength(0);
     await act(() => {
       renderer.unmount();
     });
@@ -1399,18 +1475,22 @@ describe('input provider', () => {
       <InputSurfaceFrame>
         <Field
           fieldId="outside-dismiss"
-          testID="sample:outside-dismiss"
+          testID={testId('sample:outside-dismiss')}
           keyboardKind="virtual"
           onReady={() => undefined}
         />
-        <PrimitiveHeading testID="sample:outside-dismiss:title">标题</PrimitiveHeading>
+        <PrimitiveHeading testID={testId('sample:outside-dismiss:title')}>标题</PrimitiveHeading>
       </InputSurfaceFrame>,
     );
-    const input = queryNodes(renderer, 'TextInput').find(node => node.props.testID === 'sample:outside-dismiss')!;
+    const input = queryNodes(renderer, 'TextInput').find(
+      node => node.props.testID === testId('sample:outside-dismiss'),
+    )!;
     await focusAndFinishKeyboard(renderer, input);
-    expect(getNodeByProps(renderer, {testID: 'ui.base.input:virtual-keyboard'})).toBeDefined();
+    expect(getNodeByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard'))})).toBeDefined();
 
-    const keyboard = getNodeByProps(renderer, {testID: 'ui.base.input:virtual-keyboard'}) as unknown as Readonly<{
+    const keyboard = getNodeByProps(renderer, {
+      testID: testId(inputTestIds.node('virtual-keyboard')),
+    }) as unknown as Readonly<{
       readonly props: Readonly<{
         readonly onTouchEnd?: (event: Readonly<{readonly stopPropagation: () => void}>) => void;
       }>;
@@ -1418,9 +1498,11 @@ describe('input provider', () => {
     const stopKeyboardPropagation = vi.fn();
     keyboard.props.onTouchEnd?.({stopPropagation: stopKeyboardPropagation});
     expect(stopKeyboardPropagation).toHaveBeenCalledTimes(1);
-    expect(getNodeByProps(renderer, {testID: 'ui.base.input:virtual-keyboard'})).toBeDefined();
+    expect(getNodeByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard'))})).toBeDefined();
 
-    const content = getNodeByProps(renderer, {testID: 'ui.base.input:surface-content'}) as unknown as Readonly<{
+    const content = getNodeByProps(renderer, {
+      testID: testId(inputTestIds.node('surface-content')),
+    }) as unknown as Readonly<{
       readonly props: Readonly<{
         readonly onTouchStart?: (
           event: Readonly<{readonly nativeEvent: Readonly<{readonly pageX: number; readonly pageY: number}>}>,
@@ -1437,7 +1519,7 @@ describe('input provider', () => {
       content.props.onTouchStart?.({nativeEvent: {pageX: 10, pageY: 20}});
       content.props.onTouchEnd?.({nativeEvent: {pageX: 10, pageY: 20}});
     });
-    expect(queryNodesByProps(renderer, {testID: 'ui.base.input:virtual-keyboard'})).toHaveLength(0);
+    expect(queryNodesByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard'))})).toHaveLength(0);
     await act(() => {
       renderer.unmount();
     });
@@ -1450,7 +1532,7 @@ describe('input provider', () => {
       <InputSurfaceFrame>
         <Field
           fieldId="admin-scoped-field"
-          testID="sample:admin-scoped-field"
+          testID={testId('sample:admin-scoped-field')}
           nativeLess
           focusScopeId="admin.console"
           onReady={value => {
@@ -1462,7 +1544,7 @@ describe('input provider', () => {
             controller = value;
           }}
         />
-        <PrimitiveHeading testID="sample:admin-scoped-field:title">标题</PrimitiveHeading>
+        <PrimitiveHeading testID={testId('sample:admin-scoped-field:title')}>标题</PrimitiveHeading>
       </InputSurfaceFrame>,
     );
 
@@ -1471,9 +1553,11 @@ describe('input provider', () => {
       field?.focus();
     });
     await finishKeyboardPresentation(renderer);
-    expect(getNodeByProps(renderer, {testID: 'ui.base.input:virtual-keyboard'})).toBeDefined();
+    expect(getNodeByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard'))})).toBeDefined();
 
-    const content = getNodeByProps(renderer, {testID: 'ui.base.input:surface-content'}) as unknown as Readonly<{
+    const content = getNodeByProps(renderer, {
+      testID: testId(inputTestIds.node('surface-content')),
+    }) as unknown as Readonly<{
       readonly props: Readonly<{
         readonly onTouchStart?: (
           event: Readonly<{readonly nativeEvent: Readonly<{readonly pageX: number; readonly pageY: number}>}>,
@@ -1487,12 +1571,12 @@ describe('input provider', () => {
       content.props.onTouchStart?.({nativeEvent: {pageX: 10, pageY: 20}});
       content.props.onTouchEnd?.({nativeEvent: {pageX: 10, pageY: 20}});
     });
-    expect(getNodeByProps(renderer, {testID: 'ui.base.input:virtual-keyboard'})).toBeDefined();
+    expect(getNodeByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard'))})).toBeDefined();
 
     await act(() => {
       field?.blur();
     });
-    expect(queryNodesByProps(renderer, {testID: 'ui.base.input:virtual-keyboard'})).toHaveLength(0);
+    expect(queryNodesByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard'))})).toHaveLength(0);
     await act(() => {
       renderer.unmount();
     });
@@ -1501,15 +1585,22 @@ describe('input provider', () => {
   it('keeps the active keyboard during a surface swipe', async () => {
     const renderer = await mount(
       <InputSurfaceFrame>
-        <Field fieldId="surface-swipe" testID="sample:surface-swipe" keyboardKind="virtual" onReady={() => undefined} />
-        <PrimitiveHeading testID="sample:surface-swipe:title">标题</PrimitiveHeading>
+        <Field
+          fieldId="surface-swipe"
+          testID={testId('sample:surface-swipe')}
+          keyboardKind="virtual"
+          onReady={() => undefined}
+        />
+        <PrimitiveHeading testID={testId('sample:surface-swipe:title')}>标题</PrimitiveHeading>
       </InputSurfaceFrame>,
     );
-    const input = queryNodes(renderer, 'TextInput').find(node => node.props.testID === 'sample:surface-swipe')!;
+    const input = queryNodes(renderer, 'TextInput').find(node => node.props.testID === testId('sample:surface-swipe'))!;
     await focusAndFinishKeyboard(renderer, input);
-    expect(getNodeByProps(renderer, {testID: 'ui.base.input:virtual-keyboard'})).toBeDefined();
+    expect(getNodeByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard'))})).toBeDefined();
 
-    const content = getNodeByProps(renderer, {testID: 'ui.base.input:surface-content'}) as unknown as Readonly<{
+    const content = getNodeByProps(renderer, {
+      testID: testId(inputTestIds.node('surface-content')),
+    }) as unknown as Readonly<{
       readonly props: Readonly<{
         readonly onTouchStart?: (
           event: Readonly<{readonly nativeEvent: Readonly<{readonly pageX: number; readonly pageY: number}>}>,
@@ -1523,7 +1614,7 @@ describe('input provider', () => {
       content.props.onTouchStart?.({nativeEvent: {pageX: 10, pageY: 20}});
       content.props.onTouchEnd?.({nativeEvent: {pageX: 40, pageY: 20}});
     });
-    expect(getNodeByProps(renderer, {testID: 'ui.base.input:virtual-keyboard'})).toBeDefined();
+    expect(getNodeByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard'))})).toBeDefined();
     await act(() => {
       renderer.unmount();
     });
@@ -1540,13 +1631,15 @@ describe('input provider', () => {
         />
         <Field
           fieldId="virtual-selection"
-          testID="sample:virtual-selection"
+          testID={testId('sample:virtual-selection')}
           keyboardKind="virtual"
           onReady={() => undefined}
         />
       </InputSurfaceFrame>,
     );
-    const input = queryNodes(renderer, 'TextInput').find(node => node.props.testID === 'sample:virtual-selection')!;
+    const input = queryNodes(renderer, 'TextInput').find(
+      node => node.props.testID === testId('sample:virtual-selection'),
+    )!;
     expect(input.props.selection).toEqual({start: 0, end: 0});
     await focusAndFinishKeyboard(renderer, input);
     await act(() => {
@@ -1574,13 +1667,15 @@ describe('input provider', () => {
       <InputSurfaceFrame>
         <Field
           fieldId="press-boundary"
-          testID="sample:press-boundary"
+          testID={testId('sample:press-boundary')}
           keyboardKind="virtual"
           onReady={() => undefined}
         />
       </InputSurfaceFrame>,
     );
-    const input = queryNodes(renderer, 'TextInput').find(node => node.props.testID === 'sample:press-boundary')!;
+    const input = queryNodes(renderer, 'TextInput').find(
+      node => node.props.testID === testId('sample:press-boundary'),
+    )!;
     const stopPropagation = vi.fn();
     await act(() => {
       input.props.onPressIn?.({stopPropagation});
@@ -1599,13 +1694,15 @@ describe('input provider', () => {
         <InputSurfaceFrame>
           <Field
             fieldId="web-press-boundary"
-            testID="sample:web-press-boundary"
+            testID={testId('sample:web-press-boundary')}
             keyboardKind="virtual"
             onReady={() => undefined}
           />
         </InputSurfaceFrame>,
       );
-      const input = queryNodes(renderer, 'TextInput').find(node => node.props.testID === 'sample:web-press-boundary')!;
+      const input = queryNodes(renderer, 'TextInput').find(
+        node => node.props.testID === testId('sample:web-press-boundary'),
+      )!;
       const stopPropagation = vi.fn();
       await act(() => {
         input.props.onClick?.({stopPropagation});
@@ -1633,14 +1730,18 @@ describe('input provider', () => {
           />
           <Field
             fieldId="web-pending-target"
-            testID="sample:web-pending-target"
+            testID={testId('sample:web-pending-target')}
             keyboardKind="virtual"
             onReady={() => undefined}
           />
         </InputSurfaceFrame>,
       );
-      const input = queryNodes(renderer, 'TextInput').find(node => node.props.testID === 'sample:web-pending-target')!;
-      const content = getNodeByProps(renderer, {testID: 'ui.base.input:surface-content'}) as unknown as Readonly<{
+      const input = queryNodes(renderer, 'TextInput').find(
+        node => node.props.testID === testId('sample:web-pending-target'),
+      )!;
+      const content = getNodeByProps(renderer, {
+        testID: testId(inputTestIds.node('surface-content')),
+      }) as unknown as Readonly<{
         readonly props: Readonly<{readonly onClick?: (event: unknown) => void}>;
       }>;
       await act(() => {
@@ -1680,27 +1781,29 @@ describe('input provider', () => {
         />
         <Field
           fieldId="complete-first"
-          testID="sample:complete-first"
+          testID={testId('sample:complete-first')}
           keyboardKind="virtual"
           onReady={() => undefined}
         />
         <Field
           fieldId="complete-second"
-          testID="sample:complete-second"
+          testID={testId('sample:complete-second')}
           keyboardKind="virtual"
           onReady={() => undefined}
         />
       </InputSurfaceFrame>,
     );
-    const first = queryNodes(renderer, 'TextInput').find(node => node.props.testID === 'sample:complete-first')!;
+    const first = queryNodes(renderer, 'TextInput').find(
+      node => node.props.testID === testId('sample:complete-first'),
+    )!;
     await focusAndFinishKeyboard(renderer, first);
     expect(firstState.current?.hasNextField).toBe(true);
     await act(() => {
-      getNodeByProps(renderer, {testID: 'ui.base.input:virtual-keyboard:complete'}).props.onPress();
+      getNodeByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard:complete'))}).props.onPress();
     });
     expect(firstState.current?.activeFieldId).toBe('complete-second');
     expect(firstState.current?.owner).toBe('virtual');
-    expect(getNodeByProps(renderer, {testID: 'ui.base.input:virtual-keyboard'})).toBeDefined();
+    expect(getNodeByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard'))})).toBeDefined();
     await act(() => {
       renderer.unmount();
     });
@@ -1715,21 +1818,23 @@ describe('input provider', () => {
         />
         <Field
           fieldId="complete-final"
-          testID="sample:complete-final"
+          testID={testId('sample:complete-final')}
           keyboardKind="virtual"
           onReady={() => undefined}
         />
       </InputSurfaceFrame>,
     );
-    const final = queryNodes(finalRenderer, 'TextInput').find(node => node.props.testID === 'sample:complete-final')!;
+    const final = queryNodes(finalRenderer, 'TextInput').find(
+      node => node.props.testID === testId('sample:complete-final'),
+    )!;
     await focusAndFinishKeyboard(finalRenderer, final);
     expect(finalState.current?.hasNextField).toBe(false);
     await act(() => {
-      getNodeByProps(finalRenderer, {testID: 'ui.base.input:virtual-keyboard:complete'}).props.onPress();
+      getNodeByProps(finalRenderer, {testID: testId(inputTestIds.node('virtual-keyboard:complete'))}).props.onPress();
     });
     expect(finalState.current?.activeFieldId).toBeNull();
     expect(finalState.current?.owner).toBe('none');
-    expect(queryNodesByProps(finalRenderer, {testID: 'ui.base.input:virtual-keyboard'})).toHaveLength(0);
+    expect(queryNodesByProps(finalRenderer, {testID: testId(inputTestIds.node('virtual-keyboard'))})).toHaveLength(0);
     await act(() => {
       finalRenderer.unmount();
     });
@@ -1741,7 +1846,7 @@ describe('input provider', () => {
       <InputSurfaceFrame>
         <RenderCountingField
           fieldId="active-render-counter"
-          testID="sample:active-render-counter"
+          testID={testId('sample:active-render-counter')}
           keyboardKind="virtual"
           onRender={count => {
             renders.active = count;
@@ -1749,7 +1854,7 @@ describe('input provider', () => {
         />
         <RenderCountingField
           fieldId="idle-render-counter"
-          testID="sample:idle-render-counter"
+          testID={testId('sample:idle-render-counter')}
           keyboardKind="virtual"
           onRender={count => {
             renders.idle = count;
@@ -1757,10 +1862,12 @@ describe('input provider', () => {
         />
       </InputSurfaceFrame>,
     );
-    const input = queryNodes(renderer, 'TextInput').find(node => node.props.testID === 'sample:active-render-counter')!;
+    const input = queryNodes(renderer, 'TextInput').find(
+      node => node.props.testID === testId('sample:active-render-counter'),
+    )!;
     await focusAndFinishKeyboard(renderer, input);
     const idleBeforeKey = renders.idle;
-    const one = getNodeByProps(renderer, {testID: 'ui.base.input:virtual-keyboard:text-1'});
+    const one = getNodeByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard:text-1'))});
     await act(() => {
       one.props.onPress();
     });
@@ -1780,19 +1887,24 @@ describe('input provider', () => {
             state = value;
           }}
         />
-        <Field fieldId="too-small" testID="sample:too-small" keyboardKind="virtual" onReady={() => undefined} />
+        <Field
+          fieldId="too-small"
+          testID={testId('sample:too-small')}
+          keyboardKind="virtual"
+          onReady={() => undefined}
+        />
       </InputSurfaceFrame>,
       {width: 320, height: 300},
     );
-    const input = queryNodes(renderer, 'TextInput').find(node => node.props.testID === 'sample:too-small')!;
+    const input = queryNodes(renderer, 'TextInput').find(node => node.props.testID === testId('sample:too-small'))!;
     await focusAndFinishKeyboard(renderer, input);
     expect(state?.blockedCapacity).toBe('unsupported-width');
     expect(state?.visible).toBe(false);
-    expect(getNodeByProps(renderer, {testID: 'sample:decision'})).toBeDefined();
-    expect(getNodeByProps(renderer, {testID: 'ui.base.input:unsupported-size'}).props.children).toContain(
+    expect(getNodeByProps(renderer, {testID: testId('sample:decision')})).toBeDefined();
+    expect(getNodeByProps(renderer, {testID: testId(inputTestIds.node('unsupported-size'))}).props.children).toContain(
       '至少 360 个逻辑单位',
     );
-    expect(queryNodesByProps(renderer, {testID: 'ui.base.input:virtual-keyboard'})).toHaveLength(0);
+    expect(queryNodesByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard'))})).toHaveLength(0);
     await act(() => {
       renderer.unmount();
     });
@@ -1830,14 +1942,14 @@ describe('input provider', () => {
         />
         <Field
           fieldId="owner-business"
-          testID="sample:owner-business"
+          testID={testId('sample:owner-business')}
           onReady={value => {
             businessField = value;
           }}
         />
         <Field
           fieldId="owner-overlay"
-          testID="sample:owner-overlay"
+          testID={testId('sample:owner-overlay')}
           focusScopeId="admin.console"
           onReady={value => {
             overlayField = value;
@@ -1861,13 +1973,13 @@ describe('input provider', () => {
       businessChange('business-before');
     });
     expect(snapshot?.().fields['owner-business']?.value).toBe('business-before');
-    expect(getNodeByProps(renderer, {testID: 'ui.base.input:virtual-keyboard'})).toBeDefined();
+    expect(getNodeByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard'))})).toBeDefined();
 
     await act(() => {
       boundary?.('suspend');
     });
     expect(focusHarness.isFocused('sample:owner-business')).toBe(false);
-    expect(queryNodesByProps(renderer, {testID: 'ui.base.input:virtual-keyboard'})).toHaveLength(0);
+    expect(queryNodesByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard'))})).toHaveLength(0);
     await act(() => {
       businessChange('covered-write');
       businessSelection({nativeEvent: {selection: {start: 0, end: 0}}});
@@ -1891,7 +2003,7 @@ describe('input provider', () => {
     expect(focusHarness.isFocused('sample:owner-overlay')).toBe(false);
     expect(keyboardState?.activeFieldId).toBeNull();
     expect(keyboardState?.owner).toBe('none');
-    expect(queryNodesByProps(renderer, {testID: 'ui.base.input:virtual-keyboard'})).toHaveLength(0);
+    expect(queryNodesByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard'))})).toHaveLength(0);
     await act(() => {
       renderer.unmount();
     });
@@ -1910,12 +2022,12 @@ describe('input provider', () => {
         <StateProbe onState={value => (keyboardState = value)} />
         <Field
           fieldId="covered-business-focus"
-          testID="sample:owner-covered-focus"
+          testID={testId('sample:owner-covered-focus')}
           onReady={value => (businessField = value)}
         />
         <Field
           fieldId="overlay-focus"
-          testID="sample:owner-overlay-focus"
+          testID={testId('sample:owner-overlay-focus')}
           focusScopeId="admin.console"
           onReady={() => undefined}
         />

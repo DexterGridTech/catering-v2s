@@ -1,3 +1,4 @@
+import {testIdProps} from '../foundations/testId';
 import {forwardRef, useImperativeHandle, useRef} from 'react';
 import type {NativeScrollEvent, NativeSyntheticEvent} from 'react-native';
 import {RnrScrollView, type RnrScrollViewRef} from '../foundations/nativeSlots';
@@ -73,7 +74,7 @@ export const PrimitiveScrollView = forwardRef<PrimitiveScrollViewHandle, Primiti
     return (
       <RnrScrollView
         ref={nativeScrollViewRef}
-        testID={assertTestID(testID)}
+        {...testIdProps(assertTestID(testID))}
         className={layout === 'transparent' ? baseTokens.scrollTransparent : baseTokens.scroll}
         contentContainerStyle={
           contentPaddingBottom === undefined

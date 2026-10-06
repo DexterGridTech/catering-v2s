@@ -1,3 +1,4 @@
+import {testIdProps} from '../foundations/testId';
 import {RnrView} from '../foundations/nativeSlots';
 import type {StyleProp, ViewStyle} from 'react-native';
 import {cn} from '../foundations/cn';
@@ -76,7 +77,7 @@ export const PrimitiveContainer = ({
 
   return (
     <RnrView
-      testID={assertTestID(testID)}
+      {...testIdProps(assertTestID(testID))}
       className={cn(layoutClassName, boundedClassName, elevatedClassName, appearanceClassName)}
       style={resolvedStyle}
     >

@@ -1,0 +1,572 @@
+<Rive version="1" kind="fragment">
+    <!-- View Model: 控制激活码状态 -->
+    <ViewModel name="ActivationViewModel" id="0:100">
+        <ViewModelPropertyNumber name="activationCount" id="0:105"/>
+        <ViewModelInstanceNumber viewModelPropertyId="0:105" propertyValue="0" id="0:101"/>
+    </ViewModel>
+
+    <Artboard defaultStateMachineId="0:7" viewModelId="0:100" width="600" height="150" name="Activation" id="0:2">
+        <!-- 透明背景：不添加 Fill -->
+
+        <!-- 左侧：终端图标（蓝色矩形框，中心在 80, 75） -->
+        <Rectangle name="TerminalScreen" x="80" y="75" width="60" height="45" cornerRadiusTL="2" cornerRadiusTR="2" id="0:10">
+            <Stroke thickness="2.5" cap="round" join="round">
+                <SolidColor colorValue="FF2196F3"/>
+            </Stroke>
+        </Rectangle>
+
+        <!-- 右侧：云服务图标（绿色椭圆，中心在 520, 75） -->
+        <Ellipse name="CloudIcon" x="520" y="75" width="60" height="30" id="0:20">
+            <Fill>
+                <SolidColor colorValue="FF4CAF50"/>
+            </Fill>
+        </Ellipse>
+
+        <!-- 中间：箭头路径和虚线 - 8个独立段 -->
+        <Node name="Arrow" x="300" y="75" id="0:30">
+            <!-- 8个独立虚线段，每段可独立控制粗细 -->
+            <!-- 段1 -->
+            <Shape name="Segment1" id="0:31">
+                <PointsPath>
+                    <StraightVertex x="-200" y="0"/>
+                    <StraightVertex x="-150" y="0"/>
+                </PointsPath>
+                <Stroke name="Stroke1" thickness="3" cap="butt" join="miter" id="0:32">
+                    <SolidColor colorValue="FF000000" name="Color1" id="0:33"/>
+                    <DashPath offset="0" id="0:34">
+                        <Dash length="40"/>
+                        <Dash length="10"/>
+                    </DashPath>
+                </Stroke>
+            </Shape>
+
+            <!-- 段2 -->
+            <Shape name="Segment2" id="0:41">
+                <PointsPath>
+                    <StraightVertex x="-150" y="0"/>
+                    <StraightVertex x="-100" y="0"/>
+                </PointsPath>
+                <Stroke name="Stroke2" thickness="3" cap="butt" join="miter" id="0:42">
+                    <SolidColor colorValue="FF000000" id="0:43"/>
+                    <DashPath offset="0" id="0:44">
+                        <Dash length="40"/>
+                        <Dash length="10"/>
+                    </DashPath>
+                </Stroke>
+            </Shape>
+
+            <!-- 段3 -->
+            <Shape name="Segment3" id="0:51">
+                <PointsPath>
+                    <StraightVertex x="-100" y="0"/>
+                    <StraightVertex x="-50" y="0"/>
+                </PointsPath>
+                <Stroke name="Stroke3" thickness="3" cap="butt" join="miter" id="0:52">
+                    <SolidColor colorValue="FF000000" id="0:53"/>
+                    <DashPath offset="0" id="0:54">
+                        <Dash length="40"/>
+                        <Dash length="10"/>
+                    </DashPath>
+                </Stroke>
+            </Shape>
+
+            <!-- 段4 -->
+            <Shape name="Segment4" id="0:61">
+                <PointsPath>
+                    <StraightVertex x="-50" y="0"/>
+                    <StraightVertex x="0" y="0"/>
+                </PointsPath>
+                <Stroke name="Stroke4" thickness="3" cap="butt" join="miter" id="0:62">
+                    <SolidColor colorValue="FF000000" id="0:63"/>
+                    <DashPath offset="0" id="0:64">
+                        <Dash length="40"/>
+                        <Dash length="10"/>
+                    </DashPath>
+                </Stroke>
+            </Shape>
+
+            <!-- 段5 -->
+            <Shape name="Segment5" id="0:71">
+                <PointsPath>
+                    <StraightVertex x="0" y="0"/>
+                    <StraightVertex x="50" y="0"/>
+                </PointsPath>
+                <Stroke name="Stroke5" thickness="3" cap="butt" join="miter" id="0:72">
+                    <SolidColor colorValue="FF000000" id="0:73"/>
+                    <DashPath offset="0" id="0:74">
+                        <Dash length="40"/>
+                        <Dash length="10"/>
+                    </DashPath>
+                </Stroke>
+            </Shape>
+
+            <!-- 段6 -->
+            <Shape name="Segment6" id="0:81">
+                <PointsPath>
+                    <StraightVertex x="50" y="0"/>
+                    <StraightVertex x="100" y="0"/>
+                </PointsPath>
+                <Stroke name="Stroke6" thickness="3" cap="butt" join="miter" id="0:82">
+                    <SolidColor colorValue="FF000000" id="0:83"/>
+                    <DashPath offset="0" id="0:84">
+                        <Dash length="40"/>
+                        <Dash length="10"/>
+                    </DashPath>
+                </Stroke>
+            </Shape>
+
+            <!-- 段7 -->
+            <Shape name="Segment7" id="0:91">
+                <PointsPath>
+                    <StraightVertex x="100" y="0"/>
+                    <StraightVertex x="150" y="0"/>
+                </PointsPath>
+                <Stroke name="Stroke7" thickness="3" cap="butt" join="miter" id="0:92">
+                    <SolidColor colorValue="FF000000" id="0:93"/>
+                    <DashPath offset="0" id="0:94">
+                        <Dash length="40"/>
+                        <Dash length="10"/>
+                    </DashPath>
+                </Stroke>
+            </Shape>
+
+            <!-- 段8 -->
+            <Shape name="Segment8" id="0:161">
+                <PointsPath>
+                    <StraightVertex x="150" y="0"/>
+                    <StraightVertex x="180" y="0"/>
+                </PointsPath>
+                <Stroke name="Stroke8" thickness="3" cap="butt" join="miter" id="0:162">
+                    <SolidColor colorValue="FF000000" id="0:163"/>
+                    <DashPath offset="0" id="0:164">
+                        <Dash length="30"/>
+                        <Dash length="0"/>
+                    </DashPath>
+                </Stroke>
+            </Shape>
+
+            <!-- 箭头头部 -->
+            <Shape name="ArrowHead" id="0:181">
+                <PointsPath>
+                    <StraightVertex x="180" y="-8"/>
+                    <StraightVertex x="200" y="0"/>
+                    <StraightVertex x="180" y="8"/>
+                </PointsPath>
+                <Stroke thickness="3" cap="round" join="round">
+                    <SolidColor colorValue="FF000000" id="0:182"/>
+                </Stroke>
+            </Shape>
+        </Node>
+
+        <!-- 动画：虚线循环移动 -->
+        <LinearAnimation fps="60" duration="30" speed="1" loopValue="loop" name="DashMovement" id="0:6">
+            <!-- 所有 8 个 DashPath 同步移动 offset: 0 → 50 -->
+            <KeyedProperty propertyKey="690">
+                <KeyedObject objectId="0:34">
+                    <KeyFrameDouble frame="0" value="0" interpolationType="linear"/>
+                    <KeyFrameDouble frame="30" value="50" interpolationType="linear"/>
+                </KeyedObject>
+                <KeyedObject objectId="0:44">
+                    <KeyFrameDouble frame="0" value="0" interpolationType="linear"/>
+                    <KeyFrameDouble frame="30" value="50" interpolationType="linear"/>
+                </KeyedObject>
+                <KeyedObject objectId="0:54">
+                    <KeyFrameDouble frame="0" value="0" interpolationType="linear"/>
+                    <KeyFrameDouble frame="30" value="50" interpolationType="linear"/>
+                </KeyedObject>
+                <KeyedObject objectId="0:64">
+                    <KeyFrameDouble frame="0" value="0" interpolationType="linear"/>
+                    <KeyFrameDouble frame="30" value="50" interpolationType="linear"/>
+                </KeyedObject>
+                <KeyedObject objectId="0:74">
+                    <KeyFrameDouble frame="0" value="0" interpolationType="linear"/>
+                    <KeyFrameDouble frame="30" value="50" interpolationType="linear"/>
+                </KeyedObject>
+                <KeyedObject objectId="0:84">
+                    <KeyFrameDouble frame="0" value="0" interpolationType="linear"/>
+                    <KeyFrameDouble frame="30" value="50" interpolationType="linear"/>
+                </KeyedObject>
+                <KeyedObject objectId="0:94">
+                    <KeyFrameDouble frame="0" value="0" interpolationType="linear"/>
+                    <KeyFrameDouble frame="30" value="50" interpolationType="linear"/>
+                </KeyedObject>
+                <KeyedObject objectId="0:164">
+                    <KeyFrameDouble frame="0" value="0" interpolationType="linear"/>
+                    <KeyFrameDouble frame="30" value="50" interpolationType="linear"/>
+                </KeyedObject>
+            </KeyedProperty>
+        </LinearAnimation>
+
+        <!-- 9 个状态对应的粗细动画：State0-8 -->
+        <!-- State 0: 所有段都是正常粗细 3 -->
+        <LinearAnimation fps="60" duration="1" name="State0" id="0:200"/>
+
+        <!-- State 1: 段1 变粗 7.5 (3*2.5) -->
+        <LinearAnimation fps="60" duration="1" name="State1" id="0:201">
+            <KeyedProperty propertyKey="47">
+                <KeyedObject objectId="0:32">
+                    <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
+                </KeyedObject>
+            </KeyedProperty>
+        </LinearAnimation>
+
+        <!-- State 2: 段1-2 变粗 -->
+        <LinearAnimation fps="60" duration="1" name="State2" id="0:202">
+            <KeyedProperty propertyKey="47">
+                <KeyedObject objectId="0:32">
+                    <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
+                </KeyedObject>
+                <KeyedObject objectId="0:42">
+                    <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
+                </KeyedObject>
+            </KeyedProperty>
+        </LinearAnimation>
+
+        <!-- State 3: 段1-3 变粗 -->
+        <LinearAnimation fps="60" duration="1" name="State3" id="0:203">
+            <KeyedProperty propertyKey="47">
+                <KeyedObject objectId="0:32">
+                    <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
+                </KeyedObject>
+                <KeyedObject objectId="0:42">
+                    <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
+                </KeyedObject>
+                <KeyedObject objectId="0:52">
+                    <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
+                </KeyedObject>
+            </KeyedProperty>
+        </LinearAnimation>
+
+        <!-- State 4: 段1-4 变粗 -->
+        <LinearAnimation fps="60" duration="1" name="State4" id="0:204">
+            <KeyedProperty propertyKey="47">
+                <KeyedObject objectId="0:32">
+                    <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
+                </KeyedObject>
+                <KeyedObject objectId="0:42">
+                    <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
+                </KeyedObject>
+                <KeyedObject objectId="0:52">
+                    <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
+                </KeyedObject>
+                <KeyedObject objectId="0:62">
+                    <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
+                </KeyedObject>
+            </KeyedProperty>
+        </LinearAnimation>
+
+        <!-- State 5: 段1-5 变粗 -->
+        <LinearAnimation fps="60" duration="1" name="State5" id="0:205">
+            <KeyedProperty propertyKey="47">
+                <KeyedObject objectId="0:32">
+                    <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
+                </KeyedObject>
+                <KeyedObject objectId="0:42">
+                    <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
+                </KeyedObject>
+                <KeyedObject objectId="0:52">
+                    <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
+                </KeyedObject>
+                <KeyedObject objectId="0:62">
+                    <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
+                </KeyedObject>
+                <KeyedObject objectId="0:72">
+                    <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
+                </KeyedObject>
+            </KeyedProperty>
+        </LinearAnimation>
+
+        <!-- State 6: 段1-6 变粗 -->
+        <LinearAnimation fps="60" duration="1" name="State6" id="0:206">
+            <KeyedProperty propertyKey="47">
+                <KeyedObject objectId="0:32">
+                    <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
+                </KeyedObject>
+                <KeyedObject objectId="0:42">
+                    <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
+                </KeyedObject>
+                <KeyedObject objectId="0:52">
+                    <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
+                </KeyedObject>
+                <KeyedObject objectId="0:62">
+                    <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
+                </KeyedObject>
+                <KeyedObject objectId="0:72">
+                    <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
+                </KeyedObject>
+                <KeyedObject objectId="0:82">
+                    <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
+                </KeyedObject>
+            </KeyedProperty>
+        </LinearAnimation>
+
+        <!-- State 7: 段1-7 变粗 -->
+        <LinearAnimation fps="60" duration="1" name="State7" id="0:207">
+            <KeyedProperty propertyKey="47">
+                <KeyedObject objectId="0:32">
+                    <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
+                </KeyedObject>
+                <KeyedObject objectId="0:42">
+                    <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
+                </KeyedObject>
+                <KeyedObject objectId="0:52">
+                    <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
+                </KeyedObject>
+                <KeyedObject objectId="0:62">
+                    <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
+                </KeyedObject>
+                <KeyedObject objectId="0:72">
+                    <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
+                </KeyedObject>
+                <KeyedObject objectId="0:82">
+                    <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
+                </KeyedObject>
+                <KeyedObject objectId="0:92">
+                    <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
+                </KeyedObject>
+            </KeyedProperty>
+        </LinearAnimation>
+
+        <!-- State 8: 段1-8 全部变粗 -->
+        <LinearAnimation fps="60" duration="1" name="State8" id="0:208">
+            <KeyedProperty propertyKey="47">
+                <KeyedObject objectId="0:32">
+                    <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
+                </KeyedObject>
+                <KeyedObject objectId="0:42">
+                    <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
+                </KeyedObject>
+                <KeyedObject objectId="0:52">
+                    <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
+                </KeyedObject>
+                <KeyedObject objectId="0:62">
+                    <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
+                </KeyedObject>
+                <KeyedObject objectId="0:72">
+                    <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
+                </KeyedObject>
+                <KeyedObject objectId="0:82">
+                    <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
+                </KeyedObject>
+                <KeyedObject objectId="0:92">
+                    <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
+                </KeyedObject>
+                <KeyedObject objectId="0:162">
+                    <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
+                </KeyedObject>
+            </KeyedProperty>
+        </LinearAnimation>
+
+        <StateMachine name="ActivationStateMachine" id="0:7">
+            <StateMachineLayer name="MovementLayer" id="0:8">
+                <AnyState x="100" y="0"/>
+                <ExitState x="1000" y="0"/>
+                <EntryState x="0" y="100">
+                    <StateTransition stateToId="0:500"/>
+                </EntryState>
+                <!-- 始终播放虚线移动动画 -->
+                <AnimationState x="200" y="100" animationId="0:6" id="0:500"/>
+            </StateMachineLayer>
+
+            <StateMachineLayer name="ThicknessLayer" id="0:9">
+                <AnyState x="100" y="200"/>
+                <ExitState x="1000" y="200"/>
+                <EntryState x="0" y="300">
+                    <StateTransition stateToId="0:510"/>
+                </EntryState>
+
+                <!-- 9 个状态：State0 到 State8 -->
+                <AnimationState x="200" y="300" animationId="0:200" id="0:510">
+                    <!-- 从 State0 到 State1: activationCount == 1 -->
+                    <StateTransition stateToId="0:511" duration="0">
+                        <TransitionViewModelCondition opValue="equal">
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyNumber propertyValue="0">
+                                    <DataBindContext sourcePathIds="0:100-0:105"/>
+                                </BindablePropertyNumber>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueNumberComparator value="1"/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                </AnimationState>
+
+                <AnimationState x="350" y="300" animationId="0:201" id="0:511">
+                    <!-- State1 → State2: activationCount == 2 -->
+                    <StateTransition stateToId="0:512" duration="0">
+                        <TransitionViewModelCondition opValue="equal">
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyNumber propertyValue="0">
+                                    <DataBindContext sourcePathIds="0:100-0:101"/>
+                                </BindablePropertyNumber>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueNumberComparator value="2"/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                    <!-- State1 → State0: activationCount == 0 -->
+                    <StateTransition stateToId="0:510" duration="0">
+                        <TransitionViewModelCondition opValue="equal">
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyNumber propertyValue="0">
+                                    <DataBindContext sourcePathIds="0:100-0:101"/>
+                                </BindablePropertyNumber>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueNumberComparator value="0"/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                </AnimationState>
+
+                <AnimationState x="500" y="300" animationId="0:202" id="0:512">
+                    <StateTransition stateToId="0:513" duration="0">
+                        <TransitionViewModelCondition opValue="equal">
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyNumber propertyValue="0">
+                                    <DataBindContext sourcePathIds="0:100-0:101"/>
+                                </BindablePropertyNumber>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueNumberComparator value="3"/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                    <StateTransition stateToId="0:511" duration="0">
+                        <TransitionViewModelCondition opValue="lessThan">
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyNumber propertyValue="0">
+                                    <DataBindContext sourcePathIds="0:100-0:101"/>
+                                </BindablePropertyNumber>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueNumberComparator value="2"/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                </AnimationState>
+
+                <AnimationState x="650" y="300" animationId="0:203" id="0:513">
+                    <StateTransition stateToId="0:514" duration="0">
+                        <TransitionViewModelCondition opValue="equal">
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyNumber propertyValue="0">
+                                    <DataBindContext sourcePathIds="0:100-0:101"/>
+                                </BindablePropertyNumber>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueNumberComparator value="4"/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                    <StateTransition stateToId="0:512" duration="0">
+                        <TransitionViewModelCondition opValue="lessThan">
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyNumber propertyValue="0">
+                                    <DataBindContext sourcePathIds="0:100-0:101"/>
+                                </BindablePropertyNumber>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueNumberComparator value="3"/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                </AnimationState>
+
+                <AnimationState x="800" y="300" animationId="0:204" id="0:514">
+                    <StateTransition stateToId="0:515" duration="0">
+                        <TransitionViewModelCondition opValue="equal">
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyNumber propertyValue="0">
+                                    <DataBindContext sourcePathIds="0:100-0:101"/>
+                                </BindablePropertyNumber>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueNumberComparator value="5"/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                    <StateTransition stateToId="0:513" duration="0">
+                        <TransitionViewModelCondition opValue="lessThan">
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyNumber propertyValue="0">
+                                    <DataBindContext sourcePathIds="0:100-0:101"/>
+                                </BindablePropertyNumber>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueNumberComparator value="4"/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                </AnimationState>
+
+                <AnimationState x="200" y="450" animationId="0:205" id="0:515">
+                    <StateTransition stateToId="0:516" duration="0">
+                        <TransitionViewModelCondition opValue="equal">
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyNumber propertyValue="0">
+                                    <DataBindContext sourcePathIds="0:100-0:101"/>
+                                </BindablePropertyNumber>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueNumberComparator value="6"/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                    <StateTransition stateToId="0:514" duration="0">
+                        <TransitionViewModelCondition opValue="lessThan">
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyNumber propertyValue="0">
+                                    <DataBindContext sourcePathIds="0:100-0:101"/>
+                                </BindablePropertyNumber>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueNumberComparator value="5"/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                </AnimationState>
+
+                <AnimationState x="350" y="450" animationId="0:206" id="0:516">
+                    <StateTransition stateToId="0:517" duration="0">
+                        <TransitionViewModelCondition opValue="equal">
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyNumber propertyValue="0">
+                                    <DataBindContext sourcePathIds="0:100-0:101"/>
+                                </BindablePropertyNumber>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueNumberComparator value="7"/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                    <StateTransition stateToId="0:515" duration="0">
+                        <TransitionViewModelCondition opValue="lessThan">
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyNumber propertyValue="0">
+                                    <DataBindContext sourcePathIds="0:100-0:101"/>
+                                </BindablePropertyNumber>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueNumberComparator value="6"/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                </AnimationState>
+
+                <AnimationState x="500" y="450" animationId="0:207" id="0:517">
+                    <StateTransition stateToId="0:518" duration="0">
+                        <TransitionViewModelCondition opValue="equal">
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyNumber propertyValue="0">
+                                    <DataBindContext sourcePathIds="0:100-0:101"/>
+                                </BindablePropertyNumber>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueNumberComparator value="8"/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                    <StateTransition stateToId="0:516" duration="0">
+                        <TransitionViewModelCondition opValue="lessThan">
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyNumber propertyValue="0">
+                                    <DataBindContext sourcePathIds="0:100-0:101"/>
+                                </BindablePropertyNumber>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueNumberComparator value="7"/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                </AnimationState>
+
+                <AnimationState x="650" y="450" animationId="0:208" id="0:518">
+                    <!-- State8 是终态，可以回退 -->
+                    <StateTransition stateToId="0:517" duration="0">
+                        <TransitionViewModelCondition opValue="lessThan">
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyNumber propertyValue="0">
+                                    <DataBindContext sourcePathIds="0:100-0:101"/>
+                                </BindablePropertyNumber>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueNumberComparator value="8"/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                </AnimationState>
+            </StateMachineLayer>
+        </StateMachine>
+    </Artboard>
+</Rive>

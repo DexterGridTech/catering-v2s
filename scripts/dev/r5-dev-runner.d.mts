@@ -39,9 +39,11 @@ export function readManagedTerminalBindingByName(input: Readonly<{
 }>): readonly Readonly<{
   name: string;
   terminalRef: string;
+  storeRef: string;
   terminalStatus: 'ENABLED' | 'DISABLED' | 'VOIDED';
   bindingStatus: 'UNBOUND' | 'ACTIVE' | 'ENDED';
   generation: number | null;
+  boundDeviceId: string | null;
 }>[];
 export function parseManagedTerminalBindingReadback(
   rows: readonly Readonly<Record<string, unknown>>[],
@@ -49,7 +51,9 @@ export function parseManagedTerminalBindingReadback(
 ): readonly Readonly<{
   name: string;
   terminalRef: string;
+  storeRef: string;
   terminalStatus: 'ENABLED' | 'DISABLED' | 'VOIDED';
   bindingStatus: 'UNBOUND' | 'ACTIVE' | 'ENDED';
   generation: number | null;
+  boundDeviceId: string | null;
 }>[];

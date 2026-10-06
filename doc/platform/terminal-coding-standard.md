@@ -288,10 +288,12 @@ expect(selectTcpRuntimeState(second.runtime.getState())?.lastActivationRequestId
 **规则**：automation 控制面、诊断 socket 等**调试能力**，
 在 production 构建产物里**必须不存在**，而不是"存在但默认不启动"。
 
-⚠️ **边界（与 `T-11` 分清）**：本条针对 **automation 调试控制面**
-（`adb` socket、`runtime.getState`、`ui.*` 这类调试入口）。
+⚠️ **边界（与 `T-11` 分清）**：本条针对 **TER automation-agent 调试控制面**
+（agent WebSocket、`runtime.info`、selector/控件观察及 driver 输入等调试入口）。
 **`scripts.execute` 作为产品运行期能力已由 `T-11` 保留，并支持运行期远端下发脚本源** ——
 **它不在本条剔除范围内**，写门时不得连它一起剔掉。
+
+TER automation-agent 只由显式的开发/验收构建输入启用；应用 package 的默认配置保持关闭。该输入不是运行时开关，也不得从业务 state、远端配置或环境变量回退推导。production bundle 仍必须通过本仓产物门证明 agent 控制面与 driver 接缝不存在；该边界不豁免其他 TR-08 调试符号。
 
 **反例**（POC 实测）：`host-runtime-rn84/application/createApp.ts:376`
 `const automation = adbSocketDebugConfig.enabled ? ... : undefined` —— **运行期分支，代码照常编进产物**。
@@ -889,17 +891,9 @@ screen 的 `containerKey` 在 definition 里（`primaryRootContainer` / `seconda
 
 ### 4-C · 自动化语义注册下沉到控件层（加法改减法）
 
-**规则**：automation 的可寻址节点注册**由控件层统一提供**，业务组件零感知。
+**术语与规则**：本文称其为**界面自动化定位标识**（`TestId`），用于 UI 自动化定位节点或读取该节点的断言状态。`TestId` 由 primitives 的 `createTestId` 构造器生成，并沿项目拥有的 props、常量与转发路径保持强类型。静态门逐个检查生产 TSX 的 `testID`/`testId` 属性，拒绝字面量、普通 string 与构造器外 cast。只给自动化需要交互/定位，或需要读取几何/可见状态作为断言对象的节点提供 testID；纯装饰、静态且不参与自动化断言的 Primitive 不增加 testID。
 
-**反例**（POC 实测）：手工注册 ⇒ `semanticId` 52 处 vs `testID` 221 处，
-**能不能被自动化测到，取决于有没有人记得注册**。加法型机制的覆盖率必然随代码量下降。
-
-**TER 形态**：所有业务组件由 `ui/base/primitives`（NativeWind + React Native Reusables）构建，
-该层统一挂注册 ⇒ 默认全部可寻址。
-
-⚠️ **已登记例外**：虚拟键盘按「单表面命中测试」实现（`T-12`），
-其三层结构落在 RNR 组件模型之外，**automation 寻址方式必须单独设计**
-（虚拟节点 + `bounds`，或专用 command，或两者并存）。
+输入控件和虚拟键盘由 `ui/base/input` 提供实际可交互节点，沿同一 `TestId` 注册/查询路径供 driver 使用。driver 通过已注册节点和 bounds 进行实际 Web/Android 输入；它不需要第二套虚拟键盘身份、独立 surface 注册机制或手写语义 ID。surface 与 display index 是查询/动作参数，不拼进 testID。
 
 ---
 

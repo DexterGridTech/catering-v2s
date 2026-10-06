@@ -4,6 +4,7 @@ import {selectWallpaperId, type WallpaperId} from '@catering-v2s/kernel-feature-
 import {assetsById} from '../foundations/assets';
 
 import {wallpaperLabels} from '../foundations/wallpaperCatalog';
+import {wallpaperContentTestIds} from '../foundations/wallpaperPickerTestIds';
 
 export const WallpaperBackground = () => {
   const wallpaperId = useUiStateSelector(selectWallpaperId);
@@ -11,7 +12,7 @@ export const WallpaperBackground = () => {
   if (source === undefined) return null;
   return (
     <PrimitiveImage
-      testID="sample.wallpaper.background"
+      testID={wallpaperContentTestIds.background}
       accessibilityLabel={`当前壁纸：${wallpaperLabels[wallpaperId as WallpaperId]}`}
       layout="background"
       source={source}

@@ -1,5 +1,6 @@
 import {RnrPressable, RnrText, RnrView} from '../foundations/nativeSlots';
 import {assertTestID} from '../foundations/assertTestID';
+import {deriveTestId, testIdProps} from '../foundations/testId';
 import {baseTokens} from '../theme/tokens';
 import type {PrimitivePinInputProps} from '../types/types';
 
@@ -29,7 +30,7 @@ export const PrimitivePinInput = ({
 
   return (
     <RnrPressable
-      testID={assertTestID(testID)}
+      {...testIdProps(assertTestID(testID))}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{disabled}}
@@ -39,7 +40,7 @@ export const PrimitivePinInput = ({
       {...interactionProps}
     >
       <RnrView
-        testID={`${testID}:cells`}
+        {...testIdProps(deriveTestId(testID, 'cells'))}
         className={appearance === 'login' ? baseTokens.pinInputLogin : baseTokens.pinInput}
       >
         {Array.from({length}, (_value, index) => {
@@ -60,7 +61,7 @@ export const PrimitivePinInput = ({
           return (
             <RnrView key={index} className={`${cellClassName}${disabled ? ` ${baseTokens.pinCellDisabled}` : ''}`}>
               <RnrText
-                testID={`${cellTestIDPrefix}:digit:${index}`}
+                {...testIdProps(deriveTestId(cellTestIDPrefix ?? testID, 'digit', String(index)))}
                 className={appearance === 'login' ? baseTokens.pinCellLoginText : baseTokens.pinCellText}
               >
                 {hasValue ? maskCharacter : ''}

@@ -3,7 +3,19 @@
 import {spawn, spawnSync} from 'node:child_process';
 import {createHash, randomUUID} from 'node:crypto';
 import {createRequire} from 'node:module';
-import {closeSync, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync, realpathSync, renameSync, rmSync, statSync, writeSync} from 'node:fs';
+import {
+  closeSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  openSync,
+  readFileSync,
+  realpathSync,
+  renameSync,
+  rmSync,
+  statSync,
+  writeSync,
+} from 'node:fs';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -25,39 +37,48 @@ const scenarioCatalog = Object.freeze({
   'terminal.client.multi-instance-isolation': Object.freeze({
     file: 'acceptance/multiInstanceIsolation.test.ts',
     suiteName: 'terminal-data-client Node acceptance composition isolation',
-    testName: 'isolates activation identity, secure-storage namespace, WebSocket session and disposal across two compositions',
+    testName:
+      'isolates activation identity, secure-storage namespace, WebSocket session and disposal across two compositions',
   }),
   'terminal.dev.lifecycle-and-compression': Object.freeze({
     file: 'acceptance/devScenarios.test.ts',
     suiteName: 'terminal-data-client managed DEV end-to-end scenarios',
-    testName: 'terminal-data-client managed DEV lifecycle activates, receives heartbeats and latency, survives backend cancellation, reactivates and cancels online',
+    testName:
+      'terminal-data-client managed DEV lifecycle activates, receives heartbeats and latency, survives backend cancellation, reactivates and cancels online',
   }),
   'terminal.dev.entry-address-failover': Object.freeze({
     file: 'acceptance/devScenarios.test.ts',
     suiteName: 'terminal-data-client managed DEV end-to-end scenarios',
-    testName: 'terminal-data-client managed DEV retries a nonresponsive configured entry and prefers the reachable address',
+    testName:
+      'terminal-data-client managed DEV retries a nonresponsive configured entry and prefers the reachable address',
   }),
   'terminal.dev.two-device-rebind': Object.freeze({
     file: 'acceptance/devScenarios.test.ts',
     suiteName: 'terminal-data-client managed DEV end-to-end scenarios',
-    testName: 'terminal-data-client managed DEV preserves an offline credential until backend cancellation and rebinds across devices',
+    testName:
+      'terminal-data-client managed DEV preserves an offline credential until backend cancellation and rebinds across devices',
   }),
   'terminal.dev.three-node-two-entry-handoff': Object.freeze({
     file: 'acceptance/devScenarios.test.ts',
     suiteName: 'terminal-data-client managed DEV end-to-end scenarios',
-    testName: 'terminal-data-client managed DEV drains node A, fails node B to entry two, and does not fail back after restart',
+    testName:
+      'terminal-data-client managed DEV drains node A, fails node B to entry two, and does not fail back after restart',
   }),
 });
 
-const fail = code => { throw new Error(code); };
+const fail = code => {
+  throw new Error(code);
+};
 const sha256 = value => createHash('sha256').update(value).digest('hex');
 const escapeTestName = value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const within = (base, candidate) => {
   const relative = path.relative(base, candidate);
   return relative === '' || (!relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative));
 };
-const safeFailure = error => String(error?.code || error?.message || 'TERMINAL_CLIENT_ACCEPTANCE_FAILED')
-  .replaceAll(/[^A-Za-z0-9_:. -]/g, '').slice(0, 220);
+const safeFailure = error =>
+  String(error?.code || error?.message || 'TERMINAL_CLIENT_ACCEPTANCE_FAILED')
+    .replaceAll(/[^A-Za-z0-9_:. -]/g, '')
+    .slice(0, 220);
 
 export function parseTerminalAcceptanceArgs(argv) {
   if (argv.length === 1 && argv[0] === '--self-test') return Object.freeze({selfTest: true});
@@ -69,24 +90,36 @@ export function parseTerminalAcceptanceArgs(argv) {
 }
 
 export function buildVitestArguments({cliPath, scenarioId, scenario, configPath = 'acceptance.vitest.config.ts'} = {}) {
-  if (typeof cliPath !== 'string' || !path.isAbsolute(cliPath) || !scenarioCatalog[scenarioId] ||
-      scenarioCatalog[scenarioId].file !== scenario?.file || scenarioCatalog[scenarioId].suiteName !== scenario?.suiteName ||
-      scenarioCatalog[scenarioId].testName !== scenario?.testName)
+  if (
+    typeof cliPath !== 'string' ||
+    !path.isAbsolute(cliPath) ||
+    !scenarioCatalog[scenarioId] ||
+    scenarioCatalog[scenarioId].file !== scenario?.file ||
+    scenarioCatalog[scenarioId].suiteName !== scenario?.suiteName ||
+    scenarioCatalog[scenarioId].testName !== scenario?.testName
+  )
     fail('TERMINAL_CLIENT_ACCEPTANCE_VITEST_INPUT_INVALID');
   const escapedName = escapeTestName(`${scenario.suiteName} ${scenario.testName}`);
   return Object.freeze([
     cliPath,
     'run',
-    '--config', configPath,
-    '--testNamePattern', `^${escapedName}$`,
+    '--config',
+    configPath,
+    '--testNamePattern',
+    `^${escapedName}$`,
     scenario.file,
   ]);
 }
 
 export function assertVitestListResult(entries, {filePath, suiteName, testName} = {}) {
   const expectedName = `${suiteName} > ${testName}`;
-  if (!Array.isArray(entries) || entries.length !== 1 || entries[0]?.name !== expectedName ||
-      typeof entries[0]?.file !== 'string' || path.resolve(entries[0].file) !== path.resolve(filePath))
+  if (
+    !Array.isArray(entries) ||
+    entries.length !== 1 ||
+    entries[0]?.name !== expectedName ||
+    typeof entries[0]?.file !== 'string' ||
+    path.resolve(entries[0].file) !== path.resolve(filePath)
+  )
     fail('TERMINAL_CLIENT_ACCEPTANCE_VITEST_SELECTION_NOT_EXACT');
 }
 
@@ -119,19 +152,34 @@ export function resolveTerminalNodeRuntime({repositoryRoot = root, terminalPacka
   const undici = packageRootFor(requireFromTer.resolve('undici'), 'undici', repo);
   const vitestDeclaration = terManifest.devDependencies?.vitest;
   const undiciDeclaration = terManifest.devDependencies?.undici;
-  if (vitestDeclaration !== vitest.manifest.version || vitest.manifest.version !== '4.1.10') fail('TERMINAL_CLIENT_ACCEPTANCE_VITEST_VERSION_MISMATCH');
-  if (undiciDeclaration !== undici.manifest.version || undici.manifest.version !== '8.11.2') fail('TERMINAL_CLIENT_ACCEPTANCE_UNDICI_VERSION_MISMATCH');
+  if (vitestDeclaration !== vitest.manifest.version || vitest.manifest.version !== '4.1.10')
+    fail('TERMINAL_CLIENT_ACCEPTANCE_VITEST_VERSION_MISMATCH');
+  if (undiciDeclaration !== undici.manifest.version || undici.manifest.version !== '8.11.2')
+    fail('TERMINAL_CLIENT_ACCEPTANCE_UNDICI_VERSION_MISMATCH');
   const cliRelative = typeof vitest.manifest.bin === 'string' ? vitest.manifest.bin : vitest.manifest.bin?.vitest;
-  if (typeof cliRelative !== 'string' || path.isAbsolute(cliRelative)) fail('TERMINAL_CLIENT_ACCEPTANCE_VITEST_BIN_INVALID');
+  if (typeof cliRelative !== 'string' || path.isAbsolute(cliRelative))
+    fail('TERMINAL_CLIENT_ACCEPTANCE_VITEST_BIN_INVALID');
   const cliPath = realpathSync(path.resolve(vitest.root, cliRelative));
   if (!within(vitest.root, cliPath)) fail('TERMINAL_CLIENT_ACCEPTANCE_VITEST_BIN_ESCAPES_PACKAGE');
   const nodeVersion = process.versions.node;
   if (!supportsTerminalAcceptanceNodeVersion(nodeVersion)) fail('TERMINAL_CLIENT_ACCEPTANCE_NODE_VERSION_UNSUPPORTED');
   return Object.freeze({
     node: Object.freeze({version: process.version, executable: realpathSync(process.execPath)}),
-    terminalPackage: Object.freeze({root: path.relative(repo, terRoot), manifestSha256: sha256(readFileSync(terManifestPath))}),
-    vitest: Object.freeze({version: vitest.manifest.version, packageRoot: path.relative(repo, vitest.root), packageManifestSha256: sha256(readFileSync(vitest.manifestPath)), cliPath}),
-    undici: Object.freeze({version: undici.manifest.version, packageRoot: path.relative(repo, undici.root), packageManifestSha256: sha256(readFileSync(undici.manifestPath))}),
+    terminalPackage: Object.freeze({
+      root: path.relative(repo, terRoot),
+      manifestSha256: sha256(readFileSync(terManifestPath)),
+    }),
+    vitest: Object.freeze({
+      version: vitest.manifest.version,
+      packageRoot: path.relative(repo, vitest.root),
+      packageManifestSha256: sha256(readFileSync(vitest.manifestPath)),
+      cliPath,
+    }),
+    undici: Object.freeze({
+      version: undici.manifest.version,
+      packageRoot: path.relative(repo, undici.root),
+      packageManifestSha256: sha256(readFileSync(undici.manifestPath)),
+    }),
   });
 }
 
@@ -151,25 +199,47 @@ export function currentProcessIdentity(pid) {
   return {startToken: canonicalStartToken(match[1]), pgid: Number(match[2])};
 }
 
-export function validateManagedDevManifest(manifest, {manifestPath = devManifestPath, processIdentityForPid = currentProcessIdentity} = {}) {
-  if (!manifest || manifest.kind !== 'r5-dev-run-manifest' ||
-      typeof manifest.runId !== 'string' || !/^r5-dev-[0-9]+-[0-9]+-[0-9a-f-]{36}$/.test(manifest.runId) ||
-      !Array.isArray(manifest.processes) || manifest.processes.length < 3 ||
-      !Array.isArray(manifest.remoteTdsNodes) || manifest.remoteTdsNodes.length !== 3 || !manifest.remoteHaproxy) {
+export function validateManagedDevManifest(
+  manifest,
+  {manifestPath = devManifestPath, processIdentityForPid = currentProcessIdentity} = {},
+) {
+  if (
+    !manifest ||
+    manifest.kind !== 'r5-dev-run-manifest' ||
+    typeof manifest.runId !== 'string' ||
+    !/^r5-dev-[0-9]+-[0-9]+-[0-9a-f-]{36}$/.test(manifest.runId) ||
+    !Array.isArray(manifest.processes) ||
+    manifest.processes.length < 3 ||
+    !Array.isArray(manifest.remoteTdsNodes) ||
+    manifest.remoteTdsNodes.length !== 3 ||
+    !manifest.remoteHaproxy
+  ) {
     fail('TERMINAL_CLIENT_ACCEPTANCE_DEV_MANIFEST_INVALID');
   }
   const absoluteManifest = realpathSync(manifestPath);
-  if (!within(path.join(root, '.runtime/r5'), absoluteManifest) || path.basename(absoluteManifest) !== 'run-manifest.json') {
+  if (
+    !within(path.join(root, '.runtime/r5'), absoluteManifest) ||
+    path.basename(absoluteManifest) !== 'run-manifest.json'
+  ) {
     fail('TERMINAL_CLIENT_ACCEPTANCE_DEV_MANIFEST_PATH_INVALID');
   }
   for (const process of manifest.processes) {
     if (!Number.isInteger(process.pid) || !Number.isInteger(process.pgid) || typeof process.startToken !== 'string')
       fail('TERMINAL_CLIENT_ACCEPTANCE_LOCAL_PROCESS_IDENTITY_INVALID');
     let alive = false;
-    try { globalThis.process.kill(process.pid, 0); alive = true; } catch { alive = false; }
+    try {
+      globalThis.process.kill(process.pid, 0);
+      alive = true;
+    } catch {
+      alive = false;
+    }
     const actual = processIdentityForPid(process.pid);
-    if (!alive || !actual || actual.pgid !== process.pgid ||
-        actual.startToken !== canonicalStartToken(process.startToken)) {
+    if (
+      !alive ||
+      !actual ||
+      actual.pgid !== process.pgid ||
+      actual.startToken !== canonicalStartToken(process.startToken)
+    ) {
       fail('TERMINAL_CLIENT_ACCEPTANCE_LOCAL_PROCESS_IDENTITY_MISMATCH');
     }
   }
@@ -208,20 +278,38 @@ function resourcePreflight() {
   if (result.status !== 0) fail('TERMINAL_CLIENT_ACCEPTANCE_RESOURCE_PREFLIGHT_FAILED');
 }
 
-function readOperationsPassword() {
+export function readManagedCredential(name) {
+  const allowedNames = new Set(['V2S_SEED_OPERATIONS_DEFAULT_PASSWORD', 'V2S_SEED_PLATFORM_ROOT_PASSWORD']);
+  if (!allowedNames.has(name)) fail('TERMINAL_CLIENT_ACCEPTANCE_CREDENTIAL_NAME_INVALID');
   const credentialsPath = path.join(root, '.runtime/r5/credentials.env');
   const actualPath = realpathSync(credentialsPath);
   if (!within(path.join(root, '.runtime/r5'), actualPath) || path.basename(actualPath) !== 'credentials.env')
     fail('TERMINAL_CLIENT_ACCEPTANCE_CREDENTIAL_PATH_INVALID');
   if ((statSync(actualPath).mode & 0o777) !== 0o600) fail('TERMINAL_CLIENT_ACCEPTANCE_CREDENTIAL_MODE_INVALID');
-  const line = readFileSync(actualPath, 'utf8').split(/\r?\n/).find(value => value.startsWith('V2S_SEED_OPERATIONS_DEFAULT_PASSWORD='));
-  const password = line?.slice('V2S_SEED_OPERATIONS_DEFAULT_PASSWORD='.length);
-  if (!password || /[\u0000\r\n]/.test(password)) fail('TERMINAL_CLIENT_ACCEPTANCE_OPERATIONS_PASSWORD_MISSING');
+  const prefix = `${name}=`;
+  const line = readFileSync(actualPath, 'utf8')
+    .split(/\r?\n/)
+    .find(value => value.startsWith(prefix));
+  const password = line?.slice(prefix.length);
+  if (!password || /[\u0000\r\n]/.test(password)) fail(`TERMINAL_CLIENT_ACCEPTANCE_CREDENTIAL_MISSING:${name}`);
   return password;
 }
 
+export function readOperationsPassword() {
+  return readManagedCredential('V2S_SEED_OPERATIONS_DEFAULT_PASSWORD');
+}
+
+export function readPlatformRootPassword() {
+  return readManagedCredential('V2S_SEED_PLATFORM_ROOT_PASSWORD');
+}
+
 function processIsAlive(pid) {
-  try { globalThis.process.kill(pid, 0); return true; } catch { return false; }
+  try {
+    globalThis.process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function makeRunId() {
@@ -232,14 +320,20 @@ function vitestListEntries(resolved, scenario, testNamePattern) {
   const temporaryDirectory = mkdtempSync(path.join(tmpdir(), 'v2s-terminal-vitest-list-'));
   const reportPath = path.join(temporaryDirectory, 'selection.json');
   try {
-    const result = spawnSync(resolved.node.executable, [
-      resolved.vitest.cliPath,
-      'list',
-      '--config', 'acceptance.vitest.config.ts',
-      '--testNamePattern', testNamePattern,
-      `--json=${reportPath}`,
-      scenario.file,
-    ], {cwd: packageRoot, encoding: 'utf8', timeout: 20_000});
+    const result = spawnSync(
+      resolved.node.executable,
+      [
+        resolved.vitest.cliPath,
+        'list',
+        '--config',
+        'acceptance.vitest.config.ts',
+        '--testNamePattern',
+        testNamePattern,
+        `--json=${reportPath}`,
+        scenario.file,
+      ],
+      {cwd: packageRoot, encoding: 'utf8', timeout: 20_000},
+    );
     if (result.error || result.status !== 0 || !existsSync(reportPath))
       fail('TERMINAL_CLIENT_ACCEPTANCE_VITEST_LIST_FAILED');
     try {
@@ -255,21 +349,29 @@ function vitestListEntries(resolved, scenario, testNamePattern) {
 function selfTest() {
   const scenarioId = 'terminal.client.multi-instance-isolation';
   const selected = parseTerminalAcceptanceArgs(['--scenario', scenarioId]);
-  if (selected.scenario.file !== 'acceptance/multiInstanceIsolation.test.ts') fail('TERMINAL_CLIENT_ACCEPTANCE_SELF_TEST_SCENARIO');
+  if (selected.scenario.file !== 'acceptance/multiInstanceIsolation.test.ts')
+    fail('TERMINAL_CLIENT_ACCEPTANCE_SELF_TEST_SCENARIO');
   const args = buildVitestArguments({cliPath: '/repo/vitest.mjs', scenarioId, scenario: selected.scenario});
-  if (args.at(-1) !== selected.scenario.file ||
-      args[args.indexOf('--testNamePattern') + 1] !== `^${escapeTestName(`${selected.scenario.suiteName} ${selected.scenario.testName}`)}$`)
+  if (
+    args.at(-1) !== selected.scenario.file ||
+    args[args.indexOf('--testNamePattern') + 1] !==
+      `^${escapeTestName(`${selected.scenario.suiteName} ${selected.scenario.testName}`)}$`
+  )
     fail('TERMINAL_CLIENT_ACCEPTANCE_SELF_TEST_EXACT_SELECTION');
-  if (redactOutputLine('credentialSecret=unsafe') !== 'REDACTED_SENSITIVE_TEST_OUTPUT') fail('TERMINAL_CLIENT_ACCEPTANCE_SELF_TEST_REDACTION');
+  if (redactOutputLine('credentialSecret=unsafe') !== 'REDACTED_SENSITIVE_TEST_OUTPUT')
+    fail('TERMINAL_CLIENT_ACCEPTANCE_SELF_TEST_REDACTION');
   const resolved = resolveTerminalNodeRuntime();
   for (const [id, mapping] of Object.entries(scenarioCatalog)) {
     if (mapping.file.startsWith('acceptance/')) {
       const sourcePath = path.join(packageRoot, mapping.file);
       if (!existsSync(sourcePath)) fail(`TERMINAL_CLIENT_ACCEPTANCE_SCENARIO_FILE_MISSING:${id}`);
       const source = readFileSync(sourcePath, 'utf8');
-      if (source.split(`describe('${mapping.suiteName}'`).length - 1 !== 1 ||
-          source.split(`it('${mapping.testName}'`).length - 1 !== 1 ||
-          buildVitestArguments({cliPath: '/repo/vitest.mjs', scenarioId: id, scenario: mapping})[5] !== `^${escapeTestName(`${mapping.suiteName} ${mapping.testName}`)}$`)
+      if (
+        source.split(`describe('${mapping.suiteName}'`).length - 1 !== 1 ||
+        source.split(`it('${mapping.testName}'`).length - 1 !== 1 ||
+        buildVitestArguments({cliPath: '/repo/vitest.mjs', scenarioId: id, scenario: mapping})[5] !==
+          `^${escapeTestName(`${mapping.suiteName} ${mapping.testName}`)}$`
+      )
         fail(`TERMINAL_CLIENT_ACCEPTANCE_SCENARIO_MAPPING_INVALID:${id}`);
       const pattern = buildVitestArguments({cliPath: resolved.vitest.cliPath, scenarioId: id, scenario: mapping})[5];
       const entries = vitestListEntries(resolved, mapping, pattern);
@@ -294,11 +396,22 @@ function selfTest() {
     zeroMatchRejected = true;
   }
   if (!zeroMatchRejected) fail('TERMINAL_CLIENT_ACCEPTANCE_VITEST_ZERO_MATCH_RED_NOT_RED');
-  for (const invalid of [[], ['--scenario', 'all'], ['--scenario', scenarioId, '--all'], ['--scenario', 'terminal.dev.not-a-scenario']]) {
-    try { parseTerminalAcceptanceArgs(invalid); fail('TERMINAL_CLIENT_ACCEPTANCE_SELF_TEST_NOT_RED'); }
-    catch (error) { if (!error.message.startsWith('TERMINAL_CLIENT_ACCEPTANCE_')) throw error; }
+  for (const invalid of [
+    [],
+    ['--scenario', 'all'],
+    ['--scenario', scenarioId, '--all'],
+    ['--scenario', 'terminal.dev.not-a-scenario'],
+  ]) {
+    try {
+      parseTerminalAcceptanceArgs(invalid);
+      fail('TERMINAL_CLIENT_ACCEPTANCE_SELF_TEST_NOT_RED');
+    } catch (error) {
+      if (!error.message.startsWith('TERMINAL_CLIENT_ACCEPTANCE_')) throw error;
+    }
   }
-  process.stdout.write(`TERMINAL_CLIENT_DEV_ACCEPTANCE_SELF_TEST=PASS\nVITEST_SELECTION=PASS; CATALOG=${Object.keys(scenarioCatalog).length}; ZERO_MATCH_RED=PASS\nNODE=${resolved.node.version}\nVITEST=${resolved.vitest.version}\nUNDICI=${resolved.undici.version}\n`);
+  process.stdout.write(
+    `TERMINAL_CLIENT_DEV_ACCEPTANCE_SELF_TEST=PASS\nVITEST_SELECTION=PASS; CATALOG=${Object.keys(scenarioCatalog).length}; ZERO_MATCH_RED=PASS\nNODE=${resolved.node.version}\nVITEST=${resolved.vitest.version}\nUNDICI=${resolved.undici.version}\n`,
+  );
 }
 
 async function runSelectedScenario(scenarioId) {
@@ -331,7 +444,8 @@ async function runSelectedScenario(scenarioId) {
   };
   const logDescriptor = openSync(logFile, 'wx', 0o600);
   const eventDescriptor = openSync(eventsFile, 'wx', 0o600);
-  const appendEvent = event => writeSync(eventDescriptor, `${JSON.stringify({at: new Date().toISOString(), runId, scenarioId, ...event})}\n`);
+  const appendEvent = event =>
+    writeSync(eventDescriptor, `${JSON.stringify({at: new Date().toISOString(), runId, scenarioId, ...event})}\n`);
   let child;
   let closePromise;
   let lock;
@@ -351,7 +465,10 @@ async function runSelectedScenario(scenarioId) {
     const testFile = path.join(packageRoot, scenario.file);
     const configFile = path.join(packageRoot, 'acceptance.vitest.config.ts');
     if (!existsSync(testFile) || !existsSync(configFile)) fail('TERMINAL_CLIENT_ACCEPTANCE_SCENARIO_SOURCE_MISSING');
-    if (!within(realpathSync(packageRoot), realpathSync(testFile)) || !within(realpathSync(packageRoot), realpathSync(configFile)))
+    if (
+      !within(realpathSync(packageRoot), realpathSync(testFile)) ||
+      !within(realpathSync(packageRoot), realpathSync(configFile))
+    )
       fail('TERMINAL_CLIENT_ACCEPTANCE_SCENARIO_SOURCE_ESCAPES_PACKAGE');
     state.devRunId = manifestData.runId;
     state.devManifestPath = path.relative(root, resolvedManifest.manifestPath);
@@ -364,7 +481,12 @@ async function runSelectedScenario(scenarioId) {
     if (!parentIdentity) fail('TERMINAL_CLIENT_ACCEPTANCE_RUNNER_IDENTITY_UNAVAILABLE');
     state.processes = [{pid: process.pid, startToken: parentIdentity.startToken}];
     appendEvent({phase: 'MANIFEST_VALIDATED', devRunId: manifestData.runId});
-    appendEvent({phase: 'NODE_RUNTIME_RESOLVED', node: nodeRuntime.node.version, vitest: nodeRuntime.vitest.version, undici: nodeRuntime.undici.version});
+    appendEvent({
+      phase: 'NODE_RUNTIME_RESOLVED',
+      node: nodeRuntime.node.version,
+      vitest: nodeRuntime.vitest.version,
+      undici: nodeRuntime.undici.version,
+    });
     const args = buildVitestArguments({cliPath: nodeRuntime.vitest.cliPath, scenarioId, scenario});
     const childEnvironment = {
       PATH: process.env.PATH ?? '',
@@ -402,8 +524,13 @@ async function runSelectedScenario(scenarioId) {
       if (!childOsIdentity) await new Promise(resolve => setTimeout(resolve, 50));
     }
     if (!childOsIdentity) fail('TERMINAL_CLIENT_ACCEPTANCE_VITEST_IDENTITY_UNAVAILABLE');
-    const processTree = snapshotProcessTree({pid: child.pid, pgid: childOsIdentity.pgid, startToken: childOsIdentity.startToken});
-    if (!processTree.some(value => value.pid === child.pid && !value.ownershipUnverified)) fail('TERMINAL_CLIENT_ACCEPTANCE_VITEST_TREE_UNVERIFIED');
+    const processTree = snapshotProcessTree({
+      pid: child.pid,
+      pgid: childOsIdentity.pgid,
+      startToken: childOsIdentity.startToken,
+    });
+    if (!processTree.some(value => value.pid === child.pid && !value.ownershipUnverified))
+      fail('TERMINAL_CLIENT_ACCEPTANCE_VITEST_TREE_UNVERIFIED');
     state.process = {
       pid: child.pid,
       pgid: childOsIdentity.pgid,
@@ -458,7 +585,11 @@ async function runSelectedScenario(scenarioId) {
     state.exitSignal = exitSignal;
     state.finishedAt = new Date().toISOString();
     appendEvent({phase: 'VITEST_EXITED', exitStatus, exitSignal, outputLines});
-    const scenarioEvents = readScenarioEvents(childEnvironment.V2S_TERMINAL_DEV_ACCEPTANCE_SCENARIO_EVENTS, runId, scenarioId);
+    const scenarioEvents = readScenarioEvents(
+      childEnvironment.V2S_TERMINAL_DEV_ACCEPTANCE_SCENARIO_EVENTS,
+      runId,
+      scenarioId,
+    );
     state.fixtureCleanup = scenarioEvents.cleanup;
     if (scenarioEvents.failure) state.firstFailure ??= scenarioEvents.failure;
     if (scenarioEvents.startedCount !== 1) {
@@ -486,10 +617,15 @@ async function runSelectedScenario(scenarioId) {
           sessionIds: target.sessionIds,
         });
         const connected = rows.filter(row => row.eventType === 'CONNECTED');
-        const heartbeats = rows.filter(row => row.eventType === 'HEARTBEAT_RTT' && row.sessionId === target.heartbeatSessionId);
+        const heartbeats = rows.filter(
+          row => row.eventType === 'HEARTBEAT_RTT' && row.sessionId === target.heartbeatSessionId,
+        );
         const disconnected = rows.filter(row => row.eventType === 'DISCONNECTED');
-        readbackComplete = connected.length >= target.sessionIds.length && heartbeats.length >= 3 &&
-          disconnected.length >= target.sessionIds.length && disconnected.every(row => row.closeReason === 'ACTIVATION_CANCELLED') &&
+        readbackComplete =
+          connected.length >= target.sessionIds.length &&
+          heartbeats.length >= 3 &&
+          disconnected.length >= target.sessionIds.length &&
+          disconnected.every(row => row.closeReason === 'ACTIVATION_CANCELLED') &&
           heartbeats.every(row => row.rttMs !== 'NULL' && row.rttMs !== '\\N');
         if (readbackComplete) break;
         await new Promise(resolve => setTimeout(resolve, 250));
@@ -508,7 +644,8 @@ async function runSelectedScenario(scenarioId) {
       }
     }
     const remaining = readProcessTable().filter(value => value.pgid === state.process.pgid);
-    if (remaining.length === 0 && !processIsAlive(state.process.pid) && state.cleanup !== 'FAIL') state.cleanup = 'PASS';
+    if (remaining.length === 0 && !processIsAlive(state.process.pid) && state.cleanup !== 'FAIL')
+      state.cleanup = 'PASS';
     else {
       state.cleanup = 'FAIL';
       state.cleanupProcesses = remaining.map(({pid, startToken, commandSha256}) => ({pid, startToken, commandSha256}));
@@ -521,7 +658,9 @@ async function runSelectedScenario(scenarioId) {
     if (child?.pid && state.process && processIsAlive(child.pid)) {
       const identity = currentProcessIdentity(child.pid);
       if (identity && identity.pgid === state.process.pgid && identity.startToken === state.process.startToken) {
-        try { process.kill(-identity.pgid, 'SIGTERM'); } catch {}
+        try {
+          process.kill(-identity.pgid, 'SIGTERM');
+        } catch {}
         try {
           const result = await closePromise;
           exitStatus = result.code;
@@ -538,34 +677,58 @@ async function runSelectedScenario(scenarioId) {
     }
     if (state.cleanup !== 'FAIL') state.cleanup = ownedRemaining.length === 0 ? 'PASS' : 'FAIL';
     if (ownedRemaining.length > 0) {
-      state.cleanupProcesses = ownedRemaining.map(({pid, startToken, commandSha256}) => ({pid, startToken, commandSha256}));
+      state.cleanupProcesses = ownedRemaining.map(({pid, startToken, commandSha256}) => ({
+        pid,
+        startToken,
+        commandSha256,
+      }));
     }
   } finally {
     if (heartbeatTimer) clearInterval(heartbeatTimer);
     if (lock) {
-      try { lock.release(); } catch (error) { state.cleanup = 'FAIL'; state.firstFailure ??= safeFailure(error); }
+      try {
+        lock.release();
+      } catch (error) {
+        state.cleanup = 'FAIL';
+        state.firstFailure ??= safeFailure(error);
+      }
     }
     state.finishedAt ??= new Date().toISOString();
     state.outputLines = outputLines;
     if (!state.process) state.exitStatus = exitStatus;
-    try { appendEvent({phase: 'RUN_FINALIZED', business: state.business, cleanup: state.cleanup, exitStatus, exitSignal}); } catch {}
+    try {
+      appendEvent({phase: 'RUN_FINALIZED', business: state.business, cleanup: state.cleanup, exitStatus, exitSignal});
+    } catch {}
     writeJsonAtomically(manifestFile, state);
     closeSync(logDescriptor);
     closeSync(eventDescriptor);
   }
-  process.stdout.write(`TERMINAL_CLIENT_DEV_ACCEPTANCE=${state.business}; FIXTURE_CLEANUP=${state.fixtureCleanup ?? 'NOT_STARTED'}; CLEANUP=${state.cleanup}; RUN_ID=${runId}; SCENARIO=${scenarioId}; MANIFEST=${path.relative(root, manifestFile)}; NODE=${state.nodeRuntime?.node.version ?? process.version}; VITEST=${state.nodeRuntime?.vitest.version ?? 'NOT_RESOLVED'}; UNDICI=${state.nodeRuntime?.undici.version ?? 'NOT_RESOLVED'}\n`);
+  process.stdout.write(
+    `TERMINAL_CLIENT_DEV_ACCEPTANCE=${state.business}; FIXTURE_CLEANUP=${state.fixtureCleanup ?? 'NOT_STARTED'}; CLEANUP=${state.cleanup}; RUN_ID=${runId}; SCENARIO=${scenarioId}; MANIFEST=${path.relative(root, manifestFile)}; NODE=${state.nodeRuntime?.node.version ?? process.version}; VITEST=${state.nodeRuntime?.vitest.version ?? 'NOT_RESOLVED'}; UNDICI=${state.nodeRuntime?.undici.version ?? 'NOT_RESOLVED'}\n`,
+  );
   if (state.business !== 'PASS' || state.cleanup !== 'PASS') process.exitCode = 1;
 }
 
 export function readScenarioEvents(filePath, runId, scenarioId) {
   let events;
   try {
-    events = readFileSync(filePath, 'utf8').split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line));
+    events = readFileSync(filePath, 'utf8')
+      .split(/\r?\n/)
+      .filter(Boolean)
+      .map(line => JSON.parse(line));
   } catch {
-    return Object.freeze({cleanup: 'FAIL', startedCount: 0, failure: 'TERMINAL_CLIENT_ACCEPTANCE_SCENARIO_EVENTS_UNREADABLE'});
+    return Object.freeze({
+      cleanup: 'FAIL',
+      startedCount: 0,
+      failure: 'TERMINAL_CLIENT_ACCEPTANCE_SCENARIO_EVENTS_UNREADABLE',
+    });
   }
   if (events.some(event => event.runId !== runId || event.scenarioId !== scenarioId))
-    return Object.freeze({cleanup: 'FAIL', startedCount: 0, failure: 'TERMINAL_CLIENT_ACCEPTANCE_SCENARIO_EVENT_BINDING_INVALID'});
+    return Object.freeze({
+      cleanup: 'FAIL',
+      startedCount: 0,
+      failure: 'TERMINAL_CLIENT_ACCEPTANCE_SCENARIO_EVENT_BINDING_INVALID',
+    });
   const acceptedPhases = new Set([
     'SCENARIO_STARTED',
     'SCENARIO_CLEANUP_PASS',
@@ -576,31 +739,61 @@ export function readScenarioEvents(filePath, runId, scenarioId) {
     'E6_AFTER_A_CONNECTION_REACHED',
   ]);
   if (events.some(event => !acceptedPhases.has(event.phase)))
-    return Object.freeze({cleanup: 'FAIL', startedCount: 0, failure: 'TERMINAL_CLIENT_ACCEPTANCE_SCENARIO_EVENT_PHASE_INVALID'});
+    return Object.freeze({
+      cleanup: 'FAIL',
+      startedCount: 0,
+      failure: 'TERMINAL_CLIENT_ACCEPTANCE_SCENARIO_EVENT_PHASE_INVALID',
+    });
   const started = events.filter(event => event.phase === 'SCENARIO_STARTED');
-  const outcomes = events.filter(event => event.phase === 'SCENARIO_CLEANUP_PASS' || event.phase === 'SCENARIO_CLEANUP_FAIL');
+  const outcomes = events.filter(
+    event => event.phase === 'SCENARIO_CLEANUP_PASS' || event.phase === 'SCENARIO_CLEANUP_FAIL',
+  );
   if (started.length === 0) return Object.freeze({cleanup: 'NOT_STARTED', startedCount: 0, failure: undefined});
   if (started.length !== 1 || outcomes.length !== 1)
-    return Object.freeze({cleanup: 'FAIL', startedCount: started.length, failure: 'TERMINAL_CLIENT_ACCEPTANCE_SCENARIO_CLEANUP_PROOF_INVALID'});
+    return Object.freeze({
+      cleanup: 'FAIL',
+      startedCount: started.length,
+      failure: 'TERMINAL_CLIENT_ACCEPTANCE_SCENARIO_CLEANUP_PROOF_INVALID',
+    });
   if (outcomes[0]?.phase === 'SCENARIO_CLEANUP_FAIL')
-    return Object.freeze({cleanup: 'FAIL', startedCount: 1, failure: 'TERMINAL_CLIENT_ACCEPTANCE_SCENARIO_CLEANUP_FAILED'});
+    return Object.freeze({
+      cleanup: 'FAIL',
+      startedCount: 1,
+      failure: 'TERMINAL_CLIENT_ACCEPTANCE_SCENARIO_CLEANUP_FAILED',
+    });
   const targets = events.filter(event => event.phase === 'DORIS_HISTORY_TARGET');
-  if (targets.length > 1) return Object.freeze({cleanup: 'FAIL', startedCount: 1, failure: 'TERMINAL_CLIENT_ACCEPTANCE_DORIS_HISTORY_TARGET_DUPLICATE'});
+  if (targets.length > 1)
+    return Object.freeze({
+      cleanup: 'FAIL',
+      startedCount: 1,
+      failure: 'TERMINAL_CLIENT_ACCEPTANCE_DORIS_HISTORY_TARGET_DUPLICATE',
+    });
   let result = {cleanup: 'PASS', startedCount: 1, failure: undefined};
   if (targets.length === 1) {
     const target = targets[0];
-    if (scenarioId !== 'terminal.dev.lifecycle-and-compression' ||
-        typeof target.terminalRef !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(target.terminalRef) ||
-        !Array.isArray(target.sessionIds) || target.sessionIds.length !== 2 ||
-        target.sessionIds.some(value => typeof value !== 'string' || !/^[A-Za-z0-9._-]{1,128}$/.test(value)) ||
-        new Set(target.sessionIds).size !== target.sessionIds.length ||
-        !target.sessionIds.includes(target.heartbeatSessionId))
-      return Object.freeze({cleanup: 'FAIL', startedCount: 1, failure: 'TERMINAL_CLIENT_ACCEPTANCE_DORIS_HISTORY_TARGET_INVALID'});
-    result = {...result, dorisHistoryTarget: Object.freeze({
-      terminalRef: target.terminalRef,
-      sessionIds: Object.freeze([...target.sessionIds]),
-      heartbeatSessionId: target.heartbeatSessionId,
-    })};
+    if (
+      scenarioId !== 'terminal.dev.lifecycle-and-compression' ||
+      typeof target.terminalRef !== 'string' ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(target.terminalRef) ||
+      !Array.isArray(target.sessionIds) ||
+      target.sessionIds.length !== 2 ||
+      target.sessionIds.some(value => typeof value !== 'string' || !/^[A-Za-z0-9._-]{1,128}$/.test(value)) ||
+      new Set(target.sessionIds).size !== target.sessionIds.length ||
+      !target.sessionIds.includes(target.heartbeatSessionId)
+    )
+      return Object.freeze({
+        cleanup: 'FAIL',
+        startedCount: 1,
+        failure: 'TERMINAL_CLIENT_ACCEPTANCE_DORIS_HISTORY_TARGET_INVALID',
+      });
+    result = {
+      ...result,
+      dorisHistoryTarget: Object.freeze({
+        terminalRef: target.terminalRef,
+        sessionIds: Object.freeze([...target.sessionIds]),
+        heartbeatSessionId: target.heartbeatSessionId,
+      }),
+    };
   }
   return Object.freeze(result);
 }

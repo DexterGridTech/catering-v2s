@@ -55,15 +55,15 @@ export const PlatformPortsSectionLaptop = ({context}: AdminSectionProps) => {
       bounded
       style={sectionStyle}
     >
-      <PrimitiveScrollView testID="admin.console.platform-ports:scroll">
+      <PrimitiveScrollView testID={adminTestIds.node('admin.console.platform-ports:scroll')}>
         <PrimitiveHeading appearance="admin-page" testID={adminTestIds.ports.title}>
           {context.catalogEntry.title}
         </PrimitiveHeading>
-        <PrimitiveCard appearance="admin" testID="admin.console.platform-ports:summary-card">
+        <PrimitiveCard appearance="admin" testID={adminTestIds.node('admin.console.platform-ports:summary-card')}>
           <PrimitiveStatusLine testID={adminTestIds.ports.overallStatus} tone={units.length === 0 ? 'warn' : 'ok'}>
             能力状态总览
           </PrimitiveStatusLine>
-          <PrimitiveText appearance="admin-muted" testID="admin.console.platform-ports:total">
+          <PrimitiveText appearance="admin-muted" testID={adminTestIds.node('admin.console.platform-ports:total')}>
             共 {units.length} 项能力单位
           </PrimitiveText>
           <PrimitiveRatioBar
@@ -104,7 +104,7 @@ export const PlatformPortsSectionLaptop = ({context}: AdminSectionProps) => {
             ]}
           />
           {units.length === 0 ? (
-            <PrimitiveText appearance="admin-muted" testID="admin.console.platform-ports:empty">
+            <PrimitiveText appearance="admin-muted" testID={adminTestIds.node('admin.console.platform-ports:empty')}>
               暂无端口能力
             </PrimitiveText>
           ) : null}
@@ -140,7 +140,7 @@ export const PlatformPortsSectionLaptop = ({context}: AdminSectionProps) => {
                 categoryUnits.map(unit => (
                   <PrimitivePortItem
                     key={unit.unitKey}
-                    testID={`terminal.admin:ports:item:${unit.unitKey}`}
+                    testID={adminTestIds.node(`terminal.admin:ports:item:${unit.unitKey}`)}
                     name={unitLabelOf(unit)}
                     status={stateLabelOf(unit.state)}
                     reason={reasonLabelOf(unit.state)}
@@ -153,7 +153,11 @@ export const PlatformPortsSectionLaptop = ({context}: AdminSectionProps) => {
           );
         })}
         {units.some(unit => unit.category === 'unmapped') ? (
-          <PrimitiveStatus appearance="admin" testID="admin.console.platform-ports:unmapped" tone="warn">
+          <PrimitiveStatus
+            appearance="admin"
+            testID={adminTestIds.node('admin.console.platform-ports:unmapped')}
+            tone="warn"
+          >
             存在未归类端口能力
           </PrimitiveStatus>
         ) : null}

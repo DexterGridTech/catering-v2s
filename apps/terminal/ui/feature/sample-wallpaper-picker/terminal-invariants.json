@@ -11,6 +11,7 @@
     "WallpaperBackground",
     "branchWallpaperOptionTestId",
     "branchWallpaperPickerTestIds",
+    "branchWallpaperThumbnailTestId",
     "WallpaperPickerAssembly",
     "WallpaperId",
     "WallpaperPickerCommandPayload",
@@ -24,12 +25,16 @@
     "parts",
     "sampleWallpaperPickerAssembly",
     "wallpaperOptionTestId",
+    "wallpaperThumbnailTestId",
+    "wallpaperContentTestIds",
     "wallpaperPickerTestIds",
+    "wallpaperSystemNoticeTestIds",
     "wallpaperPickerExitRequestedCommand",
     "startWallpaperPickerCommand",
     "wallpaperOptionSelectedCommand"
   ],
   "publicExportMap": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./test-ids": "./src/foundations/wallpaperAutomationTestIds.ts"
   }
 }

@@ -1059,7 +1059,7 @@ export function readManagedTerminalBindingByName({manifestPath, runId, groupWork
   }
   const resolved = resolveManagedAcceptanceManifest(manifestPath ?? manifestPathDefault(), runId);
   const names = terminalNames.map(value => quote(value)).join(',');
-  const sql = `SELECT COALESCE(json_agg(row_to_json(binding_state)), '[]'::json) FROM (SELECT terminal.name, terminal.terminal_ref::text, terminal.status AS terminal_status, COALESCE(binding.binding_status, 'UNBOUND') AS binding_status, binding.generation FROM store_terminal.terminal terminal LEFT JOIN terminal_binding.latest_binding binding ON binding.workspace_uuid=terminal.workspace_uuid AND binding.group_workspace_key=terminal.group_workspace_key AND binding.terminal_ref=terminal.terminal_ref WHERE terminal.group_workspace_key=${quote(groupWorkspaceKey)} AND terminal.name IN (${names}) ORDER BY terminal.name) binding_state`;
+  const sql = `SELECT COALESCE(json_agg(row_to_json(binding_state)), '[]'::json) FROM (SELECT terminal.name, terminal.terminal_ref::text, terminal.store_ref::text, terminal.status AS terminal_status, COALESCE(binding.binding_status, 'UNBOUND') AS binding_status, binding.generation, binding.bound_device_id FROM store_terminal.terminal terminal LEFT JOIN terminal_binding.latest_binding binding ON binding.workspace_uuid=terminal.workspace_uuid AND binding.group_workspace_key=terminal.group_workspace_key AND binding.terminal_ref=terminal.terminal_ref WHERE terminal.group_workspace_key=${quote(groupWorkspaceKey)} AND terminal.name IN (${names}) ORDER BY terminal.name) binding_state`;
   const script = [
     'set -euo pipefail',
     `expected_boot_id=${quote(resolved.manifest.remoteResources?.bootId ?? '')}`,
@@ -1079,17 +1079,25 @@ export function parseManagedTerminalBindingReadback(rows, terminalNames) {
   if (!Array.isArray(rows) || rows.length !== terminalNames.length ||
       rows.some(row => !terminalNames.includes(row.name) ||
         !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(row.terminal_ref) ||
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(row.store_ref) ||
         !['ENABLED', 'DISABLED', 'VOIDED'].includes(row.terminal_status) ||
         !['UNBOUND', 'ACTIVE', 'ENDED'].includes(row.binding_status) ||
-        (row.binding_status === 'UNBOUND' ? row.generation !== null : !Number.isSafeInteger(row.generation)))) {
+        (row.binding_status === 'UNBOUND'
+          ? row.generation !== null || row.bound_device_id !== null
+          : !Number.isSafeInteger(row.generation)) ||
+        (row.binding_status === 'ACTIVE'
+          ? typeof row.bound_device_id !== 'string' || row.bound_device_id.length < 1 || row.bound_device_id.length > 128
+          : row.binding_status === 'ENDED' && row.bound_device_id !== null))) {
     fail('TERMINAL_ACCEPTANCE_BINDING_READBACK_INVALID');
   }
   return Object.freeze(rows.map(row => Object.freeze({
     name: row.name,
     terminalRef: row.terminal_ref,
+    storeRef: row.store_ref,
     terminalStatus: row.terminal_status,
     bindingStatus: row.binding_status,
     generation: row.generation,
+    boundDeviceId: row.bound_device_id,
   })));
 }
 

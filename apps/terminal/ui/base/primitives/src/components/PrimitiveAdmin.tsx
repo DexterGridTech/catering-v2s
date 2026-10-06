@@ -1,6 +1,7 @@
 import {RnrPressable, RnrText, RnrView} from '../foundations/nativeSlots';
 import {cn} from '../foundations/cn';
 import {assertTestID} from '../foundations/assertTestID';
+import {deriveTestId, testIdProps} from '../foundations/testId';
 import {toneClassName, toneForegroundClassName} from '../foundations/toneClassName';
 import {adminGeometry, baseTokens} from '../theme/tokens';
 import {PrimitiveIcon} from './PrimitiveIcon';
@@ -28,7 +29,7 @@ export const PrimitiveRatioBar = ({testID, accessibilityLabel, total, segments}:
   const valid = ratioIsValid({testID, accessibilityLabel, total, segments});
   return (
     <RnrView
-      testID={address}
+      {...testIdProps(address)}
       accessibilityRole="progressbar"
       accessibilityLabel={accessibilityLabel}
       accessibilityValue={valid ? {min: 0, max: total, now: total} : undefined}
@@ -38,14 +39,17 @@ export const PrimitiveRatioBar = ({testID, accessibilityLabel, total, segments}:
         segments.map(segment => (
           <RnrView
             key={segment.key}
-            testID={`${address}:segment:${segment.key}`}
+            {...testIdProps(deriveTestId(testID, 'segment', segment.key))}
             accessibilityLabel={segment.label}
             className={ratioSegmentClassName(segment.tone)}
             style={{width: `${(segment.value / total) * 100}%`}}
           />
         ))
       ) : (
-        <RnrText testID={`${address}:invalid`} className={toneForegroundClassName('warn', baseTokens.status)}>
+        <RnrText
+          {...testIdProps(deriveTestId(testID, 'invalid'))}
+          className={toneForegroundClassName('warn', baseTokens.status)}
+        >
           比例数据不可用
         </RnrText>
       )}
@@ -61,27 +65,33 @@ export const PrimitiveStatusLine = ({
   style,
 }: PrimitiveStatusLineProps) => (
   <RnrView
-    testID={assertTestID(testID)}
+    {...testIdProps(assertTestID(testID))}
     accessibilityLabel={accessibilityLabel}
     className={baseTokens.adminStatusLine}
     style={style}
   >
-    <RnrView testID={`${assertTestID(testID)}:dot`} className={toneClassName(tone, baseTokens.adminStatusLineDot)} />
+    <RnrView
+      {...testIdProps(deriveTestId(testID, 'dot'))}
+      className={toneClassName(tone, baseTokens.adminStatusLineDot)}
+    />
     <RnrText className={toneForegroundClassName(tone, baseTokens.adminStatusLine)}>{children}</RnrText>
   </RnrView>
 );
 
 export const PrimitiveFactGrid = ({testID, items, columns = 3}: PrimitiveFactGridProps) => (
-  <RnrView testID={assertTestID(testID)} className={baseTokens.adminFactGrid}>
+  <RnrView {...testIdProps(assertTestID(testID))} className={baseTokens.adminFactGrid}>
     {items.map(item => (
       <RnrView
         key={item.key}
-        testID={item.testID ?? `${assertTestID(testID)}:item:${item.key}`}
+        {...testIdProps(item.testID ?? deriveTestId(testID, 'item', item.key))}
         className={baseTokens.adminFact}
         style={{flexBasis: `${100 / columns - 2}%`}}
       >
         <RnrText className={baseTokens.adminFactLabel}>{item.label}</RnrText>
-        <RnrText className={toneForegroundClassName(item.tone ?? 'neutral', baseTokens.adminFactValue)}>
+        <RnrText
+          {...testIdProps(item.valueTestID)}
+          className={toneForegroundClassName(item.tone ?? 'neutral', baseTokens.adminFactValue)}
+        >
           {item.value}
         </RnrText>
       </RnrView>
@@ -104,9 +114,9 @@ export const PrimitiveDisclosure = ({
 }: PrimitiveDisclosureProps) => {
   const address = assertTestID(testID);
   return (
-    <RnrView testID={address} className={baseTokens.adminDisclosure}>
+    <RnrView {...testIdProps(address)} className={baseTokens.adminDisclosure}>
       <RnrPressable
-        testID={triggerTestID ?? `${address}:trigger`}
+        {...testIdProps(triggerTestID ?? deriveTestId(testID, 'trigger'))}
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
         accessibilityState={{expanded}}
@@ -115,24 +125,24 @@ export const PrimitiveDisclosure = ({
       >
         <RnrText className={baseTokens.adminDisclosureLabel}>{label}</RnrText>
         {status === undefined ? null : (
-          <RnrText testID={statusTestID} className={baseTokens.adminDisclosureSummary}>
+          <RnrText {...testIdProps(statusTestID)} className={baseTokens.adminDisclosureSummary}>
             {status}
           </RnrText>
         )}
         {summary === undefined ? null : (
-          <RnrText testID={summaryTestID} className={baseTokens.adminDisclosureSummary}>
+          <RnrText {...testIdProps(summaryTestID)} className={baseTokens.adminDisclosureSummary}>
             {summary}
           </RnrText>
         )}
         <PrimitiveIcon
-          testID={`${address}:icon`}
+          {...testIdProps(deriveTestId(testID, 'icon'))}
           accessibilityLabel={expanded ? '收起' : '展开'}
           icon={expanded ? 'chevron-down' : 'chevron-right'}
           size={18}
         />
       </RnrPressable>
       {expanded ? (
-        <RnrView testID={`${address}:content`} className={baseTokens.adminDisclosureContent}>
+        <RnrView {...testIdProps(deriveTestId(testID, 'content'))} className={baseTokens.adminDisclosureContent}>
           {children}
         </RnrView>
       ) : null}
@@ -150,7 +160,7 @@ export const PrimitiveSurfaceMap = ({
   const address = assertTestID(testID);
   return (
     <RnrView
-      testID={address}
+      {...testIdProps(address)}
       accessibilityRole="none"
       accessibilityLabel={accessibilityLabel}
       className={direction === 'row' ? baseTokens.adminSurfaceMapRow : baseTokens.adminSurfaceMapColumn}
@@ -158,7 +168,7 @@ export const PrimitiveSurfaceMap = ({
       {surfaces.map(surface => (
         <RnrView
           key={surface.key}
-          testID={`${address}:surface:${surface.key}:card`}
+          {...testIdProps(deriveTestId(testID, 'surface-card', surface.key))}
           accessibilityLabel={surface.label}
           className={
             direction === 'row'
@@ -170,23 +180,32 @@ export const PrimitiveSurfaceMap = ({
                 : baseTokens.adminSurfaceMapCardColumn
           }
         >
-          <RnrText testID={`${address}:surface:${surface.key}:label`} className={baseTokens.adminSurfaceMapLabel}>
+          <RnrText
+            {...testIdProps(deriveTestId(testID, 'surface-label', surface.key))}
+            className={baseTokens.adminSurfaceMapLabel}
+          >
             {surface.label}
           </RnrText>
-          <RnrText testID={`${address}:surface:${surface.key}:role`} className={baseTokens.adminSurfaceMapRole}>
+          <RnrText
+            {...testIdProps(deriveTestId(testID, 'surface-role', surface.key))}
+            className={baseTokens.adminSurfaceMapRole}
+          >
             {surface.roleLabel}
           </RnrText>
-          <RnrView testID={`${address}:surface:${surface.key}:wrap`} className={baseTokens.adminSurfaceMapWrap}>
+          <RnrView
+            {...testIdProps(deriveTestId(testID, 'surface-wrap', surface.key))}
+            className={baseTokens.adminSurfaceMapWrap}
+          >
             {surface.physicalWidthLabel === undefined ? null : (
               <RnrText
-                testID={`${address}:surface:${surface.key}:outside:0`}
+                {...testIdProps(deriveTestId(testID, 'surface-outside', `${surface.key}:0`))}
                 className={baseTokens.adminSurfaceMapPhysicalWidth}
               >
                 {surface.physicalWidthLabel}
               </RnrText>
             )}
             <RnrView
-              testID={`${address}:surface:${surface.key}:frame`}
+              {...testIdProps(deriveTestId(testID, 'surface-frame', surface.key))}
               className={baseTokens.adminSurfaceMapFrame}
               style={{
                 width: '100%',
@@ -199,7 +218,7 @@ export const PrimitiveSurfaceMap = ({
               }}
             >
               <RnrView
-                testID={`${address}:surface:${surface.key}`}
+                {...testIdProps(deriveTestId(testID, 'surface', surface.key))}
                 accessibilityRole="none"
                 className={surface.current ? baseTokens.adminSurfaceMapRectCurrent : baseTokens.adminSurfaceMapRect}
                 style={{
@@ -217,7 +236,7 @@ export const PrimitiveSurfaceMap = ({
               >
                 {surface.logicWidthLabel === undefined ? null : (
                   <RnrText
-                    testID={`${address}:surface:${surface.key}:logic-width`}
+                    {...testIdProps(deriveTestId(testID, 'surface-logic-width', surface.key))}
                     className={baseTokens.adminSurfaceMapLogicWidth}
                   >
                     {surface.logicWidthLabel}
@@ -225,7 +244,7 @@ export const PrimitiveSurfaceMap = ({
                 )}
                 {surface.logicHeightLabel === undefined ? null : (
                   <RnrText
-                    testID={`${address}:surface:${surface.key}:logic-height`}
+                    {...testIdProps(deriveTestId(testID, 'surface-logic-height', surface.key))}
                     className={baseTokens.adminSurfaceMapLogicHeight}
                   >
                     {surface.logicHeightLabel}
@@ -235,7 +254,7 @@ export const PrimitiveSurfaceMap = ({
                   surface.insideLabels.map((label, index) => (
                     <RnrText
                       key={`${surface.key}:inside:${index}`}
-                      testID={`${address}:surface:${surface.key}:inside:${index}`}
+                      {...testIdProps(deriveTestId(testID, 'surface-inside', `${surface.key}:${index}`))}
                       className={baseTokens.adminSurfaceMapInside}
                     >
                       {label}
@@ -243,7 +262,7 @@ export const PrimitiveSurfaceMap = ({
                   ))
                 ) : (
                   <RnrText
-                    testID={`${address}:surface:${surface.key}:absent`}
+                    {...testIdProps(deriveTestId(testID, 'surface-absent', surface.key))}
                     className={baseTokens.adminSurfaceMapInside}
                   >
                     未检测到
@@ -251,7 +270,7 @@ export const PrimitiveSurfaceMap = ({
                 )}
                 {surface.statusLabel === undefined ? null : (
                   <RnrText
-                    testID={`${address}:surface:${surface.key}:status`}
+                    {...testIdProps(deriveTestId(testID, 'surface-status', surface.key))}
                     className={toneForegroundClassName(
                       surface.statusTone ?? 'neutral',
                       baseTokens.adminSurfaceMapStatus,
@@ -263,7 +282,7 @@ export const PrimitiveSurfaceMap = ({
               </RnrView>
               {surface.physicalHeightLabel === undefined ? null : (
                 <RnrText
-                  testID={`${address}:surface:${surface.key}:outside:1`}
+                  {...testIdProps(deriveTestId(testID, 'surface-outside', `${surface.key}:1`))}
                   className={baseTokens.adminSurfaceMapPhysicalHeight}
                 >
                   {surface.physicalHeightLabel}
@@ -275,7 +294,7 @@ export const PrimitiveSurfaceMap = ({
               : surface.outsideLabels.map((label, index) => (
                   <RnrText
                     key={`${surface.key}:outside:${index}`}
-                    testID={`${address}:surface:${surface.key}:outside:${index}`}
+                    {...testIdProps(deriveTestId(testID, 'surface-outside', `${surface.key}:${index}`))}
                     className={baseTokens.adminSurfaceMapOutside}
                   >
                     {label}

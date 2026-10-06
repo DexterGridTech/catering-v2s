@@ -1,3 +1,4 @@
+import {testIdProps} from '../foundations/testId';
 import {RnrText} from '../foundations/nativeSlots';
 import {baseTokens} from '../theme/tokens';
 import {assertTestID} from '../foundations/assertTestID';
@@ -5,7 +6,7 @@ import type {PrimitiveHeadingProps} from '../types/types';
 
 export const PrimitiveHeading = ({testID, appearance = 'default', children}: PrimitiveHeadingProps) => (
   <RnrText
-    testID={assertTestID(testID)}
+    {...testIdProps(assertTestID(testID))}
     accessibilityRole="header"
     accessibilityLiveRegion="polite"
     className={

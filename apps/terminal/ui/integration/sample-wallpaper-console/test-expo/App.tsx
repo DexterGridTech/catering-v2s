@@ -12,6 +12,15 @@ const managedGroupWorkspaceBaseUrl = process.env.EXPO_PUBLIC_TER_MANAGED_GROUP_W
 const managedTdsEntryOneWebSocketBaseUrl = process.env.EXPO_PUBLIC_TER_MANAGED_TDS_ENTRY_ONE_WS_URL;
 const managedTdsEntryTwoWebSocketBaseUrl = process.env.EXPO_PUBLIC_TER_MANAGED_TDS_ENTRY_TWO_WS_URL;
 const managedDeviceId = process.env.EXPO_PUBLIC_TER_MANAGED_DEVICE_ID;
+const testAutomationUrl = process.env.EXPO_PUBLIC_TER_AUTOMATION_URL;
+const testAutomationToken = process.env.EXPO_PUBLIC_TER_AUTOMATION_TOKEN;
+const testSurfaceForm = process.env.EXPO_PUBLIC_TER_AUTOMATION_SURFACE_FORM;
+if (testSurfaceForm !== undefined && testSurfaceForm !== 'laptop' && testSurfaceForm !== 'mobile') {
+  throw new Error('TEST_EXPO_TERMINAL_SURFACE_FORM_INVALID');
+}
+if ((testAutomationUrl === undefined) !== (testAutomationToken === undefined)) {
+  throw new Error('TEST_EXPO_AUTOMATION_CONFIG_INCOMPLETE');
+}
 if (managedDeviceId !== undefined && !/^[A-Za-z0-9:._-]{1,128}$/.test(managedDeviceId)) {
   throw new Error('TEST_EXPO_MANAGED_DEVICE_ID_INVALID');
 }
@@ -91,6 +100,9 @@ const App = createTestExpoApp({
   appName: 'sample-wallpaper-console',
   title: '壁纸终端画布',
   persistenceKey: 'sample-wallpaper-console-web',
+  ...(testAutomationUrl === undefined || testAutomationToken === undefined || testSurfaceForm === undefined
+    ? {}
+    : {surfaceForm: testSurfaceForm}),
   webPlatformOptions: {
     protectedStorage: createProcessMemoryStateStoragePort(),
     ...(managedDeviceId === undefined
@@ -107,7 +119,14 @@ const App = createTestExpoApp({
         }),
   },
   terminalSurfaces,
-  createAssembly: input => createSampleWallpaperConsoleAssembly({...input, serverSpaces: testServerSpaces()}),
+  createAssembly: input =>
+    createSampleWallpaperConsoleAssembly({
+      ...input,
+      serverSpaces: testServerSpaces(),
+      ...(testAutomationUrl === undefined || testAutomationToken === undefined
+        ? {}
+        : {terminalAutomation: {enabled: true, url: testAutomationUrl, sessionToken: testAutomationToken}}),
+    }),
   getRuntimeStatus: assembly => assembly.runtime.status,
   onSurfaceModeChanged: async ({assembly}) => {
     await assembly.runtime.dispatchCommand(refreshTopologyDisplayCommand, {}, {requestId: createRequestId()});

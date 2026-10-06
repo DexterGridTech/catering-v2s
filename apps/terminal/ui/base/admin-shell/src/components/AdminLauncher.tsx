@@ -1,5 +1,5 @@
 import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, type ReactNode} from 'react';
-import {StyleSheet, useWindowDimensions, View} from 'react-native';
+import {StyleSheet, useWindowDimensions, View, type GestureResponderEvent, type LayoutChangeEvent} from 'react-native';
 import {openLayerCommand, selectLayers} from '@catering-v2s/kernel-base-ui-state';
 import {selectDisplayRole} from '@catering-v2s/kernel-base-display-context';
 import {selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
@@ -10,6 +10,7 @@ import {
   useSurfaceContext,
   useUiStateSelector,
 } from '@catering-v2s/ui-base-render';
+import {useAutomationNode} from '@catering-v2s/ui-base-primitives';
 import type {SurfaceHostSize} from '@catering-v2s/ui-base-render';
 import {ADMIN_CONSOLE_LAYER_ID, ADMIN_CONSOLE_PART_KEY} from '../foundations/adminIdentity';
 import {
@@ -77,6 +78,10 @@ export const AdminLauncher = ({canvas, children}: AdminLauncherProps) => {
   const surface = useSurfaceContext();
   const {logger} = useRenderContext();
   const hostLogicalSize = surface.hostLogicalSize;
+  const automationNode = useAutomationNode({testID: adminTestIds.launcher, role: 'container'});
+  const recordLauncherTouchStart = automationNode?.onPressIn;
+  const recordLauncherTouchEnd = automationNode?.onPressOut;
+  const updateAutomationLayout = automationNode?.onLayout;
   const windowDimensions = useWindowDimensions();
   const canvasWidth = canvas.width;
   const canvasHeight = canvas.height;
@@ -107,6 +112,14 @@ export const AdminLauncher = ({canvas, children}: AdminLauncherProps) => {
     readonly height: number;
   }> | null>(null);
   const nodeRef = useRef<View>(null);
+  const attachAutomationNode = automationNode?.attachHostNode;
+  const setNodeRef = useCallback(
+    (node: View | null) => {
+      nodeRef.current = node;
+      attachAutomationNode?.(node);
+    },
+    [attachAutomationNode],
+  );
   const measurementGenerationRef = useRef(0);
   const geometryReadyRef = useRef(false);
 
@@ -185,6 +198,13 @@ export const AdminLauncher = ({canvas, children}: AdminLauncherProps) => {
       windowDimensions.height,
       windowDimensions.width,
     ],
+  );
+  const handleLayout = useCallback(
+    (event: LayoutChangeEvent) => {
+      measureOrigin(true);
+      updateAutomationLayout?.(event);
+    },
+    [measureOrigin, updateAutomationLayout],
   );
 
   useLayoutEffect(() => {
@@ -371,14 +391,22 @@ export const AdminLauncher = ({canvas, children}: AdminLauncherProps) => {
 
   const launcherEventProps =
     typeof document === 'undefined'
-      ? {onTouchEnd: hasAdminLayer ? undefined : handleLauncherEvent}
+      ? {
+          onTouchStart: hasAdminLayer ? undefined : recordLauncherTouchStart,
+          onTouchEnd: hasAdminLayer
+            ? undefined
+            : (event: GestureResponderEvent) => {
+                recordLauncherTouchEnd?.(event);
+                handleLauncherEvent(event);
+              },
+        }
       : {onClick: hasAdminLayer ? undefined : handleLauncherEvent};
   return (
     <View
-      ref={nodeRef}
+      ref={setNodeRef}
       testID={adminTestIds.launcher}
       style={styles.observer}
-      onLayout={() => measureOrigin(true)}
+      onLayout={handleLayout}
       {...launcherEventProps}
     >
       {children}

@@ -1,7 +1,10 @@
+import {testIdProps} from '../foundations/testId';
 import {useState, type ReactNode} from 'react';
 import {RnrPressable, RnrText, RnrView} from '../foundations/nativeSlots';
 import {baseTokens} from '../theme/tokens';
 import {assertTestID} from '../foundations/assertTestID';
+import {deriveTestId} from '../foundations/testId';
+import type {TestId} from '../foundations/testId';
 import {PrimitiveInput} from './PrimitiveInput';
 import {PrimitiveLabel} from './PrimitiveLabel';
 import {PrimitiveStatus} from './PrimitiveStatus';
@@ -38,7 +41,7 @@ export const PrimitiveCheckbox = ({
   onCheckedChange,
 }: PrimitiveCheckboxProps) => (
   <RnrPressable
-    testID={assertTestID(testID)}
+    {...testIdProps(assertTestID(testID))}
     accessibilityRole="checkbox"
     accessibilityLabel={accessibilityLabel}
     accessibilityState={{checked, disabled: disabled === true, busy: busy === true}}
@@ -62,7 +65,7 @@ export const PrimitiveRadio = ({
   onSelectedChange,
 }: PrimitiveRadioProps) => (
   <RnrPressable
-    testID={assertTestID(testID)}
+    {...testIdProps(assertTestID(testID))}
     accessibilityRole="radio"
     accessibilityLabel={accessibilityLabel}
     accessibilityState={{selected, disabled: disabled === true, busy: busy === true}}
@@ -86,7 +89,7 @@ export const PrimitiveSwitch = ({
   onCheckedChange,
 }: PrimitiveSwitchProps) => (
   <RnrPressable
-    testID={assertTestID(testID)}
+    {...testIdProps(assertTestID(testID))}
     accessibilityRole="switch"
     accessibilityLabel={accessibilityLabel}
     accessibilityState={{checked, disabled: disabled === true, busy: busy === true}}
@@ -118,7 +121,7 @@ export const PrimitiveSelect = ({
   const isBlocked = disabled === true || busy === true;
   return (
     <RnrPressable
-      testID={assertTestID(testID)}
+      {...testIdProps(assertTestID(testID))}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{
@@ -154,9 +157,9 @@ export const PrimitiveDropdownSelect = ({
   const selected = options.find(option => option.value === value);
   const isBlocked = disabled === true || busy === true;
   return (
-    <RnrView testID={assertTestID(testID)} className={baseTokens.dropdown}>
+    <RnrView {...testIdProps(assertTestID(testID))} className={baseTokens.dropdown}>
       <RnrPressable
-        testID={`${assertTestID(testID)}:trigger`}
+        {...testIdProps(deriveTestId(testID, 'trigger'))}
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
         accessibilityState={{disabled: isBlocked, busy: busy === true, expanded: open}}
@@ -179,13 +182,13 @@ export const PrimitiveDropdownSelect = ({
       </RnrPressable>
       {open ? (
         <RnrView
-          testID={`${assertTestID(testID)}:menu`}
+          {...testIdProps(deriveTestId(testID, 'menu'))}
           className={appearance === 'admin-mobile' ? baseTokens.adminDropdownMenu : baseTokens.dropdownMenu}
         >
           {options.map(option => (
             <RnrPressable
               key={option.value}
-              testID={`${assertTestID(testID)}:option:${option.value}`}
+              {...testIdProps(deriveTestId(testID, 'option', option.value))}
               accessibilityRole="menuitem"
               accessibilityLabel={option.label}
               accessibilityState={{selected: option.value === value, disabled: isBlocked}}
@@ -233,13 +236,16 @@ export const PrimitiveForm = ({children, onSubmit}: PrimitiveFormProps): ReactNo
 };
 
 export const PrimitiveFormField = ({testID, label, children, error}: PrimitiveFormFieldProps) => (
-  <RnrView testID={assertTestID(testID)} className={baseTokens.stack}>
-    <PrimitiveLabel testID={`${testID}:label`} nativeID={`${testID}:input`}>
+  <RnrView {...testIdProps(assertTestID(testID))} className={baseTokens.stack}>
+    <PrimitiveLabel
+      {...testIdProps(deriveTestId(testID, 'label'))}
+      nativeID={testID === undefined ? undefined : `${testID}:input`}
+    >
       {label}
     </PrimitiveLabel>
     {children}
     {error === undefined ? null : (
-      <PrimitiveStatus testID={`${testID}:error`} tone="error">
+      <PrimitiveStatus {...testIdProps(deriveTestId(testID, 'error'))} tone="error">
         {error}
       </PrimitiveStatus>
     )}
@@ -247,7 +253,7 @@ export const PrimitiveFormField = ({testID, label, children, error}: PrimitiveFo
 );
 
 export type PrimitivePressOptionProps = Readonly<{
-  readonly testID: string;
+  readonly testID?: TestId;
   readonly accessibilityLabel: string;
   readonly selected?: boolean;
   readonly disabled?: boolean;
@@ -276,7 +282,7 @@ export const PrimitivePressOption = ({
   const isDisabled = disabled === true || busy === true;
   const option = (
     <RnrPressable
-      testID={assertTestID(testID)}
+      {...testIdProps(assertTestID(testID))}
       accessibilityRole={accessibilityRole}
       accessibilityLabel={accessibilityLabel}
       aria-selected={accessibilityRole === 'tab' ? selected : undefined}
@@ -295,14 +301,14 @@ export const PrimitivePressOption = ({
     >
       {variant === 'admin-nav' && selected ? (
         <RnrView
-          testID={`${assertTestID(testID)}:selected-surface`}
+          {...testIdProps(deriveTestId(testID, 'selected-surface'))}
           pointerEvents="none"
           className={baseTokens.adminNavItemSelected}
         />
       ) : null}
       {variant === 'admin-nav' && icon !== undefined ? (
         <PrimitiveIcon
-          testID={`${assertTestID(testID)}:icon`}
+          {...testIdProps(deriveTestId(testID, 'icon'))}
           accessibilityLabel={accessibilityLabel}
           appearance="admin-shell"
           icon={icon}
@@ -328,7 +334,7 @@ export const PrimitivePressOption = ({
         {children}
       </RnrText>
       {variant === 'admin-nav' && selected ? (
-        <RnrView testID={`${assertTestID(testID)}:focus-bar`} className={baseTokens.adminNavFocusBar} />
+        <RnrView {...testIdProps(deriveTestId(testID, 'focus-bar'))} className={baseTokens.adminNavFocusBar} />
       ) : null}
     </RnrPressable>
   );

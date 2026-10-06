@@ -1,3 +1,5 @@
+import {defineStateSelector} from '../foundations/defineStateSelector';
+import {moduleName} from '../moduleName';
 import type {RequestId} from '@catering-v2s/kernel-base-contracts';
 import type {StateRoot} from '@catering-v2s/kernel-base-state';
 import {
@@ -11,7 +13,7 @@ import {readRequestLedgerState} from './readRequestLedgerState';
 import type {RequestExecutionCommandView, RequestExecutionView} from '../types/requestLedger';
 import {freezeList} from '../foundations/freezeList';
 
-export const selectRequestExecutionViews = (
+const selectRequestExecutionViewsImplementation = (
   state: StateRoot,
   workspace?: 'MAIN' | 'BRANCH',
 ): readonly RequestExecutionView[] => {
@@ -38,7 +40,7 @@ export const selectRequestExecutionViews = (
   );
 };
 
-export const selectRequestExecutionCommands = (
+const selectRequestExecutionCommandsImplementation = (
   state: StateRoot,
   requestId: RequestId,
   displayMode?: 'PRIMARY' | 'SECONDARY',
@@ -51,3 +53,12 @@ export const selectRequestExecutionCommands = (
     ),
   );
 };
+
+export const selectRequestExecutionViews = defineStateSelector(moduleName, 'selectRequestExecutionViews', {
+  parameters: [{kind: 'enum', values: ['MAIN', 'BRANCH'], optional: true}],
+  selector: selectRequestExecutionViewsImplementation,
+});
+export const selectRequestExecutionCommands = defineStateSelector(moduleName, 'selectRequestExecutionCommands', {
+  parameters: [{kind: 'string'}, {kind: 'enum', values: ['PRIMARY', 'SECONDARY'], optional: true}],
+  selector: selectRequestExecutionCommandsImplementation,
+});

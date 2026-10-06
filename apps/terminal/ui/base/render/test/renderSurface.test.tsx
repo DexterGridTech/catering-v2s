@@ -18,6 +18,7 @@ import {
   SurfaceRoot,
   calculateSurfaceHostGeometry,
   dispatchWithRequestId,
+  renderTestIds,
   useDispatchCommand,
   type SurfaceHostSnapshot,
   type SurfaceHostMeasurementSource,
@@ -26,6 +27,7 @@ import {
   type SurfaceHostIdentityRejection,
 } from '../src/index';
 import {createUiCatalog, selectScreen} from '@catering-v2s/kernel-base-ui-state';
+import {inputTestIds} from '@catering-v2s/ui-base-input/test-ids';
 import {createRenderPartDiagnosticReporter} from '../src/foundations/diagnostics';
 import {unusedRenderProviderBindings} from './renderProviderBindings';
 import {
@@ -124,7 +126,7 @@ const findFallbacks = (renderer: RenderResult) =>
     node =>
       typeof node.type === 'string' &&
       typeof node.props.testID === 'string' &&
-      node.props.testID.startsWith('ui-base-render:fallback:'),
+      node.props.testID.startsWith(`${renderTestIds.fallbackPrefix}:`),
   );
 
 const findByTestID = (renderer: RenderResult, testID: string) => renderer.getByTestId(testID);
@@ -261,7 +263,7 @@ describe('render surface hosts', () => {
       ),
     );
 
-    expect(renderer.getByTestId('ui-base-render:system-failure:surface-content')).toBeTruthy();
+    expect(renderer.getByTestId(renderTestIds.systemFailure('surface-content'))).toBeTruthy();
     expect(renderer.getByTestId('admin-console-layer')).toBeTruthy();
     await act(async () => {
       await renderer.unmount();
@@ -441,8 +443,8 @@ describe('render surface hosts', () => {
       ),
     );
 
-    const viewport = findByTestID(renderer, 'ui-base-render:surface-host-viewport');
-    const canvas = findByTestID(renderer, 'ui-base-render:surface-host-canvas');
+    const viewport = findByTestID(renderer, renderTestIds.surfaceHostViewport);
+    const canvas = findByTestID(renderer, renderTestIds.surfaceHostCanvas);
     expect(StyleSheet.flatten(viewport.props.style)).toMatchObject({flex: 1, overflow: 'hidden'});
     expect(StyleSheet.flatten(canvas.props.style)).toMatchObject({
       width: 960,
@@ -492,7 +494,7 @@ describe('render surface hosts', () => {
       ),
     );
 
-    const canvas = findByTestID(renderer, 'ui-base-render:surface-host-canvas');
+    const canvas = findByTestID(renderer, renderTestIds.surfaceHostCanvas);
     const probe = findByTestID(renderer, 'surface-presentation-probe');
     const canvasStyle = StyleSheet.flatten(canvas.props.style) as Readonly<{
       readonly transform: readonly Readonly<Record<string, number>>[];
@@ -536,13 +538,13 @@ describe('render surface hosts', () => {
           containerKey: 'root',
           canvas: {width: 960, height: 540},
           surfaceHostSource: host,
-          renderContentFrame: ({content}) => createElement(View, {testID: 'ui.base.input:surface-frame'}, content),
+          renderContentFrame: ({content}) => createElement(View, {testID: inputTestIds.surfaceFrame}, content),
         }),
       ),
     );
 
-    const canvas = findByTestID(renderer, 'ui-base-render:surface-host-canvas');
-    expect(queryRenderedSubtree(canvas, node => node.props.testID === 'ui.base.input:surface-frame')).toHaveLength(1);
+    const canvas = findByTestID(renderer, renderTestIds.surfaceHostCanvas);
+    expect(queryRenderedSubtree(canvas, node => node.props.testID === inputTestIds.surfaceFrame)).toHaveLength(1);
     await act(async () => {
       await renderer.unmount();
     });
@@ -574,20 +576,16 @@ describe('render surface hosts', () => {
       ),
     );
 
-    expect(findByTestID(renderer, 'ui-base-render:surface-host-pending')).toBeDefined();
-    expect(findByTestID(renderer, 'ui-base-render:surface-host-loading-indicator')).toBeDefined();
-    expect(
-      queryRenderedTree(renderer, node => node.props.testID === 'ui-base-render:surface-host-canvas'),
-    ).toHaveLength(0);
+    expect(findByTestID(renderer, renderTestIds.node('surface-host-pending'))).toBeDefined();
+    expect(findByTestID(renderer, renderTestIds.node('surface-host-loading-indicator'))).toBeDefined();
+    expect(queryRenderedTree(renderer, node => node.props.testID === renderTestIds.surfaceHostCanvas)).toHaveLength(0);
 
     await act(async () => host.emit(hostSnapshot(800, 600)));
-    expect(findByTestID(renderer, 'ui-base-render:surface-host-canvas')).toBeDefined();
+    expect(findByTestID(renderer, renderTestIds.surfaceHostCanvas)).toBeDefined();
 
     await act(async () => host.emit(null));
-    expect(findByTestID(renderer, 'ui-base-render:surface-host-pending')).toBeDefined();
-    expect(
-      queryRenderedTree(renderer, node => node.props.testID === 'ui-base-render:surface-host-canvas'),
-    ).toHaveLength(0);
+    expect(findByTestID(renderer, renderTestIds.node('surface-host-pending'))).toBeDefined();
+    expect(queryRenderedTree(renderer, node => node.props.testID === renderTestIds.surfaceHostCanvas)).toHaveLength(0);
     await act(async () => {
       await renderer.unmount();
     });
@@ -650,7 +648,7 @@ describe('render surface hosts', () => {
       ),
     );
 
-    expect(findByTestID(renderer, 'ui-base-render:surface-host-pending')).toBeDefined();
+    expect(findByTestID(renderer, renderTestIds.node('surface-host-pending'))).toBeDefined();
     await act(async () => {
       availability = 'unavailable';
       current = null;
@@ -659,8 +657,8 @@ describe('render surface hosts', () => {
     });
     await act(async () => undefined);
 
-    expect(findByTestID(renderer, 'ui-base-render:surface-host-failure')).toBeDefined();
-    expect(findByTestID(renderer, 'ui.base.render:startup-failure')).toBeDefined();
+    expect(findByTestID(renderer, renderTestIds.surfaceHostFailure)).toBeDefined();
+    expect(findByTestID(renderer, renderTestIds.startupFailure)).toBeDefined();
     expect(hiddenReasons).toEqual(['startup-failure']);
     await act(async () => {
       await renderer.unmount();
@@ -699,10 +697,10 @@ describe('render surface hosts', () => {
     );
 
     await act(async () => undefined);
-    expect(findByTestID(renderer, 'ui-base-render:fallback:container-empty')).toBeDefined();
-    const fallback = findByTestID(renderer, 'ui-base-render:fallback:container-empty');
+    expect(findByTestID(renderer, renderTestIds.fallback('container-empty'))).toBeDefined();
+    const fallback = findByTestID(renderer, renderTestIds.fallback('container-empty'));
     expect(fallback.props.children).toContain('页面找不到');
-    expect(queryRenderedTree(renderer, node => node.props.testID === 'ui.base.render:startup-failure')).toHaveLength(0);
+    expect(queryRenderedTree(renderer, node => node.props.testID === renderTestIds.startupFailure)).toHaveLength(0);
     expect(events.some(event => event.event === 'startup.failure-page-visible')).toBe(false);
     expect(events).toEqual(
       expect.arrayContaining([
@@ -888,7 +886,7 @@ describe('render surface hosts', () => {
       ),
       (_hostName, props) => {
         const testID = props.testID;
-        if (typeof testID !== 'string' || !testID.startsWith('ui-base-render:layer:')) return {};
+        if (typeof testID !== 'string' || !testID.startsWith(`${renderTestIds.layerPrefix}:`)) return {};
         const existing = layerFocusTargets.get(testID);
         if (existing !== undefined) return existing;
         const target = {
@@ -966,17 +964,17 @@ describe('render surface hosts', () => {
     expect(screens.map(screen => screen.props.marker)).toEqual(['primary', 'secondary']);
     const screenContainers = queryRenderedTree(
       renderer,
-      node => node.type === 'View' && node.props.testID === 'ui-base-render:screen-container',
+      node => node.type === 'View' && node.props.testID === renderTestIds.screenContainer,
     );
     const layerStacks = queryRenderedTree(
       renderer,
-      node => node.type === 'View' && node.props.testID === 'ui-base-render:layer-stack',
+      node => node.type === 'View' && node.props.testID === renderTestIds.layerStack,
     );
     expect(screenContainers).toHaveLength(2);
     expect(layerStacks).toHaveLength(2);
     expect(screenContainers.every(node => node.type === 'View')).toBe(true);
     expect(layerStacks.every(node => node.type === 'View')).toBe(true);
-    expect(queryRenderedTree(renderer, node => node.props.testID === 'ui-base-render:layer-backdrop')).toHaveLength(0);
+    expect(queryRenderedTree(renderer, node => node.props.testID === renderTestIds.layerBackdrop)).toHaveLength(0);
     expect((StyleSheet.flatten(layerStacks[0].props.style) as {readonly position?: string}).position).toBe('absolute');
     await act(async () => {
       await renderer.unmount();
@@ -1042,8 +1040,8 @@ describe('render surface hosts', () => {
     );
     const unavailable = findFallbacks(renderer);
     expect(unavailable.map(item => item.props.testID)).toEqual([
-      'ui-base-render:fallback:runtime-not-started',
-      'ui-base-render:fallback:runtime-not-started',
+      renderTestIds.fallback('runtime-not-started'),
+      renderTestIds.fallback('runtime-not-started'),
     ]);
 
     await act(async () => {
@@ -1052,8 +1050,8 @@ describe('render surface hosts', () => {
       source.notify();
     });
     const empty = findFallbacks(renderer);
-    expect(empty.map(item => item.props.testID)).toContain('ui-base-render:fallback:container-empty');
-    expect(empty.map(item => item.props.testID)).not.toContain('ui-base-render:fallback:runtime-unavailable');
+    expect(empty.map(item => item.props.testID)).toContain(renderTestIds.fallback('container-empty'));
+    expect(empty.map(item => item.props.testID)).not.toContain(renderTestIds.fallback('runtime-unavailable'));
     await act(async () => {
       await renderer.unmount();
     });
@@ -1091,9 +1089,9 @@ describe('render surface hosts', () => {
       ),
     );
 
-    expect(renderer.queryAllByTestId('ui-base-render:fallback:runtime-not-started')).not.toHaveLength(0);
-    expect(queryRenderedTree(renderer, node => node.props.testID === 'ui.base.render:startup-failure')).toHaveLength(0);
-    expect(queryRenderedTree(renderer, node => node.props.testID === 'ui.base.render:runtime-failure')).toHaveLength(0);
+    expect(renderer.queryAllByTestId(renderTestIds.fallback('runtime-not-started'))).not.toHaveLength(0);
+    expect(queryRenderedTree(renderer, node => node.props.testID === renderTestIds.startupFailure)).toHaveLength(0);
+    expect(queryRenderedTree(renderer, node => node.props.testID === renderTestIds.runtimeFailure)).toHaveLength(0);
     expect(hiddenReasons).toEqual([]);
     await act(async () => {
       await renderer.unmount();
@@ -1164,8 +1162,8 @@ describe('render surface hosts', () => {
       'standard-late',
       'alert',
     ]);
-    const layerStack = findByTestID(renderer, 'ui-base-render:layer-stack');
-    const backdrop = findByTestID(renderer, 'ui-base-render:layer-backdrop');
+    const layerStack = findByTestID(renderer, renderTestIds.layerStack);
+    const backdrop = findByTestID(renderer, renderTestIds.layerBackdrop);
     expect(backdrop).toBeDefined();
     const layerStackStyle = StyleSheet.flatten(layerStack.props.style);
     expect(layerStackStyle).toMatchObject({
@@ -1188,7 +1186,7 @@ describe('render surface hosts', () => {
       node =>
         node.type === 'View' &&
         typeof node.props.testID === 'string' &&
-        node.props.testID.startsWith('ui-base-render:layer:'),
+        node.props.testID.startsWith(`${renderTestIds.layerPrefix}:`),
     );
     expect(layerSurfaces).toHaveLength(4);
     expect(layerSurfaces.every(layer => layer.props.pointerEvents === 'box-none')).toBe(true);
@@ -1204,7 +1202,7 @@ describe('render surface hosts', () => {
     expect(layerStyle).not.toHaveProperty('justifyContent');
     expect(layerStyle).not.toHaveProperty('padding');
     expect(layerStyle).not.toHaveProperty('transform');
-    const alertLayer = findByTestID(renderer, 'ui-base-render:layer:alert');
+    const alertLayer = findByTestID(renderer, renderTestIds.layer('alert'));
     expect(alertLayer.props.focusable).not.toBe(true);
     expect(alertLayer.props.accessibilityViewIsModal).not.toBe(true);
     expect(StyleSheet.flatten(alertLayer.props.style)).not.toHaveProperty('transform');
@@ -1273,7 +1271,7 @@ describe('render surface hosts', () => {
       ),
     );
     await act(async () => {
-      const onPress = findByTestID(renderer, 'ui-base-render:layer-backdrop').props.onPress;
+      const onPress = findByTestID(renderer, renderTestIds.layerBackdrop).props.onPress;
       if (typeof onPress !== 'function') throw new Error('layer backdrop must be pressable');
       onPress();
     });
@@ -1354,7 +1352,7 @@ describe('render surface hosts', () => {
       ),
     );
     await act(async () => {
-      const onPress = findByTestID(renderer, 'ui-base-render:layer-backdrop').props.onPress;
+      const onPress = findByTestID(renderer, renderTestIds.layerBackdrop).props.onPress;
       if (typeof onPress !== 'function') throw new Error('layer backdrop must be pressable');
       onPress();
       await Promise.resolve();
@@ -1396,7 +1394,7 @@ describe('render surface hosts', () => {
         {stateSource: source.stateSource, uiCatalog, rendererCatalog, logger, ...unusedRenderProviderBindings},
         createElement(SurfaceRoot, {displayMode: 'PRIMARY', containerKey: 'root'}),
       ),
-      (_hostName, props) => (props.testID === 'ui-base-render:layer:focus-layer' ? layerFocusTarget : {}),
+      (_hostName, props) => (props.testID === renderTestIds.layer('focus-layer') ? layerFocusTarget : {}),
     );
 
     await act(async () => {
@@ -1459,7 +1457,7 @@ describe('render surface hosts', () => {
         {stateSource: source.stateSource, uiCatalog, rendererCatalog, logger, ...unusedRenderProviderBindings},
         createElement(SurfaceRoot, {displayMode: 'PRIMARY', containerKey: 'root'}),
       ),
-      (_hostName, props) => (props.testID === 'ui-base-render:layer:focus-without-input' ? layerFocusTarget : {}),
+      (_hostName, props) => (props.testID === renderTestIds.layer('focus-without-input') ? layerFocusTarget : {}),
     );
     expect(layerFocusTarget.focus).not.toHaveBeenCalled();
     await act(async () => {
@@ -1552,10 +1550,10 @@ describe('render surface hosts', () => {
     );
     expect(diagnosticCountDuringRender).toBe(0);
     expect(findFallbacks(renderer).map(item => item.props.testID)).toContain(
-      'ui-base-render:fallback:missing-catalog-entry',
+      renderTestIds.fallback('missing-catalog-entry'),
     );
     expect(findFallbacks(renderer).map(item => item.props.testID)).toContain(
-      'ui-base-render:fallback:missing-renderer',
+      renderTestIds.fallback('missing-renderer'),
     );
     expect(events).toEqual(
       expect.arrayContaining([
@@ -1611,7 +1609,7 @@ describe('render surface hosts', () => {
       source.notify();
     });
     expect(queryRenderedTree(renderer, node => node.type === 'render-counted-screen')).toHaveLength(0);
-    expect(findFallbacks(renderer).map(item => item.props.testID)).toContain('ui-base-render:fallback:invalid-props');
+    expect(findFallbacks(renderer).map(item => item.props.testID)).toContain(renderTestIds.fallback('invalid-props'));
     expect(events).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -1657,7 +1655,7 @@ describe('render surface hosts', () => {
       source.notify();
     });
     expect(findFallbacks(renderer).map(item => item.props.testID)).toContain(
-      'ui-base-render:fallback:missing-renderer',
+      renderTestIds.fallback('missing-renderer'),
     );
     expect(events).toEqual(
       expect.arrayContaining([
@@ -1726,11 +1724,11 @@ describe('render surface hosts', () => {
       ),
     );
 
-    expect(findByTestID(renderer, 'ui-base-render:fallback:missing-catalog-entry').props.children).toContain(
+    expect(findByTestID(renderer, renderTestIds.fallback('missing-catalog-entry')).props.children).toContain(
       '页面找不到',
     );
-    expect(queryRenderedTree(renderer, node => node.props.testID === 'ui.base.render:startup-failure')).toHaveLength(0);
-    const boundary = findByTestID(renderer, 'ui-base-render:screen-ready-boundary');
+    expect(queryRenderedTree(renderer, node => node.props.testID === renderTestIds.startupFailure)).toHaveLength(0);
+    const boundary = findByTestID(renderer, renderTestIds.screenReadyBoundary);
     await act(async () => {
       boundary.props.onLayout({nativeEvent: {layout: {width: 800, height: 600}}});
     });
@@ -1794,11 +1792,11 @@ describe('render surface hosts', () => {
       ),
     );
 
-    const fallback = findByTestID(renderer, 'ui-base-render:fallback:incompatible-catalog-entry');
+    const fallback = findByTestID(renderer, renderTestIds.fallback('incompatible-catalog-entry'));
     expect(fallback.props.children).toContain('页面找不到');
     expect(fallback.props.children).toContain('incompatible-screen-part');
     expect(fallback.props.children).toContain('laptop');
-    expect(queryRenderedTree(renderer, node => node.props.testID === 'ui.base.render:startup-failure')).toHaveLength(0);
+    expect(queryRenderedTree(renderer, node => node.props.testID === renderTestIds.startupFailure)).toHaveLength(0);
     expect(events).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -1815,7 +1813,7 @@ describe('render surface hosts', () => {
       ]),
     );
 
-    const boundary = findByTestID(renderer, 'ui-base-render:screen-ready-boundary');
+    const boundary = findByTestID(renderer, renderTestIds.screenReadyBoundary);
     await act(async () => {
       boundary.props.onLayout({nativeEvent: {layout: {width: 800, height: 600}}});
     });
@@ -1952,7 +1950,7 @@ describe('render surface hosts', () => {
     );
 
     expect(hiddenReasons).toEqual([]);
-    const boundary = findByTestID(renderer, 'ui-base-render:screen-ready-boundary');
+    const boundary = findByTestID(renderer, renderTestIds.screenReadyBoundary);
     await act(async () => {
       boundary.props.onLayout({nativeEvent: {layout: {width: 800, height: 600}}});
     });
@@ -2022,13 +2020,13 @@ describe('render surface hosts', () => {
       ),
     );
 
-    const notice = findByTestID(renderer, 'ui-base-render:system-failure:screen:root:broken-startup-part');
+    const notice = findByTestID(renderer, renderTestIds.systemFailure('screen:root:broken-startup-part'));
     expect(notice).toBeDefined();
-    expect(queryRenderedTree(renderer, node => node.props.testID === 'ui.base.render:startup-failure')).toHaveLength(0);
+    expect(queryRenderedTree(renderer, node => node.props.testID === renderTestIds.startupFailure)).toHaveLength(0);
     expect(hiddenReasons).toEqual([]);
     expect(readyInputs).toEqual([]);
 
-    const fallbackBoundary = findByTestID(renderer, 'ui-base-render:screen-ready-boundary');
+    const fallbackBoundary = findByTestID(renderer, renderTestIds.screenReadyBoundary);
     await act(async () => {
       fallbackBoundary.props.onLayout({nativeEvent: {layout: {width: 800, height: 600}}});
     });
@@ -2097,10 +2095,10 @@ describe('render surface hosts', () => {
     source.setRoot(rootWithContent(emptyContent()));
     source.setStatus('started');
     const renderer = await mount(render());
-    expect(findByTestID(renderer, 'ui-base-render:fallback:container-empty').props.children).toContain('页面找不到');
-    expect(queryRenderedTree(renderer, node => node.props.testID === 'ui.base.render:startup-failure')).toHaveLength(0);
+    expect(findByTestID(renderer, renderTestIds.fallback('container-empty')).props.children).toContain('页面找不到');
+    expect(queryRenderedTree(renderer, node => node.props.testID === renderTestIds.startupFailure)).toHaveLength(0);
 
-    const contentBoundary = findByTestID(renderer, 'ui-base-render:screen-ready-boundary');
+    const contentBoundary = findByTestID(renderer, renderTestIds.screenReadyBoundary);
     await act(async () => {
       contentBoundary.props.onLayout({nativeEvent: {layout: {width: 800, height: 600}}});
     });
@@ -2125,9 +2123,9 @@ describe('render surface hosts', () => {
       await renderer.rerender(render(createRendererCatalog([])));
     });
     await act(async () => undefined);
-    expect(findByTestID(renderer, 'ui.base.render:runtime-failure')).toBeDefined();
-    expect(findByTestID(renderer, 'ui.base.render:runtime-failure:title').props.children).toBe('终端运行异常');
-    expect(queryRenderedTree(renderer, node => node.props.testID === 'ui.base.render:startup-failure')).toHaveLength(0);
+    expect(findByTestID(renderer, renderTestIds.runtimeFailure)).toBeDefined();
+    expect(findByTestID(renderer, renderTestIds.runtimeFailureTitle).props.children).toBe('终端运行异常');
+    expect(queryRenderedTree(renderer, node => node.props.testID === renderTestIds.startupFailure)).toHaveLength(0);
     expect(events.some(event => event.event === 'startup.failure-page-visible')).toBe(true);
     await act(async () => {
       await renderer.unmount();
@@ -2162,10 +2160,8 @@ describe('render surface hosts', () => {
         }),
       ),
     );
-    expect(findByTestID(beforeReadyRenderer, 'ui.base.render:startup-failure')).toBeDefined();
-    expect(findByTestID(beforeReadyRenderer, 'ui.base.render:startup-failure:title').props.children).toBe(
-      '终端启动失败',
-    );
+    expect(findByTestID(beforeReadyRenderer, renderTestIds.startupFailure)).toBeDefined();
+    expect(findByTestID(beforeReadyRenderer, renderTestIds.startupFailureTitle).props.children).toBe('终端启动失败');
     await act(async () => {
       await beforeReadyRenderer.unmount();
     });
@@ -2214,14 +2210,14 @@ describe('render surface hosts', () => {
       ),
     );
 
-    const root = findByTestID(renderer, 'ui-base-render:surface-root');
+    const root = findByTestID(renderer, renderTestIds.surfaceRoot);
     await act(async () => {
       root.props.onLayout({nativeEvent: {layout: {width: 800, height: 600}}});
     });
     expect(hiddenReasons).toEqual(['startup-failure']);
-    expect(renderer.getByTestId('ui-base-render:fallback:missing-renderer')).toBeDefined();
-    expect(renderer.getByTestId('ui.base.render:startup-failure')).toBeDefined();
-    expect(renderer.queryAllByTestId('ui-base-render:screen-ready-boundary')).toHaveLength(0);
+    expect(renderer.getByTestId(renderTestIds.fallback('missing-renderer'))).toBeDefined();
+    expect(renderer.getByTestId(renderTestIds.startupFailure)).toBeDefined();
+    expect(renderer.queryAllByTestId(renderTestIds.screenReadyBoundary)).toHaveLength(0);
     await act(async () => {
       await renderer.unmount();
     });
@@ -2283,9 +2279,9 @@ describe('render surface hosts', () => {
       ),
     );
 
-    expect(findByTestID(renderer, 'ui-base-render:fallback:missing-renderer')).toBeDefined();
-    expect(queryRenderedTree(renderer, node => node.props.testID === 'ui.base.render:startup-failure')).toHaveLength(0);
-    expect(queryRenderedTree(renderer, node => node.props.testID === 'ui.base.render:runtime-failure')).toHaveLength(0);
+    expect(findByTestID(renderer, renderTestIds.fallback('missing-renderer'))).toBeDefined();
+    expect(queryRenderedTree(renderer, node => node.props.testID === renderTestIds.startupFailure)).toHaveLength(0);
+    expect(queryRenderedTree(renderer, node => node.props.testID === renderTestIds.runtimeFailure)).toHaveLength(0);
     expect(hiddenReasons).toEqual([]);
     await act(async () => {
       await renderer.unmount();
@@ -2353,12 +2349,12 @@ describe('render surface hosts', () => {
       ),
     );
 
-    expect(findByTestID(renderer, 'ui-base-render:fallback:incompatible-catalog-entry')).toBeDefined();
-    expect(findByTestID(renderer, 'ui-base-render:fallback:incompatible-catalog-entry').props.children).toContain(
+    expect(findByTestID(renderer, renderTestIds.fallback('incompatible-catalog-entry'))).toBeDefined();
+    expect(findByTestID(renderer, renderTestIds.fallback('incompatible-catalog-entry')).props.children).toContain(
       '页面找不到',
     );
-    expect(queryRenderedTree(renderer, node => node.props.testID === 'ui.base.render:startup-failure')).toHaveLength(0);
-    expect(queryRenderedTree(renderer, node => node.props.testID === 'ui.base.render:runtime-failure')).toHaveLength(0);
+    expect(queryRenderedTree(renderer, node => node.props.testID === renderTestIds.startupFailure)).toHaveLength(0);
+    expect(queryRenderedTree(renderer, node => node.props.testID === renderTestIds.runtimeFailure)).toHaveLength(0);
     expect(readyInputs).toHaveLength(0);
     expect(hiddenReasons).toEqual([]);
     await act(async () => {
@@ -2410,7 +2406,7 @@ describe('render surface hosts', () => {
       ),
     );
 
-    expect(findByTestID(renderer, 'ui-base-render:fallback:missing-catalog-entry')).toBeDefined();
+    expect(findByTestID(renderer, renderTestIds.fallback('missing-catalog-entry'))).toBeDefined();
     expect(readyInputs).toEqual([]);
     expect(hiddenReasons).toEqual([]);
     await act(async () => {

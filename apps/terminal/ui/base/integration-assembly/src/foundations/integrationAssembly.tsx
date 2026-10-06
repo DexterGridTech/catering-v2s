@@ -36,6 +36,13 @@ import {
   type UiVariableDeclaration,
 } from '@catering-v2s/kernel-base-ui-state';
 import {useEffect, useRef, type ReactElement, type ReactNode} from 'react';
+import {AutomationNodeProvider, type AutomationNodeSink} from '@catering-v2s/ui-base-primitives';
+import {
+  createAutomationAgentModule,
+  createAutomationNodeRegistry,
+  parseAutomationAgentConfig,
+  type AutomationAgentConfig,
+} from '@catering-v2s/ui-base-automation-agent';
 import {InputSurfaceFrame} from '@catering-v2s/ui-base-input';
 import {AdminLauncher, adminShellAssembly} from '@catering-v2s/ui-base-admin-shell';
 import {
@@ -80,6 +87,7 @@ type IntegrationDefinedPart = Readonly<{
 type IntegrationRuntimeBundle = Readonly<{
   readonly runtime: Runtime;
   readonly uiStateModule: UiStateModule;
+  readonly automationNodeSink: AutomationNodeSink | null;
   readonly topologyCapability?: TopologyAdminCapability;
 }>;
 
@@ -192,6 +200,8 @@ export type IntegrationAssembly = Readonly<{
 
 export type IntegrationAssemblyInput<TReadyPayload extends StateJsonValue> = Readonly<{
   readonly appName: string;
+  readonly appVersion?: string;
+  readonly terminalAutomation?: AutomationAgentConfig;
   readonly errorPrefix: string;
   readonly runtimeName: string;
   readonly defaultPersistenceKey: string;
@@ -359,6 +369,12 @@ export const createIntegrationAssembly = async <TReadyPayload extends StateJsonV
   const deviceInfoResult = await input.platformPorts.device.getDeviceInfo({timeoutMs: 2_000});
   const deviceIdentity = normalizeDeviceIdentity(deviceInfoResult);
   const displayFacts = await readDisplayFacts(input.platformPorts.device);
+  const terminalAutomation = input.terminalAutomation ?? {
+    enabled: false,
+    url: 'ws://127.0.0.1:19090',
+    sessionToken: '',
+  };
+  const normalizedAutomation = parseAutomationAgentConfig(terminalAutomation);
   const runtimeFacts = createRenderRuntimeFacts({
     environmentMode,
     debugMode: resolveDebugMode({packaging: input.packagingDebugMode, startup: input.startupDebugMode}),
@@ -367,6 +383,10 @@ export const createIntegrationAssembly = async <TReadyPayload extends StateJsonV
     platformPortCapabilities: describePlatformPortCapabilities(input.platformPorts),
     displayFacts,
     surfaceCanvasSizes: input.surfaceDeclarations,
+    automation: {
+      enabled: normalizedAutomation.enabled,
+      address: normalizedAutomation.enabled ? normalizedAutomation.url : '—',
+    },
   });
   const allParts = Object.freeze([...adminShellAssembly.parts, ...input.parts]);
   const selectedParts = selectPartsForSurfaceForm(allParts, input.surfaceForm);
@@ -443,6 +463,7 @@ export const createIntegrationAssembly = async <TReadyPayload extends StateJsonV
   });
 
   const createRuntimeBundle = (): IntegrationRuntimeBundle => {
+    const automationNodeRegistry = createAutomationNodeRegistry();
     const uiStateModule = createUiStateModule({
       catalog: uiCatalog,
       variables: input.variables,
@@ -452,6 +473,13 @@ export const createIntegrationAssembly = async <TReadyPayload extends StateJsonV
       createDisplayContextModule({surfaceForm: input.surfaceForm}),
       uiStateModule,
       ...input.createApplicationModules({uiStateModule}),
+      createAutomationAgentModule({
+        appName: input.appName,
+        buildVersion: input.appVersion ?? 'dev',
+        config: terminalAutomation,
+        deviceIdentity,
+        nodeRegistry: automationNodeRegistry,
+      }),
     ];
     const nextRuntime = createRuntime({
       localNodeId: createNodeId(),
@@ -468,6 +496,7 @@ export const createIntegrationAssembly = async <TReadyPayload extends StateJsonV
     return Object.freeze({
       runtime: nextRuntime,
       uiStateModule,
+      automationNodeSink: terminalAutomation.enabled ? automationNodeRegistry.sink : null,
       topologyCapability: input.createTopologyAdminCapability?.(nextRuntime),
     });
   };
@@ -486,6 +515,7 @@ export const createIntegrationAssembly = async <TReadyPayload extends StateJsonV
     for (const subscription of runtimeSubscriptions) subscription.runtimeUnsubscribe();
     runtime = nextBundle.runtime;
     uiStateModule = nextBundle.uiStateModule;
+    automationNodeSink = nextBundle.automationNodeSink;
     topologyCapability = nextBundle.topologyCapability;
     for (const subscription of runtimeSubscriptions) {
       if (subscription.active) subscription.runtimeUnsubscribe = nextBundle.runtime.subscribe(subscription.listener);
@@ -518,10 +548,12 @@ export const createIntegrationAssembly = async <TReadyPayload extends StateJsonV
       target: options.target,
     });
   let uiStateModule: UiStateModule;
+  let automationNodeSink: AutomationNodeSink | null;
   let topologyCapability: TopologyAdminCapability | undefined;
   const initialBundle = createRuntimeBundle();
   runtime = initialBundle.runtime;
   uiStateModule = initialBundle.uiStateModule;
+  automationNodeSink = initialBundle.automationNodeSink;
   topologyCapability = initialBundle.topologyCapability;
   try {
     await initialBundle.runtime.start();
@@ -755,52 +787,54 @@ export const createIntegrationAssembly = async <TReadyPayload extends StateJsonV
       });
     }
     return (
-      <RenderProvider
-        stateSource={stateSource}
-        uiCatalog={uiCatalog}
-        rendererCatalog={rendererCatalog}
-        logger={input.platformPorts.logger}
-        nativeLoadingCapability={input.nativeLoadingCapability}
-        onPrimarySurfaceReady={onPrimarySurfaceReady}
-        getPrimarySurfaceReady={() => primarySurfaceReady}
-        runtimeFacts={runtimeFacts}
-        onRuntimeRetry={onRuntimeRetry}
-        topologyCapability={topologyCapability}
-        dispatchCommand={dispatchCommand}
-        createRouteContext={createRouteContext}
-        layerDismissals={input.layerDismissals}
-        selectUiVariable={selectUiVariable}
-        selectSurfaceForm={selectSurfaceForm}
-        selectBusinessInterlockActive={input.selectBusinessInterlockActive}
-        renderBusinessInterlock={input.renderBusinessInterlock}
-      >
-        <SurfaceRoot
-          displayMode={surface.displayMode}
-          containerKey="main"
-          defaultContainerPartKeys={input.defaultContainerPartKeys}
-          canvas={declaredSize}
-          surfaceHostSource={getSurfaceHostSource(surface)}
-          renderContentFrame={({content}) => (
-            <IntegrationSurfaceInputFrame
-              appName={input.appName}
-              surface={surface}
-              declaredSize={declaredSize}
-              logger={input.platformPorts.logger}
-              hostSourceAttached={input.surfaceHostSourcesByDisplayIndex?.[surface.displayIndex] !== undefined}
-              onSurfaceDeclared={() => {
-                if (surface.displayIndex === 0) startupReadiness.primaryDeclared = true;
-              }}
-              onSurfaceMeasured={() => {
-                if (surface.displayIndex === 0) markPrimarySurfaceMeasured();
-              }}
-            >
-              <AdminLauncher canvas={declaredSize}>{content}</AdminLauncher>
-            </IntegrationSurfaceInputFrame>
-          )}
+      <AutomationNodeProvider sink={automationNodeSink}>
+        <RenderProvider
+          stateSource={stateSource}
+          uiCatalog={uiCatalog}
+          rendererCatalog={rendererCatalog}
+          logger={input.platformPorts.logger}
+          nativeLoadingCapability={input.nativeLoadingCapability}
+          onPrimarySurfaceReady={onPrimarySurfaceReady}
+          getPrimarySurfaceReady={() => primarySurfaceReady}
+          runtimeFacts={runtimeFacts}
+          onRuntimeRetry={onRuntimeRetry}
+          topologyCapability={topologyCapability}
+          dispatchCommand={dispatchCommand}
+          createRouteContext={createRouteContext}
+          layerDismissals={input.layerDismissals}
+          selectUiVariable={selectUiVariable}
+          selectSurfaceForm={selectSurfaceForm}
+          selectBusinessInterlockActive={input.selectBusinessInterlockActive}
+          renderBusinessInterlock={input.renderBusinessInterlock}
         >
-          {input.renderChildren?.()}
-        </SurfaceRoot>
-      </RenderProvider>
+          <SurfaceRoot
+            displayMode={surface.displayMode}
+            containerKey="main"
+            defaultContainerPartKeys={input.defaultContainerPartKeys}
+            canvas={declaredSize}
+            surfaceHostSource={getSurfaceHostSource(surface)}
+            renderContentFrame={({content}) => (
+              <IntegrationSurfaceInputFrame
+                appName={input.appName}
+                surface={surface}
+                declaredSize={declaredSize}
+                logger={input.platformPorts.logger}
+                hostSourceAttached={input.surfaceHostSourcesByDisplayIndex?.[surface.displayIndex] !== undefined}
+                onSurfaceDeclared={() => {
+                  if (surface.displayIndex === 0) startupReadiness.primaryDeclared = true;
+                }}
+                onSurfaceMeasured={() => {
+                  if (surface.displayIndex === 0) markPrimarySurfaceMeasured();
+                }}
+              >
+                <AdminLauncher canvas={declaredSize}>{content}</AdminLauncher>
+              </IntegrationSurfaceInputFrame>
+            )}
+          >
+            {input.renderChildren?.()}
+          </SurfaceRoot>
+        </RenderProvider>
+      </AutomationNodeProvider>
     );
   };
 

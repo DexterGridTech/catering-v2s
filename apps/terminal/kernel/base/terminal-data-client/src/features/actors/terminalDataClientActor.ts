@@ -134,10 +134,16 @@ const isCanonicalUuid = (value: unknown): value is string =>
   typeof value === 'string' && /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/.test(value);
 const isTerminalTopicKey = (value: unknown): value is TerminalTopicKey =>
   typeof value === 'string' && (terminalTopicKeys as readonly string[]).includes(value);
-const createProtocolUuid = (): string | null =>
-  typeof globalThis.crypto?.randomUUID === 'function' ? globalThis.crypto.randomUUID() : null;
-const requireProtocolUuid = (): string => {
-  const value = createProtocolUuid();
+const createProtocolUuid = (dependencies: TerminalDataClientDependencies): string | null => {
+  try {
+    const value = dependencies.createProtocolUuid?.();
+    return isCanonicalUuid(value) ? value : null;
+  } catch {
+    return null;
+  }
+};
+const requireProtocolUuid = (dependencies: TerminalDataClientDependencies): string => {
+  const value = createProtocolUuid(dependencies);
   if (value === null) throw new Error('TERMINAL_PROTOCOL_UUID_UNAVAILABLE');
   return value;
 };
@@ -494,7 +500,7 @@ export const createTerminalDataClientActor = (
       configRevision: currentConfigRevision,
       commandName: message.commandName,
       phase,
-      reportId: requireProtocolUuid(),
+      reportId: requireProtocolUuid(dependencies),
       occurredAt: new Date(dependencies.now()).toISOString(),
       ...details,
     };
@@ -578,7 +584,7 @@ export const createTerminalDataClientActor = (
     for (const fact of Object.values(readState(context.getState()).remoteOperations)) {
       let current = fact;
       if (fact.phase === 'RECEIVED' || fact.phase === 'STARTED') {
-        const reportId = createProtocolUuid();
+        const reportId = createProtocolUuid(dependencies);
         if (reportId === null) continue;
         const {resultJson, ...withoutResult} = fact;
         void resultJson;
@@ -675,7 +681,7 @@ export const createTerminalDataClientActor = (
     const credential = client.credential;
     const reject = async (errorCode: string): Promise<Readonly<{status: string}>> => {
       if (remoteOperationEpoch !== expectedEpoch) return Object.freeze({status: 'operation-cleared'});
-      const reportId = createProtocolUuid();
+      const reportId = createProtocolUuid(dependencies);
       if (reportId !== null) {
         await sendRemoteReport({
           remoteOperationId: message.remoteOperationId,
@@ -1422,7 +1428,7 @@ export const createTerminalDataClientActor = (
         ownerRef: payload.ownerRef,
       });
       const acceptedTimeEpochMillis = state.acceptedTopicTimes[identityKey] ?? payload.initialTimeEpochMillis;
-      const subscriptionId = createProtocolUuid();
+      const subscriptionId = createProtocolUuid(dependencies);
       if (subscriptionId === null) return Object.freeze({status: 'failed', reason: 'UUID_GENERATION_UNAVAILABLE'});
       const subscription: TerminalTopicSubscription = Object.freeze({
         subscriptionId,

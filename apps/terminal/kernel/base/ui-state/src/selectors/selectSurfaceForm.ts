@@ -1,8 +1,10 @@
+import {defineStateSelector} from '@catering-v2s/kernel-base-runtime';
+import {moduleName} from '../moduleName';
 import type {StateRoot} from '@catering-v2s/kernel-base-state';
 import {surfaceFormSliceName} from '../features/slices/surfaceForm';
 import {isSurfaceForm, type SurfaceForm} from '../types/catalog';
 
-export const selectSurfaceForm = (state: StateRoot): SurfaceForm => {
+const selectSurfaceFormImplementation = (state: StateRoot): SurfaceForm => {
   const slice = state[surfaceFormSliceName];
   if (slice === undefined || slice === null) {
     throw new Error(`Missing surface form slice: ${surfaceFormSliceName}`);
@@ -13,3 +15,8 @@ export const selectSurfaceForm = (state: StateRoot): SurfaceForm => {
   }
   return value;
 };
+
+export const selectSurfaceForm = defineStateSelector(moduleName, 'selectSurfaceForm', {
+  parameters: [],
+  selector: selectSurfaceFormImplementation,
+});

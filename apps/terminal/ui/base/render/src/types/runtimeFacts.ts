@@ -20,11 +20,18 @@ export type DebugMode = Readonly<{
 
 export type RuntimeDeviceIdentity = DeviceIdentity;
 
+export type AutomationBuildFacts = Readonly<{
+  readonly enabled: boolean;
+  readonly address: string;
+}>;
+
 export type RenderRuntimeFacts = Readonly<{
   readonly environmentMode: EnvironmentMode;
   readonly debugMode: DebugMode;
   /** Optional package-level opt-in for showing the current sample admin password in the login UI. */
   readonly showAdminPassword?: boolean;
+  /** Validated build configuration only; never carries the session token or live connection state. */
+  readonly automation: AutomationBuildFacts;
   readonly deviceIdentity: RuntimeDeviceIdentity;
   readonly platformPortCapabilities: readonly PlatformPortCapabilitySnapshot[];
   readonly displayFacts?: DisplayFactsReadModel;
@@ -52,6 +59,7 @@ export const createRenderRuntimeFacts = ({
   environmentMode,
   debugMode,
   showAdminPassword,
+  automation,
   deviceIdentity,
   platformPortCapabilities,
   displayFacts,
@@ -60,6 +68,7 @@ export const createRenderRuntimeFacts = ({
   readonly environmentMode: EnvironmentMode;
   readonly debugMode: DebugMode;
   readonly showAdminPassword?: boolean;
+  readonly automation?: AutomationBuildFacts;
   readonly deviceIdentity: RuntimeDeviceIdentity;
   readonly platformPortCapabilities: readonly PlatformPortCapabilitySnapshot[];
   readonly displayFacts?: DisplayFactsReadModel;
@@ -69,6 +78,7 @@ export const createRenderRuntimeFacts = ({
     environmentMode,
     debugMode: Object.freeze({enabled: debugMode.enabled, source: debugMode.source}),
     ...(showAdminPassword === undefined ? {} : {showAdminPassword}),
+    automation: Object.freeze(automation ?? {enabled: false, address: '—'}),
     deviceIdentity: Object.freeze({
       available: deviceIdentity.available,
       deviceId: deviceIdentity.deviceId,

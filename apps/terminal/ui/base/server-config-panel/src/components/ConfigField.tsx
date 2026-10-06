@@ -1,9 +1,10 @@
 import {useInputField} from '@catering-v2s/ui-base-input';
-import {PrimitiveInput, PrimitiveLabel} from '@catering-v2s/ui-base-primitives';
+import {deriveTestId, PrimitiveInput, PrimitiveLabel, testIdProps, type TestId} from '@catering-v2s/ui-base-primitives';
 import {ADMIN_CONSOLE_FOCUS_SCOPE_ID} from '@catering-v2s/ui-base-admin-shell';
 
 export type ConfigFieldProps = Readonly<{
   readonly fieldId: string;
+  readonly testID: TestId;
   readonly label: string;
   readonly initialValue: string;
   readonly editable: boolean;
@@ -14,6 +15,7 @@ export type ConfigFieldProps = Readonly<{
 
 export const ConfigField = ({
   fieldId,
+  testID,
   label,
   initialValue,
   editable,
@@ -23,7 +25,7 @@ export const ConfigField = ({
 }: ConfigFieldProps) => {
   const field = useInputField({
     fieldId,
-    testID: fieldId,
+    testID,
     accessibilityLabel: label,
     initialValue,
     keyboardKind: 'virtual',
@@ -32,9 +34,10 @@ export const ConfigField = ({
     maxLength: secure ? 256 : 2048,
     onValueChange,
   });
+  const labelTestID = deriveTestId(testID, 'label');
   return (
     <>
-      <PrimitiveLabel testID={`${fieldId}:label`} nativeID={fieldId}>
+      <PrimitiveLabel {...testIdProps(labelTestID)} nativeID={fieldId}>
         {label}
       </PrimitiveLabel>
       <PrimitiveInput {...field.inputProps} secureTextEntry={secure} editable={editable} appearance="admin" />

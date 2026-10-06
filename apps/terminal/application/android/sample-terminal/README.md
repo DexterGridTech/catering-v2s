@@ -17,7 +17,6 @@
 
 ```text
 App.tsx                         Expo React 根组件；等待 assembly 后按 displayIndex 呈现 surface，注入 render-owned failure page
-src/components/controlledKeyboardHarness.tsx  只供受管键盘验证的 full-layout 空输入 harness；默认启动不进入
 src/index.ts                    包元数据公开面：moduleName 与依赖模块名
 src/moduleName.ts               本 application 的固定 moduleName
 src/dependencies.ts             Android base、render 与 sample-console 的模块依赖列表
@@ -48,10 +47,6 @@ registerRootComponent(App)
 splash。库消费者不应绕过 `App` 自己创建第二个 React host、runtime 或 store。
 本 Android application 的 `package.json.serverSpaces` 是该入口唯一的内置服务配置。`platformPorts.ts`
 在创建 integration assembly 时显式传入它；它不继承或合并 `sample-console` integration 的默认列表。
-
-受管键盘验证器可向已运行的主屏 Activity 发送精确 URI `ter-vk://controlled/full`，进入
-`InputSurfaceFrame` 内的空 full-layout harness，用于验证 URL 符号实际插入；副屏和正常启动
-不进入该页面。它不是业务 part、字段或提交路径，harness 截图也不计入生产 IA 帧分母。
 
 `App` 是唯一保留 `surfaceForm='laptop'` 默认值的外层入口；它把解析后的形态显式传给
 `createSampleTerminalAssembly`，Android wrapper 与 sample-console assembly 不再各自兜底。

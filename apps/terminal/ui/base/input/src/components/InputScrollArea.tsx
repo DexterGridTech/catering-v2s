@@ -6,6 +6,7 @@ import {
   type PrimitiveScrollViewHandle,
 } from '@catering-v2s/ui-base-primitives';
 import {InputScrollAncestorContext} from '../contexts/context';
+import type {TestId} from '@catering-v2s/ui-base-primitives';
 import {useInputSurfaceGeometry} from '../contexts/InputSurfaceGeometryContext';
 import {
   calculateScrollOffset,
@@ -16,7 +17,7 @@ import {
 } from '../foundations/scrollIntoView';
 
 export type InputScrollAreaProps = Readonly<{
-  readonly testID: string;
+  readonly testID: TestId;
   readonly children?: ReactNode;
   readonly contentPaddingBottom?: number;
 }>;

@@ -17,6 +17,7 @@
     "startMemberDeskCommand"
   ],
   "publicExportMap": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./test-ids": "./src/foundations/sampleMemberDeskTestIds.ts"
   }
 }

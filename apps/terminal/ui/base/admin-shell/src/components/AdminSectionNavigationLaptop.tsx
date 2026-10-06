@@ -33,7 +33,7 @@ export const AdminSectionNavigationLaptop = ({
   ));
   return (
     <PrimitiveGrid
-      testID="terminal.admin:navigation"
+      testID={adminTestIds.node('terminal.admin:navigation')}
       appearance="admin-nav"
       accessibilityLabel="终端管理分区"
       style={adminGeometry.navigationList}

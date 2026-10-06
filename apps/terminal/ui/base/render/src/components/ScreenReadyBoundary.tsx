@@ -4,9 +4,7 @@ import type {LoggerPort, NativeLoadingCapability} from '@catering-v2s/kernel-bas
 import {useRenderContext} from '../contexts/RenderContext';
 import {useSurfaceContext} from '../contexts/SurfaceContext';
 import type {ContentFailureReason, RenderSurfaceReadyInput, SystemFailureReason} from '../types/props';
-
-const STARTUP_FAILURE_TEST_ID = 'ui.base.render:startup-failure';
-const RUNTIME_FAILURE_TEST_ID = 'ui.base.render:runtime-failure';
+import {renderTestIds} from '../foundations/renderTestIds';
 const FAILURE_MESSAGE = '请重启终端，如仍失败请联系管理员';
 const FAILURE_TITLES = Object.freeze({
   startup: '终端启动失败',
@@ -75,7 +73,12 @@ const StartupFailurePageView = ({
   readonly reason: string;
   readonly errorName?: string;
 }>) => {
-  const testId = failureStage === 'startup' ? STARTUP_FAILURE_TEST_ID : RUNTIME_FAILURE_TEST_ID;
+  const testId = failureStage === 'startup' ? renderTestIds.startupFailure : renderTestIds.runtimeFailure;
+  const titleTestId =
+    failureStage === 'startup' ? renderTestIds.startupFailureTitle : renderTestIds.runtimeFailureTitle;
+  const messageTestId =
+    failureStage === 'startup' ? renderTestIds.startupFailureMessage : renderTestIds.runtimeFailureMessage;
+  const codeTestId = failureStage === 'startup' ? renderTestIds.startupFailureCode : renderTestIds.runtimeFailureCode;
   const title = FAILURE_TITLES[failureStage];
   const code = failureCode(reason, errorName);
   return (
@@ -85,11 +88,11 @@ const StartupFailurePageView = ({
       accessibilityRole="alert"
       accessibilityLabel={`${title}，${FAILURE_MESSAGE}`}
     >
-      <Text testID={`${testId}:title`}>{title}</Text>
-      <Text testID={`${testId}:message`} accessibilityRole="alert">
+      <Text testID={titleTestId}>{title}</Text>
+      <Text testID={messageTestId} accessibilityRole="alert">
         {FAILURE_MESSAGE}
       </Text>
-      <Text testID={`${testId}:code`}>{code}</Text>
+      <Text testID={codeTestId}>{code}</Text>
     </View>
   );
 };
@@ -348,7 +351,7 @@ export const ScreenReadyBoundary = ({partKey, contentFailure, children}: ScreenR
   }
 
   return (
-    <View testID="ui-base-render:screen-ready-boundary" style={styles.content} onLayout={onLayout}>
+    <View testID={renderTestIds.screenReadyBoundary} style={styles.content} onLayout={onLayout}>
       {children}
     </View>
   );

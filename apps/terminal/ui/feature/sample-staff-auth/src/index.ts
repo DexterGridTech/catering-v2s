@@ -4,3 +4,4 @@ export {moduleKind} from './moduleName';
 export {needToLoginStaffCommand} from './features/commands/commands';
 export {sampleStaffAuthAssembly} from './assembly/assembly';
 export type {StaffAuthAssembly} from './assembly/assembly';
+export {sampleStaffAuthTestIds} from './components/sampleStaffAuthTestIds';

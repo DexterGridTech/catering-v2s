@@ -8,7 +8,6 @@ export type AndroidTerminalAppProps<TAssembly> = Readonly<{
   readonly surfaceForm?: AndroidSurfaceForm;
   readonly createAssembly: (input: Readonly<{readonly surfaceForm: AndroidSurfaceForm}>) => Promise<TAssembly>;
   readonly renderSurface: (assembly: TAssembly, displayIndex: 0 | 1) => ReactElement;
-  readonly loadingTestID?: string;
   readonly loadingMessage?: string;
   readonly loadingBackgroundColor?: string;
   readonly loadingForegroundColor?: string;
@@ -29,7 +28,6 @@ export const AndroidTerminalApp = <TAssembly,>({
   surfaceForm = 'laptop',
   createAssembly,
   renderSurface,
-  loadingTestID = 'application.base.android:loading',
   loadingMessage = '正在启动终端…',
   loadingBackgroundColor = '#f1f5f9',
   loadingForegroundColor = '#0f172a',
@@ -61,7 +59,7 @@ export const AndroidTerminalApp = <TAssembly,>({
 
   if (assembly === null) {
     return (
-      <View testID={loadingTestID} style={[styles.fallback, {backgroundColor: loadingBackgroundColor}]}>
+      <View style={[styles.fallback, {backgroundColor: loadingBackgroundColor}]}>
         <Text style={[styles.fallbackText, {color: loadingForegroundColor}]}>{loadingMessage}</Text>
       </View>
     );

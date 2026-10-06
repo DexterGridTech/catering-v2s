@@ -2474,16 +2474,6 @@
           "anchor": "function validateSuiteAdmission(suite = 'catalog-inventory') {"
         },
         {
-          "assertionKey": "TEST_FIXTURES_STAY_OUTSIDE_SCANNED_SOURCE_ROOTS",
-          "path": "scripts/test/terminal-owned-test-report.test.mjs",
-          "anchor": "const runtimeFixtureRoot = path.join(repositoryRoot, 'apps/terminal/.runtime/test-fixtures');"
-        },
-        {
-          "assertionKey": "TEST_FIXTURES_STAY_OUTSIDE_SCANNED_SOURCE_ROOTS",
-          "path": "scripts/test/ter-admin-display-web-contract.mjs",
-          "anchor": "    execFileSync('git', ['ls-files', '-co', '--exclude-standard', '--', 'apps/terminal'], {"
-        },
-        {
           "assertionKey": "CROSS_OWNER_TESTS_ASSERT_SHARED_CONTRACTS",
           "path": "scripts/dev/r5-dev-command-wrapper.test.mjs",
           "anchor": "  assert.match(tdsConfiguration, /Map\\.of\\(protocol\\.webSocketRoutePattern\\(\\), handler\\)/);"
@@ -2499,11 +2489,6 @@
           "anchor": "- `ACTION_ADMISSION_IS_CHECKED_AT_ACTION_BOUNDARY`: a hash-bound human review/admission record is runtime authorization evidence, not a static-suite baseline. General static tests should exercise accepted, stale and blocked records with synthetic snapshots; the actual L2/reset/seed entry must still validate the live record and fail closed. Do not refresh an approval digest or require unrelated `scripts/verify` to pass by asserting that a mutable human review is current when the action is explicitly out of scope."
         },
         {
-          "assertionKey": "TEST_FIXTURES_STAY_OUTSIDE_SCANNED_SOURCE_ROOTS",
-          "path": "project-memory/operations/test-closed-loop.md",
-          "anchor": "- `TEST_FIXTURES_STAY_OUTSIDE_SCANNED_SOURCE_ROOTS`: temporary test packages or files must not be created under a live source root that another concurrent test inventories. Keep them in a run-scoped ignored runtime fixture directory or an isolated temporary repository; preserve production discovery and path-escape checks instead of weakening the scanner to hide races. When the validator also confines inputs to the repository root, keep positive fixtures under an ignored path whose realpath stays inside that root and separately assert an outside-root fixture is rejected; do not weaken the guard to accommodate a `/tmp` happy-path fixture."
-        },
-        {
           "assertionKey": "CROSS_OWNER_TESTS_ASSERT_SHARED_CONTRACTS",
           "path": "project-memory/operations/test-closed-loop.md",
           "anchor": "- `CROSS_OWNER_TESTS_ASSERT_SHARED_CONTRACTS`: when a consumer delegates a route, key, or protocol value to its owner, test the consumer's use of that shared contract API and test the exact value at the owner boundary. Do not freeze a consumer's source to an old literal while the owner remains authoritative."
@@ -2512,16 +2497,6 @@
           "assertionKey": "ACTION_ADMISSION_IS_CHECKED_AT_ACTION_BOUNDARY",
           "path": "scripts/test/l2-suite-admission.mjs",
           "anchor": "    if (readUniqueMarker('ADMISSION_SOURCE_DIGEST', 'L2_SCRIPT_ADMISSION_SOURCE_DRIFT') !== snapshot.admissionDigest)"
-        },
-        {
-          "assertionKey": "TEST_FIXTURES_STAY_OUTSIDE_SCANNED_SOURCE_ROOTS",
-          "path": "scripts/test/ter-admin-display-web.test.mjs",
-          "anchor": "test('source inventory contains all tracked and active app files plus runner inputs and rejects path escape', () => {"
-        },
-        {
-          "assertionKey": "TEST_FIXTURES_STAY_OUTSIDE_SCANNED_SOURCE_ROOTS",
-          "path": "tools/terminal-shared/run-owned-android-tests.mjs",
-          "anchor": "function selfTest() {"
         },
         {
           "assertionKey": "CROSS_OWNER_TESTS_ASSERT_SHARED_CONTRACTS",
@@ -2547,6 +2522,16 @@
           "assertionKey": "LAYERED_TESTS_SHARE_EXPENSIVE_FIXTURE_PROOF",
           "path": "apps/terminal/kernel/base/topology/test/topology.test.ts",
           "anchor": "  it('locks a deterministic sender payload failure until the members reference changes', async () => {"
+        },
+        {
+          "assertionKey": "TEST_FIXTURES_STAY_OUTSIDE_SCANNED_SOURCE_ROOTS",
+          "path": "tools/terminal-automation/src/managedRun.ts",
+          "anchor": "  const runtimePath = path.join(root, '.runtime');"
+        },
+        {
+          "assertionKey": "TEST_FIXTURES_STAY_OUTSIDE_SCANNED_SOURCE_ROOTS",
+          "path": "tools/terminal-automation/test/managedRun.test.ts",
+          "anchor": "  it('rejects a runtime symlink that escapes the repository', () => {"
         }
       ],
       "sourceRefs": [
@@ -2578,12 +2563,10 @@
         "scripts/test/r5-remote-testcontainers.mjs",
         "scripts/test/r5-remote-testcontainers.test.mjs",
         "scripts/test/store-terminal-l2-admission.test.mjs",
-        "scripts/test/ter-admin-display-web-contract.mjs",
-        "scripts/test/ter-admin-display-web.test.mjs",
-        "scripts/test/terminal-owned-test-report.test.mjs",
         "scripts/test/terminal-ws-wire-client.mjs",
         "scripts/test/terminal-ws-wire-client.test.mjs",
-        "tools/terminal-shared/run-owned-android-tests.mjs",
+        "tools/terminal-automation/src/managedRun.ts",
+        "tools/terminal-automation/test/managedRun.test.ts",
         "tools/verify-gates/verify.mjs"
       ]
     },

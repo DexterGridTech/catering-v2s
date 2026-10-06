@@ -1,3 +1,5 @@
+import {defineStateSelector} from '@catering-v2s/kernel-base-runtime';
+import {moduleName} from '../moduleName';
 import type {StateRoot} from '@catering-v2s/kernel-base-state';
 import {selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
 import {sessionSliceName} from '../features/slices/slice';
@@ -19,9 +21,9 @@ const readSessionState = (root: StateRoot): SessionState => {
   return value as SessionState;
 };
 
-export const selectSessionState = (root: StateRoot): SessionState => readSessionState(root);
+const selectSessionStateImplementation = (root: StateRoot): SessionState => readSessionState(root);
 
-export const selectHostStaffQualification = (
+const selectHostStaffQualificationImplementation = (
   root: StateRoot,
 ): Readonly<{status: SessionState['status']; operatorName: string | null}> | null => {
   if (selectRuntimeInstanceMode(root) === 'MASTER') {
@@ -39,3 +41,12 @@ export const selectHostStaffQualification = (
   }
   return projection;
 };
+
+export const selectHostStaffQualification = defineStateSelector(moduleName, 'selectHostStaffQualification', {
+  parameters: [],
+  selector: selectHostStaffQualificationImplementation,
+});
+export const selectSessionState = defineStateSelector(moduleName, 'selectSessionState', {
+  parameters: [],
+  selector: selectSessionStateImplementation,
+});

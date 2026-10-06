@@ -27,6 +27,7 @@ import {
 import {selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
 import type {AdminSectionProps} from '@catering-v2s/ui-base-admin-shell';
 import {ConfigField} from './ConfigField';
+import {serverConfigPanelTestIds as testIds} from './serverConfigPanelTestIds';
 
 type AddressDraft = Readonly<{addressName: string; baseUrl: string; timeoutMs: string}>;
 type ConfigDraft = Readonly<{
@@ -250,48 +251,44 @@ export const ServerConfigPanel = ({
 
   return (
     <PrimitiveContainer
-      testID="terminal.server-config.section"
+      testID={testIds.section}
       layout="content"
       appearance="admin-content"
       bounded
       style={sectionStyle}
     >
-      <PrimitiveHeading appearance="admin-page" testID="terminal.server-config.title">
+      <PrimitiveHeading appearance="admin-page" testID={testIds.title}>
         {context.catalogEntry.title}
       </PrimitiveHeading>
-      <InputScrollArea testID="terminal.server-config:scroll">
+      <InputScrollArea testID={testIds.scroll}>
         {!hostProjectionReady ? (
-          <PrimitiveStatus testID="terminal.server-config.read.status" tone="warn">
+          <PrimitiveStatus testID={testIds.readStatus} tone="warn">
             主机配置待同步
           </PrimitiveStatus>
         ) : (
           <>
-            <PrimitiveText testID="terminal.server-config.read.status">
-              {branch ? '副机只读配置' : '本机服务配置'}
-            </PrimitiveText>
-            <PrimitiveText testID="terminal.server-config.read.space">服务空间：{selectedSpace}</PrimitiveText>
+            <PrimitiveText testID={testIds.readStatus}>{branch ? '副机只读配置' : '本机服务配置'}</PrimitiveText>
+            <PrimitiveText testID={testIds.readSpace}>服务空间：{selectedSpace}</PrimitiveText>
             {editable ? (
               <PrimitiveSelect
-                testID="terminal.server-config.space"
+                testID={testIds.space}
                 accessibilityLabel="服务空间"
                 options={(config?.spaces ?? []).map(space => ({value: space.name, label: space.name}))}
                 value={selectedSpace}
                 onValueChange={spaceName => void run(selectServerConfigSpaceCommand, {spaceName})}
               />
             ) : null}
-            <PrimitiveText testID="terminal.server-config.read.service">
-              服务：{service?.serverName ?? '暂无服务'}
-            </PrimitiveText>
+            <PrimitiveText testID={testIds.readService}>服务：{service?.serverName ?? '暂无服务'}</PrimitiveText>
             {editable && serviceOptions.length > 1 ? (
               <PrimitiveSelect
-                testID="terminal.server-config.service"
+                testID={testIds.service}
                 accessibilityLabel="服务"
                 options={serviceOptions}
                 value={selectedServerName}
                 onValueChange={setSelectedServerName}
               />
             ) : null}
-            <PrimitiveCard appearance="admin" testID="terminal.server-config.addresses">
+            <PrimitiveCard appearance="admin" testID={testIds.addresses}>
               {visibleAddresses.map((address, index) => {
                 const fieldBase = `terminal.server-config.address.${index + 1}`;
                 const draftAddress = editable
@@ -305,12 +302,13 @@ export const ServerConfigPanel = ({
                   <PrimitiveCard
                     key={`${fieldBase}:${draftVersion}:${addressRowsVersion}:${draftIdentity ?? 'loading'}`}
                     appearance="admin"
-                    testID={`${fieldBase}:card`}
+                    testID={testIds.addressCard(index + 1)}
                   >
                     {editable ? (
                       <>
                         <ConfigField
                           fieldId={`${fieldBase}.name`}
+                          testID={testIds.addressField(index + 1, 'name')}
                           label={`地址 ${index + 1} 名称`}
                           initialValue={draftAddress.addressName}
                           editable
@@ -318,6 +316,7 @@ export const ServerConfigPanel = ({
                         />
                         <ConfigField
                           fieldId={`${fieldBase}.url`}
+                          testID={testIds.addressField(index + 1, 'url')}
                           label={`地址 ${index + 1} URL 前缀`}
                           initialValue={draftAddress.baseUrl}
                           editable
@@ -325,6 +324,7 @@ export const ServerConfigPanel = ({
                         />
                         <ConfigField
                           fieldId={`${fieldBase}.timeout`}
+                          testID={testIds.addressField(index + 1, 'timeout')}
                           label={`地址 ${index + 1} 超时毫秒`}
                           initialValue={String(draftAddress.timeoutMs)}
                           editable
@@ -333,13 +333,13 @@ export const ServerConfigPanel = ({
                         />
                       </>
                     ) : (
-                      <PrimitiveText testID={`terminal.server-config.read.address.${index + 1}`}>
+                      <PrimitiveText testID={testIds.readAddress(index + 1)}>
                         {address.addressName}：{address.baseUrl}（{address.timeoutMs} ms）
                       </PrimitiveText>
                     )}
                     {editable && draft.addresses.length > 1 ? (
                       <PrimitiveButton
-                        testID={`${fieldBase}.remove`}
+                        testID={testIds.removeAddress(index + 1)}
                         appearance="admin-secondary"
                         onPress={() => {
                           setAddressRowsVersion(version => version + 1);
@@ -361,7 +361,7 @@ export const ServerConfigPanel = ({
               })}
               {editable && draft.addresses.length < 4 ? (
                 <PrimitiveButton
-                  testID="terminal.server-config.address.add"
+                  testID={testIds.addAddress}
                   appearance="admin-secondary"
                   onPress={() => {
                     setAddressRowsVersion(version => version + 1);
@@ -385,14 +385,11 @@ export const ServerConfigPanel = ({
               ) : null}
             </PrimitiveCard>
             {addresses.map((address, index) => (
-              <PrimitiveText
-                key={`effective-${address.addressName}`}
-                testID={`terminal.server-config.effective.address.${index + 1}`}
-              >
+              <PrimitiveText key={`effective-${address.addressName}`} testID={testIds.effectiveAddress(index + 1)}>
                 当前生效地址：{address.addressName} · {address.baseUrl}（{address.timeoutMs ?? 10000} ms）
               </PrimitiveText>
             ))}
-            <PrimitiveText testID="terminal.server-config.effective.proxy">
+            <PrimitiveText testID={testIds.effectiveProxy}>
               当前生效代理：
               {effectiveProxy === null
                 ? '未配置'
@@ -401,20 +398,21 @@ export const ServerConfigPanel = ({
             {editable ? (
               <>
                 <PrimitiveSwitch
-                  testID="terminal.server-config.proxy-enabled"
+                  testID={testIds.proxyEnabled}
                   accessibilityLabel="启用 HTTP 代理"
                   checked={draft.proxyEnabled}
                   onCheckedChange={enabled => setDraft(current => Object.freeze({...current, proxyEnabled: enabled}))}
                 />
-                <PrimitiveText testID="terminal.server-config.proxy-enabled.label">启用 HTTP 代理</PrimitiveText>
+                <PrimitiveText testID={testIds.proxyEnabledLabel}>启用 HTTP 代理</PrimitiveText>
                 {draft.proxyEnabled ? (
                   <PrimitiveCard
                     key={`proxy:${draftVersion}:${config?.selectedSpace ?? ''}:${selectedServerName}:${draftSourceKey}`}
                     appearance="admin"
-                    testID="terminal.server-config.proxy-fields"
+                    testID={testIds.proxyFields}
                   >
                     <ConfigField
                       fieldId="terminal.server-config.proxy-host"
+                      testID={testIds.proxyHost}
                       label="HTTP 代理主机"
                       initialValue={draft.proxyHost}
                       editable
@@ -422,6 +420,7 @@ export const ServerConfigPanel = ({
                     />
                     <ConfigField
                       fieldId="terminal.server-config.proxy-port"
+                      testID={testIds.proxyPort}
                       label="HTTP 代理端口"
                       initialValue={draft.proxyPort}
                       editable
@@ -432,6 +431,7 @@ export const ServerConfigPanel = ({
                     />
                     <ConfigField
                       fieldId="terminal.server-config.proxy-user"
+                      testID={testIds.proxyUser}
                       label="代理用户名"
                       initialValue={draft.proxyUsername}
                       editable
@@ -439,6 +439,7 @@ export const ServerConfigPanel = ({
                     />
                     <ConfigField
                       fieldId="terminal.server-config.proxy-password"
+                      testID={testIds.proxyPassword}
                       label="代理密码"
                       initialValue=""
                       editable
@@ -446,15 +447,13 @@ export const ServerConfigPanel = ({
                       onValueChange={proxyPassword => setDraft(current => Object.freeze({...current, proxyPassword}))}
                     />
                     {effectiveProxy?.passwordConfigured || defaultProxy?.passwordConfigured ? (
-                      <PrimitiveText testID="terminal.server-config.proxy-password-configured">
-                        代理密码已配置，不显示明文
-                      </PrimitiveText>
+                      <PrimitiveText testID={testIds.proxyPasswordConfigured}>代理密码已配置，不显示明文</PrimitiveText>
                     ) : null}
                   </PrimitiveCard>
                 ) : null}
               </>
             ) : (
-              <PrimitiveText testID="terminal.server-config.read.proxy">
+              <PrimitiveText testID={testIds.readProxy}>
                 HTTP 代理：
                 {effectiveProxy === null
                   ? '未配置'
@@ -465,9 +464,9 @@ export const ServerConfigPanel = ({
         )}
       </InputScrollArea>
       {editable ? (
-        <PrimitiveActions testID="terminal.server-config.actions">
+        <PrimitiveActions testID={testIds.actions}>
           <PrimitiveButton
-            testID="terminal.server-config.save"
+            testID={testIds.save}
             appearance="admin-primary"
             disabled={tracked.requestInFlight || service === undefined}
             busy={tracked.requestInFlight}
@@ -476,7 +475,7 @@ export const ServerConfigPanel = ({
             保存配置
           </PrimitiveButton>
           <PrimitiveButton
-            testID="terminal.server-config.clear"
+            testID={testIds.clear}
             appearance="admin-secondary"
             disabled={tracked.requestInFlight || service === undefined}
             onPress={() => service && void run(clearServerOverrideCommand, {serverName: service.serverName})}
@@ -484,7 +483,7 @@ export const ServerConfigPanel = ({
             清除覆盖
           </PrimitiveButton>
           <PrimitiveButton
-            testID="terminal.server-config.restore"
+            testID={testIds.restore}
             appearance="admin-secondary"
             disabled={tracked.requestInFlight}
             onPress={() => void run(restoreServerDefaultsCommand, {})}
@@ -493,9 +492,7 @@ export const ServerConfigPanel = ({
           </PrimitiveButton>
         </PrimitiveActions>
       ) : null}
-      {feedback.length > 0 ? (
-        <PrimitiveStatus testID="terminal.server-config.result">{feedback}</PrimitiveStatus>
-      ) : null}
+      {feedback.length > 0 ? <PrimitiveStatus testID={testIds.result}>{feedback}</PrimitiveStatus> : null}
     </PrimitiveContainer>
   );
 };

@@ -5,6 +5,7 @@ import {act, render} from '@testing-library/react-native';
 import type {TransportServerConfig} from '@catering-v2s/kernel-base-contracts';
 import type {AdminSectionProps} from '@catering-v2s/ui-base-admin-shell';
 import {setServerOverrideCommand} from '@catering-v2s/kernel-base-server-config';
+import {serverConfigPanelTestIds as testIds} from '../src/components/serverConfigPanelTestIds';
 import {ServerConfigPanel} from '../src/components/ServerConfigPanel';
 
 const mockRuntime = vi.hoisted(() => ({
@@ -45,6 +46,13 @@ vi.mock('@catering-v2s/ui-base-input', async () => {
 });
 
 vi.mock('@catering-v2s/ui-base-primitives', () => ({
+  createTestId: (module: string, part: string, input: {element?: string; key?: string} = {}) =>
+    [module, part, input.element, input.key === undefined ? undefined : encodeURIComponent(input.key)]
+      .filter(Boolean)
+      .join(':'),
+  deriveTestId: (parent: string, element: string) =>
+    `${parent.slice(0, parent.indexOf(':'))}:derived:${element}:${encodeURIComponent(parent)}`,
+  testIdProps: (testID?: string) => (testID === undefined ? {} : {testID}),
   PrimitiveActions: ({children, testID}: {children?: React.ReactNode; testID: string}) => (
     <View testID={testID}>{children}</View>
   ),
@@ -165,9 +173,9 @@ describe('server-config admin panel', () => {
   it('does not project package-local defaults on an uninitialized SLAVE branch', async () => {
     stateFor('SLAVE', null);
     const screen = await render(<ServerConfigPanel defaults={defaults} context={context} />);
-    expect(screen.getByTestId('terminal.server-config.read.status').props.children).toBe('主机配置待同步');
-    expect(screen.queryByTestId('terminal.server-config.save')).toBeNull();
-    expect(screen.queryByTestId('terminal.server-config.read.address.1')).toBeNull();
+    expect(screen.getByTestId(testIds.readStatus).props.children).toBe('主机配置待同步');
+    expect(screen.queryByTestId(testIds.save)).toBeNull();
+    expect(screen.queryByTestId(testIds.readAddress(1))).toBeNull();
     expect(JSON.stringify(screen.toJSON())).not.toContain('dev.example.test');
   });
 
@@ -191,21 +199,17 @@ describe('server-config admin panel', () => {
     });
     stateFor('SLAVE', hostDefaults);
     const screen = await render(<ServerConfigPanel defaults={defaults} context={context} />);
-    expect(screen.getByTestId('terminal.server-config.read.status').props.children).toBe('副机只读配置');
-    expect(screen.getByTestId('terminal.server-config.read.address.1').props.children).toContain(
-      'https://host.example.test/api',
-    );
+    expect(screen.getByTestId(testIds.readStatus).props.children).toBe('副机只读配置');
+    expect(screen.getByTestId(testIds.readAddress(1)).props.children).toContain('https://host.example.test/api');
     expect(JSON.stringify(screen.toJSON())).not.toContain('https://dev.example.test/api');
-    expect(screen.queryByTestId('terminal.server-config.save')).toBeNull();
+    expect(screen.queryByTestId(testIds.save)).toBeNull();
   });
 
   it('shows only a masked proxy status and secure empty input on the MASTER host', async () => {
     stateFor('MASTER', null);
     const screen = await render(<ServerConfigPanel defaults={defaults} context={context} />);
-    expect(screen.getByTestId('terminal.server-config.proxy-password-configured').props.children).toBe(
-      '代理密码已配置，不显示明文',
-    );
-    expect(screen.getByTestId('terminal.server-config.proxy-password').props.children).toBe('secure:');
+    expect(screen.getByTestId(testIds.proxyPasswordConfigured).props.children).toBe('代理密码已配置，不显示明文');
+    expect(screen.getByTestId(testIds.proxyPassword).props.children).toBe('secure:');
     expect(JSON.stringify(screen.toJSON())).not.toContain('secret-that-must-not-render');
     expect(JSON.stringify(screen.toJSON())).not.toContain('default-proxy-secret');
   });
@@ -228,17 +232,17 @@ describe('server-config admin panel', () => {
       ]),
     });
     const screen = await render(<ServerConfigPanel defaults={twoServiceDefaults} context={context} />);
-    const inputTestId = 'terminal.server-config.address.1.url';
+    const inputTestId = testIds.addressField(1, 'url');
     expect(screen.getByTestId(inputTestId).props.children).toContain('https://dev.example.test/api');
 
     await act(async () => {
-      screen.getByTestId('terminal.server-config.service').props.onPress();
+      screen.getByTestId(testIds.service).props.onPress();
     });
 
-    expect(screen.getByTestId('terminal.server-config.read.service').props.children).toContain('analytics');
+    expect(screen.getByTestId(testIds.readService).props.children).toContain('analytics');
     expect(screen.getByTestId(inputTestId).props.children).toContain('https://analytics.example.test/api');
     await act(async () => {
-      screen.getByTestId('terminal.server-config.save').props.onPress();
+      screen.getByTestId(testIds.save).props.onPress();
     });
     const saveCall = mockRuntime.commandRun.mock.calls.at(-1)?.[0] as
       {definition?: unknown; payload?: unknown} | undefined;
@@ -269,16 +273,16 @@ describe('server-config admin panel', () => {
       ]),
     });
     const screen = await render(<ServerConfigPanel defaults={twoAddressDefaults} context={context} />);
-    const urlField = 'terminal.server-config.address.1.url';
+    const urlField = testIds.addressField(1, 'url');
     expect(screen.getByTestId(urlField).props.children).toContain('https://a.example.test/api');
 
     await act(async () => {
-      screen.getByTestId('terminal.server-config.address.1.remove').props.onPress();
+      screen.getByTestId(testIds.removeAddress(1)).props.onPress();
     });
 
     expect(screen.getByTestId(urlField).props.children).toContain('https://b.example.test/api');
     await act(async () => {
-      screen.getByTestId('terminal.server-config.save').props.onPress();
+      screen.getByTestId(testIds.save).props.onPress();
     });
     const saveCall = mockRuntime.commandRun.mock.calls.at(-1)?.[0] as {payload?: unknown} | undefined;
     expect(saveCall?.payload).toMatchObject({

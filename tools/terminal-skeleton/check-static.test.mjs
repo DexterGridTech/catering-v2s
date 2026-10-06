@@ -14,7 +14,8 @@ import {
   moduleNameToRelativePath,
   readPackageCensus,
 } from './graph-model.mjs';
-import {runStaticChecks} from './check-static.mjs';
+import {findRetiredUiRunnerReferences, runStaticChecks} from './check-static.mjs';
+import {runTestIdTypeGate} from './test-id-type-gate.mjs';
 import {assertNoCompilerOptionsDiagnostics} from '../terminal-shared/typescript-analysis.mjs';
 
 const toolDirectory = path.dirname(fileURLToPath(import.meta.url));
@@ -55,11 +56,11 @@ assert.throws(
 
 const help = spawnSync(process.execPath, [checkStaticPath, '--help'], {cwd: repoRoot, encoding: 'utf8'});
 assert.equal(help.status, 0, help.stderr);
-assert.match(help.stdout, /eight TER static rule gates/);
+assert.match(help.stdout, /eleven TER static rule gates/);
 
 const realStatic = spawnSync(process.execPath, [checkStaticPath], {cwd: repoRoot, encoding: 'utf8'});
 assert.equal(realStatic.status, 0, realStatic.stderr);
-assert.match(realStatic.stdout, /RULE_GATES=8/);
+assert.match(realStatic.stdout, /RULE_GATES=11/);
 assert.match(realStatic.stdout, /SUPPORT_CHECKS=1/);
 for (const rule of [
   'GRAPH_COMPARISON',
@@ -70,10 +71,72 @@ for (const rule of [
   'TR01_REDUCER_BOUNDARY',
   'STATE_RESET_RETENTION_ONLY',
   'KERNEL_PLATFORM_INDEPENDENCE',
+  'SELECTOR_REGISTRATION',
+  'TEST_ID_TYPE_SAFETY',
+  'RETIRED_UI_RUNNER_ABSENCE',
 ]) {
   assert.match(realStatic.stdout, new RegExp(`RULE_${rule}=PASS`));
 }
 assert.match(realStatic.stdout, /SCAFFOLD_HYGIENE=PASS/);
+assert.deepEqual(
+  findRetiredUiRunnerReferences([{name: 'importer.mjs', text: "import './ter-admin-display-web.mjs';"}]),
+  ['importer.mjs:ter-admin-display-web.mjs'],
+  'retired runner imports are rejected',
+);
+assert.deepEqual(
+  findRetiredUiRunnerReferences([{name: 'catalog.mjs', text: "'scripts/test/ter-admin-display-web.mjs'"}]),
+  ['catalog.mjs:ter-admin-display-web.mjs'],
+  'retired runner path registrations are rejected',
+);
+
+const testIdFixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'terminal-test-id-type-'));
+try {
+  const primitives = path.join(testIdFixtureRoot, 'apps/terminal/ui/base/primitives/src');
+  const screen = path.join(testIdFixtureRoot, 'apps/terminal/ui/feature/example/src/Screen.tsx');
+  fs.mkdirSync(path.dirname(screen), {recursive: true});
+  fs.mkdirSync(path.join(primitives, 'foundations'), {recursive: true});
+  fs.writeFileSync(
+    path.join(primitives, 'foundations/testId.ts'),
+    "const testIdTypeMarker: unique symbol = Symbol('TestId');\nexport type TestId = string & Readonly<{[testIdTypeMarker]: true}>;\nexport const createTestId = (value: string): TestId => value as TestId;\n",
+  );
+  fs.writeFileSync(
+    screen,
+    "import type {TestId} from '../../../base/primitives/src/foundations/testId';\ndeclare const id: TestId;\nexport const View = () => <div testID={id} />;\n",
+  );
+  assert.deepEqual(runTestIdTypeGate({root: testIdFixtureRoot}), {checkedAttributes: 1});
+  fs.writeFileSync(screen, 'export const View = () => <div testID="raw" />;\n');
+  assert.throws(() => runTestIdTypeGate({root: testIdFixtureRoot}), /TER_TEST_ID_TYPE_MISMATCH/);
+  fs.writeFileSync(
+    screen,
+    "import type {TestId} from '../../../base/primitives/src/foundations/testId';\nconst id = 'raw' as TestId;\nexport const View = () => <div testID={id} />;\n",
+  );
+  assert.throws(() => runTestIdTypeGate({root: testIdFixtureRoot}), /TER_TEST_ID_CAST_OUTSIDE_FACTORY/);
+  const testIds = path.join(path.dirname(screen), 'testIds.ts');
+  fs.writeFileSync(
+    testIds,
+    "import type {TestId as CanonicalId} from '../../../base/primitives/src/foundations/testId';\nexport const invalidTestId = 'raw' as CanonicalId;\n",
+  );
+  fs.writeFileSync(
+    screen,
+    "import {invalidTestId as importedAlias} from './testIds';\nexport const View = () => <div testID={importedAlias} />;\n",
+  );
+  assert.throws(
+    () => runTestIdTypeGate({root: testIdFixtureRoot}),
+    /TER_TEST_ID_CAST_OUTSIDE_FACTORY/,
+    'a TestId cast in a generated-constant-style TypeScript file remains red across an import alias',
+  );
+  fs.writeFileSync(
+    testIds,
+    "import {createTestId} from '../../../base/primitives/src/foundations/testId';\nexport const validTestId = createTestId('example:button');\n",
+  );
+  fs.writeFileSync(
+    screen,
+    "import {validTestId} from './testIds';\nexport const View = () => <div testID={validTestId} />;\n",
+  );
+  assert.deepEqual(runTestIdTypeGate({root: testIdFixtureRoot}), {checkedAttributes: 1});
+} finally {
+  fs.rmSync(testIdFixtureRoot, {recursive: true, force: true});
+}
 
 const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'terminal-skeleton-static-'));
 try {
@@ -144,8 +207,76 @@ try {
   const applicationRoot = path.join(fixtureRoot, 'apps/terminal/application/base/android');
   const applicationNodeModulesRoot = path.join(applicationRoot, 'node_modules');
   const cleanReport = runStaticChecks({root: fixtureRoot, batch: 2});
-  assert.ok(cleanReport.results.every(result => result.status === 'PASS'));
+  assert.ok(
+    cleanReport.results.every(result => result.status === 'PASS'),
+    JSON.stringify(cleanReport.results.filter(result => result.status !== 'PASS')),
+  );
   assert.equal(cleanReport.hygiene.status, 'PASS', cleanReport.hygiene.error);
+
+  const selectorModulePath = path.join(
+    fixtureRoot,
+    'apps/terminal/ui/base/terminal-activation/src/application/module.ts',
+  );
+  const selectorModuleBefore = fs.readFileSync(selectorModulePath, 'utf8');
+  const registeredActivationSelector = 'selectorDefinitions: [selectActivationStatusView]';
+  assert.ok(selectorModuleBefore.includes(registeredActivationSelector));
+  fs.writeFileSync(
+    selectorModulePath,
+    selectorModuleBefore.replace(registeredActivationSelector, 'selectorDefinitions: []'),
+  );
+
+  const uiStateModulePath = path.join(
+    fixtureRoot,
+    'apps/terminal/kernel/base/ui-state/src/application/createUiStateModule.ts',
+  );
+  const uiStateModuleBefore = fs.readFileSync(uiStateModulePath, 'utf8');
+  const registeredNonSelectSelector =
+    'selectorDefinitions: [selectSurfaceForm, selectLayers, selectScreen, isCurrentWorkspaceOwnedByInstance]';
+  assert.ok(uiStateModuleBefore.includes(registeredNonSelectSelector));
+  fs.writeFileSync(
+    uiStateModulePath,
+    uiStateModuleBefore.replace(
+      registeredNonSelectSelector,
+      'selectorDefinitions: [selectSurfaceForm, selectLayers, selectScreen, selectSurfaceForm, createUiStateModule]',
+    ),
+  );
+  const selectorRed = runStaticChecks({root: fixtureRoot, batch: 2});
+  assert.equal(gate(selectorRed, 'selector-registration').status, 'FAIL');
+  assert.match(gate(selectorRed, 'selector-registration').error, /missing=\[selectActivationStatusView\]/);
+  assert.match(gate(selectorRed, 'selector-registration').error, /missing=\[isCurrentWorkspaceOwnedByInstance\]/);
+  assert.match(gate(selectorRed, 'selector-registration').error, /extra=\[createUiStateModule\]/);
+  assert.match(gate(selectorRed, 'selector-registration').error, /duplicates=\[selectSurfaceForm\]/);
+  console.log('TERMINAL_SKELETON_RED_MISSING_NONPREFIX_DUPLICATE_HELPER=selector-registration:FAIL');
+  fs.writeFileSync(selectorModulePath, selectorModuleBefore);
+  fs.writeFileSync(uiStateModulePath, uiStateModuleBefore);
+  const selectorRestored = runStaticChecks({root: fixtureRoot, batch: 2});
+  assert.equal(
+    gate(selectorRestored, 'selector-registration').status,
+    'PASS',
+    gate(selectorRestored, 'selector-registration').error,
+  );
+  console.log('TERMINAL_SKELETON_RED_MISSING_SELECTOR_RESTORE=PASS');
+
+  const staffTestIdsPath = path.join(
+    fixtureRoot,
+    'apps/terminal/ui/feature/sample-staff-auth/src/components/sampleStaffAuthTestIds.ts',
+  );
+  const staffTestIdsBefore = fs.readFileSync(staffTestIdsPath, 'utf8');
+  const declaredSubpathImport = "'@catering-v2s/ui-base-primitives/test-id'";
+  assert.ok(staffTestIdsBefore.includes(declaredSubpathImport));
+  const exportedSubpath = runStaticChecks({root: fixtureRoot, batch: 2});
+  assert.equal(gate(exportedSubpath, 'graph-comparison').status, 'PASS');
+  fs.writeFileSync(
+    staffTestIdsPath,
+    staffTestIdsBefore.replace(declaredSubpathImport, "'@catering-v2s/ui-base-primitives/not-exported'"),
+  );
+  const undeclaredSubpath = runStaticChecks({root: fixtureRoot, batch: 2});
+  assert.equal(gate(undeclaredSubpath, 'graph-comparison').status, 'FAIL');
+  assert.match(gate(undeclaredSubpath, 'graph-comparison').error, /imports undeclared workspace export/);
+  fs.writeFileSync(staffTestIdsPath, staffTestIdsBefore);
+  const restoredSubpath = runStaticChecks({root: fixtureRoot, batch: 2});
+  assert.equal(gate(restoredSubpath, 'graph-comparison').status, 'PASS');
+  console.log('TERMINAL_SKELETON_RED_UNDECLARED_WORKSPACE_SUBPATH=graph-comparison:FAIL');
 
   fs.mkdirSync(applicationNodeModulesRoot, {recursive: true});
   try {
@@ -1031,7 +1162,7 @@ try {
     source => `import '@catering-v2s/ui-base-render/src/index';\n${source}`,
     report => {
       assertGateVector(report, ['graph-comparison']);
-      assert.match(gate(report, 'graph-comparison').error, /non-root workspace import/);
+      assert.match(gate(report, 'graph-comparison').error, /imports undeclared workspace export/);
     },
   );
 

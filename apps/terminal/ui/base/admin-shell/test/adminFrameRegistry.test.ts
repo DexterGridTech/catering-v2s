@@ -1,4 +1,5 @@
 import {describe, expect, it} from 'vitest';
+import {adminTestIds} from '../src/foundations/adminTestIds';
 import {
   adminFrameFixtures,
   adminFrameDefinitions,
@@ -169,12 +170,12 @@ describe('admin IA frame registry', () => {
   it('keeps IA-14 normal and display-facts-error controls mutually exclusive', () => {
     const frame = adminFrameDefinitions.find(candidate => candidate.id === 'IA-14');
     expect(frame?.variants.map(frameVariant => frameVariant.id)).toEqual(['single-surface', 'display-facts-error']);
-    expect(frame?.variants[0]?.controlTestIDs).toContain('terminal.admin:runtime:surface-map');
-    expect(frame?.variants[0]?.mustNotTestIDs).toContain('terminal.admin:runtime:display-facts-error');
-    expect(frame?.variants[1]?.controlTestIDs).toEqual(['terminal.admin:runtime:display-facts-error']);
+    expect(frame?.variants[0]?.controlTestIDs).toContain(adminTestIds.runtime.surfaceMap);
+    expect(frame?.variants[0]?.mustNotTestIDs).toContain(adminTestIds.runtime.displayFactsError);
+    expect(frame?.variants[1]?.controlTestIDs).toEqual([adminTestIds.runtime.displayFactsError]);
     expect(frame?.variants[1]?.mustNotTestIDs).toEqual([
-      'terminal.admin:runtime:surface-map',
-      'terminal.admin:runtime:mobile:single-surface-boundary',
+      adminTestIds.runtime.surfaceMap,
+      adminTestIds.runtime.mobileSingleSurfaceBoundary,
     ]);
   });
 

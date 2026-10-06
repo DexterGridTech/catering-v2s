@@ -4,6 +4,7 @@ import {
   createRuntime,
   defineActor,
   defineCommand,
+  defineStateSelector,
   onCommand,
   type RuntimeJournalEvent,
   type RuntimeModule,
@@ -31,6 +32,39 @@ const moduleFor = (
   });
 
 describe('runtime journal and lifecycle', () => {
+  it('R-05 evaluates only registered selectors and validates their declared argument tuple', async () => {
+    const selector = defineStateSelector('test.lifecycle.selector', 'selectValue', {
+      parameters: [{kind: 'string'}],
+      selector: (_state, value: string) => value,
+    });
+    const runtime = createRuntime(
+      createTestRuntimeInput({
+        modules: [
+          Object.freeze({
+            ...moduleFor('test.lifecycle.selector'),
+            selectorDefinitions: [selector],
+          }),
+        ],
+      }),
+    );
+    expect(() => runtime.evaluateSelector('test.lifecycle.selector.selectValue', ['before-start'])).toThrow();
+    await runtime.start();
+    expect(runtime.descriptors.find(item => item.moduleName === 'test.lifecycle.selector')).toMatchObject({
+      selectorNames: ['test.lifecycle.selector.selectValue'],
+      selectorParameters: {'test.lifecycle.selector.selectValue': [{kind: 'string'}]},
+    });
+    expect(runtime.evaluateSelector('test.lifecycle.selector.selectValue', ['ok'])).toBe('ok');
+    expect(() => runtime.evaluateSelector('test.lifecycle.selector.missing', [])).toThrow(
+      'RUNTIME_SELECTOR_NOT_REGISTERED:test.lifecycle.selector.missing',
+    );
+    expect(() => runtime.evaluateSelector('test.lifecycle.selector.selectValue', [])).toThrow(
+      'RUNTIME_SELECTOR_ARGUMENT_COUNT_INVALID:test.lifecycle.selector.selectValue',
+    );
+    expect(() => runtime.evaluateSelector('test.lifecycle.selector.selectValue', [1])).toThrow(
+      'RUNTIME_SELECTOR_ARGUMENT_INVALID:test.lifecycle.selector.selectValue:0',
+    );
+  });
+
   it('J-1 keeps a bounded FIFO journal and isolates observer failures', async () => {
     const observed: RuntimeJournalEvent[] = [];
     const command = defineCommand<Readonly<{}>>('test.lifecycle.journal', {name: 'run', visibility: 'internal'});
@@ -241,6 +275,7 @@ describe('runtime journal and lifecycle', () => {
     let preDescriptors: unknown;
     let installDescriptors: unknown;
     let installStateAvailable = false;
+    let installedRuntimeId: unknown;
     const module = moduleFor('test.lifecycle.order', [], [], {
       preSetup: context => {
         order.push('preSetup');
@@ -250,6 +285,7 @@ describe('runtime journal and lifecycle', () => {
         order.push('install');
         installDescriptors = context.descriptors;
         installStateAvailable = context.getState() !== undefined;
+        installedRuntimeId = context.runtimeId;
       },
     });
     const runtime = createRuntime(createTestRuntimeInput({modules: [module]}));
@@ -259,6 +295,7 @@ describe('runtime journal and lifecycle', () => {
     expect(preDescriptors).toBe(descriptors);
     expect(installDescriptors).toBe(descriptors);
     expect(installStateAvailable).toBe(true);
+    expect(installedRuntimeId).toBe(runtime.runtimeId);
   });
 
   it('L-2 makes a failed runtime terminal and keeps facade access closed', async () => {

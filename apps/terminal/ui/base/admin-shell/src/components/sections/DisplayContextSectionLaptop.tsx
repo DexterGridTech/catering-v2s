@@ -36,11 +36,14 @@ export const DisplayContextSectionLaptop = ({context}: AdminSectionProps) => {
       bounded
       style={sectionStyle}
     >
-      <PrimitiveScrollView testID="admin.console.runtime:scroll" contentPaddingBottom={runtimeScrollPaddingBottom}>
+      <PrimitiveScrollView
+        testID={adminTestIds.node('admin.console.runtime:scroll')}
+        contentPaddingBottom={runtimeScrollPaddingBottom}
+      >
         <PrimitiveHeading appearance="admin-page" testID={adminTestIds.runtime.title}>
           {context.catalogEntry.title}
         </PrimitiveHeading>
-        <PrimitiveCard appearance="admin" testID="admin.console.runtime:summary-card">
+        <PrimitiveCard appearance="admin" testID={adminTestIds.node('admin.console.runtime:summary-card')}>
           <PrimitiveStatusLine
             testID={adminTestIds.runtime.overallStatus}
             tone={status === 'started' ? 'ok' : status === 'created' ? 'warn' : 'error'}
@@ -48,7 +51,7 @@ export const DisplayContextSectionLaptop = ({context}: AdminSectionProps) => {
             {overallMessage}
           </PrimitiveStatusLine>
           <PrimitiveFactGrid
-            testID="admin.console.runtime:facts"
+            testID={adminTestIds.node('admin.console.runtime:facts')}
             columns={3}
             items={[
               {
@@ -59,27 +62,27 @@ export const DisplayContextSectionLaptop = ({context}: AdminSectionProps) => {
               },
               {
                 key: 'environment',
-                testID: 'admin.console.runtime:environment',
+                testID: adminTestIds.node('admin.console.runtime:environment'),
                 label: '环境',
                 value: facts.environmentMode,
               },
               {
                 key: 'debug',
-                testID: 'admin.console.runtime:debug',
+                testID: adminTestIds.node('admin.console.runtime:debug'),
                 label: '调试态',
                 value: `${facts.debugMode.enabled ? '开启' : '关闭'} / ${facts.debugMode.source}`,
                 tone: facts.debugMode.enabled ? ('ok' as const) : ('neutral' as const),
               },
               {
                 key: 'device',
-                testID: 'admin.console.runtime:device',
+                testID: adminTestIds.node('admin.console.runtime:device'),
                 label: '设备',
                 value: facts.deviceIdentity.available ? '可用' : '不可用',
                 tone: facts.deviceIdentity.available ? ('ok' as const) : ('warn' as const),
               },
               {
                 key: 'display-status',
-                testID: 'admin.console.runtime:display-status',
+                testID: adminTestIds.node('admin.console.runtime:display-status'),
                 label: '显示事实',
                 value: display.status === 'ready' ? '已读取' : (display.reason ?? '显示事实不可用'),
                 tone: display.status === 'ready' ? ('ok' as const) : ('warn' as const),
@@ -95,7 +98,7 @@ export const DisplayContextSectionLaptop = ({context}: AdminSectionProps) => {
         </PrimitiveCard>
         {display.status === 'ready' ? (
           <>
-            <PrimitiveStack testID="admin.console.runtime:surface-card">
+            <PrimitiveStack testID={adminTestIds.node('admin.console.runtime:surface-card')}>
               <PrimitiveSurfaceMap
                 testID={adminTestIds.runtime.surfaceMap}
                 accessibilityLabel="显示屏状态"

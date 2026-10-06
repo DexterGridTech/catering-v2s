@@ -2,6 +2,7 @@ import {useEffect, useMemo, useState, useSyncExternalStore, type ReactNode} from
 import {PixelRatio, StyleSheet, View} from 'react-native';
 import {PrimitiveSpinner} from '@catering-v2s/ui-base-primitives';
 import {useRenderContext} from '../contexts/RenderContext';
+import {renderTestIds} from '../foundations/renderTestIds';
 import {
   calculateSurfaceHostGeometry,
   type SurfaceCanvasDeclaration,
@@ -112,27 +113,30 @@ export const SurfaceHostController = ({
   if (geometry === null) {
     if (availability === 'unavailable') {
       return (
-        <View testID="ui-base-render:surface-host-failure" style={styles.viewport}>
+        <View testID={renderTestIds.surfaceHostFailure} style={styles.viewport}>
           {children}
         </View>
       );
     }
     return (
       <View
-        testID="ui-base-render:surface-host-pending"
+        testID={renderTestIds.node('surface-host-pending')}
         style={styles.viewport}
         accessibilityRole="progressbar"
         accessibilityLabel="正在准备显示面"
       >
-        <PrimitiveSpinner testID="ui-base-render:surface-host-loading-indicator" accessibilityLabel="正在准备显示面" />
+        <PrimitiveSpinner
+          testID={renderTestIds.node('surface-host-loading-indicator')}
+          accessibilityLabel="正在准备显示面"
+        />
       </View>
     );
   }
 
   return (
-    <View testID="ui-base-render:surface-host-viewport" style={styles.viewport}>
+    <View testID={renderTestIds.surfaceHostViewport} style={styles.viewport}>
       <View
-        testID="ui-base-render:surface-host-canvas"
+        testID={renderTestIds.surfaceHostCanvas}
         style={[
           styles.canvas,
           {

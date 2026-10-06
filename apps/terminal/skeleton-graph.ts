@@ -88,6 +88,11 @@ export const skeletonGraph = {
     ],
     devDependencies: [],
   },
+  'ui.base.automation-agent': {
+    batch: 2,
+    dependencies: ['kernel.base.contracts', 'kernel.base.runtime', 'ui.base.primitives'],
+    devDependencies: [],
+  },
   'ui.base.integration-assembly': {
     batch: 2,
     plannedKind: 'toolkit',
@@ -99,8 +104,10 @@ export const skeletonGraph = {
       'kernel.base.state',
       'kernel.base.transport',
       'kernel.base.ui-state',
+      'ui.base.automation-agent',
       'ui.base.admin-shell',
       'ui.base.input',
+      'ui.base.primitives',
       'ui.base.render',
     ],
     devDependencies: [],
@@ -175,7 +182,12 @@ export const skeletonGraph = {
   'ui.base.dev-host': {
     batch: 1,
     plannedKind: 'toolkit',
-    dependencies: ['kernel.base.contracts', 'kernel.base.display-context', 'kernel.base.platform-ports'],
+    dependencies: [
+      'kernel.base.contracts',
+      'kernel.base.display-context',
+      'kernel.base.platform-ports',
+      'ui.base.primitives',
+    ],
     devDependencies: [],
   },
   'kernel.feature.sample-staff-session': {

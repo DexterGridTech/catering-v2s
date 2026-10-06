@@ -1,3 +1,5 @@
+import {defineStateSelector} from '@catering-v2s/kernel-base-runtime';
+import {moduleName} from '../moduleName';
 import type {StateRoot} from '@catering-v2s/kernel-base-state';
 import {memberSliceName} from '../features/slices/slice';
 import type {Member, MemberState, PendingMember} from '../types/types';
@@ -23,16 +25,34 @@ const readMemberState = (root: StateRoot): MemberState => {
   return value as MemberState;
 };
 
-export const selectMembers = (root: StateRoot): readonly Member[] => readMemberState(root).members;
+const selectMembersImplementation = (root: StateRoot): readonly Member[] => readMemberState(root).members;
 
-export const selectHostPendingMember = (root: StateRoot): PendingMember | null => {
+const selectHostPendingMemberImplementation = (root: StateRoot): PendingMember | null => {
   const state = readMemberState(root);
   return selectRuntimeInstanceMode(root) === 'MASTER' ? state.hostPending : (state.hostPendingProjection ?? null);
 };
 
-export const selectBranchPendingMember = (root: StateRoot): PendingMember | null => readMemberState(root).branchPending;
+const selectBranchPendingMemberImplementation = (root: StateRoot): PendingMember | null =>
+  readMemberState(root).branchPending;
 
-export const selectPendingMember = (root: StateRoot): PendingMember | null => {
+const selectPendingMemberImplementation = (root: StateRoot): PendingMember | null => {
   const state = readMemberState(root);
   return selectRuntimeInstanceMode(root) === 'MASTER' ? state.hostPending : state.branchPending;
 };
+
+export const selectMembers = defineStateSelector(moduleName, 'selectMembers', {
+  parameters: [],
+  selector: selectMembersImplementation,
+});
+export const selectPendingMember = defineStateSelector(moduleName, 'selectPendingMember', {
+  parameters: [],
+  selector: selectPendingMemberImplementation,
+});
+export const selectHostPendingMember = defineStateSelector(moduleName, 'selectHostPendingMember', {
+  parameters: [],
+  selector: selectHostPendingMemberImplementation,
+});
+export const selectBranchPendingMember = defineStateSelector(moduleName, 'selectBranchPendingMember', {
+  parameters: [],
+  selector: selectBranchPendingMemberImplementation,
+});

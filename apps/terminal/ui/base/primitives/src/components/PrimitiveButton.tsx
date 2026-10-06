@@ -6,6 +6,7 @@ import {PrimitiveIcon} from './PrimitiveIcon';
 import {cn} from '../foundations/cn';
 import {baseTokens, buttonToneTokens} from '../theme/tokens';
 import {assertTestID} from '../foundations/assertTestID';
+import {deriveTestId, testIdProps} from '../foundations/testId';
 import type {PrimitiveButtonProps} from '../types/types';
 import {type NativeVariableValue, useNativeVariable} from '../foundations/nativeVariable';
 
@@ -32,14 +33,14 @@ const resolveThemeColor = (value: NativeVariableValue): string | undefined => {
 const PrimitiveActionGradient = ({
   namespace,
   testID,
-}: Readonly<{readonly namespace: 'login' | 'admin'; readonly testID: string}>) => {
+}: Readonly<{readonly namespace: 'login' | 'admin'; readonly testID?: PrimitiveButtonProps['testID']}>) => {
   const actionStart = resolveThemeColor(useNativeVariable(`--color-${namespace}-action-start`));
   const actionEnd = resolveThemeColor(useNativeVariable(`--color-${namespace}-action-end`));
   if (actionStart === undefined || actionEnd === undefined) return null;
   return (
     <RnrGradientBackground
       gradientId={`primitive-${namespace}-action-gradient`}
-      testID={testID}
+      {...testIdProps(testID)}
       startColor={actionStart}
       endColor={actionEnd}
     />
@@ -84,7 +85,7 @@ export const PrimitiveButton = ({
           : baseTokens.keyboardAction;
   return (
     <RnrPressable
-      testID={assertTestID(testID)}
+      {...testIdProps(assertTestID(testID))}
       accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
       accessibilityState={{disabled: blocked, busy: busy === true, selected: selected === true ? true : undefined}}
@@ -122,15 +123,15 @@ export const PrimitiveButton = ({
       {appearance === 'login-primary' || (appearance === 'admin-primary' && !blocked) ? (
         <PrimitiveActionGradient
           namespace={appearance === 'admin-primary' ? 'admin' : 'login'}
-          testID={`${assertTestID(testID)}:gradient`}
+          {...testIdProps(deriveTestId(testID, 'gradient'))}
         />
       ) : null}
       {busy ? (
-        <RnrActivityIndicator testID={`${assertTestID(testID)}:busy-indicator`} accessibilityLabel="处理中" />
+        <RnrActivityIndicator {...testIdProps(deriveTestId(testID, 'busy-indicator'))} accessibilityLabel="处理中" />
       ) : null}
       {icon !== undefined && !busy ? (
         <PrimitiveIcon
-          testID={`${assertTestID(testID)}:icon`}
+          {...testIdProps(deriveTestId(testID, 'icon'))}
           accessibilityLabel={accessibilityLabel ?? icon}
           appearance={
             appearance === 'admin-icon'

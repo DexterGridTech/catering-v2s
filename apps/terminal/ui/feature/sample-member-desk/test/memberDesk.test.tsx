@@ -1,3 +1,4 @@
+import {inputTestIds} from '@catering-v2s/ui-base-input/test-ids';
 import {act, render, type RenderResult} from '@testing-library/react-native';
 import {createElement, cloneElement, type ReactElement, type ReactNode} from 'react';
 import {renderHook} from '@testing-library/react-native';
@@ -56,6 +57,7 @@ import {releaseRuntimeForTestAsync} from '../../../../kernel/base/runtime/src/te
 import {setDisplayRoleAction} from '../../../../kernel/base/display-context/src/features/slices/displayRole';
 import {setRuntimeInstanceModeAction} from '../../../../kernel/base/runtime/src/features/slices/runtimeInstanceMode';
 import {useCustomerMember} from '../src/hooks/useCustomerMember';
+import {deriveSampleMemberDeskTestId, sampleMemberDeskTestId} from '../src/foundations/sampleMemberDeskTestIds';
 import {
   resetNativeTestRefFactory,
   setNativeTestRefFactory,
@@ -108,20 +110,30 @@ type FrameLayout = Readonly<{readonly width: number; readonly height: number}>;
 type ScrollFieldProof = Readonly<{readonly scrollTestID: string; readonly fieldIds: readonly string[]}>;
 
 const defaultScrollContentByID = new Map<string, object>();
-const defaultScrollByFieldID = new Map([
-  ['sample.desk.member-form:name', 'sample.desk.member-form:scroll'],
-  ['sample.desk.member-form:phone', 'sample.desk.member-form:scroll'],
-  ['sample.desk.member-form:keyboard-alpha-probe', 'sample.desk.member-form:scroll'],
-  ['sample.desk.member-form:keyboard-financial-probe', 'sample.desk.member-form:scroll'],
-  ['sample.desk.customer-member:age', 'sample.desk.customer-member:scroll'],
+const defaultScrollByFieldID = new Map<string, string>([
+  [sampleMemberDeskTestId('sample.desk.member-form:name'), sampleMemberDeskTestId('sample.desk.member-form:scroll')],
+  [sampleMemberDeskTestId('sample.desk.member-form:phone'), sampleMemberDeskTestId('sample.desk.member-form:scroll')],
+  [
+    sampleMemberDeskTestId('sample.desk.member-form:keyboard-alpha-probe'),
+    sampleMemberDeskTestId('sample.desk.member-form:scroll'),
+  ],
+  [
+    sampleMemberDeskTestId('sample.desk.member-form:keyboard-financial-probe'),
+    sampleMemberDeskTestId('sample.desk.member-form:scroll'),
+  ],
+  [
+    sampleMemberDeskTestId('sample.desk.customer-member:age'),
+    sampleMemberDeskTestId('sample.desk.customer-member:scroll'),
+  ],
 ]);
+const defaultScrollIDs = new Set<string>(defaultScrollByFieldID.values());
 
 const createDefaultInputNodeMock =
   (frameLayout: FrameLayout) =>
   (_hostName: string, props: NativeTestHostProps): unknown => {
     const testID = props.testID;
-    if (testID === 'ui.base.input:surface-frame') return {};
-    if (typeof testID === 'string' && testID.endsWith(':scroll')) {
+    if (testID === inputTestIds.node('surface-frame')) return {};
+    if (typeof testID === 'string' && defaultScrollIDs.has(testID)) {
       const contentNode = {};
       defaultScrollContentByID.set(testID, contentNode);
       return {
@@ -154,8 +166,9 @@ const createDefaultInputNodeMock =
   };
 
 const findTextInput = (renderer: RenderResult, testID: string): TextInputTestInstance => {
-  const input = queryRenderedByType(renderer, 'TextInput').find(node => node.props.testID === testID) as unknown as
-    TextInputTestInstance | undefined;
+  const input = queryRenderedByType(renderer, 'TextInput').find(
+    node => node.props.testID === sampleMemberDeskTestId(testID),
+  ) as unknown as TextInputTestInstance | undefined;
   if (input === undefined) throw new Error(`Missing TextInput ${testID}`);
   return input;
 };
@@ -207,7 +220,7 @@ const mount = async (
   defaultScrollContentByID.clear();
   setNativeTestRefFactory(nativeRefFactory ?? createDefaultInputNodeMock(frameLayout));
   const renderer = await render(wrappedElement);
-  const frames = queryRenderedByProps(renderer, {testID: 'ui.base.input:surface-frame'});
+  const frames = queryRenderedByProps(renderer, {testID: inputTestIds.node('surface-frame')});
   await act(async () => {
     for (const frame of frames) {
       (frame.props.onLayout as (event: unknown) => void)({nativeEvent: {layout: frameLayout}});
@@ -217,7 +230,7 @@ const mount = async (
     const scrollAreas = queryRenderedTree(renderer, node => true).filter(
       node =>
         typeof node.props.testID === 'string' &&
-        (node.props.testID as string).endsWith(':scroll') &&
+        defaultScrollIDs.has(node.props.testID as string) &&
         typeof node.props.onLayout === 'function' &&
         typeof node.props.onContentSizeChange === 'function' &&
         typeof node.props.onScroll === 'function',
@@ -250,15 +263,16 @@ const createScrollFieldNodeMock = (
   const contentByScrollID = new Map<string, object>();
   const scrollIDByFieldID = new Map<string, string>();
   for (const proof of proofs) {
-    for (const fieldId of proof.fieldIds) scrollIDByFieldID.set(fieldId, proof.scrollTestID);
+    const scrollTestID = sampleMemberDeskTestId(proof.scrollTestID);
+    for (const fieldId of proof.fieldIds) scrollIDByFieldID.set(sampleMemberDeskTestId(fieldId), scrollTestID);
   }
   return (hostName, props) => {
     const testID = props.testID;
-    if (hostName === 'View' && testID === 'ui.base.input:surface-frame') return surfaceRoot;
+    if (hostName === 'View' && testID === inputTestIds.node('surface-frame')) return surfaceRoot;
     if (
       hostName === 'ScrollView' &&
       typeof testID === 'string' &&
-      proofs.some(proof => proof.scrollTestID === testID)
+      proofs.some(proof => sampleMemberDeskTestId(proof.scrollTestID) === testID)
     ) {
       const contentNode = {};
       contentByScrollID.set(testID, contentNode);
@@ -300,7 +314,7 @@ const initializeScrollArea = async (
   width = 1280,
   height = 780,
 ): Promise<void> => {
-  const props = queryRenderedByProps(renderer, {testID}).find(
+  const props = queryRenderedByProps(renderer, {testID: sampleMemberDeskTestId(testID)}).find(
     node =>
       typeof node.props.onLayout === 'function' &&
       typeof node.props.onContentSizeChange === 'function' &&
@@ -315,9 +329,11 @@ const initializeScrollArea = async (
 };
 
 const measureKeyboardLayers = async (renderer: RenderResult): Promise<void> => {
-  const measurementLayers = queryRenderedByProps(renderer, {testID: 'ui.base.input:keyboard-layer-position:measure'});
+  const measurementLayers = queryRenderedByProps(renderer, {
+    testID: inputTestIds.node('keyboard-layer-position:measure'),
+  });
   for (const layer of measurementLayers) {
-    const backdrop = getRenderedDescendantByProps(layer, {testID: 'ui.base.input:virtual-keyboard:backdrop'});
+    const backdrop = getRenderedDescendantByProps(layer, {testID: inputTestIds.node('virtual-keyboard:backdrop')});
     const layout = StyleSheet.flatten(backdrop.props.style) as Readonly<{
       readonly width: number;
       readonly height: number;
@@ -333,7 +349,8 @@ const measureKeyboardLayers = async (renderer: RenderResult): Promise<void> => {
 const finishKeyboardPresentation = async (renderer: RenderResult): Promise<void> => {
   setAnimatedTimingAutoFinishForTests(true);
   for (let attempt = 0; attempt < 4; attempt += 1) {
-    if (queryRenderedByProps(renderer, {testID: 'ui.base.input:keyboard-layer-position:measure'}).length === 0) break;
+    if (queryRenderedByProps(renderer, {testID: inputTestIds.node('keyboard-layer-position:measure')}).length === 0)
+      break;
     await measureKeyboardLayers(renderer);
     await act(async () => {
       advanceAnimatedTimingsForTests(1);
@@ -357,7 +374,7 @@ const expectTextValue = (renderer: RenderResult, testID: string, value: string):
 
 const expectTextAbsent = (renderer: RenderResult, value: string): void => {
   expect(
-    queryRenderedByProps(renderer, {testID: 'sample.desk.system-notice:message'}).some(
+    queryRenderedByProps(renderer, {testID: deriveSampleMemberDeskTestId('sample.desk.system-notice', 'message')}).some(
       node =>
         node.children
           ?.filter((child): child is string => typeof child === 'string')
@@ -981,13 +998,15 @@ describe('sample member desk UI feature', () => {
       ),
     );
     const branchList = queryRenderedByType(renderer, 'VirtualizedList').find(
-      node => node.props.testID === 'sample.desk.branch.member-list:scroll',
+      node => node.props.testID === sampleMemberDeskTestId('sample.desk.branch.member-list:scroll'),
     );
     expect(branchList).toBeDefined();
     expect((branchList!.props.data as readonly {memberId: string}[]).map(member => member.memberId)).toEqual([
       'host-member-1',
     ]);
-    expect(queryRenderedByProps(renderer, {testID: 'sample.desk.branch.member-list:logout'})).toHaveLength(0);
+    expect(
+      queryRenderedByProps(renderer, {testID: sampleMemberDeskTestId('sample.desk.branch.member-list:logout')}),
+    ).toHaveLength(0);
     await act(async () => {
       await renderer.unmount();
     });
@@ -1006,12 +1025,28 @@ describe('sample member desk UI feature', () => {
         withInputSurface(createElement(BranchLaptopCustomerMember)),
       ),
     );
-    expectTextValue(customerRenderer, 'sample.desk.branch.customer-member:name', 'Branch guest');
-    expectTextValue(customerRenderer, 'sample.desk.branch.customer-member:phone', '010-7777-8888');
-    expect(getRenderedByProps(customerRenderer, {testID: 'sample.desk.branch.customer-member:confirm'})).toBeDefined();
-    expect(getRenderedByProps(customerRenderer, {testID: 'sample.desk.branch.customer-member:reject'})).toBeDefined();
+    expectTextValue(
+      customerRenderer,
+      sampleMemberDeskTestId('sample.desk.branch.customer-member:name'),
+      'Branch guest',
+    );
+    expectTextValue(
+      customerRenderer,
+      sampleMemberDeskTestId('sample.desk.branch.customer-member:phone'),
+      '010-7777-8888',
+    );
+    expect(
+      getRenderedByProps(customerRenderer, {
+        testID: sampleMemberDeskTestId('sample.desk.branch.customer-member:confirm'),
+      }),
+    ).toBeDefined();
+    expect(
+      getRenderedByProps(customerRenderer, {
+        testID: sampleMemberDeskTestId('sample.desk.branch.customer-member:reject'),
+      }),
+    ).toBeDefined();
     await act(async () => {
-      await press(customerRenderer, 'sample.desk.branch.customer-member:confirm')();
+      await press(customerRenderer, sampleMemberDeskTestId('sample.desk.branch.customer-member:confirm'))();
     });
     expect(dispatched).toContainEqual({
       name: confirmMemberCommand.commandName,
@@ -1045,10 +1080,14 @@ describe('sample member desk UI feature', () => {
       ),
     );
 
-    expectTextValue(renderer, 'sample.desk.customer-member:name', 'Alice');
-    expectTextValue(renderer, 'sample.desk.customer-member:phone', '010-1234-5678');
-    expect(getRenderedByProps(renderer, {testID: 'sample.desk.customer-member:confirm'})).toBeDefined();
-    expect(getRenderedByProps(renderer, {testID: 'sample.desk.customer-member:reject'})).toBeDefined();
+    expectTextValue(renderer, sampleMemberDeskTestId('sample.desk.customer-member:name'), 'Alice');
+    expectTextValue(renderer, sampleMemberDeskTestId('sample.desk.customer-member:phone'), '010-1234-5678');
+    expect(
+      getRenderedByProps(renderer, {testID: sampleMemberDeskTestId('sample.desk.customer-member:confirm')}),
+    ).toBeDefined();
+    expect(
+      getRenderedByProps(renderer, {testID: sampleMemberDeskTestId('sample.desk.customer-member:reject')}),
+    ).toBeDefined();
     await act(async () => {
       await renderer.unmount();
     });
@@ -1071,9 +1110,15 @@ describe('sample member desk UI feature', () => {
       ),
     );
 
-    expect(getRenderedByProps(renderer, {testID: 'sample.desk.customer-member:confirm'})).toBeDefined();
-    expect(getRenderedByProps(renderer, {testID: 'sample.desk.customer-member:reject'})).toBeDefined();
-    expect(getRenderedByProps(renderer, {testID: 'sample.desk.customer-member:hand-back'})).toBeDefined();
+    expect(
+      getRenderedByProps(renderer, {testID: sampleMemberDeskTestId('sample.desk.customer-member:confirm')}),
+    ).toBeDefined();
+    expect(
+      getRenderedByProps(renderer, {testID: sampleMemberDeskTestId('sample.desk.customer-member:reject')}),
+    ).toBeDefined();
+    expect(
+      getRenderedByProps(renderer, {testID: sampleMemberDeskTestId('sample.desk.customer-member:hand-back')}),
+    ).toBeDefined();
     await act(async () => {
       await renderer.unmount();
     });
@@ -1102,16 +1147,22 @@ describe('sample member desk UI feature', () => {
         frameLayout,
       );
 
-      const ageInput = findTextInput(renderer, 'sample.desk.customer-member:age');
+      const ageInput = findTextInput(renderer, sampleMemberDeskTestId('sample.desk.customer-member:age'));
       await act(async () => {
         ageInput.props.onFocus({nativeEvent: {}});
       });
       await finishKeyboardPresentation(renderer);
-      expect(getRenderedByProps(renderer, {testID: 'ui.base.input:virtual-keyboard:text-1'})).toBeDefined();
-      expect(getRenderedByProps(renderer, {testID: 'sample.desk.customer-member:confirm'})).toBeDefined();
-      expect(getRenderedByProps(renderer, {testID: 'sample.desk.customer-member:reject'})).toBeDefined();
+      expect(getRenderedByProps(renderer, {testID: inputTestIds.node('virtual-keyboard:text-1')})).toBeDefined();
+      expect(
+        getRenderedByProps(renderer, {testID: sampleMemberDeskTestId('sample.desk.customer-member:confirm')}),
+      ).toBeDefined();
+      expect(
+        getRenderedByProps(renderer, {testID: sampleMemberDeskTestId('sample.desk.customer-member:reject')}),
+      ).toBeDefined();
       if (mode === 'handheld-confirm') {
-        expect(getRenderedByProps(renderer, {testID: 'sample.desk.customer-member:hand-back'})).toBeDefined();
+        expect(
+          getRenderedByProps(renderer, {testID: sampleMemberDeskTestId('sample.desk.customer-member:hand-back')}),
+        ).toBeDefined();
       }
       await act(async () => {
         await renderer.unmount();
@@ -1142,13 +1193,15 @@ describe('sample member desk UI feature', () => {
       ),
     );
 
-    const ageInput = findTextInput(renderer, 'sample.desk.customer-member:age');
+    const ageInput = findTextInput(renderer, sampleMemberDeskTestId('sample.desk.customer-member:age'));
     await act(async () => {
       ageInput.props.onFocus({nativeEvent: {}});
     });
     await finishKeyboardPresentation(renderer);
-    expect(getRenderedByProps(renderer, {testID: 'ui.base.input:virtual-keyboard'})).toBeDefined();
-    expect(getRenderedByProps(renderer, {testID: 'sample.desk.customer-member:confirm'})).toBeDefined();
+    expect(getRenderedByProps(renderer, {testID: inputTestIds.node('virtual-keyboard')})).toBeDefined();
+    expect(
+      getRenderedByProps(renderer, {testID: sampleMemberDeskTestId('sample.desk.customer-member:confirm')}),
+    ).toBeDefined();
     expect(ageInput.props.maxLength).toBe(3);
 
     await act(async () => {
@@ -1162,7 +1215,7 @@ describe('sample member desk UI feature', () => {
       phone: '010-1234-5678',
     });
     await act(async () => {
-      await press(renderer, 'sample.desk.customer-member:confirm')();
+      await press(renderer, sampleMemberDeskTestId('sample.desk.customer-member:confirm'))();
     });
     expect(dispatched).toContainEqual({
       name: confirmMemberCommand.commandName,
@@ -1196,7 +1249,7 @@ describe('sample member desk UI feature', () => {
     );
 
     await act(async () => {
-      await press(renderer, 'sample.desk.customer-member:confirm')();
+      await press(renderer, sampleMemberDeskTestId('sample.desk.customer-member:confirm'))();
     });
     expect(dispatched).toContainEqual({
       name: confirmMemberCommand.commandName,
@@ -1234,7 +1287,7 @@ describe('sample member desk UI feature', () => {
     );
 
     await act(async () => {
-      await press(renderer, 'sample.desk.customer-member:confirm')();
+      await press(renderer, sampleMemberDeskTestId('sample.desk.customer-member:confirm'))();
     });
     expect(dispatched).toContainEqual({
       name: confirmMemberCommand.commandName,
@@ -1262,13 +1315,19 @@ describe('sample member desk UI feature', () => {
         withInputSurface(createElement(CustomerMember, {mode: 'confirm'})),
       ),
     );
-    const ageInput = findTextInput(renderer, 'sample.desk.customer-member:age');
+    const ageInput = findTextInput(renderer, sampleMemberDeskTestId('sample.desk.customer-member:age'));
     await act(async () => {
       ageInput.props.onFocus({nativeEvent: {}});
     });
-    expect(getRenderedByProps(renderer, {testID: 'sample.desk.customer-member:scroll'})).toBeDefined();
-    expect(getRenderedByProps(renderer, {testID: 'sample.desk.customer-member:confirm'})).toBeDefined();
-    expect(getRenderedByProps(renderer, {testID: 'sample.desk.customer-member:reject'})).toBeDefined();
+    expect(
+      getRenderedByProps(renderer, {testID: sampleMemberDeskTestId('sample.desk.customer-member:scroll')}),
+    ).toBeDefined();
+    expect(
+      getRenderedByProps(renderer, {testID: sampleMemberDeskTestId('sample.desk.customer-member:confirm')}),
+    ).toBeDefined();
+    expect(
+      getRenderedByProps(renderer, {testID: sampleMemberDeskTestId('sample.desk.customer-member:reject')}),
+    ).toBeDefined();
     await act(async () => {
       await renderer.unmount();
     });
@@ -1291,15 +1350,21 @@ describe('sample member desk UI feature', () => {
       ),
       {width: 320, height: 541},
     );
-    const ageInput = findTextInput(renderer, 'sample.desk.customer-member:age');
+    const ageInput = findTextInput(renderer, sampleMemberDeskTestId('sample.desk.customer-member:age'));
     await act(async () => {
       ageInput.props.onFocus({nativeEvent: {}});
     });
-    expect(queryRenderedByProps(renderer, {testID: 'ui.base.input:virtual-keyboard'})).toHaveLength(0);
-    expect(getRenderedByProps(renderer, {testID: 'ui.base.input:unsupported-size'})).toBeDefined();
-    expect(getRenderedByProps(renderer, {testID: 'sample.desk.customer-member:confirm'})).toBeDefined();
-    expect(getRenderedByProps(renderer, {testID: 'sample.desk.customer-member:reject'})).toBeDefined();
-    expect(getRenderedByProps(renderer, {testID: 'sample.desk.customer-member:hand-back'})).toBeDefined();
+    expect(queryRenderedByProps(renderer, {testID: inputTestIds.node('virtual-keyboard')})).toHaveLength(0);
+    expect(getRenderedByProps(renderer, {testID: inputTestIds.node('unsupported-size')})).toBeDefined();
+    expect(
+      getRenderedByProps(renderer, {testID: sampleMemberDeskTestId('sample.desk.customer-member:confirm')}),
+    ).toBeDefined();
+    expect(
+      getRenderedByProps(renderer, {testID: sampleMemberDeskTestId('sample.desk.customer-member:reject')}),
+    ).toBeDefined();
+    expect(
+      getRenderedByProps(renderer, {testID: sampleMemberDeskTestId('sample.desk.customer-member:hand-back')}),
+    ).toBeDefined();
     await act(async () => {
       await renderer.unmount();
     });
@@ -1322,9 +1387,11 @@ describe('sample member desk UI feature', () => {
       ),
     );
 
-    expectTextValue(renderer, 'sample.desk.waiting-confirm:member-name', 'Alice');
-    expectTextValue(renderer, 'sample.desk.waiting-confirm:member-phone', '010-1234-5678');
-    expect(getRenderedByProps(renderer, {testID: 'sample.desk.waiting-confirm:withdraw'})).toBeDefined();
+    expectTextValue(renderer, sampleMemberDeskTestId('sample.desk.waiting-confirm:member-name'), 'Alice');
+    expectTextValue(renderer, sampleMemberDeskTestId('sample.desk.waiting-confirm:member-phone'), '010-1234-5678');
+    expect(
+      getRenderedByProps(renderer, {testID: sampleMemberDeskTestId('sample.desk.waiting-confirm:withdraw')}),
+    ).toBeDefined();
     await act(async () => {
       await renderer.unmount();
     });
@@ -1347,9 +1414,15 @@ describe('sample member desk UI feature', () => {
       ),
     );
 
-    expect(getRenderedByProps(renderer, {testID: 'sample.desk.registry-notice:retry'})).toBeDefined();
-    expect(getRenderedByProps(renderer, {testID: 'sample.desk.registry-notice:abandon'})).toBeDefined();
-    expect(queryRenderedByProps(renderer, {testID: 'sample.desk.registry-notice:dismiss'})).toHaveLength(0);
+    expect(
+      getRenderedByProps(renderer, {testID: sampleMemberDeskTestId('sample.desk.registry-notice:retry')}),
+    ).toBeDefined();
+    expect(
+      getRenderedByProps(renderer, {testID: sampleMemberDeskTestId('sample.desk.registry-notice:abandon')}),
+    ).toBeDefined();
+    expect(
+      queryRenderedByProps(renderer, {testID: sampleMemberDeskTestId('sample.desk.registry-notice:dismiss')}),
+    ).toHaveLength(0);
     await act(async () => {
       await renderer.unmount();
     });
@@ -1387,7 +1460,9 @@ describe('sample member desk UI feature', () => {
       ),
     );
 
-    const confirm = getRenderedByProps(renderer, {testID: 'sample.desk.customer-member:confirm'});
+    const confirm = getRenderedByProps(renderer, {
+      testID: sampleMemberDeskTestId('sample.desk.customer-member:confirm'),
+    });
     await act(async () => {
       await (confirm.props.onPress as () => Promise<unknown>)();
     });
@@ -1423,7 +1498,9 @@ describe('sample member desk UI feature', () => {
         ),
       );
 
-      const confirm = getRenderedByProps(renderer, {testID: 'sample.desk.customer-member:confirm'});
+      const confirm = getRenderedByProps(renderer, {
+        testID: sampleMemberDeskTestId('sample.desk.customer-member:confirm'),
+      });
       await act(async () => {
         await (confirm.props.onPress as () => Promise<unknown>)();
       });
@@ -1455,26 +1532,34 @@ describe('sample member desk UI feature', () => {
         ),
       );
 
-      expectTextValue(renderer, 'sample.desk.system-notice:message', '操作没有完成，请重试');
+      expectTextValue(
+        renderer,
+        deriveSampleMemberDeskTestId('sample.desk.system-notice', 'message'),
+        '操作没有完成，请重试',
+      );
       expectTextAbsent(renderer, 'ledger write failed');
       expect(
-        queryRenderedByProps(renderer, {testID: 'sample.desk.system-notice'}).map(node => node.props.style),
+        queryRenderedByProps(renderer, {testID: sampleMemberDeskTestId('sample.desk.system-notice')}).map(
+          node => node.props.style,
+        ),
       ).toContainEqual(
         isMobile ? {flex: 1, minHeight: 0, padding: 16, alignItems: 'stretch'} : {flex: 1, minHeight: 0, padding: 24},
       );
-      const cardStyles = queryRenderedByProps(renderer, {testID: 'sample.desk.system-notice:card'}).map(node =>
-        StyleSheet.flatten(node.props.style as never),
-      );
+      const cardStyles = queryRenderedByProps(renderer, {
+        testID: deriveSampleMemberDeskTestId('sample.desk.system-notice', 'card'),
+      }).map(node => StyleSheet.flatten(node.props.style as never));
       expect(cardStyles).toHaveLength(1);
       expect(cardStyles[0]).toEqual(
         expect.objectContaining(isMobile ? {width: '100%'} : {width: '100%', maxWidth: 720}),
       );
       expect(
-        queryRenderedByProps(renderer, {testID: 'sample.desk.system-notice:actions'}).map(node => node.props.className),
+        queryRenderedByProps(renderer, {
+          testID: deriveSampleMemberDeskTestId('sample.desk.system-notice', 'actions'),
+        }).map(node => node.props.className),
       ).toContain(isMobile ? 'w-full items-center gap-3' : 'flex-row flex-wrap items-start gap-3');
-      const dismissStyles = queryRenderedByProps(renderer, {testID: 'sample.desk.system-notice:dismiss'}).map(node =>
-        StyleSheet.flatten(node.props.style as never),
-      );
+      const dismissStyles = queryRenderedByProps(renderer, {
+        testID: deriveSampleMemberDeskTestId('sample.desk.system-notice', 'dismiss'),
+      }).map(node => StyleSheet.flatten(node.props.style as never));
       expect(dismissStyles).toHaveLength(1);
       if (isMobile) expect(dismissStyles[0]).toEqual(expect.objectContaining({width: '100%'}));
       else expect(dismissStyles[0]).toBeUndefined();
@@ -1507,7 +1592,7 @@ describe('sample member desk UI feature', () => {
     );
 
     await act(async () => {
-      await press(renderer, 'sample.desk.system-notice:dismiss')();
+      await press(renderer, deriveSampleMemberDeskTestId('sample.desk.system-notice', 'dismiss'))();
     });
     expect(commandNames).toEqual([deskSystemFailureDismissedCommand.commandName]);
     await act(async () => {
@@ -1546,7 +1631,7 @@ describe('sample member desk UI feature', () => {
 
     const virtualizedList = () =>
       queryRenderedByType(renderer, 'VirtualizedList').find(
-        node => node.props.testID === 'sample.desk.member-list:scroll',
+        node => node.props.testID === sampleMemberDeskTestId('sample.desk.member-list:scroll'),
       );
     type ListProps = Readonly<{
       readonly data: readonly (typeof members)[number][];
@@ -1572,17 +1657,23 @@ describe('sample member desk UI feature', () => {
     const finalProps = finalList!.props as ListProps;
     expect(renderedWindowSize(finalProps)).toBeLessThanOrEqual(24);
     const finalRow = finalProps.renderItem({item: members[29]!, index: 29});
-    expect(finalRow.props.testID).toBe('sample.desk.member-list:scroll:row:member-29');
+    expect(finalRow.props.testID).toBe(
+      deriveSampleMemberDeskTestId('sample.desk.member-list:scroll', 'row', 'member-29'),
+    );
     const finalMember = finalRow.props.children as ReactElement<{
       readonly testID: string;
       readonly name: string;
       readonly phone: string;
     }>;
-    expect(finalMember.props.testID).toBe('sample.desk.member-list:row:member-29');
+    expect(finalMember.props.testID).toBe(sampleMemberDeskTestId('sample.desk.member-list:row:member-29'));
     expect(finalMember.props.name).toBe('Member 29');
     expect(finalMember.props.phone).toBe('010-0029-0000');
-    expect(queryRenderedByProps(renderer, {testID: 'sample.desk.member-list:add'})).toHaveLength(1);
-    expect(queryRenderedByProps(renderer, {testID: 'sample.desk.member-list:logout'})).toHaveLength(1);
+    expect(
+      queryRenderedByProps(renderer, {testID: sampleMemberDeskTestId('sample.desk.member-list:add')}),
+    ).toHaveLength(1);
+    expect(
+      queryRenderedByProps(renderer, {testID: sampleMemberDeskTestId('sample.desk.member-list:logout')}),
+    ).toHaveLength(1);
     await act(async () => {
       await renderer.unmount();
     });
@@ -1606,35 +1697,64 @@ describe('sample member desk UI feature', () => {
     );
 
     const scrollArea = getRenderedByProps(renderer, {
-      testID: 'sample.desk.member-form:scroll',
+      testID: sampleMemberDeskTestId('sample.desk.member-form:scroll'),
     }) as unknown as TestInstanceQuery;
-    expect(getRenderedByProps(renderer, {testID: 'sample.desk.member-form:title'})).toBeDefined();
     expect(
-      queryRenderedSubtree(scrollArea, node => node.props.testID === 'sample.desk.member-form:title'),
-    ).toHaveLength(0);
-    expect(getRenderedDescendantByProps(scrollArea, {testID: 'sample.desk.member-form:name'})).toBeDefined();
-    expect(getRenderedDescendantByProps(scrollArea, {testID: 'sample.desk.member-form:phone'})).toBeDefined();
-    expect(
-      getRenderedDescendantByProps(scrollArea, {testID: 'sample.desk.member-form:keyboard-alpha-probe'}),
+      getRenderedByProps(renderer, {testID: sampleMemberDeskTestId('sample.desk.member-form:title')}),
     ).toBeDefined();
     expect(
-      getRenderedDescendantByProps(scrollArea, {testID: 'sample.desk.member-form:keyboard-financial-probe'}),
-    ).toBeDefined();
-    expect(getRenderedByProps(renderer, {testID: 'sample.desk.member-form:keyboard-alpha-probe-notice'})).toBeDefined();
-    expect(
-      getRenderedByProps(renderer, {testID: 'sample.desk.member-form:keyboard-financial-probe-notice'}),
-    ).toBeDefined();
-    expect(
-      queryRenderedSubtree(scrollArea, node => node.props.testID === 'sample.desk.member-form:submit'),
+      queryRenderedSubtree(
+        scrollArea,
+        node => node.props.testID === sampleMemberDeskTestId('sample.desk.member-form:title'),
+      ),
     ).toHaveLength(0);
     expect(
-      queryRenderedSubtree(scrollArea, node => node.props.testID === 'sample.desk.member-form:cancel'),
+      getRenderedDescendantByProps(scrollArea, {testID: sampleMemberDeskTestId('sample.desk.member-form:name')}),
+    ).toBeDefined();
+    expect(
+      getRenderedDescendantByProps(scrollArea, {testID: sampleMemberDeskTestId('sample.desk.member-form:phone')}),
+    ).toBeDefined();
+    expect(
+      getRenderedDescendantByProps(scrollArea, {
+        testID: sampleMemberDeskTestId('sample.desk.member-form:keyboard-alpha-probe'),
+      }),
+    ).toBeDefined();
+    expect(
+      getRenderedDescendantByProps(scrollArea, {
+        testID: sampleMemberDeskTestId('sample.desk.member-form:keyboard-financial-probe'),
+      }),
+    ).toBeDefined();
+    expect(
+      getRenderedByProps(renderer, {
+        testID: sampleMemberDeskTestId('sample.desk.member-form:keyboard-alpha-probe-notice'),
+      }),
+    ).toBeDefined();
+    expect(
+      getRenderedByProps(renderer, {
+        testID: sampleMemberDeskTestId('sample.desk.member-form:keyboard-financial-probe-notice'),
+      }),
+    ).toBeDefined();
+    expect(
+      queryRenderedSubtree(
+        scrollArea,
+        node => node.props.testID === sampleMemberDeskTestId('sample.desk.member-form:submit'),
+      ),
+    ).toHaveLength(0);
+    expect(
+      queryRenderedSubtree(
+        scrollArea,
+        node => node.props.testID === sampleMemberDeskTestId('sample.desk.member-form:cancel'),
+      ),
     ).toHaveLength(0);
     const actions = getRenderedByProps(renderer, {
-      testID: 'sample.desk.member-form:actions',
+      testID: sampleMemberDeskTestId('sample.desk.member-form:actions'),
     }) as unknown as TestInstanceQuery;
-    expect(getRenderedDescendantByProps(actions, {testID: 'sample.desk.member-form:submit'})).toBeDefined();
-    expect(getRenderedDescendantByProps(actions, {testID: 'sample.desk.member-form:cancel'})).toBeDefined();
+    expect(
+      getRenderedDescendantByProps(actions, {testID: sampleMemberDeskTestId('sample.desk.member-form:submit')}),
+    ).toBeDefined();
+    expect(
+      getRenderedDescendantByProps(actions, {testID: sampleMemberDeskTestId('sample.desk.member-form:cancel')}),
+    ).toBeDefined();
     await act(async () => {
       await renderer.unmount();
     });
@@ -1665,19 +1785,21 @@ describe('sample member desk UI feature', () => {
       {width: 1280, height: 800},
       createScrollFieldNodeMock(
         {},
-        [{scrollTestID: 'sample.desk.member-form:scroll', fieldIds: memberFieldIds}],
+        [{scrollTestID: sampleMemberDeskTestId('sample.desk.member-form:scroll'), fieldIds: memberFieldIds}],
         measuredFields,
       ),
     );
 
-    await initializeScrollArea(renderer, 'sample.desk.member-form:scroll');
+    await initializeScrollArea(renderer, sampleMemberDeskTestId('sample.desk.member-form:scroll'));
     for (const fieldId of memberFieldIds) {
       await act(async () => {
         findTextInput(renderer, fieldId).props.onFocus({nativeEvent: {}});
       });
       await finishKeyboardPresentation(renderer);
     }
-    expect([...new Set(measuredFields.map(field => field.fieldId))]).toEqual(memberFieldIds);
+    expect([...new Set(measuredFields.map(field => field.fieldId))]).toEqual(
+      memberFieldIds.map(sampleMemberDeskTestId),
+    );
     await act(async () => {
       await renderer.unmount();
     });
@@ -1703,17 +1825,17 @@ describe('sample member desk UI feature', () => {
       {width: 1280, height: 800},
       createScrollFieldNodeMock(
         {},
-        [{scrollTestID: 'sample.desk.customer-member:scroll', fieldIds: [fieldId]}],
+        [{scrollTestID: sampleMemberDeskTestId('sample.desk.customer-member:scroll'), fieldIds: [fieldId]}],
         measuredFields,
       ),
     );
 
-    await initializeScrollArea(renderer, 'sample.desk.customer-member:scroll');
+    await initializeScrollArea(renderer, sampleMemberDeskTestId('sample.desk.customer-member:scroll'));
     await act(async () => {
       findTextInput(renderer, fieldId).props.onFocus({nativeEvent: {}});
     });
     await finishKeyboardPresentation(renderer);
-    expect([...new Set(measuredFields.map(field => field.fieldId))]).toEqual([fieldId]);
+    expect([...new Set(measuredFields.map(field => field.fieldId))]).toEqual([sampleMemberDeskTestId(fieldId)]);
     await act(async () => {
       await renderer.unmount();
     });
@@ -1741,53 +1863,58 @@ describe('sample member desk UI feature', () => {
       ),
     );
 
-    const financialInput = findTextInput(renderer, 'sample.desk.member-form:keyboard-financial-probe');
-    const phoneInput = findTextInput(renderer, 'sample.desk.member-form:phone');
+    const financialInput = findTextInput(
+      renderer,
+      sampleMemberDeskTestId('sample.desk.member-form:keyboard-financial-probe'),
+    );
+    const phoneInput = findTextInput(renderer, sampleMemberDeskTestId('sample.desk.member-form:phone'));
     await act(async () => {
       phoneInput.props.onFocus({nativeEvent: {}});
     });
     await finishKeyboardPresentation(renderer);
-    expect(getRenderedByProps(renderer, {testID: 'ui.base.input:virtual-keyboard:text-1'})).toBeDefined();
+    expect(getRenderedByProps(renderer, {testID: inputTestIds.node('virtual-keyboard:text-1')})).toBeDefined();
     await act(async () => {
-      press(renderer, 'ui.base.input:virtual-keyboard:text-1')();
+      press(renderer, inputTestIds.node('virtual-keyboard:text-1'))();
     });
     await act(async () => {
-      press(renderer, 'ui.base.input:virtual-keyboard:complete')();
-    });
-    await finishKeyboardPresentation(renderer);
-    await act(async () => {
-      findTextInput(renderer, 'sample.desk.member-form:keyboard-alpha-probe').props.onFocus({nativeEvent: {}});
+      press(renderer, inputTestIds.node('virtual-keyboard:complete'))();
     });
     await finishKeyboardPresentation(renderer);
-    expect(getRenderedByProps(renderer, {testID: 'ui.base.input:virtual-keyboard:text-a'})).toBeDefined();
-    expect(queryRenderedByProps(renderer, {testID: 'ui.base.input:virtual-keyboard:text--'})).toHaveLength(0);
     await act(async () => {
-      press(renderer, 'ui.base.input:virtual-keyboard:text-a')();
+      findTextInput(renderer, sampleMemberDeskTestId('sample.desk.member-form:keyboard-alpha-probe')).props.onFocus({
+        nativeEvent: {},
+      });
+    });
+    await finishKeyboardPresentation(renderer);
+    expect(getRenderedByProps(renderer, {testID: inputTestIds.node('virtual-keyboard:text-a')})).toBeDefined();
+    expect(queryRenderedByProps(renderer, {testID: inputTestIds.node('virtual-keyboard:text--')})).toHaveLength(0);
+    await act(async () => {
+      press(renderer, inputTestIds.node('virtual-keyboard:text-a'))();
     });
     await act(async () => {
-      press(renderer, 'ui.base.input:virtual-keyboard:complete')();
+      press(renderer, inputTestIds.node('virtual-keyboard:complete'))();
     });
     await finishKeyboardPresentation(renderer);
     await act(async () => {
       financialInput.props.onFocus({nativeEvent: {}});
     });
     await finishKeyboardPresentation(renderer);
-    expect(getRenderedByProps(renderer, {testID: 'ui.base.input:virtual-keyboard:text--'})).toBeDefined();
-    expect(getRenderedByProps(renderer, {testID: 'ui.base.input:virtual-keyboard:text-.'})).toBeDefined();
+    expect(getRenderedByProps(renderer, {testID: inputTestIds.node('virtual-keyboard:text--')})).toBeDefined();
+    expect(getRenderedByProps(renderer, {testID: inputTestIds.node('virtual-keyboard:text-.')})).toBeDefined();
     expect(financialInput.props.value).toBe('');
     await act(async () => {
-      press(renderer, 'ui.base.input:virtual-keyboard:text-1')();
-      press(renderer, 'ui.base.input:virtual-keyboard:text-.')();
-      press(renderer, 'ui.base.input:virtual-keyboard:text-2')();
+      press(renderer, inputTestIds.node('virtual-keyboard:text-1'))();
+      press(renderer, inputTestIds.node('virtual-keyboard:text-.'))();
+      press(renderer, inputTestIds.node('virtual-keyboard:text-2'))();
     });
     expect(financialInput.props.value).toBe('1.2');
     await act(async () => {
       phoneInput.props.onFocus({nativeEvent: {}});
     });
     await finishKeyboardPresentation(renderer);
-    expect(getRenderedByProps(renderer, {testID: 'ui.base.input:virtual-keyboard:text-1'})).toBeDefined();
+    expect(getRenderedByProps(renderer, {testID: inputTestIds.node('virtual-keyboard:text-1')})).toBeDefined();
     await act(async () => {
-      await press(renderer, 'sample.desk.member-form:submit')();
+      await press(renderer, sampleMemberDeskTestId('sample.desk.member-form:submit'))();
     });
     expect(dispatched).toContainEqual({
       name: submitMemberCommand.commandName,
@@ -1822,9 +1949,9 @@ describe('sample member desk UI feature', () => {
       );
 
       const fields = [
-        ['sample.desk.member-form:phone', 'ui.base.input:virtual-keyboard:text-1'],
-        ['sample.desk.member-form:keyboard-alpha-probe', 'ui.base.input:virtual-keyboard:text-a'],
-        ['sample.desk.member-form:keyboard-financial-probe', 'ui.base.input:virtual-keyboard:text-.'],
+        ['sample.desk.member-form:phone', inputTestIds.node('virtual-keyboard:text-1')],
+        ['sample.desk.member-form:keyboard-alpha-probe', inputTestIds.node('virtual-keyboard:text-a')],
+        ['sample.desk.member-form:keyboard-financial-probe', inputTestIds.node('virtual-keyboard:text-.')],
       ] as const;
       for (const [fieldID, keyID] of fields) {
         const field = findTextInput(renderer, fieldID);
@@ -1862,14 +1989,14 @@ describe('sample member desk UI feature', () => {
       ),
     );
 
-    const nameInput = findTextInput(renderer, 'sample.desk.member-form:name');
-    const phoneInput = findTextInput(renderer, 'sample.desk.member-form:phone');
+    const nameInput = findTextInput(renderer, sampleMemberDeskTestId('sample.desk.member-form:name'));
+    const phoneInput = findTextInput(renderer, sampleMemberDeskTestId('sample.desk.member-form:phone'));
     await act(async () => {
       nameInput.props.onChangeText('Alice');
       phoneInput.props.onChangeText('010-1234-5678');
     });
     await act(async () => {
-      await press(renderer, 'sample.desk.member-form:submit')();
+      await press(renderer, sampleMemberDeskTestId('sample.desk.member-form:submit'))();
     });
     expect(dispatched).toContainEqual({
       name: submitMemberCommand.commandName,
@@ -1898,17 +2025,26 @@ describe('sample member desk UI feature', () => {
     );
 
     const scrollArea = getRenderedByProps(renderer, {
-      testID: 'sample.desk.member-list:scroll',
+      testID: sampleMemberDeskTestId('sample.desk.member-list:scroll'),
     }) as unknown as TestInstanceQuery;
     const actions = getRenderedByProps(renderer, {
-      testID: 'sample.desk.member-list:actions',
+      testID: sampleMemberDeskTestId('sample.desk.member-list:actions'),
     }) as unknown as TestInstanceQuery;
-    expect(getRenderedDescendantByProps(scrollArea, {testID: 'sample.desk.member-list:empty'})).toBeDefined();
     expect(
-      queryRenderedSubtree(scrollArea, node => node.props.testID === 'sample.desk.member-list:empty-action'),
+      getRenderedDescendantByProps(scrollArea, {testID: sampleMemberDeskTestId('sample.desk.member-list:empty')}),
+    ).toBeDefined();
+    expect(
+      queryRenderedSubtree(
+        scrollArea,
+        node => node.props.testID === sampleMemberDeskTestId('sample.desk.member-list:empty-action'),
+      ),
     ).toHaveLength(0);
-    expect(getRenderedDescendantByProps(actions, {testID: 'sample.desk.member-list:empty-action'})).toBeDefined();
-    expect(getRenderedDescendantByProps(actions, {testID: 'sample.desk.member-list:logout'})).toBeDefined();
+    expect(
+      getRenderedDescendantByProps(actions, {testID: sampleMemberDeskTestId('sample.desk.member-list:empty-action')}),
+    ).toBeDefined();
+    expect(
+      getRenderedDescendantByProps(actions, {testID: sampleMemberDeskTestId('sample.desk.member-list:logout')}),
+    ).toBeDefined();
     await act(async () => {
       await renderer.unmount();
     });

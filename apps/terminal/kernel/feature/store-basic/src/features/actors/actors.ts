@@ -79,6 +79,12 @@ const childOutcomeStatus = (result: CommandDispatchResult): string | null => {
     ? String(value.status)
     : null;
 };
+const childOutcomeReason = (result: CommandDispatchResult): string | null => {
+  const value = childResult(result);
+  if (typeof value !== 'object' || value === null || Array.isArray(value) || !('reason' in value)) return null;
+  const reason = value.reason;
+  return typeof reason === 'string' && /^[A-Z][A-Z0-9_:-]{1,95}$/u.test(reason) ? reason : 'UNCLASSIFIED';
+};
 const currentTopicStatus = (context: ActorExecutionContext, topicKey: TerminalTopicKey, errorCode: string): void => {
   context.dispatchAction(storeBasicActions.setFailure({topicKey, errorCode}));
 };
@@ -134,8 +140,22 @@ const subscribe = async (
   );
   const succeeded =
     result.status === 'completed' && ['subscribed', 'already-subscribed'].includes(childOutcomeStatus(result) ?? '');
-  if (!succeeded && isLatest() && checkCurrentMasterBinding(context, binding))
+  if (!succeeded && isLatest() && checkCurrentMasterBinding(context, binding)) {
+    context.platformPorts.logger
+      .scope({moduleName, layer: 'kernel', subsystem: 'store-basic', component: 'topic-subscription'})
+      .error({
+        category: 'terminal.store-basic.subscription',
+        event: 'topic-subscribe-failed',
+        message: 'Store basic topic subscription command did not complete successfully',
+        data: {
+          topicKey,
+          dispatchStatus: result.status,
+          outcomeStatus: childOutcomeStatus(result),
+          reason: childOutcomeReason(result),
+        },
+      });
     currentTopicStatus(context, topicKey, 'TOPIC_SUBSCRIBE_FAILED');
+  }
   return succeeded;
 };
 const accept = async (

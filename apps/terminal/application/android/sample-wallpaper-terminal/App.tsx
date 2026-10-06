@@ -7,11 +7,11 @@ import {
 import {StandaloneStartupFailurePage} from '@catering-v2s/ui-base-render';
 import {AndroidTerminalApp} from '@catering-v2s/application-base-android';
 import {
+  automationSurfaceForm,
   createSampleWallpaperTerminalAssembly,
   nativeLoadingCapability,
   nativeLoadingLogger,
 } from './src/assembly/platformPorts';
-import {ControlledKeyboardHarness, useControlledKeyboardHarness} from './src/components/controlledKeyboardHarness';
 
 type AppProps = Readonly<{
   readonly displayIndex?: 0 | 1;
@@ -19,13 +19,10 @@ type AppProps = Readonly<{
 }>;
 
 export default function App({displayIndex, surfaceForm}: AppProps) {
-  const controlledKeyboardHarness = useControlledKeyboardHarness(displayIndex !== 1);
-  if (controlledKeyboardHarness) return <ControlledKeyboardHarness />;
-
   return (
     <AndroidTerminalApp<WallpaperConsoleAssembly>
       displayIndex={displayIndex}
-      surfaceForm={surfaceForm}
+      surfaceForm={surfaceForm ?? automationSurfaceForm}
       createAssembly={createSampleWallpaperTerminalAssembly}
       renderSurface={(assembly, nextDisplayIndex) => createSurfaceForDisplayIndex(assembly, nextDisplayIndex)}
       renderFailurePage={({reason, displayIndex}) => (
@@ -36,7 +33,6 @@ export default function App({displayIndex, surfaceForm}: AppProps) {
           nativeLoadingCapability={nativeLoadingCapability}
         />
       )}
-      loadingTestID="sample-wallpaper-terminal.loading"
       loadingMessage="正在启动壁纸终端…"
       loadingBackgroundColor="#f1f5f9"
       loadingForegroundColor="#0f172a"

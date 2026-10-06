@@ -5,6 +5,7 @@ import {
   PrimitiveIconBadge,
   PrimitiveStatusLine,
   PrimitiveText,
+  testIdProps,
 } from '@catering-v2s/ui-base-primitives';
 import {InputScrollArea} from '@catering-v2s/ui-base-input';
 import {topologyReasonMessages} from '@catering-v2s/kernel-base-topology';
@@ -40,12 +41,12 @@ export const TopologySectionMobile = ({context}: AdminSectionProps) => {
           {context.catalogEntry.title}
         </PrimitiveHeading>
         <PrimitiveCard
-          testID={`${topologyIds.pageGate}:card`}
+          {...testIdProps(adminTestIds.child(topologyIds.pageGate, 'card'))}
           appearance="admin"
           style={{minHeight: 230, alignItems: 'center', justifyContent: 'center', padding: 18}}
         >
           <PrimitiveIconBadge
-            testID={`${topologyIds.pageGate}:icon`}
+            {...testIdProps(adminTestIds.child(topologyIds.pageGate, 'icon'))}
             accessibilityLabel="功能不可用"
             icon="blocked"
             size={28}

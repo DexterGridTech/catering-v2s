@@ -1,3 +1,4 @@
+import {inputTestIds} from '@catering-v2s/ui-base-input/test-ids';
 import {act, render, type RenderResult} from '@testing-library/react-native';
 import {createElement, cloneElement, type ReactElement} from 'react';
 import {ScrollView, StyleSheet, TextInput, View} from 'react-native';
@@ -26,7 +27,7 @@ import {
 import type {RenderProviderProps} from '@catering-v2s/ui-base-render';
 import {createUiCatalog, createUiStateModule, selectLayers} from '@catering-v2s/kernel-base-ui-state';
 import {loginCommand} from '@catering-v2s/kernel-feature-sample-staff-session';
-import {sampleStaffAuthAssembly} from '../src/index';
+import {sampleStaffAuthAssembly, sampleStaffAuthTestIds} from '../src/index';
 import {createSampleStaffAuthModule} from '../src/application/module';
 import {createAuthNavigationActor} from '../src/features/actors/actors';
 import {AuthSystemNotice} from '../src/components/laptop/AuthSystemNotice';
@@ -92,17 +93,17 @@ type TextInputTestInstance = Readonly<{
 type FrameLayout = Readonly<{readonly width: number; readonly height: number}>;
 
 const defaultScrollContentByID = new Map<string, object>();
-const defaultScrollByFieldID = new Map([
-  ['sample.auth.login:operator-name', 'sample.auth.login:scroll'],
-  ['sample.auth.login:passcode', 'sample.auth.login:scroll'],
+const defaultScrollByFieldID = new Map<string, string>([
+  [sampleStaffAuthTestIds.operatorName, sampleStaffAuthTestIds.loginScroll],
+  [sampleStaffAuthTestIds.passcode, sampleStaffAuthTestIds.loginScroll],
 ]);
 
 const createDefaultInputNodeMock =
   (frameLayout: FrameLayout) =>
   (_hostName: string, props: NativeTestHostProps): unknown => {
     const testID = props.testID;
-    if (testID === 'ui.base.input:surface-frame') return {};
-    if (typeof testID === 'string' && testID.endsWith(':scroll')) {
+    if (testID === inputTestIds.node('surface-frame')) return {};
+    if (typeof testID === 'string' && testID === sampleStaffAuthTestIds.loginScroll) {
       const contentNode = {};
       defaultScrollContentByID.set(testID, contentNode);
       return {
@@ -138,7 +139,7 @@ const initializeMountedScrollAreas = async (renderer: RenderResult, frameLayout:
   const scrollAreas = queryRenderedTree(renderer, node => true).filter(
     node =>
       typeof node.props.testID === 'string' &&
-      (node.props.testID as string).endsWith(':scroll') &&
+      node.props.testID === sampleStaffAuthTestIds.loginScroll &&
       typeof node.props.onLayout === 'function' &&
       typeof node.props.onContentSizeChange === 'function' &&
       typeof node.props.onScroll === 'function',
@@ -162,9 +163,11 @@ const initializeMountedScrollAreas = async (renderer: RenderResult, frameLayout:
 };
 
 const measureKeyboardLayers = async (renderer: RenderResult): Promise<void> => {
-  const measurementLayers = queryRenderedByProps(renderer, {testID: 'ui.base.input:keyboard-layer-position:measure'});
+  const measurementLayers = queryRenderedByProps(renderer, {
+    testID: inputTestIds.node('keyboard-layer-position:measure'),
+  });
   for (const layer of measurementLayers) {
-    const backdrop = getRenderedDescendantByProps(layer, {testID: 'ui.base.input:virtual-keyboard:backdrop'});
+    const backdrop = getRenderedDescendantByProps(layer, {testID: inputTestIds.node('virtual-keyboard:backdrop')});
     const layout = StyleSheet.flatten(backdrop.props.style) as Readonly<{
       readonly width: number;
       readonly height: number;
@@ -180,7 +183,8 @@ const measureKeyboardLayers = async (renderer: RenderResult): Promise<void> => {
 const finishKeyboardPresentation = async (renderer: RenderResult): Promise<void> => {
   setAnimatedTimingAutoFinishForTests(true);
   for (let attempt = 0; attempt < 4; attempt += 1) {
-    if (queryRenderedByProps(renderer, {testID: 'ui.base.input:keyboard-layer-position:measure'}).length === 0) break;
+    if (queryRenderedByProps(renderer, {testID: inputTestIds.node('keyboard-layer-position:measure')}).length === 0)
+      break;
     await measureKeyboardLayers(renderer);
     await act(async () => {
       advanceAnimatedTimingsForTests(1);
@@ -228,7 +232,7 @@ const mount = async (
   defaultScrollContentByID.clear();
   setNativeTestRefFactory(nativeRefFactory ?? createDefaultInputNodeMock(frameLayout));
   const renderer = await render(wrappedElement);
-  const frames = queryRenderedByProps(renderer, {testID: 'ui.base.input:surface-frame'});
+  const frames = queryRenderedByProps(renderer, {testID: inputTestIds.node('surface-frame')});
   await act(async () => {
     for (const frame of frames) {
       (frame.props.onLayout as (event: unknown) => void)({nativeEvent: {layout: frameLayout}});
@@ -255,7 +259,7 @@ const press = (renderer: RenderResult, testID: string): unknown => {
 };
 
 const virtualKeyboardHosts = (renderer: RenderResult): readonly TestInstanceQuery[] =>
-  queryRenderedByType(renderer, 'View').filter(node => node.props.testID === 'ui.base.input:virtual-keyboard');
+  queryRenderedByType(renderer, 'View').filter(node => node.props.testID === inputTestIds.node('virtual-keyboard'));
 
 const completedResult = (): CommandDispatchResult => ({
   requestId: null,
@@ -454,8 +458,8 @@ describe('sample staff auth UI feature', () => {
       ),
     );
 
-    const operatorName = findTextInput(renderer, 'sample.auth.login:operator-name');
-    const passcode = findTextInput(renderer, 'sample.auth.login:passcode');
+    const operatorName = findTextInput(renderer, sampleStaffAuthTestIds.operatorName);
+    const passcode = findTextInput(renderer, sampleStaffAuthTestIds.passcode);
     expect(operatorName.props.showSoftInputOnFocus).toBe(false);
     expect(passcode.props.showSoftInputOnFocus).toBe(false);
     expect(passcode.props.secureTextEntry).toBe(true);
@@ -466,14 +470,14 @@ describe('sample staff auth UI feature', () => {
     await finishKeyboardPresentation(renderer);
     expect(virtualKeyboardHosts(renderer)).toHaveLength(1);
     await act(async () => {
-      press(renderer, 'ui.base.input:virtual-keyboard:shift');
+      press(renderer, inputTestIds.node('virtual-keyboard:shift'));
     });
     await act(async () => {
-      press(renderer, 'ui.base.input:virtual-keyboard:text-a');
+      press(renderer, inputTestIds.node('virtual-keyboard:text-a'));
     });
     for (const key of ['0', '0', '1']) {
       await act(async () => {
-        press(renderer, `ui.base.input:virtual-keyboard:text-${key}`);
+        press(renderer, inputTestIds.node(`virtual-keyboard:text-${key}`));
       });
     }
 
@@ -484,11 +488,11 @@ describe('sample staff auth UI feature', () => {
     expect(virtualKeyboardHosts(renderer)).toHaveLength(1);
     for (const _ of [1, 2, 3, 4]) {
       await act(async () => {
-        press(renderer, 'ui.base.input:virtual-keyboard:text-1');
+        press(renderer, inputTestIds.node('virtual-keyboard:text-1'));
       });
     }
 
-    const submit = getRenderedByProps(renderer, {testID: 'sample.auth.login:submit'});
+    const submit = getRenderedByProps(renderer, {testID: sampleStaffAuthTestIds.loginSubmit});
     await act(async () => {
       await (submit.props.onPress as () => Promise<unknown>)();
     });
@@ -520,8 +524,8 @@ describe('sample staff auth UI feature', () => {
       ),
       {width: 1280, height: 800},
       (hostName, props) => {
-        if (hostName === 'View' && props.testID === 'ui.base.input:surface-frame') return surfaceRoot;
-        if (hostName === 'ScrollView' && props.testID === 'sample.auth.login:scroll') {
+        if (hostName === 'View' && props.testID === inputTestIds.node('surface-frame')) return surfaceRoot;
+        if (hostName === 'ScrollView' && props.testID === sampleStaffAuthTestIds.loginScroll) {
           return {
             getInnerViewRef: () => scrollContent,
             measureLayout: (
@@ -535,7 +539,10 @@ describe('sample staff auth UI feature', () => {
           };
         }
         const fieldId = props.testID;
-        if (fieldId === 'sample.auth.login:operator-name' || fieldId === 'sample.auth.login:passcode') {
+        if (
+          typeof fieldId === 'string' &&
+          (fieldId === sampleStaffAuthTestIds.operatorName || fieldId === sampleStaffAuthTestIds.passcode)
+        ) {
           return {
             measureLayout: (
               relativeTo: unknown,
@@ -553,7 +560,7 @@ describe('sample staff auth UI feature', () => {
       },
     );
 
-    const scrollProps = queryRenderedByProps(renderer, {testID: 'sample.auth.login:scroll'}).find(
+    const scrollProps = queryRenderedByProps(renderer, {testID: sampleStaffAuthTestIds.loginScroll}).find(
       node =>
         typeof node.props.onLayout === 'function' &&
         typeof node.props.onContentSizeChange === 'function' &&
@@ -567,15 +574,15 @@ describe('sample staff auth UI feature', () => {
       (scrollProps.onContentSizeChange as (width: number, height: number) => void)(1280, 1100);
       (scrollProps.onScroll as (event: unknown) => void)({nativeEvent: {contentOffset: {y: 0}}});
     });
-    for (const fieldId of ['sample.auth.login:operator-name', 'sample.auth.login:passcode']) {
+    for (const fieldId of [sampleStaffAuthTestIds.operatorName, sampleStaffAuthTestIds.passcode]) {
       await act(async () => {
         findTextInput(renderer, fieldId).props.onFocus({nativeEvent: {}});
       });
       await finishKeyboardPresentation(renderer);
     }
     expect([...new Set(measuredFields.map(field => field.fieldId))]).toEqual([
-      'sample.auth.login:operator-name',
-      'sample.auth.login:passcode',
+      sampleStaffAuthTestIds.operatorName,
+      sampleStaffAuthTestIds.passcode,
     ]);
     expect(measuredFields.every(field => field.relativeTo === scrollContent)).toBe(true);
     await act(async () => {
@@ -603,13 +610,13 @@ describe('sample staff auth UI feature', () => {
       frameLayout,
     );
 
-    const operatorName = findTextInput(renderer, 'sample.auth.login:operator-name');
+    const operatorName = findTextInput(renderer, sampleStaffAuthTestIds.operatorName);
     await act(async () => {
       operatorName.props.onFocus({nativeEvent: {}});
     });
     await finishKeyboardPresentation(renderer);
-    expect(getRenderedByProps(renderer, {testID: 'ui.base.input:virtual-keyboard:text-1'})).toBeDefined();
-    expect(getRenderedByProps(renderer, {testID: 'ui.base.input:virtual-keyboard:text-a'})).toBeDefined();
+    expect(getRenderedByProps(renderer, {testID: inputTestIds.node('virtual-keyboard:text-1')})).toBeDefined();
+    expect(getRenderedByProps(renderer, {testID: inputTestIds.node('virtual-keyboard:text-a')})).toBeDefined();
     await act(async () => {
       await renderer.unmount();
     });
@@ -637,10 +644,12 @@ describe('sample staff auth UI feature', () => {
     );
 
     const scrollArea = getRenderedByProps(renderer, {
-      testID: 'sample.auth.login:scroll',
+      testID: sampleStaffAuthTestIds.loginScroll,
     }) as unknown as TestInstanceQuery;
-    expect(queryRenderedSubtree(scrollArea, node => node.props.testID === 'sample.auth.login:submit')).toHaveLength(0);
-    const submit = getRenderedByProps(renderer, {testID: 'sample.auth.login:submit'});
+    expect(
+      queryRenderedSubtree(scrollArea, node => node.props.testID === sampleStaffAuthTestIds.loginSubmit),
+    ).toHaveLength(0);
+    const submit = getRenderedByProps(renderer, {testID: sampleStaffAuthTestIds.loginSubmit});
     await act(async () => {
       await (submit.props.onPress as () => Promise<unknown>)();
     });
@@ -670,13 +679,13 @@ describe('sample staff auth UI feature', () => {
         ),
       );
 
-      expectTextValue(renderer, 'sample.auth.system-notice:message', '操作没有完成，请重试');
+      expectTextValue(renderer, sampleStaffAuthTestIds.systemNoticeMessage, '操作没有完成，请重试');
       expect(
-        queryRenderedByProps(renderer, {testID: 'sample.auth.system-notice'}).map(node => node.props.style),
+        queryRenderedByProps(renderer, {testID: sampleStaffAuthTestIds.systemNotice}).map(node => node.props.style),
       ).toContainEqual(
         isMobile ? {flex: 1, minHeight: 0, padding: 16, alignItems: 'stretch'} : {flex: 1, minHeight: 0, padding: 24},
       );
-      const cardStyles = queryRenderedByProps(renderer, {testID: 'sample.auth.system-notice:card'}).map(node =>
+      const cardStyles = queryRenderedByProps(renderer, {testID: sampleStaffAuthTestIds.systemNoticeCard}).map(node =>
         StyleSheet.flatten(node.props.style as never),
       );
       expect(cardStyles).toHaveLength(1);
@@ -684,10 +693,12 @@ describe('sample staff auth UI feature', () => {
         expect.objectContaining(isMobile ? {width: '100%'} : {width: '100%', maxWidth: 720}),
       );
       expect(
-        queryRenderedByProps(renderer, {testID: 'sample.auth.system-notice:actions'}).map(node => node.props.className),
+        queryRenderedByProps(renderer, {testID: sampleStaffAuthTestIds.systemNoticeActions}).map(
+          node => node.props.className,
+        ),
       ).toContain(isMobile ? 'w-full items-center gap-3' : 'flex-row flex-wrap items-start gap-3');
-      const dismissStyles = queryRenderedByProps(renderer, {testID: 'sample.auth.system-notice:dismiss'}).map(node =>
-        StyleSheet.flatten(node.props.style as never),
+      const dismissStyles = queryRenderedByProps(renderer, {testID: sampleStaffAuthTestIds.systemNoticeDismiss}).map(
+        node => StyleSheet.flatten(node.props.style as never),
       );
       expect(dismissStyles).toHaveLength(1);
       if (isMobile) expect(dismissStyles[0]).toEqual(expect.objectContaining({width: '100%'}));
@@ -720,7 +731,7 @@ describe('sample staff auth UI feature', () => {
     );
 
     await act(async () => {
-      await press(renderer, 'sample.auth.system-notice:dismiss');
+      await press(renderer, sampleStaffAuthTestIds.systemNoticeDismiss);
     });
     expect(commandNames).toEqual([authSystemFailureDismissedCommand.commandName]);
     await act(async () => {

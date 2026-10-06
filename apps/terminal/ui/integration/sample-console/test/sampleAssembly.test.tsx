@@ -42,11 +42,14 @@ import {
   memberSubmissionWithdrawnCommand,
 } from '../../../../ui/feature/sample-member-desk/src/features/commands/commands';
 import {createSampleAssembly as createProductionSampleAssembly, createSurfaceForDisplayIndex} from '../src';
+import {renderTestIds} from '@catering-v2s/ui-base-render';
 import {startupReadyCommand} from '../src/application/module';
 import {createSampleDefinedParts} from '../src/assembly/assembly';
 import {adminTestIds} from '@catering-v2s/ui-base-admin-shell';
+import {inputTestIds} from '@catering-v2s/ui-base-input/test-ids';
 import {sampleMemberDeskAssembly} from '@catering-v2s/ui-feature-sample-member-desk';
-import {sampleStaffAuthAssembly} from '@catering-v2s/ui-feature-sample-staff-auth';
+import {sampleMemberDeskTestId} from '@catering-v2s/ui-feature-sample-member-desk/test-ids';
+import {sampleStaffAuthAssembly, sampleStaffAuthTestIds} from '@catering-v2s/ui-feature-sample-staff-auth';
 import {needToActivateTerminalCommand} from '@catering-v2s/ui-base-terminal-activation';
 import {activateTerminalCommand} from '@catering-v2s/kernel-base-terminal-data-client';
 import {
@@ -78,9 +81,13 @@ vi.mock('react-native', async importOriginal => {
   return withNativeTestHosts(actual, reactRuntime);
 });
 
-vi.mock('expo-crypto', () => ({
-  getRandomBytesAsync: vi.fn(async (length: number) => new Uint8Array(length)),
-}));
+vi.mock('expo-crypto', () => {
+  let sequence = 0;
+  return {
+    getRandomBytesAsync: vi.fn(async (length: number) => new Uint8Array(length)),
+    randomUUID: vi.fn(() => `00000000-0000-4000-8000-${String(++sequence).padStart(12, '0')}`),
+  };
+});
 
 type TestSampleAssemblyInput = Omit<
   Parameters<typeof createProductionSampleAssembly>[0],
@@ -273,7 +280,7 @@ const mount = async (
         },
       };
     }
-    if (typeof testID === 'string' && testID.endsWith(':scroll')) {
+    if (typeof testID === 'string' && testID.endsWith('%3Ascroll')) {
       const contentNode = {};
       return {
         getInnerViewRef: () => contentNode,
@@ -300,7 +307,7 @@ const mount = async (
     }
   });
   const renderer = await render(element);
-  const frames = queryNodes(renderer, 'ui.base.input:surface-frame');
+  const frames = queryNodes(renderer, inputTestIds.node('surface-frame'));
   if (measureSurface) {
     await act(async () => {
       for (const frame of frames) {
@@ -320,7 +327,7 @@ const mount = async (
     renderer,
     scroll =>
       typeof scroll.props.testID === 'string' &&
-      scroll.props.testID.endsWith(':scroll') &&
+      scroll.props.testID.endsWith('%3Ascroll') &&
       typeof scroll.props.onLayout === 'function' &&
       typeof scroll.props.onContentSizeChange === 'function' &&
       typeof scroll.props.onScroll === 'function',
@@ -348,7 +355,7 @@ const reportPrimaryReadyLayout = async (
   renderer: TestRenderer,
   frame: Readonly<{readonly width: number; readonly height: number}>,
 ): Promise<void> => {
-  const boundaries = queryNodes(renderer, 'ui-base-render:screen-ready-boundary');
+  const boundaries = queryNodes(renderer, renderTestIds.screenReadyBoundary);
   await act(async () => {
     for (const boundary of boundaries) {
       (boundary.props.onLayout as (event: unknown) => void)({nativeEvent: {layout: frame}});
@@ -400,12 +407,13 @@ const waitForAdminContent = async (renderer: TestRenderer): Promise<void> => {
 };
 
 const selectMobileAdminSection = async (renderer: TestRenderer, partKey: string): Promise<void> => {
+  const navigationId = adminTestIds.node('terminal.admin:navigation');
   await act(async () => {
-    await press(renderer, 'terminal.admin:navigation:trigger');
+    await press(renderer, adminTestIds.child(navigationId, 'trigger'));
     await new Promise(resolve => setTimeout(resolve, 0));
   });
   await act(async () => {
-    await press(renderer, `terminal.admin:navigation:option:${partKey}`);
+    await press(renderer, adminTestIds.child(navigationId, 'option', partKey));
     await new Promise(resolve => setTimeout(resolve, 0));
   });
 };
@@ -428,7 +436,7 @@ const pressLauncher = (
         ) => void;
       }>;
     }>;
-  const canvas = getNode(renderer, 'ui-base-render:surface-host-canvas') as TestNode &
+  const canvas = getNode(renderer, renderTestIds.surfaceHostCanvas) as TestNode &
     Readonly<{
       readonly props: Readonly<{readonly style: unknown}>;
     }>;
@@ -497,7 +505,7 @@ const authenticateAdmin = async (renderer: TestRenderer): Promise<void> => {
   const displayedCode = String(displayedPassword?.props.children ?? '').match(/\d{6}/)?.[0] ?? '123456';
   for (const digit of displayedCode) {
     await act(async () => {
-      await press(renderer, `ui.base.input:virtual-keyboard:text-${digit}`);
+      await press(renderer, inputTestIds.node(`virtual-keyboard:text-${digit}`));
       await new Promise(resolve => setTimeout(resolve, 0));
     });
   }
@@ -509,10 +517,10 @@ const authenticateAdmin = async (renderer: TestRenderer): Promise<void> => {
 };
 
 const measureKeyboardLayers = async (renderer: TestRenderer): Promise<void> => {
-  const measurementLayers = queryNodes(renderer, 'ui.base.input:keyboard-layer-position:measure');
+  const measurementLayers = queryNodes(renderer, inputTestIds.node('keyboard-layer-position:measure'));
   for (const layer of measurementLayers) {
     const backdrop = getRenderedDescendantByProps(layer, {
-      testID: 'ui.base.input:virtual-keyboard:backdrop',
+      testID: inputTestIds.node('virtual-keyboard:backdrop'),
     }) as TestNode;
     const layout = StyleSheet.flatten(backdrop.props.style) as Readonly<{
       readonly width: number;
@@ -529,7 +537,7 @@ const measureKeyboardLayers = async (renderer: TestRenderer): Promise<void> => {
 const finishKeyboardPresentation = async (renderer: TestRenderer): Promise<void> => {
   setAnimatedTimingAutoFinishForTests(true);
   for (let attempt = 0; attempt < 4; attempt += 1) {
-    if (queryNodes(renderer, 'ui.base.input:keyboard-layer-position:measure').length === 0) break;
+    if (queryNodes(renderer, inputTestIds.node('keyboard-layer-position:measure')).length === 0) break;
     await measureKeyboardLayers(renderer);
     await act(async () => {
       advanceAnimatedTimingsForTests(1);
@@ -576,12 +584,14 @@ describe('sample-console real assembly', () => {
             throw new Error('WEBSOCKET_NOT_EXPECTED_IN_ACTIVATION_SCREEN_TEST');
           },
           sendHttp: async input => {
-            requests.push(
-              Object.freeze({
-                pathAndQuery: input.pathAndQuery,
-                activationCode: (input.body as {activationCode?: string} | undefined)?.activationCode,
-              }),
-            );
+            if (input.pathAndQuery === '/activation') {
+              requests.push(
+                Object.freeze({
+                  pathAndQuery: input.pathAndQuery,
+                  activationCode: (input.body as {activationCode?: string} | undefined)?.activationCode,
+                }),
+              );
+            }
             return Object.freeze({
               kind: 'response' as const,
               status: 200,
@@ -619,9 +629,9 @@ describe('sample-console real assembly', () => {
       });
 
       renderer = await mount(createSurfaceForDisplayIndex(assembly, 0), LANDSCAPE_PRIMARY_FRAME);
-      expect(getNode(renderer, 'terminal.activation.result').children.join('')).toBe('设备已激活成功');
-      expect(queryNodes(renderer, 'terminal.activation.submit')).toHaveLength(0);
-      expect(queryNodes(renderer, 'terminal.activation.continue')).toHaveLength(0);
+      expect(renderer.getByText('设备已激活成功')).toBeDefined();
+      expect(renderer.queryByText('激活设备')).toBeNull();
+      expect(renderer.queryByText('继续')).toBeNull();
     } finally {
       if (renderer !== undefined) await renderer.unmount();
       await releaseRuntimeForTestAsync(assembly.runtime);
@@ -815,7 +825,7 @@ describe('sample-console real assembly', () => {
     let renderer: TestRenderer | undefined;
     try {
       renderer = await mount(createSurfaceForDisplayIndex(assembly, 0), PORTRAIT_PRIMARY_FRAME, false);
-      const boundary = getNode(renderer, 'ui-base-render:screen-ready-boundary');
+      const boundary = getNode(renderer, renderTestIds.screenReadyBoundary);
       await act(async () => {
         (boundary.props.onLayout as (event: unknown) => void)({
           nativeEvent: {layout: PORTRAIT_PRIMARY_FRAME},
@@ -825,7 +835,7 @@ describe('sample-console real assembly', () => {
       expect(events.filter(event => event.event === 'startup.complete')).toHaveLength(0);
       expect(events.some(event => event.event === 'startup.ready-failed')).toBe(false);
 
-      const frame = getNode(renderer, 'ui.base.input:surface-frame');
+      const frame = getNode(renderer, inputTestIds.node('surface-frame'));
       await act(async () => {
         (frame.props.onLayout as (event: unknown) => void)({
           nativeEvent: {layout: PORTRAIT_PRIMARY_FRAME},
@@ -977,8 +987,8 @@ describe('sample-console real assembly', () => {
         await readyAndActivateForTest(assembly);
         const renderer = await mount(createSurfaceForDisplayIndex(assembly, 0), frame);
         renderers.push(renderer);
-        const login = getNode(renderer, 'sample.auth.login');
-        const actions = getNode(renderer, 'sample.auth.login:actions');
+        const login = getNode(renderer, sampleStaffAuthTestIds.login);
+        const actions = getNode(renderer, sampleStaffAuthTestIds.loginActions);
         const style = StyleSheet.flatten(login.props.style);
         if (assembly.surfaceForm === 'laptop') {
           expect(style).toMatchObject({maxWidth: 720, alignSelf: 'center'});
@@ -1053,7 +1063,7 @@ describe('sample-console real assembly', () => {
         await new Promise(resolve => setTimeout(resolve, 0));
       });
       for (const renderer of [firstRenderer, secondRenderer]) {
-        const boundaries = queryNodes(renderer, 'ui-base-render:screen-ready-boundary');
+        const boundaries = queryNodes(renderer, renderTestIds.screenReadyBoundary);
         await act(async () => {
           for (const boundary of boundaries) {
             (boundary.props.onLayout as (event: unknown) => void)({
@@ -1254,7 +1264,7 @@ describe('sample-console real assembly', () => {
         const sectionButton = queryNodes(laptopRenderer, sectionTestID).find(node => node.type === 'Pressable')!;
         expect(sectionButton.props.accessibilityState).toMatchObject({selected: false});
       }
-      expect(getNode(laptopRenderer, 'terminal.admin:panel:normal:title')).toBeDefined();
+      expect(getNode(laptopRenderer, adminTestIds.node('terminal.admin:panel:normal:title'))).toBeDefined();
       expect(queryNodes(laptopRenderer, adminTestIds.ports.title)).toHaveLength(0);
       for (const sectionTestID of [
         adminTestIds.sections.platformPorts,
@@ -1267,13 +1277,17 @@ describe('sample-console real assembly', () => {
       const laptopShellStyle = StyleSheet.flatten(laptopShell.props.style);
       expect(laptopShellStyle).toMatchObject({flex: 1, width: '100%'});
       expect(laptopShellStyle).not.toHaveProperty('maxWidth');
-      expect(StyleSheet.flatten(getNode(laptopRenderer, 'terminal.admin:workspace').props.style)).toMatchObject({
+      expect(
+        StyleSheet.flatten(getNode(laptopRenderer, adminTestIds.node('terminal.admin:workspace')).props.style),
+      ).toMatchObject({
         flex: 1,
         flexDirection: 'row',
         flexWrap: 'nowrap',
         minHeight: 0,
       });
-      expect(StyleSheet.flatten(getNode(laptopRenderer, 'terminal.admin:navigation').props.style)).toMatchObject({
+      expect(
+        StyleSheet.flatten(getNode(laptopRenderer, adminTestIds.node('terminal.admin:navigation')).props.style),
+      ).toMatchObject({
         flexDirection: 'column',
         flexWrap: 'nowrap',
       });
@@ -1320,7 +1334,7 @@ describe('sample-console real assembly', () => {
         await press(laptopRenderer!, adminTestIds.sections.sampleConsole);
         await new Promise(resolve => setTimeout(resolve, 0));
       });
-      expect(getNode(laptopRenderer, 'sample.console.admin-test:title')).toBeDefined();
+      expect(getNode(laptopRenderer, adminTestIds.node('sample.console.admin-test:title'))).toBeDefined();
       expect(
         queryNodes(laptopRenderer, adminTestIds.sections.sampleConsole).find(node => node.type === 'Pressable')?.props
           .accessibilityState,
@@ -1329,33 +1343,54 @@ describe('sample-console real assembly', () => {
       mobileRenderer = await mount(createSurfaceForDisplayIndex(mobileAssembly, 0), PORTRAIT_PRIMARY_FRAME);
       await tapLauncher(mobileRenderer);
       await authenticateAdmin(mobileRenderer);
-      expect(getNode(mobileRenderer, 'terminal.admin:navigation')).toBeDefined();
-      expect(getNode(mobileRenderer, 'terminal.admin:panel:normal:title')).toBeDefined();
+      expect(getNode(mobileRenderer, adminTestIds.node('terminal.admin:navigation'))).toBeDefined();
+      expect(getNode(mobileRenderer, adminTestIds.node('terminal.admin:panel:normal:title'))).toBeDefined();
       expect(queryNodesByType(mobileRenderer, 'Text').some(node => node.props.children === '平台端口')).toBe(false);
       const mobileShell = getNode(mobileRenderer, adminTestIds.shell);
       const mobileShellStyle = StyleSheet.flatten(mobileShell.props.style);
       expect(mobileShellStyle).toMatchObject({flex: 1, width: '100%'});
       expect(mobileShellStyle).not.toHaveProperty('maxWidth');
-      const mobileNavigation = getNode(mobileRenderer, 'terminal.admin:navigation');
+      const mobileNavigation = getNode(mobileRenderer, adminTestIds.node('terminal.admin:navigation'));
       expect(mobileNavigation).toBeDefined();
-      const mobileNavigationTrigger = getNode(mobileRenderer, 'terminal.admin:navigation:trigger');
+      const mobileNavigationTrigger = getNode(
+        mobileRenderer,
+        adminTestIds.child(adminTestIds.node('terminal.admin:navigation'), 'trigger'),
+      );
       expect(mobileNavigationTrigger.props.accessibilityRole).toBe('button');
       expect(mobileNavigationTrigger.props.accessibilityLabel).toBe('选择终端管理页面');
       expect(mobileNavigationTrigger.props.accessibilityState).toMatchObject({expanded: false});
       await act(async () => {
-        await press(mobileRenderer!, 'terminal.admin:navigation:trigger');
+        await press(mobileRenderer!, adminTestIds.child(adminTestIds.node('terminal.admin:navigation'), 'trigger'));
         await new Promise(resolve => setTimeout(resolve, 0));
       });
-      expect(getNode(mobileRenderer, 'terminal.admin:navigation:menu')).toBeDefined();
+      expect(
+        getNode(mobileRenderer, adminTestIds.child(adminTestIds.node('terminal.admin:navigation'), 'menu')),
+      ).toBeDefined();
       for (const partKey of ['admin.console.platform-ports', 'admin.console.runtime', 'admin.console.topology']) {
-        expect(getNode(mobileRenderer, `terminal.admin:navigation:option:${partKey}`)).toBeDefined();
+        expect(
+          getNode(
+            mobileRenderer,
+            adminTestIds.child(adminTestIds.node('terminal.admin:navigation'), 'option', partKey),
+          ),
+        ).toBeDefined();
       }
-      expect(getNode(mobileRenderer, 'terminal.admin:navigation:option:sample.console.admin-test')).toBeDefined();
+      expect(
+        getNode(
+          mobileRenderer,
+          adminTestIds.child(adminTestIds.node('terminal.admin:navigation'), 'option', 'sample.console.admin-test'),
+        ),
+      ).toBeDefined();
       await act(async () => {
-        await press(mobileRenderer!, 'terminal.admin:navigation:option:admin.console.platform-ports');
+        await press(
+          mobileRenderer!,
+          adminTestIds.child(adminTestIds.node('terminal.admin:navigation'), 'option', 'admin.console.platform-ports'),
+        );
         await new Promise(resolve => setTimeout(resolve, 0));
       });
-      expect(getNode(mobileRenderer, 'terminal.admin:navigation:trigger').props.accessibilityState).toMatchObject({
+      expect(
+        getNode(mobileRenderer, adminTestIds.child(adminTestIds.node('terminal.admin:navigation'), 'trigger')).props
+          .accessibilityState,
+      ).toMatchObject({
         expanded: false,
       });
       expect(getNode(mobileRenderer, adminTestIds.content)).toBeDefined();
@@ -1375,14 +1410,17 @@ describe('sample-console real assembly', () => {
         accessibilityLiveRegion: 'polite',
       });
       await act(async () => {
-        await press(mobileRenderer!, 'terminal.admin:navigation:trigger');
+        await press(mobileRenderer!, adminTestIds.child(adminTestIds.node('terminal.admin:navigation'), 'trigger'));
         await new Promise(resolve => setTimeout(resolve, 0));
       });
       await act(async () => {
-        await press(mobileRenderer!, 'terminal.admin:navigation:option:sample.console.admin-test');
+        await press(
+          mobileRenderer!,
+          adminTestIds.child(adminTestIds.node('terminal.admin:navigation'), 'option', 'sample.console.admin-test'),
+        );
         await new Promise(resolve => setTimeout(resolve, 0));
       });
-      expect(getNode(mobileRenderer, 'sample.console.admin-test:title')).toBeDefined();
+      expect(getNode(mobileRenderer, adminTestIds.node('sample.console.admin-test:title'))).toBeDefined();
     } finally {
       if (laptopRenderer !== undefined) await laptopRenderer!.unmount();
       if (mobileRenderer !== undefined) await mobileRenderer!.unmount();
@@ -1407,27 +1445,27 @@ describe('sample-console real assembly', () => {
       expect(launcher.props.onPress).toBeUndefined();
       expect(launcher.props.onStartShouldSetResponder).toBeUndefined();
       expect(launcher.props.onResponderGrant).toBeUndefined();
-      const surfaceContent = getNode(renderer, 'ui.base.input:surface-content');
+      const surfaceContent = getNode(renderer, inputTestIds.node('surface-content'));
       expect(surfaceContent.type).toBe('View');
       expect(surfaceContent.props.onStartShouldSetResponder).toBeUndefined();
       expect(surfaceContent.props.onStartShouldSetResponderCapture).toBeUndefined();
       expect(surfaceContent.props.onResponderRelease).toBeUndefined();
       expect(surfaceContent.props.onTouchEnd).toBeDefined();
-      expect(getRenderedDescendantByProps(launcher, {testID: 'sample.auth.login:submit'})).toBeDefined();
+      expect(getRenderedDescendantByProps(launcher, {testID: sampleStaffAuthTestIds.loginSubmit})).toBeDefined();
 
       await act(async () => {
-        findTextInput(renderer!, 'sample.auth.login:operator-name').props.onChangeText?.('invalid-operator');
-        findTextInput(renderer!, 'sample.auth.login:passcode').props.onChangeText?.('invalid-passcode');
+        findTextInput(renderer!, sampleStaffAuthTestIds.operatorName).props.onChangeText?.('invalid-operator');
+        findTextInput(renderer!, sampleStaffAuthTestIds.passcode).props.onChangeText?.('invalid-passcode');
       });
       await act(async () => {
-        await press(renderer!, 'sample.auth.login:submit');
+        await press(renderer!, sampleStaffAuthTestIds.loginSubmit);
         await new Promise(resolve => setTimeout(resolve, 20));
       });
-      expect(getNode(renderer, 'sample.auth.notice')).toBeDefined();
+      expect(getNode(renderer, sampleStaffAuthTestIds.notice)).toBeDefined();
       expect(queryNodes(renderer, adminTestIds.login)).toHaveLength(0);
 
       await act(async () => {
-        await press(renderer!, 'sample.auth.notice:dismiss');
+        await press(renderer!, sampleStaffAuthTestIds.noticeDismiss);
         await new Promise(resolve => setTimeout(resolve, 0));
       });
       await tapLauncher(renderer, 5, 95, 95);
@@ -1658,20 +1696,20 @@ describe('sample-console real assembly', () => {
       }
       await finishKeyboardPresentation(renderer);
       expect(getNode(renderer, adminTestIds.login)).toBeDefined();
-      const loginCard = getNode(renderer, `${adminTestIds.login}:card`);
-      expect(queryNodes(renderer, 'ui.base.input:surface-frame')).toHaveLength(1);
+      const loginCard = getNode(renderer, adminTestIds.child(adminTestIds.login, 'card'));
+      expect(queryNodes(renderer, inputTestIds.node('surface-frame'))).toHaveLength(1);
       expect(
         queryRenderedTree(
           renderer,
-          node => node.type === 'View' && node.props.testID === 'ui.base.input:virtual-keyboard',
+          node => node.type === 'View' && node.props.testID === inputTestIds.node('virtual-keyboard'),
         ),
       ).toHaveLength(1);
       expect(StyleSheet.flatten(loginCard.props.style)).toMatchObject({width: '100%'});
-      expect(getNode(renderer, 'ui.base.input:virtual-keyboard:text-1')).toBeDefined();
+      expect(getNode(renderer, inputTestIds.node('virtual-keyboard:text-1'))).toBeDefined();
       expect(stopPropagation).toHaveBeenCalledTimes(1);
       for (const digit of ['1', '2', '3', '4', '5', '6']) {
         await act(async () => {
-          await press(renderer!, `ui.base.input:virtual-keyboard:text-${digit}`);
+          await press(renderer!, inputTestIds.node(`virtual-keyboard:text-${digit}`));
           await new Promise(resolve => setTimeout(resolve, 0));
         });
       }
@@ -1681,10 +1719,10 @@ describe('sample-console real assembly', () => {
       });
       await waitForAdminContent(renderer);
       expect(getNode(renderer, adminTestIds.shell)).toBeDefined();
-      expect(getNode(renderer, 'terminal.admin:navigation')).toBeDefined();
+      expect(getNode(renderer, adminTestIds.node('terminal.admin:navigation'))).toBeDefined();
       await selectMobileAdminSection(renderer!, 'admin.console.runtime');
       expect(getNode(renderer, adminTestIds.runtime.contentRoot)).toBeDefined();
-      expect(queryNodes(renderer, 'sample.console.admin-test')).toHaveLength(0);
+      expect(queryNodes(renderer, adminTestIds.node('sample.console.admin-test'))).toHaveLength(0);
       await act(async () => {
         hostSource.emit({
           stableHostLogicalSize: {width: 1000, height: 700},
@@ -1765,16 +1803,16 @@ describe('sample-console real assembly', () => {
       );
       renderer = await mount(createSurfaceForDisplayIndex(assembly, 0), LANDSCAPE_PRIMARY_FRAME);
 
-      const businessInput = findTextInput(renderer, 'sample.desk.member-form:phone');
+      const businessInput = findTextInput(renderer, sampleMemberDeskTestId('sample.desk.member-form:phone'));
       await act(async () => {
         businessInput.props.onFocus({nativeEvent: {}});
       });
       await finishKeyboardPresentation(renderer);
       await act(async () => {
-        await press(renderer!, 'ui.base.input:virtual-keyboard:text-3');
+        await press(renderer!, inputTestIds.node('virtual-keyboard:text-3'));
         await new Promise(resolve => setTimeout(resolve, 0));
       });
-      expect(findTextInput(renderer, 'sample.desk.member-form:phone').props.value).toBe('3');
+      expect(findTextInput(renderer, sampleMemberDeskTestId('sample.desk.member-form:phone')).props.value).toBe('3');
 
       for (let index = 0; index < 5; index += 1) {
         await act(async () => {
@@ -1784,33 +1822,33 @@ describe('sample-console real assembly', () => {
       }
       expect(getNode(renderer, adminTestIds.login)).toBeDefined();
 
-      const businessInputUnderAdmin = findTextInput(renderer, 'sample.desk.member-form:phone');
+      const businessInputUnderAdmin = findTextInput(renderer, sampleMemberDeskTestId('sample.desk.member-form:phone'));
       await act(async () => {
         businessInputUnderAdmin.props.onFocus({nativeEvent: {}});
       });
       await finishKeyboardPresentation(renderer);
       await act(async () => {
-        await press(renderer!, 'ui.base.input:virtual-keyboard:text-1');
+        await press(renderer!, inputTestIds.node('virtual-keyboard:text-1'));
         await new Promise(resolve => setTimeout(resolve, 0));
       });
       expect(renderer.getByText('*')).toBeDefined();
-      expect(findTextInput(renderer, 'sample.desk.member-form:phone').props.value).toBe('3');
+      expect(findTextInput(renderer, sampleMemberDeskTestId('sample.desk.member-form:phone')).props.value).toBe('3');
 
       await act(async () => {
         await press(renderer!, adminTestIds.close);
         await new Promise(resolve => setTimeout(resolve, 0));
       });
       expect(queryNodes(renderer, adminTestIds.login)).toHaveLength(0);
-      const restoredBusinessInput = findTextInput(renderer, 'sample.desk.member-form:phone');
+      const restoredBusinessInput = findTextInput(renderer, sampleMemberDeskTestId('sample.desk.member-form:phone'));
       await act(async () => {
         restoredBusinessInput.props.onFocus({nativeEvent: {}});
       });
       await finishKeyboardPresentation(renderer);
       await act(async () => {
-        await press(renderer!, 'ui.base.input:virtual-keyboard:text-4');
+        await press(renderer!, inputTestIds.node('virtual-keyboard:text-4'));
         await new Promise(resolve => setTimeout(resolve, 0));
       });
-      expect(findTextInput(renderer, 'sample.desk.member-form:phone').props.value).toBe('34');
+      expect(findTextInput(renderer, sampleMemberDeskTestId('sample.desk.member-form:phone')).props.value).toBe('34');
     } finally {
       if (renderer !== undefined) await renderer!.unmount();
       await releaseRuntimeForTestAsync(assembly.runtime);
@@ -1837,7 +1875,7 @@ describe('sample-console real assembly', () => {
         });
       }
       expect(renderer.getByText('（123456）')).toBeDefined();
-      expect(getNode(renderer, 'terminal.admin:login:instruction')).toBeDefined();
+      expect(getNode(renderer, adminTestIds.node('terminal.admin:login:instruction'))).toBeDefined();
       expect(
         events.some(event => String((event as {readonly event?: unknown}).event) === 'sample.runtime-facts-resolved'),
       ).toBe(true);
@@ -1878,7 +1916,7 @@ describe('sample-console real assembly', () => {
       expect(displayedCode).toMatch(/^\d{6}$/);
       for (const digit of displayedCode!) {
         await act(async () => {
-          await press(renderer!, `ui.base.input:virtual-keyboard:text-${digit}`);
+          await press(renderer!, inputTestIds.node(`virtual-keyboard:text-${digit}`));
           await new Promise(resolve => setTimeout(resolve, 0));
         });
       }
@@ -1950,7 +1988,7 @@ describe('sample-console real assembly', () => {
     let renderer: TestRenderer | undefined;
     try {
       renderer = await mount(createSurfaceForDisplayIndex(assembly, 0), LANDSCAPE_PRIMARY_FRAME);
-      expect(getNode(renderer, 'ui-base-render:surface-host-pending')).toBeDefined();
+      expect(getNode(renderer, renderTestIds.node('surface-host-pending'))).toBeDefined();
       expect(queryNodes(renderer, adminTestIds.launcher)).toHaveLength(0);
       const rejection = events.find(event => event.event === 'surface.host-identity-rejected');
       expect(rejection).toMatchObject({
@@ -2189,7 +2227,7 @@ describe('sample-console real assembly', () => {
       await finishKeyboardPresentation(renderer);
       for (const digit of ['1', '2', '3', '4', '5', '6']) {
         await act(async () => {
-          await press(renderer!, `ui.base.input:virtual-keyboard:text-${digit}`);
+          await press(renderer!, inputTestIds.node(`virtual-keyboard:text-${digit}`));
           await new Promise(resolve => setTimeout(resolve, 0));
         });
       }
@@ -2227,7 +2265,7 @@ describe('sample-console real assembly', () => {
         'business-layer',
         'admin.console.layer',
       ]);
-      const canvas = getNode(renderer, 'ui-base-render:surface-host-canvas');
+      const canvas = getNode(renderer, renderTestIds.surfaceHostCanvas);
       expect(canvas.props.style).toEqual(expect.arrayContaining([expect.objectContaining({width: 1280, height: 720})]));
     } finally {
       if (renderer !== undefined) await renderer!.unmount();
@@ -2286,10 +2324,11 @@ describe('sample-console real assembly', () => {
           'ui.feature.sample-member-desk',
           'ui.base.terminal-activation',
           'kernel.base.terminal-data-client',
+          'ui.base.automation-agent',
           'ui.integration.sample-console',
         ]),
       );
-      expect(assembly.runtime.descriptors).toHaveLength(14);
+      expect(assembly.runtime.descriptors).toHaveLength(15);
     } finally {
       await releaseRuntimeForTestAsync(assembly.runtime);
     }
@@ -2305,8 +2344,8 @@ describe('sample-console real assembly', () => {
     try {
       await readyAndActivateForTest(assembly);
       renderer = await mount(createSurfaceForDisplayIndex(assembly, 0), LANDSCAPE_PRIMARY_FRAME);
-      expect(getNode(renderer, 'sample.auth.login')).toBeDefined();
-      expect(getNode(renderer, 'sample.auth.login:submit')).toBeDefined();
+      expect(getNode(renderer, sampleStaffAuthTestIds.login)).toBeDefined();
+      expect(getNode(renderer, sampleStaffAuthTestIds.loginSubmit)).toBeDefined();
     } finally {
       if (renderer !== undefined) await renderer!.unmount();
       await releaseRuntimeForTestAsync(assembly.runtime);
@@ -2342,7 +2381,10 @@ describe('sample-console real assembly', () => {
         500,
       );
 
-      const financialProbe = findTextInput(renderer, 'sample.desk.member-form:keyboard-financial-probe');
+      const financialProbe = findTextInput(
+        renderer,
+        sampleMemberDeskTestId('sample.desk.member-form:keyboard-financial-probe'),
+      );
       await act(async () => {
         financialProbe.props.onFocus({nativeEvent: {}});
       });
@@ -2389,7 +2431,7 @@ describe('sample-console real assembly', () => {
       );
       expect(result.status).toBe('completed');
       renderer = await mount(createSurfaceForDisplayIndex(assembly, 1), LANDSCAPE_SECONDARY_FRAME);
-      expect(getNode(renderer, 'sample.desk.customer-welcome')).toBeDefined();
+      expect(getNode(renderer, sampleMemberDeskTestId('sample.desk.customer-welcome'))).toBeDefined();
     } finally {
       if (renderer !== undefined) await renderer!.unmount();
       await releaseRuntimeForTestAsync(assembly.runtime);
@@ -2510,28 +2552,28 @@ describe('sample-console real assembly', () => {
         </>,
       );
 
-      const ageInput = findTextInput(renderer, 'sample.desk.customer-member:age');
+      const ageInput = findTextInput(renderer, sampleMemberDeskTestId('sample.desk.customer-member:age'));
       await act(async () => {
         ageInput.props.onFocus({nativeEvent: {}});
       });
       await finishKeyboardPresentation(renderer);
-      expect(getNode(renderer, 'ui.base.input:virtual-keyboard')).toBeDefined();
+      expect(getNode(renderer, inputTestIds.node('virtual-keyboard'))).toBeDefined();
       await act(async () => {
-        await press(renderer!, 'ui.base.input:virtual-keyboard:text-3');
+        await press(renderer!, inputTestIds.node('virtual-keyboard:text-3'));
       });
 
-      await press(renderer, 'sample.desk.waiting-confirm:withdraw');
+      await press(renderer, sampleMemberDeskTestId('sample.desk.waiting-confirm:withdraw'));
       await waitFor(() => {
-        expect(getNode(renderer!, 'sample.desk.withdraw-confirm:withdraw')).toBeDefined();
+        expect(getNode(renderer!, sampleMemberDeskTestId('sample.desk.withdraw-confirm:withdraw'))).toBeDefined();
       });
-      await press(renderer, 'sample.desk.withdraw-confirm:withdraw');
+      await press(renderer, sampleMemberDeskTestId('sample.desk.withdraw-confirm:withdraw'));
 
       expect(selectPendingMember(assembly.runtime.getState())).toBeNull();
       expect(selectScreen(assembly.runtime.getState(), 'SECONDARY', 'main')).toMatchObject({
         partKey: 'sample.desk.customer-welcome',
       });
       expect(selectLayers(assembly.runtime.getState(), 'PRIMARY')).toHaveLength(0);
-      expect(getNode(renderer, 'sample.desk.customer-welcome')).toBeDefined();
+      expect(getNode(renderer, sampleMemberDeskTestId('sample.desk.customer-welcome'))).toBeDefined();
 
       const membersBeforeLateConfirm = selectMembers(assembly.runtime.getState());
       await act(async () => {
@@ -2568,16 +2610,16 @@ describe('sample-console real assembly', () => {
         {requestId: createRequestId()},
       );
       secondaryRenderer = await mount(createSurfaceForDisplayIndex(assembly, 1));
-      const ageInput = findTextInput(secondaryRenderer, 'sample.desk.customer-member:age');
+      const ageInput = findTextInput(secondaryRenderer, sampleMemberDeskTestId('sample.desk.customer-member:age'));
       await act(async () => {
         ageInput.props.onFocus({nativeEvent: {}});
       });
       await finishKeyboardPresentation(secondaryRenderer);
       await act(async () => {
-        await press(secondaryRenderer!, 'ui.base.input:virtual-keyboard:text-3');
+        await press(secondaryRenderer!, inputTestIds.node('virtual-keyboard:text-3'));
       });
       await act(async () => {
-        await press(secondaryRenderer!, 'sample.desk.customer-member:confirm');
+        await press(secondaryRenderer!, sampleMemberDeskTestId('sample.desk.customer-member:confirm'));
       });
       expect(selectMembers(assembly.runtime.getState())).toContainEqual(
         expect.objectContaining({
@@ -2612,16 +2654,16 @@ describe('sample-console real assembly', () => {
         {requestId: createRequestId()},
       );
       secondaryRenderer = await mount(createSurfaceForDisplayIndex(assembly, 1));
-      const ageInput = findTextInput(secondaryRenderer, 'sample.desk.customer-member:age');
+      const ageInput = findTextInput(secondaryRenderer, sampleMemberDeskTestId('sample.desk.customer-member:age'));
       await act(async () => {
         ageInput.props.onFocus({nativeEvent: {}});
       });
       await finishKeyboardPresentation(secondaryRenderer);
       await act(async () => {
-        await press(secondaryRenderer!, 'ui.base.input:virtual-keyboard:text-4');
+        await press(secondaryRenderer!, inputTestIds.node('virtual-keyboard:text-4'));
       });
       await act(async () => {
-        await press(secondaryRenderer!, 'sample.desk.customer-member:reject');
+        await press(secondaryRenderer!, sampleMemberDeskTestId('sample.desk.customer-member:reject'));
       });
       expect(selectMembers(assembly.runtime.getState())).toEqual([]);
       expect(selectPendingMember(assembly.runtime.getState())).toEqual({

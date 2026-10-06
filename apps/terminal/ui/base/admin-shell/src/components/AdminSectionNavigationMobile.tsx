@@ -1,3 +1,4 @@
+import {adminTestIds} from '../foundations/adminTestIds';
 import {useState} from 'react';
 import {PrimitiveDropdownSelect} from '@catering-v2s/ui-base-primitives';
 import type {UiCatalogEntry} from '@catering-v2s/kernel-base-ui-state';
@@ -17,7 +18,7 @@ export const AdminSectionNavigationMobile = ({
   const value = selectedPartKey ?? '';
   return (
     <PrimitiveDropdownSelect
-      testID="terminal.admin:navigation"
+      testID={adminTestIds.node('terminal.admin:navigation')}
       accessibilityLabel="选择终端管理页面"
       options={options}
       value={value}

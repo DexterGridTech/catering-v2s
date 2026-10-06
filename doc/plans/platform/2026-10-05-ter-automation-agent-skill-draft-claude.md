@@ -66,7 +66,7 @@ observeUiAction 在动作前先建立 selectRequestExecutionViews(workspace) 订
 
 driver内部用RxJS firstValueFrom/filter/timeout/race，先订阅后动作；外部旅途消费普通Promise/事件接口。禁固定sleep与轮询。每步同时断言visible part、selector、request；只看「成功」不够。
 真实业务登录/顾客输入/确认走real，虚拟键盘逐键，最后显式submit。semantic/directcommand只准备fixture，报告注明。
-testID由唯一构造 `createTestId(moduleName,part,element?,key?)` 返回品牌TestId；props/转发同品牌，literal或拼接传品牌props在typecheck报红，构造文件外不得as TestId；直接RN元素另由全生产TSX的testID/testId属性定点checker检查，不能赋给TestId即门红（包括 `<View testID="x">`），不做跨组件流分析；surface不放ID；fixture使用同一常量源，不能散写旧ID。新包漏登记/literal红例按skeleton入口验证。
+testID由唯一构造 `createTestId(moduleName, part, {element?, key?})` 返回强类型TestId；props/转发保持强类型，literal或拼接传强类型props在typecheck报红，构造文件外不得as TestId；直接RN元素另由全生产TSX的testID/testId属性定点checker检查，不能赋给TestId即门红（包括 `<View testID="x">`），不做跨组件流分析；surface不放ID；fixture使用同一常量源，不能散写旧ID。新包漏登记/literal红例按skeleton入口验证。
 
 ## 5. 故障排查
 

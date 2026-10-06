@@ -4,6 +4,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./test-id": "./src/foundations/testId.ts",
     "./config/semantic-color-keys": "./config/semantic-color-keys.cjs"
   },
   "scripts": {

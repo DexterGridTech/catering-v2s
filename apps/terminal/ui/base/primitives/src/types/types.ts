@@ -10,6 +10,7 @@ import type {
   TextStyle,
   ViewStyle,
 } from 'react-native';
+import type {TestId} from '../foundations/testId';
 
 export type PrimitiveTone = 'neutral' | 'ok' | 'warn' | 'error' | 'info';
 
@@ -19,7 +20,7 @@ export type PrimitiveOption = Readonly<{
 }>;
 
 export type PrimitiveAddressableProps = Readonly<{
-  readonly testID: string;
+  readonly testID?: TestId;
 }>;
 
 export type PrimitiveContainerProps = PrimitiveAddressableProps &
@@ -77,7 +78,7 @@ export type PrimitivePinInputProps = PrimitiveAddressableProps &
     /** Selects the shared PIN presentation recipe without owning input state. */
     readonly appearance?: 'default' | 'login';
     /** Stable prefix owned by the caller for the six (or caller-selected) digit test IDs. */
-    readonly cellTestIDPrefix: string;
+    readonly cellTestIDPrefix?: TestId;
     readonly disabled?: boolean;
     readonly focusedIndex?: number;
     readonly invalid?: boolean;
@@ -413,7 +414,8 @@ export type PrimitiveStatusLineProps = PrimitiveAddressableProps &
 
 export type PrimitiveFactItem = Readonly<{
   readonly key: string;
-  readonly testID?: string;
+  readonly testID?: TestId;
+  readonly valueTestID?: TestId;
   readonly label: string;
   readonly value: string;
   readonly tone?: PrimitiveTone;
@@ -430,10 +432,10 @@ export type PrimitiveDisclosureProps = PrimitiveAddressableProps &
     readonly accessibilityLabel: string;
     readonly label: string;
     readonly summary?: string;
-    readonly summaryTestID?: string;
+    readonly summaryTestID?: TestId;
     readonly status?: string;
-    readonly statusTestID?: string;
-    readonly triggerTestID?: string;
+    readonly statusTestID?: TestId;
+    readonly triggerTestID?: TestId;
     readonly expanded: boolean;
     readonly onExpandedChange?: (expanded: boolean) => void;
     readonly children?: ReactNode;

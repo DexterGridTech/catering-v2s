@@ -30,7 +30,7 @@
 |---|---|
 | 平台实现 | 真实实现在 `adapter/**`；本包只有**声明**与**零依赖默认实例** |
 | 配置容器 | `environmentMode` 是 factory 的构造参数，**不是端口**，也不出现在 `PlatformPorts` 里 |
-| UI / application 控制面 | automation 不进端口 —— 它是 UI 层关注点，且 `TR-08` 要求编译期剔除 |
+| UI / application 控制面 | automation-agent 不进平台端口 —— 它由 application assembly 按显式验收构建参数装配，默认关闭，并由 `TR-08` 的 production bundle 门证明不进入正式产物 |
 | 屏幕上下文 | **没有独立的 `display` 端口**。设备级屏数由 `device.getDisplayInfo()` 提供；surface 身份仍由宿主经 `initialProps` 推入 `kernel.base.display-context`；`appControl` 只拿被推进来的 `containerKey` 路由既有 surface |
 
 ## 3 · 什么该进来 —— 三个判别式

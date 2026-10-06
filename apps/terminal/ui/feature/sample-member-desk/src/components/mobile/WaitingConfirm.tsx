@@ -7,25 +7,39 @@ import {
   PrimitiveText,
 } from '@catering-v2s/ui-base-primitives';
 import {useWaitingConfirm} from '../../hooks/useWaitingConfirm';
+import {sampleMemberDeskTestId} from '../../foundations/sampleMemberDeskTestIds';
 
 export const WaitingConfirm = () => {
   const waiting = useWaitingConfirm();
   return (
     <PrimitiveCenter
-      testID="sample.desk.waiting-confirm"
+      testID={sampleMemberDeskTestId('sample.desk.waiting-confirm')}
       style={{flex: 1, minHeight: 0, padding: 16, alignItems: 'stretch'}}
     >
-      <PrimitiveContainer testID="sample.desk.waiting-confirm:card" layout="card" bounded style={{width: '100%'}}>
-        <PrimitiveStatus testID="sample.desk.waiting-confirm:message">已提交，等待顾客确认</PrimitiveStatus>
-        <PrimitiveText testID="sample.desk.waiting-confirm:member-name" accessibilityLabel="姓名">
+      <PrimitiveContainer
+        testID={sampleMemberDeskTestId('sample.desk.waiting-confirm:card')}
+        layout="card"
+        bounded
+        style={{width: '100%'}}
+      >
+        <PrimitiveStatus testID={sampleMemberDeskTestId('sample.desk.waiting-confirm:message')}>
+          已提交，等待顾客确认
+        </PrimitiveStatus>
+        <PrimitiveText
+          testID={sampleMemberDeskTestId('sample.desk.waiting-confirm:member-name')}
+          accessibilityLabel="姓名"
+        >
           {waiting.pending?.name ?? ''}
         </PrimitiveText>
-        <PrimitiveText testID="sample.desk.waiting-confirm:member-phone" accessibilityLabel="电话">
+        <PrimitiveText
+          testID={sampleMemberDeskTestId('sample.desk.waiting-confirm:member-phone')}
+          accessibilityLabel="电话"
+        >
           {waiting.pending?.phone ?? ''}
         </PrimitiveText>
-        <PrimitiveActions testID="sample.desk.waiting-confirm:actions" orientation="column">
+        <PrimitiveActions testID={sampleMemberDeskTestId('sample.desk.waiting-confirm:actions')} orientation="column">
           <PrimitiveButton
-            testID="sample.desk.waiting-confirm:withdraw"
+            testID={sampleMemberDeskTestId('sample.desk.waiting-confirm:withdraw')}
             accessibilityLabel="撤回"
             onPress={waiting.withdraw}
             style={{width: '100%'}}

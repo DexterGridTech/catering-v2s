@@ -194,6 +194,8 @@ export type TerminalDataClientDependencies = Readonly<{
   readonly transport: TerminalTransportCommands;
   readonly businessServerName: string;
   readonly createCredentialSecret: () => string | Promise<string>;
+  /** Platform-provided RFC 4122 UUID generator for wire subscription identities. */
+  readonly createProtocolUuid?: () => string;
   readonly now: () => number;
   readonly surfaceForm: TerminalSurfaceForm;
   readonly appVersion: string;

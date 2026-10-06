@@ -15,9 +15,7 @@ import {useUiStateSelector} from '../hooks/useUiStateSelector';
 import {isUiCatalogEntryAvailable} from '@catering-v2s/kernel-base-ui-state';
 import {useSurfacePresentationOffset} from '../contexts/SurfacePresentationOffsetContext';
 import {SystemFailureBoundary} from './SystemFailureBoundary';
-
-const LAYER_STACK_TEST_ID = 'ui-base-render:layer-stack';
-const LAYER_BACKDROP_TEST_ID = 'ui-base-render:layer-backdrop';
+import {renderTestIds} from '../foundations/renderTestIds';
 
 type Layer = Readonly<{
   readonly layerId: string;
@@ -192,7 +190,7 @@ export const LayerStack = () => {
   const renderLayer = (layer: Layer) => (
     <View
       key={layer.layerId}
-      testID={`ui-base-render:layer:${layer.layerId}`}
+      testID={renderTestIds.layer(layer.layerId)}
       accessibilityElementsHidden={businessInterlockActive && !isAdminLayer(layer, uiCatalog, rendererCatalog)}
       importantForAccessibility={
         businessInterlockActive && !isAdminLayer(layer, uiCatalog, rendererCatalog) ? 'no-hide-descendants' : 'auto'
@@ -256,17 +254,17 @@ export const LayerStack = () => {
 
   if (runtimeStatus !== 'started') {
     return (
-      <View testID={LAYER_STACK_TEST_ID}>
+      <View testID={renderTestIds.layerStack}>
         <RenderFallback failure={{category: 'transition', reason: 'runtime-not-started'}} />
       </View>
     );
   }
 
   return (
-    <View testID={LAYER_STACK_TEST_ID} pointerEvents="box-none" style={styles.stack}>
+    <View testID={renderTestIds.layerStack} pointerEvents="box-none" style={styles.stack}>
       {orderedLayers.length > 0 ? (
         <Pressable
-          testID={LAYER_BACKDROP_TEST_ID}
+          testID={renderTestIds.layerBackdrop}
           accessibilityRole="none"
           style={styles.backdrop}
           onPress={dismissTopLayer}
@@ -279,5 +277,5 @@ export const LayerStack = () => {
   );
 };
 
-const BUSINESS_INTERLOCK_FOCUS_MARKER = 'ui-base-render:business-interlock';
+const BUSINESS_INTERLOCK_FOCUS_MARKER = renderTestIds.businessInterlock;
 const alwaysInactiveInterlock = (): boolean => false;

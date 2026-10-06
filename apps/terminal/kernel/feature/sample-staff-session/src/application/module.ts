@@ -16,6 +16,7 @@ import {createBootstrapActor, createLoginActor, createLogoutActor} from '../feat
 import {invalidCredentialsErrorDefinition} from '../foundations/errors';
 import {moduleKind, moduleName} from '../moduleName';
 import {sessionStateRegistration} from '../features/slices/slice';
+import {selectHostStaffQualification, selectSessionState} from '../selectors/selectors';
 
 const commands = [
   bootstrapSessionCommand,
@@ -39,6 +40,7 @@ export const createSampleStaffSessionModule = (
     errorDefinitions: [invalidCredentialsErrorDefinition],
     commands: commands.map(command => ({name: command.commandName, visibility: command.visibility})),
     commandDefinitions: commands,
+    selectorDefinitions: [selectHostStaffQualification, selectSessionState],
     actors: actors.map(actor => ({name: actor.actorName})),
     actorDefinitions: actors,
     slices: [{name: sessionStateRegistration.name, persistIntent: sessionStateRegistration.persistIntent}],

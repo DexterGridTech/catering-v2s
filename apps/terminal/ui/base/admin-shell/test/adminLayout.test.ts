@@ -93,7 +93,7 @@ describe('admin layout structural contract', () => {
 
     const laptop = readSource('src/components/AdminShellLaptop.tsx');
     const workspace = jsxOpenings(laptop, 'PrimitiveGrid').find(node =>
-      attributeText(laptop, node, 'testID')?.includes('terminal.admin:workspace'),
+      attributeText(laptop, node, 'testID')?.includes("adminTestIds.node('terminal.admin:workspace')"),
     );
     expect(workspace).toBeDefined();
     expect(attributeText(laptop, workspace!, 'style')).toContain('workspaceStyle');
@@ -105,7 +105,9 @@ describe('admin layout structural contract', () => {
     const navigation = readSource('src/components/AdminSectionNavigationMobile.tsx');
     const mobileNav = jsxOpenings(navigation, 'PrimitiveDropdownSelect')[0];
     expect(mobileNav).toBeDefined();
-    expect(attributeText(navigation, mobileNav!, 'testID')).toBe('testID="terminal.admin:navigation"');
+    expect(attributeText(navigation, mobileNav!, 'testID')).toBe(
+      "testID={adminTestIds.node('terminal.admin:navigation')}",
+    );
     expect(navigation.text).toContain('const [open, setOpen] = useState(false)');
     expect(navigation.text).not.toContain('PrimitivePressOption');
 

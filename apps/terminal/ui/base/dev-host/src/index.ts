@@ -4,6 +4,7 @@ export {createTestExpoApp} from './components/testExpoApp';
 export {createWebDevicePort, createWebPlatformPorts} from './implementations/webPlatform';
 export {createWebSurfaceHostSource} from './implementations/webSurfaceHost';
 export {createWebStateStoragePort} from './implementations/webStorage';
+export {testExpoTestIds} from './foundations/testExpoTestIds';
 export type {
   SurfaceSize,
   SurfaceForm,

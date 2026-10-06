@@ -1,4 +1,5 @@
 import packageJson from '../../package.json';
+import * as Crypto from 'expo-crypto';
 import {moduleName as integrationModuleName} from '../moduleName';
 import type {EnvironmentMode, NativeLoadingCapability, PlatformPorts} from '@catering-v2s/kernel-base-platform-ports';
 import {type SurfaceHostMeasurementSource} from '@catering-v2s/ui-base-render';
@@ -21,6 +22,7 @@ import {
   PairReadinessInterlock,
   selectStateSyncSlices,
   type IntegrationAssembly,
+  type AutomationAgentConfig,
 } from '@catering-v2s/ui-base-integration-assembly';
 import {sampleStaffAuthAssembly} from '@catering-v2s/ui-feature-sample-staff-auth';
 import {sampleWallpaperPickerAssembly, WallpaperBackground} from '@catering-v2s/ui-feature-sample-wallpaper-picker';
@@ -78,6 +80,7 @@ type WallpaperConsoleAssemblyInput = Readonly<{
   readonly packagingDebugMode?: boolean;
   readonly startupDebugMode?: boolean;
   readonly showAdminPassword?: boolean;
+  readonly terminalAutomation?: AutomationAgentConfig;
   readonly serverSpaces?: TransportServerConfig;
   readonly surfaceHostSourcesByDisplayIndex?: Readonly<Partial<Record<0 | 1, SurfaceHostMeasurementSource>>>;
   readonly topologyPeerChannel?: TopologyPeerChannel;
@@ -97,6 +100,8 @@ export async function createSampleWallpaperConsoleAssembly(
   const environmentMode: EnvironmentMode = input.environmentMode ?? (__DEV__ ? 'DEV' : 'PROD');
   return createIntegrationAssembly<SampleWallpaperConsoleReadyPayload>({
     appName: 'sample-wallpaper-console',
+    appVersion: input.appVersion ?? 'dev',
+    terminalAutomation: input.terminalAutomation ?? packageJson.terminalAutomation,
     errorPrefix: 'sample-wallpaper-console',
     runtimeName: 'sample-wallpaper-console',
     defaultPersistenceKey,
@@ -153,6 +158,7 @@ export async function createSampleWallpaperConsoleAssembly(
         transport: transportModule.commandGateway,
         businessServerName: 'business',
         createCredentialSecret,
+        createProtocolUuid: () => Crypto.randomUUID(),
         now: () => Date.now(),
         surfaceForm,
         appVersion: input.appVersion ?? '1.0.0',

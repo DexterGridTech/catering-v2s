@@ -7,7 +7,6 @@ import {
 import {StandaloneStartupFailurePage} from '@catering-v2s/ui-base-render';
 import {AndroidTerminalApp} from '@catering-v2s/application-base-android';
 import {createSampleTerminalAssembly, nativeLoadingCapability, nativeLoadingLogger} from './src/assembly/platformPorts';
-import {ControlledKeyboardHarness, useControlledKeyboardHarness} from './src/components/controlledKeyboardHarness';
 
 type AppProps = Readonly<{
   readonly displayIndex?: 0 | 1;
@@ -15,13 +14,18 @@ type AppProps = Readonly<{
 }>;
 
 export default function App({displayIndex, surfaceForm}: AppProps) {
-  const controlledKeyboardHarness = useControlledKeyboardHarness(displayIndex !== 1);
-  if (controlledKeyboardHarness) return <ControlledKeyboardHarness />;
+  const automationSurfaceForm =
+    process.env.EXPO_PUBLIC_TER_AUTOMATION_BUILD === 'true'
+      ? process.env.EXPO_PUBLIC_TER_AUTOMATION_SURFACE_FORM
+      : undefined;
+  if (automationSurfaceForm !== undefined && automationSurfaceForm !== 'laptop' && automationSurfaceForm !== 'mobile') {
+    throw new Error('TERMINAL_AUTOMATION_SURFACE_FORM_INVALID');
+  }
 
   return (
     <AndroidTerminalApp<SampleAssembly>
       displayIndex={displayIndex}
-      surfaceForm={surfaceForm}
+      surfaceForm={surfaceForm ?? automationSurfaceForm}
       createAssembly={createSampleTerminalAssembly}
       renderSurface={(assembly, nextDisplayIndex) => createSurfaceForDisplayIndex(assembly, nextDisplayIndex)}
       renderFailurePage={({reason, displayIndex}) => (

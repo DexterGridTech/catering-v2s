@@ -21,6 +21,13 @@ import {
   terminalTransportEventCommand,
   unsubscribeTerminalTopicCommand,
 } from '../features/commands/terminalDataClientCommands';
+import {
+  selectActivationState,
+  selectConnectionLatency,
+  selectConnectionState,
+  selectTerminalTopicSubscriptions,
+} from '../selectors/selectTerminalDataClientState';
+import {selectTerminalClientStatusProjection} from '../selectors/selectTerminalDataClientStatusProjection';
 import {terminalDataClientStateSlice, terminalDataClientSliceName} from '../features/slices/terminalDataClient';
 import {
   terminalClientStatusProjectionStateSlice,
@@ -54,6 +61,13 @@ export const createTerminalDataClientModule = (dependencies: TerminalDataClientD
     dependencies: runtimeModuleDependencyNames.map(name => ({moduleName: name})),
     commands: commandDefinitions.map(command => ({name: command.commandName, visibility: command.visibility})),
     commandDefinitions,
+    selectorDefinitions: [
+      selectActivationState,
+      selectConnectionState,
+      selectConnectionLatency,
+      selectTerminalTopicSubscriptions,
+      selectTerminalClientStatusProjection,
+    ],
     actors: [{name: actorRuntime.actor.actorName}],
     actorDefinitions: [actorRuntime.actor],
     slices: [

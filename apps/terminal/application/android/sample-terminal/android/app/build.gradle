@@ -138,6 +138,19 @@ afterEvaluate {
  * Set this to true in release builds to optimize the app using [R8](https://developer.android.com/topic/performance/app-optimization/enable-app-optimization).
  */
 def enableMinifyInReleaseBuilds = (findProperty('android.enableMinifyInReleaseBuilds') ?: false).toBoolean()
+def terminalAutomationApplicationIdSuffix = findProperty('terAutomationApplicationIdSuffix') ?: ''
+if (terminalAutomationApplicationIdSuffix && !(terminalAutomationApplicationIdSuffix ==~ /\.terauto[a-f0-9]{8}/)) {
+    throw new GradleException('TERMINAL_AUTOMATION_APPLICATION_ID_SUFFIX_INVALID')
+}
+def terminalAutomationBuildDirectory = findProperty('terAutomationBuildDir')
+if (terminalAutomationBuildDirectory) {
+    def automationRuntimeRoot = new File(rootDir, '../../../../../../.runtime/terminal-automation').canonicalFile
+    def runBuildDirectory = new File(terminalAutomationBuildDirectory).canonicalFile
+    if (!runBuildDirectory.path.startsWith(automationRuntimeRoot.path + File.separator)) {
+        throw new GradleException('TERMINAL_AUTOMATION_ANDROID_BUILD_DIRECTORY_OUTSIDE_RUN')
+    }
+    layout.buildDirectory.set(runBuildDirectory)
+}
 
 /**
  * The preferred build flavor of JavaScriptCore (JSC)
@@ -161,6 +174,9 @@ android {
     namespace 'com.anonymous.sampleterminal'
     defaultConfig {
         applicationId 'com.anonymous.sampleterminal'
+        if (terminalAutomationApplicationIdSuffix) {
+            applicationIdSuffix terminalAutomationApplicationIdSuffix
+        }
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

@@ -317,7 +317,7 @@ Dexter 2026-10-05 追加（逐字），针对作者对其他第三方库的推�
 ### R-14 testID 完全重建
 
 - 格式：`<moduleName>:<part>[:<element>][:<key>]`，前缀是所在包的点分 moduleName。
-- `ui/base/primitives` 提供唯一的 testID 构造函数。primitives 的 testID 必填规则不变。
+- `ui/base/primitives` 提供唯一的 testID 构造函数。testID 仅对自动化实际需要点击、定位，或读取几何/可见状态作为断言对象的 Primitive 必填；纯装饰、静态且不参与自动化交互或断言的 Primitive 不需要 testID。
 - 所属 surface 不写进 testID，由注册表的 surface 字段区分（R-08）。
 - 废弃不符合该格式的现有前缀，例如 `ui-base-render:`（连字符而非点分 moduleName）、`terminal.admin:`、`application.base.android:loading`、`<appName>:test-expo:surface:*`。`ui.base.input:` 的前缀本身已是点分 moduleName，但其后各段仍须按新格式与构造函数重建。
 - TER 源码中全部 testID 改由构造函数生成，不保留旧 ID 别名。

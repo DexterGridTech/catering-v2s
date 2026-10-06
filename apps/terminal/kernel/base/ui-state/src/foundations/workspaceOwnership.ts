@@ -1,3 +1,5 @@
+import {defineStateSelector} from '@catering-v2s/kernel-base-runtime';
+import {moduleName} from '../moduleName';
 import {resolveWorkspace, selectDisplayRole} from '@catering-v2s/kernel-base-display-context';
 import {selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
 import type {StateRoot, WorkspaceKey} from '@catering-v2s/kernel-base-state';
@@ -13,7 +15,7 @@ export const isWorkspaceOwnedByInstanceMode = (
   }>,
 ): boolean => workspaceOwnedByInstanceMode(input.instanceMode) === input.workspace;
 
-export const isCurrentWorkspaceOwnedByInstance = (state: StateRoot): boolean => {
+const isCurrentWorkspaceOwnedByInstanceImplementation = (state: StateRoot): boolean => {
   const instanceMode = selectRuntimeInstanceMode(state);
   const currentWorkspace = resolveWorkspace({
     instanceMode,
@@ -21,3 +23,8 @@ export const isCurrentWorkspaceOwnedByInstance = (state: StateRoot): boolean => 
   });
   return isWorkspaceOwnedByInstanceMode({instanceMode, workspace: currentWorkspace});
 };
+
+export const isCurrentWorkspaceOwnedByInstance = defineStateSelector(moduleName, 'isCurrentWorkspaceOwnedByInstance', {
+  parameters: [],
+  selector: isCurrentWorkspaceOwnedByInstanceImplementation,
+});

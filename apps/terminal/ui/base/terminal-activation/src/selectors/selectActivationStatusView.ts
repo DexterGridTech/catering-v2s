@@ -1,3 +1,5 @@
+import {defineStateSelector} from '@catering-v2s/kernel-base-runtime';
+import {moduleName} from '../moduleName';
 import {
   selectActivationState,
   selectConnectionLatency,
@@ -17,7 +19,7 @@ export type ActivationStatusView = Readonly<{
 }>;
 
 /** A matching persisted host cache is display-only until the current peer applies its revision. */
-export const selectActivationStatusView = (state: StateRoot): ActivationStatusView | null => {
+const selectActivationStatusViewImplementation = (state: StateRoot): ActivationStatusView | null => {
   if (selectRuntimeInstanceMode(state) === 'MASTER') {
     const latency = selectConnectionLatency(state);
     return Object.freeze({
@@ -38,3 +40,8 @@ export const selectActivationStatusView = (state: StateRoot): ActivationStatusVi
     currentPeerValue: selectTopologyRequiredProjectionsReady(state, [terminalClientStatusProjectionSliceName]),
   });
 };
+
+export const selectActivationStatusView = defineStateSelector(moduleName, 'selectActivationStatusView', {
+  parameters: [],
+  selector: selectActivationStatusViewImplementation,
+});

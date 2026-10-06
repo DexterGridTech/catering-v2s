@@ -87,6 +87,10 @@ DYNAMIC_STATUS=修订前证据与后续当前字节运行分开记录；未运�
 
 逐项场景id、判据、owner test位置、fixture、业务oracle、执行面以详设 §11 和 §11a 为唯一分母。本计划必须产生的结果表复用完全相同的 24 条 V 与16条 DEV-DATA行；不删除、合并或重新编号。所有初始状态 `NOT_RUN`。本计划TER执行面落Dexter专项裁决：Expo Web only；Android/VM/device不计划，adapter `NOT_COVERED`。CBS backend-acceptance/DEV场景仍为计划值，不虚报已授权已跑。
 
+### 2026-10-06 定向验收补充
+
+Dexter 当前任务明确要求额外自动化证明 `DEV-DATA-01`：在现有 TER automation console 场景中分别运行 Expo Web 与 Android application，以真实 Operations owner HTTP 更新当前测试门店备注；runner 在更新前订阅 `kernel.feature.store-basic.selectStore` 和 `selectStoreBasicTopicState('STORE')`，以 selector 新值及其 `updatedAtEpochMillis` 对齐 CBS 响应和后续 owner readback，再恢复原备注并做 cleanup readback。业务 oracle 是 store-basic selector，不是日志。该补充只扩大 `DEV-DATA-01` 的 TER 执行面，不扩大为 `DEV-DATA-02～16`、`V-01～24` 全部在 Android 运行，也不覆盖 adapter；原逐场景表中其它 TER 执行面与 NOT_RUN 状态维持不变。执行由 `scripts/test/terminal-automation` 的 console journey 单场景调用承载，业务fixture更新与selector fixture清理分别记录。
+
 ## 5. 六步控制与失败处置
 
 1. **冻结设计输入：** 复核需求、详设§0/§12、契约、owner源码、六维记忆命中与第三方实际版本；技术/产品OPEN逐项列明并等待有权人，不写推测结论。普通`--validate-only`基线要记录其真实首fail，不叫绿基线。

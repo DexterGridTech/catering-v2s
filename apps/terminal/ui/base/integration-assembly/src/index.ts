@@ -1,5 +1,6 @@
 export {moduleName} from './moduleName';
-export {PairReadinessInterlock, pairReadinessInterlockTestIds} from './components/PairReadinessInterlock';
+export {PairReadinessInterlock} from './components/PairReadinessInterlock';
+export {pairReadinessInterlockTestIds} from './foundations/integrationAssemblyTestIds';
 export {dependencyModuleNames, devDependencyModuleNames} from './dependencies';
 export {createStartupDiagnosticsWriter} from './foundations/startupDiagnosticsWriter';
 export type {StartupDiagnosticsWriter, StartupDiagnosticsWriterInput} from './foundations/startupDiagnosticsWriter';
@@ -25,6 +26,7 @@ export {
   createStateSource,
   createSurfaceForDisplayIndex,
 } from './foundations/integrationAssembly';
+export type {AutomationAgentConfig} from '@catering-v2s/ui-base-automation-agent';
 export type {
   IntegrationAssembly,
   IntegrationAssemblyInput,

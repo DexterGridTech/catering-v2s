@@ -1,9 +1,5 @@
 import {StyleSheet, Text, View} from 'react-native';
-
-export const pairReadinessInterlockTestIds = Object.freeze({
-  status: 'terminal.pair.mask:status',
-  message: 'terminal.pair.mask:message',
-});
+import {pairReadinessInterlockTestIds} from '../foundations/integrationAssemblyTestIds';
 
 export const PairReadinessInterlock = () => (
   <View

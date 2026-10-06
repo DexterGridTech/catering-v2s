@@ -9,11 +9,12 @@ import type {ReactElement} from 'react';
 import {assetsById} from '../foundations/assets';
 import {wallpaperIds, wallpaperLabels} from '../foundations/wallpaperCatalog';
 import type {WallpaperId} from '@catering-v2s/kernel-feature-sample-wallpaper';
+import {deriveTestId, type TestId, testIdProps} from '@catering-v2s/ui-base-primitives';
 
 export const WallpaperOptionCards = (
   props: Readonly<{
-    readonly testID: string;
-    readonly optionTestId: (wallpaperId: WallpaperId) => string;
+    readonly testID: TestId;
+    readonly optionTestId: (wallpaperId: WallpaperId) => TestId;
     readonly selected: WallpaperId | undefined;
     readonly onSelect: (wallpaperId: WallpaperId) => void;
     readonly style: Readonly<Record<string, unknown>>;
@@ -26,7 +27,7 @@ export const WallpaperOptionCards = (
       const source = assetsById[wallpaperId];
       const optionTestId = props.optionTestId(wallpaperId);
       return (
-        <PrimitiveCard key={wallpaperId} testID={`${optionTestId}:card`} style={props.cardStyle}>
+        <PrimitiveCard key={wallpaperId} {...testIdProps(deriveTestId(optionTestId, 'card'))} style={props.cardStyle}>
           <PrimitiveRadio
             testID={optionTestId}
             accessibilityLabel={wallpaperLabels[wallpaperId]}
@@ -35,7 +36,7 @@ export const WallpaperOptionCards = (
           />
           {source === undefined ? null : (
             <PrimitiveImage
-              testID={`${optionTestId}:thumbnail`}
+              {...testIdProps(deriveTestId(optionTestId, 'thumbnail'))}
               accessibilityLabel={`${wallpaperLabels[wallpaperId]}缩略图`}
               source={source}
               layout="thumbnail"
@@ -43,7 +44,9 @@ export const WallpaperOptionCards = (
               style={props.thumbnailStyle}
             />
           )}
-          <PrimitiveLabel testID={`${optionTestId}:label`}>{wallpaperLabels[wallpaperId]}</PrimitiveLabel>
+          <PrimitiveLabel {...testIdProps(deriveTestId(optionTestId, 'label'))}>
+            {wallpaperLabels[wallpaperId]}
+          </PrimitiveLabel>
         </PrimitiveCard>
       );
     })}

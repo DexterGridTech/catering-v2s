@@ -32,6 +32,8 @@ import {registerRuntimeResourceAccessor} from '../foundations/runtimeResourceAcc
 import {registerRuntimeStateSyncAccessor} from '../foundations/runtimeStateSyncAccessorRegistry';
 import {createStateSubscription} from '../foundations/createStateSubscription';
 import {commandDefinitionBrand} from '../types/command';
+import {readStateSelectorMetadata} from '../foundations/defineStateSelector';
+import {validateSelectorArguments} from '../foundations/validateSelectorArguments';
 
 const lifecycleErrorDefinition = {
   key: `${moduleName}.lifecycle_failed`,
@@ -157,6 +159,29 @@ const validateModuleShape = (modules: readonly RuntimeModule[]): ReadonlyMap<str
   return definitions;
 };
 
+const createSelectorRegistry = (modules: readonly RuntimeModule[]) => {
+  const selectors = new Map<
+    string,
+    Readonly<{
+      metadata: NonNullable<ReturnType<typeof readStateSelectorMetadata>>;
+      selector: (state: StateRoot, ...args: readonly unknown[]) => unknown;
+    }>
+  >();
+  for (const module of modules) {
+    for (const selector of module.selectorDefinitions ?? []) {
+      const metadata = readStateSelectorMetadata(selector);
+      if (metadata === undefined)
+        throw new Error(`Runtime selector was not created by defineStateSelector: ${module.moduleName}`);
+      if (metadata.moduleName !== module.moduleName)
+        throw new Error(`Runtime selector belongs to another module: ${metadata.selectorName}`);
+      const name = `${metadata.moduleName}.${metadata.selectorName}`;
+      if (selectors.has(name)) throw new Error(`Duplicate runtime selector: ${name}`);
+      selectors.set(name, {metadata, selector: selector as (state: StateRoot, ...args: readonly unknown[]) => unknown});
+    }
+  }
+  return selectors;
+};
+
 export const createRuntime = (input: CreateRuntimeInput): Runtime => {
   assertNonEmptyString(input.localNodeId, '', 'Runtime localNodeId');
   assertNonEmptyString(input.state.runtimeName, '', 'Runtime runtimeName');
@@ -170,6 +195,7 @@ export const createRuntime = (input: CreateRuntimeInput): Runtime => {
   );
   const declaredModules = [internalModule, ...input.modules];
   const definitions = validateModuleShape(declaredModules);
+  const selectors = createSelectorRegistry(declaredModules);
   const maxRegisteredCommandTimeoutMs = [...definitions.values()].reduce(
     (max, definition) => Math.max(max, definition.timeoutMs),
     Number(defaultCommandTimeoutMs),
@@ -311,19 +337,31 @@ export const createRuntime = (input: CreateRuntimeInput): Runtime => {
     return dispatcher.dispatchCommand(definitionOrName, payload, options);
   };
 
+  const evaluateSelector = (name: string, argsTuple: readonly unknown[]): unknown => {
+    if (status !== 'started' || stateRuntime === undefined) throw lifecycleError('Runtime is not started');
+    const registered = selectors.get(name);
+    if (registered === undefined) throw new Error(`RUNTIME_SELECTOR_NOT_REGISTERED:${name}`);
+    validateSelectorArguments(registered.metadata.parameters, argsTuple, name);
+    return registered.selector(stateRuntime.getState(), ...argsTuple);
+  };
+
   const installPeerDispatchGateway = (gateway: import('../types/peer').PeerDispatchGateway): void => {
     if (dispatcher === undefined) throw new Error('Runtime dispatcher is not available');
     dispatcher.installPeerDispatchGateway(gateway);
   };
 
+  const runtimeId = createRuntimeInstanceId();
   const lifecycle = createRuntimeLifecycle({
     modules,
     descriptors,
+    journal,
+    runtimeId,
     localNodeId: input.localNodeId,
     platformPorts: input.platformPorts,
     requestMaxResidenceMs: limits.requestMaxResidenceMs,
     getStateRuntime: () => stateRuntime,
     dispatchCommand: dispatchForContext,
+    evaluateSelector,
     installPeerDispatchGateway,
     dispatchAction: (action: RuntimeUnknownAction): RuntimeUnknownAction => {
       if (stateRuntime === undefined) throw new Error('State runtime is not available');
@@ -359,8 +397,6 @@ export const createRuntime = (input: CreateRuntimeInput): Runtime => {
       data: {rootCommandId: String(rootCommandId)},
     });
   };
-
-  const runtimeId = createRuntimeInstanceId();
 
   const start = (): Promise<void> => {
     if (status === 'started') return Promise.resolve();
@@ -490,6 +526,7 @@ export const createRuntime = (input: CreateRuntimeInput): Runtime => {
     getState,
     getStore,
     dispatchCommand,
+    evaluateSelector,
   };
   registerRuntimeResourceAccessor(runtime, resources);
   registerRuntimeStateSyncAccessor(runtime, () => stateRuntime);

@@ -1,3 +1,4 @@
+import {derivedPrimitiveTestId, primitiveTestId} from './testIds';
 import {createRef, useState} from 'react';
 import {act, render, type RenderResult} from '@testing-library/react-native';
 import {Platform, StyleSheet, View} from 'react-native';
@@ -59,7 +60,7 @@ vi.mock('react-native', async importOriginal => {
 const mount = async (element: React.ReactElement): Promise<RenderResult> => render(element);
 const hostNodes = (result: RenderResult, type: string) => queryRenderedTree(result, node => node.type === type);
 const hostNode = (result: RenderResult, type: string, testID: string) =>
-  getRenderedNode(result, node => node.type === type && node.props.testID === testID);
+  getRenderedNode(result, node => node.type === type && node.props.testID === primitiveTestId(testID));
 
 afterEach(resetNativeTestRefFactory);
 
@@ -67,10 +68,10 @@ describe('ui primitives', () => {
   it('keeps the form host native-transparent and prevents browser submit defaults', async () => {
     const nativeRenderer = await mount(
       <PrimitiveForm>
-        <View testID="sample:form-child" />
+        <View testID={primitiveTestId('sample:form-child')} />
       </PrimitiveForm>,
     );
-    expect(nativeRenderer.getByTestId('sample:form-child')).toBeDefined();
+    expect(nativeRenderer.getByTestId(primitiveTestId('sample:form-child'))).toBeDefined();
     expect(queryRenderedTree(nativeRenderer, node => node.type === 'form')).toHaveLength(0);
 
     const originalDocument = Object.getOwnPropertyDescriptor(globalThis, 'document');
@@ -79,7 +80,7 @@ describe('ui primitives', () => {
       const onSubmit = vi.fn();
       const browserRenderer = await mount(
         <PrimitiveForm onSubmit={onSubmit}>
-          <View testID="sample:web-form-child" />
+          <View testID={primitiveTestId('sample:web-form-child')} />
         </PrimitiveForm>,
       );
       const form = getRenderedNode(browserRenderer, node => node.type === 'form');
@@ -100,19 +101,19 @@ describe('ui primitives', () => {
 
   it('renders addressable native controls with required testIDs', async () => {
     const renderer = await mount(
-      <PrimitiveContainer testID="sample:root">
-        <PrimitiveHeading testID="sample:heading">标题</PrimitiveHeading>
-        <PrimitiveLabel testID="sample:label" nativeID="sample:label">
+      <PrimitiveContainer testID={primitiveTestId('sample:root')}>
+        <PrimitiveHeading testID={primitiveTestId('sample:heading')}>标题</PrimitiveHeading>
+        <PrimitiveLabel testID={primitiveTestId('sample:label')} nativeID="sample:label">
           姓名
         </PrimitiveLabel>
-        <PrimitiveInput testID="sample:input" accessibilityLabel="姓名" value="Alice" />
-        <PrimitiveText testID="sample:text">内容</PrimitiveText>
-        <PrimitiveStatus testID="sample:status">状态</PrimitiveStatus>
-        <PrimitiveActions testID="sample:actions" />
-        <PrimitiveScrollView testID="sample:scroll">
-          <PrimitiveText testID="sample:scroll:text">可滚动内容</PrimitiveText>
+        <PrimitiveInput testID={primitiveTestId('sample:input')} accessibilityLabel="姓名" value="Alice" />
+        <PrimitiveText testID={primitiveTestId('sample:text')}>内容</PrimitiveText>
+        <PrimitiveStatus testID={primitiveTestId('sample:status')}>状态</PrimitiveStatus>
+        <PrimitiveActions testID={primitiveTestId('sample:actions')} />
+        <PrimitiveScrollView testID={primitiveTestId('sample:scroll')}>
+          <PrimitiveText testID={primitiveTestId('sample:scroll:text')}>可滚动内容</PrimitiveText>
         </PrimitiveScrollView>
-        <PrimitiveButton testID="sample:button">确定</PrimitiveButton>
+        <PrimitiveButton testID={primitiveTestId('sample:button')}>确定</PrimitiveButton>
       </PrimitiveContainer>,
     );
 
@@ -123,25 +124,25 @@ describe('ui primitives', () => {
     expect(baseTokens.status).toContain('leading-6');
     const container = hostNode(renderer, 'View', 'sample:root');
     expect(container.props.className).toBe('flex-1 bg-canvas p-6 gap-4');
-    expect(renderer.getByTestId('sample:root')).toBeDefined();
+    expect(renderer.getByTestId(primitiveTestId('sample:root'))).toBeDefined();
     const heading = hostNode(renderer, 'Text', 'sample:heading');
     expect(heading.props.accessibilityRole).toBe('header');
     expect(heading.props.accessibilityLiveRegion).toBe('polite');
-    expect(renderer.getByTestId('sample:label')).toBeDefined();
-    expect(renderer.getByTestId('sample:label').props.nativeID).toBe('sample:label');
-    expect(renderer.getByTestId('sample:input')).toBeDefined();
-    expect(renderer.getByTestId('sample:text')).toBeDefined();
-    expect(renderer.getByTestId('sample:status')).toBeDefined();
-    expect(renderer.getByTestId('sample:actions')).toBeDefined();
+    expect(renderer.getByTestId(primitiveTestId('sample:label'))).toBeDefined();
+    expect(renderer.getByTestId(primitiveTestId('sample:label')).props.nativeID).toBe('sample:label');
+    expect(renderer.getByTestId(primitiveTestId('sample:input'))).toBeDefined();
+    expect(renderer.getByTestId(primitiveTestId('sample:text'))).toBeDefined();
+    expect(renderer.getByTestId(primitiveTestId('sample:status'))).toBeDefined();
+    expect(renderer.getByTestId(primitiveTestId('sample:actions'))).toBeDefined();
     const scrollView = hostNode(renderer, 'ScrollView', 'sample:scroll');
     expect(scrollView.props.className).toBe('w-full flex-1 bg-canvas');
     expect(scrollView.props.contentContainerStyle).toEqual({gap: baseLayout.scrollContentGap});
     expect(scrollView.props.scrollEventThrottle).toBe(16);
-    expect(renderer.getByTestId('sample:scroll')).toBeDefined();
+    expect(renderer.getByTestId(primitiveTestId('sample:scroll'))).toBeDefined();
     expect(baseTokens.button).toContain('bg-action');
     const button = hostNode(renderer, 'Pressable', 'sample:button');
     expect(button.props.className).toBe('self-start min-h-12 rounded-md bg-action px-4 py-3');
-    expect(renderer.getByTestId('sample:button')).toBeDefined();
+    expect(renderer.getByTestId(primitiveTestId('sample:button'))).toBeDefined();
     expect(hostNodes(renderer, 'View').length).toBeGreaterThan(0);
     expect(hostNodes(renderer, 'Text').length).toBeGreaterThan(0);
     expect(hostNodes(renderer, 'TextInput').length).toBeGreaterThan(0);
@@ -152,13 +153,13 @@ describe('ui primitives', () => {
 
   it('keeps surface, content, card, and centered layouts presentation-only', async () => {
     const renderer = await mount(
-      <PrimitiveContainer testID="sample:layout-root" layout="centered">
-        <PrimitiveContainer testID="sample:layout-content" layout="content" bounded />
-        <PrimitiveContainer testID="sample:layout-card" layout="card" bounded />
+      <PrimitiveContainer testID={primitiveTestId('sample:layout-root')} layout="centered">
+        <PrimitiveContainer testID={primitiveTestId('sample:layout-content')} layout="content" bounded />
+        <PrimitiveContainer testID={primitiveTestId('sample:layout-card')} layout="card" bounded />
       </PrimitiveContainer>,
     );
 
-    const byTestID = (testID: string) => renderer.queryByTestId(testID);
+    const byTestID = (testID: string) => renderer.queryByTestId(primitiveTestId(testID));
     expect(byTestID('sample:layout-root')?.props.className).toBe(baseTokens.containerCentered);
     expect(byTestID('sample:layout-content')?.props.className).toBe(
       `${baseTokens.containerContent} ${baseTokens.containerBoundedContent}`,
@@ -175,7 +176,7 @@ describe('ui primitives', () => {
     expect(byTestID('sample:layout-card')?.props.className).not.toContain(baseTokens.containerElevated);
 
     const elevatedRenderer = await mount(
-      <PrimitiveContainer testID="sample:elevated-card" layout="card" bounded elevated />,
+      <PrimitiveContainer testID={primitiveTestId('sample:elevated-card')} layout="card" bounded elevated />,
     );
     const elevatedView = hostNode(elevatedRenderer, 'View', 'sample:elevated-card');
     expect(elevatedView.props.className).toBe(
@@ -191,8 +192,8 @@ describe('ui primitives', () => {
 
   it('forwards an optional trailing content inset without changing the viewport contract', async () => {
     const renderer = await mount(
-      <PrimitiveScrollView testID="sample:scroll-padding" contentPaddingBottom={64}>
-        <PrimitiveText testID="sample:scroll-padding:text">内容</PrimitiveText>
+      <PrimitiveScrollView testID={primitiveTestId('sample:scroll-padding')} contentPaddingBottom={64}>
+        <PrimitiveText testID={primitiveTestId('sample:scroll-padding:text')}>内容</PrimitiveText>
       </PrimitiveScrollView>,
     );
     const scrollView = hostNode(renderer, 'ScrollView', 'sample:scroll-padding');
@@ -209,8 +210,8 @@ describe('ui primitives', () => {
     const onClick = vi.fn();
     const renderer = await mount(
       <PrimitivePinInput
-        testID="sample:pin"
-        cellTestIDPrefix="sample:pin"
+        testID={primitiveTestId('sample:pin')}
+        cellTestIDPrefix={primitiveTestId('sample:pin')}
         accessibilityLabel="输入动态口令"
         value="12"
         length={6}
@@ -224,10 +225,10 @@ describe('ui primitives', () => {
     expect(pressable.props.onPress).toBe(onPress);
     expect(pressable.props.onTouchEnd).toBe(onTouchEnd);
     expect(pressable.props.onClick).toBeUndefined();
-    expect(renderer.getByTestId('sample:pin:cells')).toBeDefined();
-    expect(renderer.getByTestId('sample:pin:digit:0').props.children).toBe('*');
-    expect(renderer.getByTestId('sample:pin:digit:1').props.children).toBe('*');
-    expect(renderer.getByTestId('sample:pin:digit:2').props.children).toBe('');
+    expect(renderer.getByTestId(derivedPrimitiveTestId('sample:pin', 'cells')!)).toBeDefined();
+    expect(renderer.getByTestId(derivedPrimitiveTestId('sample:pin', 'digit', '0')!).props.children).toBe('*');
+    expect(renderer.getByTestId(derivedPrimitiveTestId('sample:pin', 'digit', '1')!).props.children).toBe('*');
+    expect(renderer.getByTestId(derivedPrimitiveTestId('sample:pin', 'digit', '2')!).props.children).toBe('');
     expect(hostNodes(renderer, 'View').some(node => node.props.className === baseTokens.pinCellFocused)).toBe(true);
     await act(async () => {
       (pressable.props.onPress as (() => void) | undefined)?.();
@@ -240,8 +241,8 @@ describe('ui primitives', () => {
     vi.stubGlobal('document', {});
     const browserRenderer = await mount(
       <PrimitivePinInput
-        testID="sample:browser-pin"
-        cellTestIDPrefix="sample:browser-pin"
+        testID={primitiveTestId('sample:browser-pin')}
+        cellTestIDPrefix={primitiveTestId('sample:browser-pin')}
         value=""
         length={6}
         onTouchEnd={onTouchEnd}
@@ -261,14 +262,14 @@ describe('ui primitives', () => {
     const measureRef = createRef<Pick<PrimitiveInputHandle, 'measureLayout'>>();
     const pinHost = {measureLayout: vi.fn()};
     const pinProps = {
-      testID: 'sample:measured-pin',
-      cellTestIDPrefix: 'sample:measured-pin',
+      testID: primitiveTestId('sample:measured-pin'),
+      cellTestIDPrefix: primitiveTestId('sample:measured-pin'),
       value: '',
       length: 6,
       measureRef,
     };
     setNativeTestRefFactory((hostName, props) =>
-      hostName === 'Pressable' && props.testID === 'sample:measured-pin' ? pinHost : null,
+      hostName === 'Pressable' && props.testID === primitiveTestId('sample:measured-pin') ? pinHost : null,
     );
     const renderer = await mount(<PrimitivePinInput {...pinProps} />);
     const pressable = hostNode(renderer, 'Pressable', 'sample:measured-pin');
@@ -286,11 +287,11 @@ describe('ui primitives', () => {
   it('keeps the scroll viewport opaque by default and supports an explicit transparent variant', async () => {
     const renderer = await mount(
       <>
-        <PrimitiveScrollView testID="sample:scroll-opaque">
-          <PrimitiveText testID="sample:scroll-opaque:text">内容</PrimitiveText>
+        <PrimitiveScrollView testID={primitiveTestId('sample:scroll-opaque')}>
+          <PrimitiveText testID={primitiveTestId('sample:scroll-opaque:text')}>内容</PrimitiveText>
         </PrimitiveScrollView>
-        <PrimitiveScrollView testID="sample:scroll-transparent" layout="transparent">
-          <PrimitiveText testID="sample:scroll-transparent:text">内容</PrimitiveText>
+        <PrimitiveScrollView testID={primitiveTestId('sample:scroll-transparent')} layout="transparent">
+          <PrimitiveText testID={primitiveTestId('sample:scroll-transparent:text')}>内容</PrimitiveText>
         </PrimitiveScrollView>
       </>,
     );
@@ -305,9 +306,13 @@ describe('ui primitives', () => {
 
   it('renders a background image through the shared image seam and keeps missing sources empty', async () => {
     const renderer = await mount(
-      <PrimitiveContainer testID="sample:transparent" layout="transparent">
-        <PrimitiveImage testID="sample:background" layout="background" source={{uri: 'wallpaper.jpg'}} />
-        <PrimitiveImage testID="sample:missing" layout="background" />
+      <PrimitiveContainer testID={primitiveTestId('sample:transparent')} layout="transparent">
+        <PrimitiveImage
+          testID={primitiveTestId('sample:background')}
+          layout="background"
+          source={{uri: 'wallpaper.jpg'}}
+        />
+        <PrimitiveImage testID={primitiveTestId('sample:missing')} layout="background" />
       </PrimitiveContainer>,
     );
 
@@ -326,7 +331,7 @@ describe('ui primitives', () => {
   it('supports keyboard cell variants without exposing styling to consumers', async () => {
     const onPress = vi.fn();
     const renderer = await mount(
-      <PrimitiveButton testID="sample:key" accessibilityLabel="1" onPress={onPress} variant="key">
+      <PrimitiveButton testID={primitiveTestId('sample:key')} accessibilityLabel="1" onPress={onPress} variant="key">
         1
       </PrimitiveButton>,
     );
@@ -357,11 +362,16 @@ describe('ui primitives', () => {
   it('shows the theme focus outline for every pressed keyboard key and action', async () => {
     const renderer = await mount(
       <>
-        <PrimitiveButton testID="sample:pressed-key" accessibilityLabel="1" onPress={() => undefined} variant="key">
+        <PrimitiveButton
+          testID={primitiveTestId('sample:pressed-key')}
+          accessibilityLabel="1"
+          onPress={() => undefined}
+          variant="key"
+        >
           1
         </PrimitiveButton>
         <PrimitiveButton
-          testID="sample:pressed-action"
+          testID={primitiveTestId('sample:pressed-action')}
           accessibilityLabel="删除"
           onPress={() => undefined}
           variant="key-action"
@@ -399,11 +409,16 @@ describe('ui primitives', () => {
     useNativeVariableMock.mockClear();
     const renderer = await mount(
       <>
-        <PrimitiveButton testID="sample:keyboard-key" accessibilityLabel="1" onPress={() => undefined} variant="key">
+        <PrimitiveButton
+          testID={primitiveTestId('sample:keyboard-key')}
+          accessibilityLabel="1"
+          onPress={() => undefined}
+          variant="key"
+        >
           1
         </PrimitiveButton>
         <PrimitiveButton
-          testID="sample:keyboard-action"
+          testID={primitiveTestId('sample:keyboard-action')}
           accessibilityLabel="删除"
           onPress={() => undefined}
           variant="key-action"
@@ -421,7 +436,7 @@ describe('ui primitives', () => {
     useNativeVariableMock.mockClear();
     const loginRenderer = await mount(
       <PrimitiveButton
-        testID="sample:login-primary"
+        testID={primitiveTestId('sample:login-primary')}
         accessibilityLabel="登录"
         appearance="login-primary"
         onPress={() => undefined}
@@ -437,7 +452,7 @@ describe('ui primitives', () => {
     useNativeVariableMock.mockClear();
     const adminRenderer = await mount(
       <PrimitiveButton
-        testID="sample:admin-primary"
+        testID={primitiveTestId('sample:admin-primary')}
         accessibilityLabel="开启主机服务"
         appearance="admin-primary"
         onPress={() => undefined}
@@ -455,8 +470,17 @@ describe('ui primitives', () => {
   it('renders the semantic keyboard surface and selected modifier recipe', async () => {
     const stopNative = vi.fn();
     const renderer = await mount(
-      <PrimitiveKeyboardSurface testID="sample:keyboard-surface" onTouchEnd={stopNative} onClick={() => undefined}>
-        <PrimitiveButton testID="sample:selected-key" accessibilityLabel="Shift" variant="key-action" selected>
+      <PrimitiveKeyboardSurface
+        testID={primitiveTestId('sample:keyboard-surface')}
+        onTouchEnd={stopNative}
+        onClick={() => undefined}
+      >
+        <PrimitiveButton
+          testID={primitiveTestId('sample:selected-key')}
+          accessibilityLabel="Shift"
+          variant="key-action"
+          selected
+        >
           ⇧
         </PrimitiveButton>
       </PrimitiveKeyboardSurface>,
@@ -490,7 +514,9 @@ describe('ui primitives', () => {
   });
 
   it('provides a full-width semantic backdrop for an inset keyboard dock', async () => {
-    const renderer = await mount(<PrimitiveKeyboardBackdrop testID="sample:keyboard-backdrop" style={{height: 219}} />);
+    const renderer = await mount(
+      <PrimitiveKeyboardBackdrop testID={primitiveTestId('sample:keyboard-backdrop')} style={{height: 219}} />,
+    );
     const backdrop = hostNode(renderer, 'View', 'sample:keyboard-backdrop');
     expect(backdrop.props.className).toBe(baseTokens.keyboardBackdrop);
     expect(StyleSheet.flatten(backdrop.props.style)).toEqual({height: 219});
@@ -506,7 +532,7 @@ describe('ui primitives', () => {
       const stopWeb = vi.fn();
       const renderer = await mount(
         <PrimitiveKeyboardSurface
-          testID="sample:web-keyboard-surface"
+          testID={primitiveTestId('sample:web-keyboard-surface')}
           onTouchEnd={() => undefined}
           onClick={event => event.stopPropagation()}
         />,
@@ -539,7 +565,7 @@ describe('ui primitives', () => {
     const inputRef = createRef<PrimitiveInputHandle>();
     const renderer = await mount(
       <PrimitiveInput
-        testID="sample:input-contract"
+        testID={primitiveTestId('sample:input-contract')}
         maxLength={3}
         onChangeText={onChangeText}
         onSelectionChange={onSelectionChange}
@@ -589,7 +615,7 @@ describe('ui primitives', () => {
     const originalDocument = Object.getOwnPropertyDescriptor(globalThis, 'document');
     Object.defineProperty(globalThis, 'document', {configurable: true, value: {}});
     try {
-      const renderer = await mount(<PrimitiveInput testID="sample:context-menu" />);
+      const renderer = await mount(<PrimitiveInput testID={primitiveTestId('sample:context-menu')} />);
       const input = hostNode(renderer, 'TextInput', 'sample:context-menu');
       const preventDefault = vi.fn();
       expect(typeof input.props.onContextMenu).toBe('function');
@@ -613,7 +639,9 @@ describe('ui primitives', () => {
     const callback = vi.fn();
     const measureInWindow = vi.fn();
     setNativeTestRefFactory(hostName => (hostName === 'TextInput' ? {measureInWindow} : {}));
-    const renderer = await mount(<PrimitiveInput testID="sample:missing-measure-layout" inputRef={inputRef} />);
+    const renderer = await mount(
+      <PrimitiveInput testID={primitiveTestId('sample:missing-measure-layout')} inputRef={inputRef} />,
+    );
 
     inputRef.current!.measureLayout({} as never, callback, onFail);
 
@@ -629,7 +657,9 @@ describe('ui primitives', () => {
     const inputRef = createRef<PrimitiveInputHandle>();
     const onFail = vi.fn();
     setNativeTestRefFactory(hostName => (hostName === 'TextInput' ? null : {}));
-    const renderer = await mount(<PrimitiveInput testID="sample:missing-native-input" inputRef={inputRef} />);
+    const renderer = await mount(
+      <PrimitiveInput testID={primitiveTestId('sample:missing-native-input')} inputRef={inputRef} />,
+    );
 
     inputRef.current!.measureLayout({} as never, vi.fn(), onFail);
 
@@ -653,13 +683,13 @@ describe('ui primitives', () => {
     const renderer = await mount(
       <PrimitiveScrollView
         ref={scrollRef}
-        testID="sample:scroll-contract"
+        testID={primitiveTestId('sample:scroll-contract')}
         onContentHeightChange={onContentHeightChange}
         onScrollOffsetChange={onScrollOffsetChange}
         onScrollEndDrag={onScrollEndDrag}
         onMomentumScrollEnd={onMomentumScrollEnd}
       >
-        <PrimitiveText testID="sample:scroll-contract:text">内容</PrimitiveText>
+        <PrimitiveText testID={primitiveTestId('sample:scroll-contract:text')}>内容</PrimitiveText>
       </PrimitiveScrollView>,
     );
     const scrollView = hostNode(renderer, 'ScrollView', 'sample:scroll-contract');
@@ -706,16 +736,16 @@ describe('ui primitives', () => {
   });
 
   it('rejects an empty addressability key', async () => {
-    await expect(mount(<PrimitiveText testID=" ">内容</PrimitiveText>)).rejects.toThrow('testID');
+    expect(() => primitiveTestId(' ')).toThrow('testID');
   });
 
   it('keeps text accessibility roles within feedback semantics', async () => {
     const renderer = await mount(
-      <PrimitiveContainer testID="sample:role-root">
-        <PrimitiveText testID="sample:alert" accessibilityRole="alert">
+      <PrimitiveContainer testID={primitiveTestId('sample:role-root')}>
+        <PrimitiveText testID={primitiveTestId('sample:alert')} accessibilityRole="alert">
           提示
         </PrimitiveText>
-        <PrimitiveText testID="sample:status" accessibilityRole="status">
+        <PrimitiveText testID={primitiveTestId('sample:status')} accessibilityRole="status">
           状态
         </PrimitiveText>
       </PrimitiveContainer>,
@@ -732,7 +762,7 @@ describe('ui primitives', () => {
   it('rejects control roles at the PrimitiveText type boundary', async () => {
     const invalidRole = (
       // @ts-expect-error PrimitiveText only accepts feedback roles; controls use dedicated primitives.
-      <PrimitiveText testID="sample:invalid-role" accessibilityRole="button">
+      <PrimitiveText testID={primitiveTestId('sample:invalid-role')} accessibilityRole="button">
         错误
       </PrimitiveText>
     );
@@ -743,12 +773,12 @@ describe('ui primitives', () => {
     const onPress = vi.fn();
     const onValueChange = vi.fn();
     const renderer = await mount(
-      <PrimitiveContainer testID="sample:state-root">
-        <PrimitiveButton testID="sample:busy" accessibilityLabel="保存" busy onPress={onPress}>
+      <PrimitiveContainer testID={primitiveTestId('sample:state-root')}>
+        <PrimitiveButton testID={primitiveTestId('sample:busy')} accessibilityLabel="保存" busy onPress={onPress}>
           保存
         </PrimitiveButton>
         <PrimitiveSegmentedControl
-          testID="sample:segments"
+          testID={primitiveTestId('sample:segments')}
           accessibilityLabel="诊断分区"
           items={[
             {value: 'one', label: '一'},
@@ -757,14 +787,14 @@ describe('ui primitives', () => {
           selectedValue="one"
           onValueChange={onValueChange}
         />
-        <PrimitiveSpinner testID="sample:spinner" accessibilityLabel="加载中" />
-        <PrimitiveInlineAlert testID="sample:alert" tone="error">
+        <PrimitiveSpinner testID={primitiveTestId('sample:spinner')} accessibilityLabel="加载中" />
+        <PrimitiveInlineAlert testID={primitiveTestId('sample:alert')} tone="error">
           失败
         </PrimitiveInlineAlert>
-        <PrimitiveEmptyState testID="sample:empty" accessibilityLabel="空列表">
+        <PrimitiveEmptyState testID={primitiveTestId('sample:empty')} accessibilityLabel="空列表">
           暂无数据
         </PrimitiveEmptyState>
-        <PrimitiveBadge testID="sample:badge" tone="ok">
+        <PrimitiveBadge testID={primitiveTestId('sample:badge')} tone="ok">
           可用
         </PrimitiveBadge>
       </PrimitiveContainer>,
@@ -778,21 +808,26 @@ describe('ui primitives', () => {
     expect(busy.props.accessibilityState).toMatchObject({disabled: true, busy: true});
     expect(hostNodes(renderer, 'Text').some(node => node.props.children === '保存')).toBe(true);
 
-    const second = renderer.getByTestId('sample:segments:two');
+    const second = renderer.getByTestId(derivedPrimitiveTestId('sample:segments', 'item', 'two')!);
     await act(async () => {
       (second.props.onPress as () => void)();
     });
     expect(onValueChange).toHaveBeenCalledWith('two');
-    expect(renderer.getByTestId('sample:spinner')).toBeDefined();
+    expect(renderer.getByTestId(primitiveTestId('sample:spinner'))).toBeDefined();
     expect(hostNode(renderer, 'View', 'sample:alert').props.accessibilityRole).toBe('alert');
-    expect(renderer.getByTestId('sample:empty')).toBeDefined();
-    expect(renderer.getByTestId('sample:badge')).toBeDefined();
+    expect(renderer.getByTestId(primitiveTestId('sample:empty'))).toBeDefined();
+    expect(renderer.getByTestId(primitiveTestId('sample:badge'))).toBeDefined();
   });
 
   it('exposes tab semantics for bounded navigation primitives', async () => {
     const renderer = await mount(
-      <PrimitiveGrid testID="sample:tablist" accessibilityLabel="分区" accessibilityRole="tablist">
-        <PrimitivePressOption testID="sample:tab" accessibilityLabel="第一节" accessibilityRole="tab" selected>
+      <PrimitiveGrid testID={primitiveTestId('sample:tablist')} accessibilityLabel="分区" accessibilityRole="tablist">
+        <PrimitivePressOption
+          testID={primitiveTestId('sample:tab')}
+          accessibilityLabel="第一节"
+          accessibilityRole="tab"
+          selected
+        >
           第一节
         </PrimitivePressOption>
       </PrimitiveGrid>,
@@ -815,7 +850,7 @@ describe('ui primitives', () => {
       const [selected, setSelected] = useState(false);
       return (
         <PrimitivePressOption
-          testID="sample:admin-navigation-option"
+          testID={primitiveTestId('sample:admin-navigation-option')}
           accessibilityLabel="运行状态"
           selected={selected}
           variant="admin-nav"
@@ -838,7 +873,9 @@ describe('ui primitives', () => {
     const selectedPressable = hostNode(renderer, 'Pressable', 'sample:admin-navigation-option');
     expect(selectedPressable.props.className).toBe(initialClassName);
     expect(selectedPressable.props.accessibilityState).toMatchObject({selected: true});
-    const selectedSurface = renderer.getByTestId('sample:admin-navigation-option:selected-surface');
+    const selectedSurface = renderer.getByTestId(
+      derivedPrimitiveTestId('sample:admin-navigation-option', 'selected-surface')!,
+    );
     expect(selectedSurface.props.className).toBe(baseTokens.adminNavItemSelected);
     await act(async () => {
       await renderer.unmount();
@@ -850,9 +887,9 @@ describe('ui primitives', () => {
     try {
       expect(Platform.OS).toBe('web');
       const renderer = await mount(
-        <RnrSvgIcon testID="sample:icon" accessibilityLabel="信息" path={primitiveIconPaths.info} />,
+        <RnrSvgIcon testID={primitiveTestId('sample:icon')} accessibilityLabel="信息" path={primitiveIconPaths.info} />,
       );
-      const svg = renderer.getByTestId('sample:icon');
+      const svg = renderer.getByTestId(primitiveTestId('sample:icon'));
       const path = getRenderedNode(renderer, node => node.type === Path);
       expect(svg.props.accessibilityLabel).toBe('信息');
       expect(svg.props.accessible).toBeUndefined();
@@ -874,7 +911,7 @@ describe('ui primitives', () => {
       return (
         <>
           <PrimitiveDropdownSelect
-            testID="sample:dropdown"
+            testID={primitiveTestId('sample:dropdown')}
             accessibilityLabel="选择页面"
             options={[
               {value: 'runtime', label: '运行状态'},
@@ -886,21 +923,21 @@ describe('ui primitives', () => {
             onValueChange={setValue}
           />
           <PrimitiveDisclosure
-            testID="sample:disclosure"
+            testID={primitiveTestId('sample:disclosure')}
             accessibilityLabel="展开端口"
             label="连接"
             summary="2 项"
-            summaryTestID="sample:disclosure:count"
+            summaryTestID={primitiveTestId('sample:disclosure:count')}
             status="已声明"
-            statusTestID="sample:disclosure:status"
-            triggerTestID="sample:disclosure:expand"
+            statusTestID={primitiveTestId('sample:disclosure:status')}
+            triggerTestID={primitiveTestId('sample:disclosure:expand')}
             expanded={false}
             onExpandedChange={onExpandedChange}
           >
-            <PrimitiveText testID="sample:disclosure:body">详情</PrimitiveText>
+            <PrimitiveText testID={primitiveTestId('sample:disclosure:body')}>详情</PrimitiveText>
           </PrimitiveDisclosure>
           <PrimitiveRatioBar
-            testID="sample:ratio"
+            testID={primitiveTestId('sample:ratio')}
             accessibilityLabel="端口比例"
             total={4}
             segments={[
@@ -910,7 +947,7 @@ describe('ui primitives', () => {
             ]}
           />
           <PrimitiveSurfaceMap
-            testID="sample:surface-map"
+            testID={primitiveTestId('sample:surface-map')}
             accessibilityLabel="显示屏"
             direction="row"
             surfaces={[
@@ -950,80 +987,107 @@ describe('ui primitives', () => {
       );
     };
     const renderer = await mount(<Probe />);
-    const trigger = renderer.getByTestId('sample:dropdown:trigger');
+    const trigger = renderer.getByTestId(derivedPrimitiveTestId('sample:dropdown', 'trigger')!);
     expect(trigger.props.accessibilityState).toMatchObject({expanded: false});
     await act(async () => {
       (trigger.props.onPress as () => void)();
     });
-    expect(renderer.getByTestId('sample:dropdown:menu')).toBeDefined();
+    expect(renderer.getByTestId(derivedPrimitiveTestId('sample:dropdown', 'menu')!)).toBeDefined();
     await act(async () => {
-      (renderer.getByTestId('sample:dropdown:option:topology').props.onPress as () => void)();
+      (
+        renderer.getByTestId(derivedPrimitiveTestId('sample:dropdown', 'option', 'topology')!).props
+          .onPress as () => void
+      )();
     });
-    expect(renderer.getByTestId('sample:dropdown:trigger').props.accessibilityState).toMatchObject({expanded: false});
-    expect(renderer.queryAllByTestId('sample:disclosure:content')).toHaveLength(0);
-    expect(renderer.getByTestId('sample:disclosure:expand')).toBeDefined();
-    expect(renderer.getByTestId('sample:disclosure:status')).toBeDefined();
-    expect(renderer.getByTestId('sample:disclosure:count')).toBeDefined();
+    expect(
+      renderer.getByTestId(derivedPrimitiveTestId('sample:dropdown', 'trigger')!).props.accessibilityState,
+    ).toMatchObject({expanded: false});
+    expect(renderer.queryAllByTestId(derivedPrimitiveTestId('sample:disclosure', 'content')!)).toHaveLength(0);
+    expect(renderer.getByTestId(primitiveTestId('sample:disclosure:expand'))).toBeDefined();
+    expect(renderer.getByTestId(primitiveTestId('sample:disclosure:status'))).toBeDefined();
+    expect(renderer.getByTestId(primitiveTestId('sample:disclosure:count'))).toBeDefined();
     await act(async () => {
-      (renderer.getByTestId('sample:disclosure:expand').props.onPress as () => void)();
+      (renderer.getByTestId(primitiveTestId('sample:disclosure:expand')).props.onPress as () => void)();
     });
     expect(onExpandedChange).toHaveBeenCalledWith(true);
     expect(
-      hostNodes(renderer, 'View').filter(node => node.props.testID === 'sample:ratio:segment:available'),
+      hostNodes(renderer, 'View').filter(
+        node => node.props.testID === derivedPrimitiveTestId('sample:ratio', 'segment', 'available'),
+      ),
     ).toHaveLength(1);
-    expect(renderer.getByTestId('sample:ratio:segment:undeclared').props.className).toContain(
-      baseTokens.adminRatioSegmentUndeclared,
-    );
-    expect(renderer.getByTestId('sample:surface-map:surface:PRIMARY').props.style).toEqual(
-      expect.objectContaining({aspectRatio: 2, width: '100%', minWidth: 176, maxWidth: 320, height: 160}),
-    );
-    expect(renderer.getByTestId('sample:surface-map:surface:PRIMARY:logic-width').props.className).toBe(
-      baseTokens.adminSurfaceMapLogicWidth,
-    );
-    expect(renderer.getByTestId('sample:surface-map:surface:PRIMARY:logic-height').props.className).toBe(
-      baseTokens.adminSurfaceMapLogicHeight,
-    );
-    expect(renderer.getByTestId('sample:surface-map:surface:PRIMARY:outside:0').props.className).toBe(
-      baseTokens.adminSurfaceMapPhysicalWidth,
-    );
-    expect(renderer.getByTestId('sample:surface-map:surface:PRIMARY:outside:1').props.className).toBe(
-      baseTokens.adminSurfaceMapPhysicalHeight,
-    );
+    expect(
+      renderer.getByTestId(derivedPrimitiveTestId('sample:ratio', 'segment', 'undeclared')!).props.className,
+    ).toContain(baseTokens.adminRatioSegmentUndeclared);
+    expect(
+      renderer.getByTestId(derivedPrimitiveTestId('sample:surface-map', 'surface', 'PRIMARY')!).props.style,
+    ).toEqual(expect.objectContaining({aspectRatio: 2, width: '100%', minWidth: 176, maxWidth: 320, height: 160}));
+    expect(
+      renderer.getByTestId(derivedPrimitiveTestId('sample:surface-map', 'surface-logic-width', 'PRIMARY')!).props
+        .className,
+    ).toBe(baseTokens.adminSurfaceMapLogicWidth);
+    expect(
+      renderer.getByTestId(derivedPrimitiveTestId('sample:surface-map', 'surface-logic-height', 'PRIMARY')!).props
+        .className,
+    ).toBe(baseTokens.adminSurfaceMapLogicHeight);
+    expect(
+      renderer.getByTestId(derivedPrimitiveTestId('sample:surface-map', 'surface-outside', 'PRIMARY:0')!).props
+        .className,
+    ).toBe(baseTokens.adminSurfaceMapPhysicalWidth);
+    expect(
+      renderer.getByTestId(derivedPrimitiveTestId('sample:surface-map', 'surface-outside', 'PRIMARY:1')!).props
+        .className,
+    ).toBe(baseTokens.adminSurfaceMapPhysicalHeight);
     expect(baseTokens.adminSurfaceMapLogicWidth).toContain('left-0 right-0 top-2');
     expect(baseTokens.adminSurfaceMapLogicHeight).toContain('right-2 top-1/2');
     expect(baseTokens.adminSurfaceMapPhysicalWidth).toContain('top-0');
     expect(baseTokens.adminSurfaceMapPhysicalHeight).toContain('left-full top-1/2');
-    expect(renderer.getByTestId('sample:surface-map:surface:PRIMARY:card').props.style).toBeUndefined();
-    expect(renderer.getByTestId('sample:surface-map:surface:SECONDARY:inside:0').props.children).toBeDefined();
-    expect(renderer.getByTestId('sample:surface-map:surface:SECONDARY').props.className).toContain(
-      baseTokens.adminSurfaceMapRect,
-    );
-    expect(renderer.getByTestId('sample:surface-map:surface:SECONDARY:logic-width').props.children).toBeDefined();
-    expect(renderer.getByTestId('sample:surface-map:surface:SECONDARY:outside:1').props.children).toBeDefined();
+    expect(
+      renderer.getByTestId(derivedPrimitiveTestId('sample:surface-map', 'surface-card', 'PRIMARY')!).props
+        .accessibilityLabel,
+    ).toBeDefined();
+    expect(
+      renderer.getByTestId(derivedPrimitiveTestId('sample:surface-map', 'surface-inside', 'SECONDARY:0')!).props
+        .children,
+    ).toBeDefined();
+    expect(
+      renderer.getByTestId(derivedPrimitiveTestId('sample:surface-map', 'surface', 'SECONDARY')!).props.className,
+    ).toContain(baseTokens.adminSurfaceMapRect);
+    expect(
+      renderer.getByTestId(derivedPrimitiveTestId('sample:surface-map', 'surface-logic-width', 'SECONDARY')!).props
+        .children,
+    ).toBeDefined();
+    expect(
+      renderer.getByTestId(derivedPrimitiveTestId('sample:surface-map', 'surface-inside', 'SECONDARY:1')!).props
+        .children,
+    ).toBeDefined();
   });
 
   it('renders a visible invalid state when ratio segments do not conserve the total', async () => {
     const renderer = await mount(
       <PrimitiveRatioBar
-        testID="sample:invalid-ratio"
+        testID={primitiveTestId('sample:invalid-ratio')}
         accessibilityLabel="端口比例"
         total={4}
         segments={[{key: 'available', label: '可用', value: 1, tone: 'ok'}]}
       />,
     );
-    expect(renderer.getByTestId('sample:invalid-ratio:invalid')).toBeDefined();
-    expect(renderer.queryAllByTestId('sample:invalid-ratio:segment:available')).toHaveLength(0);
+    expect(renderer.getByTestId(derivedPrimitiveTestId('sample:invalid-ratio', 'invalid')!)).toBeDefined();
+    expect(
+      renderer.queryAllByTestId(derivedPrimitiveTestId('sample:invalid-ratio', 'segment', 'available')!),
+    ).toHaveLength(0);
   });
 
   it('keeps the full list data while bounding mounted rows across scroll transitions', async () => {
     const data = Array.from({length: 100}, (_value, index) => `row-${index}`);
     const renderer = await mount(
       <PrimitiveList
-        testID="sample:list"
+        testID={primitiveTestId('sample:list')}
         data={data}
         rowHeight={10}
         getItemKey={item => item}
-        renderItem={item => <PrimitiveText testID={`sample:list:content:${item}`}>{item}</PrimitiveText>}
+        renderItem={item => (
+          <PrimitiveText testID={primitiveTestId(`sample:list:content:${item}`)}>{item}</PrimitiveText>
+        )}
       />,
     );
     type VirtualizedListProbe = {
@@ -1038,7 +1102,7 @@ describe('ui primitives', () => {
     const list = () =>
       hostNodes(renderer, 'VirtualizedList')
         .map(node => node as unknown as VirtualizedListProbe)
-        .find(node => node.props.testID === 'sample:list')!;
+        .find(node => node.props.testID === primitiveTestId('sample:list'))!;
     expect(list().props.getItemCount(data)).toBe(100);
     expect(list().props.className).toBe(baseTokens.list);
 
@@ -1057,7 +1121,7 @@ describe('ui primitives', () => {
         .map((item, index) => renderItem({item, index}))
         .filter(node => {
           const testID = (node as {readonly props?: Readonly<Record<string, unknown>>} | null)?.props?.testID;
-          return typeof testID === 'string' && testID.startsWith('sample:list:row:');
+          return typeof testID === 'string' && testID.startsWith('test.ui.base.primitives:derived:row:');
         }) as Array<{
         readonly props?: Readonly<Record<string, unknown>>;
       }>;
@@ -1066,10 +1130,10 @@ describe('ui primitives', () => {
     };
 
     const head = (await observeWindow(0)) as Array<{readonly props?: Readonly<Record<string, unknown>>}>;
-    expect(head.some(node => String(node.props?.testID).endsWith(':row-0'))).toBe(true);
+    expect(head.some(node => node.props?.testID === derivedPrimitiveTestId('sample:list', 'row', 'row-0'))).toBe(true);
     for (const offsetY of [10, 80, 160, 320, 480, 640, 800, 900]) await observeWindow(offsetY);
     const tail = (await observeWindow(900)) as Array<{readonly props?: Readonly<Record<string, unknown>>}>;
-    expect(tail.some(node => String(node.props?.testID).endsWith(':row-99'))).toBe(true);
+    expect(tail.some(node => node.props?.testID === derivedPrimitiveTestId('sample:list', 'row', 'row-99'))).toBe(true);
     await act(async () => {
       await renderer.unmount();
     });

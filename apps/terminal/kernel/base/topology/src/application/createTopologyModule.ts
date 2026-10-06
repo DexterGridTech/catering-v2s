@@ -35,6 +35,8 @@ import {
   unpairTopologyCommand,
 } from '../features/commands/commands';
 import {createTopologySlice} from '../features/slices/topology';
+import {selectTopologyFacts} from '../selectors/selectTopologyFacts';
+import {selectTopologyRequiredProjectionsReady, selectTopologyState} from '../selectors/selectTopologyState';
 import {topologySliceName} from '../selectors/selectTopologyState';
 import type {TopologyState} from '../types/state';
 import {createTopologyPeerCommandController} from './createTopologyPeerCommandController';
@@ -693,6 +695,7 @@ export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeM
     dependencies: runtimeModuleDependencyNames.map(name => ({moduleName: name})),
     commands: commands.map(command => ({name: command.commandName, visibility: command.visibility})),
     commandDefinitions: commands,
+    selectorDefinitions: [selectTopologyFacts, selectTopologyRequiredProjectionsReady, selectTopologyState],
     actors: [{name: actor.actorName}],
     actorDefinitions: [actor],
     slices: [{name: topologySliceName, persistIntent: slice.persistIntent}],

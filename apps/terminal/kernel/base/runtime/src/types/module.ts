@@ -14,6 +14,8 @@ import type {CommandDefinition, CommandDispatchOptions} from './command';
 import {commandDefinitionBrand} from './command';
 import type {CommandDispatchResult} from './execution';
 import type {PeerDispatchGateway} from './peer';
+import type {RuntimeJournal} from './journal';
+import type {AnyStateSelector, StateSelectorParameters} from './selector';
 
 export type RuntimeRoleChangeSignal = Readonly<{
   kind: 'role.change-requested' | 'role.changed';
@@ -58,6 +60,7 @@ export type RuntimeModulePreSetupContext = Readonly<{
   localNodeId: NodeId;
   platformPorts: PlatformPorts;
   descriptors: readonly RuntimeModuleDescriptor[];
+  journal: RuntimeJournal;
 }>;
 
 export type RuntimeModuleResetInput = Readonly<{
@@ -67,9 +70,11 @@ export type RuntimeModuleResetInput = Readonly<{
 
 export type RuntimeModuleContext = Readonly<{
   moduleName: string;
+  runtimeId: import('@catering-v2s/kernel-base-contracts').RuntimeInstanceId;
   localNodeId: NodeId;
   platformPorts: PlatformPorts;
   descriptors: readonly RuntimeModuleDescriptor[];
+  journal: RuntimeJournal;
   requestMaxResidenceMs: number;
   getState: () => StateRoot;
   flushPersistence: () => Promise<PersistenceOperationResult>;
@@ -79,6 +84,7 @@ export type RuntimeModuleContext = Readonly<{
   createFullSyncPayload: (sliceName: string) => StateSyncPayloadResult;
   applyAuthoritativeSync: (sliceName: string, payload: SyncStateDiff) => StateSyncApplyResult;
   dispatchCommand: RuntimeModuleDispatch;
+  evaluateSelector: (name: string, argsTuple: readonly unknown[]) => unknown;
   installPeerDispatchGateway: (gateway: PeerDispatchGateway) => void;
 }>;
 
@@ -86,6 +92,7 @@ export type RuntimeModule = Readonly<
   AppModule & {
     /** Concrete definitions are kept separately from the AppModule declarations. */
     commandDefinitions?: readonly RuntimeCommandDefinition[];
+    selectorDefinitions?: readonly AnyStateSelector[];
     actorDefinitions?: readonly ActorDefinition[];
     stateSlices?: readonly StateRuntimeSliceRegistration[];
     preSetup?: (context: RuntimeModulePreSetupContext) => void | Promise<void>;
@@ -103,6 +110,8 @@ export type RuntimeModuleDescriptor = Readonly<{
   stateSliceNames: readonly string[];
   commandNames: readonly string[];
   actorKeys: readonly string[];
+  selectorNames: readonly string[];
+  selectorParameters: Readonly<Record<string, StateSelectorParameters>>;
   hasPreSetup: boolean;
   hasInstall: boolean;
   hasReset: boolean;

@@ -5,6 +5,7 @@ import type {RenderProviderProps} from '../src/types/props';
 import {describe, expect, it, vi} from 'vitest';
 import {RenderContext, type RenderContextValue} from '../src/contexts/RenderContext';
 import {SystemFailureBoundary} from '../src/components/SystemFailureBoundary';
+import {renderTestIds} from '../src/foundations/renderTestIds';
 
 const renderContext = (dispatchCommand: ReturnType<typeof vi.fn>, logger: RenderContextValue['logger']) =>
   ({
@@ -56,7 +57,9 @@ describe('SystemFailureBoundary', () => {
       }),
     );
 
-    await fireEvent.press(view.getByTestId('ui-base-render:system-failure:screen:sample.auth.login:dismiss'));
+    await fireEvent.press(
+      view.getByTestId(renderTestIds.child(renderTestIds.systemFailure('screen:sample.auth.login'), 'dismiss')),
+    );
     expect(dispatch).toHaveBeenCalledTimes(1);
     expect(dispatch.mock.calls[0]?.[0]).toMatchObject({
       definition: {commandName: 'kernel.base.runtime.reset-runtime-after-system-failure'},
@@ -82,6 +85,6 @@ describe('SystemFailureBoundary', () => {
     );
     expect(view.getByText('知道了')).toBeTruthy();
     expect(view.getByTestId('admin-launcher')).toBeTruthy();
-    expect(view.getByTestId('ui-base-render:system-failure:surface-content')).toBeTruthy();
+    expect(view.getByTestId(renderTestIds.systemFailure('surface-content'))).toBeTruthy();
   });
 });

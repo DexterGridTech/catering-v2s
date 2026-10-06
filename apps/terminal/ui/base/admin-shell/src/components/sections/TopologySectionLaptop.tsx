@@ -20,6 +20,7 @@ import {
   PrimitiveInput,
   PrimitiveStatusLine,
   PrimitiveText,
+  testIdProps,
 } from '@catering-v2s/ui-base-primitives';
 import {InputScrollArea, useInputField} from '@catering-v2s/ui-base-input';
 import {useRenderContext, useUiStateSelector} from '@catering-v2s/ui-base-render';
@@ -225,11 +226,11 @@ const TopologySectionLaptopContent = ({
         </PrimitiveHeading>
         <PrimitiveCard
           appearance="admin"
-          testID={`${topologyIds.pageGate}:card`}
+          {...testIdProps(adminTestIds.child(topologyIds.pageGate, 'card'))}
           style={{minHeight: 230, alignItems: 'center', justifyContent: 'center', padding: 18}}
         >
           <PrimitiveIconBadge
-            testID={`${topologyIds.pageGate}:icon`}
+            {...testIdProps(adminTestIds.child(topologyIds.pageGate, 'icon'))}
             accessibilityLabel="功能不可用"
             icon="blocked"
             size={28}
@@ -273,23 +274,29 @@ const TopologySectionLaptopContent = ({
         尚未配对 · 请选择当前机器的用途
       </PrimitiveStatusLine>
       <PrimitiveContainer
-        testID={`${topologyIds.goalChoice}:grid`}
+        {...testIdProps(adminTestIds.child(topologyIds.goalChoice, 'grid'))}
         layout="transparent"
         appearance="admin-content"
         style={{flexDirection: 'row', flexWrap: 'wrap', gap: 12, padding: 0}}
       >
         <PrimitiveCard appearance="admin" testID={topologyIds.goalHost} style={{flex: 1, minWidth: 280}}>
           <PrimitiveIcon
-            testID={`${topologyIds.goalHost}:icon`}
+            {...testIdProps(adminTestIds.child(topologyIds.goalHost, 'icon'))}
             accessibilityLabel="主机"
             appearance="admin-content"
             icon="server"
             size={24}
           />
-          <PrimitiveHeading appearance="admin-section" testID="terminal.admin:topology:goal:host:title">
+          <PrimitiveHeading
+            appearance="admin-section"
+            testID={adminTestIds.node('terminal.admin:topology:goal:host:title')}
+          >
             作为主机
           </PrimitiveHeading>
-          <PrimitiveText appearance="admin-muted" testID="terminal.admin:topology:goal:host:description">
+          <PrimitiveText
+            appearance="admin-muted"
+            testID={adminTestIds.node('terminal.admin:topology:goal:host:description')}
+          >
             开启主机服务，等待副机输入地址后配对。
           </PrimitiveText>
           <PrimitiveButton
@@ -309,16 +316,22 @@ const TopologySectionLaptopContent = ({
         </PrimitiveCard>
         <PrimitiveCard appearance="admin" testID={topologyIds.goalSlave} style={{flex: 1, minWidth: 280}}>
           <PrimitiveIcon
-            testID={`${topologyIds.goalSlave}:icon`}
+            {...testIdProps(adminTestIds.child(topologyIds.goalSlave, 'icon'))}
             accessibilityLabel="副机"
             appearance="admin-content"
             icon="link"
             size={24}
           />
-          <PrimitiveHeading appearance="admin-section" testID="terminal.admin:topology:goal:slave:title">
+          <PrimitiveHeading
+            appearance="admin-section"
+            testID={adminTestIds.node('terminal.admin:topology:goal:slave:title')}
+          >
             作为副机
           </PrimitiveHeading>
-          <PrimitiveText appearance="admin-muted" testID="terminal.admin:topology:goal:slave:description">
+          <PrimitiveText
+            appearance="admin-muted"
+            testID={adminTestIds.node('terminal.admin:topology:goal:slave:description')}
+          >
             输入主机 IP，提交后直接发起配对。无需先查询身份。
           </PrimitiveText>
           <PrimitiveFormField testID={topologyIds.hostIp} label="主机 IP 地址">
@@ -376,7 +389,7 @@ const TopologySectionLaptopContent = ({
         主机服务已开启 · 等待副机配对
       </PrimitiveStatusLine>
       <PrimitiveFactGrid
-        testID={`${topologyIds.hostService}:facts`}
+        {...testIdProps(adminTestIds.child(topologyIds.hostService, 'facts'))}
         items={[
           {key: 'role', testID: topologyIds.role, label: '当前角色', value: '主机'},
           {key: 'service', testID: topologyIds.hostServiceState, label: '服务状态', value: '运行中', tone: 'ok'},
@@ -388,8 +401,8 @@ const TopologySectionLaptopContent = ({
           },
         ]}
       />
-      <PrimitiveCard appearance="admin-inset" testID={`${topologyIds.hostService}:hint`}>
-        <PrimitiveText testID={`${topologyIds.hostService}:hint:text`} appearance="admin-muted">
+      <PrimitiveCard appearance="admin-inset" {...testIdProps(adminTestIds.child(topologyIds.hostService, 'hint'))}>
+        <PrimitiveText testID={adminTestIds.node(`${topologyIds.hostService}:hint:text`)} appearance="admin-muted">
           请在副机上输入这台主机的 IP 地址并直接配对。
         </PrimitiveText>
       </PrimitiveCard>
@@ -408,7 +421,10 @@ const TopologySectionLaptopContent = ({
           关闭主机服务
         </PrimitiveButton>,
       )}
-      <PrimitiveText appearance="admin-muted" testID={`${topologyIds.hostService}:close-hint`}>
+      <PrimitiveText
+        appearance="admin-muted"
+        {...testIdProps(adminTestIds.child(topologyIds.hostService, 'close-hint'))}
+      >
         关闭服务后回到未配对目标选择。
       </PrimitiveText>
       {feedback !== null ? (
@@ -473,7 +489,7 @@ const TopologySectionLaptopContent = ({
         正在与主机配对…
       </PrimitiveStatusLine>
       <PrimitiveFactGrid
-        testID={`${topologyIds.pairing}:facts`}
+        {...testIdProps(adminTestIds.child(topologyIds.pairing, 'facts'))}
         items={[
           {
             key: 'host',
@@ -484,7 +500,7 @@ const TopologySectionLaptopContent = ({
           {key: 'target', testID: topologyIds.role, label: '当前目标', value: '作为副机'},
         ]}
       />
-      <PrimitiveText appearance="admin-muted" testID={`${topologyIds.pairing}:hint`}>
+      <PrimitiveText appearance="admin-muted" {...testIdProps(adminTestIds.child(topologyIds.pairing, 'hint'))}>
         正在建立连接并确认配对结果，请勿重复提交。
       </PrimitiveText>
     </PrimitiveCard>
@@ -551,7 +567,7 @@ const TopologySectionLaptopContent = ({
           tone={stateTone}
         >{`${roleLabel(facts)} · ${stateLabel}`}</PrimitiveStatusLine>
         <PrimitiveFactGrid
-          testID={`${topologyIds.pairing}:facts`}
+          {...testIdProps(adminTestIds.child(topologyIds.pairing, 'facts'))}
           items={[
             {
               key: 'paired',
@@ -576,8 +592,8 @@ const TopologySectionLaptopContent = ({
             },
           ]}
         />
-        <PrimitiveCard appearance="admin-inset" testID={`${topologyIds.pairing}:result`}>
-          <PrimitiveText testID={`${topologyIds.pairing}:result:text`} appearance="admin-muted">
+        <PrimitiveCard appearance="admin-inset" {...testIdProps(adminTestIds.child(topologyIds.pairing, 'result'))}>
+          <PrimitiveText testID={adminTestIds.node(`${topologyIds.pairing}:result:text`)} appearance="admin-muted">
             {isUnpairing
               ? '正在解除配对，完成后将回到可选择目标的状态。'
               : isMaster

@@ -33,7 +33,7 @@ export const AdminShellFrameLaptop = ({onClose, status, frameId, children}: Admi
       >
         <PrimitiveGrid testID={adminTestIds.panel.header} appearance="admin-header" style={adminGeometry.headerLaptop}>
           <PrimitiveIconBadge testID={adminTestIds.panel.brand} accessibilityLabel="终端管理" icon="admin" />
-          <PrimitiveHeading appearance="admin-shell" testID="terminal.admin:shell:title">
+          <PrimitiveHeading appearance="admin-shell" testID={adminTestIds.node('terminal.admin:shell:title')}>
             终端管理
           </PrimitiveHeading>
           <PrimitiveBadge appearance="admin-status" testID={adminTestIds.panel.status} tone={status.tone}>

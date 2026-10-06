@@ -13,6 +13,7 @@ import {
 } from '../src';
 import {createUiCatalog, isUiCatalogEntryAvailable, selectLayers} from '@catering-v2s/kernel-base-ui-state';
 import {unusedRenderProviderBindings} from './renderProviderBindings';
+import {renderTestIds} from '../src';
 
 type RuntimeStateRoot = ReturnType<import('@catering-v2s/kernel-base-runtime').Runtime['getState']>;
 
@@ -266,15 +267,17 @@ describe('LayerStack filtered hydration behavior', () => {
     expect(renderer.getByTestId('business-interlock')).toBeDefined();
     expect(renderer.getByTestId('local-admin-layer')).toBeDefined();
     expect(
-      renderer.getAllByTestId(/^ui-base-render:layer:/, {includeHiddenElements: true}).map(node => node.props.testID),
-    ).toEqual(['ui-base-render:layer:business-layer', 'ui-base-render:layer:local-admin-layer']);
+      renderer
+        .getAllByTestId(new RegExp(`^${renderTestIds.layerPrefix}:`), {includeHiddenElements: true})
+        .map(node => node.props.testID),
+    ).toEqual([renderTestIds.layer('business-layer'), renderTestIds.layer('local-admin-layer')]);
     expect(
-      renderer.getByTestId('ui-base-render:layer:business-layer', {includeHiddenElements: true}).props,
+      renderer.getByTestId(renderTestIds.layer('business-layer'), {includeHiddenElements: true}).props,
     ).toMatchObject({
       accessibilityElementsHidden: true,
       importantForAccessibility: 'no-hide-descendants',
     });
-    expect(renderer.getByTestId('ui-base-render:layer:local-admin-layer').props).toMatchObject({
+    expect(renderer.getByTestId(renderTestIds.layer('local-admin-layer')).props).toMatchObject({
       accessibilityElementsHidden: false,
       importantForAccessibility: 'auto',
     });
@@ -338,9 +341,9 @@ describe('LayerStack filtered hydration behavior', () => {
       ),
     );
 
-    expect(renderer.queryAllByTestId('ui-base-render:layer-backdrop')).toHaveLength(0);
-    expect(renderer.queryAllByTestId('ui-base-render:layer:stale-mobile-layer')).toHaveLength(0);
-    expect(renderer.getByTestId('ui-base-render:layer-stack').props.pointerEvents).toBe('box-none');
+    expect(renderer.queryAllByTestId(renderTestIds.layerBackdrop)).toHaveLength(0);
+    expect(renderer.queryAllByTestId(renderTestIds.layer('stale-mobile-layer'))).toHaveLength(0);
+    expect(renderer.getByTestId(renderTestIds.layerStack).props.pointerEvents).toBe('box-none');
     await renderer.unmount();
   });
 
@@ -390,7 +393,9 @@ describe('LayerStack filtered hydration behavior', () => {
     );
 
     await waitFor(() =>
-      expect(renderer.getByTestId('ui-base-render:system-failure:layer:broken-layer:dismiss')).toBeDefined(),
+      expect(
+        renderer.getByTestId(renderTestIds.child(renderTestIds.systemFailure('layer:broken-layer'), 'dismiss')),
+      ).toBeDefined(),
     );
     expect(renderer.getByTestId('healthy-layer')).toBeDefined();
     expect(renderer.getByTestId('surface-content')).toBeDefined();
@@ -431,7 +436,9 @@ describe('LayerStack filtered hydration behavior', () => {
       ),
     );
 
-    expect(renderer.getByTestId('ui-base-render:system-failure:surface-layers:dismiss')).toBeDefined();
+    expect(
+      renderer.getByTestId(renderTestIds.child(renderTestIds.systemFailure('surface-layers'), 'dismiss')),
+    ).toBeDefined();
     expect(renderer.getByTestId('surface-content')).toBeDefined();
     expect(renderer.getByTestId('admin-launcher')).toBeDefined();
     await renderer.unmount();

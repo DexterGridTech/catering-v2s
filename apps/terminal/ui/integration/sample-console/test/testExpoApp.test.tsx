@@ -1,3 +1,5 @@
+import {inputTestIds} from '@catering-v2s/ui-base-input/test-ids';
+import {testExpoTestIds} from '@catering-v2s/ui-base-dev-host';
 import {act, render, type RenderResult} from '@testing-library/react-native';
 import type {ReactNode} from 'react';
 import {StyleSheet} from 'react-native';
@@ -18,6 +20,14 @@ vi.mock('@catering-v2s/ui-base-admin-shell', async importOriginal => {
   return {
     ...actual,
     AdminLauncher: ({children}: Readonly<{children?: ReactNode}>) => createElement(Fragment, null, children),
+  };
+});
+
+vi.mock('expo-crypto', () => {
+  let sequence = 0;
+  return {
+    getRandomBytesAsync: vi.fn(async (length: number) => new Uint8Array(length)),
+    randomUUID: vi.fn(() => `00000000-0000-4000-8000-${String(++sequence).padStart(12, '0')}`),
   };
 });
 
@@ -62,19 +72,19 @@ describe('test-expo host shell', () => {
 
     renderer = await render(<App />);
 
-    await waitFor(renderer!, () => renderer!.queryAllByTestId('sample-console:test-expo:canvas').length > 0);
-    const canvas = renderer.getByTestId('sample-console:test-expo:canvas');
-    const previewViewport = renderer.getByTestId('sample-console:test-expo:canvas:preview-viewport');
+    await waitFor(renderer!, () => renderer!.queryAllByTestId(testExpoTestIds.canvas).length > 0);
+    const canvas = renderer.getByTestId(testExpoTestIds.canvas);
+    const previewViewport = renderer.getByTestId(testExpoTestIds.previewViewport);
     await act(async () => {
       (canvas.props.onLayout as LayoutHandler)({nativeEvent: {layout: {width: 1304, height: 96}}});
       (previewViewport.props.onLayout as LayoutHandler)({nativeEvent: {layout: {width: 1280, height: 720}}});
     });
-    await waitFor(renderer!, () => renderer!.queryAllByTestId('sample-console:test-expo:surface:PRIMARY').length > 0);
-    expect(renderer.queryAllByTestId('sample-console:test-expo:surface:SECONDARY')).toHaveLength(0);
-    expect(renderer.getByTestId('sample-console:test-expo:surface-toggle')).toBeDefined();
-    expect(renderer.getByTestId('sample-console:test-expo:header-status')).toBeDefined();
-    expect(renderer.getByTestId('sample-console:test-expo:surface-summary:PRIMARY')).toBeDefined();
-    expect(renderer.getByTestId('sample-console:test-expo:surface-summary:SECONDARY')).toBeDefined();
+    await waitFor(renderer!, () => renderer!.queryAllByTestId(testExpoTestIds.surface('PRIMARY')).length > 0);
+    expect(renderer.queryAllByTestId(testExpoTestIds.surface('SECONDARY'))).toHaveLength(0);
+    expect(renderer.getByTestId(testExpoTestIds.surfaceToggle)).toBeDefined();
+    expect(renderer.getByTestId(testExpoTestIds.headerStatus)).toBeDefined();
+    expect(renderer.getByTestId(testExpoTestIds.surfaceSummary('PRIMARY'))).toBeDefined();
+    expect(renderer.getByTestId(testExpoTestIds.surfaceSummary('SECONDARY'))).toBeDefined();
     expect(createAssembly).toHaveBeenCalledTimes(1);
     expect(info.mock.calls.map(([event]) => (event as {readonly event?: string}).event)).toContain('startup-ready');
     expect(info.mock.calls.map(([event]) => (event as {readonly event?: string}).event)).toContain(
@@ -102,21 +112,21 @@ describe('test-expo host shell', () => {
       expect(style.flexShrink).toBe(0);
       expect(style.borderWidth).toBeUndefined();
     };
-    for (const frame of renderer.queryAllByTestId('ui.base.input:surface-frame')) {
+    for (const frame of renderer.queryAllByTestId(inputTestIds.node('surface-frame'))) {
       await act(async () => {
         (frame.props.onLayout as (event: unknown) => void)({
           nativeEvent: {layout: {width: 1280, height: 720}},
         });
       });
     }
-    assertFixedSurface('sample-console:test-expo:surface:PRIMARY', 1280, 720);
+    assertFixedSurface(testExpoTestIds.surface('PRIMARY'), 1280, 720);
     const canvasStyle = StyleSheet.flatten(canvas.props.style) as {
       readonly width?: unknown;
       readonly transform?: unknown;
     };
     expect(canvasStyle.width).toBe('100%');
     expect(canvasStyle.transform).toBeUndefined();
-    const logicalStage = renderer.getByTestId('sample-console:test-expo:canvas:logical-stage');
+    const logicalStage = renderer.getByTestId(testExpoTestIds.logicalStage);
     const logicalStageStyle = StyleSheet.flatten(logicalStage.props.style) as {
       readonly height?: unknown;
       readonly transform?: ReadonlyArray<{readonly scale?: unknown}>;
@@ -126,7 +136,7 @@ describe('test-expo host shell', () => {
     expect(logicalStageStyle.height).toBe(720 + 0);
     expect(logicalStageStyle.transform?.[0]?.scale).toBe(1);
 
-    const dualModeRadio = renderer.getByTestId('sample-console:test-expo:surface-mode:dual');
+    const dualModeRadio = renderer.getByTestId(testExpoTestIds.surfaceMode('dual'));
     expect(dualModeRadio.props.accessibilityRole).toBe('radio');
     expect(dualModeRadio.props.accessibilityState).toEqual({selected: false});
     await act(async () => {
@@ -134,21 +144,21 @@ describe('test-expo host shell', () => {
       await nextTurn();
     });
 
-    await waitFor(renderer!, () => renderer!.queryAllByTestId('sample-console:test-expo:surface:SECONDARY').length > 0);
-    expect(renderer.queryAllByTestId('sample-console:test-expo:surface:PRIMARY').length).toBeGreaterThan(0);
-    for (const frame of renderer.queryAllByTestId('ui.base.input:surface-frame')) {
+    await waitFor(renderer!, () => renderer!.queryAllByTestId(testExpoTestIds.surface('SECONDARY')).length > 0);
+    expect(renderer.queryAllByTestId(testExpoTestIds.surface('PRIMARY')).length).toBeGreaterThan(0);
+    for (const frame of renderer.queryAllByTestId(inputTestIds.node('surface-frame'))) {
       await act(async () => {
         (frame.props.onLayout as (event: unknown) => void)({
           nativeEvent: {layout: {width: 1280, height: 720}},
         });
       });
     }
-    assertFixedSurface('sample-console:test-expo:surface:PRIMARY', 1280, 720);
-    assertFixedSurface('sample-console:test-expo:surface:SECONDARY', 1280, 720);
-    expect(renderer.getByTestId('sample-console:test-expo:surface-mode:single').props.accessibilityState).toEqual({
+    assertFixedSurface(testExpoTestIds.surface('PRIMARY'), 1280, 720);
+    assertFixedSurface(testExpoTestIds.surface('SECONDARY'), 1280, 720);
+    expect(renderer.getByTestId(testExpoTestIds.surfaceMode('single')).props.accessibilityState).toEqual({
       selected: false,
     });
-    expect(renderer.getByTestId('sample-console:test-expo:surface-mode:dual').props.accessibilityState).toEqual({
+    expect(renderer.getByTestId(testExpoTestIds.surfaceMode('dual')).props.accessibilityState).toEqual({
       selected: true,
     });
     expect(createAssembly).toHaveBeenCalledTimes(1);
