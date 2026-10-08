@@ -87,6 +87,7 @@ describe('platform journey UI ports', () => {
     const tapButton = vi.fn(async () => undefined);
     const setChecked = vi.fn(async () => ({label: 'Allow from this source', checked: true}) as never);
     const pressBack = vi.fn(async () => undefined);
+    const acknowledgeImmersiveModeEducation = vi.fn(async () => true);
     const readScreenSummary = vi.fn(async () => 'PACKAGE_COM_ANDROID_SETTINGS');
     const connection = {
       tapRegisteredNode,
@@ -99,6 +100,7 @@ describe('platform journey UI ports', () => {
         tapButton,
         setChecked,
         pressBack,
+        acknowledgeImmersiveModeEducation,
       },
     } as unknown as AndroidAutomationConnection;
     const onStep = vi.fn();
@@ -111,6 +113,7 @@ describe('platform journey UI ports', () => {
     await ui.waitForSystemButton({labels: ['Update'], timeoutMs: 5_000, allowedPackagePrefixes: ['com.google.android.packageinstaller']});
     await ui.setSystemChecked({labels: ['Allow from this source'], checked: true, timeoutMs: 5_000});
     await ui.pressSystemBack();
+    await expect(ui.acknowledgeImmersiveModeEducation()).resolves.toBe(true);
     await ui.readSystemScreenSummary();
 
     expect(tapRegisteredNode).toHaveBeenCalledWith({
@@ -130,11 +133,14 @@ describe('platform journey UI ports', () => {
     expect(onStep).toHaveBeenCalledWith('ui.system.set-checked.complete');
     expect(onStep).toHaveBeenCalledWith('ui.system.back');
     expect(onStep).toHaveBeenCalledWith('ui.system.back.complete');
+    expect(onStep).toHaveBeenCalledWith('ui.system.acknowledge-fullscreen-education');
+    expect(onStep).toHaveBeenCalledWith('ui.system.acknowledge-fullscreen-education.complete');
     expect(onStep).toHaveBeenCalledWith('ui.system.screen-summary');
     expect(onStep).toHaveBeenCalledWith('ui.system.screen-summary.complete');
     expect(waitForButton).toHaveBeenCalledWith(['Update'], 5_000, undefined, ['com.google.android.packageinstaller'], undefined);
     expect(tapButton).not.toHaveBeenCalled();
     expect(pressBack).toHaveBeenCalledOnce();
+    expect(acknowledgeImmersiveModeEducation).toHaveBeenCalledOnce();
     expect(readScreenSummary).toHaveBeenCalledOnce();
     expect(setChecked).toHaveBeenCalledWith({
       labels: ['Allow from this source'],

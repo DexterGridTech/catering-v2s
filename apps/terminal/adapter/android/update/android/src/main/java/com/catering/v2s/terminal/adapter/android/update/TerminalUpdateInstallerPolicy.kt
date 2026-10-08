@@ -44,3 +44,10 @@ internal fun isResumableInstallerSession(
   committed: Boolean,
   sealed: Boolean,
 ): Boolean = sessionApplicationId == applicationId && committed && sealed
+
+internal fun isMatchingInstallerConfirmation(
+  expectedSessionId: Int,
+  confirmationSessionId: Int,
+  hasResolvedActivity: Boolean,
+): Boolean = expectedSessionId >= 0 &&
+  confirmationSessionId == expectedSessionId && hasResolvedActivity

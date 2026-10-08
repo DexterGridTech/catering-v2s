@@ -73,10 +73,21 @@ describe('createAndroidUpdatePort', () => {
     );
 
     const action: UpdateAction = {
-      taskId: 'task-1', actionId: 'action-1', state: 'unknown', reason: null, publicationId: 'publication-2', bootId: null,
+      taskId: 'task-1',
+      actionId: 'action-1',
+      state: 'unknown',
+      reason: null,
+      publicationId: 'publication-2',
+      bootId: null,
     };
     native.applyPrepared.mockResolvedValue(action);
-    await port.applyPrepared({timeoutMs: 120_000, taskId: 'task-1', actionId: 'action-1', preparedId: 'prepared', kind: 'full'});
+    await port.applyPrepared({
+      timeoutMs: 120_000,
+      taskId: 'task-1',
+      actionId: 'action-1',
+      preparedId: 'prepared',
+      kind: 'full',
+    });
     expect(native.applyPrepared).toHaveBeenCalledWith('task-1', 'action-1', 'prepared', 'full');
 
     native.readAction.mockResolvedValue(action);
@@ -106,7 +117,39 @@ describe('createAndroidUpdatePort', () => {
     await port.prepareArtifact(input);
 
     expect(native.prepareArtifact).toHaveBeenCalledWith(
-      'http://127.0.0.1:28080/hot.zip', 10_000, 'b'.repeat(64), JSON.stringify(input.artifact), 'hot', null,
+      'http://127.0.0.1:28080/hot.zip',
+      10_000,
+      'b'.repeat(64),
+      JSON.stringify(input.artifact),
+      'hot',
+      null,
     );
+  });
+
+  it('preserves an allowlisted native failure code without exposing the native message', async () => {
+    native.readFacts.mockRejectedValueOnce(new Error('TERMINAL_UPDATE_APK_SIGNER_MISMATCH'));
+    const result = await createAndroidUpdatePort().readFacts({timeoutMs: 10_000});
+
+    expect(result).toMatchObject({
+      status: 'failed',
+      capability: 'readFacts',
+      error: {
+        code: 'TERMINAL_UPDATE_APK_SIGNER_MISMATCH',
+        message: 'native update operation failed',
+        retryable: true,
+      },
+    });
+    expect(result.status === 'failed' && result.error.message).toBe('native update operation failed');
+  });
+
+  it('maps non-stable native rejection details to the generic safe failure', async () => {
+    native.readFacts.mockRejectedValueOnce(new Error('failed for secret-bearing input'));
+    const result = await createAndroidUpdatePort().readFacts({timeoutMs: 10_000});
+
+    expect(result).toMatchObject({
+      status: 'failed',
+      error: {code: 'NATIVE_UPDATE_OPERATION_FAILED', message: 'native update operation failed'},
+    });
+    expect(JSON.stringify(result)).not.toContain('secret-bearing input');
   });
 });

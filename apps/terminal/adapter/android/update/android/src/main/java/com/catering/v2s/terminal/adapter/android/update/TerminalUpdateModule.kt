@@ -13,8 +13,10 @@ class TerminalUpdateModule : Module() {
     Name("TerminalUpdate")
 
     OnActivityEntersForeground {
-      appContext.reactContext?.applicationContext?.let { context ->
-        TerminalUpdateRuntime.resumePendingInstallerConfirmation(context)
+      appContext.currentActivity?.let { activity ->
+        TerminalUpdateRuntime.resumePendingInstallerConfirmation(activity)
+      } ?: run {
+        Log.i("TerminalUpdate", "event=installer-confirmation-resume outcome=activity-unavailable")
       }
     }
 

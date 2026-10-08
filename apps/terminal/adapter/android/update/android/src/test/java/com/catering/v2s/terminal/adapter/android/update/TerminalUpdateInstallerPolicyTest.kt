@@ -47,6 +47,15 @@ class TerminalUpdateInstallerPolicyTest {
     assertFalse(isResumableInstallerSession(null, "com.example.app", committed = true, sealed = true))
   }
 
+  @Test
+  fun `confirmation intent must resolve and carry the committed session identity`() {
+    assertTrue(isMatchingInstallerConfirmation(7, 7, hasResolvedActivity = true))
+    assertFalse(isMatchingInstallerConfirmation(7, 8, hasResolvedActivity = true))
+    assertFalse(isMatchingInstallerConfirmation(7, -1, hasResolvedActivity = true))
+    assertFalse(isMatchingInstallerConfirmation(7, 7, hasResolvedActivity = false))
+    assertFalse(isMatchingInstallerConfirmation(-1, -1, hasResolvedActivity = true))
+  }
+
   private fun currentInstallerCallback(
     currentKind: String = "full",
     callbackTaskId: String = "task-1",

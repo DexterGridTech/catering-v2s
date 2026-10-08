@@ -402,9 +402,7 @@ describe('createAndroidDeviceSession', () => {
     });
     const write = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
     try {
-      await expect(session.attachDriver(19_123)).rejects.toThrow(
-        'TERMINAL_AUTOMATION_ANDROID_REVERSE_LIST_FAILED',
-      );
+      await expect(session.attachDriver(19_123)).rejects.toThrow('TERMINAL_AUTOMATION_ANDROID_REVERSE_LIST_FAILED');
       expect(write).toHaveBeenCalledExactlyOnceWith(
         'TERMINAL_AUTOMATION_ANDROID_REVERSE_LIST_ERROR errorType=Error errorCode=ECONNRESET\n',
       );

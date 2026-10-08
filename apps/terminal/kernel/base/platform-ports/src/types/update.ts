@@ -83,9 +83,13 @@ export interface UpdatePort {
   readFacts(input: UpdateCall): Promise<PortResult<UpdateFacts>>;
   prepareArtifact(input: PrepareUpdateArtifactInput): Promise<PortResult<UpdatePreparedArtifact>>;
   applyPrepared(input: UpdateActionInput): Promise<PortResult<UpdateAction>>;
-  readAction(input: UpdateCall & Readonly<{taskId: string; actionId: string}>): Promise<PortResult<UpdateAction | null>>;
+  readAction(
+    input: UpdateCall & Readonly<{taskId: string; actionId: string}>,
+  ): Promise<PortResult<UpdateAction | null>>;
   confirmBoot(
     input: UpdateCall & Readonly<{bootToken: string; publicationId: string}>,
   ): Promise<PortResult<UpdateAction>>;
-  releasePrepared(input: UpdateCall & Readonly<{preparedId: string}>): Promise<PortResult<Readonly<{released: boolean}>>>;
+  releasePrepared(
+    input: UpdateCall & Readonly<{preparedId: string}>,
+  ): Promise<PortResult<Readonly<{released: boolean}>>>;
 }

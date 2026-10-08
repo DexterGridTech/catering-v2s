@@ -78,6 +78,12 @@ const fakeServer = (actionViews: readonly View[]) => {
           );
         return response({subscriptionId: request.subscriptionId, accepted: true});
       }
+      if (type === 'selector.read' && typeof body === 'object' && body !== null) {
+        const request = body as {selectorName: string};
+        if (request.selectorName.endsWith('selectRequestExecutionViews')) {
+          throw new Error('TEST_REJECTED_REDUNDANT_REQUEST_LIST_READ');
+        }
+      }
       if (type === 'selector.read') return response({valueState: 'JSON', value: []});
       if (type === 'selector.unsubscribe' && typeof body === 'object' && body !== null) {
         const subscriptionId = (body as {subscriptionId: string}).subscriptionId;

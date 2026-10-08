@@ -852,8 +852,10 @@ async function main() {
     );
     return;
   }
-  if (argumentsList.length > 1 || argumentsList.some(argument =>
-    !['--self-test', '--red-fixtures', '--a9-lock-red-fixture'].includes(argument))) {
+  if (
+    argumentsList.length > 1 ||
+    argumentsList.some(argument => !['--self-test', '--red-fixtures', '--a9-lock-red-fixture'].includes(argument))
+  ) {
     process.stderr.write('TERMINAL_ANDROID_TESTS=FAIL reason=unknown-argument\n');
     process.exitCode = 2;
     return;

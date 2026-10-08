@@ -281,7 +281,7 @@ it.skipIf(updateCase !== 'update.artifacts')(
 );
 
 beforeAll(async () => {
-  if (updateCase !== 'update.fixed' && updateCase !== 'update.install-result') return;
+  if (updateCase !== 'update.fixed' && updateCase !== 'update.install-result' && updateCase !== 'update.compatibility') return;
   const runId = process.env.TERMINAL_AUTOMATION_RUN_ID;
   if (!runId) throw new Error('TERMINAL_AUTOMATION_RUN_ID_REQUIRED');
   ownerDriver = createTerminalAutomationDriver({token: testToken, host: '127.0.0.1', port: 0});
@@ -320,7 +320,7 @@ beforeAll(async () => {
 }, 90_000);
 
 afterAll(async () => {
-  if (updateCase !== 'update.fixed' && updateCase !== 'update.install-result') return;
+  if (updateCase !== 'update.fixed' && updateCase !== 'update.install-result' && updateCase !== 'update.compatibility') return;
   const cleanupErrors: string[] = [];
   try { await ownerBrowser?.close(); } catch { cleanupErrors.push('BROWSER_CLOSE_FAILED'); }
   try { await ownerDriver?.close(); } catch { cleanupErrors.push('DRIVER_CLOSE_FAILED'); }
@@ -473,6 +473,72 @@ it.skipIf(updateCase !== 'update.install-result')(
       'kernel.base.terminal-update.selectTerminalUpdateTask',
       [],
     )).toEqual(retriedTask);
+  },
+  30_000,
+);
+
+it.skipIf(updateCase !== 'update.compatibility')(
+  'selects FULL before HOT when the current runtime is below the target FULL identity',
+  async () => {
+    if (ownerDriver === undefined || ownerSession === undefined)
+      throw new Error('TERMINAL_AUTOMATION_UPDATE_WEB_NOT_READY');
+    const before = await readSelector(
+      ownerDriver.transport,
+      ownerSession.sessionId,
+      'kernel.base.terminal-update.selectTerminalUpdateActualVersions',
+      [],
+    );
+    expect(before).toMatchObject({nativeBuildNumber: 1, bundleVersion: '1.0.5', entryKind: 'hot'});
+
+    const runtimeInfo = responseResult(await ownerDriver.transport.request(ownerSession.sessionId, 'runtime.info', null));
+    if (!isRecord(runtimeInfo) || !Array.isArray(runtimeInfo.descriptors)) throw new Error('RUNTIME_INFO_INVALID');
+    const descriptor = runtimeInfo.descriptors.find(
+      value => isRecord(value) && value.moduleName === 'kernel.base.terminal-update',
+    );
+    if (!isRecord(descriptor) || !Array.isArray(descriptor.commandNames))
+      throw new Error('TERMINAL_UPDATE_RUNTIME_DESCRIPTOR_MISSING');
+    const commandName = descriptor.commandNames.find(
+      value => typeof value === 'string' && value.endsWith('.accept-target'),
+    );
+    if (typeof commandName !== 'string') throw new Error('TERMINAL_UPDATE_ACCEPT_COMMAND_MISSING');
+
+    const completion = waitForMessage(ownerDriver.transport, ownerSession.sessionId, message =>
+      eventBody(message)?.kind === 'command.result',
+    );
+    const accepted = responseResult(await ownerDriver.transport.request(ownerSession.sessionId, 'command.dispatch', {
+      commandName,
+      payload: {selectionContext: {selectedSpace: 'development', contextIdentity: runId}},
+    }));
+    if (!isRecord(accepted) || typeof accepted.requestId !== 'string')
+      throw new Error('TERMINAL_UPDATE_COMMAND_NOT_ACCEPTED');
+    const message = await completion;
+    const body = eventBody(message);
+    if (body?.requestId !== accepted.requestId || !isRecord(body.result) || !Array.isArray(body.result.actorResults) ||
+      !isRecord(body.result.actorResults[0]) || !isRecord(body.result.actorResults[0].result))
+      throw new Error('TERMINAL_UPDATE_COMMAND_RESULT_MISMATCH');
+    expect(body.result.actorResults[0].result).toMatchObject({status: 'applying'});
+
+    const task = await readSelector(
+      ownerDriver.transport,
+      ownerSession.sessionId,
+      'kernel.base.terminal-update.selectTerminalUpdateTask',
+      [],
+    );
+    expect(task).toMatchObject({
+      phase: 'applying-full',
+      target: {
+        full: {artifact: {nativeBuildNumber: 2, bundleVersion: '1.0.4'}},
+        hot: {artifact: {nativeBuildNumber: 2, bundleVersion: '1.0.6'}},
+      },
+    });
+    const after = await readSelector(
+      ownerDriver.transport,
+      ownerSession.sessionId,
+      'kernel.base.terminal-update.selectTerminalUpdateActualVersions',
+      [],
+    );
+    expect(after).toMatchObject({nativeBuildNumber: 1, bundleVersion: '1.0.5', entryKind: 'hot'});
+    process.stdout.write(`TERMINAL_AUTOMATION_UPDATE_CASE_ASSERTIONS_PASS case=update.compatibility run=${runId}\n`);
   },
   30_000,
 );

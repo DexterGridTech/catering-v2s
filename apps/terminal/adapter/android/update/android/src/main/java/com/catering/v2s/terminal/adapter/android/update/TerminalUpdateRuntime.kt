@@ -2,6 +2,7 @@ package com.catering.v2s.terminal.adapter.android.update
 
 import android.content.Context
 import android.content.Intent
+import android.app.Activity
 import android.app.AppOpsManager
 import android.app.PendingIntent
 import android.content.pm.PackageInstaller
@@ -46,6 +47,22 @@ internal data class TerminalUpdateBootReservation(
   val bundleFile: String?,
   val embeddedBundleAssetName: String,
 )
+
+internal fun bootConfirmationMatches(
+  contextToken: String?,
+  reservation: TerminalUpdateBootReservation?,
+  bootToken: String,
+  publicationId: String,
+  recordBootToken: String?,
+  recordInstalledIdentity: String?,
+): Boolean {
+  val current = reservation ?: return false
+  return contextToken == current.token &&
+    bootToken == current.token &&
+    publicationId == current.publicationId &&
+    recordBootToken == current.token &&
+    recordInstalledIdentity == current.installedIdentity.key()
+}
 
 internal fun selectedBundleVersionForFacts(
   entryKind: String?,
@@ -191,7 +208,11 @@ internal object TerminalUpdateRuntime {
     selectionResetReason = if (changed) "APK_CHANGED_SELECTION_RESET" else null
     cancelBootDeadline()
     scheduleBootDeadline(app, reservation)
-    Log.i(LOG_TAG, "event=boot-reserved entryKind=$selectedKind apkChanged=$changed")
+    Log.i(
+      LOG_TAG,
+      "event=boot-reserved entryKind=$selectedKind apkChanged=$changed" +
+        if (changed) " resetReason=APK_CHANGED_SELECTION_RESET previousEligible=false candidateEligible=false" else "",
+    )
     reservation
   }
 
@@ -279,11 +300,13 @@ internal object TerminalUpdateRuntime {
   }
 
   fun markBootConfirmed(context: ReactContext, bootToken: String, publicationId: String): Boolean = synchronized(lock) {
-    val reservation = reservationFor(context) ?: return@synchronized false
-    if (reservation.token != bootToken || reservation.publicationId != publicationId) return@synchronized false
+    val reservation = currentReservation ?: return@synchronized false
     val app = context.applicationContext
     val record = readRecord(app) ?: return@synchronized false
-    if (record.optString("bootToken") != reservation.token || record.optString("installedIdentity") != reservation.installedIdentity.key()) {
+    if (!bootConfirmationMatches(
+        contextBoots[context], reservation, bootToken, publicationId,
+        record.optString("bootToken"), record.optString("installedIdentity"),
+      )) {
       return@synchronized false
     }
     record.put("bootConfirmed", true)
@@ -474,9 +497,13 @@ internal object TerminalUpdateRuntime {
   }
 
   /** Replays PackageInstaller's exact user-action Intent once after source permission is granted. */
-  fun resumePendingInstallerConfirmation(context: Context) = synchronized(lock) {
+  fun resumePendingInstallerConfirmation(activity: Activity) = synchronized(lock) {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return@synchronized
-    val app = context.applicationContext
+    if (activity.isFinishing || activity.isDestroyed) {
+      Log.i(LOG_TAG, "event=installer-confirmation-resume outcome=activity-not-resumable")
+      return@synchronized
+    }
+    val app = activity.applicationContext
     val value = readRecord(app) ?: return@synchronized
     if (value.optString("actionKind") == "full" &&
       value.optString("actionState") == "unknown" &&
@@ -537,17 +564,38 @@ internal object TerminalUpdateRuntime {
       return@synchronized
     }
 
+    val resolved = confirmation.resolveActivity(app.packageManager)
+    val confirmationSessionId = confirmation.getIntExtra(
+      PackageInstaller.EXTRA_SESSION_ID,
+      PackageInstaller.SessionInfo.INVALID_ID,
+    )
+    if (!isMatchingInstallerConfirmation(sessionId, confirmationSessionId, resolved != null)) {
+      value.put("actionState", "unknown")
+      value.put("actionReason", "INSTALL_CONFIRMATION_UNAVAILABLE")
+      writeRecord(app, value)
+      Log.i(
+        LOG_TAG,
+        "event=installer-confirmation-resume outcome=confirmation-not-resolvable resolved=${resolved != null} sessionMatches=${confirmationSessionId == sessionId}",
+      )
+      return@synchronized
+    }
+
     value.put("installerConfirmationResumeAttempted", true)
     writeRecord(app, value)
     runCatching {
-      confirmation.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-      app.startActivity(confirmation)
-      Log.i(LOG_TAG, "event=installer-confirmation-resume outcome=launched session=$sessionId")
+      activity.startActivity(confirmation)
+      Log.i(
+        LOG_TAG,
+        "event=installer-confirmation-resume outcome=launched context=foreground-activity component=${resolved.flattenToShortString()} session=$sessionId task=${activity.taskId}",
+      )
     }.onFailure {
       value.put("actionState", "unknown")
       value.put("actionReason", "INSTALL_CONFIRMATION_UNAVAILABLE")
       writeRecord(app, value)
-      Log.e(LOG_TAG, "event=installer-confirmation-resume outcome=failed errorType=${it.javaClass.simpleName}")
+      Log.e(
+        LOG_TAG,
+        "event=installer-confirmation-resume outcome=failed context=foreground-activity component=${resolved.flattenToShortString()} session=$sessionId errorType=${it.javaClass.simpleName}",
+      )
     }
   }
 

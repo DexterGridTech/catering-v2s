@@ -15,10 +15,22 @@ const definition = createSlice({
   name: terminalUpdateSliceName,
   initialState,
   reducers: {
-    replaceTask: (state, action: PayloadAction<TerminalUpdateTask | null>): TerminalUpdateState => ({...state, currentTask: action.payload}),
-    replaceRecentStatus: (state, action: PayloadAction<TerminalUpdateRecentStatus>): TerminalUpdateState => ({...state, recentStatus: action.payload}),
-    replaceFailedArtifactIds: (state, action: PayloadAction<readonly string[]>): TerminalUpdateState => ({...state, failedArtifactIds: Object.freeze([...action.payload])}),
-    replaceActualVersions: (state, action: PayloadAction<TerminalUpdateState['actualVersions']>): TerminalUpdateState => ({...state, actualVersions: action.payload}),
+    replaceTask: (state, action: PayloadAction<TerminalUpdateTask | null>): TerminalUpdateState => ({
+      ...state,
+      currentTask: action.payload,
+    }),
+    replaceRecentStatus: (state, action: PayloadAction<TerminalUpdateRecentStatus>): TerminalUpdateState => ({
+      ...state,
+      recentStatus: action.payload,
+    }),
+    replaceFailedArtifactIds: (state, action: PayloadAction<readonly string[]>): TerminalUpdateState => ({
+      ...state,
+      failedArtifactIds: Object.freeze([...action.payload]),
+    }),
+    replaceActualVersions: (
+      state,
+      action: PayloadAction<TerminalUpdateState['actualVersions']>,
+    ): TerminalUpdateState => ({...state, actualVersions: action.payload}),
   },
 });
 

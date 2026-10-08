@@ -62,8 +62,14 @@ const updateCasesRequiringManagedDev = new Set([
   'update.rollback',
 ]);
 const implementedUpdateCases: Readonly<Record<AutomationPlatform, ReadonlySet<string>>> = Object.freeze({
-  web: new Set(['update.artifacts', 'update.fixed', 'update.install-result']),
-  android: new Set(['update.full-hot', 'update.offline-assets', 'update.boot-guard', 'update.install-result']),
+  web: new Set(['update.artifacts', 'update.fixed', 'update.install-result', 'update.compatibility']),
+  android: new Set([
+    'update.full-hot',
+    'update.offline-assets',
+    'update.boot-guard',
+    'update.install-result',
+    'update.compatibility',
+  ]),
 });
 const phaseSuite: Readonly<Record<AutomationPlatform, Readonly<Partial<Record<AutomationPhase, string>>>>> =
   Object.freeze({
@@ -119,7 +125,8 @@ export const resolveAutomationSuite = (execution: TerminalAutomationRunOptions):
 };
 
 export const updateRequiresManagedDev = (execution: TerminalAutomationRunOptions): boolean =>
-  execution.phase === 'update' && execution.case !== undefined &&
+  execution.phase === 'update' &&
+  execution.case !== undefined &&
   (updateCasesRequiringManagedDev.has(execution.case) ||
     (execution.platform === 'android' && execution.case === 'update.install-result'));
 
@@ -134,9 +141,9 @@ export const updateScenarioAssertionsObserved = (
   output: string,
 ): boolean =>
   execution.phase !== 'update' ||
-  execution.platform !== 'android' ||
-  execution.case !== 'update.boot-guard' ||
-  output.includes(`TERMINAL_AUTOMATION_UPDATE_CASE_ASSERTIONS_PASS case=update.boot-guard run=${runId}`);
+  (execution.case !== 'update.compatibility' &&
+    (execution.platform !== 'android' || execution.case !== 'update.boot-guard')) ||
+  output.includes(`TERMINAL_AUTOMATION_UPDATE_CASE_ASSERTIONS_PASS case=${execution.case} run=${runId}`);
 
 export const createAndroidDeviceCleanupTracker = () => {
   const tails = new Map<'stdout' | 'stderr', string>([
@@ -1021,7 +1028,8 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
     ...(execution.case === undefined ? {} : {TERMINAL_AUTOMATION_CASE: execution.case}),
     ...(execution.age === undefined ? {} : {TERMINAL_AUTOMATION_AGE: execution.age}),
     ...(execution.sample === undefined ? {} : {TERMINAL_AUTOMATION_SAMPLE: execution.sample}),
-    ...(execution.phase === 'update' && ['update.fixed', 'update.install-result'].includes(execution.case ?? '')
+    ...(execution.phase === 'update' &&
+    ['update.fixed', 'update.install-result', 'update.compatibility'].includes(execution.case ?? '')
       ? {
           EXPO_PUBLIC_TER_AUTOMATION_RUN_ID: manifest.runId,
           EXPO_PUBLIC_TER_AUTOMATION_CASE: execution.case ?? '',

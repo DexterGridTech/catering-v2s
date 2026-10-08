@@ -37,6 +37,21 @@ const safeClass = (value: string | undefined): string => value && /^[A-Za-z_$][A
   ? value
   : 'UNKNOWN';
 
+const systemLabelAliases: Readonly<Record<string, readonly string[]>> = Object.freeze({
+  Install: Object.freeze(['安装']),
+  Update: Object.freeze(['更新']),
+  Settings: Object.freeze(['设置']),
+  'Allow from this source': Object.freeze(['允许来自此来源的应用']),
+  Cancel: Object.freeze(['取消']),
+  Done: Object.freeze(['完成']),
+  Open: Object.freeze(['打开']),
+});
+
+const requestedLabelFor = (actual: string, labels: readonly string[]): string | undefined =>
+  labels.find(label =>
+    [label, ...(systemLabelAliases[label] ?? [])].some(candidate => candidate.toLowerCase() === actual.toLowerCase()),
+  );
+
 const packageNameForNode = (node: HierarchyNode): string | undefined => {
   let current: HierarchyNode | null = node;
   while (current !== null) {
@@ -79,7 +94,10 @@ export const findAndroidSystemUiButton = (
     const packageName = packageNameForNode(node);
     const packageAllowed = allowedPackagePrefixes === undefined ||
       (packageName !== undefined && allowedPackagePrefixes.some(prefix => packageName === prefix || packageName.startsWith(`${prefix}.`)));
-    if (labels.includes(label) && packageAllowed) matchedLabels.push(Object.freeze({label, node}));
+    const requestedLabel = requestedLabelFor(label, labels);
+    if (requestedLabel !== undefined && packageAllowed) {
+      matchedLabels.push(Object.freeze({label: requestedLabel, node}));
+    }
     if (!/\/\s*>$/u.test(tag)) ancestors.push(node);
   }
   for (const {label, node} of matchedLabels) {
@@ -179,6 +197,27 @@ const hasExactText = (xml: string, expectedText: string, allowedPackagePrefixes?
   return false;
 };
 
+const hasSystemLabel = (xml: string, expectedLabel: string, allowedPackagePrefixes?: readonly string[]): boolean => {
+  const ancestors: HierarchyNode[] = [];
+  for (const match of xml.matchAll(NODE_TAG_PATTERN)) {
+    const tag = String(match[0]);
+    if (tag.startsWith('</')) {
+      ancestors.pop();
+      continue;
+    }
+    const attributeText = tag.slice('<node'.length, tag.length - 1).replace(/\/?\s*$/u, '');
+    const node: HierarchyNode = {attributes: new Map([...attributeText.matchAll(ATTRIBUTE_PATTERN)].map(value => [value[1]!, decodeXml(value[2]!)])), parent: ancestors.at(-1) ?? null, children: []};
+    node.parent?.children.push(node);
+    const label = node.attributes.get('text') ?? node.attributes.get('content-desc') ?? '';
+    const packageName = packageNameForNode(node);
+    if (requestedLabelFor(label, [expectedLabel]) === expectedLabel &&
+      (allowedPackagePrefixes === undefined || (packageName !== undefined &&
+        allowedPackagePrefixes.some(prefix => packageName === prefix || packageName.startsWith(`${prefix}.`))))) return true;
+    if (!/\/\s*>$/u.test(tag)) ancestors.push(node);
+  }
+  return false;
+};
+
 const summarizeSystemUi = (xml: string): string => {
   const labels = ['Install', 'Update', 'Done', 'Cancel', 'Next', 'Allow', 'Open', 'Settings', 'Allow from this source',
     'Install unknown apps', 'Disabled', 'Disabled by admin'];
@@ -261,6 +300,8 @@ export type AndroidSystemUi = Readonly<{
   readonly readHierarchy: () => Promise<string>;
   /** A privacy-safe summary of the current native window for failure diagnostics. */
   readonly readScreenSummary: () => Promise<string>;
+  /** Acknowledges Android's full-screen education overlay only when SystemUI owns it. */
+  readonly acknowledgeImmersiveModeEducation: () => Promise<boolean>;
   readonly waitForButton: (
     labels: readonly string[], timeoutMs: number, signal?: AbortSignal, allowedPackagePrefixes?: readonly string[],
     expectedContext?: Readonly<{readonly label: string; readonly text: string}>,
@@ -442,7 +483,7 @@ export const createAndroidSystemUi = (input: Readonly<{
       lastSummary = summarizeSystemUi(xml);
       try {
         const hasContextLabel = expectedContext !== undefined && labels.includes(expectedContext.label) &&
-          hasExactText(xml, expectedContext.label, allowedPackagePrefixes);
+          hasSystemLabel(xml, expectedContext.label, allowedPackagePrefixes);
         if (hasContextLabel && expectedContext !== undefined &&
           !hasExactText(xml, expectedContext.text, allowedPackagePrefixes)) {
           throw new Error('TERMINAL_AUTOMATION_ANDROID_SYSTEM_UI_CONTEXT_TEXT_MISSING');
@@ -479,7 +520,7 @@ export const createAndroidSystemUi = (input: Readonly<{
     // Resolve the same semantic control again immediately before tapping so a
     // system transition cannot send an old coordinate into a different screen.
     const hierarchy = await readHierarchy();
-    const hasContextLabel = expectedContext !== undefined && hasExactText(hierarchy, expectedContext.label, allowedPackagePrefixes);
+    const hasContextLabel = expectedContext !== undefined && hasSystemLabel(hierarchy, expectedContext.label, allowedPackagePrefixes);
     if (hasContextLabel && expectedContext !== undefined &&
       !hasExactText(hierarchy, expectedContext.text, allowedPackagePrefixes)) {
       throw new Error('TERMINAL_AUTOMATION_ANDROID_SYSTEM_UI_CONTEXT_TEXT_MISSING');
@@ -518,6 +559,17 @@ export const createAndroidSystemUi = (input: Readonly<{
     await tapResolvedButton(button, options.allowedPackagePrefixes, options.expectedContext);
     return button;
   };
+  const acknowledgeImmersiveModeEducation: AndroidSystemUi['acknowledgeImmersiveModeEducation'] = async () => {
+    const hierarchy = await readHierarchy();
+    const packagePrefixes = ['com.android.systemui'] as const;
+    const title = 'Viewing full screen';
+    const label = 'Got it';
+    if (!hasExactText(hierarchy, title, packagePrefixes)) return false;
+
+    const button = findAndroidSystemUiButton(hierarchy, [label], packagePrefixes);
+    await tapResolvedButton(button, packagePrefixes, {label, text: title});
+    return true;
+  };
   const setChecked: AndroidSystemUi['setChecked'] = async input => {
     if (typeof input.checked !== 'boolean' || !Number.isSafeInteger(input.timeoutMs) ||
       input.timeoutMs < 1 || input.timeoutMs > 60_000) {
@@ -548,5 +600,6 @@ export const createAndroidSystemUi = (input: Readonly<{
   const pressBack = async (): Promise<void> => {
     await run(input.adbPath, ['-s', input.serial, 'shell', 'input', 'keyevent', 'KEYCODE_BACK']);
   };
-  return Object.freeze({readHierarchy, readScreenSummary, waitForButton, clickButton, tapButton, setChecked, pressBack});
+  return Object.freeze({readHierarchy, readScreenSummary, acknowledgeImmersiveModeEducation,
+    waitForButton, clickButton, tapButton, setChecked, pressBack});
 };

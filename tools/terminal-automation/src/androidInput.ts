@@ -74,6 +74,33 @@ const runAdbText = async (adbPath: string, args: readonly string[]): Promise<str
   }
 };
 
+const displayInputSummary = (logicalOutput: string, surfaceFlingerOutput: string): string => {
+  const logicalSizes = [...logicalOutput.matchAll(/real (\d+) x (\d+)/g)].map(match => `${match[1]}x${match[2]}`);
+  const surfaceBlocks = String(surfaceFlingerOutput)
+    .split(/(?=^(?:Display|Virtual Display) \S+)/m)
+    .map(block => block.trim())
+    .filter(block => /^(?:Display|Virtual Display) \S+/.test(block));
+  const surfaceFacts = surfaceBlocks.map(block => {
+    const role = /^Virtual Display /.test(block)
+      ? 'virtual'
+      : /\bprimary\b/.test(block)
+        ? 'primary'
+        : /^\s*connectionType=External\s*$/m.test(block)
+          ? 'external'
+          : /^\s*connectionType=Internal\s*$/m.test(block)
+            ? 'internal'
+            : 'other';
+    const mode = block.match(/(?:activeMode=\{[^\n]*resolution=|displayModes=\{[^\n]*resolution=)(\d+)\s*x\s*(\d+)/);
+    const displaySpace = block
+      .match(/^\s*displaySpace\s*[:=]\s*(.{1,220})$/m)?.[1]
+      ?.replace(/"[^"]*"/g, '"<redacted>"')
+      .replace(/\b\d{9,}\b/g, '<id>')
+      .replace(/0x[0-9a-f]+/gi, '<pointer>');
+    return `${role}:${mode ? `${mode[1]}x${mode[2]}` : displaySpace ? `displaySpace=${displaySpace}` : 'geometry-unparsed'}`;
+  });
+  return `logical=${logicalSizes.join(',') || 'none'} surface=${surfaceFacts.join(',') || 'none'}`;
+};
+
 export const createAndroidInput = (
   input: Readonly<{
     readonly adbPath: string;
@@ -91,7 +118,18 @@ export const createAndroidInput = (
       runCommand(input.adbPath, ['-s', input.serial, 'shell', 'dumpsys', 'display']),
       runCommand(input.adbPath, ['-s', input.serial, 'shell', 'dumpsys', 'SurfaceFlinger', '--displays']),
     ]);
-    return resolveDisplayMapping(input.shape, logicalOutput, surfaceFlingerOutput);
+    try {
+      return resolveDisplayMapping(input.shape, logicalOutput, surfaceFlingerOutput);
+    } catch (error) {
+      const code =
+        error instanceof Error && /^TERMINAL_AUTOMATION_[A-Z0-9_]+$/.test(error.message)
+          ? error.message
+          : 'TERMINAL_AUTOMATION_DISPLAY_MAPPING_FAILED';
+      process.stderr.write(
+        `TERMINAL_AUTOMATION_ANDROID_DISPLAY_MAPPING_FAILURE code=${code} ${displayInputSummary(logicalOutput, surfaceFlingerOutput)}\n`,
+      );
+      throw error;
+    }
   };
 
   const tap = async (surface: AndroidSurface, x: number, y: number): Promise<void> => {

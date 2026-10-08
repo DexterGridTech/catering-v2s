@@ -631,7 +631,12 @@ describe('resolveAutomationSuite', () => {
       ]).case,
     ).toBe('update.full-hot');
     expect(updateCaseImplemented({phase: 'update', platform: 'web', shape: 'mobile', case: 'update.fixed'})).toBe(true);
-    expect(updateCaseImplemented({phase: 'update', platform: 'web', shape: 'mobile', case: 'update.install-result'})).toBe(true);
+    expect(
+      updateCaseImplemented({phase: 'update', platform: 'web', shape: 'mobile', case: 'update.install-result'}),
+    ).toBe(true);
+    expect(
+      updateCaseImplemented({phase: 'update', platform: 'web', shape: 'mobile', case: 'update.compatibility'}),
+    ).toBe(true);
     expect(
       updateCaseImplemented({phase: 'update', platform: 'android', shape: 'mobile', case: 'update.full-hot'}),
     ).toBe(true);
@@ -664,8 +669,18 @@ describe('resolveAutomationSuite', () => {
     expect(
       updateCaseImplemented({phase: 'update', platform: 'android', shape: 'mobile', case: 'update.install-result'}),
     ).toBe(true);
-    expect(updateRequiresManagedDev({phase: 'update', platform: 'android', shape: 'mobile', case: 'update.install-result'})).toBe(true);
-    expect(updateRequiresManagedDev({phase: 'update', platform: 'web', shape: 'mobile', case: 'update.install-result'})).toBe(false);
+    expect(
+      updateCaseImplemented({phase: 'update', platform: 'android', shape: 'mobile', case: 'update.compatibility'}),
+    ).toBe(true);
+    expect(
+      updateRequiresManagedDev({phase: 'update', platform: 'android', shape: 'mobile', case: 'update.compatibility'}),
+    ).toBe(true);
+    expect(
+      updateRequiresManagedDev({phase: 'update', platform: 'android', shape: 'mobile', case: 'update.install-result'}),
+    ).toBe(true);
+    expect(
+      updateRequiresManagedDev({phase: 'update', platform: 'web', shape: 'mobile', case: 'update.install-result'}),
+    ).toBe(false);
     expect(
       updateCaseImplemented({phase: 'update', platform: 'android', shape: 'mobile', case: 'update.interruption'}),
     ).toBe(false);
@@ -679,6 +694,30 @@ describe('resolveAutomationSuite', () => {
         execution,
         'run-1',
         'TERMINAL_AUTOMATION_UPDATE_CASE_ASSERTIONS_PASS case=update.boot-guard run=run-1\n',
+      ),
+    ).toBe(true);
+  });
+
+  it('fails closed when Android compatibility data-crossing assertions were not observed', () => {
+    const execution = {phase: 'update', platform: 'android', shape: 'mobile', case: 'update.compatibility'} as const;
+    expect(updateScenarioAssertionsObserved(execution, 'run-1', '')).toBe(false);
+    expect(
+      updateScenarioAssertionsObserved(
+        execution,
+        'run-1',
+        'TERMINAL_AUTOMATION_UPDATE_CASE_ASSERTIONS_PASS case=update.compatibility run=run-1\n',
+      ),
+    ).toBe(true);
+  });
+
+  it('requires Web compatibility owner assertions before reporting the case as passed', () => {
+    const execution = {phase: 'update', platform: 'web', shape: 'mobile', case: 'update.compatibility'} as const;
+    expect(updateScenarioAssertionsObserved(execution, 'run-1', '')).toBe(false);
+    expect(
+      updateScenarioAssertionsObserved(
+        execution,
+        'run-1',
+        'TERMINAL_AUTOMATION_UPDATE_CASE_ASSERTIONS_PASS case=update.compatibility run=run-1\n',
       ),
     ).toBe(true);
   });

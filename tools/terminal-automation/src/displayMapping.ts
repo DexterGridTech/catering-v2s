@@ -122,8 +122,11 @@ const parseSurfaceDisplays = (output: string): readonly SurfaceDisplay[] => {
     const connectionType = block.match(/^\s*connectionType=(Internal|External)$/m)?.[1] ?? null;
     const primary = /^Display \S+ \([^\n]*, primary,/.test(block);
     const mode = block.match(/(?:activeMode=\{[^\n]*resolution=|displayModes=\{[^\n]*resolution=)(\d+)x(\d+)/);
-    const width = mode ? Number(mode[1]) : 0;
-    const height = mode ? Number(mode[2]) : 0;
+    const displaySpace = block.match(
+      /\bdisplaySpace\s*[:=]\s*ProjectionSpace[({][^\n]*?\bbounds\s*=\s*Rect\(\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*(-?\d+)\s*\)/,
+    );
+    const width = mode ? Number(mode[1]) : displaySpace ? Number(displaySpace[3]) - Number(displaySpace[1]) : 0;
+    const height = mode ? Number(mode[2]) : displaySpace ? Number(displaySpace[4]) - Number(displaySpace[2]) : 0;
     const internal = !virtual && (connectionType === 'Internal' || primary);
     const external = !virtual && connectionType === 'External';
     if (!/^\d+$/.test(id) || !Number.isSafeInteger(width) || width < 0 || !Number.isSafeInteger(height) || height < 0) {
@@ -144,10 +147,8 @@ export const resolveDisplayMapping = (
   if (shape !== 'dual' && shape !== 'mobile') return fail('TERMINAL_AUTOMATION_DISPLAY_SHAPE_INVALID');
   const targetFor = (logicalDisplay: LogicalDisplay, surfaceDisplay: SurfaceDisplay): AndroidDisplayTarget => {
     const hasSurfaceSize = surfaceDisplay.width > 0 && surfaceDisplay.height > 0;
-    if (!hasSurfaceSize && !surfaceDisplay.virtual) {
-      return fail('TERMINAL_AUTOMATION_SURFACE_DISPLAY_SIZE_MISSING');
-    }
-    // Virtual SurfaceFlinger blocks may omit modes; screencap validates this logical-size fallback.
+    // Some SurfaceFlinger builds omit physical mode geometry. The capture path validates this
+    // logical-size fallback against the actual PNG dimensions before accepting a screenshot.
     const surfaceSize = hasSurfaceSize
       ? {width: surfaceDisplay.width, height: surfaceDisplay.height}
       : {width: logicalDisplay.width, height: logicalDisplay.height};

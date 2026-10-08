@@ -25,6 +25,37 @@ describe('Android system UI installer controls', () => {
       .toThrow('BUTTON_MATCH_COUNT_0');
   });
 
+  it('matches Android system labels without depending on the ROM text casing', () => {
+    const hierarchy = xml(
+      '<node package="com.android.packageinstaller" text="UPDATE" enabled="true" clickable="true" bounds="[1,2][21,32]" />',
+    );
+    expect(findAndroidSystemUiButton(hierarchy, ['Install', 'Update'], ['com.android.packageinstaller']))
+      .toMatchObject({label: 'Update', packageName: 'com.android.packageinstaller'});
+  });
+
+  it('matches Chinese Android installer labels while retaining the canonical action name', () => {
+    const hierarchy = xml(
+      '<node package="com.android.settings" class="com.android.settingslib.widget.MainSwitchPreference" ' +
+      'clickable="true" enabled="true" bounds="[1,2][101,42]">' +
+      '<node class="android.widget.TextView" text="允许来自此来源的应用" clickable="false" enabled="true" ' +
+      'bounds="[8,8][80,28]" />' +
+      '<node class="android.widget.Switch" checkable="true" clickable="false" enabled="true" ' +
+      'checked="false" bounds="[80,8][98,28]" />' +
+      '<node package="com.android.settings" text="sample-terminal" enabled="true" />' +
+      '</node>',
+    );
+    expect(findAndroidSystemUiButton(
+      hierarchy,
+      ['Install', 'Update', 'Settings', 'Allow from this source'],
+      ['com.android.settings'],
+    )).toMatchObject({
+      label: 'Allow from this source',
+      checked: false,
+      targetClass: 'com.android.settingslib.widget.MainSwitchPreference',
+      stateSource: 'switch-descendant',
+    });
+  });
+
   it('uses the nearest owning package when a system button node omits its package attribute', () => {
     const hierarchy = xml(
       '<node package="com.google.android.packageinstaller">' +
@@ -172,6 +203,97 @@ describe('Android system UI installer controls', () => {
       undefined, ['com.android.packageinstaller', 'com.android.settings'], {
         label: 'Allow from this source', text: 'sample-terminal',
       })).resolves.toMatchObject({label: 'Install', packageName: 'com.android.packageinstaller'});
+  });
+
+  it('leaves Android system UI untouched when its full-screen education notice is absent', async () => {
+    const calls: string[][] = [];
+    const ui = createAndroidSystemUi({
+      adbPath: '/sdk/platform-tools/adb',
+      serial: 'emulator-5554',
+      runTextCommand: async (_adb, args) => {
+        calls.push([...args]);
+        return xml('<node package="com.android.packageinstaller" text="Update" enabled="true" ' +
+          'clickable="true" bounds="[10,20][30,60]" />');
+      },
+    });
+
+    await expect(ui.acknowledgeImmersiveModeEducation()).resolves.toBe(false);
+    expect(calls).toEqual([
+      ['-s', 'emulator-5554', 'exec-out', 'uiautomator', 'dump', '--compressed', '/dev/stdout'],
+    ]);
+  });
+
+  it('acknowledges the exact SystemUI full-screen education notice using fresh bounds', async () => {
+    const calls: string[][] = [];
+    const hierarchy = xml(
+      '<node package="com.android.systemui" text="Viewing full screen" enabled="true">' +
+      '<node package="com.android.systemui" text="Got it" class="android.widget.Button" ' +
+      'enabled="true" clickable="true" bounds="[10,20][30,60]" />' +
+      '</node>',
+    );
+    const ui = createAndroidSystemUi({
+      adbPath: '/sdk/platform-tools/adb',
+      serial: 'emulator-5554',
+      runTextCommand: async (_adb, args) => {
+        calls.push([...args]);
+        return args.includes('dump') ? hierarchy : '';
+      },
+    });
+
+    await expect(ui.acknowledgeImmersiveModeEducation()).resolves.toBe(true);
+    expect(calls).toEqual([
+      ['-s', 'emulator-5554', 'exec-out', 'uiautomator', 'dump', '--compressed', '/dev/stdout'],
+      ['-s', 'emulator-5554', 'exec-out', 'uiautomator', 'dump', '--compressed', '/dev/stdout'],
+      ['-s', 'emulator-5554', 'shell', 'input', 'tap', '20', '40'],
+    ]);
+  });
+
+  it('does not acknowledge same-labeled UI owned by another package', async () => {
+    const calls: string[][] = [];
+    const ui = createAndroidSystemUi({
+      adbPath: '/sdk/platform-tools/adb',
+      serial: 'emulator-5554',
+      runTextCommand: async (_adb, args) => {
+        calls.push([...args]);
+        return xml(
+          '<node package="com.example.other" text="Viewing full screen" enabled="true">' +
+          '<node package="com.example.other" text="Got it" enabled="true" clickable="true" ' +
+          'bounds="[10,20][30,60]" />' +
+          '</node>',
+        );
+      },
+    });
+
+    await expect(ui.acknowledgeImmersiveModeEducation()).resolves.toBe(false);
+    expect(calls.some(args => args.includes('tap'))).toBe(false);
+  });
+
+  it('refuses to tap if the SystemUI notice disappears before the fresh click check', async () => {
+    const calls: string[][] = [];
+    let hierarchyRead = 0;
+    const ui = createAndroidSystemUi({
+      adbPath: '/sdk/platform-tools/adb',
+      serial: 'emulator-5554',
+      runTextCommand: async (_adb, args) => {
+        calls.push([...args]);
+        if (!args.includes('dump')) return '';
+        hierarchyRead += 1;
+        return hierarchyRead === 1
+          ? xml(
+            '<node package="com.android.systemui" text="Viewing full screen" enabled="true">' +
+            '<node package="com.android.systemui" text="Got it" class="android.widget.Button" ' +
+            'enabled="true" clickable="true" bounds="[10,20][30,60]" />' +
+            '</node>',
+          )
+          : xml('<node package="com.android.packageinstaller" text="Update" enabled="true" ' +
+            'clickable="true" bounds="[10,20][30,60]" />');
+      },
+    });
+
+    await expect(ui.acknowledgeImmersiveModeEducation()).rejects.toThrow(
+      'TERMINAL_AUTOMATION_ANDROID_SYSTEM_UI_BUTTON_MATCH_COUNT_0',
+    );
+    expect(calls.some(args => args.includes('tap'))).toBe(false);
   });
 
   it('uses the selected Android serial and taps the unique button center', async () => {

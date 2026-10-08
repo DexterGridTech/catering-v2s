@@ -7,7 +7,7 @@ import {
   type Server as HttpServer,
 } from 'node:http';
 import {createServer as createNetServer, type Server as NetServer} from 'node:net';
-import {readFileSync, writeFileSync} from 'node:fs';
+import {copyFileSync, readFileSync, writeFileSync} from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {afterAll, beforeAll, expect, it} from 'vitest';
@@ -56,7 +56,7 @@ type UpdateTarget = Readonly<{
     readonly sourceRef: string;
     readonly expectedSha256: string;
     readonly artifact: ArtifactManifest;
-  }>;
+  }> | null;
   readonly hot: Readonly<{
     readonly sourceRef: string;
     readonly expectedSha256: string;
@@ -70,6 +70,12 @@ const sha256 = (value: Buffer): string => createHash('sha256').update(value).dig
 const readArtifact = (file: string): ArtifactManifest => {
   if (!runDirectory) throw new Error('TERMINAL_AUTOMATION_RUN_ID_REQUIRED');
   return JSON.parse(readFileSync(path.join(runDirectory, 'update', appName, file), 'utf8')) as ArtifactManifest;
+};
+const writeArtifact = (file: string, artifact: ArtifactManifest): void => {
+  if (!runDirectory) throw new Error('TERMINAL_AUTOMATION_RUN_ID_REQUIRED');
+  writeFileSync(path.join(runDirectory, 'update', appName, file), `${JSON.stringify(artifact, null, 2)}\n`, {
+    mode: 0o600,
+  });
 };
 
 const proxyHeaders = (headers: IncomingHttpHeaders): Record<string, string | string[]> => {
@@ -170,6 +176,12 @@ let hotSourceResponseGate: Promise<void> | undefined;
 let releaseHotSourceResponse: (() => void) | undefined;
 let initialSessionId: string | null = null;
 let initialDeviceId: string | null = null;
+let compatibilityTargetDocument:
+  Readonly<{target: UpdateTarget; sourcePaths: Readonly<Record<string, string>>}> | undefined;
+const updatePayloadPaths = new Map<
+  ArtifactManifest,
+  Readonly<{readonly kind: 'full' | 'hot'; readonly path: string}>
+>();
 
 const responseResult = (response: unknown): unknown => {
   if (
@@ -488,7 +500,10 @@ const waitForWallpaperAssets = async (
   }
 };
 
-const buildArtifact = (kind: 'install' | 'full' | 'hot'): void => {
+const buildArtifact = (
+  kind: 'install' | 'full' | 'hot',
+  options?: Readonly<{nativeBuildNumber?: number; bundleVersion?: string; minimumFullManifest?: string}>,
+): void => {
   if (!runId || !packageId || !httpServer) throw new Error('TERMINAL_AUTOMATION_UPDATE_BUILD_CONTEXT_MISSING');
   const shape = parseMainSampleShape(process.env.TERMINAL_AUTOMATION_SHAPE);
   const surfaceForm = mainSampleSurfaceForm(shape);
@@ -524,8 +539,27 @@ const buildArtifact = (kind: 'install' | 'full' | 'hot'): void => {
       environment.EXPO_PUBLIC_TER_DEBUG_FAILURE_INJECTION_OWNER = 'surface-content';
     }
   }
-  const result = spawnSync('yarn', [`package:${kind}`], {
-    cwd: path.join(root, 'apps/terminal/application/android', appName),
+  if (options?.nativeBuildNumber !== undefined)
+    environment.TERMINAL_AUTOMATION_FULL_NATIVE_BUILD_NUMBER = String(options.nativeBuildNumber);
+  if (options?.bundleVersion !== undefined)
+    environment.TERMINAL_AUTOMATION_UPDATE_BUNDLE_VERSION = options.bundleVersion;
+  const args =
+    options === undefined
+      ? [`package:${kind}`]
+      : [
+          path.join(root, 'scripts/build/terminal-update-artifact.mjs'),
+          '--app',
+          appName,
+          '--kind',
+          kind,
+          '--run-id',
+          runId,
+          ...(options.minimumFullManifest === undefined
+            ? []
+            : ['--minimum-full-manifest', options.minimumFullManifest]),
+        ];
+  const result = spawnSync(options === undefined ? 'yarn' : process.execPath, args, {
+    cwd: options === undefined ? path.join(root, 'apps/terminal/application/android', appName) : root,
     encoding: 'utf8',
     env: environment,
     maxBuffer: 8 * 1024 * 1024,
@@ -547,13 +581,81 @@ const buildArtifact = (kind: 'install' | 'full' | 'hot'): void => {
     throw new Error('TERMINAL_AUTOMATION_UPDATE_HTTP_LISTENER_LOST');
 };
 
+const snapshotCompatibilityArtifact = (
+  kind: 'full' | 'hot',
+  manifestName: string,
+  payloadName: string,
+): ArtifactManifest => {
+  if (!runDirectory) throw new Error('TERMINAL_AUTOMATION_RUN_ID_REQUIRED');
+  const outputRoot = path.join(runDirectory, 'update', appName);
+  const artifact = readArtifact(`${kind}.json`);
+  const sourcePath =
+    kind === 'full' ? path.join(outputRoot, artifact.apk?.path ?? '') : path.join(outputRoot, `${appName}-hot.zip`);
+  const targetPath = path.join(outputRoot, payloadName);
+  copyFileSync(sourcePath, targetPath);
+  const snapshot =
+    kind === 'full'
+      ? Object.freeze({...artifact, apk: Object.freeze({...artifact.apk!, path: payloadName})})
+      : artifact;
+  writeArtifact(manifestName, snapshot);
+  updatePayloadPaths.set(snapshot, Object.freeze({kind, path: targetPath}));
+  return snapshot;
+};
+
+const updateDocument = (
+  full: ArtifactManifest | null,
+  hot: ArtifactManifest,
+  fullBytes?: Buffer,
+  hotBytes?: Buffer,
+): Readonly<{target: UpdateTarget; sourcePaths: Readonly<Record<string, string>>}> => {
+  if (!runId || !packageId) throw new Error('TERMINAL_AUTOMATION_UPDATE_BUILD_CONTEXT_MISSING');
+  const fullRef = `full-${runId}`;
+  const hotRef = `hot-${runId}`;
+  const fullArtifactPath =
+    full === null ? undefined : path.join(runDirectory!, 'update', appName, full.apk?.path ?? '');
+  const hotPayload = updatePayloadPaths.get(hot);
+  const fullPayload = full === null ? undefined : updatePayloadPaths.get(full);
+  if (hotPayload?.kind !== 'hot' || (full !== null && fullPayload?.kind !== 'full'))
+    throw new Error('TERMINAL_AUTOMATION_UPDATE_PAYLOAD_NOT_REGISTERED');
+  const fullPayloadBytes = fullBytes ?? (fullArtifactPath === undefined ? undefined : readFileSync(fullArtifactPath));
+  const hotPayloadBytes = hotBytes ?? readFileSync(hotPayload.path);
+  return Object.freeze({
+    target: Object.freeze({
+      ruleRef: `automation-${runId}`,
+      createdAt: Date.now(),
+      applicationId: packageId,
+      full:
+        full === null
+          ? null
+          : Object.freeze({sourceRef: fullRef, expectedSha256: sha256(fullPayloadBytes!), artifact: full}),
+      hot: Object.freeze({sourceRef: hotRef, expectedSha256: sha256(hotPayloadBytes), artifact: hot}),
+      strategy: Object.freeze({maxNetworkAttempts: 0, bootTimeoutMs: 60_000}),
+      selectionContext: Object.freeze({selectedSpace: 'development', contextIdentity: runId}),
+    }),
+    sourcePaths: Object.freeze({...(full === null ? {} : {[fullRef]: '/full.apk'}), [hotRef]: '/hot.zip'}),
+  });
+};
+
+const resetHotSourceGate = (gated: boolean): void => {
+  hotSourceRequested = new Promise<void>(resolve => {
+    signalHotSourceRequested = resolve;
+  });
+  hotSourceResponseGate = gated
+    ? new Promise<void>(resolve => {
+        releaseHotSourceResponse = resolve;
+      })
+    : Promise.resolve();
+  if (!gated) releaseHotSourceResponse = () => undefined;
+};
+
 beforeAll(
   async () => {
     if (
       updateCase !== 'update.full-hot' &&
       updateCase !== 'update.offline-assets' &&
       updateCase !== 'update.boot-guard' &&
-      updateCase !== 'update.install-result'
+      updateCase !== 'update.install-result' &&
+      updateCase !== 'update.compatibility'
     )
       return;
     if (!runId || !runDirectory) throw new Error('TERMINAL_AUTOMATION_RUN_ID_REQUIRED');
@@ -566,12 +668,7 @@ beforeAll(
     const identity = androidAutomationBuildIdentity(runId, selectedSample);
     packageId = identity.packageId;
 
-    hotSourceRequested = new Promise<void>(resolve => {
-      signalHotSourceRequested = resolve;
-    });
-    hotSourceResponseGate = new Promise<void>(resolve => {
-      releaseHotSourceResponse = resolve;
-    });
+    resetHotSourceGate(updateCase !== 'update.compatibility');
 
     httpServer = createHttpServer((request, response) => {
       if (request.url?.startsWith('/api/')) {
@@ -587,9 +684,14 @@ beforeAll(
         return;
       }
       if (request.url === '/full.apk' && runDirectory) {
-        const artifact = readArtifact('full.json');
-        const apkPath = path.join(runDirectory, 'update', appName, artifact.apk?.path ?? '');
-        const bytes = readFileSync(apkPath);
+        const artifact = targetDocument?.target.full?.artifact;
+        const payload = artifact === undefined ? undefined : updatePayloadPaths.get(artifact);
+        if (artifact === undefined || payload?.kind !== 'full') {
+          response.writeHead(404, {'cache-control': 'no-store'});
+          response.end();
+          return;
+        }
+        const bytes = readFileSync(payload.path);
         process.stdout.write(
           `TERMINAL_AUTOMATION_UPDATE_SOURCE run=${runId} resource=full.apk status=200 bytes=${bytes.byteLength}\n`,
         );
@@ -601,7 +703,14 @@ beforeAll(
         return;
       }
       if (request.url === '/hot.zip' && runDirectory) {
-        const bytes = readFileSync(path.join(runDirectory, 'update', appName, `${appName}-hot.zip`));
+        const artifact = targetDocument?.target.hot?.artifact;
+        const payload = artifact === undefined ? undefined : updatePayloadPaths.get(artifact);
+        if (artifact === undefined || payload?.kind !== 'hot') {
+          response.writeHead(404, {'cache-control': 'no-store'});
+          response.end();
+          return;
+        }
+        const bytes = readFileSync(payload.path);
         signalHotSourceRequested?.();
         void hotSourceResponseGate?.then(() => {
           if (response.destroyed) return;
@@ -662,8 +771,72 @@ beforeAll(
       `TERMINAL_AUTOMATION_UPDATE_ANDROID_PREPARED run=${runId} app=${appName} serial=${serial} package=${packageId}\n`,
     );
     buildArtifact('install');
-    buildArtifact('full');
-    buildArtifact('hot');
+    let compatibilityHotFive: ArtifactManifest | undefined;
+    if (updateCase === 'update.compatibility') {
+      buildArtifact('hot', {
+        nativeBuildNumber: 1,
+        bundleVersion: '1.0.5',
+        minimumFullManifest: `update/${appName}/install.json`,
+      });
+      compatibilityHotFive = snapshotCompatibilityArtifact(
+        'hot',
+        'compatibility-hot-five.json',
+        `${appName}-compat-hot-five.zip`,
+      );
+      buildArtifact('full', {nativeBuildNumber: 2, bundleVersion: '1.0.4'});
+      const compatibilityFull = snapshotCompatibilityArtifact(
+        'full',
+        'compatibility-full.json',
+        `${appName}-compat-full.apk`,
+      );
+      buildArtifact('full', {nativeBuildNumber: 3, bundleVersion: '1.0.7'});
+      const compatibilityExternalFull = snapshotCompatibilityArtifact(
+        'full',
+        'compatibility-external-full.json',
+        `${appName}-compat-external-full.apk`,
+      );
+      if (compatibilityExternalFull.nativeBuildNumber <= compatibilityFull.nativeBuildNumber)
+        throw new Error('TERMINAL_AUTOMATION_COMPATIBILITY_EXTERNAL_APK_NOT_HIGHER');
+      writeArtifact('full.json', compatibilityFull);
+      buildArtifact('hot', {
+        nativeBuildNumber: 2,
+        bundleVersion: '1.0.6',
+        minimumFullManifest: `update/${appName}/compatibility-full.json`,
+      });
+      const compatibilityHotSix = snapshotCompatibilityArtifact(
+        'hot',
+        'compatibility-hot-six.json',
+        `${appName}-compat-hot-six.zip`,
+      );
+      updatePayloadPaths.set(
+        compatibilityFull,
+        Object.freeze({kind: 'full', path: path.join(runDirectory, 'update', appName, compatibilityFull.apk!.path)}),
+      );
+      updatePayloadPaths.set(
+        compatibilityHotSix,
+        Object.freeze({kind: 'hot', path: path.join(runDirectory, 'update', appName, `${appName}-compat-hot-six.zip`)}),
+      );
+      updatePayloadPaths.set(
+        compatibilityHotFive,
+        Object.freeze({
+          kind: 'hot',
+          path: path.join(runDirectory, 'update', appName, `${appName}-compat-hot-five.zip`),
+        }),
+      );
+      if (
+        compatibilityHotFive.publicationId !== compatibilityHotSix.publicationId ||
+        updatePayloadPaths.get(compatibilityHotFive)?.path !==
+          path.join(runDirectory, 'update', appName, `${appName}-compat-hot-five.zip`) ||
+        updatePayloadPaths.get(compatibilityHotSix)?.path !==
+          path.join(runDirectory, 'update', appName, `${appName}-compat-hot-six.zip`)
+      ) {
+        throw new Error('TERMINAL_AUTOMATION_COMPATIBILITY_HOT_PAYLOAD_IDENTITY_INVALID');
+      }
+      compatibilityTargetDocument = updateDocument(compatibilityFull, compatibilityHotSix);
+    } else {
+      buildArtifact('full');
+      buildArtifact('hot');
+    }
 
     const install = readArtifact('install.json');
     const full = readArtifact('full.json');
@@ -673,8 +846,8 @@ beforeAll(
       !full.apk ||
       !hot.minimumFull ||
       full.nativeBuildNumber !== 2 ||
-      full.bundleVersion !== '1.0.0' ||
-      hot.bundleVersion !== '1.0.1' ||
+      full.bundleVersion !== (updateCase === 'update.compatibility' ? '1.0.4' : '1.0.0') ||
+      hot.bundleVersion !== (updateCase === 'update.compatibility' ? '1.0.6' : '1.0.1') ||
       install.applicationId !== packageId ||
       full.applicationId !== packageId ||
       hot.applicationId !== packageId ||
@@ -687,20 +860,20 @@ beforeAll(
     }
     const fullBytes = readFileSync(path.join(runDirectory, 'update', appName, full.apk.path));
     const hotBytes = readFileSync(path.join(runDirectory, 'update', appName, `${appName}-hot.zip`));
-    const fullRef = `full-${runId}`;
-    const hotRef = `hot-${runId}`;
-    targetDocument = Object.freeze({
-      target: Object.freeze({
-        ruleRef: `automation-${runId}`,
-        createdAt: Date.now(),
-        applicationId: packageId,
-        full: Object.freeze({sourceRef: fullRef, expectedSha256: sha256(fullBytes), artifact: full}),
-        hot: Object.freeze({sourceRef: hotRef, expectedSha256: sha256(hotBytes), artifact: hot}),
-        strategy: Object.freeze({maxNetworkAttempts: 0, bootTimeoutMs: 60_000}),
-        selectionContext: Object.freeze({selectedSpace: 'development', contextIdentity: runId}),
-      }),
-      sourcePaths: Object.freeze({[fullRef]: '/full.apk', [hotRef]: '/hot.zip'}),
-    });
+    updatePayloadPaths.set(
+      full,
+      Object.freeze({kind: 'full', path: path.join(runDirectory, 'update', appName, full.apk.path)}),
+    );
+    updatePayloadPaths.set(
+      hot,
+      Object.freeze({kind: 'hot', path: path.join(runDirectory, 'update', appName, `${appName}-hot.zip`)}),
+    );
+    if (updateCase === 'update.compatibility') {
+      if (!compatibilityHotFive) throw new Error('TERMINAL_AUTOMATION_COMPATIBILITY_HOT_FIVE_MISSING');
+      targetDocument = updateDocument(null, compatibilityHotFive);
+    } else {
+      targetDocument = updateDocument(full, hot, fullBytes, hotBytes);
+    }
 
     installAttempted = true;
     await connection.install(path.join(runDirectory, 'update', appName, install.apk.path));
@@ -744,7 +917,8 @@ afterAll(async () => {
     updateCase !== 'update.full-hot' &&
     updateCase !== 'update.offline-assets' &&
     updateCase !== 'update.boot-guard' &&
-    updateCase !== 'update.install-result'
+    updateCase !== 'update.install-result' &&
+    updateCase !== 'update.compatibility'
   )
     return;
   const errors: string[] = [];
@@ -760,18 +934,20 @@ afterAll(async () => {
       process.stdout.write(`TERMINAL_AUTOMATION_DEVICE_CLEANUP_STAGE run=${runId} stage=package-readback\n`);
       if (await connection.isInstalled(packageId)) errors.push('ANDROID_PACKAGE_REMAINS');
     } catch (error) {
-      const code = error instanceof Error && /^TERMINAL_AUTOMATION_[A-Z0-9_]+$/u.test(error.message)
-        ? error.message
-        : 'ANDROID_PACKAGE_CLEANUP_FAILED';
+      const code =
+        error instanceof Error && /^TERMINAL_AUTOMATION_[A-Z0-9_]+$/u.test(error.message)
+          ? error.message
+          : 'ANDROID_PACKAGE_CLEANUP_FAILED';
       errors.push(code);
     }
     try {
       process.stdout.write(`TERMINAL_AUTOMATION_DEVICE_CLEANUP_STAGE run=${runId} stage=connection-close\n`);
       await connection.close();
     } catch (error) {
-      const code = error instanceof Error && /^TERMINAL_AUTOMATION_[A-Z0-9_]+$/u.test(error.message)
-        ? error.message
-        : 'ANDROID_CONNECTION_CLEANUP_FAILED';
+      const code =
+        error instanceof Error && /^TERMINAL_AUTOMATION_[A-Z0-9_]+$/u.test(error.message)
+          ? error.message
+          : 'ANDROID_CONNECTION_CLEANUP_FAILED';
       errors.push(code);
     }
   }
@@ -793,7 +969,8 @@ it.skipIf(
   updateCase !== 'update.full-hot' &&
     updateCase !== 'update.offline-assets' &&
     updateCase !== 'update.boot-guard' &&
-    updateCase !== 'update.install-result',
+    updateCase !== 'update.install-result' &&
+    updateCase !== 'update.compatibility',
 )(
   'installs FULL then loads HOT on the same Android identity and verifies wallpaper images',
   async () => {
@@ -809,14 +986,14 @@ it.skipIf(
     const install = readArtifact('install.json');
     const full = readArtifact('full.json');
     const hot = readArtifact('hot.json');
-    const initial = connection.driver.getSessions().find(value => value.appName === sample.appName);
+    let initial = connection.driver.getSessions().find(value => value.appName === sample.appName);
     if (initial === undefined) throw new Error('TERMINAL_AUTOMATION_UPDATE_INITIAL_SESSION_MISSING');
-    const androidUi = createAndroidJourneyUiPort({
+    let androidUi = createAndroidJourneyUiPort({
       connection,
       sessionId: initial.sessionId,
       onStep: step => process.stdout.write(`TERMINAL_AUTOMATION_DRIVER_STEP run=${runId} step=${step}\n`),
     });
-    const systemUi = androidUi;
+    let systemUi = androidUi;
     const info = responseResult(await connection.driver.request(initial.sessionId, 'runtime.info', null));
     if (!info || typeof info !== 'object' || !('descriptors' in info) || !Array.isArray(info.descriptors)) {
       throw new Error('TERMINAL_AUTOMATION_UPDATE_RUNTIME_INFO_INVALID');
@@ -840,32 +1017,212 @@ it.skipIf(
       (value: unknown) => typeof value === 'string' && value.endsWith('.accept-target'),
     );
     if (typeof commandName !== 'string') throw new Error('TERMINAL_AUTOMATION_UPDATE_COMMAND_MISSING');
-    const dispatchUpdateCommand = async (name: string, payload: unknown) => {
+    let assertCompatibilityDataReadback: ((sessionId: string, stage: string) => Promise<void>) | undefined;
+    const dispatchUpdateCommand = async (name: string, payload: unknown, sessionId = initial!.sessionId) => {
       const requestId = `req_${Date.now().toString(36)}_${randomUUID().replaceAll('-', '').slice(0, 16)}`;
-      const commandCompletion = waitForCommandResult(connection!.driver, initial!.sessionId, requestId, 180_000);
+      const commandCompletion = waitForCommandResult(connection!.driver, sessionId, requestId, 180_000);
       void commandCompletion.promise.catch(() => undefined);
       try {
         const accepted = responseResult(
-          await connection!.driver.request(initial!.sessionId, 'command.dispatch', {commandName: name, payload, requestId}),
+          await connection!.driver.request(sessionId, 'command.dispatch', {
+            commandName: name,
+            payload,
+            requestId,
+          }),
         );
         if (!isRecord(accepted) || accepted.requestId !== requestId || accepted.accepted !== true) {
           commandCompletion.cancel();
           throw new Error('TERMINAL_AUTOMATION_UPDATE_COMMAND_NOT_ACCEPTED');
         }
         const completion = await commandCompletion.promise;
+        const result = isRecord(completion.result) ? completion.result : undefined;
+        const actorResults = result && Array.isArray(result.actorResults) ? result.actorResults : [];
+        const actorSummary = actorResults.map(actor => {
+          if (!isRecord(actor)) return 'invalid-record';
+          const error = isRecord(actor.error) ? actor.error : undefined;
+          return `${typeof actor.actorKey === 'string' ? actor.actorKey : 'unknown'}:${typeof actor.status === 'string' ? actor.status : 'unknown'}:${typeof error?.code === 'string' ? error.code : 'no-error'}:${'result' in actor ? 'has-result' : 'no-result'}`;
+        }).join(',');
+        process.stdout.write(
+          `TERMINAL_AUTOMATION_UPDATE_COMMAND_RESULT run=${runId} request=${requestId} command=${name} status=${typeof result?.status === 'string' ? result.status : 'invalid'} actorCount=${actorResults.length} actors=${actorSummary || 'none'}\n`,
+        );
         if (
-          !isRecord(completion.result) ||
-          completion.result.status !== 'completed' ||
-          !Array.isArray(completion.result.actorResults) ||
-          !isRecord(completion.result.actorResults[0]) ||
-          !isRecord(completion.result.actorResults[0].result)
-        ) throw new Error('TERMINAL_AUTOMATION_UPDATE_COMMAND_RESULT_INVALID');
-        return Object.freeze({requestId, result: completion.result.actorResults[0].result});
+          !result ||
+          result.status !== 'completed' ||
+          !Array.isArray(result.actorResults) ||
+          !isRecord(result.actorResults[0]) ||
+          !('result' in result.actorResults[0])
+        )
+          throw new Error('TERMINAL_AUTOMATION_UPDATE_COMMAND_RESULT_INVALID');
+        return Object.freeze({requestId, result: result.actorResults[0].result});
       } catch (error) {
         commandCompletion.cancel();
         throw error;
       }
     };
+    const dispatchUpdateCommandAcrossRuntimeReload = async (name: string, payload: unknown): Promise<string> => {
+      const requestId = `req_${Date.now().toString(36)}_${randomUUID().replaceAll('-', '').slice(0, 16)}`;
+      const accepted = responseResult(
+        await connection!.driver.request(initial!.sessionId, 'command.dispatch', {
+          commandName: name,
+          payload,
+          requestId,
+        }),
+      );
+      if (!isRecord(accepted) || accepted.requestId !== requestId || accepted.accepted !== true) {
+        throw new Error('TERMINAL_AUTOMATION_UPDATE_COMMAND_NOT_ACCEPTED');
+      }
+      process.stdout.write(
+        `TERMINAL_AUTOMATION_UPDATE_COMMAND_ACCEPTED run=${runId} request=${requestId} observation=successor-runtime\n`,
+      );
+      return requestId;
+    };
+    if (updateCase === 'update.compatibility') {
+      if (
+        compatibilityTargetDocument === undefined ||
+        targetDocument.target.full !== null ||
+        targetDocument.target.hot.artifact.bundleVersion !== '1.0.5'
+      ) {
+        throw new Error('TERMINAL_AUTOMATION_COMPATIBILITY_INITIAL_TARGET_INVALID');
+      }
+      const hotFiveRequestId = await dispatchUpdateCommandAcrossRuntimeReload(commandName, {
+        selectionContext: targetDocument.target.selectionContext,
+      });
+      const hotFiveSession = await waitForAutomationSession(
+        connection.driver,
+        value => value.appName === sample.appName && value.sessionId !== initial!.sessionId,
+        180_000,
+      );
+      const hotFiveActual = await readSelector(
+        connection.driver,
+        hotFiveSession.sessionId,
+        'kernel.base.terminal-update.selectTerminalUpdateActualVersions',
+        [],
+      );
+      expect(hotFiveActual).toMatchObject({
+        applicationId: packageId,
+        nativeBuildNumber: install.nativeBuildNumber,
+        bundleVersion: '1.0.5',
+        publicationId: targetDocument.target.hot.artifact.publicationId,
+        entryKind: 'hot',
+      });
+      process.stdout.write(
+        `TERMINAL_AUTOMATION_UPDATE_COMPATIBILITY_STAGE run=${runId} request=${hotFiveRequestId} stage=hot-five nativeBuild=${install.nativeBuildNumber} bundle=1.0.5 observation=successor-runtime-selector\n`,
+      );
+
+      const layerId = `update-compat-${runId.slice(0, 24)}`;
+      const layerMarker = `compatibility-${runId}`;
+      const wallpaper = selectedSample === 'wallpaper';
+      if (wallpaper) {
+        const qualification = await readSelector(
+          connection.driver,
+          hotFiveSession.sessionId,
+          'kernel.feature.sample-staff-session.selectHostStaffQualification',
+          [],
+        );
+        if (!isRecord(qualification) || qualification.status !== 'authenticated') {
+          const hotFiveUi = createAndroidJourneyUiPort({
+            connection,
+            sessionId: hotFiveSession.sessionId,
+            onStep: step => process.stdout.write(`TERMINAL_AUTOMATION_DRIVER_STEP run=${runId} step=${step}\n`),
+          });
+          await loginSampleStaff(
+            {server: connection.driver, sessionId: hotFiveSession.sessionId, ...hotFiveUi},
+            {operatorName: 'A001', passcode: '1111', expectedScreen: 'sample.wallpaper.picker'},
+          );
+        }
+        const selected = await dispatchUpdateCommand(
+          'kernel.feature.sample-wallpaper.select-wallpaper',
+          {wallpaperId: 'w2'},
+          hotFiveSession.sessionId,
+        );
+        expect(selected.result).toBeNull();
+        const confirmed = await dispatchUpdateCommand(
+          'kernel.feature.sample-wallpaper.confirm-wallpaper',
+          {},
+          hotFiveSession.sessionId,
+        );
+        expect(confirmed.result).toBeNull();
+      } else {
+        const written = await dispatchUpdateCommand(
+          'kernel.base.ui-state.open-layer',
+          Object.freeze({
+            displayMode: 'PRIMARY',
+            layerId,
+            partKey: 'sample.desk.waiting-confirm',
+            persistence: 'durable',
+            props: Object.freeze({compatibilityMarker: layerMarker}),
+          }),
+          hotFiveSession.sessionId,
+        );
+        expect(written.result).toMatchObject({changed: true, persistenceStatus: 'succeeded'});
+      }
+      assertCompatibilityDataReadback = async (sessionId: string, stage: string): Promise<void> => {
+        if (wallpaper) {
+          const wallpaperId = await readSelector(
+            connection!.driver,
+            sessionId,
+            'kernel.feature.sample-wallpaper.selectWallpaperId',
+            [],
+          );
+          expect(wallpaperId).toBe('w2');
+          process.stdout.write(
+            `TERMINAL_AUTOMATION_COMPATIBILITY_DATA run=${runId} stage=${stage} owner=sample-wallpaper selection=w2\n`,
+          );
+          return;
+        }
+        const layers = await readSelector(connection!.driver, sessionId, 'kernel.base.ui-state.selectLayers', [
+          'PRIMARY',
+        ]);
+        const matching = Array.isArray(layers)
+          ? layers.find(value => isRecord(value) && value.layerId === layerId)
+          : undefined;
+        if (!isRecord(matching) || !isRecord(matching.props) || matching.props.compatibilityMarker !== layerMarker)
+          throw new Error(`TERMINAL_AUTOMATION_COMPATIBILITY_DATA_NOT_READ_${stage.toUpperCase()}`);
+        process.stdout.write(
+          `TERMINAL_AUTOMATION_UPDATE_COMPATIBILITY_DATA run=${runId} stage=${stage} owner=ui-state layer=present\n`,
+        );
+      };
+      await assertCompatibilityDataReadback(hotFiveSession.sessionId, 'hot-five-write');
+
+      // A fresh app Runtime creates a new boot token; startup reconciliation must
+      // release only the completed prior task while durable UI state remains.
+      await connection.forceStop(packageId);
+      await connection.launch(`${packageId}/${sample.applicationId}.MainActivity`);
+      const restartedSession = await waitForAutomationSession(
+        connection.driver,
+        value => value.appName === sample.appName && value.sessionId !== hotFiveSession.sessionId,
+        90_000,
+      );
+      initial = restartedSession;
+      androidUi = createAndroidJourneyUiPort({
+        connection,
+        sessionId: restartedSession.sessionId,
+        onStep: step => process.stdout.write(`TERMINAL_AUTOMATION_DRIVER_STEP run=${runId} step=${step}\n`),
+      });
+      systemUi = androidUi;
+      await assertCompatibilityDataReadback(restartedSession.sessionId, 'same-js-five-process-restart');
+      const restartedActual = await readSelector(
+        connection.driver,
+        restartedSession.sessionId,
+        'kernel.base.terminal-update.selectTerminalUpdateActualVersions',
+        [],
+      );
+      expect(restartedActual).toMatchObject({bundleVersion: '1.0.5', entryKind: 'hot'});
+      const releasedTask = await waitForSelector(
+        connection.driver,
+        restartedSession.sessionId,
+        'kernel.base.terminal-update.selectTerminalUpdateTask',
+        [],
+        value => value === null,
+        20_000,
+      );
+      expect(releasedTask).toBeNull();
+      resetHotSourceGate(true);
+      targetDocument = compatibilityTargetDocument;
+      process.stdout.write(
+        `TERMINAL_AUTOMATION_UPDATE_COMPATIBILITY_TASK run=${runId} stage=after-new-runtime state=released\n`,
+      );
+    }
     const acceptedTarget = await dispatchUpdateCommand(commandName, {
       selectionContext: targetDocument.target.selectionContext,
     });
@@ -896,7 +1253,7 @@ it.skipIf(
     );
 
     const fullSessionMatches = (value: Readonly<{readonly appName: string; readonly sessionId: string}>): boolean =>
-      value.appName === sample.appName && value.sessionId !== initial.sessionId;
+      value.appName === sample.appName && value.sessionId !== initial!.sessionId;
     let fullSession: Awaited<ReturnType<typeof waitForAutomationSession>> | undefined;
     let installerOpenedApp = false;
     let installButton: Awaited<ReturnType<AndroidAutomationConnection['systemUi']['waitForButton']>> | undefined;
@@ -967,11 +1324,21 @@ it.skipIf(
       } else {
         process.stdout.write(`TERMINAL_AUTOMATION_INSTALLER_SOURCE_SETTINGS run=${runId} state=already-enabled\n`);
       }
-      process.stdout.write(`TERMINAL_AUTOMATION_INSTALLER_SOURCE_SETTINGS run=${runId} action=return-to-installer\n`);
-      // Settings is a separate system screen. Return once to the pending PackageInstaller flow;
-      // never issue a second back or infer installation from the application screen.
+      // Returning to the app lets its foreground lifecycle resume the exact
+      // staged confirmation intent. Some Android builds keep Settings in front
+      // after the permission readback, so explicitly foreground the app too.
       await systemUi.pressSystemBack();
-      process.stdout.write(`TERMINAL_AUTOMATION_INSTALLER_SOURCE_SETTINGS run=${runId} action=system-back\n`);
+      process.stdout.write(
+        `TERMINAL_AUTOMATION_INSTALLER_SOURCE_SETTINGS run=${runId} action=returned-from-settings\n`,
+      );
+      await connection.launch(`${packageId}/${sample.applicationId}.MainActivity`);
+      process.stdout.write(
+        `TERMINAL_AUTOMATION_INSTALLER_SOURCE_SETTINGS run=${runId} action=app-foreground-requested\n`,
+      );
+      const immersiveNoticeAcknowledged = await systemUi.acknowledgeImmersiveModeEducation();
+      process.stdout.write(
+        `TERMINAL_AUTOMATION_IMMERSIVE_NOTICE run=${runId} acknowledged=${immersiveNoticeAcknowledged ? 1 : 0}\n`,
+      );
       try {
         installButton = await systemUi.waitForSystemButton({
           labels: ['Install', 'Update'],
@@ -983,6 +1350,8 @@ it.skipIf(
         );
       } catch {
         const screenshotPath = runDirectory ? path.join(runDirectory, 'installer-return-unresolved.png') : undefined;
+        const screen = await systemUi.readSystemScreenSummary().catch(() => 'UNAVAILABLE');
+        process.stdout.write(`TERMINAL_AUTOMATION_INSTALLER_RETURN_UNRESOLVED_STATE run=${runId} screen=${screen}\n`);
         if (screenshotPath) {
           writeFileSync(screenshotPath, await connection.capture('primary'), {mode: 0o600});
           process.stdout.write(
@@ -1055,7 +1424,10 @@ it.skipIf(
       }
     }
     if (updateCase === 'update.install-result') {
-      if (installButton === undefined || !installerPackagePrefixes.some(prefix => installButton?.packageName?.startsWith(prefix))) {
+      if (
+        installButton === undefined ||
+        !installerPackagePrefixes.some(prefix => installButton?.packageName?.startsWith(prefix))
+      ) {
         throw new Error('TERMINAL_AUTOMATION_INSTALL_RESULT_INSTALLER_SCREEN_NOT_OWNED');
       }
       const cancelledTask = await readSelector(
@@ -1076,9 +1448,7 @@ it.skipIf(
       } catch (error) {
         const screen = await systemUi.readSystemScreenSummary().catch(() => 'UNAVAILABLE');
         await writeNativeUpdateDiagnostics({connection, packageId, runId});
-        process.stdout.write(
-          `TERMINAL_AUTOMATION_INSTALL_RESULT_CANCEL_NOT_AVAILABLE run=${runId} screen=${screen}\n`,
-        );
+        process.stdout.write(`TERMINAL_AUTOMATION_INSTALL_RESULT_CANCEL_NOT_AVAILABLE run=${runId} screen=${screen}\n`);
         throw error;
       }
       if (!installerPackagePrefixes.some(prefix => cancelButton.packageName?.startsWith(prefix))) {
@@ -1100,8 +1470,11 @@ it.skipIf(
       const reaccepted = await dispatchUpdateCommand(commandName, {
         selectionContext: targetDocument.target.selectionContext,
       });
-      if (!isRecord(reaccepted.result) || reaccepted.result.status !== 'unknown' ||
-        reaccepted.result.reason !== 'INSTALLER_AWAITING_READBACK') {
+      if (
+        !isRecord(reaccepted.result) ||
+        reaccepted.result.status !== 'unknown' ||
+        reaccepted.result.reason !== 'INSTALLER_AWAITING_READBACK'
+      ) {
         const observedTask = await readSelector(
           connection.driver,
           initial.sessionId,
@@ -1238,7 +1611,7 @@ it.skipIf(
             `TERMINAL_AUTOMATION_FULL_SESSION_TIMEOUT run=${runId}`,
             `sessionCount=${sessions.length}`,
             `sampleSessionCount=${sessions.filter(value => value.appName === sample.appName).length}`,
-            `initialSessionPresent=${sessions.some(value => value.sessionId === initial.sessionId) ? 1 : 0}`,
+            `initialSessionPresent=${sessions.some(value => value.sessionId === initial!.sessionId) ? 1 : 0}`,
           ].join(' ') + '\n',
         );
         await writeAndroidFailureDiagnostics({connection, packageId, runId, boundary: 'full-session'});
@@ -1270,21 +1643,35 @@ it.skipIf(
         applicationId: packageId,
         nativeBuildNumber: full.nativeBuildNumber,
         entryKind: 'embedded',
+        ...(updateCase === 'update.compatibility' ? {bundleVersion: '1.0.4'} : {}),
       });
+      if (updateCase === 'update.compatibility') {
+        if (assertCompatibilityDataReadback === undefined)
+          throw new Error('TERMINAL_AUTOMATION_COMPATIBILITY_ORACLE_MISSING');
+        await assertCompatibilityDataReadback(fullSession.sessionId, 'embedded-js-four');
+      }
       if (selectedSample === 'wallpaper') {
         const fullUi = createAndroidJourneyUiPort({
           connection,
           sessionId: fullSession.sessionId,
           onStep: step => process.stdout.write(`TERMINAL_AUTOMATION_DRIVER_STEP run=${runId} step=${step}\n`),
         });
-        await loginSampleStaff(
-          {server: connection.driver, sessionId: fullSession.sessionId, ...fullUi},
-          {
-            operatorName: 'A001',
-            passcode: '1111',
-            expectedScreen: 'sample.wallpaper.picker',
-          },
+        const fullQualification = await readSelector(
+          connection.driver,
+          fullSession.sessionId,
+          'kernel.feature.sample-staff-session.selectHostStaffQualification',
+          [],
         );
+        if (!isRecord(fullQualification) || fullQualification.status !== 'authenticated') {
+          await loginSampleStaff(
+            {server: connection.driver, sessionId: fullSession.sessionId, ...fullUi},
+            {
+              operatorName: 'A001',
+              passcode: '1111',
+              expectedScreen: 'sample.wallpaper.picker',
+            },
+          );
+        }
         await waitForWallpaperAssets(connection.driver, fullSession.sessionId, 'full');
       }
       await writeUpdateStateDiagnostics(connection.driver, fullSession.sessionId, runId);
@@ -1308,7 +1695,7 @@ it.skipIf(
         connection.driver,
         value =>
           value.appName === sample.appName &&
-          value.sessionId !== initial.sessionId &&
+          value.sessionId !== initial!.sessionId &&
           value.sessionId !== fullSession.sessionId,
         180_000,
       );
@@ -1334,6 +1721,99 @@ it.skipIf(
       publicationId: hot.publicationId,
       entryKind: 'hot',
     });
+      if (updateCase === 'update.compatibility') {
+        expect(finalActual).toMatchObject({bundleVersion: '1.0.6'});
+        if (assertCompatibilityDataReadback === undefined)
+          throw new Error('TERMINAL_AUTOMATION_COMPATIBILITY_ORACLE_MISSING');
+        await assertCompatibilityDataReadback(hotSession.sessionId, 'hot-six');
+        const completedTask = await waitForSelector(
+          connection.driver,
+          hotSession.sessionId,
+          'kernel.base.terminal-update.selectTerminalUpdateTask',
+          [],
+          value =>
+            isRecord(value) &&
+            value.target !== null &&
+            typeof value.target === 'object' &&
+            'ruleRef' in value.target &&
+            value.target.ruleRef === `automation-${runId}` &&
+            (value.phase === 'succeeded' || value.phase === 'failed' || value.phase === 'unknown'),
+          30_000,
+        );
+        if (completedTask === null) {
+          await writeUpdateStateDiagnostics(connection.driver, hotSession.sessionId, runId);
+          await writeNativeUpdateDiagnostics({connection, packageId, runId});
+          throw new Error('TERMINAL_AUTOMATION_COMPATIBILITY_TASK_TERMINAL_STATE_TIMEOUT');
+        }
+        if (!isRecord(completedTask) || completedTask.phase !== 'succeeded') {
+          await writeUpdateStateDiagnostics(connection.driver, hotSession.sessionId, runId);
+          await writeNativeUpdateDiagnostics({connection, packageId, runId});
+        }
+        expect(completedTask).toMatchObject({target: {ruleRef: `automation-${runId}`}, phase: 'succeeded'});
+        const completedStatus = await readSelector(
+          connection.driver,
+          hotSession.sessionId,
+          'kernel.base.terminal-update.selectTerminalUpdateRecentStatus',
+          [],
+        );
+        expect(completedStatus).toMatchObject({state: 'succeeded'});
+        process.stdout.write(
+          `TERMINAL_AUTOMATION_UPDATE_COMPATIBILITY_TASK run=${runId} stage=hot-six state=succeeded\n`,
+        );
+        const externalFull = readArtifact('compatibility-external-full.json');
+      if (externalFull.apk === undefined || externalFull.nativeBuildNumber <= hot.nativeBuildNumber)
+        throw new Error('TERMINAL_AUTOMATION_COMPATIBILITY_EXTERNAL_APK_INVALID');
+      process.stdout.write(
+        `TERMINAL_AUTOMATION_UPDATE_COMPATIBILITY_STAGE run=${runId} stage=external-apk-replace action=force-stop\n`,
+      );
+      await connection.forceStop(packageId);
+      await connection.install(path.join(runDirectory, 'update', appName, externalFull.apk.path));
+      if (!(await connection.isInstalled(packageId)))
+        throw new Error('TERMINAL_AUTOMATION_COMPATIBILITY_EXTERNAL_APK_INSTALL_READBACK_FAILED');
+      await connection.launch(`${packageId}/${sample.applicationId}.MainActivity`);
+      const externalSession = await waitForAutomationSession(
+        connection.driver,
+        value => value.appName === sample.appName && value.sessionId !== hotSession.sessionId,
+        90_000,
+      );
+      initial = externalSession;
+      const externalActual = await readSelector(
+        connection.driver,
+        externalSession.sessionId,
+        'kernel.base.terminal-update.selectTerminalUpdateActualVersions',
+        [],
+      );
+      expect(externalActual).toMatchObject({
+        applicationId: packageId,
+        nativeBuildNumber: externalFull.nativeBuildNumber,
+        bundleVersion: externalFull.bundleVersion,
+        publicationId: externalFull.publicationId,
+        entryKind: 'embedded',
+      });
+      if (assertCompatibilityDataReadback === undefined)
+        throw new Error('TERMINAL_AUTOMATION_COMPATIBILITY_ORACLE_MISSING');
+      await assertCompatibilityDataReadback(externalSession.sessionId, 'external-apk-embedded');
+      const externalBootLog = await connection.readTerminalUpdateLogs(packageId);
+      expect(externalBootLog).toContain(
+        'event=boot-reserved entryKind=embedded apkChanged=true resetReason=APK_CHANGED_SELECTION_RESET previousEligible=false candidateEligible=false',
+      );
+      expect(
+        await waitForSelector(
+          connection.driver,
+          externalSession.sessionId,
+          'kernel.base.terminal-update.selectTerminalUpdateTask',
+          [],
+          value => value === null,
+          20_000,
+        ),
+      ).toBeNull();
+      process.stdout.write(
+        `TERMINAL_AUTOMATION_UPDATE_COMPATIBILITY_STAGE run=${runId} stage=external-apk-embedded data=preserved reset=APK_CHANGED_SELECTION_RESET\n`,
+      );
+      process.stdout.write(`TERMINAL_AUTOMATION_UPDATE_CASE_ASSERTIONS_PASS case=update.compatibility run=${runId}\n`);
+      expect(install.nativeBuildNumber).toBeLessThan(full.nativeBuildNumber);
+      return;
+    }
     expect(install.nativeBuildNumber).toBeLessThan(full.nativeBuildNumber);
 
     if (updateCase === 'update.boot-guard') {
@@ -1434,6 +1914,10 @@ it.skipIf(
       'kernel.base.terminal-update.selectTerminalUpdateTask',
       [],
     );
+    if (!isRecord(task) || task.phase !== 'succeeded') {
+      await writeUpdateStateDiagnostics(connection.driver, hotSession.sessionId, runId);
+      await writeNativeUpdateDiagnostics({connection, packageId, runId});
+    }
     expect(task).toMatchObject({target: {ruleRef: `automation-${runId}`}, phase: 'succeeded'});
     const status = await readSelector(
       connection.driver,

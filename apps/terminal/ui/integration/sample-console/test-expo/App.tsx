@@ -105,10 +105,16 @@ const testAutomationConfig = () => {
 const testAutomation = testAutomationConfig();
 const terminalUpdateRunId = process.env.EXPO_PUBLIC_TER_AUTOMATION_RUN_ID;
 const terminalUpdateFixture =
-  terminalUpdateRunId === undefined ? undefined : createTerminalUpdateAutomationFixture(
-    terminalUpdateRunId,
-    process.env.EXPO_PUBLIC_TER_AUTOMATION_CASE === 'update.install-result' ? 'install-result' : 'fixed',
-  );
+  terminalUpdateRunId === undefined
+    ? undefined
+    : createTerminalUpdateAutomationFixture(
+        terminalUpdateRunId,
+        process.env.EXPO_PUBLIC_TER_AUTOMATION_CASE === 'update.install-result'
+          ? 'install-result'
+          : process.env.EXPO_PUBLIC_TER_AUTOMATION_CASE === 'update.compatibility'
+            ? 'compatibility'
+            : 'fixed',
+      );
 const testSurfaceForm = process.env.EXPO_PUBLIC_TER_AUTOMATION_SURFACE_FORM;
 if (testSurfaceForm !== undefined && testSurfaceForm !== 'laptop' && testSurfaceForm !== 'mobile') {
   throw new Error('TEST_EXPO_TERMINAL_SURFACE_FORM_INVALID');

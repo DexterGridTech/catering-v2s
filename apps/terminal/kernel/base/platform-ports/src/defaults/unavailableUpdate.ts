@@ -17,12 +17,15 @@ export const unavailableUpdatePort: UpdatePort = {
     createUnavailable('update', 'prepareArtifact'),
   applyPrepared: async (_input: UpdateActionInput): Promise<PortResult<UpdateAction>> =>
     createUnavailable('update', 'applyPrepared'),
-  readAction: async (_input: UpdateCall & Readonly<{taskId: string; actionId: string}>): Promise<PortResult<UpdateAction | null>> =>
-    createUnavailable('update', 'readAction'),
-  confirmBoot: async (_input: UpdateCall & Readonly<{bootToken: string; publicationId: string}>): Promise<PortResult<UpdateAction>> =>
-    createUnavailable('update', 'confirmBoot'),
-  releasePrepared: async (_input: UpdateCall & Readonly<{preparedId: string}>): Promise<PortResult<Readonly<{released: boolean}>>> =>
-    createUnavailable('update', 'releasePrepared'),
+  readAction: async (
+    _input: UpdateCall & Readonly<{taskId: string; actionId: string}>,
+  ): Promise<PortResult<UpdateAction | null>> => createUnavailable('update', 'readAction'),
+  confirmBoot: async (
+    _input: UpdateCall & Readonly<{bootToken: string; publicationId: string}>,
+  ): Promise<PortResult<UpdateAction>> => createUnavailable('update', 'confirmBoot'),
+  releasePrepared: async (
+    _input: UpdateCall & Readonly<{preparedId: string}>,
+  ): Promise<PortResult<Readonly<{released: boolean}>>> => createUnavailable('update', 'releasePrepared'),
 };
 
 Object.defineProperty(unavailableUpdatePort, PORT_DESCRIPTOR_KEY, {

@@ -150,6 +150,10 @@ export const createAndroidJourneyUiPort = (
     pressSystemBack: (): Promise<void> => systemStep('back', () => input.connection.systemUi.pressBack()),
     readSystemScreenSummary: (): Promise<string> =>
       systemStep('screen-summary', () => input.connection.systemUi.readScreenSummary()),
+    /** Dismisses only Android SystemUI's full-screen education notice when present. */
+    acknowledgeImmersiveModeEducation: (): Promise<boolean> =>
+      systemStep('acknowledge-fullscreen-education', () =>
+        input.connection.systemUi.acknowledgeImmersiveModeEducation()),
   });
 };
 

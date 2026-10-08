@@ -1,5 +1,9 @@
 import type {TimestampMs} from '@catering-v2s/kernel-base-contracts';
-import type {TerminalUpdateArtifact, UpdateActualVersions, UpdateNetworkSnapshot} from '@catering-v2s/kernel-base-platform-ports';
+import type {
+  TerminalUpdateArtifact,
+  UpdateActualVersions,
+  UpdateNetworkSnapshot,
+} from '@catering-v2s/kernel-base-platform-ports';
 import type {StateRoot} from '@catering-v2s/kernel-base-state';
 
 export interface UpdateArtifactSource {
@@ -23,7 +27,16 @@ export interface TerminalUpdateTask {
   readonly target: FixedUpdateTarget;
   /** Bundle version observed before the first update action; retained across FULL reboot for downgrade checks. */
   readonly originalBundleVersion: string | null;
-  readonly phase: 'fixed' | 'preparing-full' | 'preparing-hot' | 'applying-full' | 'applying-hot' | 'waiting-user' | 'unknown' | 'succeeded' | 'failed';
+  readonly phase:
+    | 'fixed'
+    | 'preparing-full'
+    | 'preparing-hot'
+    | 'applying-full'
+    | 'applying-hot'
+    | 'waiting-user'
+    | 'unknown'
+    | 'succeeded'
+    | 'failed';
   readonly actionId: string | null;
   readonly preparedId: string | null;
   readonly bootId: string | null;

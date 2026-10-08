@@ -156,20 +156,11 @@ export const requests = Object.freeze({
       }
       listSubscribed = true;
       // The handler publishes the first value synchronously after the subscribe response.
-      const firstList = await firstValueFrom(updates.pipe(take(1), timeout({first: timeoutMs})));
-      const baselineValue = await readSelector(
-        input.server,
-        input.sessionId,
-        'kernel.base.runtime.selectRequestExecutionViews',
-        [input.workspace],
-      );
-      if (!Array.isArray(baselineValue) || !baselineValue.every(isRequestView)) {
-        throw new Error('TERMINAL_AUTOMATION_REQUEST_LIST_BASELINE_INVALID');
-      }
-      for (const view of baselineValue) views.set(view.requestId, view);
-      for (const view of firstList) {
-        if (!views.has(view.requestId)) views.set(view.requestId, view);
-      }
+      // subscribe publishes the current full list before resolving. Keep using
+      // that maintained snapshot instead of synchronously serializing the same
+      // broad selector a second time; large live ledgers can exceed the
+      // Runtime's per-selector serialization budget on device.
+      await firstValueFrom(updates.pipe(take(1), timeout({first: timeoutMs})));
       const baselineIds = new Set(views.keys());
       const actionResult = await input.action();
 

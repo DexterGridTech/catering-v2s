@@ -8,19 +8,20 @@ import type {WallpaperId} from '@catering-v2s/ui-feature-sample-wallpaper-picker
 /** Test-host-only observation that proves the bundled wallpaper assets reach RN's native image loader. */
 export const TerminalUpdateAssetLoadProbe = () => {
   const assets = useMemo(
-    () => (Object.keys(assetsById) as WallpaperId[]).flatMap(id => {
-      const source = assetsById[id];
-      return source === undefined ? [] : [{id, source}];
-    }),
+    () =>
+      (Object.keys(assetsById) as WallpaperId[]).flatMap(id => {
+        const source = assetsById[id];
+        return source === undefined ? [] : [{id, source}];
+      }),
     [],
   );
   const [loadedIds, setLoadedIds] = useState<readonly string[]>([]);
   const [failedIds, setFailedIds] = useState<readonly string[]>([]);
   const markLoaded = useCallback((id: WallpaperId) => {
-    setLoadedIds(current => current.includes(id) ? current : [...current, id]);
+    setLoadedIds(current => (current.includes(id) ? current : [...current, id]));
   }, []);
   const markFailed = useCallback((id: WallpaperId) => {
-    setFailedIds(current => current.includes(id) ? current : [...current, id]);
+    setFailedIds(current => (current.includes(id) ? current : [...current, id]));
   }, []);
 
   return (
@@ -42,3 +43,5 @@ export const TerminalUpdateAssetLoadProbe = () => {
     </View>
   );
 };
+
+export const renderTerminalUpdateAssetLoadProbe = () => <TerminalUpdateAssetLoadProbe />;

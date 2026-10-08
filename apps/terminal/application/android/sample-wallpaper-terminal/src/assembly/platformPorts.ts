@@ -1,11 +1,10 @@
 import packageJson from '../../package.json';
-import {createElement} from 'react';
 import {createAndroidPlatformBinding} from '@catering-v2s/application-base-android';
 import {
   createSampleWallpaperConsoleAssembly,
   type SurfaceForm,
 } from '@catering-v2s/ui-integration-sample-wallpaper-console';
-import {TerminalUpdateAssetLoadProbe} from '@catering-v2s/ui-integration-sample-wallpaper-console/test-expo/TerminalUpdateAssetLoadProbe';
+import {renderTerminalUpdateAssetLoadProbe} from '@catering-v2s/ui-integration-sample-wallpaper-console/test-expo/TerminalUpdateAssetLoadProbe';
 import type {FixedUpdateTarget, UpdateTargetSourceProvider} from '@catering-v2s/kernel-base-terminal-update';
 import {resolveManagedServerSpaces} from './managedServerSpaces';
 
@@ -118,7 +117,7 @@ export const createSampleWallpaperTerminalAssembly = (
     serverSpaces: serverSpaces(),
     terminalUpdateSourceProvider: terminalUpdateSourceProvider(),
     ...(process.env.EXPO_PUBLIC_TER_AUTOMATION_UPDATE_ASSET_PROBE === 'true'
-      ? {renderAutomationChildren: () => createElement(TerminalUpdateAssetLoadProbe)}
+      ? {renderAutomationChildren: renderTerminalUpdateAssetLoadProbe}
       : {}),
     showAdminPassword: packageJson.showAdminPassword,
   });

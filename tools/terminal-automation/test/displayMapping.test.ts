@@ -146,6 +146,38 @@ describe('resolveDisplayMapping', () => {
     });
   });
 
+  it('reads physical display dimensions from the current SurfaceFlinger displaySpace dump', () => {
+    const currentSurfaceFlingerDual = [
+      'Display 4619827259835644672 (internal, primary, "Internal")',
+      '  connectionType=Internal',
+      '  name="Internal"',
+      '  Composition Display State:',
+      '    displaySpace=ProjectionSpace{bounds=Rect(0, 0, 2560, 1600), content=Rect(0, 0, 2560, 1600), orientation=ROTATION_0}',
+      'Display 4294967298 (external, "External")',
+      '  connectionType=External',
+      '  name="External"',
+      '  Composition Display State:',
+      '    displaySpace=ProjectionSpace{bounds=Rect(0, 0, 1280, 720), content=Rect(0, 0, 1280, 720), orientation=ROTATION_0}',
+    ].join('\n');
+
+    expect(resolveDisplayMapping('dual', logicalDual, currentSurfaceFlingerDual)).toEqual({
+      primary: {
+        logicalDisplayId: 0,
+        surfaceFlingerDisplayId: '4619827259835644672',
+        logicalSize: {width: 2560, height: 1600},
+        surfaceSize: {width: 2560, height: 1600},
+        rotation: 0,
+      },
+      secondary: {
+        logicalDisplayId: 2,
+        surfaceFlingerDisplayId: '4294967298',
+        logicalSize: {width: 1280, height: 720},
+        surfaceSize: {width: 1280, height: 720},
+        rotation: 0,
+      },
+    });
+  });
+
   it('rejects an ambiguous secondary instead of selecting by output order', () => {
     const ambiguousSurface = `${virtualSurfaceDual}\nVirtual Display 99999999999999999999\nname="Other"\nactiveMode={id=3, resolution=640x480}`;
 
@@ -189,10 +221,23 @@ describe('resolveDisplayMapping', () => {
     });
   });
 
-  it('rejects missing geometry and a non-decimal SurfaceFlinger ID', () => {
-    expect(() =>
-      resolveDisplayMapping('dual', logicalDual, virtualSurfaceDual.replace('resolution=2560x1600', 'resolution=0x0')),
-    ).toThrow('TERMINAL_AUTOMATION_SURFACE_DISPLAY_SIZE_MISSING');
+  it('uses logical dimensions when a physical SurfaceFlinger dump omits geometry', () => {
+    const surfaceWithoutGeometry = [
+      'Display 4619827259835644672 (HWC display 0, primary, "Internal")',
+      '  connectionType=Internal',
+      '  name="Internal"',
+      'Display 4294967298 (HWC display 1, "External")',
+      '  connectionType=External',
+      '  name="External"',
+    ].join('\n');
+
+    expect(resolveDisplayMapping('dual', logicalDual, surfaceWithoutGeometry)).toMatchObject({
+      primary: {surfaceSize: {width: 2560, height: 1600}},
+      secondary: {surfaceSize: {width: 1280, height: 720}},
+    });
+  });
+
+  it('rejects a non-decimal SurfaceFlinger ID', () => {
     expect(() =>
       resolveDisplayMapping('dual', logicalDual, virtualSurfaceDual.replace('11529215047789101945', 'virtual-id')),
     ).toThrow('TERMINAL_AUTOMATION_SURFACE_DISPLAY_PARSE_FAILED');

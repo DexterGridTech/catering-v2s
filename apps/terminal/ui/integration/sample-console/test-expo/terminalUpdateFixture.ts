@@ -1,4 +1,9 @@
-import type {PortResult, UpdateAction, UpdateActualVersions, UpdatePort} from '@catering-v2s/kernel-base-platform-ports';
+import type {
+  PortResult,
+  UpdateAction,
+  UpdateActualVersions,
+  UpdatePort,
+} from '@catering-v2s/kernel-base-platform-ports';
 import type {FixedUpdateTarget, UpdateTargetSourceProvider} from '@catering-v2s/kernel-base-terminal-update';
 import type {TimestampMs} from '@catering-v2s/kernel-base-contracts';
 
@@ -36,20 +41,45 @@ const succeeded = <TValue>(value: TValue): PortResult<TValue> => ({
 
 export const createTerminalUpdateAutomationFixture = (
   runId: string,
-  mode: 'fixed' | 'install-result' = 'fixed',
+  mode: 'fixed' | 'install-result' | 'compatibility' = 'fixed',
 ): Readonly<{
   port: UpdatePort;
   sourceProvider: UpdateTargetSourceProvider;
 }> => {
-  const targetArtifact = mode === 'install-result'
-    ? Object.freeze({...artifact, nativeBuildNumber: 2, bundleVersion: '1.0.1', publicationId: 'c'.repeat(64)})
-    : artifact;
+  const currentActual: UpdateActualVersions =
+    mode === 'compatibility'
+      ? Object.freeze({...actual, bundleVersion: '1.0.5', publicationId: 'f'.repeat(64), entryKind: 'hot'})
+      : actual;
+  const targetArtifact =
+    mode === 'install-result'
+      ? Object.freeze({...artifact, nativeBuildNumber: 2, bundleVersion: '1.0.1', publicationId: 'c'.repeat(64)})
+      : artifact;
+  const compatibilityFull = Object.freeze({
+    ...artifact,
+    nativeBuildNumber: 2,
+    bundleVersion: '1.0.4',
+    publicationId: 'd'.repeat(64),
+  });
+  const compatibilityHot = Object.freeze({
+    ...artifact,
+    nativeBuildNumber: 2,
+    bundleVersion: '1.0.6',
+    publicationId: 'e'.repeat(64),
+  });
   const target: FixedUpdateTarget = Object.freeze({
     ruleRef: `automation-${runId}`,
     createdAt: 1 as TimestampMs,
     applicationId,
-    full: Object.freeze({sourceRef: `run:${runId}:full`, expectedSha256: targetArtifact.publicationId, artifact: targetArtifact}),
-    hot: Object.freeze({sourceRef: `run:${runId}:hot`, expectedSha256: targetArtifact.publicationId, artifact: targetArtifact}),
+    full: Object.freeze({
+      sourceRef: `run:${runId}:full`,
+      expectedSha256: mode === 'compatibility' ? compatibilityFull.publicationId : targetArtifact.publicationId,
+      artifact: mode === 'compatibility' ? compatibilityFull : targetArtifact,
+    }),
+    hot: Object.freeze({
+      sourceRef: `run:${runId}:hot`,
+      expectedSha256: mode === 'compatibility' ? compatibilityHot.publicationId : targetArtifact.publicationId,
+      artifact: mode === 'compatibility' ? compatibilityHot : targetArtifact,
+    }),
     strategy: Object.freeze({maxNetworkAttempts: 2, bootTimeoutMs: 60_000}),
     selectionContext: Object.freeze({selectedSpace: 'development', contextIdentity: runId}),
   });
@@ -58,26 +88,30 @@ export const createTerminalUpdateAutomationFixture = (
   let actionCount = 0;
   let firstCancellationObserved = false;
   const port: UpdatePort = {
-    readFacts: async () => succeeded(Object.freeze({
-      actual,
-      embedded: artifact,
-      selectedPublicationId: publicationId,
-      previousPublicationId: null,
-      candidatePublicationId: null,
-      installerActionId: null,
-      installerState: 'none' as const,
-      selectionResetReason: null,
-    })),
-    prepareArtifact: async input => succeeded(Object.freeze({preparedId: `prepared:${input.sourceRef}`, artifact: input.artifact})),
+    readFacts: async () =>
+      succeeded(
+        Object.freeze({
+          actual: currentActual,
+          embedded: artifact,
+          selectedPublicationId: currentActual.publicationId,
+          previousPublicationId: null,
+          candidatePublicationId: null,
+          installerActionId: null,
+          installerState: 'none' as const,
+          selectionResetReason: null,
+        }),
+      ),
+    prepareArtifact: async input =>
+      succeeded(Object.freeze({preparedId: `prepared:${input.sourceRef}`, artifact: input.artifact})),
     applyPrepared: async input => {
       actionCount += 1;
       currentAction = Object.freeze({
         actionId: input.actionId,
         taskId: input.taskId,
-        state: mode === 'install-result' ? 'waiting-user' as const : 'accepted' as const,
+        state: mode === 'install-result' ? ('waiting-user' as const) : ('accepted' as const),
         reason: null,
         publicationId: targetArtifact.publicationId,
-        bootId: actual.bootId,
+        bootId: currentActual.bootId,
       });
       return succeeded(currentAction);
     },
@@ -103,8 +137,12 @@ export const createTerminalUpdateAutomationFixture = (
   const sourceProvider: UpdateTargetSourceProvider = {
     readTarget: async selectionContext =>
       selectionContext.contextIdentity === runId && selectionContext.selectedSpace === 'development' ? target : null,
-    resolveSourcePath: sourceRef => sourceRef === target.full?.sourceRef ? '/fixtures/full.apk' :
-      sourceRef === target.hot?.sourceRef ? '/fixtures/hot.zip' : null,
+    resolveSourcePath: sourceRef =>
+      sourceRef === target.full?.sourceRef
+        ? '/fixtures/full.apk'
+        : sourceRef === target.hot?.sourceRef
+          ? '/fixtures/hot.zip'
+          : null,
   };
 
   return Object.freeze({

@@ -127,13 +127,11 @@ const listDeviceReverses = async (device: DeviceClient): Promise<readonly Revers
   try {
     values = await device.listReverses();
   } catch (error) {
-    const failure = typeof error === 'object' && error !== null ? error as {readonly code?: unknown} : undefined;
-    const errorType = error instanceof Error && /^[A-Za-z][A-Za-z0-9_.]{0,79}$/u.test(error.name)
-      ? error.name
-      : 'UNKNOWN';
-    const errorCode = typeof failure?.code === 'string' && /^[A-Z0-9_-]{1,64}$/u.test(failure.code)
-      ? failure.code
-      : 'UNKNOWN';
+    const failure = typeof error === 'object' && error !== null ? (error as {readonly code?: unknown}) : undefined;
+    const errorType =
+      error instanceof Error && /^[A-Za-z][A-Za-z0-9_.]{0,79}$/u.test(error.name) ? error.name : 'UNKNOWN';
+    const errorCode =
+      typeof failure?.code === 'string' && /^[A-Z0-9_-]{1,64}$/u.test(failure.code) ? failure.code : 'UNKNOWN';
     process.stdout.write(
       `TERMINAL_AUTOMATION_ANDROID_REVERSE_LIST_ERROR errorType=${errorType} errorCode=${errorCode}\n`,
     );

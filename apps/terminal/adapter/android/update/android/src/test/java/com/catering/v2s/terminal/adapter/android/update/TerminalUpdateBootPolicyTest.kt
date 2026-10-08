@@ -8,6 +8,24 @@ import org.junit.Test
 
 class TerminalUpdateBootPolicyTest {
   @Test
+  fun `old context and token cannot confirm a reservation for a replaced APK`() {
+    val identity = TerminalUpdateInstalledIdentity("sample", 2, "new-publication", "1.0.4")
+    val current = TerminalUpdateBootReservation(
+      "new-boot-token", identity, "embedded", "new-publication", null, "assets/index.android.bundle",
+    )
+
+    assertTrue(bootConfirmationMatches(
+      "new-boot-token", current, "new-boot-token", "new-publication", "new-boot-token", identity.key(),
+    ))
+    assertFalse(bootConfirmationMatches(
+      "old-boot-token", current, "old-boot-token", "old-publication", "new-boot-token", identity.key(),
+    ))
+    assertFalse(bootConfirmationMatches(
+      "new-boot-token", current, "new-boot-token", "new-publication", "new-boot-token", "old-installed-identity",
+    ))
+  }
+
+  @Test
   fun `actual bundle version follows selected entry and unknown selections stay unknown`() {
     assertEquals("1.0.0", selectedBundleVersionForFacts("embedded", "1.0.1", "1.0.0"))
     assertEquals("1.0.1", selectedBundleVersionForFacts("hot", "1.0.1", "1.0.0"))

@@ -14,6 +14,10 @@ Dexter 于 2026-10-06 明确授权 Codex 按本计划完成阶段 A 实施及适
 模板正本 `doc/platform/implementation-task-template.md`；IA/交互/第三方附件是设计输入。Dexter 已确认三个面的界面内容；实现和行为证据仍须按本计划完成。
 STANDARD_DEPENDENCY=APPROVED_PENDING_CP02_IMPLEMENTATION_SYNC：Dexter 已批准详设§12所述仅取消激活根级清除的精确 TR-09 例外；须在本次授权下 CP-02 之前落地唯一规范正本并完成 focused/red，不能把批准当实现完成。
 
+### 0.10 · 2026-10-08 Android 验收设备范围
+
+Dexter 明确指定：本目标 Android 验收全部只在当前连接的一台双屏真机上执行；不要求其他设备、机型或已关闭的虚拟机，双机配对拓扑不属于本阶段验收。受管 run manifest 必须记录该设备精确序列号。设备验收使用 `shape=dual`；同机 `shape=mobile` preflight 因设备暴露四个逻辑显示而不适用，本次不再尝试该形态。此前已取得且未受当前改动影响的 Expo Web 结果按原 run 证据引用，不用 Web 结果替代真实设备判据。
+
 ### 0.1 · 2026-10-07 执行状态补充
 
 Dexter 已指示：Android 系统“允许从此来源安装”当前不可操作时，不得让该系统设置阻断 CP-04～CP-06；继续完成可独立验证的工作，最终将真实 FULL 安装留作待解决项。此指示不构成安装成功证据，也不允许绕过 PackageInstaller 或授予系统权限。
@@ -125,7 +129,7 @@ RECALL：R06/09/10/15；详设§8.3～8.6；runtime initialize/flush/resource、
    仅在上述规范前置闭合后采用resetIntent=retain，并测试只保留update持久字段、其他owner/ephemeral/orphan不扩保留；来源授权失效禁止借新凭证替换target。生产A无来源则拒绝，run-owned允许工件只进入automation-enabled profile；正式owner不分测试执行分支。
 3. task.actionId与target持久化屏障；应用前业务dirty slice flush；typed失败零提交；两屏/冲突/旧action/原始JS下限与UNKNOWN。
 4. initialize 在 hydration 后续接；Web 生产构建始终用 unavailable UpdatePort，只有 automation-enabled Web 测试构建显式注入 typed fixture port（与来源 provider 同边界），测试 facts 不冒充真实 APK。包/构建 red 证明 production 夹入 fixture 被拒，缺 native 不能自动切 mock。
-5. Web通过automation正式command/selector验证fixed/full-hot/compatibility/install-result/flush/recent；`update.fixed` 分别以 `--sample console` 与 `--sample wallpaper` 运行，确保两个 integration composition 都实际加载各自 run-scoped fixture；candidate保护协议做focused，Android首次真实触发等待CP-03完整接线。
+5. Web通过automation正式command/selector验证fixed/full-hot/compatibility/install-result/flush/recent；`update.fixed` 分别以 `--sample console` 与 `--sample wallpaper` 运行，确保两个 integration composition 都实际加载各自 run-scoped fixture；`update.compatibility` 在 Web 从 APK1/HOT JS5 owner facts 接收 FULL2/embedded4+HOT6 target，断言 owner 进入 `applying-full` 且 actual 仍为 APK1/HOT JS5。Web 只证明 owner 选择，不代替安装、boot 或设备数据保留证明；candidate保护协议做focused，Android首次真实触发等待CP-03完整接线。
    PROOF：owner/契约owned typecheck与focused；automation Web 对两个 sample 分别执行单场景。native纯单元测试可直接port，安装App内不能用run-onlyport旁路作为更新触发。
    CP出口：完整owner与Web行为闭合，完整CP三维MATCHED；尚无native加载proof，不宣称具备真实更新能力。
 
@@ -153,6 +157,7 @@ RECALL：R13/14及V21～26；详设§8.7；nativeLoading/integration PRIMARY rea
 2. identity精确匹配、旧boot迟到、多屏确认幂等；原生错误/期限有界恢复到获准previous；恢复包有独立60s确认期限，失败后持久进入失败终态，不重选同一包；没有安全目标显示原生失败文本。
 3. 新native不加载旧runtimeHOT；确认后普通HTTP/断链不回退；进程退出记录unconfirmed不假称代码BUG。
 4. 两 App 真实 fixture 证明同 runtime APK1/HOT JS5 写入→FULL2 首次只能 embedded4 读回→HOT6；另覆盖外部安装更高 APK 后三类旧记录失效、实际 embedded 与复位事实、旧 token 拒绝。HOT 候选确认前写入→上一成功包读取；坏迁移发布不被“声明兼容”掩盖。
+   兼容case的Android执行限于Dexter指定的同一双屏真机 `shape=dual`：先以APK1/HOT JS5写入持久owner数据，FULL2首次boot只读embedded4与原数据，再完成HOT6；随后由同一受管设备对run-owned签名FULL3 APK执行包替换，重新启动后selector读回nativeBuild3/embedded7、owner任务释放、原数据仍在。Console以持久UI layer selector读回；Wallpaper通过公开 `kernel.feature.sample-wallpaper.select-wallpaper` 与 `confirm-wallpaper` command写入owner slice，再以 `selectWallpaperId` 读回。设备native诊断须记录 `APK_CHANGED_SELECTION_RESET` 且previous/candidate均不可加载；focused boot-policy测试用旧context/token断言无法确认新reservation。Web同名case只覆盖owner从APK1/HOT5优先选择FULL2。双屏真机以外的机型、mobile形态和双机配对均不属于本次验收范围。
 5. 原生T及资源预算单场景测量；T=60s覆盖HOT候选和唯一一次恢复包，普通已确认启动不启动该期限；不为PASS盲延timeout；保留firstfailure/lastknown good。
    当前 boot-guard 测试接缝：仅受管 `update.boot-guard` 的 HOT Release bundle 设置 `EXPO_PUBLIC_TER_DEBUG_FAILURE_INJECTION=true` 与固定 owner `surface-content`，其他产物显式清除此开关；真实 `SurfaceRoot` 边界必须先记录 `source=build-time outcome=matched`，随后记录该 owner 的 `render-failed`，场景从 Android Runtime 诊断中核对两项后才继续，不发送 PRIMARY 确认。Expo 官方说明 Metro 在 bundle 构建时内联显式引用的 `EXPO_PUBLIC_` 变量（https://docs.expo.dev/guides/environment-variables/）。所有 release/debug Metro bundle task 必须把 `EXPO_PUBLIC_*` 环境快照的 SHA-256（不保存原值）纳入 Gradle task inputs，避免不同阶段误复用 `UP-TO-DATE` bundle；artifact builder 在复制产物前核验 boot-guard 专用编译标记，漏注入或旧注入缓存均 fail closed。场景必须读回 HOT 候选未成功、60s后实际 embedded 身份、`HOT_BOOT_TIMEOUT` 与原生日志恢复事件；Vitest 退出码为0但缺少编译标记、注入、内容失败或最终场景断言 marker 时，受管 runner 必须 fail closed。真实 Android 结果仍 NOT_RUN；其他三个 CP-04 场景仍未登记为可运行。
    PROOF：bootguard/rollback/compatibility/interruption focused与真实native；图片/字体离线证据；共享Host单机双屏。
@@ -168,7 +173,7 @@ RECALL：全部A范围§11a；automation正式需求/已交付设计/current接�
 2. automation连接→selector baseline+动作前订阅→command dispatch/requestId；语义触发使用 driver.transport.request，新 UI 动作使用现有 requests.observeUiAction({server, sessionId, workspace, displayMode, commandName, action})。reload后重新取得当前应用 session，重建固定 sessionId 的 Web/Android UI port、selector 与 request 观察，不复用旧对象；runtimeId/bootToken区别明确。业务 fixture 使用 ensureActivated({shape, deviceId, runId})，Android deviceId 从新会话 runtime.info 的生产 DevicePort 读回，Web 使用本 run 注入。
 3. 同runapplicationId/signature/storage稳定；现有androidBuild新run后缀机制只用于第一次安装，不每FULL另起新run。FULL成功后等待当前package actualfacts/新agent，而非等待旧request完成。
 4. 系统install真实点击及native失败读取走同driver扩展；安装、来源设置与原生启动失败文本三类非 React 界面按 automation R-10 用同 driver 内 uiautomator 窄例外（失败文本只读），注明来源；不启动旧 ter-*-android/Web/UiAutomator runner，TER React 节点仍走 agent。
-5. 两App，每case mobile及单机双屏；非adapter W先AND后且同断言清单；双机更新规则/投影不属A。
+5. 两App 的适用 Android case 均在 Dexter 指定的同一双屏真机以 `shape=dual` 执行；不要求其他设备/机型或 `shape=mobile`。非adapter 行为先以 Expo Web 执行同场景断言，再在该双屏真机验证；双机更新规则/投影不属A。
 6. cleanup：退订/HTTP server/agent/ports/process trees/prepared/installer引用均按identity；别删除active/previous或未知session文件；cleanup失败先修。设备 APK/reverse 清理失败及 setup 中部分创建后的释放失败，必须进入当前受管 runner 的 cleanup 判定，不能仅将 Vitest 非零记为 business FAIL、同时以本机目录/进程清空记 cleanup PASS。复用修复后的现有清理通路与设备身份，不新增恢复服务。
    Android Kotlin focused runner `tools/terminal-shared/run-owned-android-tests.mjs` 也必须在启动前拒绝已有 Android `build`/`.cxx` 中间产物，结束时只清理由本次 run 创建的目录、逐项读回，并将清理路径与结果写入本 run manifest；共享 `.gradle` 依赖缓存不属于清理目标。扫描遇到符号链接或根外目标必须 fail closed，不跟随或删除目标。
    若 Android 场景以 `cleanup=FAIL/UNKNOWN` 结束，同设备的新场景必须先停止；通过 `scripts/test/terminal-automation.mjs --recover-failed-android-run <runId> --device-serial <serial>` 仅回收失败 run 可证明拥有的 APK 与 ADB reverse。新 run 在事件日志记录每条 driver/service reverse 的 attached/released 及 serial/remote/local；旧 run 仅可按该场景的 driver/installer 原日志识别固定受管 remote port，且仅当对应 host local port 无监听时回收。恢复入口核对原 manifest 路径、失败状态、device serial、packageId 派生关系、run 进程身份和 reverse 所有权，逐项做设备读回并生成独立 cleanup manifest；不改写首败，不触碰其它 service reverse 或未知 PackageInstaller session。所有身份缺失、歧义、host port 仍活跃或设备未就绪均 fail closed。
@@ -181,13 +186,13 @@ RECALL：全部A范围§11a；automation正式需求/已交付设计/current接�
 随后执行批次整体场景回归；实际修复按受影响CP/6b差量复查，不循环要求所有无关CP重对。
 交付前13c逐代码设计对账MATCHED；fresh独立REVIEW_TARGET=IMPLEMENTATION整批审查；NO-GO确认部分最小修复后fresh复评，不受DESIGN两轮上限。
 最终给Dexter/Claude提供每条§11a的当前字节结果及firstfailure/lastknown good，分清Web/native/business/cleanup；计划不提前填PASS。
-默认scripts/verify应当前字节完整PASS，validate-only不能替代；若中断报告NO_VERDICT且不包装成通过。
+本阶段只执行对阶段A修改有直接验证价值的检查，不为满足全仓默认入口而运行未修改、与阶段A无关的模块测试。若 `scripts/verify` 的固定运行表包含此类无关项，则不要求为本阶段完成整仓verify；已执行的相关静态门、focused测试和受管运行分别报告。任何实际启动但未完成的 `scripts/verify` 均标记 `INTERRUPTED/NO_VERDICT`，不得包装为完整通过；`--validate-only` 也不替代其未执行的检查。
 
 ## 8. 未来命令与执行面
 
 打包入口：两 application 均通过 `yarn package:install`、`yarn package:full`、`yarn package:hot` 调用同一 Node builder。三个命令必须在同一个受管 `update.artifacts` run 内顺序执行；FULL 与 HOT 默认读取该 run 下本应用的 `update/<app>/install.json`、`update/<app>/full.json`，不得传入任意 APK 路径。该入口与 `tools/terminal-automation/journeys/update.test.ts` 一致。
 受管产物场景：`scripts/test/terminal-automation.mjs --phase update --case update.artifacts --sample console --platform web --shape mobile`，先在同一 run 执行 builder self-test、canonical generator `--self-test` 与 `--check`，再按每个 application 顺序执行 INSTALL→FULL→HOT 并在本 run 内读回摘要与同字节 APK；最终 APK 由 `aapt dump permissions` 确认包含 `android.permission.REQUEST_INSTALL_PACKAGES`，缺少权限时拒绝产物。该权限是发起安装来源授权页的必要条件之一，不代表设备已允许安装；系统限制导致设置项禁用属于设备策略边界，不能通过绕过 PackageInstaller 达成测试。该run不要求 DEV。两 App 的 Gradle root、application 与所有 Android library project build tree 均位于本 run 的 `android-build/<application>`；项目输出目录按 Gradle project path 的分段身份映射，不能共用 app 输出路径。AGP CMake `.cxx` staging 位于同一 run 的 `android-build/native/<application>/<gradle-project>`，在各临时 `build/` 目录之外，满足 AGP 不允许 staging 位于临时 build 子目录的约束。Gradle settings 写入 `android/build` 的 autolinking 输出通过仅在单次 Gradle 调用期间存在的链接映射到本 run 的 `android-build/<application>/root`。RN/Expo codegen 的 Android library `sourceDir/build` 由 Gradle 依据真实 projectDir/buildDirectory 建立临时链接；每个 run-owned target 先创建为实际目录，再建立符号链接，避免 Expo 配置期写入时跟随悬空链接失败；链接身份在 run 内 registry 先登记，正常退出由 builder 清理，异常退出由 runner 按 manifest/registry 精确校验并清理。Gradle 调用固定附加 `--info --stacktrace`，受管日志保留失败任务、外部命令上下文及异常栈，避免只留下“node exit 1”而无法确定 owning task。RN 0.86.3、Expo Modules Autolinking 57.0.12 的官方源码路径依据及机制见详设 §3；不得把当前两个首败模块写成固定白名单。AGP 8.12.0 的 `Cmake.buildStagingDirectory` 将 native staging 从默认源码树 `android/<module>/.cxx` 指向本 run；关闭 Gradle Problems HTML 报告。runner 退出清除临时链接、完整 Gradle build/native 树及两 App 的 publication/staging/embedded metadata、APK 与 HOT ZIP，只保留 INSTALL/FULL/HOT 小型 JSON 摘要、日志和 manifest；cleanup 前扫描 `apps/terminal` 下 Android 项目的 `build` 与 `.cxx`，发现 run 外产物则 cleanup FAIL，文件系统 readback 必须确认链接与产物均清理完成。共享 Gradle 依赖缓存（`.gradle`）不属于清理目标。AGP 官方 API：https://developer.android.com/reference/tools/gradle-api/8.12/com/android/build/api/dsl/Cmake。业务场景沿用 `--case update.flush|update.compatibility|update.rollback` 并由 runner 校验 managed DEV identity；其余 update cases 走各自计划入口。Android 场景再加 `--platform android --device-serial <本run登记serial>`，双屏用 `--shape dual`。当前命令以 `tools/terminal-automation/src/runner.ts` 的闭集及对应已存在 suite 为准；未实现的 case 由入口 fail closed，不以计划文本冒充可运行。
-真实执行用仓内包管理器/解释器和script shebang；具体现有runner语法重新读源码，发现参数不符修本计划/adapter，不发明旁路。
+真实执行用仓内包管理器/解释器和script shebang；具体现有runner语法重新读源码，发现参数不符修本计划/adapter，不发明旁路。Android 的全部剩余设备验收绑定§0.10指定的同一台双屏真机及其 run manifest serial；不得要求其他设备或双机配对拓扑。
 不涉及adapter的判据使用W同一case；native安装/loader/断进程不写“Web已证明”。系统用户动作是真实点击，而正式owner command是能力trigger；两类不混用。
 
 ## 9. 动态准入、fixture和cleanup
@@ -208,9 +213,32 @@ resources：本机PID+OSstarttoken，远端若有DEV则host/boot/ticks；只停�
 ## 11. 交付清单和当前状态
 
 未来交付：两App真实三产物、生产源码/生成输入输出、阶段/6b/13c、逐case proof、source binding、完整verify、freshimplementationreview、business/cleanup与外部handoff。
-阶段 A 实施仍在进行；具体 CP/全批6b/13c 和完整 `scripts/verify` 的当前结论须以各自独立记录为准，未在对应当前字节上运行的项目保持 `NOT_RUN`，不继承历史 PASS。
+阶段 A 当前实现已进入交付复核。适用双屏设备场景与focused验证以§11.1为准；全批6b、13c和fresh整批IMPLEMENTATION review尚未关闭。完整 `scripts/verify` 本轮在U03启动后为 `INTERRUPTED/NO_VERDICT`，不记完整通过；U04及之后未启动。用户已明确要求避免无关测试，后续只运行对阶段A当前修改有直接覆盖价值且尚无当前字节证据的验证。
 UI_CONTENT=ACCEPTED；DEXTER_WIREFRAME_REVIEW=ACCEPTED（2026-10-06，三个面内容均已确认）。FULL_MIN_ANDROID_API=29。历史 review 只适用于其原输入字节，不作为当前实现 verdict；本次实施授权来自 Dexter 2026-10-06 会话指派。
 
-当前字节上的最新运行：run=`f186def2-9537-4486-b71e-45910e78f508`（2026-10-07T23:08:18Z～23:12:54Z），Console Android API 36 mobile `update.install-result`，business=PASS、cleanup=PASS。
-最后一次通过：同一run及当前owner/runner修正字节一致；既有 Wallpaper `update.full-hot` run=`655922a2-ada9-469a-a6e3-dcde697d7c44` 继续证明其原适用范围，本次未重跑。CP/6b/13c、完整` scripts/verify`、其余跨启动/回退/拓扑场景仍以各自当前字节证据为准，不因本run升级。
+当前字节上的最新运行：run=`r5-verify-66543-1791436533811`（2026-10-08T14:15:33+09:00），默认 `scripts/verify` 在 `U03-platform-iam` 启动时被停止；其为 `INTERRUPTED/NO_VERDICT`，不是完整verify PASS。U04及后续未启动。
+最后一次通过：run=`r5-tc-1791438253561-20609`（2026-10-08T14:44:13+09:00开始），U03平台IAM远端测试与Testcontainers清理PASS；该项不属于阶段A。阶段A最后一次业务场景PASS为run=`78384df1-5555-414f-aa69-c527f2f757c8`（2026-10-08T04:59:12Z～05:04:01Z），Wallpaper Android `update.install-result`，指定双屏真机 `D409P5C2J0285`、`shape=dual`，business=PASS、cleanup=PASS。每项只证明各自范围，详细场景清单见§11.1。
 CP-03 本轮差量由 fresh 独立只读 reviewer `cp03_cancel_retry_delta` 核对为 MATCHED；该结论仅覆盖 retained action 的读回与用户取消后同目标重邀，不替代既有 CP-03 全阶段记录或全批6b。
+
+### 11.1 · 2026-10-08 当前范围、场景与验证收口
+
+Dexter 将本轮Android执行面限定为当前连接的一台双屏真机，不要求其它设备、机型、已关闭虚拟机或双机配对拓扑。所有下列设备manifest均记录同一设备 `D409P5C2J0285` 与 `shape=dual`。此前对该设备尝试的 `shape=mobile` preflight 因其暴露四个逻辑显示而拒绝；该形态为 `NOT_COVERED`，没有重试或换设备。
+
+| 样本 | 场景 | run id | business | cleanup |
+|---|---|---|---|---|
+| Console | `update.compatibility` | `09160a18-f3b0-423f-bd68-4a96368f2e42` | PASS | PASS |
+| Console | `update.full-hot` | `0ba7d975-520f-43c4-8f3e-3cf987b1a2f9` | PASS | PASS |
+| Console | `update.offline-assets` | `b85875a5-5c8c-4cb7-83ea-4f40253955ee` | PASS | PASS |
+| Console | `update.boot-guard` | `d142d95b-bace-44ad-9b00-57a2948db316` | PASS | PASS |
+| Console | `update.install-result` | `97fbf94f-6d59-4766-b8c7-5dd9f7484c47` | PASS | PASS |
+| Wallpaper | `update.compatibility` | `11f8b8ff-7272-4c65-9c03-a31b3c4b3195` | PASS | PASS |
+| Wallpaper | `update.full-hot` | `57f9417b-5402-4cfd-9062-bbece665e1ba` | PASS | PASS |
+| Wallpaper | `update.offline-assets` | `4ca28e1c-7b13-49b7-a378-277d3954aafe` | PASS | PASS |
+| Wallpaper | `update.boot-guard` | `7760adda-1766-499e-a337-e39127c1c915` | PASS | PASS |
+| Wallpaper | `update.install-result` | `78384df1-5555-414f-aa69-c527f2f757c8` | PASS | PASS |
+
+这些manifest均为 `FINISHED`，且记录独立业务与清理结果。对应场景断言覆盖真实安装/版本读取、FULL→HOT续接、离线资源读取、启动保护与安装结果处理。未由表格覆盖的受管设备case不得推定PASS；以详设§11a逐判据状态为准。
+
+本轮默认 `scripts/verify` 的静态阶段通过，执行到的TDS/终端相关远端门、Node测试、foundation测试、U02业务后端测试/Flyway及U03平台IAM测试均在各自运行记录中为PASS；U03不是本专项变更范围。为避免继续运行与阶段A无关的后端模块测试，verify在U03启动后停止，U04及之后没有启动，所以完整verify保持 `INTERRUPTED/NO_VERDICT`。不重跑已经有当前字节PASS的验证，也不将单项PASS合并声称为完整verify PASS。
+
+本轮仅为结束执行状态而引用已有manifest和日志；未因本段新增测试运行。剩余交付门：全部CP及全批6b独立三维对账、交付前13c逐代码与详设对账、fresh整批IMPLEMENTATION review。没有记录的判据保持 `NOT_RUN/OPEN`，不以历史运行或作者声明代替。
