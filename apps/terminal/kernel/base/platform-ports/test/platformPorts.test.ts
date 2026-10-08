@@ -8,7 +8,7 @@ import {
   unavailableAppControlPort,
   unavailableConnectorPort,
   unavailableDevicePort,
-  unavailableHotUpdatePort,
+  unavailableUpdatePort,
   unavailableLogUploadPort,
   unavailablePersistSecurePort,
   unavailableScriptPort,
@@ -28,7 +28,7 @@ describe('A: platform port assembly', () => {
       appControl: unavailableAppControlPort,
       script: unavailableScriptPort,
       connector: unavailableConnectorPort,
-      hotUpdate: unavailableHotUpdatePort,
+      update: unavailableUpdatePort,
       logUpload: unavailableLogUploadPort,
       topologyHost: unavailableTopologyHostPort,
     };
@@ -44,7 +44,7 @@ describe('A: platform port assembly', () => {
       'appControl',
       'script',
       'connector',
-      'hotUpdate',
+      'update',
       'logUpload',
       'topologyHost',
     ]);
@@ -55,7 +55,7 @@ describe('A: platform port assembly', () => {
     expect(ports.appControl).toBe(unavailableAppControlPort);
     expect(ports.script).toBe(unavailableScriptPort);
     expect(ports.connector).toBe(unavailableConnectorPort);
-    expect(ports.hotUpdate).toBe(unavailableHotUpdatePort);
+    expect(ports.update).toBe(unavailableUpdatePort);
     expect(ports.logUpload).toBe(unavailableLogUploadPort);
     expect(ports.topologyHost).toBe(unavailableTopologyHostPort);
     expect(Reflect.set(ports, 'device', persistKv)).toBe(false);
@@ -78,7 +78,7 @@ describe('A: platform port assembly', () => {
         appControl: unavailableAppControlPort,
         script: unavailableScriptPort,
         connector: unavailableConnectorPort,
-        hotUpdate: unavailableHotUpdatePort,
+        update: unavailableUpdatePort,
         logUpload: unavailableLogUploadPort,
         topologyHost: unavailableTopologyHostPort,
       },

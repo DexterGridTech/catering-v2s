@@ -47,4 +47,5 @@ export const wallpaperContentTestIds = Object.freeze({
   hostDisplay: wallpaperTestId('sample.wallpaper.host-display'),
   hostDisplayImage: wallpaperTestId('sample.wallpaper.host-display:image'),
   background: wallpaperTestId('sample.wallpaper.background'),
+  updateAssetLoadStatus: wallpaperTestId('update.asset-load-status'),
 });

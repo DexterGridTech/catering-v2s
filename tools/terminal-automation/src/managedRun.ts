@@ -34,6 +34,7 @@ export type TerminalAutomationManifest = Readonly<{
   readonly business: 'NOT_RUN' | 'PASS' | 'FAIL';
   readonly cleanup: 'NOT_RUN' | 'PASS' | 'FAIL';
   readonly androidPackageId?: string;
+  readonly recoveryOfRunId?: string;
   readonly managedDev?: Readonly<{readonly runId: string; readonly manifestSha256: string}>;
   readonly fixture?: Readonly<{
     readonly seedKey: 'term-front' | 'term-handheld';

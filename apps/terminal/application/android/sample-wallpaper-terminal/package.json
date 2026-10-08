@@ -1,6 +1,11 @@
 {
   "name": "@catering-v2s/application-android-sample-wallpaper-terminal",
   "version": "1.0.0",
+  "terminalRelease": {
+    "nativeBuildNumber": 1,
+    "bundleVersion": "1.0.0",
+    "runtimeVersion": "ter-main-v1"
+  },
   "main": "index.ts",
   "private": true,
   "type": "module",
@@ -74,6 +79,7 @@
     "@catering-v2s/ui-base-primitives": "workspace:*",
     "@catering-v2s/ui-base-render": "workspace:*",
     "@catering-v2s/ui-integration-sample-wallpaper-console": "workspace:*",
+    "@catering-v2s/kernel-base-terminal-update": "workspace:*",
     "expo": "~57.0.18",
     "expo-modules-core": "~57.0.14",
     "react": "19.2.3",
@@ -91,6 +97,9 @@
   },
   "scripts": {
     "lint": "node ../../../../../tools/terminal-shared/run-owned-lint.mjs",
+    "package:install": "node ../../../../../scripts/build/terminal-update-artifact.mjs --app sample-wallpaper-terminal --kind install",
+    "package:full": "node ../../../../../scripts/build/terminal-update-artifact.mjs --app sample-wallpaper-terminal --kind full",
+    "package:hot": "node ../../../../../scripts/build/terminal-update-artifact.mjs --app sample-wallpaper-terminal --kind hot",
     "start": "expo start",
     "android": "expo run:android --variant debug",
     "ios": "expo run:ios",

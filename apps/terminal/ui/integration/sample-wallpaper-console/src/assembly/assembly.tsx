@@ -1,5 +1,6 @@
 import packageJson from '../../package.json';
 import * as Crypto from 'expo-crypto';
+import type {ReactNode} from 'react';
 import {moduleName as integrationModuleName} from '../moduleName';
 import type {EnvironmentMode, NativeLoadingCapability, PlatformPorts} from '@catering-v2s/kernel-base-platform-ports';
 import {type SurfaceHostMeasurementSource} from '@catering-v2s/ui-base-render';
@@ -30,6 +31,11 @@ import {createSampleStaffSessionModule} from '@catering-v2s/kernel-feature-sampl
 import {createStoreBasicModule} from '@catering-v2s/kernel-feature-store-basic';
 import {createSampleWallpaperModule} from '@catering-v2s/kernel-feature-sample-wallpaper';
 import {createServerConfigModule} from '@catering-v2s/kernel-base-server-config';
+import {
+  createTerminalUpdateModule,
+  unavailableUpdateTargetSourceProvider,
+  type UpdateTargetSourceProvider,
+} from '@catering-v2s/kernel-base-terminal-update';
 import {resolveServerNetworkSnapshot} from '@catering-v2s/kernel-base-server-config';
 import type {TransportServerConfig} from '@catering-v2s/kernel-base-contracts';
 import {
@@ -81,6 +87,8 @@ type WallpaperConsoleAssemblyInput = Readonly<{
   readonly startupDebugMode?: boolean;
   readonly showAdminPassword?: boolean;
   readonly terminalAutomation?: AutomationAgentConfig;
+  readonly terminalUpdateSourceProvider?: UpdateTargetSourceProvider;
+  readonly renderAutomationChildren?: () => ReactNode;
   readonly serverSpaces?: TransportServerConfig;
   readonly surfaceHostSourcesByDisplayIndex?: Readonly<Partial<Record<0 | 1, SurfaceHostMeasurementSource>>>;
   readonly topologyPeerChannel?: TopologyPeerChannel;
@@ -168,6 +176,11 @@ export async function createSampleWallpaperConsoleAssembly(
       return [
         serverConfigModule,
         transportModule,
+        createTerminalUpdateModule({
+          port: input.platformPorts.update,
+          sourceProvider: input.terminalUpdateSourceProvider ?? unavailableUpdateTargetSourceProvider,
+          readNetworkSnapshot: (state, serverName) => resolveServerNetworkSnapshot(state, serverSpaces, serverName),
+        }),
         createTopologyModule({
           displayName: 'sample-wallpaper-console',
           moduleName: integrationModuleName,
@@ -201,6 +214,11 @@ export async function createSampleWallpaperConsoleAssembly(
         sampleWallpaperPickerAssembly.createModule(),
       ];
     },
-    renderChildren: () => <WallpaperBackground />,
+    renderChildren: () => (
+      <>
+        <WallpaperBackground />
+        {input.renderAutomationChildren?.()}
+      </>
+    ),
   });
 }

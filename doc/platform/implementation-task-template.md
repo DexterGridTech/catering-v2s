@@ -165,6 +165,8 @@ problem、审计和权威 readback 不变,共享机制已复用且不存在安�
 
 **6c. 动态运行的阶段准入与失败族关闭(强制,来自 2026-09-02 执行诊断)**:
 
+受管构建、生成与验收产生的中间文件和大体积产物必须写入当前 `run-manifest` 所属的 run 目录。计划和 runner 要列清哪些小型结果记录需要保留、哪些构建树/包/暂存文件属于清理分母；运行结束按 manifest 所有权定点清理，并通过文件系统 readback 确认无残留，清理结果计入 `cleanup`。进程退出或业务 PASS 不能代替产物清理 PASS。不得删除共享依赖缓存、其他 run 或身份不明的文件；清理失败必须报告 `cleanup=FAIL`。
+
 - **失败族 stop condition**:同一 `failureCategory` **第二次**出现,立即停止该失败族之后的业务推进,
   先把该族关闭到**零复发**,再继续当前 task/goal。⛔ 不得"边撞边往前走",也不得把冻结当前 lane 误读成结束整个 task。
   实测反例:某批 `BUDGET_PROJECTION_OPERATION_MISSING` 跨 11.5 小时复发 **9 次**。

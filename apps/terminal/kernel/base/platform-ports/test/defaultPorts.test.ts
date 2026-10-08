@@ -7,7 +7,7 @@ import {
   unavailableAppControlPort,
   unavailableConnectorPort,
   unavailableDevicePort,
-  unavailableHotUpdatePort,
+  unavailableUpdatePort,
   unavailableLogUploadPort,
   unavailablePersistSecurePort,
   unavailableScriptPort,
@@ -57,7 +57,7 @@ describe('D-1/D-2: usable defaults', () => {
             appControl: unavailableAppControlPort,
             script: unavailableScriptPort,
             connector: unavailableConnectorPort,
-            hotUpdate: unavailableHotUpdatePort,
+            update: unavailableUpdatePort,
             logUpload: unavailableLogUploadPort,
             topologyHost: unavailableTopologyHostPort,
           },
@@ -259,34 +259,60 @@ describe('D-3/D-4/D-5/D-6/D-7/D-8/D-9/D-10: unavailable defaults', () => {
     );
   });
 
-  it('returns unavailable for every hot-update, upload, and topology method', async () => {
-    const hotInput = {
-      timeoutMs: 20,
-      releaseId: 'release',
-      packageId: 'package',
-      bundleVersion: '1',
-      packageUrls: ['https://example.invalid/package'],
-      packageSha256: 'package-hash',
-      manifestSha256: 'manifest-hash',
-      packageSizeBytes: 1,
+  it('returns unavailable for each update, upload, and topology method', async () => {
+    const timeout = {timeoutMs: 20};
+    const artifact = {
+      schemaVersion: 1 as const,
+      platform: 'android' as const,
+      applicationId: 'com.example.terminal',
+      nativeVersion: '1.0.0',
+      nativeBuildNumber: 1,
+      bundleVersion: '1.0.0',
+      runtimeVersion: '1',
+      entry: 'index.android.bundle',
+      files: [{path: 'index.android.bundle', sizeBytes: 0, sha256: 'a'.repeat(64)}],
+      publicationId: 'b'.repeat(64),
     };
-    expectUnavailable(await unavailableHotUpdatePort.downloadPackage(hotInput), 'hotUpdate', 'downloadPackage');
+    expectUnavailable(await unavailableUpdatePort.readFacts(timeout), 'update', 'readFacts');
     expectUnavailable(
-      await unavailableHotUpdatePort.writeBootMarker({
-        ...hotInput,
-        installDirectory: '/tmp',
-        entryFile: 'index.js',
-        maxLaunchFailures: 1,
-        healthCheckTimeoutMs: 10,
+      await unavailableUpdatePort.prepareArtifact({
+        ...timeout,
+        sourceRef: 'fixture',
+        sourcePath: '/updates/artifact.zip',
+        expectedSha256: 'b'.repeat(64),
+        artifact,
+        kind: 'hot',
+        network: {addresses: [{addressName: 'primary', baseUrl: 'https://updates.example.invalid'}]},
       }),
-      'hotUpdate',
-      'writeBootMarker',
+      'update',
+      'prepareArtifact',
     );
-    expectUnavailable(await unavailableHotUpdatePort.readBootMarker(call), 'hotUpdate', 'readBootMarker');
-    expectUnavailable(await unavailableHotUpdatePort.readActiveMarker(call), 'hotUpdate', 'readActiveMarker');
-    expectUnavailable(await unavailableHotUpdatePort.readRollbackMarker(call), 'hotUpdate', 'readRollbackMarker');
-    expectUnavailable(await unavailableHotUpdatePort.clearBootMarker(call), 'hotUpdate', 'clearBootMarker');
-    expectUnavailable(await unavailableHotUpdatePort.confirmLoadComplete(call), 'hotUpdate', 'confirmLoadComplete');
+    expectUnavailable(
+      await unavailableUpdatePort.applyPrepared({
+        ...timeout,
+        taskId: 'task',
+        actionId: 'action',
+        preparedId: 'prepared',
+        kind: 'hot',
+      }),
+      'update',
+      'applyPrepared',
+    );
+    expectUnavailable(
+      await unavailableUpdatePort.readAction({...timeout, taskId: 'task', actionId: 'action'}),
+      'update',
+      'readAction',
+    );
+    expectUnavailable(
+      await unavailableUpdatePort.confirmBoot({...timeout, bootToken: 'boot', publicationId: 'b'.repeat(64)}),
+      'update',
+      'confirmBoot',
+    );
+    expectUnavailable(
+      await unavailableUpdatePort.releasePrepared({...timeout, preparedId: 'prepared'}),
+      'update',
+      'releasePrepared',
+    );
     expectUnavailable(
       await unavailableLogUploadPort.uploadLogsForDate({
         uploadUrl: 'https://example.invalid',

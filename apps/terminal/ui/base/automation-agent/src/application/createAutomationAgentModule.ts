@@ -33,14 +33,18 @@ const createSessionId = (): string => {
 
 const reconnectDelayMs = (attempt: number): number => Math.min(500 * 2 ** Math.max(0, attempt - 1), 5000);
 
-export const createSessionScopedSender = <T extends Readonly<{sessionId: string}>>(input: Readonly<{
-  readonly sessionId: string;
-  readonly socket: Readonly<{closed: boolean; next: (value: T) => void}>;
-  readonly isCurrent: () => boolean;
-}>): ((reply: T) => void) => reply => {
-  if (reply.sessionId !== input.sessionId || !input.isCurrent() || input.socket.closed) return;
-  input.socket.next(reply);
-};
+export const createSessionScopedSender =
+  <T extends Readonly<{sessionId: string}>>(
+    input: Readonly<{
+      readonly sessionId: string;
+      readonly socket: Readonly<{closed: boolean; next: (value: T) => void}>;
+      readonly isCurrent: () => boolean;
+    }>,
+  ): ((reply: T) => void) =>
+  reply => {
+    if (reply.sessionId !== input.sessionId || !input.isCurrent() || input.socket.closed) return;
+    input.socket.next(reply);
+  };
 
 const createHello = (
   input: Readonly<{

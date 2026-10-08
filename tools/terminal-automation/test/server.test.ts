@@ -69,6 +69,14 @@ describe('automation driver server', () => {
     });
     expect(observedSession).toMatchObject({runtimeId: 'runtime-1', localNodeId: 'node-1'});
     await expect(registeredSession).resolves.toMatchObject({sessionId: 'session-1', runtimeId: 'runtime-1'});
+    expect(driver.transport.getDiagnostics()).toMatchObject({
+      socketConnections: 1,
+      authenticatedSessions: 1,
+      authenticationTimeouts: 0,
+      rejectedMessages: 0,
+      activeSockets: 1,
+      activeSessions: 1,
+    });
 
     let acknowledgement: Promise<unknown> | undefined;
     const requestReceived = new Promise<void>(resolve =>
@@ -175,6 +183,12 @@ describe('automation driver server', () => {
     );
     expect(await closed).toBe(4003);
     expect(driver.getSession()).toBeNull();
+    expect(driver.getDiagnostics()).toMatchObject({
+      socketConnections: 1,
+      authenticatedSessions: 0,
+      rejectedMessages: 1,
+      activeSessions: 0,
+    });
   });
 
   it('rejects unknown hello body fields before creating a session', async () => {

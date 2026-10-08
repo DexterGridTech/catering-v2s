@@ -88,7 +88,15 @@ type DispatcherInput = Readonly<{
   };
 }>;
 
-const safeLedgerDetailKeys = new Set(['operation', 'phase', 'childStatus', 'childErrorCode', 'categoryWasBusiness']);
+const safeLedgerDetailKeys = new Set([
+  'operation',
+  'phase',
+  'childStatus',
+  'childErrorCode',
+  'categoryWasBusiness',
+  'runtimeCauseName',
+  'runtimeCauseCode',
+]);
 
 const safeLedgerDetails = (value: unknown): LedgerError['details'] => {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return undefined;

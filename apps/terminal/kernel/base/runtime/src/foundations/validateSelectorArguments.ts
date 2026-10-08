@@ -21,7 +21,9 @@ const matches = (value: unknown, schema: SelectorParameterSchema): boolean => {
       return (
         Object.keys(record).every(key => key in schema.properties && matches(record[key], schema.properties[key])) &&
         Object.entries(schema.properties).every(([key, property]) =>
-          Object.prototype.hasOwnProperty.call(record, key) ? matches(record[key], property) : property.optional === true,
+          Object.prototype.hasOwnProperty.call(record, key)
+            ? matches(record[key], property)
+            : property.optional === true,
         )
       );
     }

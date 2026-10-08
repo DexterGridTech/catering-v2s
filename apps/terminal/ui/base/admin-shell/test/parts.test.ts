@@ -14,9 +14,13 @@ const normalizeCatalogEntry = (entry: (typeof parts)[number]['catalogEntry']) =>
 
 describe('admin-shell R-10a part declarations', () => {
   it('keeps navigation tab identifiers distinct from rendered section content roots', () => {
-    for (const section of [adminTestIds.ports, adminTestIds.runtime, adminTestIds.topology]) {
+    for (const [section, expected] of [
+      [adminTestIds.ports, adminTestIds.node('terminal.admin:ports:content-root')],
+      [adminTestIds.runtime, adminTestIds.node('terminal.admin:runtime:content-root')],
+      [adminTestIds.topology, adminTestIds.node('terminal.admin:topology:content-root')],
+    ] as const) {
       expect(section.contentRoot).not.toBe(section.section);
-      expect(section.contentRoot).toMatch(/^terminal\.admin:[a-z-]+:content-root$/);
+      expect(section.contentRoot).toBe(expected);
     }
     expect(
       new Set([adminTestIds.ports.contentRoot, adminTestIds.runtime.contentRoot, adminTestIds.topology.contentRoot])

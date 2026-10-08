@@ -3,7 +3,10 @@ import type {AnyStateSelector, StateSelector, StateSelectorMetadata, StateSelect
 import {assertNonEmptyString} from './assertNonEmptyString';
 
 const definition = Symbol('runtimeStateSelectorDefinition');
-type DefinedSelector<TReturn = unknown, TArgs extends readonly unknown[] = readonly unknown[]> = StateSelector<TReturn, TArgs> &
+type DefinedSelector<TReturn = unknown, TArgs extends readonly unknown[] = readonly unknown[]> = StateSelector<
+  TReturn,
+  TArgs
+> &
   Readonly<{[definition]: StateSelectorMetadata}>;
 
 export const defineStateSelector = <TReturn, TArgs extends readonly unknown[]>(
@@ -23,14 +26,11 @@ export const defineStateSelector = <TReturn, TArgs extends readonly unknown[]>(
     selectorName,
     parameters: Object.freeze(options.parameters.map(parameter => Object.freeze({...parameter}))),
   });
-  const defined = Object.assign(
-    (state: StateRoot, ...args: TArgs): TReturn => options.selector(state, ...args),
-    {[definition]: metadata},
-  ) as DefinedSelector<TReturn, TArgs>;
+  const defined = Object.assign((state: StateRoot, ...args: TArgs): TReturn => options.selector(state, ...args), {
+    [definition]: metadata,
+  }) as DefinedSelector<TReturn, TArgs>;
   return Object.freeze(defined);
 };
 
 export const readStateSelectorMetadata = (selector: AnyStateSelector): StateSelectorMetadata | undefined =>
-  typeof selector === 'function' && definition in selector
-    ? (selector as DefinedSelector)[definition]
-    : undefined;
+  typeof selector === 'function' && definition in selector ? (selector as DefinedSelector)[definition] : undefined;

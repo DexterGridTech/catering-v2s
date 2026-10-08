@@ -6,6 +6,8 @@ export {createAndroidAutomationConnection} from './androidAutomationConnection.j
 export type {AndroidAutomationConnection} from './androidAutomationConnection.js';
 export {buildAndroidTapArguments, createAndroidInput} from './androidInput.js';
 export type {AndroidInput, AndroidSurface} from './androidInput.js';
+export {createAndroidSystemUi, findAndroidSystemUiButton} from './androidSystemUi.js';
+export type {AndroidSystemUi, AndroidSystemUiButton} from './androidSystemUi.js';
 export {tapRegisteredAndroidInput, tapRegisteredAndroidNode} from './androidRegisteredInput.js';
 export {buildAndroidCaptureArguments, createAndroidDisplayCapture} from './androidCapture.js';
 export type {AndroidDisplayCapture} from './androidCapture.js';
@@ -38,7 +40,7 @@ export {clickRegisteredWebNode, focusRegisteredWebInput} from './webInput.js';
 export {createVirtualKeyboardInput} from './virtualKeyboardInput.js';
 export type {JourneyFieldValue, TerminalInputDisplay} from './virtualKeyboardInput.js';
 export {createAndroidJourneyUiPort, createJourneyUiPort, createWebJourneyUiPort} from './journeyUiPort.js';
-export type {JourneyDisplay, PrimaryJourneyDisplay} from './journeyUiPort.js';
+export type {AndroidJourneyUiPort, JourneyDisplay, PrimaryJourneyDisplay} from './journeyUiPort.js';
 export {prepareAndroidJourneySurface, prepareWebJourneySurface} from './journeySurface.js';
 export type {MainJourneyShape} from './journeySurface.js';
 export {requests} from './requests.js';

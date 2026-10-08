@@ -47,7 +47,8 @@ export const subscribeSelector = async (
   argsTuple: readonly unknown[],
 ) => {
   const subscriptionId = `selector-observation-${randomUUID()}`;
-  let latest: Readonly<{readonly state: 'JSON'; readonly value: unknown}> | Readonly<{readonly state: 'INVALID'}> | undefined;
+  let latest:
+    Readonly<{readonly state: 'JSON'; readonly value: unknown}> | Readonly<{readonly state: 'INVALID'}> | undefined;
   let waiter:
     | Readonly<{
         matches: (value: unknown) => boolean;

@@ -27,6 +27,16 @@ const commandExecutionErrorDefinition = {
   moduleName,
 };
 
+const causeDiagnostics = (error: unknown): Readonly<Record<string, string>> => {
+  if (!(error instanceof Error)) return Object.freeze({});
+  const runtimeCauseName = /^[A-Za-z_$][A-Za-z0-9_.$]{0,100}$/u.test(error.name) ? error.name : undefined;
+  const runtimeCauseCode = /^[A-Z][A-Z0-9_]{1,95}$/u.test(error.message) ? error.message : undefined;
+  return Object.freeze({
+    ...(runtimeCauseName ? {runtimeCauseName} : {}),
+    ...(runtimeCauseCode ? {runtimeCauseCode} : {}),
+  });
+};
+
 export const normalizeRuntimeError = (error: unknown, context: RuntimeErrorContext): AppError => {
   if (isAppError(error)) return error;
 
@@ -51,6 +61,7 @@ export const normalizeRuntimeError = (error: unknown, context: RuntimeErrorConte
   return createAppError(commandExecutionErrorDefinition, {
     args: {commandName: context.commandName},
     context: errorContext,
+    details: causeDiagnostics(error),
     cause: error,
   });
 };

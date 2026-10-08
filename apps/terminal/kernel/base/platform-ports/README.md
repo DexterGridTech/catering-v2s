@@ -22,7 +22,7 @@
 它有**十个端口**：
 
 `logger` · `persistKv` · `persistSecure` · `device` · `appControl` ·
-`script` · `connector` · `hotUpdate` · `logUpload` · `topologyHost`
+`script` · `connector` · `update` · `logUpload` · `topologyHost`
 
 ## 2 · 它不是什么
 
@@ -67,7 +67,7 @@ src/
     appControl.ts    六类宿主控制能力
     script.ts        脚本执行：函数名列表 + 单一 dispatcher
     connector.ts     外设通道 call/subscribe/unsubscribe/on
-    hotUpdate.ts     热更新包与 boot/active/rollback marker
+    update.ts     热更新包与 boot/active/rollback marker
     logUpload.ts     按日期上传日志
     topologyHost.ts  跨机 host 服务（含 HTTP 与 WS 地址）
     platformPorts.ts LoggerBinding · 十键 bindings · PlatformPorts · factory 入参
@@ -100,7 +100,7 @@ test/
 import {
   createPlatformPorts, consoleLoggerBinding, createProcessMemoryStateStoragePort,
   unavailablePersistSecurePort, unavailableDevicePort, unavailableAppControlPort,
-  unavailableScriptPort, unavailableConnectorPort, unavailableHotUpdatePort,
+  unavailableScriptPort, unavailableConnectorPort, unavailableUpdatePort,
   unavailableLogUploadPort, unavailableTopologyHostPort,
 } from '@catering-v2s/kernel-base-platform-ports';
 
@@ -114,7 +114,7 @@ const ports = createPlatformPorts({
     appControl: unavailableAppControlPort,
     script: unavailableScriptPort,
     connector: unavailableConnectorPort,
-    hotUpdate: unavailableHotUpdatePort,
+    update: unavailableUpdatePort,
     logUpload: unavailableLogUploadPort,
     topologyHost: unavailableTopologyHostPort,
   },
@@ -157,7 +157,7 @@ switch (read.status) {
 const reset = await ports.appControl.resetRuntime({requestId, timeoutMs: 5000});
 if (reset.status === 'accepted') {
   // 只代表宿主已受理。终态观察点是 reset.terminalObservation
-  // = 'SUCCESSOR_RUNTIME_STARTED'，由后继运行时读 hotUpdate 的 marker
+  // = 'SUCCESSOR_RUNTIME_STARTED'，由后继运行时读 update 的 marker
   //（marker 带 resetRequestId，用它和这次的 requestId 对上）
   // reset.value 不存在 —— 类型层就禁止你把它当成功值读
 }

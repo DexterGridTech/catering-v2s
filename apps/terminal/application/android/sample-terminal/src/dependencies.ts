@@ -3,6 +3,7 @@ import {moduleName as uiBaseInput} from '@catering-v2s/ui-base-input';
 import {moduleName as uiBasePrimitives} from '@catering-v2s/ui-base-primitives';
 import {moduleName as uiBaseRender} from '@catering-v2s/ui-base-render';
 import {moduleName as uiIntegrationSampleConsole} from '@catering-v2s/ui-integration-sample-console';
+import {moduleName as terminalUpdate} from '@catering-v2s/kernel-base-terminal-update';
 
 export const dependencyModuleNames = [
   applicationBaseAndroid,
@@ -10,6 +11,7 @@ export const dependencyModuleNames = [
   uiBasePrimitives,
   uiBaseRender,
   uiIntegrationSampleConsole,
+  terminalUpdate,
 ] as const;
 
 export const devDependencyModuleNames = [] as const;

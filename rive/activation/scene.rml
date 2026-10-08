@@ -9,18 +9,21 @@
         <!-- 透明背景：不添加 Fill -->
 
         <!-- 左侧：终端图标（蓝色矩形框，中心在 80, 75） -->
-        <Rectangle name="TerminalScreen" x="80" y="75" width="60" height="45" cornerRadiusTL="2" cornerRadiusTR="2" id="0:10">
+        <!-- geometry 不能单独存在，必须用 Shape 包装才会被渲染 -->
+        <Shape name="TerminalIconShape" x="80" y="75" id="0:300">
+            <Rectangle name="TerminalScreen" width="60" height="45" cornerRadiusTL="2" cornerRadiusTR="2" id="0:10"/>
             <Stroke thickness="2.5" cap="round" join="round">
                 <SolidColor colorValue="FF2196F3"/>
             </Stroke>
-        </Rectangle>
+        </Shape>
 
         <!-- 右侧：云服务图标（绿色椭圆，中心在 520, 75） -->
-        <Ellipse name="CloudIcon" x="520" y="75" width="60" height="30" id="0:20">
+        <Shape name="CloudIconShape" x="520" y="75" id="0:301">
+            <Ellipse name="CloudIcon" width="60" height="30" id="0:20"/>
             <Fill>
                 <SolidColor colorValue="FF4CAF50"/>
             </Fill>
-        </Ellipse>
+        </Shape>
 
         <!-- 中间：箭头路径和虚线 - 8个独立段 -->
         <Node name="Arrow" x="300" y="75" id="0:30">
@@ -159,202 +162,274 @@
         </Node>
 
         <!-- 动画：虚线循环移动 -->
+        <!-- 注意：正确嵌套顺序是 KeyedObject 包 KeyedProperty（RML 规范），每个对象各自一个 KeyedObject -->
         <LinearAnimation fps="60" duration="30" speed="1" loopValue="loop" name="DashMovement" id="0:6">
             <!-- 所有 8 个 DashPath 同步移动 offset: 0 → 50 -->
-            <KeyedProperty propertyKey="690">
-                <KeyedObject objectId="0:34">
+            <KeyedObject objectId="0:34">
+                <KeyedProperty propertyKey="690">
                     <KeyFrameDouble frame="0" value="0" interpolationType="linear"/>
                     <KeyFrameDouble frame="30" value="50" interpolationType="linear"/>
-                </KeyedObject>
-                <KeyedObject objectId="0:44">
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:44">
+                <KeyedProperty propertyKey="690">
                     <KeyFrameDouble frame="0" value="0" interpolationType="linear"/>
                     <KeyFrameDouble frame="30" value="50" interpolationType="linear"/>
-                </KeyedObject>
-                <KeyedObject objectId="0:54">
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:54">
+                <KeyedProperty propertyKey="690">
                     <KeyFrameDouble frame="0" value="0" interpolationType="linear"/>
                     <KeyFrameDouble frame="30" value="50" interpolationType="linear"/>
-                </KeyedObject>
-                <KeyedObject objectId="0:64">
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:64">
+                <KeyedProperty propertyKey="690">
                     <KeyFrameDouble frame="0" value="0" interpolationType="linear"/>
                     <KeyFrameDouble frame="30" value="50" interpolationType="linear"/>
-                </KeyedObject>
-                <KeyedObject objectId="0:74">
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:74">
+                <KeyedProperty propertyKey="690">
                     <KeyFrameDouble frame="0" value="0" interpolationType="linear"/>
                     <KeyFrameDouble frame="30" value="50" interpolationType="linear"/>
-                </KeyedObject>
-                <KeyedObject objectId="0:84">
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:84">
+                <KeyedProperty propertyKey="690">
                     <KeyFrameDouble frame="0" value="0" interpolationType="linear"/>
                     <KeyFrameDouble frame="30" value="50" interpolationType="linear"/>
-                </KeyedObject>
-                <KeyedObject objectId="0:94">
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:94">
+                <KeyedProperty propertyKey="690">
                     <KeyFrameDouble frame="0" value="0" interpolationType="linear"/>
                     <KeyFrameDouble frame="30" value="50" interpolationType="linear"/>
-                </KeyedObject>
-                <KeyedObject objectId="0:164">
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:164">
+                <KeyedProperty propertyKey="690">
                     <KeyFrameDouble frame="0" value="0" interpolationType="linear"/>
                     <KeyFrameDouble frame="30" value="50" interpolationType="linear"/>
-                </KeyedObject>
-            </KeyedProperty>
+                </KeyedProperty>
+            </KeyedObject>
         </LinearAnimation>
 
         <!-- 9 个状态对应的粗细动画：State0-8 -->
         <!-- State 0: 所有段都是正常粗细 3 -->
         <LinearAnimation fps="60" duration="1" name="State0" id="0:200"/>
 
+        <!-- 注意：正确嵌套顺序是 KeyedObject 包 KeyedProperty（RML 规范），每个段各自一个 KeyedObject -->
         <!-- State 1: 段1 变粗 7.5 (3*2.5) -->
         <LinearAnimation fps="60" duration="1" name="State1" id="0:201">
-            <KeyedProperty propertyKey="47">
-                <KeyedObject objectId="0:32">
+            <KeyedObject objectId="0:32">
+                <KeyedProperty propertyKey="47">
                     <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
-                </KeyedObject>
-            </KeyedProperty>
+                </KeyedProperty>
+            </KeyedObject>
         </LinearAnimation>
 
         <!-- State 2: 段1-2 变粗 -->
         <LinearAnimation fps="60" duration="1" name="State2" id="0:202">
-            <KeyedProperty propertyKey="47">
-                <KeyedObject objectId="0:32">
+            <KeyedObject objectId="0:32">
+                <KeyedProperty propertyKey="47">
                     <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
-                </KeyedObject>
-                <KeyedObject objectId="0:42">
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:42">
+                <KeyedProperty propertyKey="47">
                     <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
-                </KeyedObject>
-            </KeyedProperty>
+                </KeyedProperty>
+            </KeyedObject>
         </LinearAnimation>
 
         <!-- State 3: 段1-3 变粗 -->
         <LinearAnimation fps="60" duration="1" name="State3" id="0:203">
-            <KeyedProperty propertyKey="47">
-                <KeyedObject objectId="0:32">
+            <KeyedObject objectId="0:32">
+                <KeyedProperty propertyKey="47">
                     <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
-                </KeyedObject>
-                <KeyedObject objectId="0:42">
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:42">
+                <KeyedProperty propertyKey="47">
                     <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
-                </KeyedObject>
-                <KeyedObject objectId="0:52">
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:52">
+                <KeyedProperty propertyKey="47">
                     <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
-                </KeyedObject>
-            </KeyedProperty>
+                </KeyedProperty>
+            </KeyedObject>
         </LinearAnimation>
 
         <!-- State 4: 段1-4 变粗 -->
         <LinearAnimation fps="60" duration="1" name="State4" id="0:204">
-            <KeyedProperty propertyKey="47">
-                <KeyedObject objectId="0:32">
+            <KeyedObject objectId="0:32">
+                <KeyedProperty propertyKey="47">
                     <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
-                </KeyedObject>
-                <KeyedObject objectId="0:42">
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:42">
+                <KeyedProperty propertyKey="47">
                     <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
-                </KeyedObject>
-                <KeyedObject objectId="0:52">
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:52">
+                <KeyedProperty propertyKey="47">
                     <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
-                </KeyedObject>
-                <KeyedObject objectId="0:62">
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:62">
+                <KeyedProperty propertyKey="47">
                     <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
-                </KeyedObject>
-            </KeyedProperty>
+                </KeyedProperty>
+            </KeyedObject>
         </LinearAnimation>
 
         <!-- State 5: 段1-5 变粗 -->
         <LinearAnimation fps="60" duration="1" name="State5" id="0:205">
-            <KeyedProperty propertyKey="47">
-                <KeyedObject objectId="0:32">
+            <KeyedObject objectId="0:32">
+                <KeyedProperty propertyKey="47">
                     <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
-                </KeyedObject>
-                <KeyedObject objectId="0:42">
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:42">
+                <KeyedProperty propertyKey="47">
                     <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
-                </KeyedObject>
-                <KeyedObject objectId="0:52">
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:52">
+                <KeyedProperty propertyKey="47">
                     <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
-                </KeyedObject>
-                <KeyedObject objectId="0:62">
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:62">
+                <KeyedProperty propertyKey="47">
                     <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
-                </KeyedObject>
-                <KeyedObject objectId="0:72">
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:72">
+                <KeyedProperty propertyKey="47">
                     <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
-                </KeyedObject>
-            </KeyedProperty>
+                </KeyedProperty>
+            </KeyedObject>
         </LinearAnimation>
 
         <!-- State 6: 段1-6 变粗 -->
         <LinearAnimation fps="60" duration="1" name="State6" id="0:206">
-            <KeyedProperty propertyKey="47">
-                <KeyedObject objectId="0:32">
+            <KeyedObject objectId="0:32">
+                <KeyedProperty propertyKey="47">
                     <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
-                </KeyedObject>
-                <KeyedObject objectId="0:42">
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:42">
+                <KeyedProperty propertyKey="47">
                     <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
-                </KeyedObject>
-                <KeyedObject objectId="0:52">
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:52">
+                <KeyedProperty propertyKey="47">
                     <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
-                </KeyedObject>
-                <KeyedObject objectId="0:62">
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:62">
+                <KeyedProperty propertyKey="47">
                     <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
-                </KeyedObject>
-                <KeyedObject objectId="0:72">
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:72">
+                <KeyedProperty propertyKey="47">
                     <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
-                </KeyedObject>
-                <KeyedObject objectId="0:82">
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:82">
+                <KeyedProperty propertyKey="47">
                     <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
-                </KeyedObject>
-            </KeyedProperty>
+                </KeyedProperty>
+            </KeyedObject>
         </LinearAnimation>
 
         <!-- State 7: 段1-7 变粗 -->
         <LinearAnimation fps="60" duration="1" name="State7" id="0:207">
-            <KeyedProperty propertyKey="47">
-                <KeyedObject objectId="0:32">
+            <KeyedObject objectId="0:32">
+                <KeyedProperty propertyKey="47">
                     <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
-                </KeyedObject>
-                <KeyedObject objectId="0:42">
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:42">
+                <KeyedProperty propertyKey="47">
                     <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
-                </KeyedObject>
-                <KeyedObject objectId="0:52">
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:52">
+                <KeyedProperty propertyKey="47">
                     <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
-                </KeyedObject>
-                <KeyedObject objectId="0:62">
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:62">
+                <KeyedProperty propertyKey="47">
                     <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
-                </KeyedObject>
-                <KeyedObject objectId="0:72">
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:72">
+                <KeyedProperty propertyKey="47">
                     <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
-                </KeyedObject>
-                <KeyedObject objectId="0:82">
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:82">
+                <KeyedProperty propertyKey="47">
                     <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
-                </KeyedObject>
-                <KeyedObject objectId="0:92">
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:92">
+                <KeyedProperty propertyKey="47">
                     <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
-                </KeyedObject>
-            </KeyedProperty>
+                </KeyedProperty>
+            </KeyedObject>
         </LinearAnimation>
 
         <!-- State 8: 段1-8 全部变粗 -->
         <LinearAnimation fps="60" duration="1" name="State8" id="0:208">
-            <KeyedProperty propertyKey="47">
-                <KeyedObject objectId="0:32">
+            <KeyedObject objectId="0:32">
+                <KeyedProperty propertyKey="47">
                     <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
-                </KeyedObject>
-                <KeyedObject objectId="0:42">
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:42">
+                <KeyedProperty propertyKey="47">
                     <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
-                </KeyedObject>
-                <KeyedObject objectId="0:52">
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:52">
+                <KeyedProperty propertyKey="47">
                     <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
-                </KeyedObject>
-                <KeyedObject objectId="0:62">
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:62">
+                <KeyedProperty propertyKey="47">
                     <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
-                </KeyedObject>
-                <KeyedObject objectId="0:72">
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:72">
+                <KeyedProperty propertyKey="47">
                     <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
-                </KeyedObject>
-                <KeyedObject objectId="0:82">
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:82">
+                <KeyedProperty propertyKey="47">
                     <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
-                </KeyedObject>
-                <KeyedObject objectId="0:92">
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:92">
+                <KeyedProperty propertyKey="47">
                     <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
-                </KeyedObject>
-                <KeyedObject objectId="0:162">
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:162">
+                <KeyedProperty propertyKey="47">
                     <KeyFrameDouble frame="0" value="7.5" interpolationType="hold"/>
-                </KeyedObject>
-            </KeyedProperty>
+                </KeyedProperty>
+            </KeyedObject>
         </LinearAnimation>
 
         <StateMachine name="ActivationStateMachine" id="0:7">
@@ -382,7 +457,7 @@
                         <TransitionViewModelCondition opValue="equal">
                             <TransitionPropertyViewModelComparator>
                                 <BindablePropertyNumber propertyValue="0">
-                                    <DataBindContext sourcePathIds="0:100-0:105"/>
+                                    <DataBindContext sourcePathIds="0:100-0:105" propertyKey="636"/>
                                 </BindablePropertyNumber>
                             </TransitionPropertyViewModelComparator>
                             <TransitionValueNumberComparator value="1"/>
@@ -396,7 +471,7 @@
                         <TransitionViewModelCondition opValue="equal">
                             <TransitionPropertyViewModelComparator>
                                 <BindablePropertyNumber propertyValue="0">
-                                    <DataBindContext sourcePathIds="0:100-0:101"/>
+                                    <DataBindContext sourcePathIds="0:100-0:105" propertyKey="636"/>
                                 </BindablePropertyNumber>
                             </TransitionPropertyViewModelComparator>
                             <TransitionValueNumberComparator value="2"/>
@@ -407,7 +482,7 @@
                         <TransitionViewModelCondition opValue="equal">
                             <TransitionPropertyViewModelComparator>
                                 <BindablePropertyNumber propertyValue="0">
-                                    <DataBindContext sourcePathIds="0:100-0:101"/>
+                                    <DataBindContext sourcePathIds="0:100-0:105" propertyKey="636"/>
                                 </BindablePropertyNumber>
                             </TransitionPropertyViewModelComparator>
                             <TransitionValueNumberComparator value="0"/>
@@ -420,7 +495,7 @@
                         <TransitionViewModelCondition opValue="equal">
                             <TransitionPropertyViewModelComparator>
                                 <BindablePropertyNumber propertyValue="0">
-                                    <DataBindContext sourcePathIds="0:100-0:101"/>
+                                    <DataBindContext sourcePathIds="0:100-0:105" propertyKey="636"/>
                                 </BindablePropertyNumber>
                             </TransitionPropertyViewModelComparator>
                             <TransitionValueNumberComparator value="3"/>
@@ -430,7 +505,7 @@
                         <TransitionViewModelCondition opValue="lessThan">
                             <TransitionPropertyViewModelComparator>
                                 <BindablePropertyNumber propertyValue="0">
-                                    <DataBindContext sourcePathIds="0:100-0:101"/>
+                                    <DataBindContext sourcePathIds="0:100-0:105" propertyKey="636"/>
                                 </BindablePropertyNumber>
                             </TransitionPropertyViewModelComparator>
                             <TransitionValueNumberComparator value="2"/>
@@ -443,7 +518,7 @@
                         <TransitionViewModelCondition opValue="equal">
                             <TransitionPropertyViewModelComparator>
                                 <BindablePropertyNumber propertyValue="0">
-                                    <DataBindContext sourcePathIds="0:100-0:101"/>
+                                    <DataBindContext sourcePathIds="0:100-0:105" propertyKey="636"/>
                                 </BindablePropertyNumber>
                             </TransitionPropertyViewModelComparator>
                             <TransitionValueNumberComparator value="4"/>
@@ -453,7 +528,7 @@
                         <TransitionViewModelCondition opValue="lessThan">
                             <TransitionPropertyViewModelComparator>
                                 <BindablePropertyNumber propertyValue="0">
-                                    <DataBindContext sourcePathIds="0:100-0:101"/>
+                                    <DataBindContext sourcePathIds="0:100-0:105" propertyKey="636"/>
                                 </BindablePropertyNumber>
                             </TransitionPropertyViewModelComparator>
                             <TransitionValueNumberComparator value="3"/>
@@ -466,7 +541,7 @@
                         <TransitionViewModelCondition opValue="equal">
                             <TransitionPropertyViewModelComparator>
                                 <BindablePropertyNumber propertyValue="0">
-                                    <DataBindContext sourcePathIds="0:100-0:101"/>
+                                    <DataBindContext sourcePathIds="0:100-0:105" propertyKey="636"/>
                                 </BindablePropertyNumber>
                             </TransitionPropertyViewModelComparator>
                             <TransitionValueNumberComparator value="5"/>
@@ -476,7 +551,7 @@
                         <TransitionViewModelCondition opValue="lessThan">
                             <TransitionPropertyViewModelComparator>
                                 <BindablePropertyNumber propertyValue="0">
-                                    <DataBindContext sourcePathIds="0:100-0:101"/>
+                                    <DataBindContext sourcePathIds="0:100-0:105" propertyKey="636"/>
                                 </BindablePropertyNumber>
                             </TransitionPropertyViewModelComparator>
                             <TransitionValueNumberComparator value="4"/>
@@ -489,7 +564,7 @@
                         <TransitionViewModelCondition opValue="equal">
                             <TransitionPropertyViewModelComparator>
                                 <BindablePropertyNumber propertyValue="0">
-                                    <DataBindContext sourcePathIds="0:100-0:101"/>
+                                    <DataBindContext sourcePathIds="0:100-0:105" propertyKey="636"/>
                                 </BindablePropertyNumber>
                             </TransitionPropertyViewModelComparator>
                             <TransitionValueNumberComparator value="6"/>
@@ -499,7 +574,7 @@
                         <TransitionViewModelCondition opValue="lessThan">
                             <TransitionPropertyViewModelComparator>
                                 <BindablePropertyNumber propertyValue="0">
-                                    <DataBindContext sourcePathIds="0:100-0:101"/>
+                                    <DataBindContext sourcePathIds="0:100-0:105" propertyKey="636"/>
                                 </BindablePropertyNumber>
                             </TransitionPropertyViewModelComparator>
                             <TransitionValueNumberComparator value="5"/>
@@ -512,7 +587,7 @@
                         <TransitionViewModelCondition opValue="equal">
                             <TransitionPropertyViewModelComparator>
                                 <BindablePropertyNumber propertyValue="0">
-                                    <DataBindContext sourcePathIds="0:100-0:101"/>
+                                    <DataBindContext sourcePathIds="0:100-0:105" propertyKey="636"/>
                                 </BindablePropertyNumber>
                             </TransitionPropertyViewModelComparator>
                             <TransitionValueNumberComparator value="7"/>
@@ -522,7 +597,7 @@
                         <TransitionViewModelCondition opValue="lessThan">
                             <TransitionPropertyViewModelComparator>
                                 <BindablePropertyNumber propertyValue="0">
-                                    <DataBindContext sourcePathIds="0:100-0:101"/>
+                                    <DataBindContext sourcePathIds="0:100-0:105" propertyKey="636"/>
                                 </BindablePropertyNumber>
                             </TransitionPropertyViewModelComparator>
                             <TransitionValueNumberComparator value="6"/>
@@ -535,7 +610,7 @@
                         <TransitionViewModelCondition opValue="equal">
                             <TransitionPropertyViewModelComparator>
                                 <BindablePropertyNumber propertyValue="0">
-                                    <DataBindContext sourcePathIds="0:100-0:101"/>
+                                    <DataBindContext sourcePathIds="0:100-0:105" propertyKey="636"/>
                                 </BindablePropertyNumber>
                             </TransitionPropertyViewModelComparator>
                             <TransitionValueNumberComparator value="8"/>
@@ -545,7 +620,7 @@
                         <TransitionViewModelCondition opValue="lessThan">
                             <TransitionPropertyViewModelComparator>
                                 <BindablePropertyNumber propertyValue="0">
-                                    <DataBindContext sourcePathIds="0:100-0:101"/>
+                                    <DataBindContext sourcePathIds="0:100-0:105" propertyKey="636"/>
                                 </BindablePropertyNumber>
                             </TransitionPropertyViewModelComparator>
                             <TransitionValueNumberComparator value="7"/>
@@ -559,7 +634,7 @@
                         <TransitionViewModelCondition opValue="lessThan">
                             <TransitionPropertyViewModelComparator>
                                 <BindablePropertyNumber propertyValue="0">
-                                    <DataBindContext sourcePathIds="0:100-0:101"/>
+                                    <DataBindContext sourcePathIds="0:100-0:105" propertyKey="636"/>
                                 </BindablePropertyNumber>
                             </TransitionPropertyViewModelComparator>
                             <TransitionValueNumberComparator value="8"/>

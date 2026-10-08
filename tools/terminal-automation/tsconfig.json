@@ -9,5 +9,12 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["src/**/*.ts", "test/**/*.ts", "journeys/**/*.ts", "fixtures/**/*.ts", "vitest*.config.ts"]
+  "include": [
+    "src/**/*.ts",
+    "test/**/*.ts",
+    "journeys/**/*.ts",
+    "fixtures/**/*.ts",
+    "vitest*.config.ts",
+    "../../apps/terminal/terminal-env.d.ts"
+  ]
 }

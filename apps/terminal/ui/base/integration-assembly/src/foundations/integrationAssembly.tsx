@@ -107,7 +107,7 @@ const requiredPlatformPortNames = [
   'appControl',
   'script',
   'connector',
-  'hotUpdate',
+  'update',
   'logUpload',
   'topologyHost',
 ] as const satisfies readonly (keyof PlatformPorts)[];

@@ -16,7 +16,10 @@ class FakeWebSocket {
     this.bufferedAmount += 3;
   };
 
-  constructor(readonly url: string, readonly protocols?: string | string[]) {}
+  constructor(
+    readonly url: string,
+    readonly protocols?: string | string[],
+  ) {}
 }
 
 describe('bounded WebSocket constructor', () => {
@@ -28,7 +31,8 @@ describe('bounded WebSocket constructor', () => {
       250,
     );
     const socket = new outbound.WebSocketCtor('ws://localhost:19090', ['automation-v1']) as unknown as FakeWebSocket;
-    const frame = (messageId: string) => JSON.stringify({protocolVersion: 1, sessionId: 's', messageId, type: 'event', body: null});
+    const frame = (messageId: string) =>
+      JSON.stringify({protocolVersion: 1, sessionId: 's', messageId, type: 'event', body: null});
 
     socket.send(frame('first'));
     socket.send(frame('second'));

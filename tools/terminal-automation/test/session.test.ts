@@ -67,4 +67,14 @@ describe('waitForAutomationSession', () => {
     );
     expect(fake.listenerCount()).toBe(0);
   });
+
+  it('cancels a losing session wait and releases its lifecycle listener', async () => {
+    const fake = createServer();
+    const controller = new AbortController();
+    const waiting = waitForAutomationSession(fake.server, () => true, 1_000, controller.signal);
+    expect(fake.listenerCount()).toBe(1);
+    controller.abort();
+    await expect(waiting).rejects.toThrow('TERMINAL_AUTOMATION_SESSION_WAIT_CANCELLED');
+    expect(fake.listenerCount()).toBe(0);
+  });
 });

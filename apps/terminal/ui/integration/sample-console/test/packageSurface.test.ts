@@ -1,4 +1,4 @@
-import {describe, expect, it} from 'vitest';
+import {describe, expect, it, vi} from 'vitest';
 import {
   createSampleAssembly,
   createSurfaceForDisplayIndex,
@@ -7,6 +7,11 @@ import {
   moduleName,
   terminalSurfaces,
 } from '../src/index';
+
+vi.mock('expo-crypto', () => ({
+  getRandomBytesAsync: vi.fn(async (length: number) => new Uint8Array(length)),
+  randomUUID: vi.fn(() => '00000000-0000-4000-8000-000000000001'),
+}));
 
 describe('sample-console package surface', () => {
   it('keeps the renamed module and current dependency declarations aligned', () => {
@@ -19,6 +24,7 @@ describe('sample-console package surface', () => {
       'kernel.base.server-config',
       'kernel.base.state',
       'kernel.base.terminal-data-client',
+      'kernel.base.terminal-update',
       'kernel.base.topology',
       'kernel.base.transport',
       'kernel.base.ui-state',

@@ -42,6 +42,6 @@ test("TER tuples use the accepted commands, arguments, and marker contract", () 
   assert.deepEqual(verify.runtimeCommands.find(([label]) => label === "terminal-verify"), [
     "terminal-verify",
     "yarn",
-    ["workspace", "@catering-v2s/terminal", "run", "verify"],
+    ["workspace", "@catering-v2s/terminal", "run", "verify", "--static-verified-by-parent"],
   ]);
 });

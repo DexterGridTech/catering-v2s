@@ -109,15 +109,24 @@ export type {
   ConnectorPort,
 } from './types/connector';
 export type {
-  HotUpdateCall,
-  HotUpdateDownloadInput,
-  HotUpdateInstall,
-  HotUpdateMarkerInput,
-  HotUpdateMarker,
-  HotUpdateMarkerRead,
-  HotUpdateMarkerWrite,
-  HotUpdatePort,
-} from './types/hotUpdate';
+  UpdatePort,
+  UpdateCall,
+  UpdateActualVersions,
+  UpdateFacts,
+  UpdateSource,
+  UpdateNetworkSnapshot,
+  PrepareUpdateArtifactInput,
+  UpdatePreparedArtifact,
+  UpdateActionInput,
+  UpdateAction,
+  UpdateFailureCode,
+} from './types/update';
+export type {
+  TerminalUpdateArtifactFile,
+  TerminalUpdateMinimumFull,
+  TerminalUpdateApkIdentity,
+  TerminalUpdateArtifact,
+} from './generated/terminalUpdateArtifact';
 export type {LogUploadInput, UploadedLogFile, LogUploadOutput, LogUploadPort} from './types/logUpload';
 export type {
   TopologyHostState,
@@ -154,6 +163,6 @@ export {unavailableDevicePort} from './defaults/unavailableDevice';
 export {unavailableAppControlPort} from './defaults/unavailableAppControl';
 export {unavailableScriptPort} from './defaults/unavailableScript';
 export {unavailableConnectorPort} from './defaults/unavailableConnector';
-export {unavailableHotUpdatePort} from './defaults/unavailableHotUpdate';
+export {unavailableUpdatePort} from './defaults/unavailableUpdate';
 export {unavailableLogUploadPort} from './defaults/unavailableLogUpload';
 export {unavailableTopologyHostPort} from './defaults/unavailableTopologyHost';

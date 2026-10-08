@@ -134,6 +134,27 @@ const validateEndpointPathAndQuery = (value: string | undefined): void => {
 const safeResponseDiagnosticId = (value: string | undefined): string | undefined =>
   typeof value === 'string' && /^[A-Za-z0-9._:-]{1,128}$/.test(value) ? value : undefined;
 
+const safeDiagnosticCode = (value: string): string => (/^[A-Z][A-Z0-9_]{0,63}$/.test(value) ? value : 'UNCLASSIFIED');
+
+const diagnosticErrorName = (error: unknown): string =>
+  error instanceof Error && /^[A-Za-z][A-Za-z0-9]{0,63}$/.test(error.name) ? error.name : 'NonError';
+
+const diagnosticErrorFacts = (error: unknown): Readonly<Record<string, string>> => {
+  const facts: Record<string, string> = {errorName: diagnosticErrorName(error)};
+  let current: unknown = error;
+  for (let depth = 0; depth < 2 && typeof current === 'object' && current !== null; depth += 1) {
+    const candidate = current as Readonly<{code?: unknown; cause?: unknown}>;
+    if (typeof candidate.code === 'string') {
+      const code = safeDiagnosticCode(candidate.code);
+      if (code !== 'UNCLASSIFIED') facts[depth === 0 ? 'errorCode' : 'causeCode'] = code;
+    }
+    if (depth === 0 && candidate.cause instanceof Error && /^[A-Za-z][A-Za-z0-9]{0,63}$/.test(candidate.cause.name))
+      facts.causeName = candidate.cause.name;
+    current = candidate.cause;
+  }
+  return Object.freeze(facts);
+};
+
 export const createTransportConnectionOwner = (
   input: Readonly<{
     readonly adapter?: TransportNetworkAdapter;
@@ -155,6 +176,7 @@ export const createTransportConnectionOwner = (
   const profiles = new Map<string, Profile>();
   const listeners = new Map<string, Set<(event: TransportConnectionEvent) => void>>();
   const httpPreferred = new Map<string, Readonly<{addressName: string; revision: number}>>();
+  let nextHttpExecutionId = 0;
 
   const profileFor = (profileId: string): Profile => {
     const profile = profiles.get(profileId);
@@ -180,7 +202,17 @@ export const createTransportConnectionOwner = (
     profile.unsubscribeConnection = undefined;
     unsubscribe?.();
     if (connection === undefined) return;
-    await connection.close(reason);
+    try {
+      await connection.close(reason);
+    } catch (error) {
+      input.diagnose?.('connection-close-failed', profile.profileId, {
+        addressName: profile.currentAddress?.addressName ?? null,
+        revision: profile.snapshotRevision ?? null,
+        reasonCode: safeDiagnosticCode(reason),
+        ...diagnosticErrorFacts(error),
+      });
+      throw error;
+    }
     if (profile.connection === connection) profile.connection = undefined;
   };
   const scheduleRetry = (profile: Profile, expediteFromNetwork = false): void => {
@@ -238,9 +270,15 @@ export const createTransportConnectionOwner = (
         ...(snapshot.proxy === undefined ? {} : {proxy: snapshot.proxy}),
         connectionToken,
       });
-    } catch {
+    } catch (error) {
       const addressIndex = snapshot.addresses.findIndex(item => item.addressName === address.addressName);
       profile.nextAddressIndex = (Math.max(0, addressIndex) + 1) % snapshot.addresses.length;
+      input.diagnose?.('connect-candidate-failed', profile.profileId, {
+        addressName: address.addressName,
+        revision: snapshot.revision,
+        connectionToken,
+        ...diagnosticErrorFacts(error),
+      });
       return 'failed';
     }
     if (profile.stopped || profile.attemptToken !== attemptToken) {
@@ -260,6 +298,22 @@ export const createTransportConnectionOwner = (
       // alongside the owner-generated open signal (which would make protocol owners send
       // their initial frame twice after every reconnect).
       if (event.type === 'open') return;
+      if (event.type === 'error') {
+        input.diagnose?.('socket-error-observed', profile.profileId, {
+          addressName: address.addressName,
+          revision: snapshot.revision,
+          ...(event.reason === undefined ? {} : {reasonCode: safeDiagnosticCode(event.reason)}),
+          connectionToken,
+        });
+      } else if (event.type === 'close') {
+        input.diagnose?.('socket-closed', profile.profileId, {
+          addressName: address.addressName,
+          revision: snapshot.revision,
+          closeCode: event.code ?? null,
+          ...(event.reason === undefined ? {} : {reasonCode: safeDiagnosticCode(event.reason)}),
+          connectionToken,
+        });
+      }
       publish(profile.profileId, event);
     });
     publish(
@@ -286,11 +340,14 @@ export const createTransportConnectionOwner = (
     profile.attemptToken += 1;
     const attemptToken = profile.attemptToken;
     const connectionToken = ++profile.connectionToken;
+    let failureStage = 'network-snapshot-read';
     try {
       const snapshot = await adapter.readSnapshot(profile.serverName);
       if (snapshot.serverName !== profile.serverName || snapshot.addresses.length === 0) {
+        failureStage = 'network-snapshot-validation';
         throw new Error('TRANSPORT_NETWORK_SNAPSHOT_INVALID');
       }
+      failureStage = 'connect-candidates';
       if (profile.snapshotRevision !== undefined && profile.snapshotRevision !== snapshot.revision) {
         profile.preferredAddressName = undefined;
         profile.nextAddressIndex = 0;
@@ -316,13 +373,22 @@ export const createTransportConnectionOwner = (
       profile.preferredAddressName = undefined;
       publish(profile.profileId, Object.freeze({type: 'error', reason: 'NETWORK_ERROR'}));
       scheduleRetry(profile, profile.recoveredDuringAttempt);
-      input.diagnose?.('connect-attempt-failed', profile.profileId, {candidateCount: snapshot.addresses.length});
-    } catch {
+      input.diagnose?.('connect-attempt-failed', profile.profileId, {
+        stage: failureStage,
+        candidateCount: snapshot.addresses.length,
+        outcome: 'all-candidates-failed',
+      });
+    } catch (error) {
       profile.inAttempt = false;
       profile.preferredAddressName = undefined;
       publish(profile.profileId, Object.freeze({type: 'error', reason: 'NETWORK_ERROR'}));
       scheduleRetry(profile, profile.recoveredDuringAttempt);
-      input.diagnose?.('connect-attempt-failed', profile.profileId, {candidateCount: profile.addresses.length});
+      input.diagnose?.('connect-attempt-failed', profile.profileId, {
+        stage: failureStage,
+        candidateCount: profile.addresses.length,
+        ...diagnosticErrorFacts(error),
+        outcome: 'attempt-failed',
+      });
     }
   };
   const invalidate = async (profile: Profile, cause: string): Promise<void> => {
@@ -342,17 +408,51 @@ export const createTransportConnectionOwner = (
       profile.preferredAddressName = undefined;
     }
     scheduleRetry(profile, profile.recoveredDuringAttempt);
-    input.diagnose?.('connection-invalidated', profile.profileId, {cause, wasReady});
+    input.diagnose?.('connection-invalidated', profile.profileId, {
+      causeCode: safeDiagnosticCode(cause),
+      wasReady,
+      connectionToken: profile.connectionToken,
+      revision: profile.snapshotRevision ?? null,
+    });
   };
   const httpKey = (profileId: string, serverName: string): string => `${profileId}\u0000${serverName}`;
 
   return Object.freeze({
     executeHttp: async (request): Promise<TransportHttpExecutionResult> => {
+      const executionId = `http-${++nextHttpExecutionId}`;
+      const startedAt = now();
+      const diagnoseHttp = (
+        event: string,
+        data: Readonly<Record<string, string | number | boolean | null>> = {},
+      ): void =>
+        input.diagnose?.(`http-${event}`, request.profileId, {
+          executionId,
+          serverName: request.serverName,
+          method: request.method,
+          safeRetryable: request.safeRetryable,
+          elapsedMs: Math.max(0, now() - startedAt),
+          ...data,
+        });
       const adapter = input.adapter;
-      if (adapter?.sendHttp === undefined) throw new Error('TRANSPORT_HTTP_ADAPTER_UNAVAILABLE');
-      const snapshot = await adapter.readSnapshot(request.serverName);
-      if (snapshot.serverName !== request.serverName || snapshot.addresses.length === 0)
+      if (adapter?.sendHttp === undefined) {
+        diagnoseHttp('request-failed', {stage: 'adapter-validation', code: 'TRANSPORT_HTTP_ADAPTER_UNAVAILABLE'});
+        throw new Error('TRANSPORT_HTTP_ADAPTER_UNAVAILABLE');
+      }
+      let snapshot: TransportNetworkSnapshot;
+      try {
+        snapshot = await adapter.readSnapshot(request.serverName);
+      } catch (error) {
+        diagnoseHttp('request-failed', {stage: 'network-snapshot-read', ...diagnosticErrorFacts(error)});
+        throw error;
+      }
+      if (snapshot.serverName !== request.serverName || snapshot.addresses.length === 0) {
+        diagnoseHttp('request-failed', {
+          stage: 'network-snapshot-validation',
+          code: 'TRANSPORT_HTTP_SNAPSHOT_INVALID',
+          addressCount: snapshot.addresses.length,
+        });
         throw new Error('TRANSPORT_HTTP_SNAPSHOT_INVALID');
+      }
       const key = httpKey(request.profileId, request.serverName);
       const preferred = httpPreferred.get(key);
       if (preferred !== undefined && preferred.revision !== snapshot.revision) httpPreferred.delete(key);
@@ -365,8 +465,11 @@ export const createTransportConnectionOwner = (
         category: 'delivered-failure',
         code: 'HTTP_EXECUTION_FAILED',
       });
+      let attemptNumber = 0;
       for (const address of ordered) {
+        attemptNumber += 1;
         let result: Awaited<ReturnType<NonNullable<typeof adapter.sendHttp>>>;
+        let adapterErrorFacts: Readonly<Record<string, string>> | undefined;
         try {
           result = await adapter.sendHttp({
             address,
@@ -377,14 +480,22 @@ export const createTransportConnectionOwner = (
             ...(request.body === undefined ? {} : {body: request.body}),
             timeoutMs: address.timeoutMs ?? 5_000,
           });
-        } catch {
+        } catch (error) {
+          adapterErrorFacts = diagnosticErrorFacts(error);
           result = Object.freeze({kind: 'failure', category: 'delivered-failure', code: 'HTTP_TRANSPORT_ERROR'});
         }
         if (result.kind === 'response') {
           let currentSnapshot: TransportNetworkSnapshot;
           try {
             currentSnapshot = await adapter.readSnapshot(request.serverName);
-          } catch {
+          } catch (error) {
+            diagnoseHttp('response-rejected', {
+              stage: 'network-snapshot-readback',
+              attemptNumber,
+              addressName: address.addressName,
+              revision: snapshot.revision,
+              ...diagnosticErrorFacts(error),
+            });
             return Object.freeze({
               kind: 'failure',
               category: 'delivered-failure',
@@ -392,6 +503,14 @@ export const createTransportConnectionOwner = (
             });
           }
           if (currentSnapshot.serverName !== request.serverName || currentSnapshot.revision !== snapshot.revision) {
+            diagnoseHttp('response-rejected', {
+              stage: 'network-snapshot-readback',
+              attemptNumber,
+              addressName: address.addressName,
+              revision: snapshot.revision,
+              currentRevision: currentSnapshot.revision,
+              code: 'HTTP_NETWORK_CONFIGURATION_CHANGED',
+            });
             return Object.freeze({
               kind: 'failure',
               category: 'delivered-failure',
@@ -400,6 +519,16 @@ export const createTransportConnectionOwner = (
           }
           const requestId = safeResponseDiagnosticId(result.requestId);
           const correlationId = safeResponseDiagnosticId(result.correlationId);
+          if (result.status < 200 || result.status >= 300) {
+            diagnoseHttp('response-non-success', {
+              attemptNumber,
+              addressName: address.addressName,
+              revision: snapshot.revision,
+              status: result.status,
+              ...(requestId === undefined ? {} : {requestId}),
+              ...(correlationId === undefined ? {} : {correlationId}),
+            });
+          }
           return Object.freeze({
             kind: 'response',
             status: result.status,
@@ -412,8 +541,26 @@ export const createTransportConnectionOwner = (
           });
         }
         lastFailure = result;
+        const willRetry = result.category === 'not-delivered' || request.safeRetryable;
+        diagnoseHttp('attempt-failed', {
+          attemptNumber,
+          candidateCount: ordered.length,
+          addressName: address.addressName,
+          revision: snapshot.revision,
+          category: result.category,
+          code: safeDiagnosticCode(result.code),
+          willRetry,
+          ...(adapterErrorFacts ?? {}),
+        });
         if (result.category === 'delivered-failure' && !request.safeRetryable) return lastFailure;
       }
+      diagnoseHttp('request-failed', {
+        stage: 'all-addresses-exhausted',
+        attemptCount: attemptNumber,
+        candidateCount: ordered.length,
+        category: lastFailure.category,
+        code: safeDiagnosticCode(lastFailure.code),
+      });
       return lastFailure;
     },
     reportHttpAddressAvailable: accepted => {
@@ -539,6 +686,11 @@ export const createTransportConnectionOwner = (
         return;
       profile.readyTimer = undefined;
       publish(profileId, Object.freeze({type: 'error', reason: 'READY_TIMEOUT'}));
+      input.diagnose?.('ready-timeout', profileId, {
+        addressName: profile.currentAddress?.addressName ?? null,
+        revision: profile.snapshotRevision ?? null,
+        timeoutMs: profile.reconnectPolicy.readyTimeoutMs,
+      });
       await invalidate(profile, 'READY_TIMEOUT');
     },
     stablePeriodElapsed: (profileId, token): void => {
@@ -554,7 +706,17 @@ export const createTransportConnectionOwner = (
         send: async raw => {
           const current = profileForConnection.connection;
           if (current === undefined) throw new Error('TRANSPORT_CONNECTION_NOT_OPEN');
-          await current.send(raw);
+          try {
+            await current.send(raw);
+          } catch (error) {
+            input.diagnose?.('socket-send-failed', profileForConnection.profileId, {
+              addressName: profileForConnection.currentAddress?.addressName ?? null,
+              revision: profileForConnection.snapshotRevision ?? null,
+              payloadLength: raw.length,
+              ...diagnosticErrorFacts(error),
+            });
+            throw error;
+          }
         },
         subscribe: listener => {
           const bucket = listeners.get(profileId) ?? new Set();

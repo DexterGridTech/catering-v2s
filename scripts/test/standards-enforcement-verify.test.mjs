@@ -291,6 +291,10 @@ test('TER root verifier tuples are wired only after CP-7 closure', () => {
   );
   assert.deepEqual(
     verify.runtimeCommands.find(([label]) => label === 'terminal-verify'),
-    ['terminal-verify', 'yarn', ['workspace', '@catering-v2s/terminal', 'run', 'verify']],
+    [
+      'terminal-verify',
+      'yarn',
+      ['workspace', '@catering-v2s/terminal', 'run', 'verify', '--static-verified-by-parent'],
+    ],
   );
 });

@@ -1236,6 +1236,25 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@catering-v2s/adapter-android-update@workspace:*, @catering-v2s/adapter-android-update@workspace:apps/terminal/adapter/android/update":
+  version: 0.0.0-use.local
+  resolution: "@catering-v2s/adapter-android-update@workspace:apps/terminal/adapter/android/update"
+  dependencies:
+    "@catering-v2s/kernel-base-platform-ports": "workspace:*"
+    "@types/react": "npm:~19.2.2"
+    expo: "npm:~57.0.18"
+    react: "npm:19.2.3"
+    react-native: "npm:0.86.3"
+    typescript: "npm:~6.0.3"
+    vitest: "npm:4.1.10"
+  peerDependencies:
+    expo: "*"
+    expo-modules-core: "*"
+    react: "*"
+    react-native: "*"
+  languageName: unknown
+  linkType: soft
+
 "@catering-v2s/admin-ui-foundation@workspace:*, @catering-v2s/admin-ui-foundation@workspace:libraries/frontend/admin-ui-foundation":
   version: 0.0.0-use.local
   resolution: "@catering-v2s/admin-ui-foundation@workspace:libraries/frontend/admin-ui-foundation"
@@ -1313,6 +1332,7 @@ __metadata:
     "@catering-v2s/adapter-android-device": "workspace:*"
     "@catering-v2s/adapter-android-dual-screen": "workspace:*"
     "@catering-v2s/adapter-android-persist-kv": "workspace:*"
+    "@catering-v2s/adapter-android-update": "workspace:*"
     "@catering-v2s/kernel-base-platform-ports": "workspace:*"
     "@catering-v2s/kernel-base-transport": "workspace:*"
     "@catering-v2s/ui-base-primitives": "workspace:*"
@@ -1416,6 +1436,20 @@ __metadata:
     "@catering-v2s/kernel-base-transport": "workspace:*"
     typescript: "npm:~6.0.3"
     undici: "npm:8.11.2"
+    vitest: "npm:4.1.10"
+  languageName: unknown
+  linkType: soft
+
+"@catering-v2s/kernel-base-terminal-update@workspace:*, @catering-v2s/kernel-base-terminal-update@workspace:apps/terminal/kernel/base/terminal-update":
+  version: 0.0.0-use.local
+  resolution: "@catering-v2s/kernel-base-terminal-update@workspace:apps/terminal/kernel/base/terminal-update"
+  dependencies:
+    "@catering-v2s/kernel-base-contracts": "workspace:*"
+    "@catering-v2s/kernel-base-platform-ports": "workspace:*"
+    "@catering-v2s/kernel-base-runtime": "workspace:*"
+    "@catering-v2s/kernel-base-state": "workspace:*"
+    "@reduxjs/toolkit": "npm:2.12.0"
+    typescript: "npm:~6.0.3"
     vitest: "npm:4.1.10"
   languageName: unknown
   linkType: soft
@@ -1931,6 +1965,7 @@ __metadata:
     "@catering-v2s/kernel-base-server-config": "workspace:*"
     "@catering-v2s/kernel-base-state": "workspace:*"
     "@catering-v2s/kernel-base-terminal-data-client": "workspace:*"
+    "@catering-v2s/kernel-base-terminal-update": "workspace:*"
     "@catering-v2s/kernel-base-topology": "workspace:*"
     "@catering-v2s/kernel-base-transport": "workspace:*"
     "@catering-v2s/kernel-base-ui-state": "workspace:*"
@@ -1981,6 +2016,7 @@ __metadata:
     "@catering-v2s/kernel-base-server-config": "workspace:*"
     "@catering-v2s/kernel-base-state": "workspace:*"
     "@catering-v2s/kernel-base-terminal-data-client": "workspace:*"
+    "@catering-v2s/kernel-base-terminal-update": "workspace:*"
     "@catering-v2s/kernel-base-topology": "workspace:*"
     "@catering-v2s/kernel-base-transport": "workspace:*"
     "@catering-v2s/kernel-base-ui-state": "workspace:*"

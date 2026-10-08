@@ -1,3 +1,5 @@
+import groovy.json.JsonSlurper
+
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
@@ -40,7 +42,34 @@ def terminalWorkspaceJsInputs = [
     file("${projectRoot}/../../../../../package.json"),
     file("${projectRoot}/../../../../../yarn.lock"),
     file("${projectRoot}/../../../ui/integration/sample-console/theme/global.css"),
+    file("${projectRoot}/package.json"),
 ]
+def terminalApplicationPackage = new JsonSlurper().parse(file("${projectRoot}/package.json"))
+def terminalRelease = terminalApplicationPackage.terminalRelease
+def terminalAutomationNativeBuildNumber = findProperty('terTerminalNativeBuildNumber')
+    ? findProperty('terTerminalNativeBuildNumber').toString().toInteger()
+    : terminalRelease.nativeBuildNumber as int
+def terminalAutomationBundleVersion = findProperty('terTerminalBundleVersion') ?: terminalRelease.bundleVersion
+if (terminalAutomationNativeBuildNumber < (terminalRelease.nativeBuildNumber as int) ||
+    !(terminalAutomationBundleVersion ==~ /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$/)) {
+    throw new GradleException('TERMINAL_AUTOMATION_UPDATE_RELEASE_OVERRIDE_INVALID')
+}
+def terminalPublicationId = findProperty('terTerminalPublicationId') ?: 'UNPUBLISHED'
+def terminalPublicationMetadata = findProperty('terTerminalPublicationMetadata')
+if (!(terminalApplicationPackage.version ==~ /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$/) ||
+    !(terminalRelease?.nativeBuildNumber instanceof Number) || terminalRelease.nativeBuildNumber < 1 ||
+    terminalRelease.nativeBuildNumber > 2147483647 || terminalRelease.nativeBuildNumber % 1 != 0 ||
+    !(terminalRelease.bundleVersion ==~ /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$/) ||
+    !(terminalRelease.runtimeVersion instanceof String) || terminalRelease.runtimeVersion.trim().isEmpty()) {
+    throw new GradleException('TERMINAL_RELEASE_SOURCE_INVALID')
+}
+if (terminalPublicationMetadata) {
+    def metadataFile = file(terminalPublicationMetadata).canonicalFile
+    def repositoryRoot = file("${projectRoot}/../../../../..").canonicalFile
+    if (!metadataFile.path.startsWith(repositoryRoot.path + File.separator)) {
+        throw new GradleException('TERMINAL_UPDATE_PUBLICATION_METADATA_OUTSIDE_REPOSITORY')
+    }
+}
 
 /**
  * This is the configuration block to customize your React Native Android app.
@@ -144,12 +173,38 @@ if (terminalAutomationApplicationIdSuffix && !(terminalAutomationApplicationIdSu
 }
 def terminalAutomationBuildDirectory = findProperty('terAutomationBuildDir')
 if (terminalAutomationBuildDirectory) {
+    def terminalApplicationGradleProject = project
     def automationRuntimeRoot = new File(rootDir, '../../../../../../.runtime/terminal-automation').canonicalFile
     def runBuildDirectory = new File(terminalAutomationBuildDirectory).canonicalFile
     if (!runBuildDirectory.path.startsWith(automationRuntimeRoot.path + File.separator)) {
         throw new GradleException('TERMINAL_AUTOMATION_ANDROID_BUILD_DIRECTORY_OUTSIDE_RUN')
     }
     layout.buildDirectory.set(runBuildDirectory)
+    rootProject.layout.buildDirectory.set(new File(runBuildDirectory, 'root'))
+
+    // Keep every Gradle project's generated output under this managed run. This
+    // includes Android libraries from node_modules, not just the :app project.
+    rootProject.allprojects { candidate ->
+        if (candidate.path == ':') {
+            candidate.layout.buildDirectory.set(new File(runBuildDirectory, 'root'))
+        } else if (candidate == terminalApplicationGradleProject) {
+            candidate.layout.buildDirectory.set(runBuildDirectory)
+        } else {
+            def projectKey = candidate.path.split(':').findAll { it }.join('/')
+            candidate.layout.buildDirectory.set(new File(runBuildDirectory, "projects/${projectKey}"))
+        }
+        ['com.android.application', 'com.android.library'].each { pluginId ->
+            candidate.plugins.withId(pluginId) {
+                def androidExtension = candidate.extensions.findByName('android')
+                if (androidExtension?.externalNativeBuild?.cmake != null) {
+                    def projectKey = candidate.path.split(':').findAll { it }.join('/')
+                    if (!projectKey) projectKey = 'root'
+                    androidExtension.externalNativeBuild.cmake.buildStagingDirectory =
+                        new File(runBuildDirectory.parentFile, "native/${runBuildDirectory.name}/${projectKey}")
+                }
+            }
+        }
+    }
 }
 
 /**
@@ -179,11 +234,16 @@ android {
         }
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0.0"
+        versionCode terminalAutomationNativeBuildNumber
+        versionName terminalApplicationPackage.version
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
         buildConfigField "boolean", "TER_DISABLE_NATIVE_DEV_SUPPORT", "${disableNativeDevSupportForManagedValidation}"
+        buildConfigField "int", "TERMINAL_NATIVE_BUILD_NUMBER", "${terminalAutomationNativeBuildNumber}"
+        buildConfigField "String", "TERMINAL_BUNDLE_VERSION", "\"${terminalAutomationBundleVersion}\""
+        buildConfigField "String", "TERMINAL_RUNTIME_VERSION", "\"${terminalRelease.runtimeVersion}\""
+        buildConfigField "String", "TERMINAL_PUBLICATION_ID", "\"${terminalPublicationId}\""
+        manifestPlaceholders = [terminalPublicationId: terminalPublicationId]
     }
     signingConfigs {
         debug {
@@ -269,3 +329,5 @@ dependencies {
         implementation jscFlavor
     }
 }
+
+apply from: "${projectRoot}/../../base/android/terminal-update-artifact.gradle"

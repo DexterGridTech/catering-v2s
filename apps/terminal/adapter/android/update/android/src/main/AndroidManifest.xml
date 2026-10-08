@@ -1,0 +1,13 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+  <application>
+    <receiver
+      android:name="com.catering.v2s.terminal.adapter.android.update.TerminalUpdateInstallReceiver"
+      android:enabled="true"
+      android:exported="false">
+      <intent-filter>
+        <action android:name="com.catering.v2s.terminal.update.INSTALL_STATUS" />
+      </intent-filter>
+    </receiver>
+  </application>
+</manifest>

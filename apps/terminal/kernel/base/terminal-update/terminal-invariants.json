@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "package": "@catering-v2s/kernel-base-terminal-update",
+  "owned": {
+    "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/kernel-base-terminal-update", "runner": "vitest"},
+    "lint": {"kind": "OWNED", "owner": "@catering-v2s/kernel-base-terminal-update", "runner": "eslint"},
+    "clean": {"kind": "ABSENT"}
+  },
+  "tr01Exceptions": [
+    {
+      "sourceFile": "src/features/actors/terminalUpdateActor.ts",
+      "declarationId": "writeTask",
+      "dispatchExpression": "context.dispatchAction",
+      "reasonCategory": "terminal-update-command-task-write"
+    },
+    {
+      "sourceFile": "src/features/actors/terminalUpdateActor.ts",
+      "declarationId": "writeTask",
+      "dispatchExpression": "context.dispatchAction",
+      "reasonCategory": "terminal-update-command-status-write"
+    },
+    {
+      "sourceFile": "src/features/actors/terminalUpdateActor.ts",
+      "declarationId": "recordFailedHotArtifact",
+      "dispatchExpression": "context.dispatchAction",
+      "reasonCategory": "terminal-update-command-failed-artifact-record"
+    },
+    {
+      "sourceFile": "src/features/actors/terminalUpdateActor.ts",
+      "declarationId": "executeNextArtifact",
+      "dispatchExpression": "context.dispatchAction",
+      "reasonCategory": "terminal-update-command-facts-unavailable"
+    },
+    {
+      "sourceFile": "src/features/actors/terminalUpdateActor.ts",
+      "declarationId": "executeNextArtifact",
+      "dispatchExpression": "context.dispatchAction",
+      "reasonCategory": "terminal-update-command-actual-version-readback"
+    }
+  ],
+  "publicExports": [
+    "acceptTerminalUpdateTargetCommand",
+    "confirmTerminalUpdateBootCommand",
+    "createTerminalUpdateModule",
+    "dependencyModuleNames",
+    "devDependencyModuleNames",
+    "FixedUpdateTarget",
+    "moduleKind",
+    "moduleName",
+    "runtimeModuleDependencyNames",
+    "selectTerminalUpdateActualVersions",
+    "selectTerminalUpdateRecentStatus",
+    "selectTerminalUpdateTask",
+    "TerminalUpdateRecentStatus",
+    "TerminalUpdateTask",
+    "TerminalUpdateState",
+    "UpdateTargetSourceProvider",
+    "unavailableUpdateTargetSourceProvider"
+  ]
+}

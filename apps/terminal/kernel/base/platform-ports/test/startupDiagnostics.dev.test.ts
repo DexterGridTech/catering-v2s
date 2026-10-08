@@ -6,7 +6,7 @@ import {
   unavailableAppControlPort,
   unavailableConnectorPort,
   unavailableDevicePort,
-  unavailableHotUpdatePort,
+  unavailableUpdatePort,
   unavailableLogUploadPort,
   unavailablePersistSecurePort,
   unavailableScriptPort,
@@ -23,7 +23,7 @@ const bindings = (): PlatformPortBindings => ({
   appControl: unavailableAppControlPort,
   script: unavailableScriptPort,
   connector: unavailableConnectorPort,
-  hotUpdate: unavailableHotUpdatePort,
+  update: unavailableUpdatePort,
   logUpload: unavailableLogUploadPort,
   topologyHost: unavailableTopologyHostPort,
 });

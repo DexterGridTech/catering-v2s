@@ -5,6 +5,8 @@ import type {TransportServerConfig} from '@catering-v2s/kernel-base-contracts';
 import {refreshTopologyDisplayCommand} from '@catering-v2s/kernel-base-topology';
 import packageJson from '../package.json';
 import {createSampleWallpaperConsoleAssembly, terminalSurfaces} from '../src';
+import {createTerminalUpdateAutomationFixture} from './terminalUpdateFixture';
+import {TerminalUpdateAssetLoadProbe} from './TerminalUpdateAssetLoadProbe';
 import '../theme/global.css';
 
 const defaultServerSpaces = packageJson.serverSpaces as TransportServerConfig;
@@ -14,6 +16,16 @@ const managedTdsEntryTwoWebSocketBaseUrl = process.env.EXPO_PUBLIC_TER_MANAGED_T
 const managedDeviceId = process.env.EXPO_PUBLIC_TER_MANAGED_DEVICE_ID;
 const testAutomationUrl = process.env.EXPO_PUBLIC_TER_AUTOMATION_URL;
 const testAutomationToken = process.env.EXPO_PUBLIC_TER_AUTOMATION_TOKEN;
+const terminalUpdateRunId = process.env.EXPO_PUBLIC_TER_AUTOMATION_RUN_ID;
+const terminalUpdateAssetProbe = process.env.EXPO_PUBLIC_TER_AUTOMATION_UPDATE_ASSET_PROBE;
+if (terminalUpdateAssetProbe !== undefined && terminalUpdateAssetProbe !== 'true') {
+  throw new Error('TEST_EXPO_TERMINAL_UPDATE_ASSET_PROBE_INVALID');
+}
+const terminalUpdateFixture =
+  terminalUpdateRunId === undefined ? undefined : createTerminalUpdateAutomationFixture(
+    terminalUpdateRunId,
+    process.env.EXPO_PUBLIC_TER_AUTOMATION_CASE === 'update.install-result' ? 'install-result' : 'fixed',
+  );
 const testSurfaceForm = process.env.EXPO_PUBLIC_TER_AUTOMATION_SURFACE_FORM;
 if (testSurfaceForm !== undefined && testSurfaceForm !== 'laptop' && testSurfaceForm !== 'mobile') {
   throw new Error('TEST_EXPO_TERMINAL_SURFACE_FORM_INVALID');
@@ -122,7 +134,16 @@ const App = createTestExpoApp({
   createAssembly: input =>
     createSampleWallpaperConsoleAssembly({
       ...input,
+      ...(terminalUpdateFixture === undefined
+        ? {}
+        : {
+            platformPorts: Object.freeze({...input.platformPorts, update: terminalUpdateFixture.port}),
+            terminalUpdateSourceProvider: terminalUpdateFixture.sourceProvider,
+          }),
       serverSpaces: testServerSpaces(),
+      ...(terminalUpdateAssetProbe === 'true'
+        ? {renderAutomationChildren: () => <TerminalUpdateAssetLoadProbe />}
+        : {}),
       ...(testAutomationUrl === undefined || testAutomationToken === undefined
         ? {}
         : {terminalAutomation: {enabled: true, url: testAutomationUrl, sessionToken: testAutomationToken}}),

@@ -14,6 +14,7 @@ import type {StateJsonValue} from '@catering-v2s/kernel-base-state';
 describe('transport module command facade', () => {
   it('executes generic HTTP only through the owner command and keeps request data out of command payloads', async () => {
     const sent: unknown[] = [];
+    const warnings: unknown[] = [];
     const transportModule = createTransportModule({
       networkAdapter: {
         readSnapshot: async serverName => ({
@@ -33,7 +34,7 @@ describe('transport module command facade', () => {
         },
         sendHttp: async request => {
           sent.push(request);
-          return {kind: 'response', status: 200, body: {accepted: true}};
+          return {kind: 'response', status: 503, body: {detail: 'response-secret'}};
         },
       },
     });
@@ -71,7 +72,7 @@ describe('transport module command facade', () => {
           subscribeNetworkStatus: async () => unavailable('subscribeNetworkStatus'),
           unsubscribeNetworkStatus: async () => unavailable('unsubscribeNetworkStatus'),
         },
-        logger: {withContext: () => ({info: vi.fn(), warn: vi.fn()})},
+        logger: {withContext: () => ({info: vi.fn(), warn: (entry: unknown) => warnings.push(entry)})},
       },
       dispatchCommand,
       registerAsyncResource: (resource: () => Promise<void>) => cleanup.push(resource),
@@ -87,7 +88,24 @@ describe('transport module command facade', () => {
       body: {credentialSecret: 'secret', activationCode: 'code'},
       safeRetryable: true,
     });
-    expect(result).toMatchObject({kind: 'response', status: 200, addressName: 'primary', configRevision: 3});
+    expect(result).toMatchObject({kind: 'response', status: 503, addressName: 'primary', configRevision: 3});
+    expect(warnings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          event: 'transport.connection.http-response-non-success',
+          data: expect.objectContaining({
+            executionId: 'http-1',
+            serverName: 'terminal-business-api',
+            method: 'POST',
+            addressName: 'primary',
+            status: 503,
+          }),
+        }),
+      ]),
+    );
+    expect(JSON.stringify(warnings)).not.toContain('proxy-secret');
+    expect(JSON.stringify(warnings)).not.toContain('activationCode');
+    expect(JSON.stringify(warnings)).not.toContain('response-secret');
     expect(sent[0]).toMatchObject({
       method: 'POST',
       pathAndQuery: '/activation',

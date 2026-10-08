@@ -12,6 +12,7 @@ import com.facebook.react.defaults.DefaultReactActivityDelegate
 import expo.modules.ReactActivityDelegateWrapper
 import com.catering.v2s.terminal.application.base.android.TerminalExpoSplashScreen
 import com.catering.v2s.terminal.application.base.android.TerminalNativeLoadingRegistry
+import com.catering.v2s.terminal.adapter.android.update.TerminalUpdateStartupFailureView
 
 class MainActivity : ReactActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -22,6 +23,7 @@ class MainActivity : ReactActivity() {
       R.color.colorPrimary,
       R.drawable.splashscreen_logo,
     )
+    TerminalUpdateStartupFailureView.registerActivity(this)
     Log.i(LOG_TAG, "event=activity.onCreate phase=before-super app=sample-terminal")
     super.onCreate(null)
     Log.i(LOG_TAG, "event=activity.onCreate phase=after-super app=sample-terminal")

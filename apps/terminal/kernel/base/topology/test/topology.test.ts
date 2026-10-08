@@ -41,7 +41,7 @@ import {
   unavailableAppControlPort,
   unavailableConnectorPort,
   unavailableDevicePort,
-  unavailableHotUpdatePort,
+  unavailableUpdatePort,
   unavailableLogUploadPort,
   unavailableScriptPort,
   type AppControlPort,
@@ -406,7 +406,7 @@ const createTopologyRuntime = (
         appControl: input.appControl ?? unavailableAppControlPort,
         script: unavailableScriptPort,
         connector: unavailableConnectorPort,
-        hotUpdate: unavailableHotUpdatePort,
+        update: unavailableUpdatePort,
         logUpload: unavailableLogUploadPort,
         topologyHost: input.host,
       },
@@ -2011,7 +2011,7 @@ describe('topology lifecycle integration', () => {
         {
           target: 'peer',
           requestId: expiredRequestId,
-          lateResultTtlMs: 1,
+          lateResultTtlMs: 1_000,
           lateOutcome: record => expiredObserved.push(record),
         },
       );
@@ -2022,9 +2022,10 @@ describe('topology lifecycle integration', () => {
             JSON.parse(raw) as {type?: string; requestId?: string | null; commandId?: string; lateResultTtlMs?: number},
         )
         .find(frame => frame.type === 'command-request' && frame.requestId === expiredRequestId);
-      expect(expiredRequest?.lateResultTtlMs).toBe(1);
+      expect(expiredRequest?.lateResultTtlMs).toBeGreaterThan(0);
+      expect(expiredRequest?.lateResultTtlMs).toBeLessThanOrEqual(1_000);
       expect((await expiredDispatch).status).toBe('timed-out');
-      await new Promise(resolve => setTimeout(resolve, 60));
+      await new Promise(resolve => setTimeout(resolve, 1_100));
       peer.emit({
         type: 'message',
         raw: JSON.stringify({

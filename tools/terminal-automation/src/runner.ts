@@ -6,14 +6,18 @@ import {
   existsSync,
   lstatSync,
   mkdirSync,
+  readlinkSync,
+  readdirSync,
   readFileSync,
   realpathSync,
   rmSync,
   statSync,
+  unlinkSync,
   writeFileSync,
 } from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {createConnection} from 'node:net';
 import {
   createManagedRun,
   persistManagedRun,
@@ -22,11 +26,45 @@ import {
   type TerminalAutomationProcessIdentity,
 } from './managedRun.ts';
 import {androidAutomationBuildIdentity} from './androidBuild.ts';
+import {
+  cleanupFailedAndroidRunReverses,
+  cleanupFailedAndroidRunPackage,
+  parseAndroidReverseList,
+  resolveFailedAndroidRunCleanupTarget,
+} from './androidCleanupRecovery.ts';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const driverRoot = path.join(root, 'tools/terminal-automation');
 type AutomationPlatform = 'web' | 'android';
-type AutomationPhase = 'feasibility' | 'capabilities' | 'journey' | 'skill' | 'f4';
+type AutomationPhase = 'feasibility' | 'capabilities' | 'journey' | 'skill' | 'f4' | 'update';
+const updateCases = new Set([
+  'update.artifacts',
+  'update.baseline',
+  'update.archive',
+  'update.fixed',
+  'update.full-hot',
+  'update.compatibility',
+  'update.install-result',
+  'update.flush',
+  'update.offline-assets',
+  'update.interruption',
+  'update.boot-guard',
+  'update.rollback',
+  'update.recent',
+  'update.cleanup',
+]);
+const updateCasesRequiringManagedDev = new Set([
+  'update.flush',
+  'update.full-hot',
+  'update.offline-assets',
+  'update.boot-guard',
+  'update.compatibility',
+  'update.rollback',
+]);
+const implementedUpdateCases: Readonly<Record<AutomationPlatform, ReadonlySet<string>>> = Object.freeze({
+  web: new Set(['update.artifacts', 'update.fixed', 'update.install-result']),
+  android: new Set(['update.full-hot', 'update.offline-assets', 'update.boot-guard', 'update.install-result']),
+});
 const phaseSuite: Readonly<Record<AutomationPlatform, Readonly<Partial<Record<AutomationPhase, string>>>>> =
   Object.freeze({
     web: Object.freeze({
@@ -35,6 +73,7 @@ const phaseSuite: Readonly<Record<AutomationPlatform, Readonly<Partial<Record<Au
       journey: 'journeys/sampleConsole.test.ts',
       skill: 'journeys/skill.test.ts',
       f4: 'journeys/f4Visual.test.ts',
+      update: 'journeys/update.test.ts',
     }),
     android: Object.freeze({
       feasibility: 'journeys/geometry.android.test.ts',
@@ -42,10 +81,12 @@ const phaseSuite: Readonly<Record<AutomationPlatform, Readonly<Partial<Record<Au
       journey: 'journeys/sampleConsole.android.test.ts',
       f4: 'journeys/f4Performance.android.test.ts',
       skill: 'journeys/skill.android.test.ts',
+      update: 'journeys/update.android.test.ts',
     }),
   });
 const ageNames = new Set(['empty', '37']);
 const ownProcessBudgetKiB = 2 * 1024 * 1024;
+const updateArtifactApps = ['sample-terminal', 'sample-wallpaper-terminal'] as const;
 const androidDeviceCleanupMarker = 'TERMINAL_AUTOMATION_DEVICE_CLEANUP_FAILED';
 const androidDeviceCleanupCompleteMarker = 'TERMINAL_AUTOMATION_DEVICE_CLEANUP_COMPLETE';
 const require = createRequire(import.meta.url);
@@ -77,8 +118,31 @@ export const resolveAutomationSuite = (execution: TerminalAutomationRunOptions):
   return suite;
 };
 
+export const updateRequiresManagedDev = (execution: TerminalAutomationRunOptions): boolean =>
+  execution.phase === 'update' && execution.case !== undefined &&
+  (updateCasesRequiringManagedDev.has(execution.case) ||
+    (execution.platform === 'android' && execution.case === 'update.install-result'));
+
+export const updateCaseImplemented = (execution: TerminalAutomationRunOptions): boolean =>
+  execution.phase !== 'update' ||
+  (execution.case !== undefined &&
+    implementedUpdateCases[execution.platform as AutomationPlatform]?.has(execution.case) === true);
+
+export const updateScenarioAssertionsObserved = (
+  execution: TerminalAutomationRunOptions,
+  runId: string,
+  output: string,
+): boolean =>
+  execution.phase !== 'update' ||
+  execution.platform !== 'android' ||
+  execution.case !== 'update.boot-guard' ||
+  output.includes(`TERMINAL_AUTOMATION_UPDATE_CASE_ASSERTIONS_PASS case=update.boot-guard run=${runId}`);
+
 export const createAndroidDeviceCleanupTracker = () => {
-  const tails = new Map<'stdout' | 'stderr', string>([['stdout', ''], ['stderr', '']]);
+  const tails = new Map<'stdout' | 'stderr', string>([
+    ['stdout', ''],
+    ['stderr', ''],
+  ]);
   let failed = false;
   let completed = false;
   return Object.freeze({
@@ -89,8 +153,179 @@ export const createAndroidDeviceCleanupTracker = () => {
       const markerLength = Math.max(androidDeviceCleanupMarker.length, androidDeviceCleanupCompleteMarker.length);
       tails.set(stream, combined.slice(-(markerLength - 1)));
     },
-    finish: (): 'PASS' | 'FAIL' | 'UNKNOWN' => failed ? 'FAIL' : completed ? 'PASS' : 'UNKNOWN',
+    finish: (): 'PASS' | 'FAIL' | 'UNKNOWN' => (failed ? 'FAIL' : completed ? 'PASS' : 'UNKNOWN'),
   });
+};
+
+const managedArtifactBytes = (target: string): number => {
+  const stat = lstatSync(target);
+  if (stat.isSymbolicLink()) throw new Error('TERMINAL_AUTOMATION_ARTIFACT_CLEANUP_SYMLINK_FORBIDDEN');
+  if (stat.isFile()) return stat.size;
+  if (!stat.isDirectory()) throw new Error('TERMINAL_AUTOMATION_ARTIFACT_CLEANUP_ENTRY_INVALID');
+  return readdirSync(target).reduce((bytes, entry) => bytes + managedArtifactBytes(path.join(target, entry)), 0);
+};
+
+export const cleanupManagedRunArtifacts = (
+  runDirectory: string,
+  cleanUpdateArtifacts: boolean,
+  terminalRoot = path.join(root, 'apps/terminal'),
+) => {
+  const runRoot = realpathSync(runDirectory);
+  const relativeTargets = ['android-build'];
+  const removed: string[] = [];
+  if (cleanUpdateArtifacts) {
+    for (const app of updateArtifactApps) {
+      const linkPath = path.join(terminalRoot, `application/android/${app}/android/build`);
+      const expectedTarget = path.join(runRoot, 'android-build', app, 'root');
+      if (cleanupRunOwnedDirectoryLink(linkPath, expectedTarget)) {
+        removed.push(path.relative(root, linkPath));
+      }
+    }
+    let nodeModulesRoot: string | undefined;
+    for (const app of updateArtifactApps) {
+      const registryPath = path.join(runRoot, 'android-build', app, 'temporary-source-build-links.json');
+      if (!existsSync(registryPath)) continue;
+      nodeModulesRoot ??= realpathSync(path.join(terminalRoot, 'node_modules'));
+      const registryStat = lstatSync(registryPath);
+      if (!registryStat.isFile() || registryStat.isSymbolicLink()) {
+        throw new Error('TERMINAL_AUTOMATION_ANDROID_BUILD_LINK_REGISTRY_INVALID');
+      }
+      const registry: unknown = JSON.parse(readFileSync(registryPath, 'utf8'));
+      if (!Array.isArray(registry)) throw new Error('TERMINAL_AUTOMATION_ANDROID_BUILD_LINK_REGISTRY_INVALID');
+      const seen = new Set<string>();
+      for (const entry of registry) {
+        if (
+          typeof entry !== 'object' ||
+          entry === null ||
+          !('path' in entry) ||
+          typeof entry.path !== 'string' ||
+          !('target' in entry) ||
+          typeof entry.target !== 'string' ||
+          seen.has(entry.path)
+        ) {
+          throw new Error('TERMINAL_AUTOMATION_ANDROID_BUILD_LINK_REGISTRY_INVALID');
+        }
+        seen.add(entry.path);
+        const linkPath = path.resolve(entry.path);
+        const targetPath = path.resolve(entry.target);
+        const linkParent = realpathSync(path.dirname(linkPath));
+        const linkParentRelative = path.relative(nodeModulesRoot, linkParent);
+        const targetRelative = path.relative(path.join(runRoot, 'android-build', app), targetPath);
+        if (
+          path.basename(linkPath) !== 'build' ||
+          path.basename(linkParent) !== 'android' ||
+          !linkParentRelative ||
+          linkParentRelative === '..' ||
+          linkParentRelative.startsWith(`..${path.sep}`) ||
+          path.isAbsolute(linkParentRelative) ||
+          !targetRelative.startsWith(`projects${path.sep}`) ||
+          targetRelative === '..' ||
+          targetRelative.startsWith(`..${path.sep}`) ||
+          path.isAbsolute(targetRelative)
+        ) {
+          throw new Error('TERMINAL_AUTOMATION_ANDROID_BUILD_LINK_REGISTRY_ENTRY_INVALID');
+        }
+        if (cleanupRunOwnedDirectoryLink(linkPath, targetPath)) removed.push(path.relative(root, linkPath));
+      }
+    }
+  }
+  if (cleanUpdateArtifacts) {
+    for (const app of updateArtifactApps) {
+      relativeTargets.push(
+        `update/${app}/publication`,
+        `update/${app}/embedded-metadata`,
+        `update/${app}/hot-staging`,
+        `update/${app}/${app}.apk`,
+        `update/${app}/${app}-full.apk`,
+        `update/${app}/${app}-hot.zip`,
+        `update/${app}/gradle-build`,
+      );
+    }
+  }
+  let removedBytes = 0;
+  for (const relative of relativeTargets) {
+    const segments = relative.split('/');
+    let cursor = runRoot;
+    let targetExists = true;
+    for (const segment of segments) {
+      cursor = path.join(cursor, segment);
+      try {
+        const stat = lstatSync(cursor);
+        if (stat.isSymbolicLink()) throw new Error('TERMINAL_AUTOMATION_ARTIFACT_CLEANUP_SYMLINK_FORBIDDEN');
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+          targetExists = false;
+          break;
+        }
+        throw error;
+      }
+    }
+    if (!targetExists) continue;
+    const target = path.join(runRoot, relative);
+    removedBytes += managedArtifactBytes(target);
+    rmSync(target, {recursive: true, force: false});
+    if (existsSync(target)) throw new Error('TERMINAL_AUTOMATION_ARTIFACT_CLEANUP_READBACK_FAILED');
+    removed.push(relative);
+  }
+  if (cleanUpdateArtifacts) assertNoAndroidIntermediateOutputs(terminalRoot);
+  return {removedBytes, removed};
+};
+
+export const assertNoAndroidIntermediateOutputs = (terminalRoot: string): void => {
+  const found: string[] = [];
+  const visit = (directory: string): void => {
+    for (const entry of readdirSync(directory, {withFileTypes: true})) {
+      const absolute = path.join(directory, entry.name);
+      const parentName = path.basename(directory);
+      const androidPath = path.relative(terminalRoot, absolute).split(path.sep).includes('android');
+      if (entry.isSymbolicLink()) {
+        if (
+          (androidPath &&
+            (entry.name === '.cxx' || (entry.name === 'build' && ['android', 'app'].includes(parentName)))) ||
+          entry.name === 'android'
+        ) {
+          found.push(path.relative(root, absolute));
+        }
+        continue;
+      }
+      if (!entry.isDirectory() || entry.name === '.gradle' || entry.name === '.git') continue;
+      if (
+        androidPath &&
+        (entry.name === '.cxx' || (entry.name === 'build' && ['android', 'app'].includes(parentName)))
+      ) {
+        found.push(path.relative(root, absolute));
+        continue;
+      }
+      visit(absolute);
+    }
+  };
+  visit(terminalRoot);
+  if (found.length > 0) {
+    throw new Error(`TERMINAL_AUTOMATION_ANDROID_INTERMEDIATE_OUTSIDE_RUN:${found.sort().join(',')}`);
+  }
+};
+
+export const cleanupRunOwnedDirectoryLink = (linkPath: string, expectedTarget: string): boolean => {
+  let link;
+  try {
+    link = lstatSync(linkPath);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return false;
+    throw error;
+  }
+  if (!link.isSymbolicLink()) throw new Error('TERMINAL_AUTOMATION_ARTIFACT_CLEANUP_PATH_NOT_OWNED_LINK');
+  const actualTarget = path.resolve(path.dirname(linkPath), readlinkSync(linkPath));
+  if (actualTarget !== path.resolve(expectedTarget)) {
+    throw new Error('TERMINAL_AUTOMATION_ARTIFACT_CLEANUP_LINK_TARGET_MISMATCH');
+  }
+  unlinkSync(linkPath);
+  try {
+    lstatSync(linkPath);
+    throw new Error('TERMINAL_AUTOMATION_ARTIFACT_CLEANUP_LINK_READBACK_FAILED');
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+  }
+  return true;
 };
 
 const fail = (code: string): never => {
@@ -173,7 +408,8 @@ export const parseAutomationRunArguments = (argv: readonly string[]): TerminalAu
     phaseValue !== 'capabilities' &&
     phaseValue !== 'journey' &&
     phaseValue !== 'skill' &&
-    phaseValue !== 'f4'
+    phaseValue !== 'f4' &&
+    phaseValue !== 'update'
   )
     fail('TERMINAL_AUTOMATION_PHASE_INVALID');
   const phase = phaseValue as AutomationPhase;
@@ -196,6 +432,12 @@ export const parseAutomationRunArguments = (argv: readonly string[]): TerminalAu
       if (phase === 'skill' && age !== 'empty') fail('TERMINAL_AUTOMATION_SKILL_AGE_MUST_BE_EMPTY');
     } else if (caseName !== undefined || age !== undefined) {
       fail('TERMINAL_AUTOMATION_CASE_NOT_APPLICABLE');
+    }
+  } else if (phase === 'update') {
+    if (!caseName || !updateCases.has(caseName)) fail('TERMINAL_AUTOMATION_UPDATE_CASE_INVALID');
+    if (age !== undefined) fail('TERMINAL_AUTOMATION_UPDATE_AGE_NOT_APPLICABLE');
+    if (sample !== undefined && sample !== 'console' && sample !== 'wallpaper') {
+      fail('TERMINAL_AUTOMATION_UPDATE_SAMPLE_INVALID');
     }
   } else if (caseName !== undefined || age !== undefined || sample !== undefined) {
     fail('TERMINAL_AUTOMATION_CASE_NOT_APPLICABLE');
@@ -421,6 +663,213 @@ const readProcessIdentity = (pid: number): TerminalAutomationProcessIdentity => 
   return Object.freeze({pid: process.pid, pgid: process.pgid, startToken: process.startToken});
 };
 
+const runRecoveryAdb = (adbPath: string, args: readonly string[], failureCode: string): string => {
+  const result = spawnSync(adbPath, [...args], {
+    cwd: root,
+    encoding: 'utf8',
+    timeout: 10_000,
+    maxBuffer: 64 * 1024,
+    windowsHide: true,
+  });
+  if (result.error || result.status !== 0) fail(failureCode);
+  return result.stdout;
+};
+
+const isLocalTcpPortListening = (port: number): Promise<boolean> =>
+  new Promise((resolve, reject) => {
+    const socket = createConnection({host: '127.0.0.1', port});
+    let settled = false;
+    const finish = (result: boolean): void => {
+      if (settled) return;
+      settled = true;
+      socket.destroy();
+      resolve(result);
+    };
+    socket.setTimeout(1_000, () => {
+      if (settled) return;
+      settled = true;
+      socket.destroy();
+      reject(new Error('TERMINAL_AUTOMATION_RECOVERY_REVERSE_LOCAL_LISTENER_UNKNOWN'));
+    });
+    socket.once('connect', () => finish(true));
+    socket.once('error', error => {
+      if (settled) return;
+      if ('code' in error && error.code === 'ECONNREFUSED') finish(false);
+      else {
+        settled = true;
+        socket.destroy();
+        reject(new Error('TERMINAL_AUTOMATION_RECOVERY_REVERSE_LOCAL_LISTENER_UNKNOWN'));
+      }
+    });
+  });
+
+const runFailedAndroidCleanupRecovery = async (runId: string, serial: string): Promise<number> => {
+  const resourceGate = path.join(root, 'scripts/env/check-runtime-resource-budget');
+  const preflight = spawnSync(resourceGate, ['--profile', 'ter-validation-with-dev', path.join(root, '.runtime')], {
+    cwd: root,
+    encoding: 'utf8',
+    maxBuffer: 1024 * 1024,
+  });
+  if (preflight.stdout) process.stdout.write(redact(preflight.stdout));
+  if (preflight.stderr) process.stderr.write(redact(preflight.stderr));
+  if (preflight.error || preflight.status !== 0) {
+    process.stderr.write('TERMINAL_AUTOMATION_RESOURCE_PREFLIGHT=FAIL\n');
+    return 1;
+  }
+
+  let sourceTarget: ReturnType<typeof resolveFailedAndroidRunCleanupTarget>;
+  try {
+    sourceTarget = resolveFailedAndroidRunCleanupTarget(
+      root,
+      runId,
+      serial,
+      managedProcessTree.readProcessTable().map(process => ({pid: process.pid, startToken: process.startToken})),
+    );
+  } catch (error) {
+    const code =
+      error instanceof Error && /^TERMINAL_AUTOMATION_[A-Z0-9_]+$/u.test(error.message)
+        ? error.message
+        : 'TERMINAL_AUTOMATION_RECOVERY_SOURCE_INVALID';
+    process.stderr.write(`${code}\n`);
+    return 2;
+  }
+
+  const wrapperPid = Number(process.env.TERMINAL_AUTOMATION_WRAPPER_PID);
+  const expectedWrapperStart = process.env.TERMINAL_AUTOMATION_WRAPPER_START_TOKEN?.trim().replace(/\s+/gu, ' ');
+  if (!Number.isInteger(wrapperPid) || wrapperPid <= 0 || !expectedWrapperStart)
+    fail('TERMINAL_AUTOMATION_WRAPPER_IDENTITY_REQUIRED');
+  const wrapperIdentity = readProcessIdentity(wrapperPid);
+  if (wrapperIdentity.startToken !== expectedWrapperStart) fail('TERMINAL_AUTOMATION_WRAPPER_IDENTITY_MISMATCH');
+  const manifest = createManagedRun(root, {
+    phase: 'cleanup',
+    platform: 'android',
+    shape: sourceTarget.shape,
+    case: 'android.failed-run-cleanup',
+    sample: sourceTarget.sample,
+    deviceSerial: sourceTarget.serial,
+  });
+  const runDirectory = path.join(root, '.runtime/terminal-automation', manifest.runId);
+  const logPath = path.join(runDirectory, 'runner.log');
+  writeFileSync(logPath, '', {mode: 0o600, flag: 'wx'});
+  const cleanupManifest = Object.freeze({
+    ...manifest,
+    stage: 'DEVICE_CLEANUP_STARTING',
+    processes: Object.freeze([...manifest.processes, wrapperIdentity]),
+    androidPackageId: sourceTarget.packageId,
+    recoveryOfRunId: sourceTarget.runId,
+    logs: Object.freeze([path.relative(root, logPath)]),
+  });
+  persistManagedRun(root, cleanupManifest);
+  const recordRecovery = (event: string, fields: Readonly<Record<string, unknown>> = {}): void => {
+    appendFileSync(
+      path.join(runDirectory, 'events.jsonl'),
+      `${JSON.stringify({at: new Date().toISOString(), event, ...fields})}\n`,
+      {mode: 0o600},
+    );
+    appendFileSync(
+      logPath,
+      `TERMINAL_AUTOMATION_RECOVERY run=${manifest.runId} ${event}${Object.entries(fields)
+        .map(([key, value]) => ` ${key}=${String(value)}`)
+        .join('')}\n`,
+      {mode: 0o600},
+    );
+  };
+  recordRecovery('source.run.verified', {sourceRunId: sourceTarget.runId, deviceSerial: sourceTarget.serial});
+  try {
+    const adbPath = process.env.ADB_PATH || 'adb';
+    const devices = runRecoveryAdb(adbPath, ['devices'], 'TERMINAL_AUTOMATION_RECOVERY_DEVICE_DISCOVERY_FAILED');
+    const readySerials = devices
+      .split(/\r?\n/u)
+      .filter(line => /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}\s+device(?:\s|$)/u.test(line));
+    if (readySerials.filter(line => line.split(/\s+/u)[0] === sourceTarget.serial).length !== 1)
+      fail('TERMINAL_AUTOMATION_RECOVERY_DEVICE_IDENTITY_UNAVAILABLE');
+    const packageInstalled = async (packageId: string): Promise<boolean> => {
+      const output = runRecoveryAdb(
+        adbPath,
+        ['-s', sourceTarget.serial, 'shell', 'pm', 'list', 'packages', '--user', '0', packageId],
+        'TERMINAL_AUTOMATION_RECOVERY_PACKAGE_READ_FAILED',
+      );
+      const matching = output.split(/\r?\n/u).filter(line => line.trim() === `package:${packageId}`);
+      if (matching.length > 1) fail('TERMINAL_AUTOMATION_RECOVERY_PACKAGE_READBACK_AMBIGUOUS');
+      return matching.length === 1;
+    };
+    const cleanupResult = await cleanupFailedAndroidRunPackage(sourceTarget, {
+      deviceSerial: sourceTarget.serial,
+      isInstalled: packageInstalled,
+      forceStop: async packageId => {
+        runRecoveryAdb(
+          adbPath,
+          ['-s', sourceTarget.serial, 'shell', 'am', 'force-stop', packageId],
+          'TERMINAL_AUTOMATION_RECOVERY_FORCE_STOP_FAILED',
+        );
+      },
+      uninstall: async packageId => {
+        runRecoveryAdb(
+          adbPath,
+          ['-s', sourceTarget.serial, 'uninstall', packageId],
+          'TERMINAL_AUTOMATION_RECOVERY_UNINSTALL_FAILED',
+        );
+      },
+    });
+    recordRecovery('target.package.cleanup.complete', {
+      packageId: sourceTarget.packageId,
+      wasInstalled: cleanupResult.wasInstalled,
+      packageReadback: 'ABSENT',
+    });
+    const reverseResult = await cleanupFailedAndroidRunReverses(sourceTarget, {
+      deviceSerial: sourceTarget.serial,
+      list: async () =>
+        parseAndroidReverseList(
+          runRecoveryAdb(
+            adbPath,
+            ['-s', sourceTarget.serial, 'reverse', '--list'],
+            'TERMINAL_AUTOMATION_RECOVERY_REVERSE_LIST_FAILED',
+          ),
+        ),
+      isLocalPortListening: isLocalTcpPortListening,
+      remove: async remote => {
+        runRecoveryAdb(
+          adbPath,
+          ['-s', sourceTarget.serial, 'reverse', '--remove', remote],
+          'TERMINAL_AUTOMATION_RECOVERY_REVERSE_REMOVE_FAILED',
+        );
+      },
+    });
+    recordRecovery('target.reverse.cleanup.complete', {
+      remotes: reverseResult.removed,
+      readback: reverseResult.readback,
+      sourceOwnership:
+        sourceTarget.reverses.length > 0
+          ? 'RECORDED_EVENTS'
+          : sourceTarget.legacyRecoverableRemotes.length > 0
+            ? 'LEGACY_RUN_LOG'
+            : 'NONE',
+    });
+    const finished = Object.freeze({...cleanupManifest, stage: 'FINISHED', business: 'PASS', cleanup: 'PASS'});
+    persistManagedRun(root, finished);
+    recordRecovery('cleanup.passed', {sourceRunId: sourceTarget.runId, packageReadback: 'ABSENT'});
+    printRunSummary(finished);
+    return 0;
+  } catch (error) {
+    const code =
+      error instanceof Error && /^TERMINAL_AUTOMATION_[A-Z0-9_]+$/u.test(error.message)
+        ? error.message
+        : 'TERMINAL_AUTOMATION_RECOVERY_DEVICE_CLEANUP_FAILED';
+    const failed = Object.freeze({
+      ...cleanupManifest,
+      stage: 'CLEANUP_FAILED',
+      firstFailure: code,
+      business: 'FAIL',
+      cleanup: 'FAIL',
+    });
+    persistManagedRun(root, failed);
+    recordRecovery('cleanup.failed', {sourceRunId: sourceTarget.runId, code});
+    printRunSummary(failed);
+    process.stderr.write(`${code}\n`);
+    return 1;
+  }
+};
+
 const readOwnedTreeSnapshot = (
   identity: TerminalAutomationProcessIdentity,
   additionalProcesses: readonly TerminalAutomationProcessIdentity[],
@@ -457,6 +906,10 @@ const readOwnedTreeSnapshot = (
 };
 
 const run = async (execution: TerminalAutomationRunOptions): Promise<number> => {
+  if (!updateCaseImplemented(execution)) {
+    process.stderr.write('TERMINAL_AUTOMATION_UPDATE_CASE_NOT_IMPLEMENTED\n');
+    return 1;
+  }
   const resourceGate = path.join(root, 'scripts/env/check-runtime-resource-budget');
   const preflight = spawnSync(resourceGate, ['--profile', 'ter-validation-with-dev', path.join(root, '.runtime')], {
     cwd: root,
@@ -502,8 +955,23 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
   record(manifest.runId, 'resource.preflight.pass', {profile: 'ter-validation-with-dev'});
   writeFileSync(logPath, '', {mode: 0o600, flag: 'wx'});
 
+  if (execution.phase === 'update' && execution.case === 'update.artifacts') {
+    try {
+      assertNoAndroidIntermediateOutputs(path.join(root, 'apps/terminal'));
+      record(manifest.runId, 'android.intermediate.preflight.pass');
+    } catch (error) {
+      const reason =
+        error instanceof Error ? error.message : 'TERMINAL_AUTOMATION_ANDROID_INTERMEDIATE_PREFLIGHT_FAILED';
+      manifest = failRun(manifest, reason, 'PASS');
+      record(manifest.runId, 'android.intermediate.preflight.failed', {code: reason});
+      printRunSummary(manifest);
+      process.stderr.write(`${reason}\n`);
+      return 1;
+    }
+  }
+
   let managedDevContext: ManagedDevContext | undefined;
-  if (execution.phase === 'journey' || execution.phase === 'skill') {
+  if (execution.phase === 'journey' || execution.phase === 'skill' || updateRequiresManagedDev(execution)) {
     try {
       managedDevContext = await readManagedDevContext();
       manifest = save(manifest, {
@@ -546,10 +1014,26 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
       : {TERMINAL_AUTOMATION_ANDROID_PEER_DEVICE_SERIAL: execution.peerDeviceSerial}),
     ...(androidBuildIdentity === undefined
       ? {}
-      : {TERMINAL_AUTOMATION_ANDROID_PACKAGE_ID: androidBuildIdentity.packageId}),
+      : {
+          TERMINAL_AUTOMATION_ANDROID_PACKAGE_ID: androidBuildIdentity.packageId,
+          TERMINAL_AUTOMATION_ANDROID_APPLICATION_ID_SUFFIX: androidBuildIdentity.applicationIdSuffix,
+        }),
     ...(execution.case === undefined ? {} : {TERMINAL_AUTOMATION_CASE: execution.case}),
     ...(execution.age === undefined ? {} : {TERMINAL_AUTOMATION_AGE: execution.age}),
     ...(execution.sample === undefined ? {} : {TERMINAL_AUTOMATION_SAMPLE: execution.sample}),
+    ...(execution.phase === 'update' && ['update.fixed', 'update.install-result'].includes(execution.case ?? '')
+      ? {
+          EXPO_PUBLIC_TER_AUTOMATION_RUN_ID: manifest.runId,
+          EXPO_PUBLIC_TER_AUTOMATION_CASE: execution.case ?? '',
+        }
+      : {}),
+    ...(execution.phase === 'update' && execution.platform === 'android'
+      ? {
+          EXPO_PUBLIC_TER_AUTOMATION_BUILD: 'true',
+          EXPO_PUBLIC_TER_AUTOMATION_RUN_ID: manifest.runId,
+          EXPO_PUBLIC_TER_AUTOMATION_ANDROID_PACKAGE_ID: androidBuildIdentity?.packageId ?? '',
+        }
+      : {}),
     ...(managedDevContext === undefined
       ? {}
       : {
@@ -718,28 +1202,40 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
   } catch {
     treeReadback = [{...childIdentity, ownershipUnverified: true}];
   }
-  let androidBuildCleanup = 'PASS';
-  if (execution.platform === 'android') {
-    const androidBuildDirectory = path.join(runDirectory, 'android-build');
-    try {
-      const stat = lstatSync(androidBuildDirectory);
-      if (!stat.isDirectory() || stat.isSymbolicLink())
-        throw new Error('TERMINAL_AUTOMATION_ANDROID_BUILD_DIRECTORY_INVALID');
-      rmSync(androidBuildDirectory, {recursive: true, force: false});
-      if (existsSync(androidBuildDirectory)) throw new Error('TERMINAL_AUTOMATION_ANDROID_BUILD_ARTIFACTS_REMAIN');
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-        androidBuildCleanup = 'FAIL';
-        record(manifest.runId, 'android.build.cleanup.failed', {
-          code: error instanceof Error ? error.message : 'TERMINAL_AUTOMATION_ANDROID_BUILD_CLEANUP_FAILED',
-        });
-      }
-    }
+  let generatedArtifactCleanup: 'PASS' | 'FAIL' = 'PASS';
+  let artifactCleanup: ReturnType<typeof cleanupManagedRunArtifacts> | undefined;
+  try {
+    artifactCleanup = cleanupManagedRunArtifacts(
+      runDirectory,
+      execution.phase === 'update' && (execution.case === 'update.artifacts' || execution.platform === 'android'),
+    );
+    record(manifest.runId, 'generated-artifacts.cleanup.passed', {
+      removedPaths: artifactCleanup.removed,
+      removedBytes: artifactCleanup.removedBytes,
+    });
+  } catch (error) {
+    generatedArtifactCleanup = 'FAIL';
+    record(manifest.runId, 'generated-artifacts.cleanup.failed', {
+      code: error instanceof Error ? error.message : 'TERMINAL_AUTOMATION_ARTIFACT_CLEANUP_FAILED',
+    });
   }
   const androidDeviceCleanupStatus = execution.platform === 'android' ? androidDeviceCleanup.finish() : 'N/A';
   const deviceCleanupPassed = execution.platform !== 'android' || androidDeviceCleanupStatus === 'PASS';
+  let scenarioProofFailure: string | null = null;
+  if (execution.phase === 'update' && execution.platform === 'android' && execution.case === 'update.boot-guard') {
+    try {
+      const output = readFileSync(logPath, 'utf8');
+      if (!updateScenarioAssertionsObserved(execution, manifest.runId, output)) {
+        scenarioProofFailure = 'TERMINAL_AUTOMATION_UPDATE_SCENARIO_ASSERTIONS_NOT_OBSERVED';
+      }
+    } catch {
+      scenarioProofFailure = 'TERMINAL_AUTOMATION_UPDATE_SCENARIO_LOG_READ_FAILED';
+    }
+    if (scenarioProofFailure !== null)
+      record(manifest.runId, 'update.scenario-proof.failed', {code: scenarioProofFailure});
+  }
   const cleanupStatus =
-    treeReadback.length === 0 && androidBuildCleanup === 'PASS' && deviceCleanupPassed ? 'PASS' : 'FAIL';
+    treeReadback.length === 0 && generatedArtifactCleanup === 'PASS' && deviceCleanupPassed ? 'PASS' : 'FAIL';
   if (androidDeviceCleanupStatus === 'FAIL') {
     record(manifest.runId, 'android.device.cleanup.failed', {code: androidDeviceCleanupMarker});
   } else if (androidDeviceCleanupStatus === 'UNKNOWN') {
@@ -750,6 +1246,7 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
     !budgetExceeded &&
     monitorFailure === null &&
     fixtureIntentFailure === null &&
+    scenarioProofFailure === null &&
     requestedSignal === null &&
     childSpawnFailure === null
       ? 'PASS'
@@ -758,6 +1255,7 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
     const failure =
       monitorFailure ??
       fixtureIntentFailure ??
+      scenarioProofFailure ??
       childSpawnFailure ??
       (requestedSignal
         ? `RUN_INTERRUPTED_${requestedSignal}`
@@ -772,6 +1270,8 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
   manifest = save(manifest, {stage: cleanupStatus === 'PASS' ? 'FINISHED' : 'CLEANUP_FAILED', cleanup: cleanupStatus});
   record(manifest.runId, cleanupStatus === 'PASS' ? 'cleanup.passed' : 'cleanup.failed', {
     processReadback: treeReadback.length === 0 ? 'EMPTY' : 'OWNED_PROCESS_REMAINS',
+    generatedArtifactCleanup,
+    generatedArtifactBytesRemoved: artifactCleanup?.removedBytes ?? null,
     androidDeviceCleanup: androidDeviceCleanupStatus,
   });
   printRunSummary(manifest);
@@ -780,6 +1280,12 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
 
 const main = async (): Promise<void> => {
   try {
+    const argv = process.argv.slice(2);
+    if (argv[0] === '--recover-failed-android-run') {
+      if (argv.length !== 4 || argv[2] !== '--device-serial') fail('TERMINAL_AUTOMATION_RECOVERY_ARGUMENTS_INVALID');
+      process.exitCode = await runFailedAndroidCleanupRecovery(argv[1] ?? '', argv[3] ?? '');
+      return;
+    }
     const execution = parseAutomationRunArguments(process.argv.slice(2));
     process.exitCode = await run(execution);
   } catch (error) {

@@ -17,6 +17,11 @@ if (tracked.status !== 0) {
 // These are task-owned paths created after the CP-0 tracked-file freeze. Never
 // discover arbitrary untracked files: a user's untracked input must stay out.
 const taskOwnedUntracked = [
+  'apps/terminal/adapter/android/update/android/src/main/java/com/catering/v2s/terminal/adapter/android/update/generated/TerminalUpdateArtifact.kt',
+  'apps/terminal/application/android/sample-terminal/app.config.js',
+  'apps/terminal/application/android/sample-wallpaper-terminal/app.config.js',
+  'apps/terminal/application/base/android/terminal-update-artifact.gradle',
+  'apps/terminal/kernel/base/platform-ports/src/generated/terminalUpdateArtifact.ts',
   'apps/terminal/adapter/android/device/android/src/test/java/com/catering/v2s/terminal/adapter/android/device/TerminalDeviceDisplaySelectionTest.kt',
   'apps/terminal/adapter/android/persist-kv/android/src/main/java/com/catering/v2s/terminal/adapter/android/persistkv/PersistKvProcessInitialization.kt',
   'apps/terminal/adapter/android/persist-kv/android/src/main/java/com/catering/v2s/terminal/adapter/android/persistkv/ProtectedStorageIdentity.kt',
@@ -58,6 +63,9 @@ const taskOwnedUntracked = [
   'tools/terminal-shared/run-owned-lint.mjs',
 ];
 const cpDToolFiles = [
+  'scripts/build/terminal-update-artifact.mjs',
+  'scripts/generate/terminal-update-artifact.mjs',
+  'scripts/test/terminal-update-artifact.test.mjs',
   'scripts/test/test-health-entry-runner.mjs',
   'scripts/test/terminal-automation.mjs',
   'scripts/test/terminal-automation.test.mjs',

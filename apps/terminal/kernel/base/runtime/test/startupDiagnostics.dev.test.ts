@@ -116,6 +116,18 @@ describe('runtime startup diagnostics', () => {
       }),
     );
     await expect(runtime.start()).rejects.toThrow('Runtime lifecycle failed');
+    const failureEvent = events.find(event => event.event === 'runtime.start.failed');
+    expect(failureEvent?.error).toMatchObject({
+      name: 'Runtime lifecycle failed',
+      code: 'ERR_TER_RUNTIME_LIFECYCLE_FAILED',
+      message: 'Runtime startup failed',
+    });
+    expect(failureEvent?.data).toMatchObject({causeName: 'Error'});
+    expect(events.find(event => event.event === 'runtime.module.hook.failed')?.data).toMatchObject({
+      moduleName: 'test.startup.failure',
+      phase: 'pre-setup',
+      causeName: 'Error',
+    });
     if (!__DEV__) {
       expect(events.some(event => event.category === 'startup.failed')).toBe(false);
       releaseRuntimeForTest(runtime);
@@ -127,5 +139,78 @@ describe('runtime startup diagnostics', () => {
     ).toBe(true);
     expect(events.some(event => event.category === 'startup.complete')).toBe(false);
     releaseRuntimeForTest(runtime);
+  });
+
+  it('identifies the failing install owner without logging the thrown message', async () => {
+    const events: LogEvent[] = [];
+    const fixtureModuleName = 'test.startup.install-failure';
+    const command = defineCommand<Readonly<{}>>(fixtureModuleName, {name: 'known', visibility: 'internal'});
+    const runtime = createRuntime(
+      createTestRuntimeInput({
+        events,
+        modules: [
+          createCommandModule({
+            moduleName: fixtureModuleName,
+            command,
+            stateSlice: createTestSlice('test.startup.install-failure.slice'),
+            install: () => {
+              throw Object.assign(new Error('private fixture payload'), {code: 'ERR_FIXTURE_INSTALL'});
+            },
+          }),
+        ],
+      }),
+    );
+
+    try {
+      await expect(runtime.start()).rejects.toThrow('Runtime lifecycle failed');
+      const hookFailure = events.find(event => event.event === 'runtime.module.hook.failed');
+      expect(hookFailure?.data).toMatchObject({
+        moduleName: fixtureModuleName,
+        phase: 'install',
+        causeName: 'Error',
+        causeCode: 'ERR_FIXTURE_INSTALL',
+      });
+      expect(JSON.stringify(hookFailure)).not.toContain('private fixture payload');
+    } finally {
+      releaseRuntimeForTest(runtime);
+    }
+  });
+
+  it('logs the command, actor and stable error token when an actor fails', async () => {
+    const events: LogEvent[] = [];
+    const fixtureModuleName = 'test.startup.actor-failure';
+    const command = defineCommand<Readonly<{}>>(fixtureModuleName, {name: 'reconcile', visibility: 'internal'});
+    const runtime = createRuntime(
+      createTestRuntimeInput({
+        events,
+        modules: [
+          createCommandModule({
+            moduleName: fixtureModuleName,
+            command,
+            actorName: 'reconciler',
+            handler: () => {
+              throw new Error('TERMINAL_UPDATE_STATE_MISSING');
+            },
+          }),
+        ],
+      }),
+    );
+
+    try {
+      await runtime.start();
+      const result = await runtime.dispatchCommand(command, Object.freeze({}));
+      expect(result.status).toBe('error');
+      const failure = events.find(event => event.event === 'runtime.actor.failed');
+      expect(failure?.data).toMatchObject({
+        commandName: `${fixtureModuleName}.reconcile`,
+        actorKey: `${fixtureModuleName}.reconciler`,
+        status: 'error',
+        causeName: 'Error',
+        causeCode: 'TERMINAL_UPDATE_STATE_MISSING',
+      });
+      expect(JSON.stringify(failure)).not.toContain('private fixture payload');
+    } finally {
+      releaseRuntimeForTest(runtime);
+    }
   });
 });

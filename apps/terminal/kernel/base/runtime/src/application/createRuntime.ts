@@ -358,6 +358,7 @@ export const createRuntime = (input: CreateRuntimeInput): Runtime => {
     runtimeId,
     localNodeId: input.localNodeId,
     platformPorts: input.platformPorts,
+    logger,
     requestMaxResidenceMs: limits.requestMaxResidenceMs,
     getStateRuntime: () => stateRuntime,
     dispatchCommand: dispatchForContext,
@@ -468,7 +469,19 @@ export const createRuntime = (input: CreateRuntimeInput): Runtime => {
           category: 'runtime.lifecycle',
           event: 'runtime.start.failed',
           message: failure.message,
-          data: {status},
+          data: {
+            status,
+            ...(isAppError(failure.cause)
+              ? {causeName: failure.cause.name, causeCode: failure.cause.code}
+              : failure.cause instanceof Error
+                ? {causeName: failure.cause.name}
+                : {}),
+          },
+          error: {
+            name: failure.name,
+            code: failure.code,
+            message: 'Runtime startup failed',
+          },
         });
         if (__DEV__) {
           logger.error({

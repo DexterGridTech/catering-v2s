@@ -2328,7 +2328,7 @@ describe('sample-console real assembly', () => {
           'ui.integration.sample-console',
         ]),
       );
-      expect(assembly.runtime.descriptors).toHaveLength(15);
+      expect(assembly.runtime.descriptors).toHaveLength(16);
     } finally {
       await releaseRuntimeForTestAsync(assembly.runtime);
     }

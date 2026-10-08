@@ -89,7 +89,7 @@ export const createTestRuntime = (modules: readonly RuntimeModule[], plainStorag
         appControl: {} as never,
         script: {} as never,
         connector: {} as never,
-        hotUpdate: {} as never,
+        update: {} as never,
         logUpload: {} as never,
         topologyHost: {} as never,
       },

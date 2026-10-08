@@ -1,0 +1,112 @@
+import org.gradle.api.file.DuplicatesStrategy
+import org.gradle.api.tasks.bundling.Zip
+import groovy.json.JsonOutput
+import java.security.MessageDigest
+import java.nio.charset.StandardCharsets
+
+def terminalArtifactRoot = providers.gradleProperty('terTerminalArtifactRoot')
+def terminalArtifactOutput = providers.gradleProperty('terTerminalArtifactOutput')
+def terminalPublicationMetadata = providers.gradleProperty('terTerminalPublicationMetadata')
+
+// Expo inlines EXPO_PUBLIC_* into Metro bundles. Include a hash of those
+// inputs in both bundle tasks without persisting their values (the automation
+// token is among them), or Gradle can reuse a bundle built for another stage.
+def terminalExpoPublicEnvironment = System.getenv().entrySet()
+    .findAll { entry -> entry.key.startsWith('EXPO_PUBLIC_') }
+    .sort { left, right -> left.key <=> right.key }
+    .collect { entry -> "${entry.key.length()}:${entry.key}${entry.value.length()}:${entry.value}" }
+    .join('|')
+def terminalExpoPublicEnvironmentSha256 = MessageDigest.getInstance('SHA-256')
+    .digest(terminalExpoPublicEnvironment.getBytes(StandardCharsets.UTF_8))
+    .encodeHex()
+    .toString()
+
+tasks.configureEach { task ->
+    if (task.name == 'createBundleReleaseJsAndAssets' || task.name == 'createBundleDebugJsAndAssets') {
+        task.inputs.property('terExpoPublicEnvironmentSha256', terminalExpoPublicEnvironmentSha256)
+    }
+}
+
+if (terminalPublicationMetadata.isPresent()) {
+    android.sourceSets.main.assets.srcDir(file(terminalPublicationMetadata.get()).parentFile)
+}
+
+// React Native autolinking stores native codegen paths under each package's
+// android/build directory. In a managed artifact run the real Gradle build
+// directory is run-scoped, so expose that directory through a temporary link.
+// The registry is written before links are created so runner cleanup can remove
+// only links owned by this run, including after an interrupted Gradle process.
+def terminalArtifactManagedBuildDirectory = providers.gradleProperty('terAutomationBuildDir')
+if (terminalArtifactManagedBuildDirectory.isPresent()) {
+    def runBuildDirectory = new File(terminalArtifactManagedBuildDirectory.get()).canonicalFile
+    def terminalNodeModules = new File(rootDir, '../../../../node_modules').canonicalFile
+    def runRoot = new File(rootDir, '../../../../../../.runtime/terminal-automation').canonicalFile
+    if (!runBuildDirectory.path.startsWith(runRoot.path + File.separator)) {
+        throw new GradleException('TERMINAL_AUTOMATION_ANDROID_BUILD_DIRECTORY_OUTSIDE_RUN')
+    }
+    gradle.projectsEvaluated {
+        def registrations = []
+        rootProject.allprojects.each { candidate ->
+            def moduleDirectory = candidate.projectDir.canonicalFile
+            def modulePath = moduleDirectory.path
+            if (moduleDirectory.name == 'android' &&
+                modulePath.startsWith(terminalNodeModules.path + File.separator) &&
+                candidate.plugins.hasPlugin('com.android.library')) {
+                def outputDirectory = candidate.layout.buildDirectory.get().asFile.canonicalFile
+                if (!outputDirectory.path.startsWith(runBuildDirectory.path + File.separator)) {
+                    throw new GradleException('TERMINAL_AUTOMATION_ANDROID_MODULE_BUILD_DIRECTORY_OUTSIDE_RUN')
+                }
+                // Expo SDK 57 writes inline-module sources during Gradle
+                // configuration through node_modules/expo/android/build.
+                // That path is a temporary symlink to this run-owned target;
+                // make the target exist before exposing the symlink, or Node's
+                // recursive mkdir follows a dangling link and exits with ENOENT.
+                java.nio.file.Files.createDirectories(outputDirectory.toPath())
+                if (!java.nio.file.Files.isDirectory(outputDirectory.toPath())) {
+                    throw new GradleException('TERMINAL_AUTOMATION_ANDROID_MODULE_BUILD_DIRECTORY_UNAVAILABLE')
+                }
+                def buildLink = new File(moduleDirectory, 'build')
+                registrations.add([path: buildLink.path, target: outputDirectory.path])
+            }
+        }
+
+        def registry = new File(runBuildDirectory, 'temporary-source-build-links.json')
+        registry.parentFile.mkdirs()
+        def registryTemporary = new File(runBuildDirectory, 'temporary-source-build-links.json.tmp')
+        registryTemporary.text = JsonOutput.toJson(registrations)
+        java.nio.file.Files.move(
+            registryTemporary.toPath(),
+            registry.toPath(),
+            java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+            java.nio.file.StandardCopyOption.ATOMIC_MOVE
+        )
+        registrations.each { registration ->
+            def link = new File(registration.path)
+            if (java.nio.file.Files.exists(link.toPath(), java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
+                throw new GradleException('TERMINAL_AUTOMATION_ANDROID_MODULE_BUILD_PATH_OCCUPIED')
+            }
+        }
+        registrations.each { registration ->
+            def link = new File(registration.path)
+            java.nio.file.Files.createSymbolicLink(link.toPath(), new File(registration.target).toPath())
+        }
+    }
+}
+
+tasks.register('terminalHotZip', Zip) {
+    onlyIf { terminalArtifactRoot.isPresent() && terminalArtifactOutput.isPresent() }
+    from(terminalArtifactRoot.map { file(it) })
+    archiveFileName.set(terminalArtifactOutput.map { file(it).name })
+    destinationDirectory.set(project.layout.dir(terminalArtifactOutput.map { file(it).parentFile }))
+    duplicatesStrategy = DuplicatesStrategy.FAIL
+    setReproducibleFileOrder(true)
+    setPreserveFileTimestamps(false)
+    doFirst {
+        if (!terminalArtifactRoot.isPresent() || !terminalArtifactOutput.isPresent()) {
+            throw new GradleException('TERMINAL_UPDATE_HOT_ZIP_INPUT_REQUIRED')
+        }
+        if (terminalArtifactRoot.get().trim().isEmpty() || terminalArtifactOutput.get().trim().isEmpty()) {
+            throw new GradleException('TERMINAL_UPDATE_HOT_ZIP_INPUT_INVALID')
+        }
+    }
+}

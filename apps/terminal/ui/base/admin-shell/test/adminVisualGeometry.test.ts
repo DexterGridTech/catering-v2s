@@ -164,16 +164,25 @@ describe('admin visual contract', () => {
     );
     expect(read('../primitives/src/components/PrimitiveAdmin.tsx')).toContain('aspectRatio: surface.aspectRatio');
     const primitiveAdminSource = read('../primitives/src/components/PrimitiveAdmin.tsx');
-    expect(primitiveAdminSource).toContain('testID={`${address}:surface:${surface.key}:frame`}');
-    const frameStart = primitiveAdminSource.indexOf('testID={`${address}:surface:${surface.key}:frame`}');
-    const surfaceStart = primitiveAdminSource.indexOf('testID={`${address}:surface:${surface.key}`}');
+    expect(primitiveAdminSource).toContain("deriveTestId(testID, 'surface-card', surface.key)");
+    expect(primitiveAdminSource).toContain("deriveTestId(testID, 'surface-frame', surface.key)");
+    expect(primitiveAdminSource).toContain("deriveTestId(testID, 'surface', surface.key)");
+    const cardStart = primitiveAdminSource.indexOf("deriveTestId(testID, 'surface-card', surface.key)");
+    const frameStart = primitiveAdminSource.indexOf("deriveTestId(testID, 'surface-frame', surface.key)");
+    const surfaceStart = primitiveAdminSource.indexOf("deriveTestId(testID, 'surface', surface.key)");
     const logicWidthStart = primitiveAdminSource.indexOf('logic-width', surfaceStart);
     const logicHeightStart = primitiveAdminSource.indexOf('logic-height', surfaceStart);
     const surfaceClose = primitiveAdminSource.indexOf('</RnrView>', surfaceStart);
-    const physicalWidthStart = primitiveAdminSource.indexOf('outside:0');
-    const physicalHeightStart = primitiveAdminSource.indexOf('outside:1', frameStart);
+    const physicalWidthStart = primitiveAdminSource.indexOf(
+      "deriveTestId(testID, 'surface-outside', `${surface.key}:0`)",
+    );
+    const physicalHeightStart = primitiveAdminSource.indexOf(
+      "deriveTestId(testID, 'surface-outside', `${surface.key}:1`)",
+      frameStart,
+    );
     const frameClose = primitiveAdminSource.indexOf('</RnrView>', surfaceClose + 1);
-    expect(frameStart).toBeGreaterThanOrEqual(0);
+    expect(cardStart).toBeGreaterThanOrEqual(0);
+    expect(frameStart).toBeGreaterThan(cardStart);
     expect(surfaceStart).toBeGreaterThan(frameStart);
     expect(physicalWidthStart).toBeLessThan(frameStart);
     expect(logicWidthStart).toBeGreaterThan(surfaceStart);
@@ -220,11 +229,13 @@ describe('admin visual contract', () => {
 
   it('binds aspect ratio to the inner surface rectangle with the native laptop fallback height', () => {
     const source = read('../primitives/src/components/PrimitiveAdmin.tsx');
-    const cardStart = source.indexOf('testID={`${address}:surface:${surface.key}:card`}');
-    const innerStart = source.indexOf('testID={`${address}:surface:${surface.key}`}', cardStart);
+    const cardStart = source.indexOf("deriveTestId(testID, 'surface-card', surface.key)");
+    const frameStart = source.indexOf("deriveTestId(testID, 'surface-frame', surface.key)", cardStart);
+    const innerStart = source.indexOf("deriveTestId(testID, 'surface', surface.key)", frameStart);
     expect(cardStart).toBeGreaterThanOrEqual(0);
-    expect(innerStart).toBeGreaterThan(cardStart);
-    expect(source.slice(cardStart, innerStart)).not.toContain('aspectRatio');
+    expect(frameStart).toBeGreaterThan(cardStart);
+    expect(innerStart).toBeGreaterThan(frameStart);
+    expect(source.slice(cardStart, frameStart)).not.toContain('aspectRatio');
     const ratioStart = source.indexOf('aspectRatio: surface.aspectRatio', innerStart);
     expect(ratioStart).toBeGreaterThan(innerStart);
     expect(source.slice(innerStart, ratioStart)).toContain(
@@ -269,7 +280,7 @@ describe('admin visual contract', () => {
     const selection = read('src/foundations/adminSectionSelection.ts');
     expect(adminShell).toContain('adminGeometry.shellLaptop');
     expect(navigation).toContain('adminGeometry.navigationList');
-    expect(primitiveAdmin).toContain(':card');
+    expect(primitiveAdmin).toContain("'surface-card'");
     expect(primitiveAdmin).not.toContain('style={{aspectRatio: surface.aspectRatio}}');
     expect(selection).toContain('for (const entry of entries)');
     expect(selection).toContain('projectedPartKeys.has(entry.partKey)');

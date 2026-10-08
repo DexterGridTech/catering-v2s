@@ -1,7 +1,6 @@
 import {
   createPlatformPorts,
   unavailableConnectorPort,
-  unavailableHotUpdatePort,
   unavailableLogUploadPort,
   unavailableScriptPort,
   type NativeLoadingCapability,
@@ -12,6 +11,7 @@ import {
 import {createAndroidDevicePort} from '@catering-v2s/adapter-android-device';
 import {createAndroidSurfaceHostSource} from '@catering-v2s/adapter-android-dual-screen';
 import {createAndroidPersistKvPort} from '@catering-v2s/adapter-android-persist-kv';
+import {createAndroidUpdatePort} from '@catering-v2s/adapter-android-update';
 import {createAndroidNativeLoadingCapability} from './nativeLoadingCapability';
 import {
   createAndroidAppControlPort,
@@ -51,7 +51,7 @@ export const createAndroidPlatformBinding = (persistenceKey: string): AndroidPla
       appControl: createAndroidAppControlPort(),
       script: unavailableScriptPort,
       connector: unavailableConnectorPort,
-      hotUpdate: unavailableHotUpdatePort,
+      update: createAndroidUpdatePort(),
       logUpload: unavailableLogUploadPort,
       topologyHost: createAndroidTopologyHostPort(() => platformLogger),
     },

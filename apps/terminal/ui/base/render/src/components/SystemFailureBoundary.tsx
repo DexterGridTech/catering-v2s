@@ -13,6 +13,7 @@ import {renderTestIds} from '../foundations/renderTestIds';
 declare const process: {
   readonly env: {
     readonly EXPO_PUBLIC_TER_DEBUG_FAILURE_INJECTION?: string;
+    readonly EXPO_PUBLIC_TER_DEBUG_FAILURE_INJECTION_OWNER?: string;
   };
 };
 
@@ -21,10 +22,36 @@ const errorNameOf = (error: unknown): string => (error instanceof Error ? error.
 export const isDebugFailureInjectionEnabled = (devMode: boolean, buildFlag: string | undefined): boolean =>
   devMode || buildFlag === 'true';
 
+export const resolveBuildTimeFailureInjectionOwner = (
+  devMode: boolean,
+  buildFlag: string | undefined,
+  ownerId: string | undefined,
+): string | null => {
+  if (!isDebugFailureInjectionEnabled(devMode, buildFlag) || ownerId === undefined) return null;
+  return /^[A-Za-z0-9:._-]{1,160}$/u.test(ownerId) ? ownerId : null;
+};
+
+export const resolveBuildTimeFailureInjectionOutcome = (
+  ownerId: string,
+  targetOwnerId: string,
+): 'matched' | 'other-owner' => (targetOwnerId === ownerId ? 'matched' : 'other-owner');
+
 const debugFailureInjectionEnabled = isDebugFailureInjectionEnabled(
   __DEV__,
   process.env.EXPO_PUBLIC_TER_DEBUG_FAILURE_INJECTION,
 );
+const buildTimeFailureOwner = resolveBuildTimeFailureInjectionOwner(
+  __DEV__,
+  process.env.EXPO_PUBLIC_TER_DEBUG_FAILURE_INJECTION,
+  process.env.EXPO_PUBLIC_TER_DEBUG_FAILURE_INJECTION_OWNER,
+);
+// The managed artifact builder checks this compile-time marker before install,
+// so an up-to-date bundle from a different EXPO_PUBLIC_* environment fails fast.
+const bootGuardInjectionBundleMarker =
+  process.env.EXPO_PUBLIC_TER_DEBUG_FAILURE_INJECTION === 'true' &&
+  process.env.EXPO_PUBLIC_TER_DEBUG_FAILURE_INJECTION_OWNER === 'surface-content'
+    ? 'TER_DEBUG_FAILURE_INJECTION_BUNDLE_MARKER_SURFACE_CONTENT'
+    : null;
 
 export function parseDebugFailureInjectionUrl(value: string | null): string | null | undefined {
   if (value === null) return undefined;
@@ -67,6 +94,23 @@ const DebugFailureInjection = ({
   useEffect(() => {
     if (!debugFailureInjectionEnabled) return;
     let active = true;
+    if (buildTimeFailureOwner !== null) {
+      const outcome = resolveBuildTimeFailureInjectionOutcome(ownerId, buildTimeFailureOwner);
+      logger.info({
+        category: 'runtime.system-failure',
+        event: 'runtime.system-failure.debug-injection-resolution',
+        message: `TER_DEBUG_FAILURE_INJECTION_RESOLUTION source=build-time owner=${ownerId} outcome=${outcome}`,
+        data: {
+          ownerId,
+          source: 'build-time',
+          urlPresent: false,
+          outcome,
+          ...(bootGuardInjectionBundleMarker === null ? {} : {buildMarker: bootGuardInjectionBundleMarker}),
+        },
+      });
+      setTargetOwnerId(buildTimeFailureOwner);
+      setReady(true);
+    }
     const applyUrl = (value: string | null, source: 'initial' | 'event') => {
       const target = parseDebugFailureInjectionUrl(value);
       if (!active) return;

@@ -13,6 +13,7 @@ import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint
 
 import expo.modules.ApplicationLifecycleDispatcher
 import expo.modules.ExpoReactHostFactory
+import com.catering.v2s.terminal.adapter.android.update.TerminalUpdateProcess
 
 class MainApplication : Application(), ReactApplication {
 
@@ -30,6 +31,9 @@ class MainApplication : Application(), ReactApplication {
 
   override fun onCreate() {
     super.onCreate()
+    if (!(BuildConfig.DEBUG && !BuildConfig.TER_DISABLE_NATIVE_DEV_SUPPORT)) {
+      TerminalUpdateProcess.begin(this)
+    }
     DefaultNewArchitectureEntryPoint.releaseLevel = try {
       ReleaseLevel.valueOf(BuildConfig.REACT_NATIVE_RELEASE_LEVEL.uppercase())
     } catch (e: IllegalArgumentException) {

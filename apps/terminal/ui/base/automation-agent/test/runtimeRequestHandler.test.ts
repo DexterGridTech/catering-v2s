@@ -43,7 +43,9 @@ const makeContext = () => {
   return {
     context: context as unknown as RuntimeModuleContext,
     journalListeners,
-    notifyState: () => { for (const listener of [...stateListeners]) listener(); },
+    notifyState: () => {
+      for (const listener of [...stateListeners]) listener();
+    },
     stateListenerCount: () => stateListeners.size,
     setDispatch: (value: typeof dispatch) => {
       dispatch = value;
@@ -63,20 +65,22 @@ describe('Runtime automation request handler', () => {
     const controlReplies: unknown[] = [];
 
     control.handle(request('controls.query', {filter: {}}, 'control-query'), value => controlReplies.push(value));
-    runtime.handle(
-      request('selector.read', {selectorName: 'example.value', argsTuple: []}, 'runtime-read'),
-      value => runtimeReplies.push(value),
+    runtime.handle(request('selector.read', {selectorName: 'example.value', argsTuple: []}, 'runtime-read'), value =>
+      runtimeReplies.push(value),
     );
 
     const eventIds = [...controlReplies, ...runtimeReplies]
-      .filter((reply): reply is {type: string; messageId: string} =>
-        typeof reply === 'object' && reply !== null && 'type' in reply && 'messageId' in reply,
+      .filter(
+        (reply): reply is {type: string; messageId: string} =>
+          typeof reply === 'object' && reply !== null && 'type' in reply && 'messageId' in reply,
       )
       .filter(reply => reply.type === 'event')
       .map(reply => reply.messageId);
     expect(eventIds).toHaveLength(2);
     expect(new Set(eventIds).size).toBe(2);
-    expect(eventIds).toEqual(expect.arrayContaining([expect.stringMatching(/^controls-event-/), expect.stringMatching(/^runtime-event-/)]));
+    expect(eventIds).toEqual(
+      expect.arrayContaining([expect.stringMatching(/^controls-event-/), expect.stringMatching(/^runtime-event-/)]),
+    );
     control.dispose();
     runtime.dispose();
   });
@@ -92,12 +96,17 @@ describe('Runtime automation request handler', () => {
 
     handler.handle(request('runtime.info', null, 'runtime-info'), send);
 
-    expect(send).toHaveBeenCalledWith(expect.objectContaining({
-      type: 'response',
-      body: {requestMessageId: 'runtime-info', result: expect.objectContaining({
-        deviceIdentity: {available: true, deviceId: 'app-scoped-device-id'},
-      })},
-    }));
+    expect(send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'response',
+        body: {
+          requestMessageId: 'runtime-info',
+          result: expect.objectContaining({
+            deviceIdentity: {available: true, deviceId: 'app-scoped-device-id'},
+          }),
+        },
+      }),
+    );
     expect(JSON.stringify(send.mock.calls)).not.toContain('sessionToken');
     handler.dispose();
   });
@@ -113,12 +122,17 @@ describe('Runtime automation request handler', () => {
 
     handler.handle(request('runtime.info', null, 'runtime-info-unavailable'), send);
 
-    expect(send).toHaveBeenCalledWith(expect.objectContaining({
-      type: 'response',
-      body: {requestMessageId: 'runtime-info-unavailable', result: expect.objectContaining({
-        deviceIdentity: {available: false, deviceId: null},
-      })},
-    }));
+    expect(send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'response',
+        body: {
+          requestMessageId: 'runtime-info-unavailable',
+          result: expect.objectContaining({
+            deviceIdentity: {available: false, deviceId: null},
+          }),
+        },
+      }),
+    );
     handler.dispose();
   });
 
@@ -129,10 +143,12 @@ describe('Runtime automation request handler', () => {
 
     handler.handle(request('selector.read', {selectorName: 'example.value', argsTuple: [9]}, 'read-1'), send);
 
-    expect(send).toHaveBeenCalledWith(expect.objectContaining({
-      type: 'response',
-      body: {requestMessageId: 'read-1', result: {valueState: 'JSON', value: {value: 9}}},
-    }));
+    expect(send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'response',
+        body: {requestMessageId: 'read-1', result: {valueState: 'JSON', value: {value: 9}}},
+      }),
+    );
     handler.dispose();
   });
 
@@ -141,7 +157,10 @@ describe('Runtime automation request handler', () => {
     const handler = createRuntimeRequestHandler({sessionId: 'session-1', context: fixture.context});
     const sent: unknown[] = [];
 
-    handler.handle(request('selector.read', {selectorName: 'example.value', argsTuple: [9]}, 'read-measured'), message => sent.push(message));
+    handler.handle(
+      request('selector.read', {selectorName: 'example.value', argsTuple: [9]}, 'read-measured'),
+      message => sent.push(message),
+    );
 
     expect(sent[0]).toMatchObject({type: 'response', body: {result: {valueState: 'JSON', value: {value: 9}}}});
     expect(sent[1]).toMatchObject({
@@ -162,19 +181,34 @@ describe('Runtime automation request handler', () => {
     const handler = createRuntimeRequestHandler({sessionId: 'session-1', context: fixture.context});
     const send = vi.fn();
 
-    handler.handle(request('selector.subscribe', {
-      subscriptionId: 'sub-1', selectorName: 'example.value', argsTuple: [],
-    }, 'subscribe-1'), send);
+    handler.handle(
+      request(
+        'selector.subscribe',
+        {
+          subscriptionId: 'sub-1',
+          selectorName: 'example.value',
+          argsTuple: [],
+        },
+        'subscribe-1',
+      ),
+      send,
+    );
     expect(handler.activeSelectorSubscriptionCount).toBe(1);
-    expect(send.mock.calls.filter(([reply]) =>
-      (reply as {type: string; body: {subscriptionId?: string}}).type === 'event' &&
-      (reply as {body: {subscriptionId?: string}}).body.subscriptionId === 'sub-1',
-    )).toHaveLength(1);
+    expect(
+      send.mock.calls.filter(
+        ([reply]) =>
+          (reply as {type: string; body: {subscriptionId?: string}}).type === 'event' &&
+          (reply as {body: {subscriptionId?: string}}).body.subscriptionId === 'sub-1',
+      ),
+    ).toHaveLength(1);
     fixture.notifyState();
-    expect(send.mock.calls.filter(([reply]) =>
-      (reply as {type: string; body: {subscriptionId?: string}}).type === 'event' &&
-      (reply as {body: {subscriptionId?: string}}).body.subscriptionId === 'sub-1',
-    )).toHaveLength(1);
+    expect(
+      send.mock.calls.filter(
+        ([reply]) =>
+          (reply as {type: string; body: {subscriptionId?: string}}).type === 'event' &&
+          (reply as {body: {subscriptionId?: string}}).body.subscriptionId === 'sub-1',
+      ),
+    ).toHaveLength(1);
 
     handler.dispose();
     expect(handler.activeSelectorSubscriptionCount).toBe(0);
@@ -188,19 +222,34 @@ describe('Runtime automation request handler', () => {
     const send = vi.fn();
 
     for (const subscriptionId of ['sub-a', 'sub-b']) {
-      handler.handle(request('selector.subscribe', {
-        subscriptionId, selectorName: 'example.value', argsTuple: ['mutable'],
-      }, `subscribe-${subscriptionId}`), send);
+      handler.handle(
+        request(
+          'selector.subscribe',
+          {
+            subscriptionId,
+            selectorName: 'example.value',
+            argsTuple: ['mutable'],
+          },
+          `subscribe-${subscriptionId}`,
+        ),
+        send,
+      );
     }
     expect(fixture.stateListenerCount()).toBe(1);
     fixture.setSelectedValue({value: 2});
     fixture.notifyState();
-    await vi.waitFor(() => expect(send.mock.calls.some(([message]) =>
-      (message as {body?: {kind?: string; phase?: string}}).body?.kind === 'performance.measurement' &&
-      (message as {body?: {phase?: string}}).body?.phase === 'selector.flush',
-    )).toBe(true));
+    await vi.waitFor(() =>
+      expect(
+        send.mock.calls.some(
+          ([message]) =>
+            (message as {body?: {kind?: string; phase?: string}}).body?.kind === 'performance.measurement' &&
+            (message as {body?: {phase?: string}}).body?.phase === 'selector.flush',
+        ),
+      ).toBe(true),
+    );
 
-    const measurements = send.mock.calls.map(([message]) => message as {body?: Record<string, unknown>})
+    const measurements = send.mock.calls
+      .map(([message]) => message as {body?: Record<string, unknown>})
       .filter(message => message.body?.kind === 'performance.measurement' && message.body.phase === 'selector.flush');
     expect(measurements).toHaveLength(1);
     expect(measurements[0]?.body).toMatchObject({
@@ -208,10 +257,13 @@ describe('Runtime automation request handler', () => {
       elapsedMs: expect.any(Number),
       payloadBytes: expect.any(Number),
     });
-    expect(send.mock.calls.filter(([message]) =>
-      (message as {body?: {subscriptionId?: string}}).body?.subscriptionId === 'sub-a' ||
-      (message as {body?: {subscriptionId?: string}}).body?.subscriptionId === 'sub-b',
-    )).toHaveLength(4);
+    expect(
+      send.mock.calls.filter(
+        ([message]) =>
+          (message as {body?: {subscriptionId?: string}}).body?.subscriptionId === 'sub-a' ||
+          (message as {body?: {subscriptionId?: string}}).body?.subscriptionId === 'sub-b',
+      ),
+    ).toHaveLength(4);
     handler.dispose();
     expect(fixture.stateListenerCount()).toBe(0);
   });
@@ -221,13 +273,25 @@ describe('Runtime automation request handler', () => {
     fixture.setSelectedValue(undefined);
     const handler = createRuntimeRequestHandler({sessionId: 'session-1', context: fixture.context});
     const send = vi.fn();
-    const events = () => send.mock.calls
-      .map(([reply]) => reply as {type: string; body: {subscriptionId?: string; valueState?: string; reason?: string}})
-      .filter(reply => reply.type === 'event' && reply.body.subscriptionId === 'sub-non-json');
+    const events = () =>
+      send.mock.calls
+        .map(
+          ([reply]) => reply as {type: string; body: {subscriptionId?: string; valueState?: string; reason?: string}},
+        )
+        .filter(reply => reply.type === 'event' && reply.body.subscriptionId === 'sub-non-json');
 
-    handler.handle(request('selector.subscribe', {
-      subscriptionId: 'sub-non-json', selectorName: 'example.value', argsTuple: ['mutable'],
-    }, 'subscribe-non-json'), send);
+    handler.handle(
+      request(
+        'selector.subscribe',
+        {
+          subscriptionId: 'sub-non-json',
+          selectorName: 'example.value',
+          argsTuple: ['mutable'],
+        },
+        'subscribe-non-json',
+      ),
+      send,
+    );
     expect(events().at(-1)?.body).toMatchObject({valueState: 'NON_JSON', reason: 'UNDEFINED'});
 
     fixture.setSelectedValue({ready: true});
@@ -251,7 +315,10 @@ describe('Runtime automation request handler', () => {
     const handler = createRuntimeRequestHandler({sessionId: 'session-1', context: fixture.context});
     const send = vi.fn();
 
-    handler.handle(request('selector.read', {selectorName: 'example.value', argsTuple: ['mutable']}, 'read-invalid-array'), send);
+    handler.handle(
+      request('selector.read', {selectorName: 'example.value', argsTuple: ['mutable']}, 'read-invalid-array'),
+      send,
+    );
 
     const reply = send.mock.calls[0]?.[0] as {body?: {result?: {reason?: string}}};
     expect(reply.body?.result?.reason).toBe('ARRAY_EXTRA_FIELD@root.p0:string:1');
@@ -268,7 +335,10 @@ describe('Runtime automation request handler', () => {
     const handler = createRuntimeRequestHandler({sessionId: 'session-1', context: fixture.context});
     const send = vi.fn();
 
-    handler.handle(request('selector.read', {selectorName: 'example.value', argsTuple: ['mutable']}, `read-${property}`), send);
+    handler.handle(
+      request('selector.read', {selectorName: 'example.value', argsTuple: ['mutable']}, `read-${property}`),
+      send,
+    );
 
     expect(send.mock.calls[0]?.[0]).toMatchObject({
       type: 'response',
@@ -287,7 +357,10 @@ describe('Runtime automation request handler', () => {
     const handler = createRuntimeRequestHandler({sessionId: 'session-1', context: fixture.context});
     const send = vi.fn();
 
-    handler.handle(request('selector.read', {selectorName: 'example.value', argsTuple: ['mutable']}, 'read-array-accessor'), send);
+    handler.handle(
+      request('selector.read', {selectorName: 'example.value', argsTuple: ['mutable']}, 'read-array-accessor'),
+      send,
+    );
 
     expect(send.mock.calls[0]?.[0]).toMatchObject({
       type: 'response',
@@ -307,7 +380,10 @@ describe('Runtime automation request handler', () => {
     const handler = createRuntimeRequestHandler({sessionId: 'session-1', context: fixture.context});
     const send = vi.fn();
 
-    handler.handle(request('selector.read', {selectorName: 'example.value', argsTuple: ['mutable']}, 'read-array-prototype'), send);
+    handler.handle(
+      request('selector.read', {selectorName: 'example.value', argsTuple: ['mutable']}, 'read-array-prototype'),
+      send,
+    );
 
     expect(send.mock.calls[0]?.[0]).toMatchObject({
       type: 'response',
@@ -323,13 +399,27 @@ describe('Runtime automation request handler', () => {
     const handler = createRuntimeRequestHandler({sessionId: 'session-1', context: fixture.context});
     const send = vi.fn();
 
-    handler.handle(request('selector.subscribe', {
-      subscriptionId: 'sub-envelope-limit', selectorName: 'example.value', argsTuple: ['mutable'],
-    }, 'subscribe-envelope-limit'), send);
+    handler.handle(
+      request(
+        'selector.subscribe',
+        {
+          subscriptionId: 'sub-envelope-limit',
+          selectorName: 'example.value',
+          argsTuple: ['mutable'],
+        },
+        'subscribe-envelope-limit',
+      ),
+      send,
+    );
 
-    expect(send.mock.calls.map(([reply]) => reply)).toEqual(expect.arrayContaining([
-      expect.objectContaining({type: 'error', body: {requestMessageId: 'subscribe-envelope-limit', code: 'RESOURCE_LIMIT'}}),
-    ]));
+    expect(send.mock.calls.map(([reply]) => reply)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'error',
+          body: {requestMessageId: 'subscribe-envelope-limit', code: 'RESOURCE_LIMIT'},
+        }),
+      ]),
+    );
     expect(handler.activeSelectorSubscriptionCount).toBe(0);
     expect(fixture.stateListenerCount()).toBe(0);
     handler.dispose();
@@ -341,7 +431,10 @@ describe('Runtime automation request handler', () => {
     const handler = createRuntimeRequestHandler({sessionId: 'session-1', context: fixture.context});
     const send = vi.fn();
 
-    handler.handle(request('selector.read', {selectorName: 'example.value', argsTuple: ['mutable']}, 'read-valid-array'), send);
+    handler.handle(
+      request('selector.read', {selectorName: 'example.value', argsTuple: ['mutable']}, 'read-valid-array'),
+      send,
+    );
 
     expect(send.mock.calls[0]?.[0]).toMatchObject({
       type: 'response',
@@ -356,16 +449,37 @@ describe('Runtime automation request handler', () => {
     const handler = createRuntimeRequestHandler({sessionId: 'session-1', context: fixture.context});
     const send = vi.fn();
 
-    handler.handle(request('selector.subscribe', {
-      subscriptionId: 'sub-oversized', selectorName: 'example.value', argsTuple: ['mutable'],
-    }, 'subscribe-oversized'), send);
+    handler.handle(
+      request(
+        'selector.subscribe',
+        {
+          subscriptionId: 'sub-oversized',
+          selectorName: 'example.value',
+          argsTuple: ['mutable'],
+        },
+        'subscribe-oversized',
+      ),
+      send,
+    );
 
-    expect(send.mock.calls.map(([reply]) => reply)).toEqual(expect.arrayContaining([
-      expect.objectContaining({type: 'response', body: {requestMessageId: 'subscribe-oversized', result: {
-        subscriptionId: 'sub-oversized', accepted: true,
-      }}}),
-      expect.objectContaining({type: 'error', body: {requestMessageId: 'subscribe-oversized', code: 'RESOURCE_LIMIT'}}),
-    ]));
+    expect(send.mock.calls.map(([reply]) => reply)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'response',
+          body: {
+            requestMessageId: 'subscribe-oversized',
+            result: {
+              subscriptionId: 'sub-oversized',
+              accepted: true,
+            },
+          },
+        }),
+        expect.objectContaining({
+          type: 'error',
+          body: {requestMessageId: 'subscribe-oversized', code: 'RESOURCE_LIMIT'},
+        }),
+      ]),
+    );
     expect(handler.activeSelectorSubscriptionCount).toBe(0);
     expect(fixture.stateListenerCount()).toBe(0);
     expect(JSON.stringify(send.mock.calls)).not.toContain('x'.repeat(128));
@@ -375,25 +489,45 @@ describe('Runtime automation request handler', () => {
   it('rejects a selector whose JSON validation exceeds the serialization budget and releases it', () => {
     const fixture = makeContext();
     const startedAt = performance.now();
-    const slowJsonValue = new Proxy({value: 1}, {
-      ownKeys: target => {
-        while (performance.now() - startedAt < 12) { /* deterministic budget red */ }
-        return Reflect.ownKeys(target);
+    const slowJsonValue = new Proxy(
+      {value: 1},
+      {
+        ownKeys: target => {
+          while (performance.now() - startedAt < 12) {
+            /* deterministic budget red */
+          }
+          return Reflect.ownKeys(target);
+        },
       },
-    });
+    );
     fixture.setSelectedValue(slowJsonValue);
     const handler = createRuntimeRequestHandler({sessionId: 'session-1', context: fixture.context});
     const send = vi.fn();
 
-    handler.handle(request('selector.subscribe', {
-      subscriptionId: 'sub-slow-serialization', selectorName: 'example.value', argsTuple: ['mutable'],
-    }, 'subscribe-slow-serialization'), send);
+    handler.handle(
+      request(
+        'selector.subscribe',
+        {
+          subscriptionId: 'sub-slow-serialization',
+          selectorName: 'example.value',
+          argsTuple: ['mutable'],
+        },
+        'subscribe-slow-serialization',
+      ),
+      send,
+    );
 
-    expect(send.mock.calls.map(([reply]) => reply)).toEqual(expect.arrayContaining([
-      expect.objectContaining({type: 'error', body: {
-        requestMessageId: 'subscribe-slow-serialization', code: 'SELECTOR_SERIALIZATION_BUDGET_EXCEEDED',
-      }}),
-    ]));
+    expect(send.mock.calls.map(([reply]) => reply)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'error',
+          body: {
+            requestMessageId: 'subscribe-slow-serialization',
+            code: 'SELECTOR_SERIALIZATION_BUDGET_EXCEEDED',
+          },
+        }),
+      ]),
+    );
     expect(handler.activeSelectorSubscriptionCount).toBe(0);
     expect(fixture.stateListenerCount()).toBe(0);
     handler.dispose();
@@ -411,28 +545,42 @@ describe('Runtime automation request handler', () => {
       expect(fixture.journalListeners.size).toBe(1);
       expect(options).toMatchObject({lateResultTtlMs: 120_000});
       observedRequestId = (options as {requestId: string}).requestId;
-      return new Promise(resolve => { finish = resolve; });
+      return new Promise(resolve => {
+        finish = resolve;
+      });
     });
 
-    handler.handle(request('command.dispatch', {commandName: 'example.command', payload: {value: 1}}, 'command-1'), send);
+    handler.handle(
+      request('command.dispatch', {commandName: 'example.command', payload: {value: 1}}, 'command-1'),
+      send,
+    );
     expect(send.mock.calls[0]?.[0]).toMatchObject({type: 'response', body: {result: {accepted: true}}});
     for (const listener of fixture.journalListeners) {
       listener({
-        kind: 'actor.timed-out', actorKey: 'example.actor', requestId: observedRequestId,
+        kind: 'actor.timed-out',
+        actorKey: 'example.actor',
+        requestId: observedRequestId,
       } as never);
       listener({
-        kind: 'actor.completed', actorKey: 'example.peerActor', requestId: observedRequestId,
+        kind: 'actor.completed',
+        actorKey: 'example.peerActor',
+        requestId: observedRequestId,
       } as never);
     }
-    finish({status: 'partial-failed', actorResults: [
-      {actorKey: 'example.actor', status: 'timed-out'},
-      {actorKey: 'example.peerActor', status: 'completed'},
-    ]});
+    finish({
+      status: 'partial-failed',
+      actorResults: [
+        {actorKey: 'example.actor', status: 'timed-out'},
+        {actorKey: 'example.peerActor', status: 'completed'},
+      ],
+    });
     await Promise.resolve();
     expect(handler.activeRequestTrackingCount).toBe(1);
     for (const listener of fixture.journalListeners) {
       listener({
-        kind: 'actor.late-error', actorKey: 'example.actor', requestId: observedRequestId,
+        kind: 'actor.late-error',
+        actorKey: 'example.actor',
+        requestId: observedRequestId,
       } as never);
     }
     expect(handler.activeRequestTrackingCount).toBe(0);
@@ -447,10 +595,15 @@ describe('Runtime automation request handler', () => {
     let observedRequestId = '';
     fixture.setDispatch((_name, _payload, options) => {
       observedRequestId = (options as {requestId: string}).requestId;
-      return new Promise(resolve => { finish = resolve; });
+      return new Promise(resolve => {
+        finish = resolve;
+      });
     });
 
-    handler.handle(request('command.dispatch', {commandName: 'example.command', payload: null}, 'same-child-twice'), send);
+    handler.handle(
+      request('command.dispatch', {commandName: 'example.command', payload: null}, 'same-child-twice'),
+      send,
+    );
     const emit = (kind: 'actor.timed-out' | 'actor.late-completed' | 'actor.late-error', commandId: string): void => {
       for (const listener of fixture.journalListeners) {
         listener({kind, actorKey: 'example.child', commandId, requestId: observedRequestId} as never);
@@ -477,10 +630,15 @@ describe('Runtime automation request handler', () => {
     let observedRequestId = '';
     fixture.setDispatch((_name, _payload, options) => {
       observedRequestId = (options as {requestId: string}).requestId;
-      return new Promise(resolve => { finish = resolve; });
+      return new Promise(resolve => {
+        finish = resolve;
+      });
     });
 
-    handler.handle(request('command.dispatch', {commandName: 'example.command', payload: null}, 'late-before-result'), send);
+    handler.handle(
+      request('command.dispatch', {commandName: 'example.command', payload: null}, 'late-before-result'),
+      send,
+    );
     const emit = (kind: 'actor.timed-out' | 'actor.late-completed'): void => {
       for (const listener of fixture.journalListeners) {
         listener({kind, actorKey: 'example.root', commandId: 'root-command', requestId: observedRequestId} as never);
@@ -488,7 +646,11 @@ describe('Runtime automation request handler', () => {
     };
     emit('actor.timed-out');
     emit('actor.late-completed');
-    finish({status: 'timed-out', commandId: 'root-command', actorResults: [{actorKey: 'example.root', status: 'timed-out'}]});
+    finish({
+      status: 'timed-out',
+      commandId: 'root-command',
+      actorResults: [{actorKey: 'example.root', status: 'timed-out'}],
+    });
     await Promise.resolve();
 
     expect(handler.activeRequestTrackingCount).toBe(0);
@@ -502,17 +664,36 @@ describe('Runtime automation request handler', () => {
     const send = vi.fn();
 
     for (let index = 0; index < 32; index += 1) {
-      handler.handle(request('command.dispatch', {
-        commandName: 'example.command', payload: null, requestId: `req-${index}`,
-      }, `command-${index}`), send);
+      handler.handle(
+        request(
+          'command.dispatch',
+          {
+            commandName: 'example.command',
+            payload: null,
+            requestId: `req-${index}`,
+          },
+          `command-${index}`,
+        ),
+        send,
+      );
     }
-    handler.handle(request('command.dispatch', {
-      commandName: 'example.command', payload: null, requestId: 'req-overflow',
-    }, 'command-overflow'), send);
+    handler.handle(
+      request(
+        'command.dispatch',
+        {
+          commandName: 'example.command',
+          payload: null,
+          requestId: 'req-overflow',
+        },
+        'command-overflow',
+      ),
+      send,
+    );
 
     expect(handler.activeRequestTrackingCount).toBe(32);
     expect(send.mock.calls.at(-1)?.[0]).toMatchObject({
-      type: 'error', body: {requestMessageId: 'command-overflow', code: 'RESOURCE_LIMIT'},
+      type: 'error',
+      body: {requestMessageId: 'command-overflow', code: 'RESOURCE_LIMIT'},
     });
     handler.dispose();
   });
@@ -524,14 +705,26 @@ describe('Runtime automation request handler', () => {
     const handler = createRuntimeRequestHandler({sessionId: 'session-1', context: fixture.context});
     const send = vi.fn();
     try {
-      handler.handle(request('command.dispatch', {
-        commandName: 'example.command', payload: null, requestId: 'req-expiring',
-      }, 'command-expiring'), send);
+      handler.handle(
+        request(
+          'command.dispatch',
+          {
+            commandName: 'example.command',
+            payload: null,
+            requestId: 'req-expiring',
+          },
+          'command-expiring',
+        ),
+        send,
+      );
       await vi.advanceTimersByTimeAsync(120_000);
-      expect(send.mock.calls.some(([reply]) =>
-        (reply as {body?: {kind?: string; lastOutcome?: string}}).body?.kind === 'TRACKING_EXPIRED' &&
-        (reply as {body?: {lastOutcome?: string}}).body?.lastOutcome === 'UNKNOWN',
-      )).toBe(true);
+      expect(
+        send.mock.calls.some(
+          ([reply]) =>
+            (reply as {body?: {kind?: string; lastOutcome?: string}}).body?.kind === 'TRACKING_EXPIRED' &&
+            (reply as {body?: {lastOutcome?: string}}).body?.lastOutcome === 'UNKNOWN',
+        ),
+      ).toBe(true);
       expect(handler.activeRequestTrackingCount).toBe(0);
     } finally {
       handler.dispose();

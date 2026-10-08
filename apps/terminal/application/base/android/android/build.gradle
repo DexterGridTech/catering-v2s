@@ -39,6 +39,9 @@ tasks.withType(org.gradle.api.tasks.testing.Test).configureEach {
 
 dependencies {
   implementation("com.facebook.react:react-android")
+  // resetRuntime is an application-control entry into the update adapter's
+  // existing process reload capability; the adapter depends only on ports.
+  implementation(project(":catering-v2s-adapter-android-update"))
   // Compile against Expo's single autolinked splash-screen implementation;
   // the consuming App remains the runtime owner of that module.
   compileOnly("host.exp.exponent:expo.modules.splashscreen:57.0.9")

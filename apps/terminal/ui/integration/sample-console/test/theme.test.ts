@@ -8,6 +8,11 @@ import {createSampleAssembly as createProductionSampleAssembly, createSurfaceFor
 import {startupReadyCommand} from '../src/application/module';
 import {releaseRuntimeForTestAsync} from '@catering-v2s/kernel-base-runtime/testing';
 import {createTestPlatformPorts, type TestPlatformPorts} from './support';
+
+vi.mock('expo-crypto', () => ({
+  getRandomBytesAsync: vi.fn(async (length: number) => new Uint8Array(length)),
+  randomUUID: vi.fn(() => '00000000-0000-4000-8000-000000000001'),
+}));
 import {queryRenderedTree} from '../../../../../../tools/terminal-shared/rntl-rendered-tree';
 import {
   resetNativeTestRefFactory,

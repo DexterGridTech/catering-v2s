@@ -19,6 +19,11 @@ import {createSampleMemberRegistryModule} from '@catering-v2s/kernel-feature-sam
 import {createSampleStaffSessionModule} from '@catering-v2s/kernel-feature-sample-staff-session';
 import {createStoreBasicModule} from '@catering-v2s/kernel-feature-store-basic';
 import {createServerConfigModule} from '@catering-v2s/kernel-base-server-config';
+import {
+  createTerminalUpdateModule,
+  unavailableUpdateTargetSourceProvider,
+  type UpdateTargetSourceProvider,
+} from '@catering-v2s/kernel-base-terminal-update';
 import {resolveServerNetworkSnapshot} from '@catering-v2s/kernel-base-server-config';
 import type {TransportServerConfig} from '@catering-v2s/kernel-base-contracts';
 import {
@@ -107,6 +112,7 @@ type SampleAssemblyInput = Readonly<{
   readonly startupDebugMode?: boolean;
   readonly showAdminPassword?: boolean;
   readonly terminalAutomation?: AutomationAgentConfig;
+  readonly terminalUpdateSourceProvider?: UpdateTargetSourceProvider;
   readonly serverSpaces?: TransportServerConfig;
   readonly surfaceHostSourcesByDisplayIndex?: Readonly<Partial<Record<0 | 1, SurfaceHostMeasurementSource>>>;
   readonly topologyPeerChannel?: TopologyPeerChannel;
@@ -182,6 +188,11 @@ export async function createSampleAssembly(input: SampleAssemblyInput): Promise<
       return [
         serverConfigModule,
         transportModule,
+        createTerminalUpdateModule({
+          port: input.platformPorts.update,
+          sourceProvider: input.terminalUpdateSourceProvider ?? unavailableUpdateTargetSourceProvider,
+          readNetworkSnapshot: (state, serverName) => resolveServerNetworkSnapshot(state, serverSpaces, serverName),
+        }),
         createTopologyModule({
           displayName: 'sample-console',
           moduleName: integrationModuleName,

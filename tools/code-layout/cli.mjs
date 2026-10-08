@@ -15,7 +15,7 @@ const forbiddenAppRoots = new Set([
 ]);
 const backendAppRoot = "apps/backend/catering-business-server/src/main/java/com/catering/v2s/app";
 const allowedBackendAppChildren = new Set(["bootstrap", "configuration", "edge"]);
-const contractRoots = new Set(["openapi", "openapi-source", "collaboration", "catalog", "protocol", "policy", "registry"]);
+const contractRoots = new Set(["openapi", "openapi-source", "collaboration", "catalog", "protocol", "policy", "registry", "terminal"]);
 const allowedRepositoryRootDirectories = new Set([
   ".agents",
   ".claude",
@@ -37,10 +37,11 @@ const allowedRepositoryRootDirectories = new Set([
   "libraries",
   "node_modules",
   "project-memory",
+  "rive",
   "scripts",
   "tools",
 ]);
-const allowedEmptyLocalRootDirectories = new Set(["rive"]);
+const allowedLocalRootDirectories = new Set(["rive"]);
 const scenarioName = /(?:^|[-_])(?:D\d{2}-S\d{2}|R\d+(?:J\d+|U\d+))/;
 const flowIdentifier = /(?:^|[._-])(?:(?:r|u|j|jg|pkg)\d+[a-z0-9_-]*|g-\d+[a-z0-9_-]*)(?=$|[._-])/i;
 
@@ -99,12 +100,20 @@ function validateBackendJavaPackagePaths(root, reasons) {
 function validate(root) {
   const reasons = [];
   for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
-    if (allowedEmptyLocalRootDirectories.has(entry.name)) {
+    if (allowedLocalRootDirectories.has(entry.name)) {
       const allowedPath = path.join(root, entry.name);
-      if (!entry.isDirectory()
-        || entry.isSymbolicLink()
-        || fs.readdirSync(allowedPath).length !== 0) {
+      if (!entry.isDirectory() || entry.isSymbolicLink()) {
         reasons.push(`REPOSITORY_ROOT_DIRECTORY_NOT_ALLOWED:${entry.name}`);
+      } else {
+        const pending = [allowedPath];
+        while (pending.length > 0) {
+          const directory = pending.pop();
+          for (const child of fs.readdirSync(directory, { withFileTypes: true })) {
+            const childPath = path.join(directory, child.name);
+            if (child.isSymbolicLink()) reasons.push(`REPOSITORY_ROOT_SYMLINK_NOT_ALLOWED:${rel(root, childPath)}`);
+            else if (child.isDirectory()) pending.push(childPath);
+          }
+        }
       }
       continue;
     }
@@ -216,6 +225,7 @@ function selfTest() {
   const contractRoot = fs.mkdtempSync(path.join(os.tmpdir(), "v2s-code-layout-"));
   try {
     fs.mkdirSync(path.join(contractRoot, "contracts/registry"), { recursive: true });
+    fs.mkdirSync(path.join(contractRoot, "contracts/terminal"), { recursive: true });
     validate(contractRoot);
     expectFailure(contractRoot, (fixture) => fs.mkdirSync(path.join(fixture, "contracts/random"), { recursive: true }), "CONTRACT_CLASSIFICATION_INVALID:contracts/random");
   } finally {
@@ -236,17 +246,13 @@ function selfTest() {
       "REPOSITORY_ROOT_DIRECTORY_NOT_ALLOWED:.local-tool",
     );
     fs.rmSync(path.join(repositoryRoot, ".local-tool"), { recursive: true, force: true });
-    expectFailure(
-      repositoryRoot,
-      (fixture) => fs.writeFileSync(path.join(fixture, "rive/graph.riv"), "local asset\n"),
-      "REPOSITORY_ROOT_DIRECTORY_NOT_ALLOWED:rive",
-    );
-    fs.rmSync(path.join(repositoryRoot, "rive/graph.riv"), { force: true });
+    fs.writeFileSync(path.join(repositoryRoot, "rive/graph.riv"), "local asset\n");
+    if (!validate(repositoryRoot).includes("CODE_LAYOUT=PASS")) fail("POPULATED_RIVE_ROOT_NOT_ACCEPTED");
     fs.writeFileSync(path.join(repositoryRoot, "rive-target.riv"), "local asset\n");
     expectFailure(
       repositoryRoot,
       (fixture) => fs.symlinkSync(path.join(fixture, "rive-target.riv"), path.join(fixture, "rive/linked.riv")),
-      "REPOSITORY_ROOT_DIRECTORY_NOT_ALLOWED:rive",
+      "REPOSITORY_ROOT_SYMLINK_NOT_ALLOWED:rive/linked.riv",
     );
     expectFailure(repositoryRoot, (fixture) => {
       fs.mkdirSync(path.join(fixture, "components/common"), { recursive: true });
@@ -341,11 +347,12 @@ function selfTest() {
     "RED_FIXTURE_SCENARIO_RUNTIME_NAME=PASS",
     "RED_FIXTURE_FLOW_IDENTIFIER_IN_SOURCE_NAME=PASS",
     "CONTRACT_REGISTRY_ALLOWED=PASS",
+    "CONTRACT_TERMINAL_ALLOWED=PASS",
     "RED_FIXTURE_CONTRACT_CLASSIFICATION=PASS",
     "RED_FIXTURE_REPOSITORY_ROOT_ALLOWLIST=PASS",
     "GREEN_FIXTURE_ALLOWED_EMPTY_RIVE_ROOT=PASS",
     "RED_FIXTURE_UNKNOWN_EMPTY_LOCAL_ROOT_DIRECTORY=PASS",
-    "RED_FIXTURE_POPULATED_RIVE_ROOT=PASS",
+    "GREEN_FIXTURE_POPULATED_RIVE_ROOT=PASS",
     "RED_FIXTURE_SYMLINK_IN_RIVE_ROOT=PASS",
     "RED_FIXTURE_SYMLINK_RIVE_ROOT=PASS",
     "GREEN_FIXTURE_IGNORED_PLAYWRIGHT_CAPTURE=PASS",

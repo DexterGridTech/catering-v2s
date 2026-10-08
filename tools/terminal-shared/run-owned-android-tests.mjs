@@ -64,6 +64,67 @@ function walk(directory, result = [], logicalRoot = directory, visitedDirectorie
   return result;
 }
 
+const ANDROID_SKIP_DIRS = new Set(['.git', '.gradle']);
+
+export function findAndroidIntermediatePaths(root = terminalRoot) {
+  const realRoot = fs.realpathSync(root);
+  const found = [];
+  const visit = (directory, insideAndroid = false) => {
+    for (const entry of fs.readdirSync(directory, {withFileTypes: true})) {
+      const target = path.join(directory, entry.name);
+      const parentName = path.basename(directory);
+      const nowInsideAndroid = insideAndroid || entry.name === 'android';
+      const isIntermediate =
+        nowInsideAndroid &&
+        (entry.name === '.cxx' || (entry.name === 'build' && ['android', 'app'].includes(parentName)));
+      if (entry.isSymbolicLink()) {
+        if (isIntermediate || entry.name === 'android') found.push(target);
+        continue;
+      }
+      if (!entry.isDirectory() || ANDROID_SKIP_DIRS.has(entry.name)) continue;
+      if (isIntermediate) {
+        found.push(target);
+        continue;
+      }
+      visit(target, nowInsideAndroid);
+    }
+  };
+  visit(realRoot);
+  return found.sort();
+}
+
+function assertOwnedAndroidIntermediate(target, root = terminalRoot) {
+  const rootPath = fs.realpathSync(root);
+  const absolute = path.resolve(target);
+  const relative = path.relative(rootPath, absolute);
+  if (relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative))
+    throw new Error('TERMINAL_ANDROID_INTERMEDIATE_OUTSIDE_REPOSITORY');
+  const stat = fs.lstatSync(absolute);
+  if (stat.isSymbolicLink() || !stat.isDirectory() || !['build', '.cxx'].includes(path.basename(absolute)))
+    throw new Error(`TERMINAL_ANDROID_INTERMEDIATE_UNSAFE:${path.relative(rootPath, absolute)}`);
+  const real = fs.realpathSync(absolute);
+  const realRelative = path.relative(rootPath, real);
+  if (realRelative === '..' || realRelative.startsWith(`..${path.sep}`) || path.isAbsolute(realRelative))
+    throw new Error('TERMINAL_ANDROID_INTERMEDIATE_OUTSIDE_REPOSITORY');
+}
+
+function cleanupAndroidIntermediates(paths, root = terminalRoot) {
+  const removed = [];
+  for (const target of paths) {
+    assertOwnedAndroidIntermediate(target, root);
+    fs.rmSync(target, {recursive: true, force: false});
+    if (fs.existsSync(target))
+      throw new Error(`TERMINAL_ANDROID_INTERMEDIATE_CLEANUP_READBACK_FAILED:${path.relative(root, target)}`);
+    removed.push(path.relative(root, target).split(path.sep).join('/'));
+  }
+  const remaining = findAndroidIntermediatePaths(root);
+  if (remaining.length > 0)
+    throw new Error(
+      `TERMINAL_ANDROID_INTERMEDIATE_CLEANUP_INCOMPLETE:${remaining.map(item => path.relative(root, item)).join(',')}`,
+    );
+  return removed;
+}
+
 function stripKotlinComments(source) {
   return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 }
@@ -609,6 +670,31 @@ function selfTest() {
   const fixture = fs.mkdtempSync(path.join(repositoryRoot, '.runtime', 'ter-owned-android-tests-'));
   const externalFixture = fs.mkdtempSync(path.join(os.tmpdir(), 'ter-owned-android-tests-outside-'));
   try {
+    const intermediateFixture = path.join(fixture, 'sample/android/app/build');
+    fs.mkdirSync(intermediateFixture, {recursive: true});
+    fs.writeFileSync(path.join(intermediateFixture, 'generated.tmp'), 'owned');
+    const detectedIntermediates = findAndroidIntermediatePaths(fixture);
+    if (detectedIntermediates.length !== 1 || detectedIntermediates[0] !== intermediateFixture)
+      throw new Error('Android intermediate discovery missed or misidentified a build directory');
+    const removedIntermediates = cleanupAndroidIntermediates(detectedIntermediates, fixture);
+    if (removedIntermediates.length !== 1 || findAndroidIntermediatePaths(fixture).length !== 0)
+      throw new Error('Android intermediate cleanup did not remove and read back the owned directory');
+    const externalIntermediate = path.join(externalFixture, 'must-survive');
+    fs.mkdirSync(externalIntermediate, {recursive: true});
+    const linkedIntermediate = path.join(fixture, 'sample/android/app/.cxx');
+    fs.mkdirSync(path.dirname(linkedIntermediate), {recursive: true});
+    fs.symlinkSync(externalIntermediate, linkedIntermediate, 'dir');
+    const symlinkDetected = findAndroidIntermediatePaths(fixture);
+    let symlinkCleanupRejected = false;
+    try {
+      cleanupAndroidIntermediates(symlinkDetected, fixture);
+    } catch (error) {
+      symlinkCleanupRejected = String(error).includes('TERMINAL_ANDROID_INTERMEDIATE_UNSAFE');
+    }
+    if (!symlinkCleanupRejected || !fs.existsSync(externalIntermediate))
+      throw new Error('Android intermediate cleanup followed or removed a symlink target');
+    fs.unlinkSync(linkedIntermediate);
+
     const testModule = path.join(fixture, 'module');
     const testSourceRoot = path.join(testModule, 'src/test/java/sample');
     fs.mkdirSync(testSourceRoot, {recursive: true});
@@ -759,6 +845,19 @@ function selfTest() {
 }
 
 async function main() {
+  const argumentsList = process.argv.slice(2);
+  if (argumentsList.length === 1 && argumentsList[0] === '--help') {
+    process.stdout.write(
+      'Usage: node tools/terminal-shared/run-owned-android-tests.mjs [--self-test | --red-fixtures | --a9-lock-red-fixture]\n',
+    );
+    return;
+  }
+  if (argumentsList.length > 1 || argumentsList.some(argument =>
+    !['--self-test', '--red-fixtures', '--a9-lock-red-fixture'].includes(argument))) {
+    process.stderr.write('TERMINAL_ANDROID_TESTS=FAIL reason=unknown-argument\n');
+    process.exitCode = 2;
+    return;
+  }
   if (process.argv.includes('--self-test')) return selfTest();
   const mode = process.argv.includes('--red-fixtures') ? 'red-fixtures' : 'run';
   if (process.argv.includes('--a9-lock-red-fixture')) return runA9LockRedFixture();
@@ -772,6 +871,13 @@ async function main() {
   process.stderr.write(budget.stderr ?? '');
   if (budget.status !== 0) throw new Error('managed resource budget did not pass before Android unit tests');
 
+  const preexistingIntermediates = findAndroidIntermediatePaths();
+  if (preexistingIntermediates.length > 0) {
+    throw new Error(
+      `TERMINAL_ANDROID_INTERMEDIATE_PREEXISTING:${preexistingIntermediates.map(item => path.relative(repositoryRoot, item)).join(',')}`,
+    );
+  }
+
   fs.mkdirSync(outputRoot, {recursive: true});
   const runId = `ter-a3-${process.pid}-${Date.now()}`;
   const logPath = path.join(outputRoot, `${runId}.jsonl`);
@@ -784,6 +890,7 @@ async function main() {
   const expectedModuleRoots = [
     'apps/terminal/adapter/android/device/android',
     'apps/terminal/adapter/android/dual-screen/android',
+    'apps/terminal/adapter/android/update/android',
     'apps/terminal/adapter/android/persist-kv/android',
     'apps/terminal/application/base/android/android',
   ]
@@ -811,6 +918,7 @@ async function main() {
     sourceSha256,
     startedAt: new Date().toISOString(),
     mode,
+    androidIntermediates: {preexisting: [], created: [], removed: [], cleanup: 'RUNNING'},
     modules: [],
     processes: [],
     cleanup: 'RUNNING',
@@ -881,6 +989,15 @@ async function main() {
       fs.writeFileSync(manifestPath, JSON.stringify(value, null, 2));
       writeEvent(logPath, runId, 'module.pass', moduleResult);
     }
+    const createdIntermediates = findAndroidIntermediatePaths();
+    value.androidIntermediates.created = createdIntermediates.map(item =>
+      path.relative(repositoryRoot, item).split(path.sep).join('/'),
+    );
+    fs.writeFileSync(manifestPath, JSON.stringify(value, null, 2));
+    value.androidIntermediates.removed = cleanupAndroidIntermediates(createdIntermediates).map(relative =>
+      path.join('apps/terminal', relative).split(path.sep).join('/'),
+    );
+    value.androidIntermediates.cleanup = 'PASS';
     value.outcome = 'PASS';
     if (value.cleanup === 'RUNNING' && value.processes.length === 0) value.cleanup = 'PASS';
     value.finishedAt = new Date().toISOString();
@@ -899,8 +1016,24 @@ async function main() {
     );
   } catch (error) {
     value.outcome = 'FAIL';
-    if (value.cleanup === 'RUNNING' && value.processes.length === 0) value.cleanup = 'PASS';
     value.firstFailure = error instanceof Error ? error.message : String(error);
+    try {
+      const createdIntermediates = findAndroidIntermediatePaths();
+      value.androidIntermediates.created = createdIntermediates.map(item =>
+        path.relative(repositoryRoot, item).split(path.sep).join('/'),
+      );
+      fs.writeFileSync(manifestPath, JSON.stringify(value, null, 2));
+      value.androidIntermediates.removed = cleanupAndroidIntermediates(createdIntermediates).map(relative =>
+        path.join('apps/terminal', relative).split(path.sep).join('/'),
+      );
+      value.androidIntermediates.cleanup = 'PASS';
+    } catch (cleanupError) {
+      value.androidIntermediates.cleanup = 'FAIL';
+      value.androidIntermediates.cleanupFailure =
+        cleanupError instanceof Error ? cleanupError.message : String(cleanupError);
+    }
+    if (value.cleanup === 'RUNNING' && value.processes.length === 0 && value.androidIntermediates.cleanup === 'PASS')
+      value.cleanup = 'PASS';
     value.finishedAt = new Date().toISOString();
     fs.writeFileSync(manifestPath, JSON.stringify(value, null, 2));
     writeEvent(logPath, runId, 'run.finish', {

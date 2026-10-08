@@ -1,5 +1,10 @@
 import {describe, expect, it} from 'vitest';
-import {getSurfaceDeclarations, readTerminalSurfaces, surfaceFormForOrientation, terminalSurfaces} from '../src';
+import {
+  getSurfaceDeclarations,
+  readTerminalSurfaces,
+  surfaceFormForOrientation,
+  terminalSurfaces,
+} from '../src/application/terminalSurfaces';
 
 describe('sample-console terminal surface adapter', () => {
   it('exposes the package defaults without duplicating the shared parser matrix', () => {

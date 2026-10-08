@@ -303,12 +303,24 @@ export const createLifecycleEmitter = (input: EmitterInput) => {
       sessionId: input.sessionId?.() ?? null,
       nodeId: context.localNodeId,
     });
+    const runtimeCauseName =
+      error instanceof Error && /^[A-Za-z_$][A-Za-z0-9_.$]{0,100}$/u.test(error.name) ? error.name : undefined;
+    const runtimeCauseCode =
+      error instanceof Error && /^[A-Z][A-Z0-9_]{1,95}$/u.test(error.message) ? error.message : undefined;
     return {
       key: normalized.key,
       code: normalized.code,
       message: normalized.message,
       category: normalized.category,
       severity: normalized.severity,
+      ...(runtimeCauseName || runtimeCauseCode
+        ? {
+            details: Object.freeze({
+              ...(runtimeCauseName ? {runtimeCauseName} : {}),
+              ...(runtimeCauseCode ? {runtimeCauseCode} : {}),
+            }),
+          }
+        : {}),
     };
   };
 
@@ -416,6 +428,28 @@ export const createLifecycleEmitter = (input: EmitterInput) => {
           }),
         ) ?? [];
       const event = toJournalEvent(transition, status, Object.freeze(actorStatuses));
+      if (transition.kind === 'actor.error' || transition.kind === 'actor.timed-out') {
+        const details = transition.error?.details;
+        input.logger.error({
+          category: 'runtime.lifecycle',
+          event: 'runtime.actor.failed',
+          message: 'Runtime actor did not complete successfully',
+          data: {
+            commandName: transition.context.commandName,
+            actorKey: transition.actorKey,
+            status: transition.kind === 'actor.error' ? 'error' : 'timed-out',
+            ...(transition.error?.key ? {failureKey: transition.error.key} : {}),
+            ...(transition.error?.code ? {failureCode: transition.error.code} : {}),
+            ...(typeof details?.runtimeCauseName === 'string' ? {causeName: details.runtimeCauseName} : {}),
+            ...(typeof details?.runtimeCauseCode === 'string' ? {causeCode: details.runtimeCauseCode} : {}),
+          },
+          error: {
+            name: 'RuntimeActorFailed',
+            code: transition.error?.code ?? 'ERR_TER_RUNTIME_ACTOR_FAILED',
+            message: 'Runtime actor did not complete successfully',
+          },
+        });
+      }
       try {
         journal.append(event);
       } catch (error) {

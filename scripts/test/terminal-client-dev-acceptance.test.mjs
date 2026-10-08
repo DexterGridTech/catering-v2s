@@ -66,8 +66,12 @@ test('terminal acceptance selects exactly one closed scenario and one Vitest fil
   assert.equal(managedActionCalls.length, 6);
   assert.ok(managedActionCalls.every((match) => match[1].includes('runId: managedDevRunId()') && !match[1].includes('scenarioRunId()')));
   const cancelBody = devScenarioSource.slice(devScenarioSource.indexOf('const cancelByOperations ='), devScenarioSource.indexOf('const prepareFixture ='));
-  assert.match(cancelBody, /operationsTerminalByRef\(session, terminal\.terminalRef\)/);
-  assert.match(cancelBody, /readback\.binding\?\.status !== 'INACTIVE'/);
+  assert.match(cancelBody, /operationsFixtureClient\(\)\.cancelByOperations\(session, terminal\)/);
+  const operationsFixtureSource = readFileSync(
+    path.join(root, 'apps/terminal/kernel/base/terminal-data-client/acceptance/operationsFixture.ts'),
+    'utf8',
+  );
+  assert.match(operationsFixtureSource, /readback\.binding\?\.status !== 'INACTIVE'/);
   assert.throws(() => parseTerminalAcceptanceArgs(['--scenario', 'terminal.dev.not-a-scenario']), /TERMINAL_CLIENT_ACCEPTANCE_SCENARIO_UNKNOWN/);
 });
 

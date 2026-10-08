@@ -1,5 +1,5 @@
 import type {NodeId, RuntimeInstanceId} from '@catering-v2s/kernel-base-contracts';
-import type {PlatformPorts} from '@catering-v2s/kernel-base-platform-ports';
+import type {LoggerPort, PlatformPorts} from '@catering-v2s/kernel-base-platform-ports';
 import type {PersistenceOperationResult, StateRoot, StateRuntime} from '@catering-v2s/kernel-base-state';
 import type {
   RuntimeModule,
@@ -23,6 +23,7 @@ type RuntimeLifecycleInput = Readonly<{
   runtimeId: RuntimeInstanceId;
   localNodeId: NodeId;
   platformPorts: PlatformPorts;
+  logger: LoggerPort;
   requestMaxResidenceMs: number;
   getStateRuntime: () => StateRuntime | undefined;
   dispatchCommand: DispatchCommand;
@@ -32,6 +33,17 @@ type RuntimeLifecycleInput = Readonly<{
   registerAsyncResource: (cleanup: () => Promise<void>) => () => void;
   evaluateSelector: (name: string, argsTuple: readonly unknown[]) => unknown;
 }>;
+
+const safeFailureToken = (value: unknown): string | undefined =>
+  typeof value === 'string' && /^[A-Za-z0-9_.:-]{1,100}$/u.test(value) ? value : undefined;
+
+const failureFacts = (error: unknown): Readonly<{causeName?: string; causeCode?: string}> => {
+  if (error === null || typeof error !== 'object') return Object.freeze({});
+  const value = error as Readonly<{name?: unknown; code?: unknown}>;
+  const causeName = safeFailureToken(value.name);
+  const causeCode = safeFailureToken(value.code);
+  return Object.freeze({...(causeName ? {causeName} : {}), ...(causeCode ? {causeCode} : {})});
+};
 
 const requireStateRuntime = (input: RuntimeLifecycleInput): StateRuntime => {
   const stateRuntime = input.getStateRuntime();
@@ -67,6 +79,29 @@ const createModuleContext = (input: RuntimeLifecycleInput, module: RuntimeModule
 };
 
 export const createRuntimeLifecycle = (input: RuntimeLifecycleInput) => {
+  const runModuleHook = async (
+    moduleName: string,
+    phase: 'pre-setup' | 'install' | 'reset',
+    hook: () => void | Promise<void>,
+  ): Promise<void> => {
+    try {
+      await hook();
+    } catch (error) {
+      input.logger.error({
+        category: 'runtime.lifecycle',
+        event: 'runtime.module.hook.failed',
+        message: 'Runtime module lifecycle hook failed',
+        data: {moduleName, phase, ...failureFacts(error)},
+        error: {
+          name: 'RuntimeModuleHookFailed',
+          code: `ERR_TER_RUNTIME_MODULE_${phase.toUpperCase().replaceAll('-', '_')}_FAILED`,
+          message: 'Runtime module lifecycle hook failed',
+        },
+      });
+      throw error;
+    }
+  };
+
   const runPreSetup = async (): Promise<void> => {
     for (const module of input.modules) {
       const context: RuntimeModulePreSetupContext = Object.freeze({
@@ -76,19 +111,27 @@ export const createRuntimeLifecycle = (input: RuntimeLifecycleInput) => {
         descriptors: input.descriptors,
         journal: input.journal,
       });
-      await module.preSetup?.(context);
+      if (module.preSetup) {
+        await runModuleHook(module.moduleName, 'pre-setup', () => module.preSetup!(context));
+      }
     }
   };
 
   const runInstall = async (): Promise<void> => {
     for (const module of input.modules) {
-      await module.install?.(createModuleContext(input, module));
+      if (module.install) {
+        const context = createModuleContext(input, module);
+        await runModuleHook(module.moduleName, 'install', () => module.install!(context));
+      }
     }
   };
 
   const runResetHooks = async (resetInput: RuntimeModuleResetInput): Promise<void> => {
     for (const module of input.modules) {
-      await module.onApplicationReset?.(createModuleContext(input, module), resetInput);
+      if (module.onApplicationReset) {
+        const context = createModuleContext(input, module);
+        await runModuleHook(module.moduleName, 'reset', () => module.onApplicationReset!(context, resetInput));
+      }
     }
   };
 

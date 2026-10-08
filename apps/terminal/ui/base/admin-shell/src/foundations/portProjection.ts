@@ -25,7 +25,7 @@ const categoryOf = (port: PlatformPortName | string): PortUnitCategory => {
   if (port === 'device') return 'device';
   if (port === 'appControl' || port === 'persistKv' || port === 'persistSecure') return 'system';
   if (port === 'connector' || port === 'topologyHost') return 'connection';
-  if (port === 'script' || port === 'hotUpdate') return 'release';
+  if (port === 'script' || port === 'update') return 'release';
   return 'unmapped';
 };
 

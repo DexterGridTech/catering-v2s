@@ -5,9 +5,7 @@ import {isUiCatalogEntryAvailable} from '@catering-v2s/kernel-base-ui-state';
 import type {RendererCatalog} from '../types/catalog';
 import type {RenderPartDiagnostic, RenderPartDiagnosticReporter} from '../foundations/diagnostics';
 import {renderTestIds} from '../foundations/renderTestIds';
-import type {ContentFailureReason, RenderFailure, SystemFailureReason, TransitionFailureReason} from '../types/props';
-
-type RenderFailureReason = ContentFailureReason | SystemFailureReason | TransitionFailureReason;
+import type {ContentFailureReason, RenderFailure, SystemFailureReason} from '../types/props';
 type ContentRenderFailure = Extract<RenderFailure, {readonly category: 'content'}>;
 type SystemRenderFailure = Extract<RenderFailure, {readonly category: 'system'}>;
 type ContentRenderFailureFor<Reason extends ContentFailureReason> = Omit<ContentRenderFailure, 'reason'> &

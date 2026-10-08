@@ -41,6 +41,7 @@ import {
   parts as wallpaperConsoleParts,
   startupReadyCommand,
 } from '../src';
+import {TerminalUpdateAssetLoadProbe} from '../test-expo/TerminalUpdateAssetLoadProbe';
 import {
   sampleWallpaperPickerAssembly,
   wallpaperPickerExitRequestedCommand,
@@ -396,6 +397,23 @@ const dispatchOptions = (displayMode: 'PRIMARY' | 'SECONDARY' = 'PRIMARY') => ({
 afterEach(resetNativeTestRefFactory);
 
 describe('sample2 wallpaper console assembly', () => {
+  it('renders the update asset probe inside the assembly surface tree', async () => {
+    const assembly = await createSampleWallpaperConsoleAssembly({
+      platformPorts: createTestPlatformPorts({displayCount: 1, deviceInfo: ACTIVATION_DEVICE_INFO}),
+      persistenceKey: `sample2-update-asset-probe-${Date.now()}`,
+      surfaceForm: 'mobile',
+      renderAutomationChildren: () => <TerminalUpdateAssetLoadProbe />,
+    });
+    let surface: TestRenderer | undefined;
+    try {
+      surface = await mount(createSurfaceForDisplayIndex(assembly, 0));
+      expect(queryNodes(surface, wallpaperContentTestIds.updateAssetLoadStatus)).toHaveLength(1);
+    } finally {
+      if (surface !== undefined) await surface.unmount();
+      await releaseRuntimeForTestAsync(assembly.runtime);
+    }
+  });
+
   it('includes one disabled automation agent in the wallpaper Runtime without opening a connection', async () => {
     const events: LogEvent[] = [];
     const assembly = await createSampleWallpaperConsoleAssembly({

@@ -77,8 +77,11 @@ describe('transport connection owner', () => {
   it('rotates handshake failures, then keeps the ready address preferred after REDIRECT_TO_NEXT_NODE', async () => {
     const timers = new ControlledTimers();
     const connection = makeConnection();
+    const diagnostics: Array<{event: string; profileId: string; data?: Readonly<Record<string, unknown>>}> = [];
     const connect = vi.fn(async ({address}: {address: {addressName: string}}) => {
-      if (address.addressName === 'primary') throw new Error('connection refused');
+      if (address.addressName === 'primary') {
+        throw Object.assign(new Error('connection refused'), {code: 'ECONNREFUSED'});
+      }
       return connection;
     });
     const adapter: TransportNetworkAdapter = {readSnapshot: async () => snapshot(), connect};
@@ -89,10 +92,22 @@ describe('transport connection owner', () => {
       random: () => 0,
       schedule: timers.schedule,
       dispatchInternal: (kind, profileId, token) => internal.push({kind, profileId, token}),
+      diagnose: (event, profileId, data) => diagnostics.push({event, profileId, data}),
     });
 
     await owner.start({profileId: 'ter', serverName: 'terminal-data-server', reconnectPolicy});
     expect(connect.mock.calls.map(call => call[0].address.addressName)).toEqual(['primary', 'backup']);
+    expect(diagnostics).toContainEqual({
+      event: 'connect-candidate-failed',
+      profileId: 'ter',
+      data: expect.objectContaining({
+        addressName: 'primary',
+        revision: 1,
+        errorName: 'Error',
+        errorCode: 'ECONNREFUSED',
+      }),
+    });
+    expect(JSON.stringify(diagnostics)).not.toContain('connection refused');
     const events: TransportConnectionEvent[] = [];
     const channel = owner.connectionFor('ter');
     channel.subscribe(event => events.push(event));
@@ -109,6 +124,33 @@ describe('transport connection owner', () => {
     const retry = internal[0]!;
     await owner.retryDue(retry.profileId, retry.token);
     expect(connect.mock.calls.map(call => call[0].address.addressName)).toEqual(['primary', 'backup', 'backup']);
+    await owner.dispose();
+  });
+
+  it('records safe socket failure codes and connection identity without logging raw reasons', async () => {
+    const connection = makeConnection();
+    const diagnostics: Array<{event: string; profileId: string; data?: Readonly<Record<string, unknown>>}> = [];
+    const owner = createTransportConnectionOwner({
+      adapter: {readSnapshot: async () => snapshot(['primary']), connect: async () => connection},
+      dispatchInternal: () => undefined,
+      diagnose: (event, profileId, data) => diagnostics.push({event, profileId, data}),
+    });
+
+    await owner.start({profileId: 'ter', serverName: 'terminal-data-server', reconnectPolicy});
+    connection.emit({type: 'error', reason: 'NETWORK_ERROR'});
+    connection.emit({type: 'close', code: 1006, reason: 'private-token=do-not-log'});
+
+    expect(diagnostics).toContainEqual({
+      event: 'socket-error-observed',
+      profileId: 'ter',
+      data: expect.objectContaining({addressName: 'primary', revision: 1, reasonCode: 'NETWORK_ERROR'}),
+    });
+    expect(diagnostics).toContainEqual({
+      event: 'socket-closed',
+      profileId: 'ter',
+      data: expect.objectContaining({addressName: 'primary', revision: 1, closeCode: 1006, reasonCode: 'UNCLASSIFIED'}),
+    });
+    expect(JSON.stringify(diagnostics)).not.toContain('private-token');
     await owner.dispose();
   });
 
@@ -537,6 +579,106 @@ describe('transport connection owner', () => {
 
     expect(result).toMatchObject({kind: 'response', requestId: 'req-owner-002'});
     expect(result).not.toHaveProperty('correlationId');
+    await owner.dispose();
+  });
+
+  it('logs non-success HTTP status and attempt identity without request or response secrets', async () => {
+    const diagnostics: Array<{event: string; profileId: string; data?: Readonly<Record<string, unknown>>}> = [];
+    const owner = createTransportConnectionOwner({
+      adapter: {
+        readSnapshot: async serverName => ({...snapshot(['primary']), serverName}),
+        connect: async () => makeConnection(),
+        sendHttp: async () => ({
+          kind: 'response',
+          status: 503,
+          body: {detail: 'response-secret'},
+          requestId: 'req-http-503',
+        }),
+      },
+      diagnose: (event, profileId, data) => diagnostics.push({event, profileId, data}),
+      now: () => 120,
+    });
+
+    const result = await owner.executeHttp({
+      profileId: 'terminal-data-client:http',
+      serverName: 'terminal-business-api',
+      method: 'POST',
+      pathAndQuery: '/api/private/workspace-secret/activation?token=query-secret',
+      headers: {Authorization: 'Bearer header-secret'},
+      body: {credentialSecret: 'body-secret'},
+      safeRetryable: false,
+    });
+
+    expect(result).toMatchObject({kind: 'response', status: 503, addressName: 'primary'});
+    expect(diagnostics).toContainEqual({
+      event: 'http-response-non-success',
+      profileId: 'terminal-data-client:http',
+      data: expect.objectContaining({
+        executionId: 'http-1',
+        serverName: 'terminal-business-api',
+        method: 'POST',
+        addressName: 'primary',
+        revision: 1,
+        status: 503,
+        requestId: 'req-http-503',
+      }),
+    });
+    const serializedDiagnostics = JSON.stringify(diagnostics);
+    for (const secret of ['workspace-secret', 'query-secret', 'header-secret', 'body-secret', 'response-secret'])
+      expect(serializedDiagnostics).not.toContain(secret);
+    await owner.dispose();
+  });
+
+  it('logs safe HTTP adapter error facts without exposing exception or request contents', async () => {
+    const diagnostics: Array<{event: string; profileId: string; data?: Readonly<Record<string, unknown>>}> = [];
+    const owner = createTransportConnectionOwner({
+      adapter: {
+        readSnapshot: async serverName => ({...snapshot(['primary']), serverName}),
+        connect: async () => makeConnection(),
+        sendHttp: async () => {
+          throw Object.assign(new Error('secret-url and bearer-token'), {
+            code: 'ECONNRESET',
+            cause: Object.assign(new Error('private-proxy-password'), {code: 'EHOSTUNREACH'}),
+          });
+        },
+      },
+      diagnose: (event, profileId, data) => diagnostics.push({event, profileId, data}),
+    });
+
+    const result = await owner.executeHttp({
+      profileId: 'terminal-data-client:http',
+      serverName: 'terminal-business-api',
+      method: 'POST',
+      pathAndQuery: '/activation?token=private-query',
+      headers: {Authorization: 'Bearer private-header'},
+      body: {credentialSecret: 'private-body'},
+      safeRetryable: false,
+    });
+
+    expect(result).toEqual({kind: 'failure', category: 'delivered-failure', code: 'HTTP_TRANSPORT_ERROR'});
+    expect(diagnostics).toContainEqual({
+      event: 'http-attempt-failed',
+      profileId: 'terminal-data-client:http',
+      data: expect.objectContaining({
+        addressName: 'primary',
+        category: 'delivered-failure',
+        code: 'HTTP_TRANSPORT_ERROR',
+        errorName: 'Error',
+        errorCode: 'ECONNRESET',
+        causeName: 'Error',
+        causeCode: 'EHOSTUNREACH',
+      }),
+    });
+    const serialized = JSON.stringify(diagnostics);
+    for (const secret of [
+      'secret-url',
+      'bearer-token',
+      'private-proxy-password',
+      'private-query',
+      'private-header',
+      'private-body',
+    ])
+      expect(serialized).not.toContain(secret);
     await owner.dispose();
   });
 

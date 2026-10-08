@@ -10,7 +10,7 @@ export type PlatformPortName =
   | 'appControl'
   | 'script'
   | 'connector'
-  | 'hotUpdate'
+  | 'update'
   | 'logUpload'
   | 'topologyHost';
 

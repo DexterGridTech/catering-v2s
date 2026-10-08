@@ -1,5 +1,6 @@
 import {describe, expect, it} from 'vitest';
-import {mainSampleAppName, mainSampleSeedKey, parseMainSample, parseMainSampleJourneyConfig} from '../src/mainSampleJourneyConfig.js';
+import {readFileSync} from 'node:fs';
+import {mainSampleAppName, mainSampleSeedKey, mainSampleSurfaceForm, parseMainSample, parseMainSampleJourneyConfig, parseMainSampleShape} from '../src/mainSampleJourneyConfig.js';
 
 describe('parseMainSampleJourneyConfig', () => {
   it('centralizes sample app and seed identity shared by platform runners', () => {
@@ -7,6 +8,22 @@ describe('parseMainSampleJourneyConfig', () => {
     expect(mainSampleAppName('wallpaper')).toBe('sample-wallpaper-console');
     expect(mainSampleSeedKey('dual')).toBe('term-front');
     expect(mainSampleSeedKey('mobile')).toBe('term-handheld');
+  });
+
+  it('preserves the runner-selected Android topology and rejects missing values', () => {
+    expect(parseMainSampleShape('dual')).toBe('dual');
+    expect(parseMainSampleShape('mobile')).toBe('mobile');
+    expect(mainSampleSurfaceForm('dual')).toBe('laptop');
+    expect(mainSampleSurfaceForm('mobile')).toBe('mobile');
+    expect(() => parseMainSampleShape(undefined)).toThrow('TERMINAL_AUTOMATION_SHAPE_INVALID');
+  });
+
+  it('keeps update Android build, connection, surface check, and activation on the runner-selected shape', () => {
+    const source = readFileSync(new URL('../journeys/update.android.test.ts', import.meta.url), 'utf8');
+    expect(source).not.toMatch(/\bshape\s*:\s*['"]mobile['"]/u);
+    expect(source.match(/parseMainSampleShape\(process\.env\.TERMINAL_AUTOMATION_SHAPE\)/gu)).toHaveLength(4);
+    expect(source).toContain('const surfaceForm = mainSampleSurfaceForm(shape)');
+    expect(source).toContain('await prepareAndroidJourneySurface(connection, parseMainSampleShape(process.env.TERMINAL_AUTOMATION_SHAPE))');
   });
 
   it('returns console journey data without platform-specific fields', () => {

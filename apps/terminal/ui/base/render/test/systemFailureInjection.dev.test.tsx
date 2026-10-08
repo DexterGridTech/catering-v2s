@@ -6,6 +6,8 @@ import {RenderContext} from '../src/contexts/RenderContext';
 import {
   isDebugFailureInjectionEnabled,
   parseDebugFailureInjectionUrl,
+  resolveBuildTimeFailureInjectionOutcome,
+  resolveBuildTimeFailureInjectionOwner,
   SystemFailureBoundary,
 } from '../src/components/SystemFailureBoundary';
 
@@ -43,6 +45,18 @@ describe('SystemFailureBoundary debug injection', () => {
     expect(isDebugFailureInjectionEnabled(false, 'false')).toBe(false);
     expect(isDebugFailureInjectionEnabled(false, 'true')).toBe(true);
     expect(isDebugFailureInjectionEnabled(true, undefined)).toBe(true);
+  });
+
+  it('accepts one bounded build-time owner only when the explicit managed injection flag is enabled', () => {
+    expect(resolveBuildTimeFailureInjectionOwner(false, undefined, 'surface-content')).toBeNull();
+    expect(resolveBuildTimeFailureInjectionOwner(false, 'true', 'surface-content')).toBe('surface-content');
+    expect(resolveBuildTimeFailureInjectionOwner(false, 'true', '../../outside')).toBeNull();
+    expect(resolveBuildTimeFailureInjectionOwner(false, 'true', undefined)).toBeNull();
+  });
+
+  it('reports build-time injection as matched only at the target owner boundary', () => {
+    expect(resolveBuildTimeFailureInjectionOutcome('surface-content', 'surface-content')).toBe('matched');
+    expect(resolveBuildTimeFailureInjectionOutcome('surface-layers', 'surface-content')).toBe('other-owner');
   });
 
   it.skipIf(!__DEV__)('accepts a bounded failure owner from an Expo Web query URL', async () => {

@@ -7,7 +7,7 @@ describe('InputFieldOptions', () => {
   it('keeps the virtual layout contract and supports a native-less field', () => {
     const virtualField: InputFieldOptions = {
       fieldId: 'virtual',
-      testID: testId('virtual'),
+      testID: testId('input:virtual'),
       keyboardKind: 'virtual',
       layout: 'numeric',
       nativeLess: true,

@@ -3,6 +3,7 @@ import {promisify} from 'node:util';
 import {realpathSync, statSync} from 'node:fs';
 import path from 'node:path';
 import type {Client, DeviceClient} from '@devicefarmer/adbkit';
+import {collectAndroidRuntimeFailureDiagnostics} from './androidAppDiagnostics.js';
 import {requireReadyAndroidDevice} from './androidAdb.js';
 
 const execFile = promisify(execFileCallback);
@@ -10,6 +11,10 @@ const DRIVER_DEVICE_PORT = 19090;
 
 type Reverse = Readonly<{readonly remote: string; readonly local: string}>;
 export type ManagedServiceReverse = Readonly<{readonly remotePort: number; readonly localPort: number}>;
+export type ManagedReverseLifecycle = Readonly<{
+  readonly onAttached?: (mapping: Readonly<{readonly remote: string; readonly local: string}>) => void;
+  readonly onReleased?: (mapping: Readonly<{readonly remote: string; readonly local: string}>) => void;
+}>;
 export type ManagedDevServiceUrls = Readonly<{
   readonly businessBaseUrl: string;
   readonly tdsEntryOneUrl: string;
@@ -62,10 +67,16 @@ export type AndroidDeviceSession = Readonly<{
   readonly install: (apkPath: string) => Promise<void>;
   readonly launch: (component: string) => Promise<void>;
   readonly isInstalled: (packageName: string) => Promise<boolean>;
+  readonly readApiLevel: () => Promise<number>;
+  readonly readTerminalUpdateLogs: (packageName: string) => Promise<string>;
+  readonly readRuntimeFailureDiagnostics: (packageName: string) => Promise<string>;
   readonly forceStop: (packageName: string) => Promise<void>;
   readonly uninstall: (packageName: string) => Promise<void>;
   readonly attachDriver: (hostPort: number) => Promise<() => Promise<void>>;
-  readonly attachManagedServicePorts: (ports: readonly ManagedServiceReverse[]) => Promise<() => Promise<void>>;
+  readonly attachManagedServicePorts: (
+    ports: readonly ManagedServiceReverse[],
+    lifecycle?: ManagedReverseLifecycle,
+  ) => Promise<() => Promise<void>>;
 }>;
 
 const fail = (code: string): never => {
@@ -82,6 +93,16 @@ const validateComponent = (component: string): void => {
   if (!/^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)+\/[A-Za-z_$][A-Za-z0-9_$.]*$/.test(component)) {
     fail('TERMINAL_AUTOMATION_ANDROID_COMPONENT_INVALID');
   }
+};
+
+const activityLaunchFailureKind = (error: unknown): string => {
+  const message = error instanceof Error ? error.message : '';
+  if (/unable to resolve intent/iu.test(message)) return 'INTENT_UNRESOLVED';
+  if (/activity class .* does not exist/iu.test(message)) return 'ACTIVITY_CLASS_MISSING';
+  if (/permission denial/iu.test(message)) return 'PERMISSION_DENIED';
+  if (/background activity (?:start|launch).*blocked/iu.test(message)) return 'BACKGROUND_START_BLOCKED';
+  if (/timed?\s*out|timeout/iu.test(message)) return 'START_TIMEOUT';
+  return 'DEVICE_COMMAND_REJECTED';
 };
 
 const validatePackageName = (packageName: string): void => {
@@ -105,7 +126,17 @@ const listDeviceReverses = async (device: DeviceClient): Promise<readonly Revers
   let values: Reverse[];
   try {
     values = await device.listReverses();
-  } catch {
+  } catch (error) {
+    const failure = typeof error === 'object' && error !== null ? error as {readonly code?: unknown} : undefined;
+    const errorType = error instanceof Error && /^[A-Za-z][A-Za-z0-9_.]{0,79}$/u.test(error.name)
+      ? error.name
+      : 'UNKNOWN';
+    const errorCode = typeof failure?.code === 'string' && /^[A-Z0-9_-]{1,64}$/u.test(failure.code)
+      ? failure.code
+      : 'UNKNOWN';
+    process.stdout.write(
+      `TERMINAL_AUTOMATION_ANDROID_REVERSE_LIST_ERROR errorType=${errorType} errorCode=${errorCode}\n`,
+    );
     return fail('TERMINAL_AUTOMATION_ANDROID_REVERSE_LIST_FAILED');
   }
   if (
@@ -159,12 +190,24 @@ const runAdbText = async (adbPath: string, args: readonly string[]): Promise<str
     const {stdout} = await execFile(adbPath, [...args], {
       encoding: 'utf8',
       timeout: 10_000,
-      maxBuffer: 64 * 1024,
+      // Runtime logcat may contain several hundred KiB before the collector
+      // projects it to a small allowlisted diagnostic record. Keep this bounded
+      // but large enough not to turn normal app output into a false command error.
+      maxBuffer: 2 * 1024 * 1024,
       windowsHide: true,
     });
     return stdout;
-  } catch {
-    return fail('TERMINAL_AUTOMATION_ANDROID_COMMAND_FAILED');
+  } catch (error) {
+    const code = error && typeof error === 'object' && 'code' in error ? error.code : undefined;
+    const failure =
+      code === 'ERR_CHILD_PROCESS_STDIO_MAXBUFFER'
+        ? 'OUTPUT_LIMIT'
+        : code === 'ETIMEDOUT'
+          ? 'TIMEOUT'
+          : code === 'ENOENT'
+            ? 'ADB_UNAVAILABLE'
+            : 'EXIT';
+    return fail(`TERMINAL_AUTOMATION_ANDROID_COMMAND_FAILED_${failure}`);
   }
 };
 
@@ -226,14 +269,116 @@ export const createAndroidDeviceSession = async (
     launch: async component => {
       validateComponent(component);
       try {
-        await device.startActivity({component, wait: true});
-      } catch {
+        // The caller owns the bounded app-session wait. ADBKit's `wait` option
+        // adds ActivityManager's `am start -W` wait; its ADB socket deadline is
+        // 10s in this driver and can expire while a cold FULL boot is starting.
+        await device.startActivity({component, wait: false});
+      } catch (error) {
+        const componentClass = component.slice(component.indexOf('/') + 1);
+        process.stdout.write(
+          [
+            'TERMINAL_AUTOMATION_ANDROID_ACTIVITY_START_FAILED',
+            `componentClass=${componentClass}`,
+            `failure=${activityLaunchFailureKind(error)}`,
+            `errorType=${error instanceof Error && /^[A-Za-z][A-Za-z0-9_.]{0,79}$/u.test(error.name) ? error.name : 'UNKNOWN'}`,
+          ].join(' ') + '\n',
+        );
         fail('TERMINAL_AUTOMATION_ANDROID_LAUNCH_FAILED');
       }
     },
     isInstalled: async packageName => {
       validatePackageName(packageName);
       return isPackageInstalled(input.adbPath, input.serial, packageName, runTextCommand);
+    },
+    readApiLevel: async () => {
+      const output = await runTextCommand(input.adbPath, [
+        '-s',
+        input.serial,
+        'shell',
+        'getprop',
+        'ro.build.version.sdk',
+      ]);
+      const apiLevel = Number(output.trim());
+      if (!Number.isSafeInteger(apiLevel) || apiLevel < 1)
+        fail('TERMINAL_AUTOMATION_ANDROID_API_LEVEL_READBACK_INVALID');
+      return apiLevel;
+    },
+    readTerminalUpdateLogs: async packageName => {
+      validatePackageName(packageName);
+      const pidOutput = await runTextCommand(input.adbPath, ['-s', input.serial, 'shell', 'pidof', packageName]);
+      const pids = pidOutput.trim().split(/\s+/u).filter(Boolean);
+      if (pids.length !== 1 || !/^\d+$/u.test(pids[0] ?? '')) {
+        fail('TERMINAL_AUTOMATION_ANDROID_UPDATE_LOG_PROCESS_UNAVAILABLE');
+      }
+      const output = await runTextCommand(input.adbPath, [
+        '-s',
+        input.serial,
+        'shell',
+        'logcat',
+        '-d',
+        '-v',
+        'brief',
+        '--pid',
+        pids[0]!,
+        '-s',
+        'TerminalUpdate:I',
+        '*:S',
+      ]);
+      const lines = output
+        .split(/\r?\n/u)
+        .filter(line =>
+          /^\w\/TerminalUpdate\s*\(\s*\d+\): event=[a-z0-9-]+(?: [a-zA-Z][a-zA-Z0-9]*=[A-Za-z0-9_.,:-]+)*$/u.test(line),
+        );
+      try {
+        const activityManagerOutput = await runTextCommand(input.adbPath, [
+          '-s',
+          input.serial,
+          'shell',
+          'logcat',
+          '-d',
+          '-v',
+          'brief',
+          '-s',
+          'ActivityTaskManager:W',
+          '*:S',
+        ]);
+        if (
+          activityManagerOutput
+            .split(/\r?\n/u)
+            .some(
+              line =>
+                /Background activity launch blocked|Background activity start denied/iu.test(line) &&
+                line.includes(packageName),
+            )
+        )
+          lines.push('W/ActivityTaskManager: event=background-activity-start-blocked');
+      } catch {
+        lines.push('I/TerminalUpdate: event=activity-manager-diagnostics-unavailable');
+      }
+      return lines.slice(-100).join('\n');
+    },
+    readRuntimeFailureDiagnostics: async packageName => {
+      validatePackageName(packageName);
+      const pidOutput = await runTextCommand(input.adbPath, ['-s', input.serial, 'shell', 'pidof', packageName]);
+      const pids = pidOutput.trim().split(/\s+/u).filter(Boolean);
+      if (pids.length !== 1 || !/^\d+$/u.test(pids[0] ?? '')) {
+        fail('TERMINAL_AUTOMATION_ANDROID_RUNTIME_LOG_PROCESS_UNAVAILABLE');
+      }
+      const output = await runTextCommand(input.adbPath, [
+        '-s',
+        input.serial,
+        'shell',
+        'logcat',
+        '-d',
+        '-v',
+        'brief',
+        '--pid',
+        pids[0]!,
+        '-s',
+        'ReactNativeJS:V',
+        '*:S',
+      ]);
+      return collectAndroidRuntimeFailureDiagnostics(output);
     },
     forceStop: async packageName => {
       validatePackageName(packageName);
@@ -314,7 +459,7 @@ export const createAndroidDeviceSession = async (
         released = true;
       };
     },
-    attachManagedServicePorts: async ports => {
+    attachManagedServicePorts: async (ports, lifecycle) => {
       validateManagedServicePorts(ports);
       const mappings = ports.map(value =>
         Object.freeze({remote: `tcp:${value.remotePort}`, local: `tcp:${value.localPort}`}),
@@ -338,6 +483,8 @@ export const createAndroidDeviceSession = async (
             await runCommand(input.adbPath, ['-s', input.serial, 'reverse', '--remove', mapping.remote]);
             if ((await listDeviceReverses(device)).some(reverse => reverse.remote === mapping.remote)) {
               errors.push('READBACK_FAILED');
+            } else {
+              lifecycle?.onReleased?.(mapping);
             }
           } catch {
             errors.push('REMOVE_FAILED');
@@ -349,6 +496,7 @@ export const createAndroidDeviceSession = async (
         for (const mapping of mappings) {
           await device.reverse(mapping.remote, mapping.local);
           created.push(mapping);
+          lifecycle?.onAttached?.(mapping);
         }
         const after = await listDeviceReverses(device);
         if (

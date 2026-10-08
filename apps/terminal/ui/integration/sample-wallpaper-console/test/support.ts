@@ -6,7 +6,7 @@ import {
   unavailableAppControlPort,
   unavailableConnectorPort,
   unavailableDevicePort,
-  unavailableHotUpdatePort,
+  unavailableUpdatePort,
   unavailableLogUploadPort,
   unavailableScriptPort,
   unavailableTopologyHostPort,
@@ -22,6 +22,7 @@ import {
   type PlatformPorts,
   type PortResult,
   type StateStoragePort,
+  type UpdatePort,
   type NativeLoadingCapability,
 } from '@catering-v2s/kernel-base-platform-ports';
 import type {TopologyPeerChannel, TopologyPeerChannelEvent} from '@catering-v2s/kernel-base-transport';
@@ -172,6 +173,7 @@ export const createTestPlatformPorts = (
     readonly protectedStorage?: StateStoragePort;
     readonly stripPortDescriptors?: boolean;
     readonly failStartupReadyCount?: number;
+    readonly updatePort?: UpdatePort;
   }> = {},
 ): TestPlatformPorts => {
   const events = input.events ?? [];
@@ -215,7 +217,7 @@ export const createTestPlatformPorts = (
       appControl: withTestPortDescriptor(unavailableAppControlPort, 'appControl'),
       script: withTestPortDescriptor(unavailableScriptPort, 'script'),
       connector: withTestPortDescriptor(unavailableConnectorPort, 'connector'),
-      hotUpdate: withTestPortDescriptor(unavailableHotUpdatePort, 'hotUpdate'),
+      update: withTestPortDescriptor(input.updatePort ?? unavailableUpdatePort, 'update'),
       logUpload: withTestPortDescriptor(unavailableLogUploadPort, 'logUpload'),
       topologyHost: withTestPortDescriptor(unavailableTopologyHostPort, 'topologyHost'),
     },
@@ -236,7 +238,7 @@ export const createTestPlatformPorts = (
     appControl: withoutTestPortDescriptor(result.appControl),
     script: withoutTestPortDescriptor(result.script),
     connector: withoutTestPortDescriptor(result.connector),
-    hotUpdate: withoutTestPortDescriptor(result.hotUpdate),
+    update: withoutTestPortDescriptor(result.update),
     logUpload: withoutTestPortDescriptor(result.logUpload),
     topologyHost: withoutTestPortDescriptor(result.topologyHost),
   });

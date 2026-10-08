@@ -86,7 +86,7 @@ export const PORT_DESCRIPTOR_ATTACHMENTS = Object.freeze([
   {path: 'apps/terminal/kernel/base/platform-ports/src/defaults/unavailableAppControl.ts', ...unavailableDescriptor('appControl', ['resetRuntime', 'exitApplication', 'clearHostDataCache', 'setFullscreen', 'getFullscreen', 'setKioskMode', 'getKioskMode', 'showNativeLoading', 'hideNativeLoading'])},
   {path: 'apps/terminal/kernel/base/platform-ports/src/defaults/unavailableConnector.ts', ...unavailableDescriptor('connector', ['call', 'subscribe', 'unsubscribe', 'on'])},
   {path: 'apps/terminal/kernel/base/platform-ports/src/defaults/unavailableDevice.ts', ...unavailableDescriptor('device', DEVICE_CAPABILITIES)},
-  {path: 'apps/terminal/kernel/base/platform-ports/src/defaults/unavailableHotUpdate.ts', ...unavailableDescriptor('hotUpdate', ['downloadPackage', 'writeBootMarker', 'readBootMarker', 'readActiveMarker', 'readRollbackMarker', 'clearBootMarker', 'confirmLoadComplete'])},
+  {path: 'apps/terminal/kernel/base/platform-ports/src/defaults/unavailableUpdate.ts', ...unavailableDescriptor('update', ['readFacts', 'prepareArtifact', 'applyPrepared', 'readAction', 'confirmBoot', 'releasePrepared'])},
   {path: 'apps/terminal/kernel/base/platform-ports/src/defaults/unavailableLogUpload.ts', ...unavailableDescriptor('logUpload', ['uploadLogsForDate'])},
   {path: 'apps/terminal/kernel/base/platform-ports/src/defaults/unavailablePersistSecure.ts', ...unavailableDescriptor('persistSecure', STORAGE_CAPABILITIES)},
   {path: 'apps/terminal/kernel/base/platform-ports/src/defaults/unavailableScript.ts', ...unavailableDescriptor('script', ['execute', 'getStats', 'clearStats'])},

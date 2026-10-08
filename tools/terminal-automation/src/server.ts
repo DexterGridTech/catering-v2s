@@ -18,10 +18,20 @@ export type AutomationDriverSession = Readonly<{
   readonly socket: WebSocket;
 }>;
 
+export type AutomationDriverDiagnostics = Readonly<{
+  readonly socketConnections: number;
+  readonly authenticatedSessions: number;
+  readonly authenticationTimeouts: number;
+  readonly rejectedMessages: number;
+  readonly activeSockets: number;
+  readonly activeSessions: number;
+}>;
+
 export type AutomationDriverServer = Readonly<{
   readonly server: WebSocketServer;
   readonly getSession: (sessionId?: string) => AutomationDriverSession | null;
   readonly getSessions: () => readonly AutomationDriverSession[];
+  readonly getDiagnostics: () => AutomationDriverDiagnostics;
   readonly onSessionChange: (listener: () => void) => () => void;
   readonly onMessage: (sessionId: string, listener: (message: AutomationEnvelope) => void) => () => void;
   readonly request: (
@@ -57,6 +67,11 @@ export const createAutomationDriverServer = (
   const channels = new Map<string, Subject<AutomationEnvelope>>();
   const sessionListeners = new Set<() => void>();
   let latestSessionId: string | null = null;
+  let socketConnections = 0;
+  let authenticatedSessions = 0;
+  let authenticationTimeouts = 0;
+  let rejectedMessages = 0;
+  let activeSockets = 0;
   const server = new WebSocketServer({
     host: input.host ?? '127.0.0.1',
     port: input.port ?? 19090,
@@ -65,13 +80,19 @@ export const createAutomationDriverServer = (
     perMessageDeflate: false,
   });
   server.on('connection', socket => {
+    socketConnections += 1;
+    activeSockets += 1;
     let authenticated = false;
     let session: AutomationDriverSession | null = null;
     const authTimer = setTimeout(() => {
-      if (!authenticated) socket.close(4001, 'AUTHENTICATION_TIMEOUT');
+      if (!authenticated) {
+        authenticationTimeouts += 1;
+        socket.close(4001, 'AUTHENTICATION_TIMEOUT');
+      }
     }, 5_000);
     socket.on('message', (data, isBinary) => {
       if (isBinary) {
+        rejectedMessages += 1;
         socket.close(1003, 'TEXT_REQUIRED');
         return;
       }
@@ -79,16 +100,19 @@ export const createAutomationDriverServer = (
       try {
         envelope = parseAutomationEnvelope(JSON.parse(data.toString('utf8')));
       } catch {
+        rejectedMessages += 1;
         socket.close(1002, 'INVALID_ENVELOPE');
         return;
       }
       if (!authenticated) {
         if (!isHello(envelope)) {
+          rejectedMessages += 1;
           socket.close(4003, 'AUTHENTICATION_FAILED');
           return;
         }
         const hello = AutomationHelloBodySchema.parse(envelope.body);
         if (hello.sessionToken !== input.token) {
+          rejectedMessages += 1;
           socket.close(4003, 'AUTHENTICATION_FAILED');
           return;
         }
@@ -107,6 +131,7 @@ export const createAutomationDriverServer = (
           return;
         }
         sessions.set(session.sessionId, session);
+        authenticatedSessions += 1;
         channels.set(session.sessionId, new Subject<AutomationEnvelope>());
         latestSessionId = session.sessionId;
         input.onSession?.(session);
@@ -122,6 +147,7 @@ export const createAutomationDriverServer = (
         return;
       }
       if (envelope.sessionId !== session?.sessionId) {
+        rejectedMessages += 1;
         socket.close(4002, 'SESSION_MISMATCH');
         return;
       }
@@ -136,6 +162,7 @@ export const createAutomationDriverServer = (
       if (socket.readyState === socket.OPEN) socket.send(JSON.stringify(acknowledgement));
     });
     socket.on('close', () => {
+      activeSockets = Math.max(0, activeSockets - 1);
       clearTimeout(authTimer);
       if (session === null || sessions.get(session.sessionId)?.socket !== socket) return;
       sessions.delete(session.sessionId);
@@ -155,6 +182,15 @@ export const createAutomationDriverServer = (
     getSession: (sessionId?: string) =>
       sessionId === undefined ? (sessions.get(latestSessionId ?? '') ?? null) : (sessions.get(sessionId) ?? null),
     getSessions: () => Object.freeze([...sessions.values()]),
+    getDiagnostics: () =>
+      Object.freeze({
+        socketConnections,
+        authenticatedSessions,
+        authenticationTimeouts,
+        rejectedMessages,
+        activeSockets,
+        activeSessions: sessions.size,
+      }),
     onSessionChange: listener => {
       sessionListeners.add(listener);
       return () => sessionListeners.delete(listener);

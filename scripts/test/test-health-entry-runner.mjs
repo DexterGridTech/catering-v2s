@@ -63,6 +63,7 @@ const nodeTestFiles = Object.freeze([
   'scripts/test/terminal-owned-test-report.test.mjs',
   'scripts/test/terminal-client-generation.test.mjs',
   'scripts/test/terminal-client-dev-acceptance.test.mjs',
+  'scripts/test/terminal-update-artifact.test.mjs',
   'scripts/test/terminal-automation.test.mjs',
   'scripts/test/test-health-entry-runner.test.mjs',
 ]);

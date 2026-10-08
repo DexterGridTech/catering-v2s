@@ -2,6 +2,7 @@ import {randomUUID} from 'node:crypto';
 import {lstatSync, readFileSync, readdirSync, realpathSync, renameSync, unlinkSync, writeFileSync} from 'node:fs';
 import path from 'node:path';
 import type {AutomationDriverServer} from '../src/server.js';
+import {subscribeSelector} from '../src/selectorObservation.js';
 import type {TerminalAutomationShape, TerminalSeedFixture} from './terminal.js';
 import {readTerminalSeedFixture} from './terminal.js';
 import {createOperationsFixtureClient} from '../../../apps/terminal/kernel/base/terminal-data-client/acceptance/operationsFixture.ts';
@@ -33,8 +34,6 @@ type TerminalActivationIntent = Readonly<{
   readonly storeRef: string;
   readonly deviceId: string;
 }>;
-
-type SelectorEvent = Readonly<{valueState?: unknown; value?: unknown}>;
 
 const managedRunDirectory = (repositoryRoot: string, runId: string): string => {
   if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$/u.test(runId)) throw new Error('TERMINAL_AUTOMATION_RUN_ID_INVALID');
@@ -111,11 +110,6 @@ const responseResult = (message: {type: string; body: unknown}): unknown => {
   return message.body.result;
 };
 
-const eventValue = (message: {type: string; body: unknown}, subscriptionId: string): SelectorEvent | undefined => {
-  if (!isRecord(message.body) || message.body.subscriptionId !== subscriptionId) return undefined;
-  return message.type === 'event' ? message.body : undefined;
-};
-
 const waitForMessage = (
   driver: AutomationDriverServer,
   sessionId: string,
@@ -136,41 +130,6 @@ const waitForMessage = (
     });
   });
 
-const createMessageWaiter = (
-  driver: AutomationDriverServer,
-  sessionId: string,
-  matches: (message: {type: string; body: unknown}) => boolean,
-  timeoutMs: number,
-): Readonly<{readonly promise: Promise<{type: string; body: unknown}>; readonly cancel: () => void}> => {
-  let unsubscribe = (): void => undefined;
-  let settled = false;
-  let timer: ReturnType<typeof setTimeout>;
-  const promise = new Promise<{type: string; body: unknown}>((resolve, reject) => {
-    timer = setTimeout(() => {
-      if (settled) return;
-      settled = true;
-      unsubscribe();
-      reject(new Error('TERMINAL_AUTOMATION_RUNTIME_OBSERVATION_TIMEOUT'));
-    }, timeoutMs);
-    unsubscribe = driver.onMessage(sessionId, message => {
-      if (settled || !matches(message)) return;
-      settled = true;
-      clearTimeout(timer);
-      unsubscribe();
-      resolve(message);
-    });
-  });
-  return Object.freeze({
-    promise,
-    cancel: () => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      unsubscribe();
-    },
-  });
-};
-
 const activeViewMatches = (
   value: unknown,
   fixture: TerminalSeedFixture,
@@ -186,6 +145,12 @@ const activeViewMatches = (
     fixture.activationCode.length === 8 &&
     deviceId.length > 0
   );
+};
+
+export const isTerminalActivationCommandSucceeded = (result: unknown): boolean => {
+  if (!isRecord(result) || result.status !== 'completed' || !Array.isArray(result.actorResults)) return false;
+  const first = result.actorResults[0];
+  return isRecord(first) && isRecord(first.result) && first.result.status === 'activated';
 };
 
 export const writeTerminalActivationIntent = (
@@ -437,30 +402,10 @@ export const ensureTerminalActivated = async (
   });
   await input.onActivationIntent(identity);
 
-  const subscriptionId = `activation-${randomUUID()}`;
-  const activeValue = createMessageWaiter(
-    input.driver,
-    input.sessionId,
-    message => {
-      const event = eventValue(message, subscriptionId);
-      return event?.valueState === 'JSON' && activeViewMatches(event.value, fixture, input.deviceId);
-    },
-    30_000,
-  );
+  let activationObservation: Awaited<ReturnType<typeof subscribeSelector>> | undefined;
   let releaseFailed = false;
-  let subscriptionAccepted = false;
   try {
-    const subscribed = responseResult(
-      await input.driver.request(input.sessionId, 'selector.subscribe', {
-        subscriptionId,
-        selectorName: activationSelector,
-        argsTuple: [],
-      }),
-    );
-    if (!isRecord(subscribed) || subscribed.subscriptionId !== subscriptionId || subscribed.accepted !== true) {
-      throw new Error('TERMINAL_AUTOMATION_ACTIVATION_SELECTOR_SUBSCRIBE_FAILED');
-    }
-    subscriptionAccepted = true;
+    activationObservation = await subscribeSelector(input.driver, input.sessionId, activationSelector, []);
     const requestId = `req_${Date.now().toString(36)}_${randomUUID().replaceAll('-', '').slice(0, 16)}`;
     const commandResult = waitForMessage(
       input.driver,
@@ -487,11 +432,71 @@ export const ensureTerminalActivated = async (
     ) {
       throw new Error('TERMINAL_AUTOMATION_ACTIVATION_COMMAND_FAILED');
     }
-    const selected = await activeValue.promise;
-    if (!isRecord(selected.body) || !isRecord(selected.body.value) || !isRecord(selected.body.value.activation)) {
+    const actorResults = completion.body.result.actorResults;
+    const activationActorResult =
+      Array.isArray(actorResults) && isRecord(actorResults[0]) && isRecord(actorResults[0].result)
+        ? actorResults[0].result
+        : undefined;
+    if (!isTerminalActivationCommandSucceeded(completion.body.result)) {
+      const dispatchResult = completion.body.result;
+      const actorList = Array.isArray(actorResults) ? actorResults : undefined;
+      const actorStatus =
+        actorList
+          ?.map(actor =>
+            isRecord(actor)
+              ? `${typeof actor.status === 'string' ? actor.status : 'NO_STATUS'}:${
+                  isRecord(actor.result) && typeof actor.result.status === 'string'
+                    ? actor.result.status
+                    : 'NO_RESULT_STATUS'
+                }`
+              : 'INVALID_ACTOR',
+          )
+          .join(',') ?? 'MISSING';
+      const reason =
+        activationActorResult !== undefined && typeof activationActorResult.reason === 'string'
+          ? /^[A-Z0-9_]{1,64}$/u.test(activationActorResult.reason)
+            ? activationActorResult.reason
+            : 'UNRECOGNIZED_REASON'
+          : activationActorResult !== undefined && typeof activationActorResult.errorCode === 'string'
+            ? /^[A-Z0-9_]{1,96}$/u.test(activationActorResult.errorCode)
+              ? activationActorResult.errorCode
+              : 'UNRECOGNIZED_ERROR_CODE'
+            : activationActorResult !== undefined && typeof activationActorResult.code === 'string'
+              ? /^[A-Z0-9_]{1,96}$/u.test(activationActorResult.code)
+                ? activationActorResult.code
+                : 'UNRECOGNIZED_CODE'
+              : activationActorResult !== undefined && typeof activationActorResult.kind === 'string'
+                ? /^[a-z-]{1,48}$/u.test(activationActorResult.kind)
+                  ? activationActorResult.kind
+                  : 'UNRECOGNIZED_KIND'
+                : activationActorResult !== undefined && typeof activationActorResult.status === 'string'
+                  ? activationActorResult.status
+                  : 'MISSING_ACTOR_RESULT';
+      process.stdout.write(
+        `TERMINAL_AUTOMATION_ACTIVATION_COMMAND_REJECTED run=${input.managedDevRunId} ` +
+          `reason=${reason} dispatchStatus=${String(dispatchResult.status)} ` +
+          `resultKeys=${Object.keys(dispatchResult).sort().join(',') || 'NONE'} ` +
+          `actorCount=${Array.isArray(actorResults) ? actorResults.length : 'MISSING'} ` +
+          `actorStatuses=${actorStatus || 'NONE'}\n`,
+      );
+      throw new Error('TERMINAL_AUTOMATION_ACTIVATION_COMMAND_REJECTED');
+    }
+    const selected = await activationObservation
+      .waitFor(value => activeViewMatches(value, fixture, input.deviceId), 30_000)
+      .catch(async error => {
+        const current = activationObservation?.current;
+        const status = isRecord(current) && isRecord(current.activation) ? current.activation.status : 'unknown';
+        const peerCurrent = isRecord(current) ? current.currentPeerValue === true : false;
+        process.stdout.write(
+          `TERMINAL_AUTOMATION_ACTIVATION_SELECTOR_TIMEOUT run=${input.managedDevRunId} ` +
+            `initialStatus=${String(status)} initialPeerCurrent=${peerCurrent ? 1 : 0}\n`,
+        );
+        throw error;
+      });
+    if (!isRecord(selected) || !isRecord(selected.activation)) {
       throw new Error('TERMINAL_AUTOMATION_ACTIVATION_SELECTOR_VALUE_INVALID');
     }
-    const activation = selected.body.value.activation;
+    const activation = selected.activation;
     if (
       activation.terminalRef !== terminal.terminalRef ||
       activation.storeRef !== session.storeRef ||
@@ -517,13 +522,9 @@ export const ensureTerminalActivated = async (
     await input.onActivationComplete(completed);
     return completed;
   } finally {
-    activeValue.cancel();
-    if (subscriptionAccepted) {
+    if (activationObservation !== undefined) {
       try {
-        const response = responseResult(
-          await input.driver.request(input.sessionId, 'selector.unsubscribe', {subscriptionId}),
-        );
-        if (!isRecord(response) || response.released !== true) releaseFailed = true;
+        await activationObservation.close();
       } catch {
         releaseFailed = true;
       }

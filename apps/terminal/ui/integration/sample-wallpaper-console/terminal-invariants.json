@@ -38,6 +38,7 @@
   ],
   "publicExportMap": {
     ".": "./src/index.ts",
-    "./theme/global.css": "./theme/global.css"
+    "./theme/global.css": "./theme/global.css",
+    "./test-expo/TerminalUpdateAssetLoadProbe": "./test-expo/TerminalUpdateAssetLoadProbe.tsx"
   }
 }

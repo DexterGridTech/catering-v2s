@@ -2,6 +2,14 @@ export type MainSample = 'console' | 'wallpaper';
 export type MainSampleShape = 'mobile' | 'dual';
 export type MainSampleCase = 'normal';
 
+export const parseMainSampleShape = (value: string | undefined): MainSampleShape => {
+  if (value !== 'mobile' && value !== 'dual') throw new Error('TERMINAL_AUTOMATION_SHAPE_INVALID');
+  return value;
+};
+
+export const mainSampleSurfaceForm = (shape: MainSampleShape): 'mobile' | 'laptop' =>
+  shape === 'mobile' ? 'mobile' : 'laptop';
+
 export const parseMainSample = (value: string | undefined): MainSample => {
   const sample = value ?? 'console';
   if (sample !== 'console' && sample !== 'wallpaper') throw new Error('TERMINAL_AUTOMATION_SAMPLE_INVALID');
@@ -35,13 +43,12 @@ export const parseMainSampleJourneyConfig = (
   values: Readonly<Record<string, string | undefined>>,
 ): MainSampleJourneyConfig => {
   const sample = parseMainSample(values.TERMINAL_AUTOMATION_SAMPLE);
-  const shape = required(values, 'TERMINAL_AUTOMATION_SHAPE');
+  const shape = parseMainSampleShape(values.TERMINAL_AUTOMATION_SHAPE);
   const runId = required(values, 'TERMINAL_AUTOMATION_RUN_ID');
   const caseName = values.TERMINAL_AUTOMATION_CASE;
   const age = values.TERMINAL_AUTOMATION_AGE;
 
-  if (shape !== 'mobile' && shape !== 'dual') throw new Error('TERMINAL_AUTOMATION_SHAPE_INVALID');
-  const checkedShape = shape as MainSampleShape;
+  const checkedShape = shape;
   if (sample === 'console') {
     if (caseName !== 'normal') throw new Error('TERMINAL_AUTOMATION_CASE_INVALID');
     if (age !== 'empty' && age !== '37') throw new Error('TERMINAL_AUTOMATION_AGE_INVALID');

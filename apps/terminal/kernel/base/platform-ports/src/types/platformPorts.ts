@@ -5,7 +5,7 @@ import type {DevicePort} from './device';
 import type {AppControlPort} from './appControl';
 import type {ScriptPort} from './script';
 import type {ConnectorPort} from './connector';
-import type {HotUpdatePort} from './hotUpdate';
+import type {UpdatePort} from './update';
 import type {LogUploadPort} from './logUpload';
 import type {TopologyHostPort} from './topologyHost';
 
@@ -41,7 +41,7 @@ export interface PlatformPortBindings {
   readonly appControl: AppControlPort;
   readonly script: ScriptPort;
   readonly connector: ConnectorPort;
-  readonly hotUpdate: HotUpdatePort;
+  readonly update: UpdatePort;
   readonly logUpload: LogUploadPort;
   readonly topologyHost: TopologyHostPort;
 }
@@ -56,7 +56,7 @@ export interface PlatformPorts {
   readonly appControl: AppControlPort;
   readonly script: ScriptPort;
   readonly connector: ConnectorPort;
-  readonly hotUpdate: HotUpdatePort;
+  readonly update: UpdatePort;
   readonly logUpload: LogUploadPort;
   readonly topologyHost: TopologyHostPort;
 }

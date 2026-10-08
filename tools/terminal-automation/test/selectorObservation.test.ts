@@ -55,7 +55,9 @@ describe('Runtime selector observation', () => {
     const server = {
       onMessage: (_sessionId: string, next: (message: any) => void) => {
         listener = next;
-        return () => { listener = undefined; };
+        return () => {
+          listener = undefined;
+        };
       },
       request: async (_sessionId: string, type: string, body: any) => {
         if (type === 'selector.subscribe') {
@@ -73,10 +75,12 @@ describe('Runtime selector observation', () => {
     const observation = await subscribeSelector(server, 'session', 'example.active', []);
     listener?.({type: 'event', body: {subscriptionId, valueState: 'JSON', value: {active: false}}});
     let settled = false;
-    const waiting = observation.waitFor(value => (value as {active?: boolean}).active === true, 1_000).then(value => {
-      settled = true;
-      return value;
-    });
+    const waiting = observation
+      .waitFor(value => (value as {active?: boolean}).active === true, 1_000)
+      .then(value => {
+        settled = true;
+        return value;
+      });
     await Promise.resolve();
     expect(settled).toBe(false);
     listener?.({type: 'event', body: {subscriptionId, valueState: 'JSON', value: {active: true, revision: 2}}});
@@ -90,7 +94,9 @@ describe('Runtime selector observation', () => {
     const server = {
       onMessage: (_sessionId: string, next: (message: any) => void) => {
         listener = next;
-        return () => { listener = undefined; };
+        return () => {
+          listener = undefined;
+        };
       },
       request: async (_sessionId: string, type: string, body: any) => {
         if (type === 'selector.subscribe') {
@@ -108,10 +114,12 @@ describe('Runtime selector observation', () => {
     const observation = await subscribeSelector(server, 'session', 'example.state', []);
     listener?.({type: 'event', body: {subscriptionId, valueState: 'NON_JSON', reason: 'UNDEFINED'}});
     let settled = false;
-    const waiting = observation.waitFor(value => (value as {status?: string}).status === 'ready', 1_000).then(value => {
-      settled = true;
-      return value;
-    });
+    const waiting = observation
+      .waitFor(value => (value as {status?: string}).status === 'ready', 1_000)
+      .then(value => {
+        settled = true;
+        return value;
+      });
     await Promise.resolve();
     expect(settled).toBe(false);
     listener?.({type: 'event', body: {subscriptionId, valueState: 'JSON', value: {status: 'ready', revision: 2}}});

@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "package": "@catering-v2s/adapter-android-update",
+  "owned": {
+    "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/adapter-android-update", "runner": "vitest"},
+    "lint": {"kind": "OWNED", "owner": "@catering-v2s/adapter-android-update", "runner": "eslint"},
+    "clean": {"kind": "ABSENT"}
+  }
+}

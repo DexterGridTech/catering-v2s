@@ -16,9 +16,9 @@ import {
   type DeviceInfo,
   type DisplayInfo,
   type EnvironmentMode,
-  type HotUpdateMarker,
-  type HotUpdateMarkerInput,
-  type HotUpdatePort,
+  type UpdatePort,
+  type UpdateAction,
+  type TerminalUpdateArtifact,
   type LogError,
   type LogEvent,
   type LogFields,
@@ -172,7 +172,7 @@ const completeResult = <TValue>(value: TValue): PortResult<TValue> => ({
   completedAt: timestamp,
 });
 const unavailableResultFor = <TValue>(
-  port: 'persistSecure' | 'device' | 'appControl' | 'script' | 'connector' | 'hotUpdate' | 'logUpload' | 'topologyHost',
+  port: 'persistSecure' | 'device' | 'appControl' | 'script' | 'connector' | 'update' | 'logUpload' | 'topologyHost',
   capability: string,
 ): PortResult<TValue> => ({
   status: 'unavailable',
@@ -292,14 +292,13 @@ const completeConnector: ConnectorPort = {
     input: ConnectorOnInput<TEvent>,
   ): Promise<PortResult<ConnectorSubscription>> => unavailableResultFor('connector', 'on'),
 };
-const completeHotUpdate: HotUpdatePort = {
-  downloadPackage: async () => unavailableResultFor('hotUpdate', 'downloadPackage'),
-  writeBootMarker: async () => unavailableResultFor('hotUpdate', 'writeBootMarker'),
-  readBootMarker: async () => unavailableResultFor('hotUpdate', 'readBootMarker'),
-  readActiveMarker: async () => unavailableResultFor('hotUpdate', 'readActiveMarker'),
-  readRollbackMarker: async () => unavailableResultFor('hotUpdate', 'readRollbackMarker'),
-  clearBootMarker: async () => unavailableResultFor('hotUpdate', 'clearBootMarker'),
-  confirmLoadComplete: async () => unavailableResultFor('hotUpdate', 'confirmLoadComplete'),
+const completeUpdate: UpdatePort = {
+  readFacts: async () => unavailableResultFor('update', 'readFacts'),
+  prepareArtifact: async () => unavailableResultFor('update', 'prepareArtifact'),
+  applyPrepared: async () => unavailableResultFor('update', 'applyPrepared'),
+  readAction: async () => unavailableResultFor('update', 'readAction'),
+  confirmBoot: async () => unavailableResultFor('update', 'confirmBoot'),
+  releasePrepared: async () => unavailableResultFor('update', 'releasePrepared'),
 };
 const completeLogUpload: LogUploadPort = {
   uploadLogsForDate: async () => unavailableResultFor('logUpload', 'uploadLogsForDate'),
@@ -318,7 +317,7 @@ const completeBindings: PlatformPortBindings = {
   appControl: completeAppControl,
   script: completeScript,
   connector: completeConnector,
-  hotUpdate: completeHotUpdate,
+  update: completeUpdate,
   logUpload: completeLogUpload,
   topologyHost: completeTopologyHost,
 };
@@ -330,7 +329,7 @@ const completePortImplementations: PlatformPorts = {
   appControl: completeAppControl,
   script: completeScript,
   connector: completeConnector,
-  hotUpdate: completeHotUpdate,
+  update: completeUpdate,
   logUpload: completeLogUpload,
   topologyHost: completeTopologyHost,
 };
@@ -345,7 +344,7 @@ declare const logger: LoggerPort;
 declare const device: DevicePort;
 declare const script: ScriptPort;
 declare const connector: ConnectorPort;
-declare const hotUpdate: HotUpdatePort;
+declare const update: UpdatePort;
 declare const logUpload: LogUploadPort;
 declare const topologyHost: TopologyHostPort;
 declare const bindings: PlatformPortBindings;
@@ -530,30 +529,25 @@ import {automation} from '@catering-v2s/kernel-base-platform-ports';
 void localWebServer;
 void display;
 void automation;
-const hotMarkerInput: HotUpdateMarkerInput = {
-  timeoutMs: 50,
-  releaseId: 'release',
-  packageId: 'package',
-  bundleVersion: '1',
-  resetRequestId: requestId,
-  installDirectory: '/tmp/install',
-  entryFile: 'index.js',
-  manifestSha256: 'manifest',
-  maxLaunchFailures: 3,
-  healthCheckTimeoutMs: 500,
+const updateArtifact: TerminalUpdateArtifact = {
+  schemaVersion: 1,
+  platform: 'android',
+  applicationId: 'com.example.terminal',
+  nativeVersion: '1.0.0',
+  nativeBuildNumber: 1,
+  bundleVersion: '1.0.0',
+  runtimeVersion: '1',
+  entry: 'index.android.bundle',
+  files: [{path: 'index.android.bundle', sizeBytes: 0, sha256: 'a'.repeat(64)}],
+  publicationId: 'b'.repeat(64),
 };
-const hotMarker: HotUpdateMarker = {
-  releaseId: 'release',
-  packageId: 'package',
-  bundleVersion: '1',
-  resetRequestId: requestId,
-  installDirectory: '/tmp/install',
-  entryFile: 'index.js',
-  manifestSha256: 'manifest',
-  bootAttempt: 1,
-  maxLaunchFailures: 3,
-  healthCheckTimeoutMs: 500,
-  updatedAt: timestamp,
+const updateAction: UpdateAction = {
+  actionId: 'action',
+  taskId: 'task',
+  state: 'accepted',
+  reason: null,
+  publicationId: updateArtifact.publicationId,
+  bootId: null,
 };
 const topologyConfig: TopologyHostConfig = {
   timeoutMs: 50,
@@ -609,7 +603,20 @@ async function exercisePublicCalls(): Promise<void> {
     void subscriptionId;
   }
   await connector.unsubscribe(connectorUnsubscribeInput);
-  await hotUpdate.writeBootMarker(hotMarkerInput);
+  await update.readFacts({timeoutMs: 50});
+  await update.prepareArtifact({
+    timeoutMs: 50,
+    sourceRef: 'fixture',
+    sourcePath: '/updates/artifact.zip',
+    expectedSha256: updateArtifact.publicationId,
+    artifact: updateArtifact,
+    kind: 'hot',
+    network: {addresses: [{addressName: 'primary', baseUrl: 'https://updates.example.invalid'}]},
+  });
+  await update.applyPrepared({timeoutMs: 50, taskId: 'task', actionId: 'action', preparedId: 'prepared', kind: 'hot'});
+  await update.readAction({timeoutMs: 50, taskId: updateAction.taskId, actionId: updateAction.actionId});
+  await update.confirmBoot({timeoutMs: 50, bootToken: 'boot', publicationId: updateArtifact.publicationId});
+  await update.releasePrepared({timeoutMs: 50, preparedId: 'prepared'});
   await logUpload.uploadLogsForDate(typedUploadInput);
   await topologyHost.start(topologyConfig);
   consumeAction(await ports.appControl.resetRuntime(requestCall));
@@ -617,7 +624,7 @@ async function exercisePublicCalls(): Promise<void> {
   void connectorMessage;
   void connectorEvent;
   void subscription;
-  void hotMarker;
+  void updateAction;
 }
 
 void exercisePublicCalls;

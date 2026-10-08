@@ -19,6 +19,12 @@ import {selectHostStaffQualification, sessionSliceName} from '@catering-v2s/kern
 import {wallpaperSliceName} from '@catering-v2s/kernel-feature-sample-wallpaper';
 import {serverConfigSliceName} from '@catering-v2s/kernel-base-server-config';
 import {terminalClientStatusProjectionSliceName} from '@catering-v2s/kernel-base-terminal-data-client';
+import {
+  confirmTerminalUpdateBootCommand,
+  reconcileTerminalUpdateCommand,
+  selectTerminalUpdateActualVersions,
+  selectTerminalUpdateTask,
+} from '@catering-v2s/kernel-base-terminal-update';
 import {needToActivateTerminalCommand, selectActivationStatusView} from '@catering-v2s/ui-base-terminal-activation';
 import {startWallpaperPickerCommand} from '@catering-v2s/ui-feature-sample-wallpaper-picker';
 import {needToLoginStaffCommand} from '@catering-v2s/ui-feature-sample-staff-auth';
@@ -45,6 +51,69 @@ export const startupReadyCommand = defineCommand<SampleWallpaperConsoleReadyPayl
   name: 'startup-ready',
   visibility: 'internal',
 });
+
+const confirmUpdateBootAfterPrimaryReady = async (
+  context: ActorExecutionContext,
+  payload: SampleWallpaperConsoleReadyPayload,
+): Promise<void> => {
+  if (payload.surfaceKey !== 'PRIMARY' || payload.contentFailure !== null) return;
+  const state = context.getState();
+  const task = selectTerminalUpdateTask(state);
+  const actual = selectTerminalUpdateActualVersions(state);
+  if (task === null || task.actionId === null || actual === null) return;
+  const result = await context.dispatchCommand(confirmTerminalUpdateBootCommand, {
+    bootToken: actual.bootId,
+    publicationId: actual.publicationId,
+  });
+  context.platformPorts.logger.info({
+    category: 'terminal-update.boot-confirmation',
+    event: 'terminal-update.primary-ready-confirmation-result',
+    message: 'PRIMARY real-ready submitted the current native boot identity to terminal-update',
+    data: {taskId: task.taskId, status: result.status, actorResultCount: result.actorResults.length},
+  });
+};
+
+const resumeFixedTerminalUpdateAfterPrimaryReady = (context: ActorExecutionContext): void => {
+  const task = selectTerminalUpdateTask(context.getState());
+  // Runtime.install may observe the installer action before Android publishes its final
+  // readback. Reconcile any still-correlated action once the primary surface is ready;
+  // the terminal-update owner decides whether it is fixed, still pending, or terminal.
+  if (task === null || (task.actionId === null && task.phase !== 'fixed')) return;
+  context.platformPorts.logger.info({
+    category: 'terminal-update.resume',
+    event: 'terminal-update.primary-ready-resume-requested',
+    message: 'PRIMARY became ready; requesting owner readback for the retained update task',
+    data: {
+      taskId: task.taskId,
+      taskPhaseAtDispatch: task.phase,
+      actionPendingAtDispatch: task.actionId === null ? 0 : 1,
+    },
+  });
+  void context
+    .dispatchCommand(reconcileTerminalUpdateCommand, {resumeFixedTask: true})
+    .then(result => {
+      context.platformPorts.logger.info({
+        category: 'terminal-update.resume',
+        event: 'terminal-update.primary-ready-resume-result',
+        message: 'Deferred fixed update was resumed after PRIMARY became ready',
+        data: {
+          taskId: task.taskId,
+          taskPhaseAtDispatch: task.phase,
+          actionPendingAtDispatch: task.actionId === null ? 0 : 1,
+          status: result.status,
+          actorStatus: result.actorResults[0]?.status ?? 'NO_ACTOR',
+        },
+      });
+    })
+    .catch(error => {
+      context.platformPorts.logger.error({
+        category: 'terminal-update.resume',
+        event: 'terminal-update.primary-ready-resume-failed',
+        message: 'Deferred fixed update resume failed after PRIMARY became ready',
+        data: {taskId: task.taskId, errorType: error instanceof Error ? error.name : typeof error},
+      });
+    });
+};
 
 const requiredPeerProjectionSliceNames = Object.freeze([
   contentStateSliceName('MAIN'),
@@ -241,7 +310,11 @@ export const createSampleWallpaperConsoleModule = (surfaceForm: SurfaceForm): Ru
       initialized = true;
       lastSignature = signature(context.getState(), surfaceForm);
       logSecondaryAvailability(context.getState(), context.platformPorts.logger);
+      await confirmUpdateBootAfterPrimaryReady(context, context.command.payload);
       await routeStage(context, surfaceForm);
+      if (context.command.payload.surfaceKey === 'PRIMARY' && context.command.payload.contentFailure === null) {
+        resumeFixedTerminalUpdateAfterPrimaryReady(context);
+      }
       return null;
     }),
     onCommand(reconcileStageCommand, async context => {

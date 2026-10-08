@@ -18,6 +18,7 @@ import {moduleName as adminShell} from '@catering-v2s/ui-base-admin-shell';
 import {moduleName as serverConfigPanel} from '@catering-v2s/ui-base-server-config-panel';
 import {moduleName as terminalActivation} from '@catering-v2s/ui-base-terminal-activation';
 import {moduleName as terminalDataClient} from '@catering-v2s/kernel-base-terminal-data-client';
+import {moduleName as terminalUpdate} from '@catering-v2s/kernel-base-terminal-update';
 import {moduleName as storeBasic} from '@catering-v2s/kernel-feature-store-basic';
 import {moduleName as integrationAssembly} from '@catering-v2s/ui-base-integration-assembly';
 import {moduleName as primitives} from '@catering-v2s/ui-base-primitives';
@@ -42,6 +43,7 @@ export const dependencyModuleNames = [
   serverConfigPanel,
   terminalActivation,
   terminalDataClient,
+  terminalUpdate,
   storeBasic,
   integrationAssembly,
 ] as const;
@@ -60,5 +62,6 @@ export const runtimeModuleDependencyNames = [
   staffAuth,
   memberDesk,
   terminalDataClient,
+  terminalUpdate,
   storeBasic,
 ] as const;

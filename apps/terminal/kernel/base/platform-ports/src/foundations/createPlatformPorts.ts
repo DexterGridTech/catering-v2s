@@ -168,7 +168,7 @@ export const describePlatformPortCapabilities = (ports: PlatformPorts): readonly
     'appControl',
     'script',
     'connector',
-    'hotUpdate',
+    'update',
     'logUpload',
     'topologyHost',
   ] as const;
@@ -202,7 +202,7 @@ const describeBindings = (
     ['appControl', bindings.appControl],
     ['script', bindings.script],
     ['connector', bindings.connector],
-    ['hotUpdate', bindings.hotUpdate],
+    ['update', bindings.update],
     ['logUpload', bindings.logUpload],
     ['topologyHost', bindings.topologyHost],
   ] as const;
@@ -227,7 +227,7 @@ export const createPlatformPorts = (input: CreatePlatformPortsInput): Readonly<P
     appControl: bindings.appControl,
     script: bindings.script,
     connector: bindings.connector,
-    hotUpdate: bindings.hotUpdate,
+    update: bindings.update,
     logUpload: bindings.logUpload,
     topologyHost: bindings.topologyHost,
   });

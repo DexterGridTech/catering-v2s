@@ -1,5 +1,6 @@
 import {render} from '@testing-library/react-native';
 import {afterEach, describe, expect, it, vi} from 'vitest';
+import {deriveTestId} from '@catering-v2s/ui-base-primitives';
 import type {DisplayFactsReadModel} from '@catering-v2s/kernel-base-display-context';
 import * as renderHooks from '@catering-v2s/ui-base-render';
 import {RuntimeSectionLaptop} from '../src/components/sections/RuntimeSectionLaptop';
@@ -66,6 +67,8 @@ const renderSection = async (context: AdminSectionProps['context'], surfaceForm:
 
 const node = (renderer: Awaited<ReturnType<typeof render>>, testID: string) =>
   getRenderedNode(renderer, instance => instance.props.testID === testID);
+const runtimeFactId = (key: string) => deriveTestId(adminTestIds.node('admin.console.runtime:facts'), 'item', key)!;
+const runtimeSurfaceId = (element: string, key: string) => deriveTestId(adminTestIds.runtime.surfaceMap, element, key)!;
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -83,8 +86,8 @@ describe('RuntimeSection display-facts controls', () => {
       } as AdminSectionProps['context'];
       const renderer = await renderSection(enabledContext, surfaceForm);
 
-      expect(node(renderer, 'admin.console.runtime:facts:item:automation-enabled')).toBeDefined();
-      expect(node(renderer, 'admin.console.runtime:facts:item:automation-address')).toBeDefined();
+      expect(node(renderer, runtimeFactId('automation-enabled'))).toBeDefined();
+      expect(node(renderer, runtimeFactId('automation-address'))).toBeDefined();
       expect(node(renderer, adminTestIds.runtime.automation.enabled).props.children).toBe('已启用');
       expect(node(renderer, adminTestIds.runtime.automation.address).props.children).toBe(
         'ws://127.0.0.1:19090/automation',
@@ -103,26 +106,20 @@ describe('RuntimeSection display-facts controls', () => {
 
   it('renders one current surface with logical, physical and readiness fields', async () => {
     const renderer = await renderSection(contextFor(singleFacts));
-    const surface = node(renderer, `${adminTestIds.runtime.surfaceMap}:surface:PRIMARY`);
+    const surface = node(renderer, runtimeSurfaceId('surface', 'PRIMARY'));
 
     expect(node(renderer, adminTestIds.runtime.physicalDisplayCount)).toBeDefined();
     expect(surface.props.style).toEqual(
       expect.objectContaining({aspectRatio: 1280 / 720, width: '100%', minWidth: 176, maxWidth: 320, height: 180}),
     );
-    expect(node(renderer, `${adminTestIds.runtime.surfaceMap}:surface:PRIMARY:inside:0`).props.children).toBe('已就绪');
-    expect(node(renderer, `${adminTestIds.runtime.surfaceMap}:surface:PRIMARY:inside:1`).props.children).toBe(
-      '可用状态：正常',
-    );
-    expect(node(renderer, `${adminTestIds.runtime.surfaceMap}:surface:PRIMARY:outside:0`).props.children).toBe(
-      '物理长：1920',
-    );
-    expect(node(renderer, `${adminTestIds.runtime.surfaceMap}:surface:PRIMARY:outside:1`).props.children).toBe(
-      '物理高：1080',
-    );
-    expect(node(renderer, `${adminTestIds.runtime.surfaceMap}:surface:PRIMARY:logic-width`).props.children).toBe(
+    expect(node(renderer, runtimeSurfaceId('surface-inside', 'PRIMARY:0')).props.children).toBe('已就绪');
+    expect(node(renderer, runtimeSurfaceId('surface-inside', 'PRIMARY:1')).props.children).toBe('可用状态：正常');
+    expect(node(renderer, runtimeSurfaceId('surface-outside', 'PRIMARY:0')).props.children).toBe('物理长：1920');
+    expect(node(renderer, runtimeSurfaceId('surface-outside', 'PRIMARY:1')).props.children).toBe('物理高：1080');
+    expect(node(renderer, runtimeSurfaceId('surface-logic-width', 'PRIMARY')).props.children).toBe(
       '逻辑分辨率宽：1280',
     );
-    expect(node(renderer, `${adminTestIds.runtime.surfaceMap}:surface:PRIMARY:logic-height`).props.children).toBe(
+    expect(node(renderer, runtimeSurfaceId('surface-logic-height', 'PRIMARY')).props.children).toBe(
       '逻辑分辨率高：800',
     );
     expect(
@@ -132,10 +129,7 @@ describe('RuntimeSection display-facts controls', () => {
       ),
     ).toHaveLength(0);
     expect(
-      queryRenderedTree(
-        renderer,
-        item => item.props.testID === `${adminTestIds.runtime.surfaceMap}:surface:PRIMARY:status`,
-      ),
+      queryRenderedTree(renderer, item => item.props.testID === runtimeSurfaceId('surface-status', 'PRIMARY')),
     ).toHaveLength(0);
     await renderer.unmount();
   });
@@ -159,10 +153,10 @@ describe('RuntimeSection display-facts controls', () => {
     });
     const renderer = await renderSection(contextFor(dualFacts));
 
-    expect(node(renderer, `${adminTestIds.runtime.surfaceMap}:surface:PRIMARY`).props.style).toEqual(
+    expect(node(renderer, runtimeSurfaceId('surface', 'PRIMARY')).props.style).toEqual(
       expect.objectContaining({aspectRatio: 1280 / 720, width: '100%', minWidth: 176, maxWidth: 320, height: 180}),
     );
-    expect(node(renderer, `${adminTestIds.runtime.surfaceMap}:surface:SECONDARY`).props.style).toEqual(
+    expect(node(renderer, runtimeSurfaceId('surface', 'SECONDARY')).props.style).toEqual(
       expect.objectContaining({
         aspectRatio: 1024 / 768,
         width: '100%',
@@ -171,29 +165,21 @@ describe('RuntimeSection display-facts controls', () => {
         height: expect.any(Number),
       }),
     );
-    expect(node(renderer, `${adminTestIds.runtime.surfaceMap}:surface:PRIMARY:card`).props.style).toBeUndefined();
-    expect(node(renderer, `${adminTestIds.runtime.surfaceMap}:surface:SECONDARY:inside:0`).props.children).toBe(
-      '已就绪',
-    );
-    expect(node(renderer, `${adminTestIds.runtime.surfaceMap}:surface:SECONDARY:inside:1`).props.children).toBe(
-      '可用状态：正常',
-    );
+    expect(node(renderer, runtimeSurfaceId('surface-card', 'PRIMARY')).props.style).toBeUndefined();
+    expect(node(renderer, runtimeSurfaceId('surface-inside', 'SECONDARY:0')).props.children).toBe('已就绪');
+    expect(node(renderer, runtimeSurfaceId('surface-inside', 'SECONDARY:1')).props.children).toBe('可用状态：正常');
     expect(
       queryRenderedTree(
         renderer,
         item => typeof item.props.children === 'string' && (item.props.children as string).includes('设备显示区域：'),
       ),
     ).toHaveLength(0);
-    expect(node(renderer, `${adminTestIds.runtime.surfaceMap}:surface:SECONDARY:outside:0`).props.children).toBe(
-      '物理长：1536',
-    );
-    expect(node(renderer, `${adminTestIds.runtime.surfaceMap}:surface:SECONDARY:outside:1`).props.children).toBe(
-      '物理高：1152',
-    );
-    expect(node(renderer, `${adminTestIds.runtime.surfaceMap}:surface:SECONDARY:logic-width`).props.children).toBe(
+    expect(node(renderer, runtimeSurfaceId('surface-outside', 'SECONDARY:0')).props.children).toBe('物理长：1536');
+    expect(node(renderer, runtimeSurfaceId('surface-outside', 'SECONDARY:1')).props.children).toBe('物理高：1152');
+    expect(node(renderer, runtimeSurfaceId('surface-logic-width', 'SECONDARY')).props.children).toBe(
       '逻辑分辨率宽：960',
     );
-    expect(node(renderer, `${adminTestIds.runtime.surfaceMap}:surface:SECONDARY:logic-height`).props.children).toBe(
+    expect(node(renderer, runtimeSurfaceId('surface-logic-height', 'SECONDARY')).props.children).toBe(
       '逻辑分辨率高：540',
     );
     await renderer.unmount();
@@ -218,7 +204,7 @@ describe('RuntimeSection display-facts controls', () => {
     expect(node(renderer, adminTestIds.runtime.displayFactsError)).toBeDefined();
     expect(queryRenderedTree(renderer, item => item.props.testID === adminTestIds.runtime.surfaceMap)).toHaveLength(0);
     expect(
-      queryRenderedTree(renderer, item => item.props.testID === `${adminTestIds.runtime.surfaceMap}:surface:SECONDARY`),
+      queryRenderedTree(renderer, item => item.props.testID === runtimeSurfaceId('surface', 'SECONDARY')),
     ).toHaveLength(0);
     await renderer.unmount();
   });

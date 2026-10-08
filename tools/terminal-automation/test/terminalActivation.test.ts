@@ -2,7 +2,10 @@ import {mkdtempSync, mkdirSync, rmSync, writeFileSync} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {afterEach, describe, expect, it} from 'vitest';
-import {priorManifestOwnsActiveBinding} from '../fixtures/terminalActivation.js';
+import {
+  isTerminalActivationCommandSucceeded,
+  priorManifestOwnsActiveBinding,
+} from '../fixtures/terminalActivation.js';
 
 const temporaryRoots: string[] = [];
 
@@ -81,5 +84,23 @@ describe('priorManifestOwnsActiveBinding', () => {
       owned: true,
       evidence: 'prior=2 exactGeneration=1 legacyAndroid=0 currentGeneration=19',
     });
+  });
+});
+
+describe('isTerminalActivationCommandSucceeded', () => {
+  it('requires the activation actor to report activated, not only outer dispatch completion', () => {
+    expect(
+      isTerminalActivationCommandSucceeded({
+        status: 'completed',
+        actorResults: [{result: {status: 'rejected', reason: 'ALREADY_ACTIVE'}}],
+      }),
+    ).toBe(false);
+    expect(
+      isTerminalActivationCommandSucceeded({
+        status: 'completed',
+        actorResults: [{result: {status: 'activated'}}],
+      }),
+    ).toBe(true);
+    expect(isTerminalActivationCommandSucceeded({status: 'completed', actorResults: []})).toBe(false);
   });
 });

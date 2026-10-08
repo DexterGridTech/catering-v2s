@@ -32,7 +32,7 @@ assert.deepEqual(
   Object.keys(spec.graph).map(moduleNameToPackageName).sort(),
   'every TER module package must have exactly one graph node',
 );
-assert.equal(Object.keys(batchOne).length, 13, 'batch one projects 13 nodes');
+assert.equal(Object.keys(batchOne).length, 14, 'batch one projects 14 nodes');
 assert.equal(Object.keys(batchTwo).length, Object.keys(spec.graph).length);
 assert.equal(
   moduleNameToPackageName('application.android.sample-terminal'),
@@ -377,6 +377,23 @@ try {
   assertGateVector(restoredRetentionReport);
   console.log('TERMINAL_SKELETON_RED_SECOND_RESET_RETENTION_OWNER_RESTORE=PASS');
 
+  const terminalUpdateRetentionPath = path.join(
+    fixtureRoot,
+    'apps/terminal/kernel/base/terminal-update/src/features/slices/terminalUpdate.ts',
+  );
+  withTextMutation(
+    terminalUpdateRetentionPath,
+    source => source.replace("resetIntent: 'retain'", "resetIntent: 'clear'"),
+    report => {
+      assertGateVector(report, ['state-reset-retention-only']);
+      assert.match(gate(report, 'state-reset-retention-only').error, /STATE_RESET_RETENTION_OWNER_SET/);
+      console.log('TERMINAL_SKELETON_RED_MISSING_TERMINAL_UPDATE_RETENTION=PASS');
+    },
+  );
+  const restoredTerminalUpdateRetentionReport = runStaticChecks({root: fixtureRoot, batch: 2});
+  assertGateVector(restoredTerminalUpdateRetentionReport);
+  console.log('TERMINAL_SKELETON_RED_MISSING_TERMINAL_UPDATE_RETENTION_RESTORE=PASS');
+
   withTextMutation(
     secondRetainerPath,
     source =>
@@ -638,10 +655,7 @@ try {
         gate(report, 'runtime-dependency-contract').error,
         /dependencyModuleNames must contain only imported moduleName bindings; opaque expression serverConfig/,
       );
-      assert.match(
-        gate(report, 'state-reset-retention-only').error,
-        /SERVER_CONFIG_RESET_RETENTION_OWNER_COUNT expected=1 actual=0/,
-      );
+      assert.match(gate(report, 'state-reset-retention-only').error, /STATE_RESET_RETENTION_OWNER_SET/);
       console.log('TERMINAL_SKELETON_RED_OMITTED_REAL_PACKAGE=PASS');
     },
   );

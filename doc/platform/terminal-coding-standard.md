@@ -363,12 +363,16 @@ owner 自己在 reducer 里接"，只是把同一个外部写入拆成二十份�
    它必须走 `preloadedState` 在 store 构造时注入，store 对外可见时状态已就位，
    **不存在运行期的外部写**；
 2. **根级重置（reset）默认清除各 owner 状态**：把 `undefined` 交给 combineReducers，
-   **每个 owner 的 reducer 各自返回自己的初始值**。唯一的窄例外是已接受的 D-16：
-   `server-config` 可以在自己的持久化 slice 上声明 `resetIntent: 'retain'`，只保留其
-   `persistence` descriptor 实际会落盘的字段与记录；不声明为持久化的运行期状态仍回到初始值。
+   **每个 owner 的 reducer 各自返回自己的初始值**。窄例外只有已接受的 D-16 `server-config`
+   持久配置 slice，以及 Dexter 于 2026-10-06 批准的阶段 A `terminal-update` 持久任务 slice：
+   两者都由 owner 声明 `resetIntent: 'retain'`，只保留各自 `persistence` descriptor 实际会落盘的字段与记录；
+   不声明为持久化的运行期状态仍回到初始值。`terminal-update` 的例外只为 TDC 取消激活
+   `TERMINAL_ACTIVATION_CANCELLED` 引发的当前生产根级 reset 保留 `currentTask`、`recentStatus`
+   和 `failedArtifactIds`；同步仍为 isolated，TDC 凭证、其它 owner、orphan 键及未声明持久化的值照常清除。
+   例外按已注册 slice 生效，不由 reset 发起方选择原因或扩大保留范围；当前唯一生产
+   `requestApplicationReset` 调用点是 TDC 取消激活。任何新增生产调用点必须先重新评审该例外。
    state runtime 必须先 flush 当前状态，再按这组 descriptor 保留对应存储键并删除其它 namespace 键
-   （包括未注册 orphan）；失败时不得派发根级 reset。发起方不得选择或扩大保留范围，除
-   `server-config` 外其它 owner 仍清空；不得增加第二份配置或凭证存储。
+   （包括未注册 orphan）；失败时不得派发根级 reset。不得增加第二份配置或凭证存储。
 3. **只能写声明了 `sync` 描述符的 slice**。没声明的 slice 即使出现在载荷里也必须跳过并记录原因；
 4. **不得导出"写任意 slice"的 API**；读侧不得导出**为读取具名他包 slice 提供的便捷访问器**。
 

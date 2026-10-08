@@ -79,15 +79,13 @@ const utf8Bytes = (value: string): number => {
 };
 
 const arrayNonJsonReason = (value: readonly unknown[], seen: WeakSet<object>, path: string): string | undefined => {
-  const extraKeys = Reflect.ownKeys(value).filter(
-    key => {
-      if (typeof key !== 'string') return true;
-      if (key === 'length') return false;
-      if (!/^(0|[1-9]\d*)$/.test(key)) return true;
-      const index = Number(key);
-      return !Number.isSafeInteger(index) || index >= value.length || index >= 0xffff_ffff;
-    },
-  );
+  const extraKeys = Reflect.ownKeys(value).filter(key => {
+    if (typeof key !== 'string') return true;
+    if (key === 'length') return false;
+    if (!/^(0|[1-9]\d*)$/.test(key)) return true;
+    const index = Number(key);
+    return !Number.isSafeInteger(index) || index >= value.length || index >= 0xffff_ffff;
+  });
   if (extraKeys.length > 0) {
     const keyKinds = new Set(extraKeys.map(key => typeof key));
     const keyKind = keyKinds.size === 1 ? [...keyKinds][0] : 'mixed';
@@ -225,8 +223,7 @@ export const createRuntimeRequestHandler = (
     const response: RuntimeRequestReply = {
       protocolVersion: 1,
       sessionId: input.sessionId,
-      messageId:
-        type === 'response' || type === 'error' ? `reply-${request.messageId}` : `runtime-event-${++sequence}`,
+      messageId: type === 'response' || type === 'error' ? `reply-${request.messageId}` : `runtime-event-${++sequence}`,
       type,
       body,
     };

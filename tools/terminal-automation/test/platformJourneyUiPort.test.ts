@@ -8,6 +8,7 @@ const webFocus = vi.hoisted(() => vi.fn(async () => undefined));
 vi.mock('../src/webInput.js', () => ({clickRegisteredWebNode: webClick, focusRegisteredWebInput: webFocus}));
 
 import {createAndroidJourneyUiPort, createWebJourneyUiPort} from '../src/journeyUiPort.js';
+import type {AndroidJourneyUiPort} from '../src/journeyUiPort.js';
 import {prepareAndroidJourneySurface, prepareWebJourneySurface, testExpoHostPrefix} from '../src/journeySurface.js';
 
 describe('platform journey UI ports', () => {
@@ -37,8 +38,14 @@ describe('platform journey UI ports', () => {
       surface: 'SECONDARY',
       displayIndex: 1,
     });
-    expect(webClick).toHaveBeenNthCalledWith(2, expect.objectContaining({testID: 'ui.base.input:virtual-keyboard:shift'}));
-    expect(webClick).toHaveBeenNthCalledWith(3, expect.objectContaining({testID: 'ui.base.input:virtual-keyboard:text-a'}));
+    expect(webClick).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({testID: 'ui.base.input:virtual-keyboard:shift'}),
+    );
+    expect(webClick).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({testID: 'ui.base.input:virtual-keyboard:text-a'}),
+    );
   });
 
   it('maps Android display names and keyboard input to registered taps', async () => {
@@ -62,8 +69,97 @@ describe('platform journey UI ports', () => {
       surface: 'primary',
       displayIndex: 0,
     });
-    expect(tapRegisteredNode).toHaveBeenNthCalledWith(2, expect.objectContaining({testID: 'ui.base.input:virtual-keyboard:shift'}));
-    expect(tapRegisteredNode).toHaveBeenNthCalledWith(3, expect.objectContaining({testID: 'ui.base.input:virtual-keyboard:text-a'}));
+    expect(tapRegisteredNode).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({testID: 'ui.base.input:virtual-keyboard:shift'}),
+    );
+    expect(tapRegisteredNode).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({testID: 'ui.base.input:virtual-keyboard:text-a'}),
+    );
+  });
+
+  it('uses one Android journey port for registered app controls and native system controls', async () => {
+    const tapRegisteredNode = vi.fn(async () => undefined);
+    const button = {label: 'Update'} as never;
+    const waitForButton = vi.fn(async () => button);
+    const clickButton = vi.fn(async () => button);
+    const tapButton = vi.fn(async () => undefined);
+    const setChecked = vi.fn(async () => ({label: 'Allow from this source', checked: true}) as never);
+    const pressBack = vi.fn(async () => undefined);
+    const readScreenSummary = vi.fn(async () => 'PACKAGE_COM_ANDROID_SETTINGS');
+    const connection = {
+      tapRegisteredNode,
+      tapRegisteredInput: vi.fn(async () => undefined),
+      systemUi: {
+        readHierarchy: vi.fn(async () => '<hierarchy/>'),
+        readScreenSummary,
+        waitForButton,
+        clickButton,
+        tapButton,
+        setChecked,
+        pressBack,
+      },
+    } as unknown as AndroidAutomationConnection;
+    const onStep = vi.fn();
+    const ui: AndroidJourneyUiPort = createAndroidJourneyUiPort({connection, sessionId: 'session-android', onStep});
+
+    await ui.click('update.install', {mode: 'PRIMARY', index: 0});
+    const installerButton = await ui.clickSystemButton({labels: ['Update'], timeoutMs: 5_000, allowedPackagePrefixes: [
+      'com.google.android.packageinstaller',
+    ]});
+    await ui.waitForSystemButton({labels: ['Update'], timeoutMs: 5_000, allowedPackagePrefixes: ['com.google.android.packageinstaller']});
+    await ui.setSystemChecked({labels: ['Allow from this source'], checked: true, timeoutMs: 5_000});
+    await ui.pressSystemBack();
+    await ui.readSystemScreenSummary();
+
+    expect(tapRegisteredNode).toHaveBeenCalledWith({
+      sessionId: 'session-android',
+      testID: 'update.install',
+      surface: 'primary',
+      displayIndex: 0,
+    });
+    expect(clickButton).toHaveBeenCalledWith({labels: ['Update'], timeoutMs: 5_000, allowedPackagePrefixes: [
+      'com.google.android.packageinstaller',
+    ]});
+    expect(onStep).toHaveBeenCalledWith('ui.system.click');
+    expect(onStep).toHaveBeenCalledWith('ui.system.click.complete');
+    expect(onStep).toHaveBeenCalledWith('ui.system.wait-button');
+    expect(onStep).toHaveBeenCalledWith('ui.system.wait-button.complete');
+    expect(onStep).toHaveBeenCalledWith('ui.system.set-checked');
+    expect(onStep).toHaveBeenCalledWith('ui.system.set-checked.complete');
+    expect(onStep).toHaveBeenCalledWith('ui.system.back');
+    expect(onStep).toHaveBeenCalledWith('ui.system.back.complete');
+    expect(onStep).toHaveBeenCalledWith('ui.system.screen-summary');
+    expect(onStep).toHaveBeenCalledWith('ui.system.screen-summary.complete');
+    expect(waitForButton).toHaveBeenCalledWith(['Update'], 5_000, undefined, ['com.google.android.packageinstaller'], undefined);
+    expect(tapButton).not.toHaveBeenCalled();
+    expect(pressBack).toHaveBeenCalledOnce();
+    expect(readScreenSummary).toHaveBeenCalledOnce();
+    expect(setChecked).toHaveBeenCalledWith({
+      labels: ['Allow from this source'],
+      checked: true,
+      timeoutMs: 5_000,
+    });
+  });
+
+  it('records and propagates a failed native system action without hiding the driver error', async () => {
+    const onStep = vi.fn();
+    const connection = {
+      tapRegisteredNode: vi.fn(async () => undefined),
+      tapRegisteredInput: vi.fn(async () => undefined),
+      systemUi: {
+        clickButton: vi.fn(async () => { throw new Error('TERMINAL_AUTOMATION_ANDROID_SYSTEM_UI_BUTTON_STALE'); }),
+      },
+    } as unknown as AndroidAutomationConnection;
+    const ui = createAndroidJourneyUiPort({connection, sessionId: 'session-android', onStep});
+
+    await expect(ui.clickSystemButton({labels: ['Update'], timeoutMs: 5_000})).rejects.toThrow(
+      'TERMINAL_AUTOMATION_ANDROID_SYSTEM_UI_BUTTON_STALE',
+    );
+    expect(onStep).toHaveBeenCalledWith('ui.system.click');
+    expect(onStep).toHaveBeenCalledWith('ui.system.click.failed');
+    expect(onStep).not.toHaveBeenCalledWith('ui.system.click.complete');
   });
 
   it('selects the requested Expo form and waits for the required displays', async () => {

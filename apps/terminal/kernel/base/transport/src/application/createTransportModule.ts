@@ -115,8 +115,10 @@ export const createTransportModule = (options: TransportModuleOptions = {}): Tra
     dispatchInternal,
     diagnose: (event, profileId, data) => {
       const context = runtimeContext;
-      if (context !== undefined)
-        report(context, {level: event === 'connect-attempt-failed' ? 'warn' : 'info', event, profileId, data});
+      if (context !== undefined) {
+        const failureEvent = /(?:failed|error|invalid|timeout|non-success|rejected)/i.test(event);
+        report(context, {level: failureEvent ? 'warn' : 'info', event, profileId, data});
+      }
     },
   });
   let nextHttpRequestId = 0;

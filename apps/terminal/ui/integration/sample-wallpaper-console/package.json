@@ -6,7 +6,8 @@
   "react-native": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./theme/global.css": "./theme/global.css"
+    "./theme/global.css": "./theme/global.css",
+    "./test-expo/TerminalUpdateAssetLoadProbe": "./test-expo/TerminalUpdateAssetLoadProbe.tsx"
   },
   "terminalSurfaces": {
     "orientations": {
@@ -83,6 +84,7 @@
     "@catering-v2s/kernel-base-server-config": "workspace:*",
     "@catering-v2s/kernel-base-state": "workspace:*",
     "@catering-v2s/kernel-base-terminal-data-client": "workspace:*",
+    "@catering-v2s/kernel-base-terminal-update": "workspace:*",
     "@catering-v2s/kernel-base-topology": "workspace:*",
     "@catering-v2s/kernel-base-transport": "workspace:*",
     "@catering-v2s/kernel-base-ui-state": "workspace:*",

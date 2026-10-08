@@ -1371,8 +1371,10 @@ function runSelectorRegistration(context) {
 
 function runStateResetRetentionOnly(context) {
   const {root, projected} = context;
-  const approvedModule = 'kernel.base.server-config';
-  const approvedSource = 'src/features/slices/serverConfig.ts';
+  const approvedRetainers = new Set([
+    'kernel.base.server-config:src/features/slices/serverConfig.ts',
+    'kernel.base.terminal-update:src/features/slices/terminalUpdate.ts',
+  ]);
   const retainedDeclarations = [];
   const analysis = analysisFor(context);
   const checker = analysis.program.getTypeChecker();
@@ -1438,7 +1440,8 @@ function runStateResetRetentionOnly(context) {
             }
             if (resetIntent?.initializer.text === 'retain') {
               retainedDeclarations.push(`${moduleName}:${relativeSource}`);
-              if (moduleName !== approvedModule || relativeSource !== approvedSource) {
+              const declaration = `${moduleName}:${relativeSource}`;
+              if (!approvedRetainers.has(declaration)) {
                 throw new Error(
                   `SERVER_CONFIG_RESET_RETENTION_OWNER_FORBIDDEN owner=${moduleName} source=${relativeSource}`,
                 );
@@ -1451,8 +1454,13 @@ function runStateResetRetentionOnly(context) {
       visit(sourceFile);
     }
   }
-  if (retainedDeclarations.length !== 1) {
-    throw new Error(`SERVER_CONFIG_RESET_RETENTION_OWNER_COUNT expected=1 actual=${retainedDeclarations.length}`);
+  const actualRetainers = new Set(retainedDeclarations);
+  const missing = [...approvedRetainers].filter(declaration => !actualRetainers.has(declaration)).sort();
+  const extra = [...actualRetainers].filter(declaration => !approvedRetainers.has(declaration)).sort();
+  if (retainedDeclarations.length !== approvedRetainers.size || missing.length || extra.length) {
+    throw new Error(
+      `STATE_RESET_RETENTION_OWNER_SET expected=${[...approvedRetainers].sort().join(',')} actual=${retainedDeclarations.sort().join(',')} missing=${missing.join(',')} extra=${extra.join(',')}`,
+    );
   }
 }
 

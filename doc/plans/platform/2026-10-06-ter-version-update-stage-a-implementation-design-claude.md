@@ -1,7 +1,7 @@
 ---
 title: TER 版本定义、完整更新与热更新阶段 A 详设
-status: PROPOSED_FOR_DEXTER_CLAUDE_REVIEW
-implementationAuthority: false
+status: IMPLEMENTATION_IN_PROGRESS
+implementationAuthority: true
 ---
 
 # TER 本机更新阶段 A 详设
@@ -10,36 +10,36 @@ implementationAuthority: false
 
 需求正本：`doc/plans/platform/2026-10-05-ter-version-and-js-apk-update-formal-requirements-claude.md`（R-01～15；§20.3 A 范围、§20.7/20.8 子判据）。
 Journey=`doc/decisions/2026-10-06-ter-local-update-journey-claude.md`；IA=`doc/decisions/2026-10-06-ter-local-update-ia-claude.md`；交互=`doc/decisions/2026-10-06-ter-local-update-ui-interaction-claude.md`；计划=`doc/plans/platform/2026-10-06-ter-version-update-stage-a-implementation-plan-claude.md`；源码/API附件=`doc/plans/platform/2026-10-06-ter-version-update-stage-a-source-and-api-appendix-claude.md`。
-本轮 Dexter 明确委托 Claude 代写阶段 A 文档；允许文档写入/静态审查，不授权源码、契约、规范、依赖修改或任何生成/编译/运行。
-本轮只静态读取 automation-agent 当前接口，不打扰 Codex 的工作；运行交付状态未核验，不把目录或作者状态当验收完成。
-UI_CONTENT=ACCEPTED；DEXTER_WIREFRAME_REVIEW=ACCEPTED：Dexter 于 2026-10-06 明确“界面内容我都确认”，覆盖系统安装/来源设置、启动加载、原生失败文本三个面。设备行为仍 NOT_RUN，工程 OPEN 与实施授权独立保留；界面确认不授权实施或运行。
-STANDARD_DEPENDENCY=APPROVED_PENDING_CP02_IMPLEMENTATION_SYNC：Dexter 已批准仅取消激活根级清除的精确 TR-09 例外；当前正本未落地，须在未来实施授权下、CP-02 之前同步并完成 focused/red。本轮不修改规范。
-需求 status/旧授权字段不覆盖本次会话文档授权；A/B/C 原划分不改。
+Dexter 于 2026-10-06 明确授权 Codex 按本详设与计划完成阶段 A 全部实现及适用验证。授权包括生产/测试源码、生成器、打包/签名配置、两 App/native 装配、TR-09 唯一正本与既有门同步、automation driver、构建、verify、受管 Expo Web/Android/DEV 操作和本详设列明的一次性 F-LOAD 探针；不包括阶段 B/C、reset/seed、Browser L2、UAT、生产部署或商店发布。
+FULL_MIN_ANDROID_API=29：Dexter 本次明确排除 API 24～28 分支；本阶段设备与构建准入按 API 29 及以上验证。API 29 的 `isCommitted=false` 仅表示未 commit，仍须验证 session 合法且可续接；未知状态不得重复 commit、抢占或删除未知 session。
+UI_CONTENT=ACCEPTED；DEXTER_WIREFRAME_REVIEW=ACCEPTED：Dexter 于 2026-10-06 明确界面内容已确认，覆盖系统安装/来源设置、启动加载、原生失败文本三个面。该确认不等于行为验收 PASS。
+STANDARD_DEPENDENCY=APPROVED_PENDING_CP02_IMPLEMENTATION_SYNC：Dexter 已批准仅取消激活根级清除的精确 TR-09 例外；须在本批 CP-02 之前同步并完成 focused/red。
+本次只更新当前实施授权和执行状态，不改正式需求、已裁决产品语义或历史 review verdict；A/B/C 原划分不改。
 
 ## 1 · 真实业务目标与方案比较
 
 A 先证明安装包、FULL、HOT 真能在两个 application 更新本机，固定任务跨 JS 启动可续接，并不错误报告成功或循环应用坏包。
 B/C 消费本批稳定接口；本批不建 CBS 包库/规则/TDP 报告、主副投影、N/M 自动调度或新手工更新页。
 
-| 路线 | 收益/成本 | 结论 |
-| --- | --- | --- |
-| Expo 公开 Host handler + 同 Host reload | 复用 ReactHost、双屏共享 VM；须独立 boot 保护及文件资源闭包 | 选定；公开 loader getter 每次访问重新计算，embedded asset/HOT file 两条路径的 F-LOAD 未运行 |
-| 整进程重启+冷入口 | 单一冷启动路径；Android 主动退出后的可靠拉起、后台启动限制、双屏 Activity 恢复需额外机制 | 本批不选，保留为 F-LOAD 证伪后交 Dexter 的替代，不同时实现两套 |
-| expo-updates/托管更新控制面 | 有现成更新库，但另带清单/选包/启动与恢复机制，需证明不与自定义固定 FULL/HOT 冲突 | 本批不引入；不是断言它不可能支持自定义服务器 |
+| 路线                                    | 收益/成本                                                                                | 结论                                                                                                    |
+| --------------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Expo 公开 Host handler + 同 Host reload | 复用 ReactHost、双屏共享 VM；须独立 boot 保护及文件资源闭包                              | 选定；公开 loader getter 每次访问重新计算，embedded asset/HOT file 两条路径的 F-LOAD 未运行             |
+| 整进程重启+冷入口                       | 单一冷启动路径；Android 主动退出后的可靠拉起、后台启动限制、双屏 Activity 恢复需额外机制 | 本批不选；仅当授权范围内的 F-LOAD 证据否定已选路线时，暂停并向 Dexter提交证据与替代方案，不同时实现两套 |
+| expo-updates/托管更新控制面             | 有现成更新库，但另带清单/选包/启动与恢复机制，需证明不与自定义固定 FULL/HOT 冲突         | 本批不引入；不是断言它不可能支持自定义服务器                                                            |
 
 加载推荐由官方公开接口支持，当前工程可行性是可证伪推论；没有 native proof，不能写“已能热更新”。
 发布采用 Hermes bytecode 与完整资源；不是在 Hermes VM 里改几段源码。受控 reload 重建 JS Runtime，单机双屏一起重建。
 
 ## 2 · CP 总览
 
-| CP | 完整责任 | 前置 | 退出 |
-| --- | --- | --- | --- |
-| CP-01 | 四版本、清单单源、两 App 三脚本、run/update case 登记 | 本包获接受、automation 公共接口可核验 | 工件/版本 focused；完整阶段 MATCHED |
-| CP-02 | UpdatePort契约与最终本机owner、typed-port focused/Web先行 | CP-01 MATCHED | 固定/flush/UNKNOWN/每boot限制；无原生HOT触发；MATCHED |
-| CP-03 | Android准备/loader/installer及原生启动保护、PRIMARY确认同时接线 | CP-02 MATCHED | 首次真实更新走最终owner并带完整保护；F-LOAD/F-INSTALL/F-BOOT；MATCHED |
-| CP-04 | 数据兼容发布、跨启动/失败/重载边界完整反例 | CP-03 MATCHED | F-COMPAT/中间包与全部边界；MATCHED |
-| CP-05 | 两 App/mobile/单机双屏的统一 automation 场景完善 | CP-04 MATCHED | 场景实现与 focused、Web→设备；MATCHED |
-| CP-06 | 收尾源码/fixtures、阶段对账；其后整体验收/13c/fresh IMPLEMENTATION | CP-05 MATCHED | 阶段出口=MATCHED；其后按§13b先全批6b，再批次验收/review/cleanup闭合 |
+| CP    | 完整责任                                                           | 前置                                  | 退出                                                                  |
+| ----- | ------------------------------------------------------------------ | ------------------------------------- | --------------------------------------------------------------------- |
+| CP-01 | 四版本、清单单源、两 App 三脚本、run/update case 登记              | 本包获接受、automation 公共接口可核验 | 工件/版本 focused；完整阶段 MATCHED                                   |
+| CP-02 | UpdatePort契约与最终本机owner、typed-port focused/Web先行          | CP-01 MATCHED                         | 固定/flush/UNKNOWN/每boot限制；无原生HOT触发；MATCHED                 |
+| CP-03 | Android准备/loader/installer及原生启动保护、PRIMARY确认同时接线    | CP-02 MATCHED                         | 首次真实更新走最终owner并带完整保护；F-LOAD/F-INSTALL/F-BOOT；MATCHED |
+| CP-04 | 数据兼容发布、跨启动/失败/重载边界完整反例                         | CP-03 MATCHED                         | F-COMPAT/中间包与全部边界；MATCHED                                    |
+| CP-05 | 两 App/mobile/单机双屏的统一 automation 场景完善                   | CP-04 MATCHED                         | 场景实现与 focused、Web→设备；MATCHED                                 |
+| CP-06 | 收尾源码/fixtures、阶段对账；其后整体验收/13c/fresh IMPLEMENTATION | CP-05 MATCHED                         | 阶段出口=MATCHED；其后按§13b先全批6b，再批次验收/review/cleanup闭合   |
 
 CP-06 不以整批 review/cleanup反向作为 CP-01～05 退出条件。已有效 MATCHED 的未受影响范围不重复对账；受影响差量必须标当前字节和影响范围，不能以历史结论免去新的全批6b。
 
@@ -47,22 +47,22 @@ CP-06 不以整批 review/cleanup反向作为 CP-01～05 退出条件。已有�
 
 模板后端组（读侧节点授权、写grant/事务、HTTP错误注册、审计三件套）N/A_WITH_REASON：A不建CBS/DB/HTTP业务，不能将TER端口错当后台operation。前端RTK、后台Drawer/下拉/§3-K组N/A_WITH_REASON：TER不用RTKQuery，无后台表单；其余适用机制逐行如下。
 
-| 机制 | ①现成能力/精确来源 | ②可做的最低档观察 | ③新实现形态 | ④适用全集 |
-| --- | --- | --- | --- | --- |
-| 跨owner写 | TR-01/11、Runtime dispatchCommand | 静态无外包reducer写；focused输入冲突拒绝 | owner actor写唯一slice，技术事件转command | update、integration、native bridge |
-| 集合形态/分页 | state单值声明、artifact schema | focused文件数量超8192拒绝；无项目列表分页 | currentTask单值，files有界技术列表 | task/files/failed identity |
-| 缓存失效/刷新 | module.initialize/reconcile、native readFacts | focused旧action不写新task，安装后读取实际facts | native actual事实不被prepared目标替换 | 所有转移/两个App |
-| 同事实唯一住址 | TR-11；native AtomicFile边界 | 静态只有JS一个task，native只有boot/selection/action | 不复制规则/业务slice | update slice、native records |
-| 失败可见/原因不改写 | TR-02；PortResult | focused失败flush/unknown/cancel分别断言 | 原因码具名，保留失败与不确定性 | 6端口、actor、两App |
-| 幂等键/重放 | Runtime requestId + task/action/publication identity | focused两屏冲突target、同action重复 | 新requestId不能换已固定任务 | accept/prepare/apply/readback/confirm/release |
-| 应生成不手搓 | protocol生成器既有模式、artifact canonical schema | 生成self-test改字段只派生两语言模型 | Node直接AJV校验，TS/Kotlin有限生成 | manifest/版本常量/两App |
-| 日志/脱敏 | AGENTS日志标准、platformPorts.logger | focused注入URI/密码/异常，输出不含原值 | 安全关联ID+阶段+错误码，非rawpayload | publisher/owner/native/driver |
-| 迁移/可逆 | state slice/AtomicFile formatVersion | focused未知格式不可加载；APK升级业务键不变 | 无DB迁移；旧不可用marker删除，无兼容层 | 两App/旧port所有引用 |
-| 编码/名称呈现 | corpus；IA/UI | 静态技术字段不进failure文本；OS copy不锁死 | 用户文本与技术reason分离 | INSTALL/BOOT/FAILURE |
-| 会同时坏的原子组 | foundation-charter §5-C | focused工件半包不active、version跨产物不符拒绝 | 发布树+manifest、selection+boot、task+action组 | 三产物/两App/跨boot |
-| 生命周期/清理 | Runtime registerAsyncResource、native进程协调器 | focused退订/文件清理失败可见 | 初始化不依赖页面，不建轮询 | module/Host/deadline/installer |
-| 网络准备 | TerminalNetworkModule配置逻辑、compositionprovider | native下载截断/超期取消call；静态非65KiB JSON调用 | 更新adapter流式下载，复用配置规则 | FULL/HOT及代理 |
-| 自动化 | tools/terminal-automation、agent registry | driver focused phase/update参数；W→AND同case | 同一driver扩展，无旧runner旁路 | §11a全部case |
+| 机制                | ①现成能力/精确来源                                   | ②可做的最低档观察                                   | ③新实现形态                                    | ④适用全集                                     |
+| ------------------- | ---------------------------------------------------- | --------------------------------------------------- | ---------------------------------------------- | --------------------------------------------- |
+| 跨owner写           | TR-01/11、Runtime dispatchCommand                    | 静态无外包reducer写；focused输入冲突拒绝            | owner actor写唯一slice，技术事件转command      | update、integration、native bridge            |
+| 集合形态/分页       | state单值声明、artifact schema                       | focused文件数量超8192拒绝；无项目列表分页           | currentTask单值，files有界技术列表             | task/files/failed identity                    |
+| 缓存失效/刷新       | module.initialize/reconcile、native readFacts        | focused旧action不写新task，安装后读取实际facts      | native actual事实不被prepared目标替换          | 所有转移/两个App                              |
+| 同事实唯一住址      | TR-11；native AtomicFile边界                         | 静态只有JS一个task，native只有boot/selection/action | 不复制规则/业务slice                           | update slice、native records                  |
+| 失败可见/原因不改写 | TR-02；PortResult                                    | focused失败flush/unknown/cancel分别断言             | 原因码具名，保留失败与不确定性                 | 6端口、actor、两App                           |
+| 幂等键/重放         | Runtime requestId + task/action/publication identity | focused两屏冲突target、同action重复                 | 新requestId不能换已固定任务                    | accept/prepare/apply/readback/confirm/release |
+| 应生成不手搓        | protocol生成器既有模式、artifact canonical schema    | 生成self-test改字段只派生两语言模型                 | Node直接AJV校验，TS/Kotlin有限生成             | manifest/版本常量/两App                       |
+| 日志/脱敏           | AGENTS日志标准、platformPorts.logger                 | focused注入URI/密码/异常，输出不含原值              | 安全关联ID+阶段+错误码，非rawpayload           | publisher/owner/native/driver                 |
+| 迁移/可逆           | state slice/AtomicFile formatVersion                 | focused未知格式不可加载；APK升级业务键不变          | 无DB迁移；旧不可用marker删除，无兼容层         | 两App/旧port所有引用                          |
+| 编码/名称呈现       | corpus；IA/UI                                        | 静态技术字段不进failure文本；OS copy不锁死          | 用户文本与技术reason分离                       | INSTALL/BOOT/FAILURE                          |
+| 会同时坏的原子组    | foundation-charter §5-C                              | focused工件半包不active、version跨产物不符拒绝      | 发布树+manifest、selection+boot、task+action组 | 三产物/两App/跨boot                           |
+| 生命周期/清理       | Runtime registerAsyncResource、native进程协调器      | focused退订/文件清理失败可见                        | 初始化不依赖页面，不建轮询                     | module/Host/deadline/installer                |
+| 网络准备            | TerminalNetworkModule配置逻辑、compositionprovider   | native下载截断/超期取消call；静态非65KiB JSON调用   | 更新adapter流式下载，复用配置规则              | FULL/HOT及代理                                |
+| 自动化              | tools/terminal-automation、agent registry            | driver focused phase/update参数；W→AND同case        | 同一driver扩展，无旧runner旁路                 | §11a全部case                                  |
 
 ### 第三方库 API 与运行行为依据
 
@@ -74,13 +74,13 @@ CP-06 不以整批 review/cleanup反向作为 CP-01～05 退出条件。已有�
 三个面按 IA/交互工件。管理后台 Browser L2=N/A_WITH_REASON（无后台）；TER Expo Web/Android 仍适用。
 L2_SCRIPT_ADMISSION=N/A_WITH_REASON（非后台BrowserL2）；TER_UI_ADMISSION=OPEN：Dexter 已接受三个面的界面内容；当前 source/control 注册、实现期独立静态复核与设备行为仍待完成，不能把看图确认写成运行 PASS。
 
-| case-action/观察 | 真实节点/owner | 唯一标识来源/挂载 | wrapper/native | driver通路 | 当前proof |
-| --- | --- | --- | --- | --- | --- |
-| install-result：安装确认 | Android系统Installer按钮 | OS包+资源语义+display；无TER TestId | native OS | 最新driver内R-10系统UI窄例外：uiautomator取节点bounds后真实input；报告注明 | NOT_RUN |
-| install-result：取消 | 同系统取消按钮 | 同上，不以TER文案猜控件 | native OS | 同例外；不能泛化到TER React节点 | NOT_RUN |
-| install前提：允许来源 | OS安装来源设置开关，仅系统要求时 | OS设置包/语义resource/display | native OS | 同driver窄例外；权限事实读回 | NOT_RUN |
-| rollback：无安全目标 | adapter/android/update内拟TerminalUpdateStartupFailureView.kt的Text | contentDescription=terminal-update-startup-failure；真实Text | native TER | 同driver R-10非React界面窄例外：uiautomator读取真实Text/屏幕，不是点击wrapper；报告注明 | NOT_RUN |
-| boot-guard：PRIMARY成功/失败 | integrationAssembly real-ready；既有loading gate | 非控件；当前boot与owner selector/原生读回 | internal state | agent注册selector；失败JS由driver原生事实读回 | NOT_RUN |
+| case-action/观察             | 真实节点/owner                                                      | 唯一标识来源/挂载                                            | wrapper/native | driver通路                                                                              | 当前proof |
+| ---------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------ | -------------- | --------------------------------------------------------------------------------------- | --------- |
+| install-result：安装确认     | Android系统Installer按钮                                            | OS包+资源语义+display；无TER TestId                          | native OS      | 最新driver内R-10系统UI窄例外：uiautomator取节点bounds后真实input；报告注明              | NOT_RUN   |
+| install-result：取消         | 同系统取消按钮                                                      | 同上，不以TER文案猜控件                                      | native OS      | 同例外；不能泛化到TER React节点                                                         | NOT_RUN   |
+| install前提：允许来源        | OS安装来源设置开关，仅系统要求时                                    | OS设置包/语义resource/display                                | native OS      | 同driver窄例外；权限事实读回                                                            | NOT_RUN   |
+| rollback：无安全目标         | adapter/android/update内拟TerminalUpdateStartupFailureView.kt的Text | contentDescription=terminal-update-startup-failure；真实Text | native TER     | 同driver R-10非React界面窄例外：uiautomator读取真实Text/屏幕，不是点击wrapper；报告注明 | NOT_RUN   |
+| boot-guard：PRIMARY成功/失败 | integrationAssembly real-ready；既有loading gate                    | 非控件；当前boot与owner selector/原生读回                    | internal state | agent注册selector；失败JS由driver原生事实读回                                           | NOT_RUN   |
 
 上述是A全部新增/复用的控件与关键观察，不用此表取代§11a。系统权限面为INSTALL前置变体，由OS控制，不在TER新增表单。
 控制面适用全集：两App package/Gradle/签名/发布配置，artifact schema/生成器，update owner/port/native，integrationAssembly及两integration selector registry，automation agent开关/run配置和driver phase/fixtures/journeys/native动作，resource/health/format。任一变化后重开本表与受影响case准入，不能拿旧字节准入执行。
@@ -93,7 +93,7 @@ L2_SCRIPT_ADMISSION=N/A_WITH_REASON（非后台BrowserL2）；TER_UI_ADMISSION=O
 ## 4 · 每个 CP 的门控
 
 计划逐 CP 写 RECALL/允许改动/PROOF/退出。每点改前和 focused 后回读同一原始材料/owning source/记忆。
-F-LOAD/F-INSTALL/F-BOOT 在 CP-03 的同一受保护生产链先做单场景；F-COMPAT 完整反例在 CP-04，不推给 CP-06 的 all。CP-02 仅 typed-port focused/Web，安装产品 App 内的更新触发始终由最终 owner command 发起。计划 CP-02 前另列可选、需单独授权的一次性 F-LOAD 技术探针，不进入产品代码、不构成更新执行或第二条 HOT 路径，不能替代 CP-03 生产链证明。
+F-LOAD/F-INSTALL/F-BOOT 在 CP-03 的同一受保护生产链先做单场景；F-COMPAT 完整反例在 CP-04，不推给 CP-06 的 all。CP-02 仅 typed-port focused/Web，安装产品 App 内的更新触发始终由最终 owner command 发起。本次授权也覆盖计划中的一次性 F-LOAD 技术探针（若早期源码核验表明它能更快证伪公开 Host 接缝）；探针不进入产品代码、不构成更新执行或第二条 HOT 路径，且不能替代 CP-03 生产链证明。
 技术阈值拟定见 §8.8；实际预算不支持则修小的 owning path或交 Dexter，不悄悄放宽产品边界。
 
 ## 5 · operation/path/face/集合形态
@@ -104,28 +104,28 @@ A 新增终端本机 command/selector 和原生技术端口，无 CBS HTTP、DB/
 
 ## 6 · 跨 owner 写矩阵
 
-| 来源→目标 | 公开入口 | 权限与事实 |
-| --- | --- | --- |
-| 后续 C 调度/受管fixture→terminal-update | acceptTerminalUpdateTargetCommand | 最终同一执行核；fixture不能生成默认生产规则 |
-| integration PRIMARY→terminal-update | confirmTerminalUpdateBootCommand | real-ready + hydration + 当前 bootToken |
-| adapter event bridge→terminal-update | internal reconcileTerminalUpdateCommand | 只传技术状态；身份不匹配不写原task |
-| terminal-update→runtime/state | flushPersistence/actor slice actions | 仅写本机 owner slice；不写 TDC/server-config/topology |
-| terminal-update→Android UpdatePort | prepare/apply/readback/confirm/release | 原生文件/installer/boot真实事实，不写业务slice |
+| 来源→目标                               | 公开入口                                | 权限与事实                                            |
+| --------------------------------------- | --------------------------------------- | ----------------------------------------------------- |
+| 后续 C 调度/受管fixture→terminal-update | acceptTerminalUpdateTargetCommand       | 最终同一执行核；fixture不能生成默认生产规则           |
+| integration PRIMARY→terminal-update     | confirmTerminalUpdateBootCommand        | real-ready + hydration + 当前 bootToken               |
+| adapter event bridge→terminal-update    | internal reconcileTerminalUpdateCommand | 只传技术状态；身份不匹配不写原task                    |
+| terminal-update→runtime/state           | flushPersistence/actor slice actions    | 仅写本机 owner slice；不写 TDC/server-config/topology |
+| terminal-update→Android UpdatePort      | prepare/apply/readback/confirm/release  | 原生文件/installer/boot真实事实，不写业务slice        |
 
 副机不会因投影获得已执行任务；A 的本机 slice syncIntent=isolated。项目规则投影及副机调度仅 C 接线。
 
 ## 7 · 声明—传递—消费矩阵
 
-| 事实/机制 | 声明 | 传递 | 消费/反例 |
-| --- | --- | --- | --- |
-| 四版本 | application/package.json version + terminalRelease | 构建清单→APK native常量/内嵌发布→HOT清单 | 实际selector；Gradle写死值红例 |
-| publication identity | 稳定 relative path/文件 bytes digest；版本与application/runtime | INSTALL内嵌资源、FULL metadata、HOT metadata | 同版本不同内容拒绝；未知身份不能 already reached |
-| 最小 FULL | HOT manifest.minimumFull={applicationId,nativeBuildNumber,runtimeVersion,publicationId,apkSha256} | 固定 target.full/hot | 不比较runtime字符串；合法旧JS中间包必须读新数据 |
-| target/task | caller→owner校验→持久slice | flush成功后 port sideeffect | 两屏同时请求只固定一个任务，后续不能换目标 |
-| boot身份 | native一次JS实例生成，独立于Activity与agent session | adapter actual facts→owner→PRIMARYconfirm | 迟到旧boot忽略，reload也开启期限 |
-| 失败/UNKNOWN | typed原因+实际readback | currentTask/recentStatus/failedArtifactIds | 只失败身份禁重试，不把取消标坏包 |
-| 资源所有权 | run/task/prepared/install identity | native原子记录/driver manifest | 清理不碰active、previous成功、未知installer、他run资源 |
-| 代理 | server-config公开selector→compositionprovider | adapter每次网络调用读取快照 | 切空间不静默重绑固定task，秘密不进入update slice |
+| 事实/机制            | 声明                                                                                              | 传递                                         | 消费/反例                                              |
+| -------------------- | ------------------------------------------------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------ |
+| 四版本               | application/package.json version + terminalRelease                                                | 构建清单→APK native常量/内嵌发布→HOT清单     | 实际selector；Gradle写死值红例                         |
+| publication identity | 稳定 relative path/文件 bytes digest；版本与application/runtime                                   | INSTALL内嵌资源、FULL metadata、HOT metadata | 同版本不同内容拒绝；未知身份不能 already reached       |
+| 最小 FULL            | HOT manifest.minimumFull={applicationId,nativeBuildNumber,runtimeVersion,publicationId,apkSha256} | 固定 target.full/hot                         | 不比较runtime字符串；合法旧JS中间包必须读新数据        |
+| target/task          | caller→owner校验→持久slice                                                                        | flush成功后 port sideeffect                  | 两屏同时请求只固定一个任务，后续不能换目标             |
+| boot身份             | native一次JS实例生成，独立于Activity与agent session                                               | adapter actual facts→owner→PRIMARYconfirm    | 迟到旧boot忽略，reload也开启期限                       |
+| 失败/UNKNOWN         | typed原因+实际readback                                                                            | currentTask/recentStatus/failedArtifactIds   | 只失败身份禁重试，不把取消标坏包                       |
+| 资源所有权           | run/task/prepared/install identity                                                                | native原子记录/driver manifest               | 清理不碰active、previous成功、未知installer、他run资源 |
+| 代理                 | server-config公开selector→compositionprovider                                                     | adapter每次网络调用读取快照                  | 切空间不静默重绑固定task，秘密不进入update slice       |
 
 ## 8 · 业务规则与状态机
 
@@ -136,29 +136,29 @@ A 新增终端本机 command/selector 和原生技术端口，无 CBS HTTP、DB/
 新增规范输入 `contracts/terminal/terminal-update-artifact.schema.json` 为清单形状单源；能力型生成器 `scripts/generate/terminal-update-artifact.mjs` 输出 platform-ports TS与 adapter Android Kotlin模型，Node打包器直接校验 schema；不能手写第二份模型。
 发布脚本名称 `package:install`/`package:full`/`package:hot`，两App均有；FULL复用该次INSTALL APK同字节，不二次build。
 HOT 必须显式引用同application的minimum FULL metadata；不通过文件名/最新目录猜FULL。
-安装APK的 embedded release 与对应HOT由同一 compiled bundle+资源发布树产生。manifest记录platform/applicationId/runtime/native声明、entry、resource paths/size/hash、publicationId；FULL含APK路径/hash/签名核验信息，HOT含 minimumFull。
+INSTALL/FULL 的 embedded release 来自其构建时 compiled bundle+资源发布树；HOT 来自其自身发布时的 compiled bundle+资源发布树。HOT 可比所引用的最小 FULL 拥有更高的 bundleVersion 和不同 publicationId；若 bundleVersion 相同，内容身份必须相同，若版本更低则拒绝。manifest记录platform/applicationId/runtime/native声明、entry、resource paths/size/hash、publicationId；FULL含APK路径/hash/签名核验信息，HOT含 minimumFull。
 publicationId=有序相对路径+每文件SHA256的稳定编码摘要，包含真实入口/资源，不包含外层ZIP/清单自身避免递归。排序仅为内容身份编码，不赋予业务列表顺序。
-embedded 保持 RN 默认的 assets:// bundle 与 APK res 资源路径，不增加安装后复制整树的启动步骤。构建从共同 compiled 发布树计算 publicationId，把该身份与实际 embedded bundle asset 名称写入受 APK 签名保护的发布 metadata；INSTALL/FULL 的身份来自该构建事实，不从 AAPT 转换后的 drawable 重新推算。HOT 保留同源未封装发布树及其文件摘要；两种封装形式不同不影响共同内容身份，普通启动不依赖文件准备或额外磁盘复制。
+embedded 保持 RN 默认的 assets:// bundle 与 APK res 资源路径，不增加安装后复制整树的启动步骤。INSTALL/FULL 构建从其 compiled 发布树计算 publicationId，把该身份与实际 embedded bundle asset 名称写入受 APK 签名保护的发布 metadata；INSTALL/FULL 的身份来自该构建事实，不从 AAPT 转换后的 drawable 重新推算。HOT 保留其自身发布时的未封装发布树及文件摘要；与最小 FULL 的版本/身份关系按上述规则校验。两种封装形式不同不要求内容身份相同，普通启动不依赖文件准备或额外磁盘复制。
 签名 metadata 本身不足以证明实际入口同源：CP-01 必须从最终签名 APK 解出 metadata 指定的真实 embedded bundle，SHA-256 与该 compiled 发布树入口摘要相等；RN Gradle 打包必须消费该树，不允许另一轮 Metro 产物悄悄替换入口。资源核对发布树文件清单到 APK assets/res 名称、类型与尺度/限定符的实际映射，缺项或错映射拒绝；AAPT 会转换部分 drawable 内容，因此不以转换后 drawable 字节与原始文件逐项相等为判据，原始身份仍由发布树摘要确定，实际资源可用性另由 F-LOAD 证明。
 原始版本同但身份不同一律冲突；actual identity缺失/损坏时返回unknown，不假填目标值；更高native只有实际runtime兼容才跳FULL。
 受管版本fixture只在仓内 run-owned descriptor副本中声明测试版本/包名后缀；生产三脚本只读application package源；不能允许环境变量绕过生产版本来源。
 
 ### 8.2 文件资源与加载路线
 
-新增 `adapter/android/update` Expo模块；TerminalUpdatePackage实现Expo Package公开createReactNativeHostHandlers，autolinking识别 *Package.kt/java。
+新增 `adapter/android/update` Expo模块；TerminalUpdatePackage实现Expo Package公开createReactNativeHostHandlers，autolinking识别 _Package.kt/java。
 getJSBundleFile 每次读取 beginBoot 已核验的唯一入口：embedded 显式返回 assets:// 加构建 metadata 中的真实 asset 名称；HOT/文件恢复目标返回已校验的 file 路径。两者共用 application 既有 Expo factory 的唯一 Host，不用 DevLauncher/private 字段。选择记录的已安装 APK 身份绑定与复位见 §8.4/§8.7。
 受控 HOT 应用顺序：owner flush → apply 持久化与当前已安装 APK 身份绑定的 selection → beginBoot 核对 identity/hash/合法 root → 同 Host reload → 加载实际 HBC。FULL 后冷启动先进行 APK 身份复位，再显式选择新 embedded。
-embedded 图片沿 RN 的 APK res 解析，字体沿内嵌资产加载；HOT 和获准的文件型恢复目标按 RN 文件 bundle 布局（drawable-*、非图片 raw/*，generic resolver 保留相对路径）打包。获准 embedded 恢复仍走 asset/res，不复制为文件包。expo-asset 未安装 expo-updates 时使用 RN resolveAssetSource；F-LOAD 分别证明 embedded asset/res 与 HOT file 两条路径下 HBC、图片、字体离线可用，HOT 新资源不能依赖旧 APK drawable、旧缓存或远程资产。
+embedded 图片沿 RN 的 APK res 解析，字体沿内嵌资产加载；HOT 和获准的文件型恢复目标按 RN 文件 bundle 布局（drawable-_、非图片 raw/*，generic resolver 保留相对路径）打包。获准 embedded 恢复仍走 asset/res，不复制为文件包。expo-asset 未安装 expo-updates 时使用 RN resolveAssetSource；F-LOAD 分别证明 embedded asset/res 与 HOT file 两条路径下 HBC、图片、字体离线可用，HOT 新资源不能依赖旧 APK drawable、旧缓存或远程资产。
 原生只提供已验证入口/root事实，不导出可由任意command直接指定的文件路径。带native新模块/不支持资源发布闭包不能发布HOT，须FULL；不通过有网/旧缓存fallback掩盖。
 F-LOAD失败时停止该CP的后续推进；先验证公开接缝/布局，若要换整进程路线必须交回Dexter并修同包，不双维护加载器。
 
 ### 8.3 最终公开接口
 
 `kernel/base/terminal-update`：public命令 acceptTerminalUpdateTargetCommand、confirmTerminalUpdateBootCommand；公开selectors selectTerminalUpdateActualVersions、selectTerminalUpdateTask、selectTerminalUpdateRecentStatus。
-module.initialize在runtime hydration完成后发送internal reconcile command；nativeevent内部转command，外包不订阅第二业务总线。
+module.install在state hydration后发送internal reconcile command，读取并投影native事实、核对已持久化action；若发现FULL成功而固定目标仍有HOT阶段，只持久化回`fixed`并返回，不在Runtime安装钩子中启动下一次下载。PRIMARY完成hydration且`contentFailure=null`、完成初始路由后，integration再通过同一internal reconcile command续接这个固定任务。该延后只改变续接时机，不重新选target、不改变task/action身份，也不适用于已有action的读回。native event仍只转command，外包不订阅第二业务总线。
 accept输入为完整不可变 `FixedUpdateTarget`：ruleRef/createdAt/applicationId、full?、hot?、N/M策略参数、可信下载来源ref及expectedhash、selectionContext（selectedSpace/context identity）。不接受raw下载路径、脚本代码或页面状态。
 来源授权provider由composition注入：A正式应用无规则供给，不自动调用accept；automation fixture按manifest登记可信artifact与来源，再用同一命令。provider不允许任意URL/额外“fixture执行”command。B/C换真实授权数据，不换执行核。
-精确装配：两ui/integration的src/application/module.ts调用createTerminalUpdateModule并注入同一个具名UpdateTargetSourceProvider；application/base/android仅装配UpdatePort与当前网络配置读取能力。生产A provider返回SOURCE_UNAVAILABLE，不内置测试target。受管构建profile从仓内run-owned descriptor生成有限允许工件ref/expectedhash/来源origin，只有当前automation-enabled测试构建使用；production构建不得导入该descriptor，包/构建检查要有红例。driver仅通过正式accept command引用这些ref，不靠测试专用native入口；此fixture也是可信来源的替身，不是执行核的替身。
+精确装配：两个 UI integration 的 `src/assembly/assembly.tsx` 在其 `createApplicationModules` composition 中调用 `createTerminalUpdateModule`，并注入具名 `UpdateTargetSourceProvider`；当前 `src/application/module.ts` 只拥有路由重协调，不创建 application owner 模块。`application/base/android` 仅装配 `UpdatePort` 与当前网络配置读取能力。生产 A provider 返回 `SOURCE_UNAVAILABLE`，不内置测试 target。受管构建 profile 从仓内 run-owned descriptor 生成有限允许工件 ref/expectedHash/来源 origin，只有当前 automation-enabled 测试构建使用；production 构建不得导入该 descriptor，包/构建检查要有红例。已持久化的 task 在 APK 更新后由新 JS Runtime 继续执行，因此受管 source provider 的 opaque `sourceRef`→origin-relative path 映射必须能从当前 run/build 配置重建，不能只依赖先前同一 JS 实例中 `readTarget` 的副作用；新 Runtime 仍按固定 task target 解析来源，不重选或改写 target。driver 仅通过正式 accept command 引用这些 ref，不靠测试专用 native 入口；此 fixture 也是可信来源的替身，不是执行核的替身。
 选择/鉴权与固定前检查在owner串行临界区；async查询后重读状态，防迟到提交。重复同target/task幂等；不同payload identity冲突；每boot只占用一个rule。
 UpdatePort替代旧HotUpdatePort，无兼容别名：readFacts、prepareArtifact、applyPrepared、readAction、confirmBoot、releasePrepared 六项。
 readFacts 返回实际 native 版本、installedApkIdentity、embedded/selected/previous/candidate 发布及加载资格、current boot、installer/action 状态；APK 身份不符后的 selectionResetReason=APK_CHANGED_SELECTION_RESET 明确可见，保留旧身份作诊断，不以目标版本填 actual。prepare 只下载/校验/解包，返回 opaque preparedId；apply 输入 task/action/prepared 身份和 FULL/HOT 类别，不接受路径；readAction 按 action identity 查询；confirmBoot 带 bootToken+publicationId，并与该 context 的 installedApkIdentity 绑定核对；release 只释放无引用 prepared。
@@ -219,30 +219,30 @@ JS 先持久化 task.actionId/目标 hash/阶段并 flush。Native 先 AtomicFil
 进程中只此adapter可创建installer Session；已持久INTENT且唯一新getMySessions的包名/创建阶段匹配，可恢复createSession→保存sessionId间的窗口，不能按端口或包名猜别的App资源。多候选/字段不匹配保持UNKNOWN。
 保存sessionId后写入APK并校验，记录STAGED；commit之前原子写COMMITTING。PendingIntent携actionId/sessionId，通过本native模块的manifest receiver回写状态，receiver在后继APK仍可读同记录；日志不存原系统异常。
 COMMITTING 时崩溃：PackageManager 已达目标则成功；系统 session 在进行则等待；平台 API 能明确证明未 commit 才允许继续同 session；session 仍存在但不可判定或读回失败则 UNKNOWN。成功读回证明该 action session 已消失且实际未达目标，原 action 记 ENDED_NOT_INSTALLED，owner 回 WAITING_USER；原 action 不再 commit。下次合法呈现前先 flush 新 actionId，再建立新 session；保持同 task/工件，不将此过程视为失败工件重试。
-API 分支必须采用 §12 经 Dexter 选定的 FULL 设备范围：SessionInfo.isCommitted() 从 API 29 才提供，false 只证明未调用 commit，还须核验该自有 session 合法可续接；不能忽略 sealed/其他状态。在 API 24～28 无法证明 COMMITTING 的实际状态时，保留 UNKNOWN 至成功读回系统已回收或其他明确结果，不按应用等待时间猜回收、不新建冲突 session。系统回收没有本产品可承诺的固定期限。
+API 分支按 Dexter 已裁定的 FULL 最低 Android API≥29 实现：`SessionInfo.isCommitted()` 只证明是否已提交，false 仍须核验该自有 session 合法且可续接；sealed、未知或读回失败均不得重复 commit、抢占或删除未知 session。API 24～28 不属于本批，不实现、不测试低版本分支。
 ACTION结果必须匹配task/action/session/hash；迟到回调不能替换后继操作。USER_CANCELLED/ABORT_UNCLASSIFIED不标坏包；明确用户取消保留WAITING。
 仅已核验结束的本 action（USER_CANCELLED/ENDED_NOT_INSTALLED），或经精确 readback 证明未提交且本 action 拥有的 session 才可受控释放无引用准备资源；WAITING_USER 续接仍引用的 APK 不清，UNKNOWN 不得清 APK。
 这是一份native action原子记录与现有系统session事实，不是第二业务任务账本；安装等待继续不代表每次自动重复create/commit。
 
-| 中断窗口 | 可恢复事实与最小动作 | 禁止 |
-| --- | --- | --- |
-| JS action flush前/失败 | 无native动作；保持原发布 | 先建session再补task |
-| native INTENT前 | 同action幂等建立INTENT | 为相同task换action造成双session |
-| INTENT后、create前 | getMySessions为空，创建唯一session | 非空未知session删除或占用 |
-| create后、sessionId持久前 | 用INTENT和唯一、包名/阶段匹配的本installer session恢复；模糊则UNKNOWN | 猜session归属或再create |
-| sessionId后、APK写入中 | 同session核对写入/hash；未commit才继续stage | 把残缺APK当已准备/已安装 |
-| STAGED后、COMMITTING前 | 原子写COMMITTING，再一次commit | 无action记录提交 |
-| COMMITTING后、调用/回调间 | 实际包已达→成功；系统在途→等待；可确证未commit→同session继续；仍存在不可判定/查询失败→UNKNOWN；确证session消失且未安装→ENDED_NOT_INSTALLED→WAITING_USER | 因无callback或读回失败重复旧commit/create |
-| callback后、JS未读回 | receiver持久技术结果；下boot按完整identity读回 | 迟到旧session写新task；系统success冒整rule成功 |
-| 明确用户取消或ENDED_NOT_INSTALLED后 | 仍WAITING_USER；旧action终结且不再commit，未来C提醒或A同fixture续接以原task建立新action/session | FAILED标坏、旧回调覆盖新action或提供手工retry界面 |
-| BUSY_UNKNOWN后 | 按foreground/resume/session事件读回；未知session仍存在则保持；确证全部结束后核对实际版本→成功或WAITING_USER | 删除/认领未知session；查询失败当空集合；轮询抢占 |
+| 中断窗口                            | 可恢复事实与最小动作                                                                                                                                    | 禁止                                              |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| JS action flush前/失败              | 无native动作；保持原发布                                                                                                                                | 先建session再补task                               |
+| native INTENT前                     | 同action幂等建立INTENT                                                                                                                                  | 为相同task换action造成双session                   |
+| INTENT后、create前                  | getMySessions为空，创建唯一session                                                                                                                      | 非空未知session删除或占用                         |
+| create后、sessionId持久前           | 用INTENT和唯一、包名/阶段匹配的本installer session恢复；模糊则UNKNOWN                                                                                   | 猜session归属或再create                           |
+| sessionId后、APK写入中              | 同session核对写入/hash；未commit才继续stage                                                                                                             | 把残缺APK当已准备/已安装                          |
+| STAGED后、COMMITTING前              | 原子写COMMITTING，再一次commit                                                                                                                          | 无action记录提交                                  |
+| COMMITTING后、调用/回调间           | 实际包已达→成功；系统在途→等待；可确证未commit→同session继续；仍存在不可判定/查询失败→UNKNOWN；确证session消失且未安装→ENDED_NOT_INSTALLED→WAITING_USER | 因无callback或读回失败重复旧commit/create         |
+| callback后、JS未读回                | receiver持久技术结果；下boot按完整identity读回                                                                                                          | 迟到旧session写新task；系统success冒整rule成功    |
+| 明确用户取消或ENDED_NOT_INSTALLED后 | 仍WAITING_USER；旧action终结且不再commit，未来C提醒或A同fixture续接以原task建立新action/session                                                         | FAILED标坏、旧回调覆盖新action或提供手工retry界面 |
+| BUSY_UNKNOWN后                      | 按foreground/resume/session事件读回；未知session仍存在则保持；确证全部结束后核对实际版本→成功或WAITING_USER                                             | 删除/认领未知session；查询失败当空集合；轮询抢占  |
 
 ### 8.8 有限技术预算（本设计拟定，尚待测量）
 
 每次只有1个native准备工作与1个application update任务；ZIP最多256MiB、解包累计512MiB、files最多8192、manifest最多256KiB；64KiB流式buffer，不整包入JS。
 空间预检需下载ZIP+本次解包上界+64MiB保留；当前active/previous空间另计，不为凑预算删除其资源。压缩比不能仅按声明判定，实际读取累计也限额。
 connect10s、一次下载总期限120s、最多3次（1s/3s延迟）暂时网络失败；下载尝试与退避累计≤364s（取消/资源结束的单次10s另计，最多三次共30s，不虚报整个动作只需364s）；认证/摘要/路径/兼容失败不重试。到期取消原call/流并等待可观察资源结束，不只cancel Promise。
-native boot T=60s，独立进程native scheduler；仅覆盖candidate启动，不给普通每次业务启动加HOT回退。人工安装等待没有TTL；清理/读回单次10s，超过返回UNKNOWN/cleanup failure，不杀未知session。
+native boot T=60s，独立进程native scheduler；只覆盖新HOT候选及其唯一一次获准previous恢复启动，不给普通每次业务启动加HOT回退。候选超时后先持久记录失败，再切到previous；previous恢复启动若超时或进程在确认前再次退出，进入失败终态，不再自动选择同一候选或递归回退。APK身份变化清除旧候选与回退资格。人工安装等待没有TTL；清理/读回单次10s，超过返回UNKNOWN/cleanup failure，不杀未知session。
 这些是控制资源的工程候选，不是已测安全容量或新业务配额。CP-03/04单场景测量证明目标设备可达；需要改变须记录依据及受影响测试，不能通过盲延timeout获得PASS。
 
 ## 9 · owner API 与消费者清单
@@ -252,23 +252,25 @@ Android update adapter只实现platform-ports，原生Package/模块/文件/安�
 两个application共同消费base/android与adapter；ui/integration两包共同注册update module+selectors，不重复本地执行者。
 打包Node工具消费canonicalartifact schema和application package，无React/UI依赖。B/C将来消费固定接口，不增另一schema/版本账本。
 
+CP-01 的受管 Android 打包把 Gradle root、application 与 library project build output 全部映射到当前 run。React Native 0.86.3 的 [`ReactSettingsExtension`](https://raw.githubusercontent.com/facebook/react-native/v0.86.3/packages/gradle-plugin/settings-plugin/src/main/kotlin/com/facebook/react/ReactSettingsExtension.kt) 按 autolinking `sourceDir` 注册项目；Expo Modules Autolinking 57.0.12 的 [`androidResolver`](https://raw.githubusercontent.com/expo/expo/sdk-57/packages/expo-modules-autolinking/src/reactNativeConfig/androidResolver.ts) 为 Android module 生成的 `cmakeListsPath` 指向 `<sourceDir>/build/generated/source/codegen/jni/CMakeLists.txt`，React Native Gradle plugin 的 [`ReactPlugin`](https://raw.githubusercontent.com/facebook/react-native/v0.86.3/packages/gradle-plugin/react-native-gradle-plugin/src/main/kotlin/com/facebook/react/ReactPlugin.kt) 则把 codegen 输出放在该 project 的 `buildDirectory/generated/source/codegen`。因此，受管构建需为实际纳入 Gradle 的 `apps/terminal/node_modules/**/android` library project 建立临时 `android/build` 链接，目标为其按 Gradle project path 映射的 run-owned build directory；创建链接前先创建目标目录。Expo SDK 57 在 Gradle 配置期经 `node_modules/expo/android/build/inline/modules` 写 inline-module 清单；若该临时链接指向尚不存在的目录，Node 的递归建目录会沿悬空链接失败，故目标目录必须先存在。不按包名写特例。Gradle 在创建链接前把精确 path/target 清单写入 run-owned registry，Node builder 正常退出时清理，runner 在中断清理时按 registry 与 run manifest 校验身份后清理。源路径已占用、registry 不合法、链接目标不匹配或 cleanup readback 有残留均 fail closed；Android 源树中的 `build`/`.cxx` 扫描负责发现未登记残留。共享 `.gradle` 依赖缓存不属于本 run 清理范围。
+
 ## 9a · 全链同步变更清单（未来实施范围）
 
-| 正本/生产路径 | 变更与消费者 |
-| --- | --- |
-| contracts/terminal/terminal-update-artifact.schema.json；scripts/generate/terminal-update-artifact.mjs | 新清单/生成器，D41完整路径校验；平台端口与Kotlin同源 |
-| apps/terminal/kernel/base/platform-ports/src/types/hotUpdate.ts、src/types/platformPorts.ts、src/types/result.ts、src/index.ts、默认不可用实现及测试 | 换UpdatePort与具名消息；检索所有hotUpdate引用，同批删除旧七方法，无fallback |
-| apps/terminal/kernel/base/terminal-update/ | 新最终owner、commands/slice/actor/selectors/initialize与tests；package/public exports/invariants |
-| apps/terminal/adapter/android/update/ | Expo native模块、TerminalUpdatePackage/HostHandler、file preparation/PackageInstaller/AtomicFile、tests |
-| apps/terminal/application/base/android/src/foundations/androidPlatform.ts、src/foundations/nativeLoadingCapability.ts | 装配adapter、注入provider和bootfacts，正确失败不confirm |
-| apps/terminal/application/base/android/android/src/main/java/com/catering/v2s/terminal/application/base/android/TerminalNativeLoadingRegistry.kt、TerminalAppControlModule.kt | 复用loading/Host，共同调用adapter的进程协调器；保留TDC取消/topology/Runtime失败reset三个原消费者与typed结果 |
-| apps/terminal/ui/base/integration-assembly/src/foundations/integrationAssembly.tsx | PRIMARY real-ready确认接缝；旧boot隔离 |
-| apps/terminal/ui/integration/sample-console/src/application/module.ts；apps/terminal/ui/integration/sample-wallpaper-console/src/application/module.ts | update module配置与selectors registry，单Runtime单实例，无页面启动effect |
-| apps/terminal/application/android/sample-terminal/；sample-wallpaper-terminal/ | package.json/scripts/app.config/Gradle/embeddedmetadata/autolink，两App签名与版本传播 |
-| scripts/build/terminal-update-artifact.mjs；tools/terminal-automation/src/runner.ts、androidBuild.ts、managedRun.ts | 单源打包和新update phase；同run包名/签名跨安装/重启 |
-| tools/terminal-automation/fixtures/updateArtifacts.ts、journeys/update*.test.ts、src/index.ts与直接测试 | 受管静态工件、最终command、实际安装动作/selector/native readback |
-| tools/verify-gates/verify.mjs、scripts/README.md、scripts/env/check-runtime-resource-budget、health/format登记 | 只扩既有门/资源profile；不要引入新台账控制面 |
-| doc/platform/terminal-coding-standard.md TR-09 | Dexter 已批准取消激活根级清除的精确例外；未来实施授权下、CP-02之前于唯一正本落实并做focused/red；本轮不改规范，不扩大其他reset/owner |
+| 正本/生产路径                                                                                                                                                                 | 变更与消费者                                                                                                         |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| contracts/terminal/terminal-update-artifact.schema.json；scripts/generate/terminal-update-artifact.mjs                                                                        | 新清单/生成器，D41完整路径校验；平台端口与Kotlin同源                                                                 |
+| apps/terminal/kernel/base/platform-ports/src/types/hotUpdate.ts、src/types/platformPorts.ts、src/types/result.ts、src/index.ts、默认不可用实现及测试                          | 换UpdatePort与具名消息；检索所有hotUpdate引用，同批删除旧七方法，无fallback                                          |
+| apps/terminal/kernel/base/terminal-update/                                                                                                                                    | 新最终owner、commands/slice/actor/selectors/initialize与tests；package/public exports/invariants                     |
+| apps/terminal/adapter/android/update/                                                                                                                                         | Expo native模块、TerminalUpdatePackage/HostHandler、file preparation/PackageInstaller/AtomicFile、tests              |
+| apps/terminal/application/base/android/src/foundations/androidPlatform.ts、src/foundations/nativeLoadingCapability.ts                                                         | 装配adapter、注入provider和bootfacts，正确失败不confirm                                                              |
+| apps/terminal/application/base/android/android/src/main/java/com/catering/v2s/terminal/application/base/android/TerminalNativeLoadingRegistry.kt、TerminalAppControlModule.kt | 复用loading/Host，共同调用adapter的进程协调器；保留TDC取消/topology/Runtime失败reset三个原消费者与typed结果          |
+| apps/terminal/ui/base/integration-assembly/src/foundations/integrationAssembly.tsx                                                                                            | PRIMARY real-ready确认接缝；旧boot隔离                                                                               |
+| apps/terminal/ui/integration/sample-console/src/application/module.ts；apps/terminal/ui/integration/sample-wallpaper-console/src/application/module.ts                        | update module配置与selectors registry，单Runtime单实例，无页面启动effect                                             |
+| apps/terminal/application/android/sample-terminal/；sample-wallpaper-terminal/                                                                                                | package.json/scripts/app.config/Gradle/embeddedmetadata/autolink，两App签名与版本传播                                |
+| scripts/build/terminal-update-artifact.mjs；tools/terminal-automation/src/runner.ts、androidBuild.ts、managedRun.ts                                                           | 单源打包和新update phase；同run包名/签名跨安装/重启                                                                  |
+| tools/terminal-automation/fixtures/updateArtifacts.ts、journeys/update*.test.ts、src/index.ts与直接测试                                                                       | 受管静态工件、最终command、实际安装动作/selector/native readback                                                     |
+| tools/verify-gates/verify.mjs、scripts/README.md、scripts/env/check-runtime-resource-budget、health/format登记                                                                | 只扩既有门/资源profile；不要引入新台账控制面                                                                         |
+| doc/platform/terminal-coding-standard.md TR-09                                                                                                                                | Dexter 已批准取消激活根级清除的精确例外；在本次授权下、CP-02之前于唯一正本落实并做focused/red；不扩大其他reset/owner |
 
 ### 9a.1 有限门映射
 
@@ -276,6 +278,7 @@ Android update adapter只实现platform-ports，原生Package/模块/文件/安�
 artifact generator/check self-test：根外package/manifest/子文件symlink必须拒绝；路径穿越、duplicate entry、symlink/压缩炸弹、同版本不同identity、旧HotUpdate消费者用最小red fixture。
 application version propagation打包门读最终签名APK真实字段、metadata及实际embedded bundle：实际入口SHA-256必须等于发布树入口摘要，资源清单与APK assets/res名称映射必须匹配。红夹具保留metadata/版本却替换入口字节（必要时按测试签名重签）必须拒绝；资源缺项/错映射同样拒绝。AAPT转换后的drawable不作原始字节相等比较，理由见§8.1；改Gradle写死/red声明不可被expected常量掩盖。
 全仓verify未来仍须跑实际默认模式；validate-only不可作替代。阈值/业务/兼容不建通用机械语义门，靠focused和独立review。
+
 ### 9a.2 runner复用/退役
 
 唯一新能力并入 `scripts/test/terminal-automation.mjs` / `tools/terminal-automation`；不新增ter-update旧风格runner。
@@ -312,55 +315,66 @@ APK升级不能清业务持久化；入口变更不能重命名业务slice键或
 ## 10b · seed、fixture与角色
 
 ### 10b.1 受影响seed全集
+
 N/A_WITH_REASON：A不改变seed。可复用 `doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json` 中dual=term-front/mobile=term-handheld。
+
 ### 10b.2 改动分类
+
 新工件fixture在run-owned仓内目录；不新增业务终端/activationcode副本；业务fixture使用当前automation已有helper。
+
 ### 10b.3 覆盖判据
+
 无激活本地case不需DEV；恢复业务字段case需要fixture真实建立/读回，再改版本；不能用假selector值替代持久数据。
+
 ### 10b.4 同步项
+
 manifest只记seedkey/terminalRef/storeRef/deviceId安全身份、artifacthash、packageId、action/session、进程身份；激活码/账号秘密/代理不落盘。
+
 ### 10b.5 边界
+
 同时间一受管run；REQUIRE_INACTIVE；仅driver manifest身份与真实binding一致才回收；沿用当前helper而非另造cancel。
+
 ### 10b.6 父流程与角色
+
 本机发布操作者=开发者，企业签名由授权配置；DEV业务fixture复用tools/terminal-automation/fixtures/managedActivation.ts→terminalActivation.ts→TDC acceptance/operationsFixture.ts。环境变量名为V2S_TERMINAL_DEV_MANIFEST、V2S_TERMINAL_DEV_HTTP_BASE_URL、V2S_SEED_OPERATIONS_DEFAULT_PASSWORD；operations actor由既有helper按seed合法操作人解析，不伪造会话。
 未来实施先重开automation的fixture helper/seed中合法actor并确认当前值由受管配置提供再运行；本轮不索取秘密，也不假定已有管理员登录。
 FULL/HOT fixture始终在同一managed run保持applicationId后缀、signature、storage；不调用当前每次生成新包名的另一个build run来假称覆盖更新。
 
 ## 11 · 验收场景设计
 
-自动化端点只触发正式command、查询selectors、真实点击系统控件；zip经受管静态文件HTTP流式下载，fixture可切断/截断响应但不改owner执行核。
+自动化端点只触发正式command、查询selectors、真实点击系统控件；zip经受管静态文件HTTP流式下载，fixture可切断/截断响应但不改owner执行核。Android使用一个`AndroidJourneyUiPort`完成两类真实操作：TER App控件只按session/surface/display经注册TestId点击或输入；Android系统控件使用命名参数的`waitForSystemButton`等待，`clickSystemButton`按语义标签、系统package与可见上下文识别，点击前重新读取层级并解析新bounds。Settings开关使用有状态读回的`setSystemChecked`，系统返回使用`pressSystemBack`，失败诊断用`readSystemScreenSummary`；这些helper都发出固定的start/complete/failed步骤事件，不记录按钮文本或业务输入。driver 不把低层系统控件API暴露为 Journey 操作入口；不得把系统控件降成TER TestId，也不得将app正文交给系统文本搜索。
 准备loader/installer/保护的native case在CP-03；高层owner行为Web先行在CP-02/05。该顺序不把原生特有行为虚构成WebPASS。
 
 ### 11a · 验收判据对照
 
 所有行当前结果=NOT_RUN；F=focused源码测试，W=Expo Web，AND=安装application设备。不使用A表示执行面，避免与阶段A混淆。
 
-| case（拟扩当前driver） | R/V当阶段子判据 | fixture/动作 | 可证伪业务断言 | 执行面/cleanup |
-| --- | --- | --- | --- | --- |
-| update.artifacts | R01/02；V01、V03本机部分 | 两App三产物、JS1.0.9/1.0.10，解最终签名APK/ZIP；保留metadata却替换入口、资源缺项/错映射红例 | 所有版本单源、FULL APK同字节；实际embedded入口摘要等于发布树入口摘要；assets/res清单与名称映射匹配；不比较AAPT转换drawable的原始字节；same-version不同内容拒绝 | 打包+F+AND；仅run产物 |
-| update.baseline | R03/13；V02 | 不同App/runtime/native模块差异 | 拒绝HOT、无select/reload；未知identity不already-reached | F/W→AND；prepared释放 |
-| update.archive | R03；V04/V30 | 穿越/symlink/duplicate/截断/超预算/无空间 | active不变；安全原因码、无越界文件 | F+AND；本action无引用文件 |
-| update.fixed | R09；V14/V15局部 | 两屏并发、慢flush、冲突target/迟到读回 | 同boot1task；flush失败零port；固定不替换 | F/W→AND双屏；资源注销 |
-| update.full-hot | R06/09；V08 A部分 | APK1JS3→FULL2JS4→HOT5 | 跨boot同task；真实APK/JS5且确认，非reload接受 | W状态→AND；同包签名，系统session收敛 |
-| update.compatibility | R06；V09/10 | 同runtime APK1+HOT JS5→FULL2 embedded4→HOT6；外部更高APK替换 | 两个反例均先作废旧selection/previous/candidate加载资格并报APK_CHANGED_SELECTION_RESET；实际首boot只运行新embedded，旧token无效；中间JS4真实读JS5数据；固定HOT后续独立确认，不以目标伪actual | F/W→AND；数据/active保护 |
-| update.install-result | R10/11；V16/17 | cancel/pending/仍存不可判定session/消失未安装/BUSY释放/读回失败/技术失败 | 取消及ENDED_NOT_INSTALLED回WAITING_USER、未标坏；下次呈现新action/session只邀请原工件；BUSY释放有出口；查询失败不当消失；仍存UNKNOWN不重复commit；旧回调不写新action，无手工retry | F/W→AND真实点击；unknown不得清session资源 |
-| update.flush | R09/10；V20 | owner-only持久数据、故障flush | 应用前failed零commit/reload；真实重启恢复所声明字段 | F/W→AND；只清fixture数据 |
-| update.offline-assets | R13；V21及embedded基线反例 | 两App先embedded asset/res禁网启动，再HOT file新图片/字体，去旧cache | 两条路径各自HBC/图片/字体离线可用；embedded无需复制整树；HOT新资源不回旧drawable/默认assets，字节码匹配真实nativeHermes | AND两App；留active/获准previous |
-| update.interruption | R09/13；V22 | prepare/selection/install/reload中断；COMMITTING落盘后退出；API≥29可查询commit状态/API24～28无该API；模拟可控session移除后版本仍未达 | 半包不active；≥29仅明确未commit且合法可续接才继续同session；低API无法判定时UNKNOWN直到实际回收读回，无应用TTL或重复commit；两分支均在确证消失未安装后结束旧action→WAITING_USER→新邀请，不坏包；读回失败UNKNOWN；外部APK替换不复用旧加载记录 | F+AND；设备只验证Dexter批准的API范围，未选分支明确N/A_WITH_REASON，不能说已运行；只stop本run拥有tree |
-| update.boot-guard | R14；V23/24 | primary成功/内容失败/停顿/旧boot迟到/同Activityreload | 每candidate新T，hide非confirm，旧token不确认；一次恢复 | F+AND双屏；deadline/executor释放 |
-| update.rollback | R14；V25/26 | confirmation前数据写入、新native不兼容、确认后断网 | 旧成功包读数据/finite恢复；没安全目标可见失败；普通HTTP不回退 | F+AND；失败identity保留 |
-| update.recent | R15 A局部；V27/28局部 | FULL成功HOT失败、unknown实际读回 | recentStatus真实；APK/JS分别显示；不伪报告CBS | F/W→AND；订阅注销 |
-| update.cleanup | R03/10；V30 | 清理失败/unknowninstaller/active资源 | 安全关联日志；cleanup失败不能完成，active/他run不删除 | F+AND+managed；精确ownership |
+| case（拟扩当前driver） | R/V当阶段子判据            | fixture/动作                                                                                                                             | 可证伪业务断言                                                                                                                                                                                                                                | 执行面/cleanup                            |
+| ---------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| update.artifacts       | R01/02；V01、V03本机部分   | 两App三产物、JS1.0.9→1.0.10 递增版本；合成不同内容正例；同版本不同内容、降版、保留metadata却替换入口、资源缺项/错映射及未合并 `REQUEST_INSTALL_PACKAGES` 红例；最终签名APK/ZIP读回 | 所有版本单源、FULL APK同字节；真实受管产物链中的HOT bundleVersion高于INSTALL，HOT 可引用较早的最小 FULL；同源构建不要求HOT字节不同于INSTALL；HOT ZIP摘要须与发布清单逐项一致；相同 bundleVersion 不同 publicationId 拒绝；实际embedded入口摘要等于发布树入口摘要；assets/res清单与名称映射匹配；不比较AAPT转换drawable的原始字节；最终APK权限表含 `android.permission.REQUEST_INSTALL_PACKAGES` | 打包+F+AND；仅run产物                     |
+| update.baseline        | R03/13；V02                | 不同App/runtime/native模块差异                                                                                                           | 拒绝HOT、无select/reload；未知identity不already-reached                                                                                                                                                                                       | F/W→AND；prepared释放                     |
+| update.archive         | R03；V04/V30               | 穿越/symlink/duplicate/截断/超预算/无空间                                                                                                | active不变；安全原因码、无越界文件                                                                                                                                                                                                            | F+AND；本action无引用文件                 |
+| update.fixed           | R09；V14/V15局部           | 两屏并发、慢flush、冲突target/迟到读回；sample-console 与 sample-wallpaper-console 各自以 run-scoped Web fixture 接线 | 同boot1task；flush失败零port；固定不替换；两个 integration composition 均通过公开 command/selectors 读回当前事实 | F/W（两 sample）→AND双屏；资源注销 |
+| update.full-hot        | R06/09；V08 A部分          | APK1JS3→FULL2JS4→HOT5                                                                                                                    | 跨boot同task；真实APK/JS5且确认，非reload接受                                                                                                                                                                                                 | W状态→AND；同包签名，系统session收敛      |
+| update.compatibility   | R06；V09/10                | 同runtime APK1+HOT JS5→FULL2 embedded4→HOT6；外部更高APK替换                                                                             | 两个反例均先作废旧selection/previous/candidate加载资格并报APK_CHANGED_SELECTION_RESET；实际首boot只运行新embedded，旧token无效；中间JS4真实读JS5数据；固定HOT后续独立确认，不以目标伪actual                                                   | F/W→AND；数据/active保护                  |
+| update.install-result  | R10/11；V16/17             | cancel/pending/仍存不可判定session/消失未安装/BUSY释放/读回失败/技术失败                                                                 | 取消及ENDED_NOT_INSTALLED回WAITING_USER、未标坏；下次呈现新action/session只邀请原工件；BUSY释放有出口；查询失败不当消失；仍存UNKNOWN不重复commit；旧回调不写新action，无手工retry                                                             | F/W→AND真实点击；unknown不得清session资源 |
+| update.flush           | R09/10；V20                | owner-only持久数据、故障flush                                                                                                            | 应用前failed零commit/reload；真实重启恢复所声明字段                                                                                                                                                                                           | F/W→AND；只清fixture数据                  |
+| update.offline-assets  | R13；V21及embedded基线反例 | 两App先embedded asset/res禁网启动，再HOT file新图片/字体，去旧cache                                                                      | 两条路径各自HBC/图片/字体离线可用；embedded无需复制整树；HOT新资源不回旧drawable/默认assets，字节码匹配真实nativeHermes                                                                                                                       | AND两App；留active/获准previous           |
+| update.interruption    | R09/13；V22                | prepare/selection/install/reload中断；COMMITTING落盘后退出；API≥29检查commit与合法续接；模拟可控session移除后版本仍未达                  | 半包不active；仅明确未commit且session合法可续接时继续同session；未知状态、不可读回、外部APK身份变化时不重复commit、不抢占、不删除未知session；确证session消失且未安装后结束旧action→WAITING_USER→新邀请；不标坏包                             | F+AND；只验证API≥29；只stop本run拥有tree  |
+| update.boot-guard      | R14；V23/24                | primary成功/内容失败/停顿/旧boot迟到/同Activityreload                                                                                    | 每candidate新T，hide非confirm，旧token不确认；一次恢复                                                                                                                                                                                        | F+AND双屏；deadline/executor释放          |
+| update.rollback        | R14；V25/26                | confirmation前数据写入、新native不兼容、确认后断网                                                                                       | 旧成功包读数据/finite恢复；没安全目标可见失败；普通HTTP不回退                                                                                                                                                                                 | F+AND；失败identity保留                   |
+| update.recent          | R15 A局部；V27/28局部      | FULL成功HOT失败、unknown实际读回                                                                                                         | recentStatus真实；APK/JS分别显示；不伪报告CBS                                                                                                                                                                                                 | F/W→AND；订阅注销                         |
+| update.cleanup         | R03/10；V30                | 清理失败/unknowninstaller/active资源                                                                                                     | 安全关联日志；cleanup失败不能完成，active/他run不删除                                                                                                                                                                                         | F+AND+managed；精确ownership              |
 
 全部case跑两application；AND至少mobile与单机双屏。涉及actor/state的同case W先于AND；两个机器配对/同步归C，A不声称四拓扑完整通过。
 V05/06管理、V07最新规则、V11/12投递、V13主副、V18 N提醒/V19 M判闲、V29后台为B/C，详设只保存接口不标A完成。
 
 ## 12 · 未决项处置
 
-APPROVED_STANDARD_SYNC_PENDING：Dexter 于本轮批准取消激活引发的根级 state 清除例外，唯一触发是 terminalDataClientActor 的 dispatchOfflineReset 调用 requestApplicationReset(TERMINAL_ACTIVATION_CANCELLED)（评审锚点L193，当前源码L199）。例外正文只落 doc/platform/terminal-coding-standard.md 的 TR-09；本轮不修改正本，未来实施授权下须在 CP-02 之前同步，focused/red 同时证明 update descriptor 实际持久三字段保留，ephemeral、其他 owner、orphan 仍清除，sync isolated 且 TDC 凭证不保留。topology 角色切换仅 flush 后 resetRuntime 重载 JS，不清 state、不作例外理由。已批准产品取舍无需再裁决；正本同步与 proof 尚未完成，不将批准写成现行实现或扩大适用原因。
+APPROVED_STANDARD_SYNC_PENDING：Dexter 于本轮批准取消激活引发的根级 state 清除例外，唯一触发是 terminalDataClientActor 的 dispatchOfflineReset 调用 requestApplicationReset(TERMINAL_ACTIVATION_CANCELLED)（评审锚点L193，当前源码L199）。例外正文只落 doc/platform/terminal-coding-standard.md 的 TR-09；本次授权下须在 CP-02 之前同步，focused/red 同时证明 update descriptor 实际持久三字段保留，ephemeral、其他 owner、orphan 仍清除，sync isolated 且 TDC 凭证不保留。topology 角色切换仅 flush 后 resetRuntime 重载 JS，不清 state、不作例外理由。已批准产品取舍无需再裁决；正本同步与 proof 尚未完成，不将批准写成现行实现或扩大适用原因。
 正本同步必须同时说明 retain 按 slice 生效、不按原因过滤；当前生产根级调用点集合为 {TDC 取消激活}。新增任何 requestApplicationReset 生产调用点必须重新评审此例外。采用明确文字义务与 CP-02/后续相关 review checklist，保留既有字段 focused/red；不另加字符串扫描门，避免将 Runtime 测试中的其他 reset 原因误作生产触发点，也避免为当前单调用点增加独立门维护成本。
 OPEN-LOAD：公开handler/资产布局在本仓尚未加载；CP-03工程单场景前置。
-OPEN-NATIVE：Maven Hermes/ZIP依赖、企业签名/安装资格未解析；CP-01/03逐项确认。FULL 最低设备 API 须 Dexter 在实施授权前二选一：①限制为 API≥29，以公开 SessionInfo.isCommitted 判定是否调用 commit（仍核验 session 可续接状态）；②允许 API24～28，并接受无法判定的自有 session 在系统实际回收前一直 UNKNOWN，不能承诺等待上限或通过应用TTL释放。官方 API29 来源与 Android7/9 AOSP 启动读回时三天年龄阈值见附件§2；该阈值不是三天必回收 SLA，具体目标系统/OEM仍需核实。仓内静态min24不是本批已经选择的FULL最低设备范围；本轮不改配置、不代 Dexter 选择。§11a update.interruption 与 CP-03 采用获批分支。
+OPEN-NATIVE：Maven Hermes/ZIP依赖、企业签名/安装资格未解析；CP-01/03逐项确认。FULL 最低设备 API 已裁定为 API≥29；公开 `SessionInfo.isCommitted` 仍不能替代 session 合法性和可续接读回。§11a update.interruption 与 CP-03 仅验证获批 API≥29 范围。
 OPEN-PUBLISH：两App的数据兼容发布证明与60s/ZIP预算未测；CP-04。
 OPEN-AUTOMATION：当前源码已提供 agent/driver 主旅途接口，本轮未核验其验收完成状态；当前 update phase 不存在。§9a.3登记了实际 API 和待修源码输入，未来实施前重开修复后的公共 helper，update 能力仍由本批在同一 driver 内扩展；不据目录存在、作者报告或本次文档修订声称运行通过，不追加在途任务。
 UI_CONTENT_ACCEPTED：Dexter 已确认系统安装/来源设置、启动加载、原生失败文本三个面的界面内容；UI/设备行为、全部新能力及 cleanup 仍 NOT_RUN。看图前置已关闭，不覆盖工程 OPEN、最低 API 决定或实施授权。

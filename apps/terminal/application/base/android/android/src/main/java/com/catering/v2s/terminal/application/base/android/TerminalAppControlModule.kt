@@ -3,26 +3,31 @@ package com.catering.v2s.terminal.application.base.android
 import com.facebook.react.ReactApplication
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
+import expo.modules.kotlin.functions.Coroutine
+import com.catering.v2s.terminal.adapter.android.update.TerminalUpdateProcess
 
 class TerminalAppControlModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("TerminalAppControl")
 
-    AsyncFunction("resetRuntime") { requestId: String, _timeoutMs: Double ->
+    AsyncFunction("resetRuntime") Coroutine { requestId: String, timeoutMs: Double ->
       val application = appContext.reactContext?.applicationContext as? ReactApplication
-        ?: return@AsyncFunction failure(requestId, "APP_CONTROL_UNAVAILABLE", "react application is unavailable")
-      val reactHost = application.reactHost
-        ?: return@AsyncFunction failure(requestId, "APP_CONTROL_UNAVAILABLE", "react host is unavailable")
-      try {
-        reactHost.reload("TER topology reset")
-        mapOf(
+        ?: return@Coroutine failure(requestId, "APP_CONTROL_UNAVAILABLE", "react application is unavailable")
+      when (val outcome = TerminalUpdateProcess.reload("TER topology reset", timeoutMs.toLong())) {
+        "SUCCESSOR_RUNTIME_STARTED" -> mapOf(
           "status" to "accepted",
           "requestId" to requestId,
           "acceptedAt" to System.currentTimeMillis(),
-          "terminalObservation" to "SUCCESSOR_RUNTIME_STARTED",
+          "terminalObservation" to outcome,
         )
-      } catch (_error: Throwable) {
-        failure(requestId, "APP_CONTROL_RESET_FAILED", "runtime reset was not accepted")
+        "RELOAD_TIMED_OUT" -> mapOf(
+          "status" to "timed-out",
+          "requestId" to requestId,
+          "port" to "appControl",
+          "capability" to "resetRuntime",
+          "timeoutMs" to timeoutMs,
+        )
+        else -> failure(requestId, "APP_CONTROL_RESET_FAILED", "runtime reset did not start a successor runtime")
       }
     }
   }
