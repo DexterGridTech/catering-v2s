@@ -22,7 +22,7 @@ export const unavailableUpdatePort: UpdatePort = {
   ): Promise<PortResult<UpdateAction | null>> => createUnavailable('update', 'readAction'),
   confirmBoot: async (
     _input: UpdateCall & Readonly<{bootToken: string; publicationId: string}>,
-  ): Promise<PortResult<UpdateAction>> => createUnavailable('update', 'confirmBoot'),
+  ): Promise<PortResult<Readonly<{confirmed: true}>>> => createUnavailable('update', 'confirmBoot'),
   releasePrepared: async (
     _input: UpdateCall & Readonly<{preparedId: string}>,
   ): Promise<PortResult<Readonly<{released: boolean}>>> => createUnavailable('update', 'releasePrepared'),

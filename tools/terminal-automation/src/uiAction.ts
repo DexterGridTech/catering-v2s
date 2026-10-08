@@ -11,6 +11,7 @@ export type ObservedUiCommand = Readonly<{
   readonly timeoutMs?: number;
   readonly onRequestIdentified?: (requestId: string) => void;
   readonly onRequestFinished?: (requestId: string) => void;
+  readonly onObserverStep?: (step: string) => void;
 }>;
 
 export const dispatchObservedUiCommand = async (input: ObservedUiCommand): Promise<void> => {

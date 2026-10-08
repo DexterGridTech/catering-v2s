@@ -24,7 +24,7 @@ import {
 import {releaseRuntimeForTestAsync} from '@catering-v2s/kernel-base-runtime/testing';
 import {createTerminalDataClientModule} from '../src/application/createTerminalDataClientModule';
 import {selectActivationState, selectConnectionState} from '../src/selectors/selectTerminalDataClientState';
-import {activateTerminalCommand} from '../src/features/commands/terminalDataClientCommands';
+import {activateTerminalCommand, readTerminalDataCommand} from '../src/features/commands/terminalDataClientCommands';
 import {
   createTransportModule,
   type TransportManagedConnection,
@@ -43,8 +43,13 @@ const createComposition = (
     readonly plainStorage: ReturnType<typeof createProcessMemoryStateStoragePort>;
     readonly device?: DevicePort;
   }>,
-): Readonly<{readonly runtime: Runtime; readonly getConnectionAttempts: () => number}> => {
+): Readonly<{
+  readonly runtime: Runtime;
+  readonly getConnectionAttempts: () => number;
+  readonly getBusinessRequestAttempts: () => number;
+}> => {
   let connectionAttempts = 0;
+  let businessRequestAttempts = 0;
   const connection: TransportManagedConnection = {
     send: async () => undefined,
     close: async () => undefined,
@@ -60,16 +65,19 @@ const createComposition = (
       connectionAttempts += 1;
       return connection;
     },
-    sendHttp: async () => ({
-      kind: 'response',
-      status: 200,
-      body: {
-        terminalRef: '00000000-0000-4000-8000-000000000001',
-        storeRef: '00000000-0000-4000-8000-000000000002',
-        groupWorkspaceKey: 'workspace-1',
-        bindingGeneration: 4,
-      },
-    }),
+    sendHttp: async () => {
+      businessRequestAttempts += 1;
+      return {
+        kind: 'response',
+        status: 200,
+        body: {
+          terminalRef: '00000000-0000-4000-8000-000000000001',
+          storeRef: '00000000-0000-4000-8000-000000000002',
+          groupWorkspaceKey: 'workspace-1',
+          bindingGeneration: 4,
+        },
+      };
+    },
   };
   const transportModule = createTransportModule({networkAdapter: adapter, now: () => 1_000, random: () => 0});
   const terminalDataClientModule = createTerminalDataClientModule({
@@ -114,7 +122,11 @@ const createComposition = (
       persistenceDebounceMs: 0,
     },
   });
-  return Object.freeze({runtime, getConnectionAttempts: () => connectionAttempts});
+  return Object.freeze({
+    runtime,
+    getConnectionAttempts: () => connectionAttempts,
+    getBusinessRequestAttempts: () => businessRequestAttempts,
+  });
 };
 
 const startRuntime = async (runtime: Runtime, label: string): Promise<void> => {
@@ -178,6 +190,13 @@ describe('terminal-data-client runtime startup', () => {
         restoredStarted = true;
         expect(restored.getConnectionAttempts()).toBe(1);
         expect(selectConnectionState(restored.runtime.getState()).status).toBe('awaiting-ready');
+        expect(selectActivationState(restored.runtime.getState()).status).toBe('active');
+        expect(restored.getBusinessRequestAttempts()).toBe(0);
+        await restored.runtime.dispatchCommand(readTerminalDataCommand, {
+          operationId: 'terminalReadStoreBasic',
+          pathParameters: {storeRef: '00000000-0000-4000-8000-000000000002'},
+        }, {requestId: createRequestId()});
+        expect(restored.getBusinessRequestAttempts()).toBe(1);
       } finally {
         if (restoredStarted) await releaseRuntimeForTestAsync(restored.runtime);
       }

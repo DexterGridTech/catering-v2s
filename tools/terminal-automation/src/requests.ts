@@ -24,6 +24,11 @@ type SelectorListEvent = Readonly<{
   readonly value: unknown;
 }>;
 
+type RequestCandidate = Readonly<{
+  readonly requestId: string;
+  readonly workspace: 'MAIN' | 'BRANCH' | null;
+}>;
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
@@ -64,12 +69,14 @@ const resultOf = (response: Awaited<ReturnType<AutomationDriverServer['request']
 const isSelectorListEvent = (
   message: {type: string; body: unknown},
   subscriptionId: string,
-): message is {type: string; body: SelectorListEvent} =>
+): message is {
+  type: 'event';
+  body: SelectorListEvent | Readonly<{readonly subscriptionId: string; readonly valueState: 'NON_JSON'}>;
+} =>
   message.type === 'event' &&
   isRecord(message.body) &&
   message.body.subscriptionId === subscriptionId &&
-  message.body.valueState === 'JSON' &&
-  'value' in message.body;
+  (message.body.valueState === 'JSON' || message.body.valueState === 'NON_JSON');
 
 const readSelector = async (
   server: AutomationDriverServer,
@@ -80,24 +87,14 @@ const readSelector = async (
   const result = resultOf(await server.request(sessionId, 'selector.read', {selectorName, argsTuple}));
   if (!isRecord(result) || result.valueState !== 'JSON') throw new Error('TERMINAL_AUTOMATION_SELECTOR_VALUE_NOT_JSON');
   return result.value;
-};
+  };
+
+const isRequestCandidate = (value: unknown): value is RequestCandidate =>
+  isRecord(value) &&
+  typeof value.requestId === 'string' &&
+  (value.workspace === null || value.workspace === 'MAIN' || value.workspace === 'BRANCH');
 
 const terminalRequestStatuses = new Set(['completed', 'partial-failed', 'timed-out', 'error']);
-
-const matchingCandidates = (
-  views: Iterable<RequestView>,
-  baselineIds: ReadonlySet<string>,
-  input: Readonly<{workspace: 'MAIN' | 'BRANCH'; displayMode: 'PRIMARY' | 'SECONDARY'; commandName: string}>,
-): readonly RequestView[] =>
-  [...views].filter(view => {
-    if (baselineIds.has(view.requestId)) return false;
-    if (view.workspace !== null && view.workspace !== input.workspace) return false;
-    return rootCommands(view).some(
-      command =>
-        command.commandName === input.commandName &&
-        (command.displayMode === null || command.displayMode === input.displayMode),
-    );
-  });
 
 export const requests = Object.freeze({
   observeUiAction: async <T>(
@@ -111,23 +108,58 @@ export const requests = Object.freeze({
       readonly timeoutMs?: number;
       readonly onRequestIdentified?: (requestId: string) => void;
       readonly onRequestFinished?: (requestId: string) => void;
+      readonly onObserverStep?: (step: string) => void;
     }>,
   ): Promise<Readonly<{readonly requestId: string; readonly view: RequestView; readonly actionResult: T}>> => {
     const timeoutMs = input.timeoutMs ?? 30_000;
     const listSubscriptionId = `request-list-${randomUUID()}`;
-    const updates = new ReplaySubject<readonly RequestView[]>(1);
-    const views = new Map<string, RequestView>();
+    const updates = new ReplaySubject<readonly RequestCandidate[]>(1);
+    const candidates = new Map<string, RequestCandidate>();
+    let listSubscribeRequestMessageId: string | undefined;
+    let subscribePending = false;
+    let earlySubscribeError: Readonly<{requestMessageId: string; code: string}> | undefined;
+    let listSubscriptionReleased = false;
+    let initialValueReceived = false;
+    let removeSessionListener = (): void => undefined;
     const listListener = input.server.onMessage(input.sessionId, message => {
+      if (message.type === 'error' && isRecord(message.body)) {
+        const requestMessageId = message.body.requestMessageId;
+        const code = typeof message.body.code === 'string' ? message.body.code : 'UNKNOWN';
+        if (
+          typeof requestMessageId === 'string' &&
+          requestMessageId !== listSubscribeRequestMessageId &&
+          subscribePending
+        ) {
+          // Runtime may send the accepted subscription response followed by an
+          // initial-value error in the same socket read. Preserve only the
+          // correlation metadata until the request call returns its message id.
+          earlySubscribeError = Object.freeze({requestMessageId, code});
+        } else if (typeof requestMessageId === 'string') {
+          listSubscriptionReleased = true;
+          input.onObserverStep?.('request-list.initial-value-error');
+          updates.error(new Error(`TERMINAL_AUTOMATION_REQUEST_LIST_INITIAL_VALUE_FAILED code=${code}`));
+        }
+      }
       if (!isSelectorListEvent(message, listSubscriptionId)) return;
-      if (!Array.isArray(message.body.value) || !message.body.value.every(isRequestView)) {
+      if (message.body.valueState === 'NON_JSON') {
+        initialValueReceived = true;
+        input.onObserverStep?.('request-list.initial-value-non-json');
+        updates.error(new Error('TERMINAL_AUTOMATION_REQUEST_LIST_NON_JSON'));
+        return;
+      }
+      if (!Array.isArray(message.body.value) || !message.body.value.every(isRequestCandidate)) {
+        input.onObserverStep?.('request-list.invalid-json-value');
         updates.error(new Error('TERMINAL_AUTOMATION_REQUEST_LIST_INVALID'));
         return;
       }
-      views.clear();
-      for (const view of message.body.value) views.set(view.requestId, view);
-      updates.next(Object.freeze([...views.values()]));
+      input.onObserverStep?.('request-list.json-value');
+      initialValueReceived = true;
+      candidates.clear();
+      for (const candidate of message.body.value) candidates.set(candidate.requestId, candidate);
+      updates.next(Object.freeze([...candidates.values()]));
     });
     let listSubscribed = false;
+    let actionStarted = false;
     let exactSubscriptionId: string | undefined;
     let exactListener: (() => void) | undefined;
     const releaseListSubscription = async (): Promise<void> => {
@@ -135,6 +167,11 @@ export const requests = Object.freeze({
       listSubscribed = false;
       listListener();
       updates.complete();
+      // Selector subscriptions belong to one automation session. The agent
+      // disposes its request handler with that socket, so a missing session
+      // means the subscription has already been released by session teardown.
+      if (input.server.getSession(input.sessionId) === null) return;
+      if (listSubscriptionReleased) return;
       const response = await input.server.request(input.sessionId, 'selector.unsubscribe', {
         subscriptionId: listSubscriptionId,
       });
@@ -144,50 +181,87 @@ export const requests = Object.freeze({
       }
     };
     try {
-      const accepted = resultOf(
-        await input.server.request(input.sessionId, 'selector.subscribe', {
-          subscriptionId: listSubscriptionId,
-          selectorName: 'kernel.base.runtime.selectRequestExecutionViews',
-          argsTuple: [input.workspace],
-        }),
-      );
-      if (!isRecord(accepted) || accepted.accepted !== true || accepted.subscriptionId !== listSubscriptionId) {
+      if (input.server.getSession(input.sessionId) === null) {
+        throw new Error('TERMINAL_AUTOMATION_SESSION_NOT_CONNECTED_BEFORE_ACTION');
+      }
+      removeSessionListener = input.server.onSessionChange(() => {
+        if (actionStarted || initialValueReceived || input.server.getSession(input.sessionId) !== null) return;
+        listSubscriptionReleased = true;
+        input.onObserverStep?.('request-list.session-closed-before-initial-value');
+        updates.error(new Error('TERMINAL_AUTOMATION_SESSION_NOT_CONNECTED_BEFORE_ACTION'));
+      });
+      if (input.server.getSession(input.sessionId) === null) {
+        throw new Error('TERMINAL_AUTOMATION_SESSION_NOT_CONNECTED_BEFORE_ACTION');
+      }
+      input.onObserverStep?.('request-list.subscribe-start');
+      subscribePending = true;
+      const subscribeResponse = await input.server.request(input.sessionId, 'selector.subscribe', {
+        subscriptionId: listSubscriptionId,
+        selectorName: 'kernel.base.runtime.selectRequestExecutionCandidates',
+        argsTuple: [input.workspace, input.commandName, input.displayMode],
+      });
+      subscribePending = false;
+      listSubscribeRequestMessageId =
+        isRecord(subscribeResponse.body) && typeof subscribeResponse.body.requestMessageId === 'string'
+          ? subscribeResponse.body.requestMessageId
+          : undefined;
+      const accepted = resultOf(subscribeResponse);
+      const isAccepted =
+        isRecord(accepted) && accepted.accepted === true && accepted.subscriptionId === listSubscriptionId;
+      const earlyError =
+        isAccepted &&
+        earlySubscribeError !== undefined &&
+        earlySubscribeError.requestMessageId === listSubscribeRequestMessageId
+          ? earlySubscribeError.code
+          : undefined;
+      earlySubscribeError = undefined;
+      if (earlyError !== undefined) {
+        listSubscriptionReleased = true;
+        input.onObserverStep?.('request-list.initial-value-error');
+        updates.error(new Error(`TERMINAL_AUTOMATION_REQUEST_LIST_INITIAL_VALUE_FAILED code=${earlyError}`));
+      }
+      if (!isAccepted) {
         throw new Error('TERMINAL_AUTOMATION_REQUEST_LIST_SUBSCRIBE_FAILED');
       }
       listSubscribed = true;
-      // The handler publishes the first value synchronously after the subscribe response.
-      // subscribe publishes the current full list before resolving. Keep using
-      // that maintained snapshot instead of synchronously serializing the same
-      // broad selector a second time; large live ledgers can exceed the
-      // Runtime's per-selector serialization budget on device.
+      input.onObserverStep?.('request-list.subscribe-accepted');
+      // The Runtime selector returns only request identities whose root command
+      // matches this observed action. The detailed ledger is fetched only for
+      // the single identified request below.
       await firstValueFrom(updates.pipe(take(1), timeout({first: timeoutMs})));
-      const baselineIds = new Set(views.keys());
+      if (input.server.getSession(input.sessionId) === null) {
+        throw new Error('TERMINAL_AUTOMATION_SESSION_NOT_CONNECTED_BEFORE_ACTION');
+      }
+      const baselineIds = new Set(candidates.keys());
+      actionStarted = true;
+      input.onObserverStep?.('request-list.initial-value-ready');
+      input.onObserverStep?.('ui-action.dispatch-start');
       const actionResult = await input.action();
 
       // Updates remain subscribed while the real action executes, so fast completion cannot be missed.
-      const findCandidate = (): RequestView => {
-        const candidates = matchingCandidates(views.values(), baselineIds, input);
-        if (candidates.length > 1) throw new Error('TERMINAL_AUTOMATION_UI_ACTION_REQUEST_AMBIGUOUS');
-        if (candidates.length === 0) throw new Error('TERMINAL_AUTOMATION_UI_ACTION_REQUEST_NOT_FOUND');
-        return candidates[0]!;
+      const findCandidate = (): RequestCandidate => {
+        const matches = [...candidates.values()].filter(candidate => !baselineIds.has(candidate.requestId));
+        if (matches.length > 1) throw new Error('TERMINAL_AUTOMATION_UI_ACTION_REQUEST_AMBIGUOUS');
+        if (matches.length === 0) throw new Error('TERMINAL_AUTOMATION_UI_ACTION_REQUEST_NOT_FOUND');
+        return matches[0]!;
       };
-      let candidate: RequestView;
+      let candidate: RequestCandidate;
       try {
         candidate = findCandidate();
       } catch (error) {
         if (!(error instanceof Error) || error.message !== 'TERMINAL_AUTOMATION_UI_ACTION_REQUEST_NOT_FOUND')
           throw error;
-        const next = await firstValueFrom(
+        await firstValueFrom(
           updates.pipe(
-            filter(() => matchingCandidates(views.values(), baselineIds, input).length > 0),
+            filter(() => [...candidates.values()].some(candidate => !baselineIds.has(candidate.requestId))),
             take(1),
             timeout({first: timeoutMs}),
           ),
         );
-        for (const view of next) views.set(view.requestId, view);
         candidate = findCandidate();
       }
       input.onRequestIdentified?.(candidate.requestId);
+      input.onObserverStep?.('request-list.action-identified');
 
       // The design uses the collection only to identify one new request. Its
       // precise selector has a current-value emission, so release the broader
@@ -223,6 +297,7 @@ export const requests = Object.freeze({
       ) {
         throw new Error('TERMINAL_AUTOMATION_REQUEST_RESULT_SUBSCRIBE_FAILED');
       }
+      input.onObserverStep?.('request-result.subscribe-accepted');
       const view = await firstValueFrom(
         exactValues.pipe(
           filter(value => terminalRequestStatuses.has(value.status)),
@@ -230,6 +305,7 @@ export const requests = Object.freeze({
           timeout({first: timeoutMs}),
         ),
       );
+      input.onObserverStep?.('request-result.terminal');
       input.onRequestFinished?.(candidate.requestId);
       const root = rootCommands(view).find(command => command.commandName === input.commandName);
       if (root === undefined || (root.displayMode !== null && root.displayMode !== input.displayMode)) {
@@ -239,10 +315,16 @@ export const requests = Object.freeze({
         throw new Error('TERMINAL_AUTOMATION_UI_ACTION_REQUEST_NOT_COMPLETED');
       }
       return Object.freeze({requestId: candidate.requestId, view, actionResult});
+    } catch (error) {
+      if (!actionStarted && error instanceof Error && error.message === 'TERMINAL_AUTOMATION_SESSION_NOT_CONNECTED') {
+        throw new Error('TERMINAL_AUTOMATION_SESSION_NOT_CONNECTED_BEFORE_ACTION', {cause: error});
+      }
+      throw error;
     } finally {
+      removeSessionListener();
       exactListener?.();
       await releaseListSubscription();
-      if (exactSubscriptionId !== undefined) {
+      if (exactSubscriptionId !== undefined && input.server.getSession(input.sessionId) !== null) {
         const response = await input.server.request(input.sessionId, 'selector.unsubscribe', {
           subscriptionId: exactSubscriptionId,
         });

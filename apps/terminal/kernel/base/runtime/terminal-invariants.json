@@ -33,6 +33,7 @@
     "PeerDispatchGateway",
     "PeerDispatchOptions",
     "RequestExecutionCommandView",
+    "RequestExecutionCandidate",
     "RequestExecutionView",
     "Runtime",
     "RuntimeInstanceMode",
@@ -52,6 +53,7 @@
     "SetRuntimeInstanceModePayload",
     "SetRuntimeInstanceModeResult",
     "SelectorParameterSchema",
+    "PrimarySurfaceReadyPayload",
     "StateSelectorParameters",
     "StateSelectorMetadata",
     "StateSelector",
@@ -75,11 +77,13 @@
     "initializeCommand",
     "moduleName",
     "onCommand",
+    "primarySurfaceReadyCommand",
     "resetRuntimeAfterSystemFailureCommand",
     "runtimeInstanceModeChangedCommand",
     "selectRequestExecutionCommands",
     "selectRequestExecutionView",
     "selectRequestExecutionViews",
+    "selectRequestExecutionCandidates",
     "selectRuntimeInstanceMode",
     "setRuntimeInstanceModeCommand"
   ],
@@ -119,13 +123,15 @@
     "kernel.base.runtime.initialize",
     "kernel.base.runtime.set-instance-mode",
     "kernel.base.runtime.cleanup-request-ledger",
-    "kernel.base.runtime.instance-mode-changed"
+    "kernel.base.runtime.instance-mode-changed",
+    "kernel.base.runtime.primary-surface-ready"
   ],
   "internalCommandDefinitions": [
     "initializeCommand",
     "setRuntimeInstanceModeCommand",
     "cleanupRequestLedgerCommand",
-    "runtimeInstanceModeChangedCommand"
+    "runtimeInstanceModeChangedCommand",
+    "primarySurfaceReadyCommand"
   ],
   "closedUnionDefinitions": {
     "RuntimeInstanceMode": ["MASTER", "SLAVE"]

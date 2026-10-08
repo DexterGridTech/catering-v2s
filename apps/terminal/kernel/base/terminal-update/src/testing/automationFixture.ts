@@ -4,34 +4,28 @@ import type {
   UpdateActualVersions,
   UpdatePort,
 } from '@catering-v2s/kernel-base-platform-ports';
-import type {FixedUpdateTarget, UpdateTargetSourceProvider} from '@catering-v2s/kernel-base-terminal-update';
 import type {TimestampMs} from '@catering-v2s/kernel-base-contracts';
+import type {FixedUpdateTarget, UpdateTargetSourceProvider} from '../types/terminalUpdate';
 
-const applicationId = 'com.anonymous.sampleterminal';
-const publicationId = 'a'.repeat(64);
-const artifact = Object.freeze({
-  schemaVersion: 1 as const,
-  platform: 'android' as const,
-  applicationId,
-  nativeVersion: '1.0.0',
-  nativeBuildNumber: 1,
-  bundleVersion: '1.0.0',
-  runtimeVersion: '1',
-  entry: 'index.android.bundle',
-  files: Object.freeze([{path: 'index.android.bundle', sizeBytes: 1, sha256: 'b'.repeat(64)}]),
-  publicationId,
-});
+type AutomationMode = 'fixed' | 'install-result' | 'compatibility';
 
-const actual: UpdateActualVersions = Object.freeze({
-  applicationId,
-  nativeVersion: artifact.nativeVersion,
-  nativeBuildNumber: artifact.nativeBuildNumber,
-  runtimeVersion: artifact.runtimeVersion,
-  bundleVersion: artifact.bundleVersion,
-  publicationId,
-  bootId: 'web-owner-fixture-boot',
-  entryKind: 'embedded',
-});
+export type TerminalUpdateAutomationFixtureInput = Readonly<{
+  runId: string;
+  applicationId: string;
+  scenario?: string;
+}>;
+
+export type TerminalUpdateAutomationFixture = Readonly<{
+  port: UpdatePort;
+  sourceProvider: UpdateTargetSourceProvider;
+}>;
+
+const modeFor = (scenario: string | undefined): AutomationMode =>
+  scenario === 'update.install-result'
+    ? 'install-result'
+    : scenario === 'update.compatibility'
+      ? 'compatibility'
+      : 'fixed';
 
 const succeeded = <TValue>(value: TValue): PortResult<TValue> => ({
   status: 'succeeded',
@@ -40,12 +34,33 @@ const succeeded = <TValue>(value: TValue): PortResult<TValue> => ({
 });
 
 export const createTerminalUpdateAutomationFixture = (
-  runId: string,
-  mode: 'fixed' | 'install-result' | 'compatibility' = 'fixed',
-): Readonly<{
-  port: UpdatePort;
-  sourceProvider: UpdateTargetSourceProvider;
-}> => {
+  input: TerminalUpdateAutomationFixtureInput,
+): TerminalUpdateAutomationFixture => {
+  const {runId, applicationId} = input;
+  const mode = modeFor(input.scenario);
+  const publicationId = 'a'.repeat(64);
+  const artifact = Object.freeze({
+    schemaVersion: 1 as const,
+    platform: 'android' as const,
+    applicationId,
+    nativeVersion: '1.0.0',
+    nativeBuildNumber: 1,
+    bundleVersion: '1.0.0',
+    runtimeVersion: '1',
+    entry: 'index.android.bundle',
+    files: Object.freeze([{path: 'index.android.bundle', sizeBytes: 1, sha256: 'b'.repeat(64)}]),
+    publicationId,
+  });
+  const actual: UpdateActualVersions = Object.freeze({
+    applicationId,
+    nativeVersion: artifact.nativeVersion,
+    nativeBuildNumber: artifact.nativeBuildNumber,
+    runtimeVersion: artifact.runtimeVersion,
+    bundleVersion: artifact.bundleVersion,
+    publicationId,
+    bootId: `web-owner-fixture-${runId}`,
+    entryKind: 'embedded',
+  });
   const currentActual: UpdateActualVersions =
     mode === 'compatibility'
       ? Object.freeze({...actual, bundleVersion: '1.0.5', publicationId: 'f'.repeat(64), entryKind: 'hot'})
@@ -101,13 +116,13 @@ export const createTerminalUpdateAutomationFixture = (
           selectionResetReason: null,
         }),
       ),
-    prepareArtifact: async input =>
-      succeeded(Object.freeze({preparedId: `prepared:${input.sourceRef}`, artifact: input.artifact})),
-    applyPrepared: async input => {
+    prepareArtifact: async source =>
+      succeeded(Object.freeze({preparedId: `prepared:${source.sourceRef}`, artifact: source.artifact})),
+    applyPrepared: async command => {
       actionCount += 1;
       currentAction = Object.freeze({
-        actionId: input.actionId,
-        taskId: input.taskId,
+        actionId: command.actionId,
+        taskId: command.taskId,
         state: mode === 'install-result' ? ('waiting-user' as const) : ('accepted' as const),
         reason: null,
         publicationId: targetArtifact.publicationId,
@@ -115,8 +130,12 @@ export const createTerminalUpdateAutomationFixture = (
       });
       return succeeded(currentAction);
     },
-    readAction: async input => {
-      if (currentAction === null || currentAction.taskId !== input.taskId || currentAction.actionId !== input.actionId)
+    readAction: async command => {
+      if (
+        currentAction === null ||
+        currentAction.taskId !== command.taskId ||
+        currentAction.actionId !== command.actionId
+      )
         return succeeded(null);
       if (mode === 'install-result' && actionCount === 1 && !firstCancellationObserved) {
         firstCancellationObserved = true;
@@ -139,14 +158,11 @@ export const createTerminalUpdateAutomationFixture = (
       selectionContext.contextIdentity === runId && selectionContext.selectedSpace === 'development' ? target : null,
     resolveSourcePath: sourceRef =>
       sourceRef === target.full?.sourceRef
-        ? '/fixtures/full.apk'
+        ? '/fixtures/full.zip'
         : sourceRef === target.hot?.sourceRef
           ? '/fixtures/hot.zip'
           : null,
   };
 
-  return Object.freeze({
-    port,
-    sourceProvider,
-  });
+  return Object.freeze({port, sourceProvider});
 };

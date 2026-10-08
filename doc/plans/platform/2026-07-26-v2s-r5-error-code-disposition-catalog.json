@@ -26,198 +26,1054 @@
     "registryOwnership": "a code is owned by exactly one disposition registry; COMMERCIAL_GROUP_ALREADY_INITIALIZED is a Heritage-observed source but is owned only by r3CompatibilityCodes"
   },
   "p6OperationErrorDispositions": [
-    {"operationId":"sendPlatformLoginOtp","owner":"platform-iam","closedSet":["PLATFORM_COMMON_IDEMPOTENCY_CONFLICT","PLATFORM_IAM_ACCOUNT_DISABLED","PLATFORM_IAM_INVALID_CREDENTIALS","PLATFORM_IAM_RATE_LIMITED","PLATFORM_IAM_RESULT_UNKNOWN"]},
-    {"operationId":"verifyPlatformLoginOtp","owner":"platform-iam","closedSet":["PLATFORM_COMMON_IDEMPOTENCY_CONFLICT","PLATFORM_IAM_ACCOUNT_DISABLED","PLATFORM_IAM_INVALID_CREDENTIALS","PLATFORM_IAM_RATE_LIMITED","PLATFORM_IAM_RESULT_UNKNOWN"]},
-    {"operationId":"startPlatformPasswordRecovery","owner":"platform-iam","closedSet":["PLATFORM_COMMON_IDEMPOTENCY_CONFLICT","PLATFORM_IAM_RATE_LIMITED","PLATFORM_IAM_RESULT_UNKNOWN"]},
-    {"operationId":"sendPlatformPasswordRecoveryOtp","owner":"platform-iam","closedSet":["PLATFORM_COMMON_IDEMPOTENCY_CONFLICT","PLATFORM_IAM_RATE_LIMITED","PLATFORM_IAM_RESULT_UNKNOWN"]},
-    {"operationId":"verifyPlatformPasswordRecoveryOtp","owner":"platform-iam","closedSet":["PLATFORM_COMMON_IDEMPOTENCY_CONFLICT","PLATFORM_IAM_INVALID_CREDENTIALS","PLATFORM_IAM_RESULT_UNKNOWN"]},
-    {"operationId":"completePlatformPasswordRecovery","owner":"platform-iam","closedSet":["PLATFORM_COMMON_IDEMPOTENCY_CONFLICT","PLATFORM_IAM_INVALID_CREDENTIALS","PLATFORM_IAM_RESULT_UNKNOWN"]},
-    {"operationId":"startOperationsPasswordRecovery","owner":"workspace-iam","closedSet":["PLATFORM_COMMON_IDEMPOTENCY_CONFLICT","WORKSPACE_IAM_RATE_LIMITED","WORKSPACE_IAM_RESULT_UNKNOWN"]},
-    {"operationId":"sendOperationsPasswordRecoveryOtp","owner":"workspace-iam","closedSet":["PLATFORM_COMMON_IDEMPOTENCY_CONFLICT","WORKSPACE_IAM_GRANT_INVALID","WORKSPACE_IAM_RATE_LIMITED","WORKSPACE_IAM_RESULT_UNKNOWN"]},
-    {"operationId":"verifyOperationsPasswordRecoveryOtp","owner":"workspace-iam","closedSet":["PLATFORM_COMMON_IDEMPOTENCY_CONFLICT","WORKSPACE_IAM_GRANT_INVALID","WORKSPACE_IAM_OTP_INVALID","WORKSPACE_IAM_RATE_LIMITED","WORKSPACE_IAM_RESULT_UNKNOWN"]},
-    {"operationId":"completeOperationsPasswordRecovery","owner":"workspace-iam","closedSet":["PLATFORM_COMMON_IDEMPOTENCY_CONFLICT","WORKSPACE_IAM_GRANT_INVALID","WORKSPACE_IAM_RESULT_UNKNOWN"]}
+    {
+      "operationId": "sendPlatformLoginOtp",
+      "owner": "platform-iam",
+      "closedSet": [
+        "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+        "PLATFORM_IAM_ACCOUNT_DISABLED",
+        "PLATFORM_IAM_INVALID_CREDENTIALS",
+        "PLATFORM_IAM_RATE_LIMITED",
+        "PLATFORM_IAM_RESULT_UNKNOWN"
+      ]
+    },
+    {
+      "operationId": "verifyPlatformLoginOtp",
+      "owner": "platform-iam",
+      "closedSet": [
+        "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+        "PLATFORM_IAM_ACCOUNT_DISABLED",
+        "PLATFORM_IAM_INVALID_CREDENTIALS",
+        "PLATFORM_IAM_RATE_LIMITED",
+        "PLATFORM_IAM_RESULT_UNKNOWN"
+      ]
+    },
+    {
+      "operationId": "startPlatformPasswordRecovery",
+      "owner": "platform-iam",
+      "closedSet": [
+        "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+        "PLATFORM_IAM_RATE_LIMITED",
+        "PLATFORM_IAM_RESULT_UNKNOWN"
+      ]
+    },
+    {
+      "operationId": "sendPlatformPasswordRecoveryOtp",
+      "owner": "platform-iam",
+      "closedSet": [
+        "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+        "PLATFORM_IAM_RATE_LIMITED",
+        "PLATFORM_IAM_RESULT_UNKNOWN"
+      ]
+    },
+    {
+      "operationId": "verifyPlatformPasswordRecoveryOtp",
+      "owner": "platform-iam",
+      "closedSet": [
+        "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+        "PLATFORM_IAM_INVALID_CREDENTIALS",
+        "PLATFORM_IAM_RESULT_UNKNOWN"
+      ]
+    },
+    {
+      "operationId": "completePlatformPasswordRecovery",
+      "owner": "platform-iam",
+      "closedSet": [
+        "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+        "PLATFORM_IAM_INVALID_CREDENTIALS",
+        "PLATFORM_IAM_RESULT_UNKNOWN"
+      ]
+    },
+    {
+      "operationId": "startOperationsPasswordRecovery",
+      "owner": "workspace-iam",
+      "closedSet": [
+        "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+        "WORKSPACE_IAM_RATE_LIMITED",
+        "WORKSPACE_IAM_RESULT_UNKNOWN"
+      ]
+    },
+    {
+      "operationId": "sendOperationsPasswordRecoveryOtp",
+      "owner": "workspace-iam",
+      "closedSet": [
+        "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+        "WORKSPACE_IAM_GRANT_INVALID",
+        "WORKSPACE_IAM_RATE_LIMITED",
+        "WORKSPACE_IAM_RESULT_UNKNOWN"
+      ]
+    },
+    {
+      "operationId": "verifyOperationsPasswordRecoveryOtp",
+      "owner": "workspace-iam",
+      "closedSet": [
+        "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+        "WORKSPACE_IAM_GRANT_INVALID",
+        "WORKSPACE_IAM_OTP_INVALID",
+        "WORKSPACE_IAM_RATE_LIMITED",
+        "WORKSPACE_IAM_RESULT_UNKNOWN"
+      ]
+    },
+    {
+      "operationId": "completeOperationsPasswordRecovery",
+      "owner": "workspace-iam",
+      "closedSet": [
+        "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+        "WORKSPACE_IAM_GRANT_INVALID",
+        "WORKSPACE_IAM_RESULT_UNKNOWN"
+      ]
+    }
   ],
   "r3CompatibilityCodes": [
-    {"source": "INVALID_EDGE_CONTEXT", "target": "INVALID_EDGE_CONTEXT", "disposition": "RETAIN_R3_WIRE_COMPATIBILITY"},
-    {"source": "GROUP_WORKSPACE_NOT_FOUND", "target": "GROUP_WORKSPACE_NOT_FOUND", "disposition": "RETAIN_R3_WIRE_COMPATIBILITY"},
-    {"source": "COMMERCIAL_GROUP_ALREADY_INITIALIZED", "target": "COMMERCIAL_GROUP_ALREADY_INITIALIZED", "disposition": "RETAIN_R3_WIRE_COMPATIBILITY"},
-    {"source": "IDEMPOTENCY_CONFLICT", "target": "IDEMPOTENCY_CONFLICT", "disposition": "RETAIN_R3_WIRE_COMPATIBILITY"},
-    {"source": "VALIDATION_FAILED", "target": "VALIDATION_FAILED", "disposition": "RETAIN_R3_WIRE_COMPATIBILITY"},
-    {"source": "UNKNOWN_SUBMISSION_RESULT", "target": "UNKNOWN_SUBMISSION_RESULT", "disposition": "RETAIN_R3_WIRE_COMPATIBILITY"}
+    {
+      "source": "INVALID_EDGE_CONTEXT",
+      "target": "INVALID_EDGE_CONTEXT",
+      "disposition": "RETAIN_R3_WIRE_COMPATIBILITY"
+    },
+    {
+      "source": "GROUP_WORKSPACE_NOT_FOUND",
+      "target": "GROUP_WORKSPACE_NOT_FOUND",
+      "disposition": "RETAIN_R3_WIRE_COMPATIBILITY"
+    },
+    {
+      "source": "COMMERCIAL_GROUP_ALREADY_INITIALIZED",
+      "target": "COMMERCIAL_GROUP_ALREADY_INITIALIZED",
+      "disposition": "RETAIN_R3_WIRE_COMPATIBILITY"
+    },
+    {
+      "source": "IDEMPOTENCY_CONFLICT",
+      "target": "IDEMPOTENCY_CONFLICT",
+      "disposition": "RETAIN_R3_WIRE_COMPATIBILITY"
+    },
+    {
+      "source": "VALIDATION_FAILED",
+      "target": "VALIDATION_FAILED",
+      "disposition": "RETAIN_R3_WIRE_COMPATIBILITY"
+    },
+    {
+      "source": "UNKNOWN_SUBMISSION_RESULT",
+      "target": "UNKNOWN_SUBMISSION_RESULT",
+      "disposition": "RETAIN_R3_WIRE_COMPATIBILITY"
+    }
   ],
   "heritageCodes": [
-    {"source": "PLATFORM_INVALID_CREDENTIALS", "target": "PLATFORM_IAM_INVALID_CREDENTIALS", "disposition": "RENAME"},
-    {"source": "PLATFORM_INTERNAL_UNAUTHORIZED", "target": "PLATFORM_COMMON_AUTHENTICATION_REQUIRED", "disposition": "RENAME"},
-    {"source": "PLATFORM_REQUEST_VALIDATION_FAILED", "target": "PLATFORM_COMMON_VALIDATION_FAILED", "disposition": "RENAME"},
-    {"source": "PLATFORM_ACCESS_DENIED", "target": "PLATFORM_COMMON_ACCESS_DENIED", "disposition": "RENAME"},
-    {"source": "PLATFORM_ADMIN_DISABLED", "target": "PLATFORM_IAM_ACCOUNT_DISABLED", "disposition": "RENAME"},
-    {"source": "PLATFORM_SESSION_EXPIRED", "target": "PLATFORM_IAM_SESSION_EXPIRED", "disposition": "RENAME"},
-    {"source": "PLATFORM_DEPENDENCY_UNAVAILABLE", "target": "PLATFORM_DEPENDENCY_UNAVAILABLE", "disposition": "RETAIN"},
-    {"source": "PLATFORM_DOWNSTREAM_PROTOCOL_MISMATCH", "target": null, "disposition": "NOT_CARRIED_DISTRIBUTED_TOPOLOGY"},
-    {"source": "PLATFORM_WORKSPACE_KEY_CONFLICT", "target": "PLATFORM_WORKSPACE_KEY_CONFLICT", "disposition": "RETAIN"},
-    {"source": "PLATFORM_WORKSPACE_NAME_CONFLICT", "target": "PLATFORM_WORKSPACE_NAME_CONFLICT", "disposition": "RETAIN"},
-    {"source": "PLATFORM_VERSION_CONFLICT", "target": "PLATFORM_COMMON_VERSION_CONFLICT", "disposition": "RENAME"},
-    {"source": "PLATFORM_ASSET_BIND_CONFLICT", "target": "PLATFORM_ASSET_BIND_CONFLICT", "disposition": "RETAIN"},
-    {"source": "PLATFORM_IDEMPOTENCY_CONFLICT", "target": "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT", "disposition": "RENAME"},
-    {"source": "PLATFORM_WORKSPACE_STATUS_TRANSITION_INVALID", "target": "PLATFORM_WORKSPACE_STATUS_TRANSITION_INVALID", "disposition": "RETAIN"},
-    {"source": "LOGIN_NAME_CONFLICT", "target": "PLATFORM_IAM_LOGIN_NAME_CONFLICT", "disposition": "RENAME"},
-    {"source": "PLATFORM_RESOURCE_NOT_FOUND", "target": "PLATFORM_COMMON_RESOURCE_NOT_FOUND", "disposition": "RENAME"},
-    {"source": "PLATFORM_LOGIN_RATE_LIMITED", "target": "PLATFORM_IAM_RATE_LIMITED", "disposition": "RENAME"},
-    {"source": "WORKSPACE_DISABLED", "target": "WORKSPACE_IAM_WORKSPACE_DISABLED", "disposition": "RENAME"},
-    {"source": "WORKSPACE_USER_DISABLED", "target": "WORKSPACE_IAM_ACCOUNT_DISABLED", "disposition": "RENAME"},
-    {"source": "COMMERCIAL_GROUP_ROOT_NOT_INITIALIZED", "target": "ORGANIZATION_COMMERCIAL_GROUP_NOT_INITIALIZED", "disposition": "RENAME"},
-    {"source": "WORKSPACE_ROLE_NAME_CONFLICT", "target": "WORKSPACE_IAM_ROLE_NAME_CONFLICT", "disposition": "RENAME"},
-    {"source": "WORKSPACE_ROLE_ORGANIZATION_TYPE_UNSUPPORTED", "target": "WORKSPACE_IAM_ROLE_SERVICE_NODE_TYPE_UNSUPPORTED", "disposition": "RENAME"},
-    {"source": "WORKSPACE_ROLE_CAPABILITY_UNKNOWN", "target": "WORKSPACE_IAM_ROLE_CAPABILITY_UNKNOWN", "disposition": "RENAME"},
-    {"source": "WORKSPACE_ROLE_CAPABILITY_CATALOG_DRIFT", "target": "WORKSPACE_IAM_ROLE_CAPABILITY_CATALOG_DRIFT", "disposition": "RENAME"},
-    {"source": "WORKSPACE_ROLE_CAPABILITY_INCOMPATIBLE", "target": "WORKSPACE_IAM_ROLE_CAPABILITY_INCOMPATIBLE", "disposition": "RENAME"},
-    {"source": "WORKSPACE_ROLE_REVISION_CONFLICT", "target": "WORKSPACE_IAM_ROLE_VERSION_CONFLICT", "disposition": "RENAME"},
-    {"source": "WORKSPACE_ROLE_STATUS_TRANSITION_INVALID", "target": "WORKSPACE_IAM_ROLE_STATUS_TRANSITION_INVALID", "disposition": "RENAME"},
-    {"source": "ORGANIZATION_NODE_CODE_CONFLICT", "target": "ORGANIZATION_NODE_CODE_CONFLICT", "disposition": "RETAIN"},
-    {"source": "ORGANIZATION_NODE_NAME_CONFLICT", "target": "ORGANIZATION_NODE_NAME_CONFLICT", "disposition": "RETAIN"},
-    {"source": "ORGANIZATION_NODE_PARENT_INVALID", "target": "ORGANIZATION_NODE_PARENT_INVALID", "disposition": "RETAIN"},
-    {"source": "ORGANIZATION_NODE_REVISION_CONFLICT", "target": "ORGANIZATION_NODE_VERSION_CONFLICT", "disposition": "RENAME"},
-    {"source": "ORGANIZATION_NODE_STATUS_TRANSITION_INVALID", "target": "ORGANIZATION_NODE_STATUS_TRANSITION_INVALID", "disposition": "RETAIN"},
-    {"source": "COMMERCIAL_GROUP_REQUIRED", "target": "ORGANIZATION_COMMERCIAL_GROUP_REQUIRED", "disposition": "RENAME"},
-    {"source": "WORKSPACE_PAGE_ACCESS_CATALOG_MISMATCH", "target": "WORKSPACE_IAM_PAGE_ACCESS_CATALOG_MISMATCH", "disposition": "RENAME"},
-    {"source": "WORKSPACE_INVITATION_DUPLICATE", "target": "WORKSPACE_IAM_INVITATION_DUPLICATE", "disposition": "RENAME"},
-    {"source": "WORKSPACE_INVITATION_REVISION_CONFLICT", "target": "WORKSPACE_IAM_INVITATION_VERSION_CONFLICT", "disposition": "RENAME"},
-    {"source": "WORKSPACE_INVITATION_NOT_ACTIVE", "target": "WORKSPACE_IAM_INVITATION_NOT_ACTIVE", "disposition": "RENAME"},
-    {"source": "WORKSPACE_ACCOUNT_REVISION_CONFLICT", "target": "WORKSPACE_IAM_ACCOUNT_VERSION_CONFLICT", "disposition": "RENAME"},
-    {"source": "WORKSPACE_ACCOUNT_STATUS_TRANSITION_INVALID", "target": "WORKSPACE_IAM_ACCOUNT_STATUS_TRANSITION_INVALID", "disposition": "RENAME"},
-    {"source": "WORKSPACE_CREDENTIAL_RESET_UNAVAILABLE", "target": "WORKSPACE_IAM_CREDENTIAL_RESET_UNAVAILABLE", "disposition": "RENAME"},
-    {"source": "WORKSPACE_PASSWORD_POLICY_INVALID", "target": "WORKSPACE_IAM_PASSWORD_POLICY_FAILED", "disposition": "RENAME"},
-    {"source": "WORKSPACE_USER_PAGE_NOT_GRANTED", "target": "WORKSPACE_IAM_USER_PAGE_NOT_GRANTED", "disposition": "RENAME"},
-    {"source": "WORKSPACE_USER_SCOPE_REQUIRED", "target": "WORKSPACE_IAM_USER_SCOPE_REQUIRED", "disposition": "RENAME"},
-    {"source": "WORKSPACE_USER_SCOPE_FORBIDDEN", "target": "WORKSPACE_IAM_USER_SCOPE_FORBIDDEN", "disposition": "RENAME"},
-    {"source": "WORKSPACE_USER_TARGET_INVALID", "target": "WORKSPACE_IAM_USER_TARGET_INVALID", "disposition": "RENAME"},
-    {"source": "WORKSPACE_USER_ASSIGNMENT_REVISION_CONFLICT", "target": "WORKSPACE_IAM_ASSIGNMENT_VERSION_CONFLICT", "disposition": "RENAME"},
-    {"source": "WORKSPACE_USER_ASSIGNMENT_NOT_ACTIVE", "target": "WORKSPACE_IAM_ASSIGNMENT_NOT_ACTIVE", "disposition": "RENAME"},
-    {"source": "EXTENSION_DEFINITION_REVISION_CONFLICT", "target": "EXTENSION_DEFINITION_VERSION_CONFLICT", "disposition": "RENAME"},
-    {"source": "EXTENSION_DEFINITION_INVALID", "target": "EXTENSION_DEFINITION_INVALID", "disposition": "RETAIN"},
-    {"source": "BUSINESS_ENTITY_CODE_CONFLICT", "target": "ORGANIZATION_BUSINESS_ENTITY_CODE_CONFLICT", "disposition": "RENAME"},
-    {"source": "BUSINESS_ENTITY_NAME_CONFLICT", "target": "ORGANIZATION_BUSINESS_ENTITY_NAME_CONFLICT", "disposition": "RENAME"},
-    {"source": "BUSINESS_ENTITY_REFERENCE_CONFLICT", "target": "ORGANIZATION_BUSINESS_ENTITY_REFERENCE_CONFLICT", "disposition": "RENAME"},
-    {"source": "BUSINESS_ENTITY_REVISION_CONFLICT", "target": "ORGANIZATION_BUSINESS_ENTITY_VERSION_CONFLICT", "disposition": "RENAME"},
-    {"source": "BUSINESS_ENTITY_STATUS_TRANSITION_INVALID", "target": "ORGANIZATION_BUSINESS_ENTITY_STATUS_TRANSITION_INVALID", "disposition": "RENAME"},
-    {"source": "BUSINESS_ENTITY_SOURCE_READ_ONLY", "target": null, "disposition": "NOT_CARRIED_NO_EXTERNAL_SYNC_SOURCE"},
-    {"source": "HEAD_COMPANY_BRAND_AUTHORIZATION_IN_USE", "target": "ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION_IN_USE", "disposition": "RENAME"},
-    {"source": "HEAD_COMPANY_BRAND_AUTHORIZATION_REVISION_CONFLICT", "target": "ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION_VERSION_CONFLICT", "disposition": "RENAME"},
-    {"source": "BUSINESS_ENTITY_UNRESOLVED_REFERENCE", "target": "ORGANIZATION_BUSINESS_ENTITY_REFERENCE_UNRESOLVED", "disposition": "RENAME"},
-    {"source": "ORGANIZATION_STORE_CODE_CONFLICT", "target": "ORGANIZATION_STORE_CODE_CONFLICT", "disposition": "RETAIN"},
-    {"source": "ORGANIZATION_STORE_NAME_CONFLICT", "target": "ORGANIZATION_STORE_NAME_CONFLICT", "disposition": "RETAIN"},
-    {"source": "ORGANIZATION_STORE_PROJECT_REQUIRED", "target": "ORGANIZATION_STORE_PROJECT_REQUIRED", "disposition": "RETAIN"},
-    {"source": "ORGANIZATION_STORE_RELATION_INVALID", "target": "ORGANIZATION_STORE_RELATION_INVALID", "disposition": "RETAIN"},
-    {"source": "ORGANIZATION_STORE_RELATION_LOCKED", "target": "ORGANIZATION_STORE_RELATION_LOCKED", "disposition": "RETAIN"},
-    {"source": "ORGANIZATION_STORE_REVISION_CONFLICT", "target": "ORGANIZATION_STORE_VERSION_CONFLICT", "disposition": "RENAME"},
-    {"source": "ORGANIZATION_STORE_STATUS_TRANSITION_INVALID", "target": "ORGANIZATION_STORE_STATUS_TRANSITION_INVALID", "disposition": "RETAIN"},
-    {"source": "ORGANIZATION_STORE_HEAD_COMPANY_AUTHORIZATION_REQUIRED", "target": "ORGANIZATION_STORE_HEAD_COMPANY_AUTHORIZATION_REQUIRED", "disposition": "RETAIN"},
-    {"source": "ORGANIZATION_STORE_FIXED_SCOPE_FORBIDDEN", "target": "ORGANIZATION_STORE_FIXED_SCOPE_FORBIDDEN", "disposition": "RETAIN"},
-    {"source": "ORGANIZATION_STORE_EXTENSION_REVISION_CONFLICT", "target": "ORGANIZATION_STORE_EXTENSION_VERSION_CONFLICT", "disposition": "RENAME"},
-    {"source": "CONTRACT_REFERENCE_UNRESOLVED", "target": "CONTRACT_REFERENCE_UNRESOLVED", "disposition": "RETAIN"},
-    {"source": "CONTRACT_PROJECT_PHASE_NOT_AVAILABLE", "target": null, "disposition": "NOT_CARRIED_PHASE_KEY_REMOVED"},
-    {"source": "CONTRACT_NUMBER_CONFLICT", "target": "CONTRACT_NUMBER_CONFLICT", "disposition": "RETAIN"},
-    {"source": "CONTRACT_ITEM_CODE_REQUIRED", "target": "CONTRACT_ITEM_CODE_REQUIRED", "disposition": "RETAIN"},
-    {"source": "CONTRACT_ITEM_CODE_DUPLICATE", "target": "CONTRACT_ITEM_CODE_DUPLICATE", "disposition": "RETAIN"},
-    {"source": "CONTRACT_DATE_RANGE_INVALID", "target": "CONTRACT_DATE_RANGE_INVALID", "disposition": "RETAIN"},
-    {"source": "CONTRACT_ALREADY_INVALID", "target": "CONTRACT_ALREADY_INVALID", "disposition": "RETAIN"},
-    {"source": "CONTRACT_REVISION_CONFLICT", "target": "CONTRACT_VERSION_CONFLICT", "disposition": "RENAME"}
+    {
+      "source": "PLATFORM_INVALID_CREDENTIALS",
+      "target": "PLATFORM_IAM_INVALID_CREDENTIALS",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "PLATFORM_INTERNAL_UNAUTHORIZED",
+      "target": "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "PLATFORM_REQUEST_VALIDATION_FAILED",
+      "target": "PLATFORM_COMMON_VALIDATION_FAILED",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "PLATFORM_ACCESS_DENIED",
+      "target": "PLATFORM_COMMON_ACCESS_DENIED",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "PLATFORM_ADMIN_DISABLED",
+      "target": "PLATFORM_IAM_ACCOUNT_DISABLED",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "PLATFORM_SESSION_EXPIRED",
+      "target": "PLATFORM_IAM_SESSION_EXPIRED",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "PLATFORM_DEPENDENCY_UNAVAILABLE",
+      "target": "PLATFORM_DEPENDENCY_UNAVAILABLE",
+      "disposition": "RETAIN"
+    },
+    {
+      "source": "PLATFORM_DOWNSTREAM_PROTOCOL_MISMATCH",
+      "target": null,
+      "disposition": "NOT_CARRIED_DISTRIBUTED_TOPOLOGY"
+    },
+    {
+      "source": "PLATFORM_WORKSPACE_KEY_CONFLICT",
+      "target": "PLATFORM_WORKSPACE_KEY_CONFLICT",
+      "disposition": "RETAIN"
+    },
+    {
+      "source": "PLATFORM_WORKSPACE_NAME_CONFLICT",
+      "target": "PLATFORM_WORKSPACE_NAME_CONFLICT",
+      "disposition": "RETAIN"
+    },
+    {
+      "source": "PLATFORM_VERSION_CONFLICT",
+      "target": "PLATFORM_COMMON_VERSION_CONFLICT",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "PLATFORM_ASSET_BIND_CONFLICT",
+      "target": "PLATFORM_ASSET_BIND_CONFLICT",
+      "disposition": "RETAIN"
+    },
+    {
+      "source": "PLATFORM_IDEMPOTENCY_CONFLICT",
+      "target": "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "PLATFORM_WORKSPACE_STATUS_TRANSITION_INVALID",
+      "target": "PLATFORM_WORKSPACE_STATUS_TRANSITION_INVALID",
+      "disposition": "RETAIN"
+    },
+    {
+      "source": "LOGIN_NAME_CONFLICT",
+      "target": "PLATFORM_IAM_LOGIN_NAME_CONFLICT",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "PLATFORM_RESOURCE_NOT_FOUND",
+      "target": "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "PLATFORM_LOGIN_RATE_LIMITED",
+      "target": "PLATFORM_IAM_RATE_LIMITED",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "WORKSPACE_DISABLED",
+      "target": "WORKSPACE_IAM_WORKSPACE_DISABLED",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "WORKSPACE_USER_DISABLED",
+      "target": "WORKSPACE_IAM_ACCOUNT_DISABLED",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "COMMERCIAL_GROUP_ROOT_NOT_INITIALIZED",
+      "target": "ORGANIZATION_COMMERCIAL_GROUP_NOT_INITIALIZED",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "WORKSPACE_ROLE_NAME_CONFLICT",
+      "target": "WORKSPACE_IAM_ROLE_NAME_CONFLICT",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "WORKSPACE_ROLE_ORGANIZATION_TYPE_UNSUPPORTED",
+      "target": "WORKSPACE_IAM_ROLE_SERVICE_NODE_TYPE_UNSUPPORTED",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "WORKSPACE_ROLE_CAPABILITY_UNKNOWN",
+      "target": "WORKSPACE_IAM_ROLE_CAPABILITY_UNKNOWN",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "WORKSPACE_ROLE_CAPABILITY_CATALOG_DRIFT",
+      "target": "WORKSPACE_IAM_ROLE_CAPABILITY_CATALOG_DRIFT",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "WORKSPACE_ROLE_CAPABILITY_INCOMPATIBLE",
+      "target": "WORKSPACE_IAM_ROLE_CAPABILITY_INCOMPATIBLE",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "WORKSPACE_ROLE_REVISION_CONFLICT",
+      "target": "WORKSPACE_IAM_ROLE_VERSION_CONFLICT",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "WORKSPACE_ROLE_STATUS_TRANSITION_INVALID",
+      "target": "WORKSPACE_IAM_ROLE_STATUS_TRANSITION_INVALID",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "ORGANIZATION_NODE_CODE_CONFLICT",
+      "target": "ORGANIZATION_NODE_CODE_CONFLICT",
+      "disposition": "RETAIN"
+    },
+    {
+      "source": "ORGANIZATION_NODE_NAME_CONFLICT",
+      "target": "ORGANIZATION_NODE_NAME_CONFLICT",
+      "disposition": "RETAIN"
+    },
+    {
+      "source": "ORGANIZATION_NODE_PARENT_INVALID",
+      "target": "ORGANIZATION_NODE_PARENT_INVALID",
+      "disposition": "RETAIN"
+    },
+    {
+      "source": "ORGANIZATION_NODE_REVISION_CONFLICT",
+      "target": "ORGANIZATION_NODE_VERSION_CONFLICT",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "ORGANIZATION_NODE_STATUS_TRANSITION_INVALID",
+      "target": "ORGANIZATION_NODE_STATUS_TRANSITION_INVALID",
+      "disposition": "RETAIN"
+    },
+    {
+      "source": "COMMERCIAL_GROUP_REQUIRED",
+      "target": "ORGANIZATION_COMMERCIAL_GROUP_REQUIRED",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "WORKSPACE_PAGE_ACCESS_CATALOG_MISMATCH",
+      "target": "WORKSPACE_IAM_PAGE_ACCESS_CATALOG_MISMATCH",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "WORKSPACE_INVITATION_DUPLICATE",
+      "target": "WORKSPACE_IAM_INVITATION_DUPLICATE",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "WORKSPACE_INVITATION_REVISION_CONFLICT",
+      "target": "WORKSPACE_IAM_INVITATION_VERSION_CONFLICT",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "WORKSPACE_INVITATION_NOT_ACTIVE",
+      "target": "WORKSPACE_IAM_INVITATION_NOT_ACTIVE",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "WORKSPACE_ACCOUNT_REVISION_CONFLICT",
+      "target": "WORKSPACE_IAM_ACCOUNT_VERSION_CONFLICT",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "WORKSPACE_ACCOUNT_STATUS_TRANSITION_INVALID",
+      "target": "WORKSPACE_IAM_ACCOUNT_STATUS_TRANSITION_INVALID",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "WORKSPACE_CREDENTIAL_RESET_UNAVAILABLE",
+      "target": "WORKSPACE_IAM_CREDENTIAL_RESET_UNAVAILABLE",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "WORKSPACE_PASSWORD_POLICY_INVALID",
+      "target": "WORKSPACE_IAM_PASSWORD_POLICY_FAILED",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "WORKSPACE_USER_PAGE_NOT_GRANTED",
+      "target": "WORKSPACE_IAM_USER_PAGE_NOT_GRANTED",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "WORKSPACE_USER_SCOPE_REQUIRED",
+      "target": "WORKSPACE_IAM_USER_SCOPE_REQUIRED",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "WORKSPACE_USER_SCOPE_FORBIDDEN",
+      "target": "WORKSPACE_IAM_USER_SCOPE_FORBIDDEN",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "WORKSPACE_USER_TARGET_INVALID",
+      "target": "WORKSPACE_IAM_USER_TARGET_INVALID",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "WORKSPACE_USER_ASSIGNMENT_REVISION_CONFLICT",
+      "target": "WORKSPACE_IAM_ASSIGNMENT_VERSION_CONFLICT",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "WORKSPACE_USER_ASSIGNMENT_NOT_ACTIVE",
+      "target": "WORKSPACE_IAM_ASSIGNMENT_NOT_ACTIVE",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "EXTENSION_DEFINITION_REVISION_CONFLICT",
+      "target": "EXTENSION_DEFINITION_VERSION_CONFLICT",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "EXTENSION_DEFINITION_INVALID",
+      "target": "EXTENSION_DEFINITION_INVALID",
+      "disposition": "RETAIN"
+    },
+    {
+      "source": "BUSINESS_ENTITY_CODE_CONFLICT",
+      "target": "ORGANIZATION_BUSINESS_ENTITY_CODE_CONFLICT",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "BUSINESS_ENTITY_NAME_CONFLICT",
+      "target": "ORGANIZATION_BUSINESS_ENTITY_NAME_CONFLICT",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "BUSINESS_ENTITY_REFERENCE_CONFLICT",
+      "target": "ORGANIZATION_BUSINESS_ENTITY_REFERENCE_CONFLICT",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "BUSINESS_ENTITY_REVISION_CONFLICT",
+      "target": "ORGANIZATION_BUSINESS_ENTITY_VERSION_CONFLICT",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "BUSINESS_ENTITY_STATUS_TRANSITION_INVALID",
+      "target": "ORGANIZATION_BUSINESS_ENTITY_STATUS_TRANSITION_INVALID",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "BUSINESS_ENTITY_SOURCE_READ_ONLY",
+      "target": null,
+      "disposition": "NOT_CARRIED_NO_EXTERNAL_SYNC_SOURCE"
+    },
+    {
+      "source": "HEAD_COMPANY_BRAND_AUTHORIZATION_IN_USE",
+      "target": "ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION_IN_USE",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "HEAD_COMPANY_BRAND_AUTHORIZATION_REVISION_CONFLICT",
+      "target": "ORGANIZATION_HEAD_COMPANY_BRAND_AUTHORIZATION_VERSION_CONFLICT",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "BUSINESS_ENTITY_UNRESOLVED_REFERENCE",
+      "target": "ORGANIZATION_BUSINESS_ENTITY_REFERENCE_UNRESOLVED",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "ORGANIZATION_STORE_CODE_CONFLICT",
+      "target": "ORGANIZATION_STORE_CODE_CONFLICT",
+      "disposition": "RETAIN"
+    },
+    {
+      "source": "ORGANIZATION_STORE_NAME_CONFLICT",
+      "target": "ORGANIZATION_STORE_NAME_CONFLICT",
+      "disposition": "RETAIN"
+    },
+    {
+      "source": "ORGANIZATION_STORE_PROJECT_REQUIRED",
+      "target": "ORGANIZATION_STORE_PROJECT_REQUIRED",
+      "disposition": "RETAIN"
+    },
+    {
+      "source": "ORGANIZATION_STORE_RELATION_INVALID",
+      "target": "ORGANIZATION_STORE_RELATION_INVALID",
+      "disposition": "RETAIN"
+    },
+    {
+      "source": "ORGANIZATION_STORE_RELATION_LOCKED",
+      "target": "ORGANIZATION_STORE_RELATION_LOCKED",
+      "disposition": "RETAIN"
+    },
+    {
+      "source": "ORGANIZATION_STORE_REVISION_CONFLICT",
+      "target": "ORGANIZATION_STORE_VERSION_CONFLICT",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "ORGANIZATION_STORE_STATUS_TRANSITION_INVALID",
+      "target": "ORGANIZATION_STORE_STATUS_TRANSITION_INVALID",
+      "disposition": "RETAIN"
+    },
+    {
+      "source": "ORGANIZATION_STORE_HEAD_COMPANY_AUTHORIZATION_REQUIRED",
+      "target": "ORGANIZATION_STORE_HEAD_COMPANY_AUTHORIZATION_REQUIRED",
+      "disposition": "RETAIN"
+    },
+    {
+      "source": "ORGANIZATION_STORE_FIXED_SCOPE_FORBIDDEN",
+      "target": "ORGANIZATION_STORE_FIXED_SCOPE_FORBIDDEN",
+      "disposition": "RETAIN"
+    },
+    {
+      "source": "ORGANIZATION_STORE_EXTENSION_REVISION_CONFLICT",
+      "target": "ORGANIZATION_STORE_EXTENSION_VERSION_CONFLICT",
+      "disposition": "RENAME"
+    },
+    {
+      "source": "CONTRACT_REFERENCE_UNRESOLVED",
+      "target": "CONTRACT_REFERENCE_UNRESOLVED",
+      "disposition": "RETAIN"
+    },
+    {
+      "source": "CONTRACT_PROJECT_PHASE_NOT_AVAILABLE",
+      "target": null,
+      "disposition": "NOT_CARRIED_PHASE_KEY_REMOVED"
+    },
+    {
+      "source": "CONTRACT_NUMBER_CONFLICT",
+      "target": "CONTRACT_NUMBER_CONFLICT",
+      "disposition": "RETAIN"
+    },
+    {
+      "source": "CONTRACT_ITEM_CODE_REQUIRED",
+      "target": "CONTRACT_ITEM_CODE_REQUIRED",
+      "disposition": "RETAIN"
+    },
+    {
+      "source": "CONTRACT_ITEM_CODE_DUPLICATE",
+      "target": "CONTRACT_ITEM_CODE_DUPLICATE",
+      "disposition": "RETAIN"
+    },
+    {
+      "source": "CONTRACT_DATE_RANGE_INVALID",
+      "target": "CONTRACT_DATE_RANGE_INVALID",
+      "disposition": "RETAIN"
+    },
+    {
+      "source": "CONTRACT_ALREADY_INVALID",
+      "target": "CONTRACT_ALREADY_INVALID",
+      "disposition": "RETAIN"
+    },
+    {
+      "source": "CONTRACT_REVISION_CONFLICT",
+      "target": "CONTRACT_VERSION_CONFLICT",
+      "disposition": "RENAME"
+    }
   ],
   "v2sNativeCodes": [
-    {"code": "EXTENSION_DEFINITION_REVISION_STALE", "origin": "V2S_EXTENSION_FIELD_LIST_SEARCH", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "EXTENSION_FILTER_INVALID", "origin": "V2S_EXTENSION_FIELD_LIST_SEARCH", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED", "origin": "V2S_STORE_OPERATING_RULE_SWITCHES", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "ORGANIZATION_STORE_OPERATING_RULES_INVALID", "origin": "V2S_STORE_OPERATING_RULE_SWITCHES", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "PLATFORM_ASSET_NOT_ACTIVE", "origin": "R5_OWNER_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "PLATFORM_ASSET_NOT_FOUND", "origin": "R5_OWNER_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "PLATFORM_ASSET_USAGE_DENIED", "origin": "R5_OWNER_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "PLATFORM_COMMON_CONTEXT_STALE", "origin": "R5_COMMON_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED", "origin": "R5_COMMON_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION", "origin": "R5_COMMON_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "PLATFORM_COMMON_RESULT_UNKNOWN", "origin": "R5_COMMON_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "PLATFORM_IAM_CREDENTIAL_LOCKED", "origin": "R5_PLATFORM_IAM_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "PLATFORM_IAM_RESULT_UNKNOWN", "origin": "R5_PLATFORM_IAM_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "ACCOUNT_NOT_BINDABLE", "origin": "BASE1_D19_WORKSPACE_IAM_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "WORKSPACE_IAM_ASSIGNMENT_CONFLICT", "origin": "R5_WORKSPACE_IAM_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "WORKSPACE_IAM_CREDENTIAL_LOCKED", "origin": "R5_WORKSPACE_IAM_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "WORKSPACE_IAM_CREDENTIAL_NOT_READY", "origin": "R5_WORKSPACE_IAM_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "WORKSPACE_IAM_GRANT_INVALID", "origin": "R5_WORKSPACE_IAM_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "WORKSPACE_IAM_INVALID_CREDENTIALS", "origin": "R5_WORKSPACE_IAM_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "WORKSPACE_IAM_INVITATION_EXPIRED", "origin": "R5_WORKSPACE_IAM_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "WORKSPACE_IAM_INVITATION_NOT_FOUND", "origin": "R5_WORKSPACE_IAM_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "WORKSPACE_IAM_INVITATION_TERMINAL", "origin": "R5_WORKSPACE_IAM_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "WORKSPACE_IAM_OTP_EXPIRED", "origin": "R5_WORKSPACE_IAM_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "WORKSPACE_IAM_OTP_INVALID", "origin": "R5_WORKSPACE_IAM_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "WORKSPACE_IAM_RATE_LIMITED", "origin": "R5_WORKSPACE_IAM_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "WORKSPACE_IAM_RESULT_UNKNOWN", "origin": "R5_WORKSPACE_IAM_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "WORKSPACE_IAM_WORKSPACE_NOT_FOUND", "origin": "R5_WORKSPACE_IAM_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "ADAPTER_UNBIND_REQUIRED", "origin": "R5_EXTERNAL_COLLABORATION_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "AUTHORIZATION_REQUIRED", "origin": "R5_EXTERNAL_COLLABORATION_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "BINDING_EDIT_NOT_ALLOWED", "origin": "R5_EXTERNAL_COLLABORATION_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "BINDING_NOT_EFFECTIVE", "origin": "R5_EXTERNAL_COLLABORATION_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "BUSINESS_SCOPE_EXCEEDED", "origin": "R5_EXTERNAL_COLLABORATION_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "BUSINESS_CHANNEL_STORE_VISIBILITY_SCOPE_REQUIRED", "origin": "V2S_BUSINESS_CHANNEL_STORE_VISIBILITY", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "BUSINESS_CHANNEL_STORE_VISIBILITY_NOT_APPLICABLE", "origin": "V2S_BUSINESS_CHANNEL_STORE_VISIBILITY", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "BUSINESS_CHANNEL_STORE_VISIBILITY_DUPLICATE", "origin": "V2S_BUSINESS_CHANNEL_STORE_VISIBILITY", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "BUSINESS_CHANNEL_STORE_NOT_IN_PROJECT", "origin": "V2S_BUSINESS_CHANNEL_STORE_VISIBILITY", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "BUSINESS_CHANNEL_STORE_VISIBILITY_STALE", "origin": "V2S_BUSINESS_CHANNEL_STORE_VISIBILITY", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "DUPLICATE_CODE", "origin": "R5_EXTERNAL_COLLABORATION_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "DELETE_NOT_ALLOWED", "origin": "R5_EXTERNAL_COLLABORATION_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "DINE_IN_FORM_MISMATCH", "origin": "R5_EXTERNAL_COLLABORATION_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "PROJECT_DINE_IN_EXTERNAL_NOT_ALLOWED", "origin": "R5_EXTERNAL_COLLABORATION_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "DISABLED_OBJECT_NOT_EDITABLE", "origin": "R5_EXTERNAL_COLLABORATION_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "EXTERNAL_OWNER_ID_MISMATCH", "origin": "R5_EXTERNAL_COLLABORATION_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "IMMUTABLE_FIELD", "origin": "R5_EXTERNAL_COLLABORATION_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "NODE_TYPE_NOT_BINDABLE", "origin": "R5_EXTERNAL_COLLABORATION_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "ORDER_KIND_MISMATCH", "origin": "R5_EXTERNAL_COLLABORATION_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "PROVIDER_NOT_ENABLED", "origin": "R5_EXTERNAL_COLLABORATION_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "VERSION_CONFLICT", "origin": "R5_EXTERNAL_COLLABORATION_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "VOIDED_RECORD_IMMUTABLE", "origin": "BASE1_THREE_STATE_LIFECYCLE_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "SALES_MENU_NOT_FOUND", "origin": "V2S_SALES_MENU_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "SALES_SECTION_NOT_FOUND", "origin": "V2S_SALES_MENU_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "SALES_ITEM_NOT_FOUND", "origin": "V2S_SALES_MENU_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "SALES_MENU_SCOPE_MISMATCH", "origin": "V2S_SALES_MENU_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "SALES_MENU_CAPABILITY_REQUIRED", "origin": "V2S_SALES_MENU_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "SALES_MENU_VERSION_CONFLICT", "origin": "V2S_SALES_MENU_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "SALES_MENU_IDEMPOTENCY_CONFLICT", "origin": "V2S_SALES_MENU_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "SALES_MENU_ARCHIVED", "origin": "V2S_SALES_MENU_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "SALES_MENU_CHANNEL_INELIGIBLE", "origin": "V2S_SALES_MENU_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "SALES_MENU_STORE_DISABLED", "origin": "V2S_SALES_MENU_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "SALES_MENU_CHANNEL_DISABLED", "origin": "V2S_SALES_MENU_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "SALES_MENU_DRAFT_INVALID", "origin": "V2S_SALES_MENU_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "SALES_MENU_ITEM_REFERENCE_INVALID", "origin": "V2S_SALES_MENU_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "SALES_MENU_SKU_REFERENCE_INVALID", "origin": "V2S_SALES_MENU_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "SALES_MENU_ORDER_OPTION_REFERENCE_INVALID", "origin": "V2S_SALES_MENU_TARGET_SELECTION_AVAILABILITY", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "SALES_MENU_ORDER_OPTION_SELECTION_INVALID", "origin": "V2S_SALES_MENU_TARGET_SELECTION_AVAILABILITY", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "SALES_MENU_ORDER_OPTION_SHAPE_UNSUPPORTED", "origin": "V2S_SALES_MENU_TARGET_SELECTION_AVAILABILITY", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "SALES_MENU_MANUAL_TARGET_INVALID", "origin": "V2S_SALES_MENU_TARGET_SELECTION_AVAILABILITY", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "SALES_MENU_PRICE_REQUIRED", "origin": "V2S_SALES_MENU_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "SALES_MENU_SCHEDULE_INVALID", "origin": "V2S_SALES_MENU_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "SALES_MENU_CONSTRAINT_INVALID", "origin": "V2S_SALES_MENU_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "SALES_MENU_ASSET_INVALID", "origin": "V2S_SALES_MENU_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "SALES_MENU_ASSET_TARGET_MISMATCH", "origin": "V2S_SALES_MENU_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "SALES_MENU_ASSET_LIFECYCLE_CONFLICT", "origin": "V2S_SALES_MENU_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "SALES_MENU_SECTION_NOT_EMPTY", "origin": "V2S_SALES_MENU_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "SALES_MENU_MOVE_BOUNDARY", "origin": "V2S_SALES_MENU_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "SALES_MENU_MANUAL_REASON_REQUIRED", "origin": "V2S_SALES_MENU_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "CONFIRMATION_REQUIRED", "origin": "V2S_SALES_MENU_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "SALES_MENU_PUBLICATION_REQUIRED", "origin": "V2S_SALES_MENU_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "SALES_MENU_RESULT_UNKNOWN", "origin": "V2S_SALES_MENU_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "STORE_TERMINAL_NAME_CONFLICT", "origin": "V2S_STORE_TERMINAL_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "STORE_TERMINAL_ACTIVATION_CODE_CONFLICT", "origin": "V2S_STORE_TERMINAL_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "STORE_TERMINAL_ACTIVATION_CODE_EXHAUSTED", "origin": "V2S_STORE_TERMINAL_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "STORE_TERMINAL_RULE_INVALID", "origin": "V2S_STORE_TERMINAL_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "STORE_TERMINAL_REFERENCE_INVALID", "origin": "V2S_STORE_TERMINAL_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "STORE_TERMINAL_STATUS_TRANSITION_INVALID", "origin": "V2S_STORE_TERMINAL_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "STORE_TERMINAL_VOIDED_IMMUTABLE", "origin": "V2S_STORE_TERMINAL_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "STORE_TERMINAL_STORE_VOIDED", "origin": "V2S_TERMINAL_ACTIVATION_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "STORE_TERMINAL_DISABLED", "origin": "V2S_TERMINAL_ACTIVATION_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "STORE_TERMINAL_DEVICE_TYPE_MISMATCH", "origin": "V2S_TERMINAL_ACTIVATION_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "TERMINAL_BINDING_CREDENTIAL_INVALID", "origin": "V2S_TERMINAL_ACTIVATION_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "TERMINAL_BINDING_NOT_ACTIVE", "origin": "V2S_TERMINAL_ACTIVATION_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "TERMINAL_BINDING_CHANGED", "origin": "V2S_TERMINAL_ACTIVATION_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "TERMINAL_BINDING_ALREADY_BOUND", "origin": "V2S_TERMINAL_ACTIVATION_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"},
-    {"code": "TERMINAL_BINDING_ACTIVATION_EXPIRED", "origin": "V2S_TERMINAL_ACTIVATION_CLOSED_SET", "disposition": "ACTIVE_V2S_NATIVE"}
+    {
+      "code": "EXTENSION_DEFINITION_REVISION_STALE",
+      "origin": "V2S_EXTENSION_FIELD_LIST_SEARCH",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "EXTENSION_FILTER_INVALID",
+      "origin": "V2S_EXTENSION_FIELD_LIST_SEARCH",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "ORGANIZATION_STORE_CATALOG_MANAGEMENT_DISABLED",
+      "origin": "V2S_STORE_OPERATING_RULE_SWITCHES",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "ORGANIZATION_STORE_OPERATING_RULES_INVALID",
+      "origin": "V2S_STORE_OPERATING_RULE_SWITCHES",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "PLATFORM_ASSET_NOT_ACTIVE",
+      "origin": "R5_OWNER_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "PLATFORM_ASSET_NOT_FOUND",
+      "origin": "R5_OWNER_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "PLATFORM_ASSET_USAGE_DENIED",
+      "origin": "R5_OWNER_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "PLATFORM_COMMON_CONTEXT_STALE",
+      "origin": "R5_COMMON_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+      "origin": "R5_COMMON_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+      "origin": "R5_COMMON_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "PLATFORM_COMMON_RESULT_UNKNOWN",
+      "origin": "R5_COMMON_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "PLATFORM_IAM_CREDENTIAL_LOCKED",
+      "origin": "R5_PLATFORM_IAM_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "PLATFORM_IAM_RESULT_UNKNOWN",
+      "origin": "R5_PLATFORM_IAM_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "ACCOUNT_NOT_BINDABLE",
+      "origin": "BASE1_D19_WORKSPACE_IAM_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "WORKSPACE_IAM_ASSIGNMENT_CONFLICT",
+      "origin": "R5_WORKSPACE_IAM_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "WORKSPACE_IAM_CREDENTIAL_LOCKED",
+      "origin": "R5_WORKSPACE_IAM_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "WORKSPACE_IAM_CREDENTIAL_NOT_READY",
+      "origin": "R5_WORKSPACE_IAM_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "WORKSPACE_IAM_GRANT_INVALID",
+      "origin": "R5_WORKSPACE_IAM_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "WORKSPACE_IAM_INVALID_CREDENTIALS",
+      "origin": "R5_WORKSPACE_IAM_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "WORKSPACE_IAM_INVITATION_EXPIRED",
+      "origin": "R5_WORKSPACE_IAM_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "WORKSPACE_IAM_INVITATION_NOT_FOUND",
+      "origin": "R5_WORKSPACE_IAM_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "WORKSPACE_IAM_INVITATION_TERMINAL",
+      "origin": "R5_WORKSPACE_IAM_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "WORKSPACE_IAM_OTP_EXPIRED",
+      "origin": "R5_WORKSPACE_IAM_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "WORKSPACE_IAM_OTP_INVALID",
+      "origin": "R5_WORKSPACE_IAM_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "WORKSPACE_IAM_RATE_LIMITED",
+      "origin": "R5_WORKSPACE_IAM_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "WORKSPACE_IAM_RESULT_UNKNOWN",
+      "origin": "R5_WORKSPACE_IAM_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "WORKSPACE_IAM_WORKSPACE_NOT_FOUND",
+      "origin": "R5_WORKSPACE_IAM_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "ADAPTER_UNBIND_REQUIRED",
+      "origin": "R5_EXTERNAL_COLLABORATION_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "AUTHORIZATION_REQUIRED",
+      "origin": "R5_EXTERNAL_COLLABORATION_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "BINDING_EDIT_NOT_ALLOWED",
+      "origin": "R5_EXTERNAL_COLLABORATION_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "BINDING_NOT_EFFECTIVE",
+      "origin": "R5_EXTERNAL_COLLABORATION_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "BUSINESS_SCOPE_EXCEEDED",
+      "origin": "R5_EXTERNAL_COLLABORATION_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "BUSINESS_CHANNEL_STORE_VISIBILITY_SCOPE_REQUIRED",
+      "origin": "V2S_BUSINESS_CHANNEL_STORE_VISIBILITY",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "BUSINESS_CHANNEL_STORE_VISIBILITY_NOT_APPLICABLE",
+      "origin": "V2S_BUSINESS_CHANNEL_STORE_VISIBILITY",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "BUSINESS_CHANNEL_STORE_VISIBILITY_DUPLICATE",
+      "origin": "V2S_BUSINESS_CHANNEL_STORE_VISIBILITY",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "BUSINESS_CHANNEL_STORE_NOT_IN_PROJECT",
+      "origin": "V2S_BUSINESS_CHANNEL_STORE_VISIBILITY",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "BUSINESS_CHANNEL_STORE_VISIBILITY_STALE",
+      "origin": "V2S_BUSINESS_CHANNEL_STORE_VISIBILITY",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "DUPLICATE_CODE",
+      "origin": "R5_EXTERNAL_COLLABORATION_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "DELETE_NOT_ALLOWED",
+      "origin": "R5_EXTERNAL_COLLABORATION_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "DINE_IN_FORM_MISMATCH",
+      "origin": "R5_EXTERNAL_COLLABORATION_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "PROJECT_DINE_IN_EXTERNAL_NOT_ALLOWED",
+      "origin": "R5_EXTERNAL_COLLABORATION_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "DISABLED_OBJECT_NOT_EDITABLE",
+      "origin": "R5_EXTERNAL_COLLABORATION_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "EXTERNAL_OWNER_ID_MISMATCH",
+      "origin": "R5_EXTERNAL_COLLABORATION_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "IMMUTABLE_FIELD",
+      "origin": "R5_EXTERNAL_COLLABORATION_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "NODE_TYPE_NOT_BINDABLE",
+      "origin": "R5_EXTERNAL_COLLABORATION_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "ORDER_KIND_MISMATCH",
+      "origin": "R5_EXTERNAL_COLLABORATION_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "PROVIDER_NOT_ENABLED",
+      "origin": "R5_EXTERNAL_COLLABORATION_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "VERSION_CONFLICT",
+      "origin": "R5_EXTERNAL_COLLABORATION_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "VOIDED_RECORD_IMMUTABLE",
+      "origin": "BASE1_THREE_STATE_LIFECYCLE_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "SALES_MENU_NOT_FOUND",
+      "origin": "V2S_SALES_MENU_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "SALES_SECTION_NOT_FOUND",
+      "origin": "V2S_SALES_MENU_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "SALES_ITEM_NOT_FOUND",
+      "origin": "V2S_SALES_MENU_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "SALES_MENU_SCOPE_MISMATCH",
+      "origin": "V2S_SALES_MENU_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "SALES_MENU_CAPABILITY_REQUIRED",
+      "origin": "V2S_SALES_MENU_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "SALES_MENU_VERSION_CONFLICT",
+      "origin": "V2S_SALES_MENU_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "SALES_MENU_IDEMPOTENCY_CONFLICT",
+      "origin": "V2S_SALES_MENU_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "SALES_MENU_ARCHIVED",
+      "origin": "V2S_SALES_MENU_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "SALES_MENU_CHANNEL_INELIGIBLE",
+      "origin": "V2S_SALES_MENU_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "SALES_MENU_STORE_DISABLED",
+      "origin": "V2S_SALES_MENU_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "SALES_MENU_CHANNEL_DISABLED",
+      "origin": "V2S_SALES_MENU_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "SALES_MENU_DRAFT_INVALID",
+      "origin": "V2S_SALES_MENU_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "SALES_MENU_ITEM_REFERENCE_INVALID",
+      "origin": "V2S_SALES_MENU_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "SALES_MENU_SKU_REFERENCE_INVALID",
+      "origin": "V2S_SALES_MENU_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "SALES_MENU_ORDER_OPTION_REFERENCE_INVALID",
+      "origin": "V2S_SALES_MENU_TARGET_SELECTION_AVAILABILITY",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "SALES_MENU_ORDER_OPTION_SELECTION_INVALID",
+      "origin": "V2S_SALES_MENU_TARGET_SELECTION_AVAILABILITY",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "SALES_MENU_ORDER_OPTION_SHAPE_UNSUPPORTED",
+      "origin": "V2S_SALES_MENU_TARGET_SELECTION_AVAILABILITY",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "SALES_MENU_MANUAL_TARGET_INVALID",
+      "origin": "V2S_SALES_MENU_TARGET_SELECTION_AVAILABILITY",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "SALES_MENU_PRICE_REQUIRED",
+      "origin": "V2S_SALES_MENU_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "SALES_MENU_SCHEDULE_INVALID",
+      "origin": "V2S_SALES_MENU_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "SALES_MENU_CONSTRAINT_INVALID",
+      "origin": "V2S_SALES_MENU_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "SALES_MENU_ASSET_INVALID",
+      "origin": "V2S_SALES_MENU_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "SALES_MENU_ASSET_TARGET_MISMATCH",
+      "origin": "V2S_SALES_MENU_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "SALES_MENU_ASSET_LIFECYCLE_CONFLICT",
+      "origin": "V2S_SALES_MENU_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "SALES_MENU_SECTION_NOT_EMPTY",
+      "origin": "V2S_SALES_MENU_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "SALES_MENU_MOVE_BOUNDARY",
+      "origin": "V2S_SALES_MENU_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "SALES_MENU_MANUAL_REASON_REQUIRED",
+      "origin": "V2S_SALES_MENU_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "CONFIRMATION_REQUIRED",
+      "origin": "V2S_SALES_MENU_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "SALES_MENU_PUBLICATION_REQUIRED",
+      "origin": "V2S_SALES_MENU_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "SALES_MENU_RESULT_UNKNOWN",
+      "origin": "V2S_SALES_MENU_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "STORE_TERMINAL_NAME_CONFLICT",
+      "origin": "V2S_STORE_TERMINAL_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "STORE_TERMINAL_ACTIVATION_CODE_CONFLICT",
+      "origin": "V2S_STORE_TERMINAL_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "STORE_TERMINAL_ACTIVATION_CODE_EXHAUSTED",
+      "origin": "V2S_STORE_TERMINAL_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "STORE_TERMINAL_RULE_INVALID",
+      "origin": "V2S_STORE_TERMINAL_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "STORE_TERMINAL_REFERENCE_INVALID",
+      "origin": "V2S_STORE_TERMINAL_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "STORE_TERMINAL_STATUS_TRANSITION_INVALID",
+      "origin": "V2S_STORE_TERMINAL_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "STORE_TERMINAL_VOIDED_IMMUTABLE",
+      "origin": "V2S_STORE_TERMINAL_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "STORE_TERMINAL_STORE_VOIDED",
+      "origin": "V2S_TERMINAL_ACTIVATION_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "STORE_TERMINAL_DISABLED",
+      "origin": "V2S_TERMINAL_ACTIVATION_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "STORE_TERMINAL_DEVICE_TYPE_MISMATCH",
+      "origin": "V2S_TERMINAL_ACTIVATION_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "TERMINAL_BINDING_CREDENTIAL_INVALID",
+      "origin": "V2S_TERMINAL_ACTIVATION_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "TERMINAL_BINDING_NOT_ACTIVE",
+      "origin": "V2S_TERMINAL_ACTIVATION_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "TERMINAL_BINDING_CHANGED",
+      "origin": "V2S_TERMINAL_ACTIVATION_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "TERMINAL_BINDING_ALREADY_BOUND",
+      "origin": "V2S_TERMINAL_ACTIVATION_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "TERMINAL_BINDING_ACTIVATION_EXPIRED",
+      "origin": "V2S_TERMINAL_ACTIVATION_CLOSED_SET",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "TERMINAL_UPDATE_ARTIFACT_INVALID",
+      "origin": "V2S_TERMINAL_VERSION_UPDATE",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "TERMINAL_UPDATE_STAGE_NOT_OWNED",
+      "origin": "V2S_TERMINAL_VERSION_UPDATE",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "TERMINAL_UPDATE_STAGE_EXPIRED",
+      "origin": "V2S_TERMINAL_VERSION_UPDATE",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "TERMINAL_UPDATE_MINIMUM_FULL_INVALID",
+      "origin": "V2S_TERMINAL_VERSION_UPDATE",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "TERMINAL_UPDATE_PUBLICATION_CONFLICT",
+      "origin": "V2S_TERMINAL_VERSION_UPDATE",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "TERMINAL_UPDATE_BUSY",
+      "origin": "V2S_TERMINAL_VERSION_UPDATE",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "TERMINAL_UPDATE_SNAPSHOT_CHANGED",
+      "origin": "V2S_TERMINAL_VERSION_UPDATE",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "TERMINAL_UPDATE_SNAPSHOT_TOO_LARGE",
+      "origin": "V2S_TERMINAL_VERSION_UPDATE",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "TERMINAL_UPDATE_RULE_TARGET_INVALID",
+      "origin": "V2S_TERMINAL_VERSION_UPDATE",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "TERMINAL_UPDATE_SCOPE_MISMATCH",
+      "origin": "V2S_TERMINAL_VERSION_UPDATE",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "TERMINAL_UPDATE_ARTIFACT_NOT_AUTHORIZED",
+      "origin": "V2S_TERMINAL_VERSION_UPDATE",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "TERMINAL_UPDATE_GRANT_EXPIRED",
+      "origin": "V2S_TERMINAL_VERSION_UPDATE",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "TERMINAL_UPDATE_REPORT_IDENTITY_CONFLICT",
+      "origin": "V2S_TERMINAL_VERSION_UPDATE",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    }
   ],
   "closure": {
     "heritageSourceCodeCount": 83,
@@ -225,11 +1081,10 @@
     "heritageSourceCodesOwnedByR3Compatibility": 1,
     "r3SourceCodeCount": 6,
     "r3DispositionCount": 6,
-    "v2sNativeCodeCount": 94,
+    "v2sNativeCodeCount": 107,
     "crossRegistryDuplicateCodeCount": 0,
     "heritageR3ActiveTargetCount": 79,
-    "v2sNativeActiveTargetCount": 94,
-    "totalActiveTargetCount": 173,
+    "v2sNativeActiveTargetCount": 107,
     "allowedDispositions": [
       "RETAIN",
       "RETAIN_R3_WIRE_COMPATIBILITY",
@@ -238,6 +1093,7 @@
       "NOT_CARRIED_NO_EXTERNAL_SYNC_SOURCE",
       "NOT_CARRIED_PHASE_KEY_REMOVED",
       "ACTIVE_V2S_NATIVE"
-    ]
+    ],
+    "totalActiveTargetCount": 186
   }
 }

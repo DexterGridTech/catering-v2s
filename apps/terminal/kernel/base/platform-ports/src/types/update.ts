@@ -88,7 +88,7 @@ export interface UpdatePort {
   ): Promise<PortResult<UpdateAction | null>>;
   confirmBoot(
     input: UpdateCall & Readonly<{bootToken: string; publicationId: string}>,
-  ): Promise<PortResult<UpdateAction>>;
+  ): Promise<PortResult<Readonly<{confirmed: true}>>>;
   releasePrepared(
     input: UpdateCall & Readonly<{preparedId: string}>,
   ): Promise<PortResult<Readonly<{released: boolean}>>>;

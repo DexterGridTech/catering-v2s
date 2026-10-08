@@ -227,6 +227,19 @@ describe('sample-console integration owner-stage regressions', () => {
       expect(accepted.status).toBe('completed');
       expect(appliedActionId).not.toBeNull();
 
+      const contentFailed = await assembly.runtime.dispatchCommand(
+        startupReadyCommand,
+        {
+          surfaceKey: 'PRIMARY',
+          displayIndex: 0,
+          readyPartKey: null,
+          contentFailure: 'render-error',
+        },
+        dispatchOptions(),
+      );
+      expect(contentFailed.status).toBe('completed');
+      expect(confirmations).toHaveLength(0);
+
       const ready = await assembly.runtime.dispatchCommand(
         startupReadyCommand,
         {
@@ -351,7 +364,7 @@ describe('sample-console integration owner-stage regressions', () => {
           }),
         ),
       readAction: async () => succeeded(action(++readActionCount === 1 ? 'accepted' : 'succeeded')),
-      confirmBoot: async input =>
+      confirmBoot: vi.fn<UpdatePort['confirmBoot']>(async input =>
         succeeded(
           Object.freeze({
             taskId: task.taskId,
@@ -362,6 +375,7 @@ describe('sample-console integration owner-stage regressions', () => {
             bootId: input.bootToken,
           }),
         ),
+      ),
       releasePrepared: async () => succeeded({released: true}),
     };
     const updateTaskKey = createPersistenceFieldKey({
@@ -397,12 +411,12 @@ describe('sample-console integration owner-stage regressions', () => {
       expect(prepareArtifact).not.toHaveBeenCalled();
       await makeReady(assembly);
       await waitFor(() =>
-        expect(events.some(event => event.event === 'terminal-update.primary-ready-resume-requested')).toBe(true),
+        expect(events.some(event => event.event === 'terminal-update.primary-ready-received')).toBe(true),
       );
       await waitFor(() =>
-        expect(events.some(event => event.event === 'terminal-update.primary-ready-resume-result')).toBe(true),
+        expect(events.some(event => event.event === 'terminal-update.primary-ready-continuation-result')).toBe(true),
       );
-      const resumeResult = events.find(event => event.event === 'terminal-update.primary-ready-resume-result');
+      const resumeResult = events.find(event => event.event === 'terminal-update.primary-ready-continuation-result');
       if (readActionCount !== 2)
         throw new Error(
           `PRIMARY_READY_RECONCILE_DID_NOT_READ_ACTION count=${readActionCount} result=${JSON.stringify(resumeResult?.data)}`,
@@ -410,6 +424,7 @@ describe('sample-console integration owner-stage regressions', () => {
       await waitFor(() => expect(readActionCount).toBe(2));
       await waitFor(() => expect(prepareArtifact).toHaveBeenCalledOnce());
       expect(prepareArtifact).toHaveBeenCalledWith(expect.objectContaining({kind: 'hot', sourceRef: 'fixture:hot'}));
+      expect(updatePort.confirmBoot).not.toHaveBeenCalled();
     } finally {
       await releaseRuntimeForTestAsync(assembly.runtime);
     }

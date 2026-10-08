@@ -26,7 +26,12 @@ import {
   runtimeRequestLedgerSlaveSliceName,
   type RuntimeRequestLedgerState,
 } from '../src/features/slices/requestLedger';
-import {selectRequestExecutionCommands, selectRequestExecutionView, selectRequestExecutionViews} from '../src/index';
+import {
+  selectRequestExecutionCandidates,
+  selectRequestExecutionCommands,
+  selectRequestExecutionView,
+  selectRequestExecutionViews,
+} from '../src/index';
 import type {ActorExecutionRecord, CommandExecutionObservation, LedgerError} from '../src/types/execution';
 import type {RequestExecutionRecord} from '../src/types/requestLedger';
 import {createTestPlatformPorts} from './testSupport';
@@ -234,6 +239,48 @@ describe('runtime request ledger selectors', () => {
       primary.commandId,
       device.commandId,
     ]);
+  });
+
+  it('selects compact matching request candidates without projecting ledger result bodies', () => {
+    const matchingId = createRequestId();
+    const unrelatedId = createRequestId();
+    const peerId = createRequestId();
+    const privateResult = 'large-result-marker-'.repeat(20_000);
+    const matching = observation({
+      name: 'kernel.feature.sample-staff-session.login',
+      displayMode: 'PRIMARY',
+      actors: [actor('test.actor', 'completed', {payload: privateResult})],
+    });
+    const state = stateWith({
+      master: {
+        [matchingId]: envelope(record(matchingId, {workspace: 'MAIN', commands: [matching]}), 10),
+        [unrelatedId]: envelope(
+          record(unrelatedId, {workspace: 'MAIN', commands: [observation({name: 'kernel.feature.other.run'})]}),
+          11,
+        ),
+      },
+      slave: {
+        [peerId]: envelope(
+          record(peerId, {
+            workspace: 'BRANCH',
+            commands: [observation({name: 'kernel.feature.sample-staff-session.login', displayMode: 'SECONDARY'})],
+          }),
+          12,
+        ),
+      },
+    });
+
+    const candidates = selectRequestExecutionCandidates(
+      state,
+      'MAIN',
+      'kernel.feature.sample-staff-session.login',
+      'PRIMARY',
+    );
+
+    expect(candidates).toEqual([{requestId: matchingId, workspace: 'MAIN'}]);
+    expect(JSON.stringify(candidates)).not.toContain(privateResult);
+    expect(JSON.stringify(candidates)).not.toContain('results');
+    expect(JSON.stringify(candidates)).not.toContain('observations');
   });
 
   it('L-6 memoizes by request envelope references, including peer-only requests', () => {

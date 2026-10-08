@@ -3,9 +3,9 @@ import {createRequestId} from '@catering-v2s/kernel-base-contracts';
 import {createProcessMemoryStateStoragePort} from '@catering-v2s/kernel-base-platform-ports';
 import type {TransportServerConfig} from '@catering-v2s/kernel-base-contracts';
 import {refreshTopologyDisplayCommand} from '@catering-v2s/kernel-base-topology';
+import {createTerminalUpdateAutomationFixture} from '@catering-v2s/kernel-base-terminal-update/testing';
 import packageJson from '../package.json';
 import {createSampleAssembly, terminalSurfaces} from '../src';
-import {createTerminalUpdateAutomationFixture} from './terminalUpdateFixture';
 import '../theme/global.css';
 
 const defaultServerSpaces = packageJson.serverSpaces as TransportServerConfig;
@@ -107,14 +107,11 @@ const terminalUpdateRunId = process.env.EXPO_PUBLIC_TER_AUTOMATION_RUN_ID;
 const terminalUpdateFixture =
   terminalUpdateRunId === undefined
     ? undefined
-    : createTerminalUpdateAutomationFixture(
-        terminalUpdateRunId,
-        process.env.EXPO_PUBLIC_TER_AUTOMATION_CASE === 'update.install-result'
-          ? 'install-result'
-          : process.env.EXPO_PUBLIC_TER_AUTOMATION_CASE === 'update.compatibility'
-            ? 'compatibility'
-            : 'fixed',
-      );
+    : createTerminalUpdateAutomationFixture({
+        runId: terminalUpdateRunId,
+        applicationId: 'com.anonymous.sampleterminal',
+        scenario: process.env.EXPO_PUBLIC_TER_AUTOMATION_CASE,
+      });
 const testSurfaceForm = process.env.EXPO_PUBLIC_TER_AUTOMATION_SURFACE_FORM;
 if (testSurfaceForm !== undefined && testSurfaceForm !== 'laptop' && testSurfaceForm !== 'mobile') {
   throw new Error('TEST_EXPO_TERMINAL_SURFACE_FORM_INVALID');

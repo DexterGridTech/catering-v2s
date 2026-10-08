@@ -8,6 +8,35 @@ import org.junit.Test
 
 class TerminalUpdateBootPolicyTest {
   @Test
+  fun `recovery never selects a package without an authorized previous target`() {
+    assertEquals(
+      Triple("failed", "candidate-publication", null),
+      selectRecoveryTarget(
+        candidatePublicationId = "candidate-publication",
+        safeEmbeddedPublicationId = null,
+        safePreviousHotPublicationId = null,
+        safePreviousHotFile = null,
+      ),
+    )
+  }
+
+  @Test
+  fun `recovery prefers the matching embedded package then an authorized previous hot file`() {
+    assertEquals(
+      Triple("embedded", "embedded-publication", null),
+      selectRecoveryTarget("candidate-publication", "embedded-publication", "previous-hot", "/private/hot.js"),
+    )
+    assertEquals(
+      Triple("file-recovery", "previous-hot", "/private/hot.js"),
+      selectRecoveryTarget("candidate-publication", null, "previous-hot", "/private/hot.js"),
+    )
+    assertEquals(
+      Triple("failed", "candidate-publication", null),
+      selectRecoveryTarget("candidate-publication", null, "previous-hot", null),
+    )
+  }
+
+  @Test
   fun `old context and token cannot confirm a reservation for a replaced APK`() {
     val identity = TerminalUpdateInstalledIdentity("sample", 2, "new-publication", "1.0.4")
     val current = TerminalUpdateBootReservation(
@@ -51,5 +80,25 @@ class TerminalUpdateBootPolicyTest {
     assertFalse(isUnconfirmedRecoveryBoot(recoveryBootPending = true, bootConfirmed = true))
     // Confirmation clears the pending flag before the next ordinary process start.
     assertFalse(isUnconfirmedRecoveryBoot(recoveryBootPending = false, bootConfirmed = false))
+  }
+
+  @Test
+  fun `HOT action is accepted only when the selected boot reservation matches`() {
+    assertEquals(
+      "accepted",
+      hotActionReadbackState("applying", "publication-hot", "boot-hot", "hot", "publication-hot", "boot-hot", false, ""),
+    )
+    assertEquals(
+      "applying",
+      hotActionReadbackState("applying", "publication-hot", "boot-old", "hot", "publication-hot", "boot-hot", false, ""),
+    )
+    assertEquals(
+      "applying",
+      hotActionReadbackState("applying", "publication-hot", "boot-hot", "embedded", "publication-hot", "boot-hot", false, ""),
+    )
+    assertEquals(
+      "succeeded",
+      hotActionReadbackState("applying", "publication-hot", "boot-hot", "hot", "publication-hot", "boot-hot", true, "publication-hot"),
+    )
   }
 }

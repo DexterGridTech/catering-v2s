@@ -96,6 +96,8 @@ export const createAndroidJourneyUiPort = (
   input: Readonly<{
     readonly connection: AndroidAutomationConnection;
     readonly sessionId: string;
+    /** Re-resolves this app's session after a Runtime socket replacement. */
+    readonly resolveSessionId?: (previousSessionId: string) => Promise<string>;
     readonly onStep?: (step: string) => void;
   }>,
 ) => {
@@ -130,6 +132,16 @@ export const createAndroidJourneyUiPort = (
     }
   };
   return Object.freeze({
+    sessionId: input.sessionId,
+    ...(input.resolveSessionId === undefined
+      ? {}
+      : {
+          refreshSession: async () => {
+            const nextSessionId = await input.resolveSessionId!(input.sessionId);
+            if (nextSessionId === input.sessionId) return createAndroidJourneyUiPort(input);
+            return createAndroidJourneyUiPort({...input, sessionId: nextSessionId});
+          },
+        }),
     ...appUi,
     /** Waits for Android-owned controls without confusing them with TER TestIds. */
     waitForSystemButton: (options: Parameters<AndroidAutomationConnection['systemUi']['clickButton']>[0]) =>

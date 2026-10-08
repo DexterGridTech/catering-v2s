@@ -93,20 +93,22 @@ if (terminalArtifactManagedBuildDirectory.isPresent()) {
     }
 }
 
-tasks.register('terminalHotZip', Zip) {
-    onlyIf { terminalArtifactRoot.isPresent() && terminalArtifactOutput.isPresent() }
-    from(terminalArtifactRoot.map { file(it) })
-    archiveFileName.set(terminalArtifactOutput.map { file(it).name })
-    destinationDirectory.set(project.layout.dir(terminalArtifactOutput.map { file(it).parentFile }))
-    duplicatesStrategy = DuplicatesStrategy.FAIL
-    setReproducibleFileOrder(true)
-    setPreserveFileTimestamps(false)
-    doFirst {
-        if (!terminalArtifactRoot.isPresent() || !terminalArtifactOutput.isPresent()) {
-            throw new GradleException('TERMINAL_UPDATE_HOT_ZIP_INPUT_REQUIRED')
-        }
-        if (terminalArtifactRoot.get().trim().isEmpty() || terminalArtifactOutput.get().trim().isEmpty()) {
-            throw new GradleException('TERMINAL_UPDATE_HOT_ZIP_INPUT_INVALID')
+['terminalHotZip', 'terminalFullZip'].each { zipTaskName ->
+    tasks.register(zipTaskName, Zip) {
+        onlyIf { terminalArtifactRoot.isPresent() && terminalArtifactOutput.isPresent() }
+        from(terminalArtifactRoot.map { file(it) })
+        archiveFileName.set(terminalArtifactOutput.map { file(it).name })
+        destinationDirectory.set(project.layout.dir(terminalArtifactOutput.map { file(it).parentFile }))
+        duplicatesStrategy = DuplicatesStrategy.FAIL
+        setReproducibleFileOrder(true)
+        setPreserveFileTimestamps(false)
+        doFirst {
+            if (!terminalArtifactRoot.isPresent() || !terminalArtifactOutput.isPresent()) {
+                throw new GradleException("TERMINAL_UPDATE_${zipTaskName == 'terminalHotZip' ? 'HOT' : 'FULL'}_ZIP_INPUT_REQUIRED")
+            }
+            if (terminalArtifactRoot.get().trim().isEmpty() || terminalArtifactOutput.get().trim().isEmpty()) {
+                throw new GradleException("TERMINAL_UPDATE_${zipTaskName == 'terminalHotZip' ? 'HOT' : 'FULL'}_ZIP_INPUT_INVALID")
+            }
         }
     }
 }

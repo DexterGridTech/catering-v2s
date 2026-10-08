@@ -222,10 +222,10 @@ describe(`TER automation ${appName} main journey on Android`, () => {
     try {
       await runMainSampleJourney(
         journey.sample === 'wallpaper'
-          ? {sample: 'wallpaper', port: {server: connection.driver, sessionId, diagnostics, ...ui}}
+          ? {sample: 'wallpaper', port: {...ui, server: connection.driver, diagnostics}}
           : {
               sample: 'console',
-              port: {server: connection.driver, sessionId, diagnostics, ...ui},
+              port: {...ui, server: connection.driver, diagnostics},
               input: {
                 runId: journey.runId,
                 shape: journey.shape,

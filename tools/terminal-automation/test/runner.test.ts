@@ -155,25 +155,71 @@ describe('run-owned generated artifact cleanup', () => {
     const terminalRoot = mkdtempSync(path.join(os.tmpdir(), 'ter-artifact-source-root-'));
     try {
       const apk = path.join(runDirectory, 'update/sample-terminal/sample-terminal.apk');
-      const fullApk = path.join(runDirectory, 'update/sample-terminal/sample-terminal-full.apk');
+      const fullZip = path.join(runDirectory, 'update/sample-terminal/sample-terminal-full.zip');
       const zip = path.join(runDirectory, 'update/sample-terminal/sample-terminal-hot.zip');
+      const compatibilityFullZip = path.join(runDirectory, 'update/sample-terminal/sample-terminal-compat-full.zip');
+      const compatibilityExternalFullZip = path.join(
+        runDirectory,
+        'update/sample-terminal/sample-terminal-compat-external-full.zip',
+      );
+      const compatibilityHotFiveZip = path.join(
+        runDirectory,
+        'update/sample-terminal/sample-terminal-compat-hot-five.zip',
+      );
+      const compatibilityHotSixZip = path.join(
+        runDirectory,
+        'update/sample-terminal/sample-terminal-compat-hot-six.zip',
+      );
+      const fullStagingApk = path.join(runDirectory, 'update/sample-terminal/full-staging/sample-terminal.apk');
+      const extractedCompatibilityApk = path.join(
+        runDirectory,
+        'update/sample-terminal/sample-terminal-compat-external.apk',
+      );
       const metadata = path.join(runDirectory, 'update/sample-terminal/install.json');
+      const fullPackageMetadata = path.join(runDirectory, 'update/sample-terminal/full-package.json');
+      const compatibilityFullPackageMetadata = path.join(
+        runDirectory,
+        'update/sample-terminal/compatibility-full-package.json',
+      );
+      const compatibilityExternalFullPackageMetadata = path.join(
+        runDirectory,
+        'update/sample-terminal/compatibility-external-full-package.json',
+      );
       const bundle = path.join(runDirectory, 'android-build/sample-terminal/assets/index.android.bundle');
       mkdirSync(path.dirname(apk), {recursive: true});
       mkdirSync(path.dirname(bundle), {recursive: true});
+      mkdirSync(path.dirname(fullStagingApk), {recursive: true});
       writeFileSync(apk, Buffer.alloc(1024));
-      writeFileSync(fullApk, Buffer.alloc(2048));
+      writeFileSync(fullZip, Buffer.alloc(2048));
       writeFileSync(zip, Buffer.alloc(512));
+      writeFileSync(compatibilityFullZip, Buffer.alloc(4096));
+      writeFileSync(compatibilityExternalFullZip, Buffer.alloc(8192));
+      writeFileSync(compatibilityHotFiveZip, Buffer.alloc(16384));
+      writeFileSync(compatibilityHotSixZip, Buffer.alloc(32768));
+      writeFileSync(fullStagingApk, Buffer.alloc(4096));
+      writeFileSync(extractedCompatibilityApk, Buffer.alloc(2048));
       writeFileSync(metadata, '{"publicationId":"kept"}');
+      writeFileSync(fullPackageMetadata, '');
+      writeFileSync(compatibilityFullPackageMetadata, '');
+      writeFileSync(compatibilityExternalFullPackageMetadata, '');
       writeFileSync(bundle, Buffer.alloc(256));
       const result = cleanupManagedRunArtifacts(runDirectory, true, terminalRoot);
-      expect(result.removedBytes).toBe(3840);
+      expect(result.removedBytes).toBe(71_424);
       expect(result.removed).toContain('android-build');
       expect(readFileSync(metadata, 'utf8')).toBe('{"publicationId":"kept"}');
       expect(existsSync(apk)).toBe(false);
-      expect(existsSync(fullApk)).toBe(false);
+      expect(existsSync(fullZip)).toBe(false);
       expect(existsSync(zip)).toBe(false);
+      expect(existsSync(compatibilityFullZip)).toBe(false);
+      expect(existsSync(compatibilityExternalFullZip)).toBe(false);
+      expect(existsSync(compatibilityHotFiveZip)).toBe(false);
+      expect(existsSync(compatibilityHotSixZip)).toBe(false);
+      expect(existsSync(path.dirname(fullStagingApk))).toBe(false);
+      expect(existsSync(extractedCompatibilityApk)).toBe(false);
       expect(existsSync(bundle)).toBe(false);
+      expect(existsSync(fullPackageMetadata)).toBe(false);
+      expect(existsSync(compatibilityFullPackageMetadata)).toBe(false);
+      expect(existsSync(compatibilityExternalFullPackageMetadata)).toBe(false);
     } finally {
       rmSync(runDirectory, {recursive: true, force: true});
       rmSync(terminalRoot, {recursive: true, force: true});
@@ -672,6 +718,12 @@ describe('resolveAutomationSuite', () => {
     expect(
       updateCaseImplemented({phase: 'update', platform: 'android', shape: 'mobile', case: 'update.compatibility'}),
     ).toBe(true);
+    expect(updateCaseImplemented({phase: 'update', platform: 'android', shape: 'dual', case: 'update.rollback'})).toBe(
+      true,
+    );
+    expect(
+      updateRequiresManagedDev({phase: 'update', platform: 'android', shape: 'dual', case: 'update.rollback'}),
+    ).toBe(true);
     expect(
       updateRequiresManagedDev({phase: 'update', platform: 'android', shape: 'mobile', case: 'update.compatibility'}),
     ).toBe(true);
@@ -679,35 +731,56 @@ describe('resolveAutomationSuite', () => {
       updateRequiresManagedDev({phase: 'update', platform: 'android', shape: 'mobile', case: 'update.install-result'}),
     ).toBe(true);
     expect(
+      updateRequiresManagedDev({phase: 'update', platform: 'android', shape: 'dual', case: 'update.interruption'}),
+    ).toBe(true);
+    expect(
+      updateCaseImplemented({phase: 'update', platform: 'android', shape: 'dual', case: 'update.interruption'}),
+    ).toBe(true);
+    expect(
       updateRequiresManagedDev({phase: 'update', platform: 'web', shape: 'mobile', case: 'update.install-result'}),
     ).toBe(false);
     expect(
       updateCaseImplemented({phase: 'update', platform: 'android', shape: 'mobile', case: 'update.interruption'}),
+    ).toBe(true);
+    expect(
+      updateScenarioAssertionsObserved(
+        {phase: 'update', platform: 'android', shape: 'dual', case: 'update.interruption'},
+        'run-2',
+        '',
+      ),
     ).toBe(false);
+    expect(
+      updateScenarioAssertionsObserved(
+        {phase: 'update', platform: 'android', shape: 'dual', case: 'update.interruption'},
+        'run-2',
+        'TERMINAL_AUTOMATION_UPDATE_CASE_ASSERTIONS_PASS case=update.interruption run=run-2\n',
+      ),
+    ).toBe(true);
   });
 
-  it('fails closed when Android boot-guard final assertions were not observed', () => {
-    const execution = {phase: 'update', platform: 'android', shape: 'mobile', case: 'update.boot-guard'} as const;
+  it.each([
+    'update.boot-guard',
+    'update.interruption',
+    'update.compatibility',
+    'update.rollback',
+    'update.install-result',
+    'update.full-hot',
+    'update.offline-assets',
+  ] as const)('fails closed when Android %s final assertions were not observed', updateCase => {
+    const execution = {phase: 'update', platform: 'android', shape: 'dual', case: updateCase} as const;
     expect(updateScenarioAssertionsObserved(execution, 'run-1', '')).toBe(false);
     expect(
       updateScenarioAssertionsObserved(
         execution,
         'run-1',
-        'TERMINAL_AUTOMATION_UPDATE_CASE_ASSERTIONS_PASS case=update.boot-guard run=run-1\n',
+        `TERMINAL_AUTOMATION_UPDATE_CASE_ASSERTIONS_PASS case=${updateCase} run=run-1\n`,
       ),
     ).toBe(true);
   });
 
-  it('fails closed when Android compatibility data-crossing assertions were not observed', () => {
-    const execution = {phase: 'update', platform: 'android', shape: 'mobile', case: 'update.compatibility'} as const;
-    expect(updateScenarioAssertionsObserved(execution, 'run-1', '')).toBe(false);
-    expect(
-      updateScenarioAssertionsObserved(
-        execution,
-        'run-1',
-        'TERMINAL_AUTOMATION_UPDATE_CASE_ASSERTIONS_PASS case=update.compatibility run=run-1\n',
-      ),
-    ).toBe(true);
+  it('does not require an Android update marker from a Web run', () => {
+    const execution = {phase: 'update', platform: 'web', shape: 'mobile', case: 'update.fixed'} as const;
+    expect(updateScenarioAssertionsObserved(execution, 'run-1', '')).toBe(true);
   });
 
   it('requires Web compatibility owner assertions before reporting the case as passed', () => {

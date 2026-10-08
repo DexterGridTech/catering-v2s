@@ -1,5 +1,5 @@
 import {describe, expect, it, vi} from 'vitest';
-import {createBoundedWebSocketCtor} from '../src/foundations/boundedWebSocketCtor';
+import {createBoundedWebSocketCtor, type BoundedWebSocketFailure} from '../src/foundations/boundedWebSocketCtor';
 
 class FakeWebSocket {
   readonly OPEN = 1;
@@ -24,7 +24,7 @@ class FakeWebSocket {
 
 describe('bounded WebSocket constructor', () => {
   it('closes once unacknowledged frames cross the limit and drops later sends', () => {
-    const onLimit = vi.fn((socket: WebSocket) => socket.close());
+    const onLimit = vi.fn((socket: WebSocket, _failure: BoundedWebSocketFailure) => socket.close());
     const outbound = createBoundedWebSocketCtor(
       FakeWebSocket as unknown as {new (url: string, protocols?: string | string[]): WebSocket},
       onLimit,
@@ -42,6 +42,15 @@ describe('bounded WebSocket constructor', () => {
     expect(socket.protocols).toEqual(['automation-v1']);
     expect(socket.sendCount).toBe(2);
     expect(onLimit).toHaveBeenCalledTimes(1);
+    expect(onLimit.mock.calls[0]?.[1]).toMatchObject({
+      reason: 'UNACKNOWLEDGED_WINDOW_FULL',
+      limitBytes: 250,
+      pendingMessages: 2,
+      pendingBytes: expect.any(Number),
+      messageBytes: expect.any(Number),
+      messageType: 'event',
+      messageIdFamily: 'opaque',
+    });
     expect(socket.close).toHaveBeenCalledTimes(1);
     expect(outbound.pendingMessageCount).toBe(0);
     expect(outbound.pendingByteCount).toBe(0);
@@ -72,5 +81,56 @@ describe('bounded WebSocket constructor', () => {
     outbound.dispose();
     expect(outbound.pendingByteCount).toBe(0);
     expect(outbound.pendingMessageCount).toBe(0);
+  });
+
+  it('distinguishes a single frame larger than the entire limit', () => {
+    const onLimit = vi.fn();
+    const outbound = createBoundedWebSocketCtor(
+      FakeWebSocket as unknown as {new (url: string, protocols?: string | string[]): WebSocket},
+      onLimit,
+      32,
+    );
+    const socket = new outbound.WebSocketCtor('ws://localhost:19090') as unknown as FakeWebSocket;
+    const frame = JSON.stringify({messageId: 'large', type: 'event', body: 'payload'});
+    const frameBytes = new TextEncoder().encode(frame).length;
+
+    socket.send(frame);
+
+    expect(onLimit).toHaveBeenCalledTimes(1);
+    expect(onLimit.mock.calls[0]?.[1]).toMatchObject({
+      reason: 'MESSAGE_TOO_LARGE',
+      limitBytes: 32,
+      messageBytes: frameBytes,
+      pendingBytes: 0,
+      pendingMessages: 0,
+      messageType: 'event',
+      messageIdFamily: 'opaque',
+    });
+    expect(socket.sendCount).toBe(0);
+    outbound.dispose();
+  });
+
+  it('reports duplicate frame type and identifier family without exposing the identifier', () => {
+    const onLimit = vi.fn();
+    const outbound = createBoundedWebSocketCtor(
+      FakeWebSocket as unknown as {new (url: string, protocols?: string | string[]): WebSocket},
+      onLimit,
+    );
+    const socket = new outbound.WebSocketCtor('ws://localhost:19090') as unknown as FakeWebSocket;
+    const frame = JSON.stringify({protocolVersion: 1, sessionId: 's', messageId: 'reply-secret-id', type: 'response'});
+
+    socket.send(frame);
+    socket.send(frame);
+
+    expect(onLimit).toHaveBeenCalledTimes(1);
+    expect(onLimit.mock.calls[0]?.[1]).toMatchObject({
+      reason: 'DUPLICATE_MESSAGE_ID',
+      messageType: 'response',
+      pendingMessageType: 'response',
+      messageIdFamily: 'reply',
+      pendingMessageIdFamily: 'reply',
+    });
+    expect(JSON.stringify(onLimit.mock.calls[0]?.[1])).not.toContain('reply-secret-id');
+    outbound.dispose();
   });
 });

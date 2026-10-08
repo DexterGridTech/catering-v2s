@@ -1,0 +1,1296 @@
+{
+  "components": {
+    "schemas": {
+      "TerminalUpdateArtifactStageRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "file",
+          "sha256",
+          "usage"
+        ],
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "usage": {
+            "type": "string",
+            "enum": [
+              "TERMINAL_UPDATE_ARTIFACT"
+            ]
+          }
+        }
+      },
+      "TerminalUpdateStageResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "stageRef",
+          "stageBindGrant",
+          "expiresAtEpochMillis",
+          "fileName",
+          "sha256",
+          "byteSize"
+        ],
+        "properties": {
+          "stageRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "stageBindGrant": {
+            "type": "string",
+            "minLength": 32,
+            "maxLength": 256
+          },
+          "expiresAtEpochMillis": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "fileName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "byteSize": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          }
+        }
+      },
+      "TerminalUpdateArtifactRegisterRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "stageRef",
+          "stageBindGrant",
+          "kind"
+        ],
+        "properties": {
+          "stageRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "stageBindGrant": {
+            "type": "string",
+            "minLength": 32,
+            "maxLength": 256
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "FULL",
+              "HOT"
+            ]
+          },
+          "minimumFullArtifactRef": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "TerminalUpdateArtifactPageQuery": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "FULL",
+              "HOT"
+            ]
+          },
+          "appId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "runtimeVersion": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "queryText": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "minimumFullNativeBuildNumber": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "minimumFullPublicationId": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "minimumFullApkSha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "cursor": {
+            "type": "string",
+            "maxLength": 512
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
+      },
+      "TerminalUpdateArtifactSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "artifactRef",
+          "kind",
+          "applicationId",
+          "runtimeVersion",
+          "nativeBuildNumber",
+          "apkVersion",
+          "jsVersion",
+          "publicationId",
+          "zipSha256",
+          "byteSize",
+          "createdAtEpochMillis"
+        ],
+        "properties": {
+          "artifactRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "FULL",
+              "HOT"
+            ]
+          },
+          "applicationId": {
+            "type": "string"
+          },
+          "runtimeVersion": {
+            "type": "string"
+          },
+          "nativeBuildNumber": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "apkVersion": {
+            "type": "string"
+          },
+          "jsVersion": {
+            "type": "string"
+          },
+          "publicationId": {
+            "type": "string"
+          },
+          "zipSha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "byteSize": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "createdAtEpochMillis": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "TerminalUpdateArtifactPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TerminalUpdateArtifactSummary"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "TerminalUpdateArtifactDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/TerminalUpdateArtifactSummary"
+          }
+        ],
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "minimumFullArtifactRef",
+          "minimumFullFacts"
+        ],
+        "properties": {
+          "minimumFullArtifactRef": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "minimumFullFacts": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "applicationId": {
+                "type": "string"
+              },
+              "runtimeVersion": {
+                "type": "string"
+              },
+              "nativeBuildNumber": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "apkVersion": {
+                "type": "string"
+              },
+              "apkSha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          }
+        }
+      },
+      "TerminalUpdateVersionPageQuery": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "limit"
+        ],
+        "properties": {
+          "storeRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "queryText": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "currentApkVersion": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "currentJsVersion": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "runtimeVersion": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "cursor": {
+            "type": "string",
+            "maxLength": 512
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
+      },
+      "TerminalUpdateVersionReportItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "terminalRef",
+          "terminalName",
+          "storeRef",
+          "storeName",
+          "hasReport",
+          "actual",
+          "recent"
+        ],
+        "properties": {
+          "terminalRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "terminalName": {
+            "type": "string"
+          },
+          "storeRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "storeName": {
+            "type": "string"
+          },
+          "hasReport": {
+            "type": "boolean"
+          },
+          "actual": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": true
+          },
+          "recent": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": true
+          }
+        }
+      },
+      "TerminalUpdateVersionPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TerminalUpdateVersionReportItem"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "TerminalUpdateRulePageQuery": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "limit"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ENABLED",
+              "DISABLED"
+            ]
+          },
+          "applicationId": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "createdFromEpochMillis": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "createdToEpochMillis": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "cursor": {
+            "type": "string",
+            "maxLength": 512
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
+      },
+      "TerminalUpdateRuleSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "ruleRef",
+          "projectRef",
+          "status",
+          "targetMode",
+          "fullArtifactRef",
+          "hotArtifactRef",
+          "nSeconds",
+          "hotStrategy",
+          "mSeconds",
+          "createdAtEpochMillis",
+          "revision"
+        ],
+        "properties": {
+          "ruleRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ENABLED",
+              "DISABLED"
+            ]
+          },
+          "targetMode": {
+            "type": "string",
+            "enum": [
+              "ALL",
+              "STORE_REFS"
+            ]
+          },
+          "fullArtifactRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "hotArtifactRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nSeconds": {
+            "type": "integer",
+            "minimum": 60,
+            "maximum": 86400
+          },
+          "hotStrategy": {
+            "type": "string",
+            "enum": [
+              "IMMEDIATE",
+              "IDLE"
+            ]
+          },
+          "mSeconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 60,
+            "maximum": 86400
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 500
+          },
+          "createdAtEpochMillis": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "TerminalUpdateRulePage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TerminalUpdateRuleSummary"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "TerminalUpdateRuleCreateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "targetMode",
+          "fullArtifactRef",
+          "status",
+          "nSeconds",
+          "hotStrategy"
+        ],
+        "properties": {
+          "targetMode": {
+            "type": "string",
+            "enum": [
+              "ALL",
+              "STORE_REFS"
+            ]
+          },
+          "storeRefs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "uniqueItems": true
+          },
+          "fullArtifactRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "hotArtifactRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ENABLED",
+              "DISABLED"
+            ]
+          },
+          "nSeconds": {
+            "type": "integer",
+            "minimum": 60,
+            "maximum": 86400
+          },
+          "hotStrategy": {
+            "type": "string",
+            "enum": [
+              "IMMEDIATE",
+              "IDLE"
+            ]
+          },
+          "mSeconds": {
+            "type": "integer",
+            "minimum": 60,
+            "maximum": 86400
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 500
+          }
+        }
+      },
+      "TerminalUpdateRuleStatusRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "revision",
+          "status"
+        ],
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ENABLED",
+              "DISABLED"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        }
+      },
+      "TerminalUpdateRuleDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/TerminalUpdateRuleSummary"
+          }
+        ],
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "storeRefs"
+        ],
+        "properties": {
+          "storeRefs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "uniqueItems": true
+          }
+        }
+      },
+      "TerminalUpdateArtifactCandidateQuery": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "projectRef",
+          "limit"
+        ],
+        "properties": {
+          "projectRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "queryText": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "FULL",
+              "HOT"
+            ]
+          },
+          "applicationId": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "runtimeVersion": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "minimumFullArtifactRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "cursor": {
+            "type": "string",
+            "maxLength": 512
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
+      },
+      "TerminalUpdateArtifactCandidatePage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TerminalUpdateArtifactSummary"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "TerminalUpdateRuleSnapshotQuery": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "cursor",
+          "limit",
+          "collectionHash"
+        ],
+        "properties": {
+          "cursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "collectionHash": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      },
+      "TerminalUpdateRuleSnapshotItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "ruleRef",
+          "targetMode",
+          "storeRefs",
+          "applicationId",
+          "full",
+          "hot",
+          "nSeconds",
+          "hotStrategy",
+          "mSeconds",
+          "revision",
+          "updatedAtEpochMillis"
+        ],
+        "properties": {
+          "ruleRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "targetMode": {
+            "type": "string",
+            "enum": [
+              "ALL",
+              "STORE_REFS"
+            ]
+          },
+          "storeRefs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "applicationId": {
+            "type": "string"
+          },
+          "full": {
+            "$ref": "#/components/schemas/TerminalUpdateArtifactSummary"
+          },
+          "hot": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": true
+          },
+          "nSeconds": {
+            "type": "integer",
+            "minimum": 60,
+            "maximum": 86400
+          },
+          "hotStrategy": {
+            "type": "string",
+            "enum": [
+              "IMMEDIATE",
+              "IDLE"
+            ]
+          },
+          "mSeconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 60,
+            "maximum": 86400
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "updatedAtEpochMillis": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "TerminalUpdateRuleSnapshotPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "collectionHash",
+          "nextCursor"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TerminalUpdateRuleSnapshotItem"
+            }
+          },
+          "collectionHash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "TerminalUpdateDownloadGrantResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "relativeContentPath",
+          "grant",
+          "expiresAtEpochMillis",
+          "artifactRef",
+          "zipSha256",
+          "byteSize"
+        ],
+        "properties": {
+          "relativeContentPath": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "grant": {
+            "type": "string",
+            "minLength": 32,
+            "maxLength": 256
+          },
+          "expiresAtEpochMillis": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "artifactRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "zipSha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "byteSize": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          }
+        }
+      },
+      "TerminalUpdateBinaryContent": {
+        "type": "string",
+        "format": "binary"
+      },
+      "TerminalUpdateReportActual": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "apkVersion",
+          "nativeBuildNumber",
+          "applicationId",
+          "runtimeVersion",
+          "jsVersion",
+          "publicationId",
+          "apkSha256",
+          "bundleSha256",
+          "entryKind",
+          "unknownReason"
+        ],
+        "properties": {
+          "apkVersion": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "nativeBuildNumber": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "applicationId": {
+            "type": "string"
+          },
+          "runtimeVersion": {
+            "type": "string"
+          },
+          "jsVersion": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "publicationId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "apkSha256": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "bundleSha256": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "entryKind": {
+            "type": "string",
+            "enum": [
+              "INSTALLED_APK",
+              "EMBEDDED_BUNDLE",
+              "HOT_BUNDLE",
+              "UNKNOWN"
+            ]
+          },
+          "unknownReason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "READBACK_UNAVAILABLE",
+              "NOT_INSTALLED",
+              "MISMATCH",
+              "OTHER",
+              null
+            ]
+          }
+        }
+      },
+      "TerminalUpdateReportRecent": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "state",
+          "reason",
+          "changedAtEpochMillis",
+          "ruleRef",
+          "fullArtifactRef",
+          "hotArtifactRef"
+        ],
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "WAITING_USER",
+              "DOWNLOADING",
+              "VERIFYING",
+              "INSTALLING",
+              "APPLYING_HOT",
+              "SUCCEEDED",
+              "FAILED",
+              "CANCELLED",
+              "UNKNOWN"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "NONE",
+              "NETWORK",
+              "HTTP_REJECTED",
+              "HASH_MISMATCH",
+              "PREPARE_FAILED",
+              "INSTALLER_CANCELLED",
+              "INSTALL_FAILED",
+              "HOT_APPLY_FAILED",
+              "UNKNOWN"
+            ]
+          },
+          "changedAtEpochMillis": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "ruleRef": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "fullArtifactRef": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "hotArtifactRef": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "TerminalUpdateReportRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "reportId",
+          "reportSequence",
+          "taskId",
+          "actual",
+          "recent"
+        ],
+        "properties": {
+          "reportId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reportSequence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "taskId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "actual": {
+            "$ref": "#/components/schemas/TerminalUpdateReportActual"
+          },
+          "recent": {
+            "$ref": "#/components/schemas/TerminalUpdateReportRecent"
+          }
+        }
+      },
+      "TerminalUpdateReportReceipt": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "reportId",
+          "taskId",
+          "acceptedSequence",
+          "outcome"
+        ],
+        "properties": {
+          "reportId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "taskId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "acceptedSequence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "ACCEPTED",
+              "SUPERSEDED"
+            ]
+          }
+        }
+      },
+      "TerminalUpdateVersionDetail": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "terminalRef",
+          "terminalName",
+          "storeRef",
+          "storeName",
+          "hasReport",
+          "latest",
+          "historyCursor"
+        ],
+        "properties": {
+          "terminalRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "terminalName": {
+            "type": "string"
+          },
+          "storeRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "storeName": {
+            "type": "string"
+          },
+          "hasReport": {
+            "type": "boolean"
+          },
+          "latest": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": true
+          },
+          "historyCursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "TerminalUpdateReportHistoryQuery": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "limit"
+        ],
+        "properties": {
+          "cursor": {
+            "type": "string",
+            "maxLength": 512
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
+      },
+      "TerminalUpdateReportHistoryPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "reportId",
+                "taskId",
+                "reportSequence",
+                "actual",
+                "recent",
+                "receivedAtEpochMillis"
+              ],
+              "properties": {
+                "reportId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "taskId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid"
+                },
+                "reportSequence": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "actual": {
+                  "$ref": "#/components/schemas/TerminalUpdateReportActual"
+                },
+                "recent": {
+                  "$ref": "#/components/schemas/TerminalUpdateReportRecent"
+                },
+                "receivedAtEpochMillis": {
+                  "type": "integer",
+                  "format": "int64",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "TerminalUpdateRuleStorePage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "storeRef",
+                "name",
+                "code",
+                "status"
+              ],
+              "properties": {
+                "storeRef": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "ENABLED",
+                    "DISABLED",
+                    "VOIDED",
+                    "UNKNOWN"
+                  ]
+                }
+              }
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

@@ -100,6 +100,9 @@ internal object TerminalUpdateRuntime {
   private val lock = Any()
   private val mainHandler = Handler(Looper.getMainLooper())
   private val contextBoots = WeakHashMap<ReactContext, String>()
+  // Suppress duplicate foreground callbacks only within this process. Persisting this
+  // marker would prevent a fresh process from reopening a still-pending installer UI.
+  private val installerConfirmationResumeAttempts = mutableSetOf<String>()
   @Volatile private var application: WeakReference<Context>? = null
   @Volatile private var reactHost: WeakReference<ReactHost>? = null
   @Volatile private var currentReservation: TerminalUpdateBootReservation? = null
@@ -228,10 +231,6 @@ internal object TerminalUpdateRuntime {
     }
   }
 
-  fun bootTokenFor(context: ReactContext): String? = synchronized(lock) {
-    contextBoots[context]
-  }
-
   fun jsBundleFile(useDeveloperSupport: Boolean): String? {
     if (useDeveloperSupport) return null
     val reservation = currentReservation ?: synchronized(lock) {
@@ -350,12 +349,16 @@ internal object TerminalUpdateRuntime {
     if (value.optString("taskId") != taskId || value.optString("actionId") != actionId) return@synchronized null
     val publicationId = value.optString("actionPublicationId")
     if (value.optString("actionKind") == "hot") {
-      val confirmed = value.optBoolean("bootConfirmed") && value.optString("bootPublicationId") == publicationId
-      val state = when {
-        confirmed -> "succeeded"
-        value.optString("actionState") == "failed" -> "failed"
-        else -> value.optString("actionState", "unknown")
-      }
+      val state = hotActionReadbackState(
+        actionState = value.optString("actionState", "unknown"),
+        actionPublicationId = publicationId,
+        actionBootToken = value.optString("actionBootId"),
+        entryKind = value.optString("entryKind"),
+        selectedPublicationId = value.optString("selectedPublicationId"),
+        currentBootToken = value.optString("bootToken"),
+        bootConfirmed = value.optBoolean("bootConfirmed"),
+        bootPublicationId = value.optString("bootPublicationId"),
+      )
       return@synchronized actionResult(taskId, actionId, state,
         value.optString("actionReason").ifBlank { null }, publicationId, value.optString("actionBootId").ifBlank { null })
     }
@@ -384,6 +387,17 @@ internal object TerminalUpdateRuntime {
       return@synchronized actionResult(taskId, actionId, "unknown", "INSTALLER_SESSION_READBACK_UNAVAILABLE", publicationId, null)
     }
     val sessionPresent = sessionRead.getOrThrow()
+    if (isPendingUserInstallerAction(sessionPresent, value.optString("installerState"), value.optString("actionState"))) {
+      Log.i(
+        LOG_TAG,
+        "event=installer-readback state=accepted sessionIdValid=${sessionId != PackageInstaller.SessionInfo.INVALID_ID} sessionPresent=true installerState=${value.optString("installerState")} actionState=${value.optString("actionState")}",
+      )
+      return@synchronized actionResult(taskId, actionId, "accepted", null, publicationId, value.optString("actionBootId").ifBlank { null })
+    }
+    Log.i(
+      LOG_TAG,
+      "event=installer-readback state=classify sessionIdValid=${sessionId != PackageInstaller.SessionInfo.INVALID_ID} sessionPresent=$sessionPresent installerState=${value.optString("installerState")} actionState=${value.optString("actionState")}",
+    )
     val state = when {
       sessionPresent -> "unknown"
       value.optString("actionState") == "callback-failed" -> "failed"
@@ -398,20 +412,6 @@ internal object TerminalUpdateRuntime {
       else -> null
     }
     actionResult(taskId, actionId, state, reason, publicationId, value.optString("actionBootId").ifBlank { null })
-  }
-
-  fun readConfirmedHotAction(context: ReactContext, publicationId: String): Map<String, Any?>? = synchronized(lock) {
-    val value = readRecord(context.applicationContext) ?: return@synchronized null
-    if (value.optString("actionKind") != "hot" || !value.optBoolean("bootConfirmed")) return@synchronized null
-    if (value.optString("actionState") == "failed") {
-      return@synchronized actionResult(value.optString("taskId"), value.optString("actionId"), "failed",
-        value.optString("actionReason").ifBlank { "HOT_BOOT_UNCONFIRMED" },
-        value.optString("actionPublicationId"), value.optString("bootToken"))
-    }
-    if (value.optString("actionPublicationId") != publicationId ||
-      value.optString("bootPublicationId") != publicationId || value.optString("bootToken") != bootTokenFor(context)) return@synchronized null
-    actionResult(value.optString("taskId"), value.optString("actionId"), "succeeded", null,
-      publicationId, value.optString("bootToken"))
   }
 
   fun onInstallerStatus(context: Context, intent: Intent) = synchronized(lock) {
@@ -530,18 +530,12 @@ internal object TerminalUpdateRuntime {
       Log.i(LOG_TAG, "event=installer-busy-reconcile outcome=${exit.state}")
       return@synchronized
     }
-    if (value.optString("actionKind") != "full" ||
-      value.optString("actionState") != "pending-user" ||
-      value.optString("installerState") != "pending-user" ||
-      !value.optBoolean("installerAwaitingSourcePermission") ||
-      value.optBoolean("installerConfirmationResumeAttempted")) return@synchronized
-
+    val sessionId = value.optInt("installerSessionId", PackageInstaller.SessionInfo.INVALID_ID)
     if (!app.packageManager.canRequestPackageInstalls()) {
       Log.i(LOG_TAG, "event=installer-confirmation-resume outcome=not-authorized")
       return@synchronized
     }
 
-    val sessionId = value.optInt("installerSessionId", PackageInstaller.SessionInfo.INVALID_ID)
     val sessionInfo = if (sessionId != PackageInstaller.SessionInfo.INVALID_ID) {
       runCatching { app.packageManager.packageInstaller.getSessionInfo(sessionId) }.getOrNull()
     } else null
@@ -580,8 +574,19 @@ internal object TerminalUpdateRuntime {
       return@synchronized
     }
 
-    value.put("installerConfirmationResumeAttempted", true)
-    writeRecord(app, value)
+    val attemptIdentity = "${value.optString("taskId")}\u0000${value.optString("actionId")}\u0000$sessionId"
+    if (!shouldResumePendingInstallerConfirmation(
+        value.optString("actionKind"),
+        value.optString("actionState"),
+        value.optString("installerState"),
+        value.optBoolean("installerAwaitingSourcePermission"),
+        canRequestPackageInstalls = true,
+        attemptedInCurrentProcess = attemptIdentity in installerConfirmationResumeAttempts,
+      )) {
+      Log.i(LOG_TAG, "event=installer-confirmation-resume outcome=already-attempted-in-process session=$sessionId")
+      return@synchronized
+    }
+    installerConfirmationResumeAttempts.add(attemptIdentity)
     runCatching {
       activity.startActivity(confirmation)
       Log.i(
@@ -589,6 +594,7 @@ internal object TerminalUpdateRuntime {
         "event=installer-confirmation-resume outcome=launched context=foreground-activity component=${resolved.flattenToShortString()} session=$sessionId task=${activity.taskId}",
       )
     }.onFailure {
+      installerConfirmationResumeAttempts.remove(attemptIdentity)
       value.put("actionState", "unknown")
       value.put("actionReason", "INSTALL_CONFIRMATION_UNAVAILABLE")
       writeRecord(app, value)
@@ -902,10 +908,10 @@ internal object TerminalUpdateRuntime {
     val previousKind = record.optString("previousEntryKind")
     val previousPublication = record.optString("previousPublicationId")
     val sameInstalledIdentity = record.optString("previousInstalledIdentity") == identity.key()
-    if (sameInstalledIdentity && previousKind == "embedded" && previousPublication == identity.publicationId) {
-      Log.w(LOG_TAG, "event=hot-boot-recovery outcome=embedded-selected candidateRecorded=true")
-      return Triple("embedded", identity.publicationId, null)
-    }
+    val safeEmbeddedPublicationId =
+      if (sameInstalledIdentity && previousKind == "embedded" && previousPublication == identity.publicationId)
+        identity.publicationId
+      else null
     val previousFile = record.optString("previousBundleFile")
       .takeIf { it.isNotBlank() && it != "null" }
       ?.let(::File)
@@ -915,12 +921,18 @@ internal object TerminalUpdateRuntime {
         previousFile.canonicalPath.startsWith(app.filesDir.canonicalPath + File.separator) && previousFile.isFile &&
           FileInputStream(previousFile).use { it.sha256(MAX_HOT_BUNDLE_BYTES) }.equals(expectedDigest, ignoreCase = true)
       }.getOrDefault(false)
-    if (previousHotIsUsable) {
-      Log.w(LOG_TAG, "event=hot-boot-recovery outcome=previous-hot-selected candidateRecorded=true")
-      return Triple("file-recovery", previousPublication, previousFile!!.canonicalPath)
+    val selection = selectRecoveryTarget(
+      candidatePublicationId = candidatePublication,
+      safeEmbeddedPublicationId = safeEmbeddedPublicationId,
+      safePreviousHotPublicationId = previousPublication.takeIf { previousHotIsUsable },
+      safePreviousHotFile = previousFile?.canonicalPath.takeIf { previousHotIsUsable },
+    )
+    when (selection.first) {
+      "embedded" -> Log.w(LOG_TAG, "event=hot-boot-recovery outcome=embedded-selected candidateRecorded=true")
+      "file-recovery" -> Log.w(LOG_TAG, "event=hot-boot-recovery outcome=previous-hot-selected candidateRecorded=true")
+      else -> Log.e(LOG_TAG, "event=hot-boot-recovery outcome=unavailable candidateRecorded=true")
     }
-    Log.e(LOG_TAG, "event=hot-boot-recovery outcome=unavailable candidateRecorded=true")
-    return Triple("failed", candidatePublication, null)
+    return selection
   }
 
   private fun scheduleBootDeadline(app: Context, reservation: TerminalUpdateBootReservation) {

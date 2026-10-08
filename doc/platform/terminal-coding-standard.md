@@ -1117,6 +1117,8 @@ REGION必填商业集团parentId，TER沿Store.projectId→PROJECT.parentId→RE
 手动广播代替真实链路。使用已有后台不等于新增前台功能，DEV证明不冒称L2/UAT；后续新增业务联动
 按其另行批准需求验收，不把本期边界升级为业务feature永久不能有业务逻辑。
 
+**终端更新报告补充（Dexter 2026-10-07，阶段 B）**：更新业务 owner 持有待发送报告正文并通过 TDC 公开 command 发起 HTTP 上报；CBS 在终端更新业务 owner 持久保存每任务报告，阶段变化更新同任务，不为重送或心跳重复建历史。有效且匹配的 PONG 完成 TDC 存活/RTT处理后，TDC 广播不含业务正文的本机 command，供有待发送数据的业务 owner 各自消费；TDC 不持有 owner 的失败正文、不替 owner 重试，也不因报告失败重连。普通断线重连保留业务 owner 的待发送项；配置/绑定按详设身份变化清理不再适用的本地缓存。此条仅收敛已批准的阶段 B 报告接缝，不扩成 outbox、通用恢复机制或阶段 C 自动更新授权。
+
 **远程 command 与记录归属（Dexter 2026-10-03）**：仅在线执行、无离线补发，超时/断链允许
 执行结果未知。CBS 计划新增 terminal-control 纯能力 owner，持久化发送记录、执行过程和执行结果，
 后续供其他业务模块通过公开 API 集成；本期不涉及前台管理或权限模型。持久化使用现有 PostgreSQL

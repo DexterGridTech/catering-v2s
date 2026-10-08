@@ -45,9 +45,31 @@ internal fun isResumableInstallerSession(
   sealed: Boolean,
 ): Boolean = sessionApplicationId == applicationId && committed && sealed
 
+internal fun isPendingUserInstallerAction(
+  sessionPresent: Boolean,
+  installerState: String,
+  actionState: String,
+): Boolean = sessionPresent &&
+  installerState == "pending-user" &&
+  actionState !in setOf("callback-success", "callback-aborted", "callback-failed", "succeeded", "failed")
+
 internal fun isMatchingInstallerConfirmation(
   expectedSessionId: Int,
   confirmationSessionId: Int,
   hasResolvedActivity: Boolean,
 ): Boolean = expectedSessionId >= 0 &&
   confirmationSessionId == expectedSessionId && hasResolvedActivity
+
+internal fun shouldResumePendingInstallerConfirmation(
+  actionKind: String,
+  actionState: String,
+  installerState: String,
+  awaitingSourcePermission: Boolean,
+  canRequestPackageInstalls: Boolean,
+  attemptedInCurrentProcess: Boolean,
+): Boolean = actionKind == "full" &&
+  actionState == "pending-user" &&
+  installerState == "pending-user" &&
+  awaitingSourcePermission &&
+  canRequestPackageInstalls &&
+  !attemptedInCurrentProcess

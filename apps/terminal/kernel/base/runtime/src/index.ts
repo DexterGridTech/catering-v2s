@@ -42,9 +42,10 @@ export type {
   CommandDispatchResult,
 } from './types/execution';
 export {aggregateCommandStatus} from './foundations/aggregateCommandStatus';
-export type {RequestExecutionCommandView, RequestExecutionView} from './types/requestLedger';
+export type {RequestExecutionCandidate, RequestExecutionCommandView, RequestExecutionView} from './types/requestLedger';
 export {selectRequestExecutionView} from './selectors/selectRequestExecutionView';
 export {selectRequestExecutionViews, selectRequestExecutionCommands} from './selectors/selectRequestExecutionViews';
+export {selectRequestExecutionCandidates} from './selectors/selectRequestExecutionCandidates';
 
 export type {PeerDispatchOptions, PeerDispatchGateway} from './types/peer';
 
@@ -63,7 +64,9 @@ export {
   runtimeInstanceModeChangedCommand,
   setRuntimeInstanceModeCommand,
   resetRuntimeAfterSystemFailureCommand,
+  primarySurfaceReadyCommand,
 } from './features/commands';
+export type {PrimarySurfaceReadyPayload} from './features/commands/primarySurfaceReady';
 export {selectRuntimeInstanceMode} from './selectors/selectRuntimeInstanceMode';
 
 export type {RuntimeLimits} from './types/limits';

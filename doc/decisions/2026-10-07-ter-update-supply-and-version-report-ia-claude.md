@@ -22,7 +22,7 @@ BUSINESS_SOURCE=doc/plans/platform/2026-10-05-ter-version-and-js-apk-update-form
 JOURNEY_REFS=doc/decisions/2026-10-07-ter-update-supply-and-version-report-journey-claude.md
 UI_INTERACTION_REF=doc/decisions/2026-10-07-ter-update-supply-and-version-report-ui-interaction-claude.md
 IMPLEMENTATION_DESIGN_REF=doc/plans/platform/2026-10-07-ter-version-update-stage-b-implementation-design-claude.md
-DEXTER_WIREFRAME_REVIEW=ACCEPTED@2026-10-07
+DEXTER_WIREFRAME_REVIEW=ACCEPTED@2026-10-07_SCOPE_APPROXIMATE_IA_DYNAMIC_NOT_RUN
 IMPLEMENTATION_AUTHORITY=false
 ```
 
@@ -123,7 +123,7 @@ snapshot只返回启用规则，但包含项目所有app/platform，不提前按
 | access/scope拒绝 | 原位禁止本操作、当前读取无旧授权事实 | GET跟着写cap消失、切URL绕权 |
 | PLATFORM_COMMON_VERSION_CONFLICT | 原位“状态已变化，请重新确认”并读回detail | 自动重派旧启停 |
 | DEPENDENCY_UNAVAILABLE/BUSY | 当前请求失败可重发同内容/幂等键 | 无限任务排队或fake success |
-| UNKNOWN/NO_REPORT | 字段未知附原因/尚无报告/未发生更新分别呈现 | 目标当actual、“实时”字样 |
+| UNKNOWN/NO_REPORT | 字段未知附原因/尚无报告/无最近更新任务信息分别呈现；后者只表示已收到观察没有recent | 目标当actual、“实时”字样 |
 
 
 ### 4.1 · 实际code的完整恢复映射

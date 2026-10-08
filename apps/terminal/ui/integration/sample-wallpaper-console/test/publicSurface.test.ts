@@ -1,6 +1,6 @@
 import * as ts from 'typescript';
-import {existsSync} from 'node:fs';
-import {resolve} from 'node:path';
+import {existsSync, readdirSync} from 'node:fs';
+import {join, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {describe, expect, it} from 'vitest';
 import packageJson from '../package.json';
@@ -16,6 +16,66 @@ type ImportRecord = Readonly<{
 const packageRoot = fileURLToPath(new URL('../', import.meta.url));
 const packageName = '@catering-v2s/ui-integration-sample-wallpaper-console';
 const cssSubpath = packageName + '/theme/global.css';
+const terminalUpdateFixtureSpecifier =
+  /(?:kernel-base-terminal-update\/testing|(?:^|\/)terminalUpdateFixture(?:\.[^/]*)?)$/u;
+type ProductionModule = Readonly<{filePath: string; moduleSpecifiers: readonly string[]}>;
+
+const sourceFiles = (root: string): readonly string[] => {
+  if (!existsSync(root)) return [];
+  return readdirSync(root, {withFileTypes: true}).flatMap(entry => {
+    const entryPath = join(root, entry.name);
+    if (entry.isDirectory()) return sourceFiles(entryPath);
+    return entry.isFile() && /\.tsx?$/u.test(entry.name) ? [entryPath] : [];
+  });
+};
+
+const moduleSpecifiers = (filePath: string): readonly string[] => {
+  const sourceFile = readSourceFile(filePath);
+  const values: string[] = [];
+  const visit = (node: ts.Node): void => {
+    if (
+      (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
+      node.moduleSpecifier !== undefined &&
+      ts.isStringLiteralLike(node.moduleSpecifier)
+    ) {
+      values.push(node.moduleSpecifier.text);
+    } else if (
+      ts.isCallExpression(node) &&
+      (node.expression.kind === ts.SyntaxKind.ImportKeyword ||
+        (ts.isIdentifier(node.expression) && node.expression.text === 'require')) &&
+      node.arguments.length > 0 &&
+      ts.isStringLiteralLike(node.arguments[0])
+    ) {
+      values.push(node.arguments[0].text);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return values;
+};
+
+const isTerminalUpdateTestFixture = (specifier: string): boolean =>
+  terminalUpdateFixtureSpecifier.test(specifier);
+
+const productionSourceRoots = (): readonly string[] => {
+  const consoleIntegrationRoot = fileURLToPath(new URL('../../sample-console/', import.meta.url));
+  const wallpaperIntegrationRoot = fileURLToPath(new URL('../', import.meta.url));
+  const consoleRoot = fileURLToPath(new URL('../../../../application/android/sample-terminal/', import.meta.url));
+  const wallpaperRoot = fileURLToPath(
+    new URL('../../../../application/android/sample-wallpaper-terminal/', import.meta.url),
+  );
+  return [
+    ...sourceFiles(resolve(consoleIntegrationRoot, 'src')),
+    ...sourceFiles(resolve(wallpaperIntegrationRoot, 'src')),
+    ...sourceFiles(resolve(consoleRoot, 'src')),
+    resolve(consoleRoot, 'App.tsx'),
+    ...sourceFiles(resolve(wallpaperRoot, 'src')),
+    resolve(wallpaperRoot, 'App.tsx'),
+  ];
+};
+
+const fixtureImportViolations = (modules: readonly ProductionModule[]): readonly ProductionModule[] =>
+  modules.filter(module => module.moduleSpecifiers.some(isTerminalUpdateTestFixture));
 
 const readPublicExports = (): readonly string[] => {
   const indexPath = fileURLToPath(new URL('../src/index.ts', import.meta.url));
@@ -116,6 +176,26 @@ const expectNamedImports = (filePath: string, moduleSpecifier: string, expected:
 };
 
 describe('sample2 integration public surface', () => {
+  it('keeps the Web update fixture outside both production source graphs', () => {
+    const productionModules = productionSourceRoots().map(filePath => ({
+      filePath,
+      moduleSpecifiers: moduleSpecifiers(filePath),
+    }));
+    expect(fixtureImportViolations(productionModules)).toEqual([]);
+  });
+
+  it('rejects a fixture import injected into a production module', () => {
+    const fixtureSpecifier = '@catering-v2s/kernel-base-terminal-update/testing';
+    const [productionPath] = productionSourceRoots();
+    expect(productionPath).toBeDefined();
+    expect(
+      fixtureImportViolations([
+        {filePath: productionPath, moduleSpecifiers: [fixtureSpecifier]},
+      ]),
+    ).toEqual([{filePath: productionPath, moduleSpecifiers: [fixtureSpecifier]}]);
+    expect(isTerminalUpdateTestFixture(`${packageName}/test-expo/TerminalUpdateAssetLoadProbe`)).toBe(false);
+  });
+
   it('matches terminal-invariants exactly, including type exports', () => {
     expect(readPublicExports()).toEqual([...invariant.publicExports].sort());
   });

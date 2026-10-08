@@ -73,6 +73,9 @@ const TERMINAL_CREDENTIAL_READS = new Map([
   ["terminalReadServicePointArea", {method:"GET", path:"/api/terminal/group-workspaces/{groupWorkspaceKey}/service-point-areas/{areaRef}", ownerModule:"organization"}],
   ["terminalReadStoreServicePoints", {method:"GET", path:"/api/terminal/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points", ownerModule:"organization"}],
   ["terminalReadServicePoint", {method:"GET", path:"/api/terminal/group-workspaces/{groupWorkspaceKey}/service-points/{pointRef}", ownerModule:"organization"}],
+  ["terminalReadProjectUpdateRuleSnapshotPage", {method:"GET", path:"/api/terminal/group-workspaces/{groupWorkspaceKey}/update-rules/projects/{projectRef}", ownerModule:"TERMINAL_UPDATE_RULE"}],
+  ["issueTerminalUpdateArtifactDownloadGrant", {method:"POST", path:"/api/terminal/group-workspaces/{groupWorkspaceKey}/update-artifacts/{artifactRef}/download-grant", ownerModule:"TERMINAL_UPDATE_RULE"}],
+  ["submitTerminalUpdateReport", {method:"POST", path:"/api/terminal/group-workspaces/{groupWorkspaceKey}/update-reports", ownerModule:"TERMINAL_UPDATE_REPORT"}],
 ]);
 const SELF_SESSION_RESOLVER = "AUTHENTICATED_WORKSPACE_SELF_SESSION";
 const READ_SCOPE_RESOLVER = "AUTHENTICATED_WORKSPACE_ROLE_NODE_RANGE";

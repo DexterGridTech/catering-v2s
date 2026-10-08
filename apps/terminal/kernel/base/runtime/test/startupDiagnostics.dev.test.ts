@@ -75,8 +75,9 @@ describe('runtime startup diagnostics', () => {
       );
       expect(commands).toEqual(
         expect.objectContaining({
-          count: 7,
+          count: 8,
           commands: expect.arrayContaining([
+            {moduleName: runtimeModuleName, commandName: `${runtimeModuleName}.primary-surface-ready`},
             {moduleName: runtimeModuleName, commandName: `${runtimeModuleName}.reset-runtime-after-system-failure`},
             {moduleName: runtimeModuleName, commandName: `${runtimeModuleName}.hello-world`},
             {moduleName: fixtureModuleName, commandName: `${fixtureModuleName}.known`},

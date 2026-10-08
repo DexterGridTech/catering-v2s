@@ -109,16 +109,20 @@
     {
       "path": "contracts/openapi-source/terminal-data-read.schemas.json",
       "sha256": "560f629cfa076829a281c0abd75517933c38f17ea86f5d0bb88308d074fed607"
+    },
+    {
+      "path": "contracts/openapi-source/terminal-update.schemas.json",
+      "sha256": "5161860b9e87bf3b39d9b1cf4c84e8d8eed57ddb841d7aabeb4198bc62474b3d"
     }
   ],
   "denominator": {
-    "scenarios": 34,
-    "operations": 246,
+    "scenarios": 51,
+    "operations": 264,
     "faces": {
-      "platform-admin": 61,
-      "operations-admin": 163,
+      "platform-admin": 66,
+      "operations-admin": 172,
       "public": 12,
-      "terminal": 10
+      "terminal": 14
     },
     "owners": [
       "business-channel",
@@ -133,6 +137,7 @@
       "store-contract",
       "store-terminal",
       "terminal-binding",
+      "terminal-update",
       "workspace-iam"
     ]
   },
@@ -293,6 +298,78 @@
     {
       "operationId": "cancelOperationsStoreTerminalActivation",
       "reason": "D-27 operations-admin cancellation scoped to the selected store"
+    },
+    {
+      "operationId": "stagePlatformTerminalUpdateArtifact",
+      "reason": "Dexter-authorized Stage B terminal version/update supply and report chain"
+    },
+    {
+      "operationId": "registerPlatformTerminalUpdateArtifact",
+      "reason": "Dexter-authorized Stage B terminal version/update supply and report chain"
+    },
+    {
+      "operationId": "releasePlatformTerminalUpdateArtifactStage",
+      "reason": "Dexter-authorized Stage B terminal version/update supply and report chain"
+    },
+    {
+      "operationId": "getPlatformTerminalUpdateArtifactPage",
+      "reason": "Dexter-authorized Stage B terminal version/update supply and report chain"
+    },
+    {
+      "operationId": "getPlatformTerminalUpdateArtifactDetail",
+      "reason": "Dexter-authorized Stage B terminal version/update supply and report chain"
+    },
+    {
+      "operationId": "getOperationsProjectTerminalVersionPage",
+      "reason": "Dexter-authorized Stage B terminal version/update supply and report chain"
+    },
+    {
+      "operationId": "getOperationsProjectTerminalUpdateRulePage",
+      "reason": "Dexter-authorized Stage B terminal version/update supply and report chain"
+    },
+    {
+      "operationId": "getOperationsProjectTerminalUpdateRuleDetail",
+      "reason": "Dexter-authorized Stage B terminal version/update supply and report chain"
+    },
+    {
+      "operationId": "createOperationsProjectTerminalUpdateRule",
+      "reason": "Dexter-authorized Stage B terminal version/update supply and report chain"
+    },
+    {
+      "operationId": "changeOperationsProjectTerminalUpdateRuleStatus",
+      "reason": "Dexter-authorized Stage B terminal version/update supply and report chain"
+    },
+    {
+      "operationId": "getOperationsTerminalUpdateArtifactCandidatePage",
+      "reason": "Dexter-authorized Stage B terminal version/update supply and report chain"
+    },
+    {
+      "operationId": "terminalReadProjectUpdateRuleSnapshotPage",
+      "reason": "Dexter-authorized Stage B terminal version/update supply and report chain"
+    },
+    {
+      "operationId": "issueTerminalUpdateArtifactDownloadGrant",
+      "reason": "Dexter-authorized Stage B terminal version/update supply and report chain"
+    },
+    {
+      "operationId": "downloadTerminalUpdateArtifact",
+      "reason": "Dexter-authorized Stage B terminal version/update supply and report chain"
+    },
+    {
+      "operationId": "getOperationsProjectTerminalUpdateRuleStorePage",
+      "reason": "Dexter-authorized Stage B terminal version/update supply and report chain"
+    },
+    {
+      "operationId": "getOperationsProjectTerminalVersionDetail",
+      "reason": "Dexter-authorized Stage B terminal version/update supply and report chain"
+    },
+    {
+      "operationId": "submitTerminalUpdateReport",
+      "reason": "Dexter-authorized Stage B terminal version/update supply and report chain"
+    },
+    {
+      "operationId": "getOperationsProjectTerminalUpdateReportHistoryPage",
+      "reason": "Dexter-authorized Stage B terminal version/update supply and report chain"
     }
   ],
   "renamedOperations": [
@@ -445,6 +522,23 @@
       "PLATFORM_DEPENDENCY_UNAVAILABLE",
       "STORE_TERMINAL_DISABLED",
       "TERMINAL_BINDING_CREDENTIAL_INVALID"
+    ],
+    "TERMINAL_UPDATE_CONTENT_READ": [
+      "PLATFORM_COMMON_VALIDATION_FAILED",
+      "PLATFORM_COMMON_ACCESS_DENIED",
+      "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+      "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+      "PLATFORM_DEPENDENCY_UNAVAILABLE"
+    ],
+    "TERMINAL_UPDATE_REPORT_WRITE": [
+      "PLATFORM_COMMON_VALIDATION_FAILED",
+      "PLATFORM_COMMON_ACCESS_DENIED",
+      "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+      "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+      "PLATFORM_DEPENDENCY_UNAVAILABLE",
+      "TERMINAL_BINDING_CREDENTIAL_INVALID",
+      "PLATFORM_COMMON_RESULT_UNKNOWN",
+      "TERMINAL_UPDATE_REPORT_IDENTITY_CONFLICT"
     ]
   },
   "operationErrorAugmentations": {
@@ -1101,6 +1195,87 @@
     "cancelOperationsStoreTerminalActivation": [
       "TERMINAL_BINDING_NOT_ACTIVE",
       "TERMINAL_BINDING_CHANGED"
+    ],
+    "stagePlatformTerminalUpdateArtifact": [
+      "TERMINAL_UPDATE_ARTIFACT_INVALID",
+      "PLATFORM_DEPENDENCY_UNAVAILABLE",
+      "TERMINAL_UPDATE_BUSY"
+    ],
+    "registerPlatformTerminalUpdateArtifact": [
+      "TERMINAL_UPDATE_STAGE_NOT_OWNED",
+      "TERMINAL_UPDATE_STAGE_EXPIRED",
+      "TERMINAL_UPDATE_MINIMUM_FULL_INVALID",
+      "TERMINAL_UPDATE_PUBLICATION_CONFLICT"
+    ],
+    "releasePlatformTerminalUpdateArtifactStage": [
+      "TERMINAL_UPDATE_STAGE_NOT_OWNED"
+    ],
+    "getPlatformTerminalUpdateArtifactPage": [
+      "PLATFORM_COMMON_VALIDATION_FAILED",
+      "TERMINAL_UPDATE_SNAPSHOT_TOO_LARGE"
+    ],
+    "getPlatformTerminalUpdateArtifactDetail": [
+      "PLATFORM_COMMON_RESOURCE_NOT_FOUND"
+    ],
+    "getOperationsProjectTerminalVersionPage": [
+      "PLATFORM_COMMON_VALIDATION_FAILED",
+      "TERMINAL_UPDATE_SCOPE_MISMATCH",
+      "TERMINAL_UPDATE_SNAPSHOT_TOO_LARGE"
+    ],
+    "getOperationsProjectTerminalUpdateRulePage": [
+      "PLATFORM_COMMON_VALIDATION_FAILED",
+      "TERMINAL_UPDATE_SNAPSHOT_TOO_LARGE"
+    ],
+    "getOperationsProjectTerminalUpdateRuleDetail": [
+      "PLATFORM_COMMON_RESOURCE_NOT_FOUND"
+    ],
+    "createOperationsProjectTerminalUpdateRule": [
+      "TERMINAL_UPDATE_SCOPE_MISMATCH",
+      "TERMINAL_UPDATE_RULE_TARGET_INVALID",
+      "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT"
+    ],
+    "changeOperationsProjectTerminalUpdateRuleStatus": [
+      "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+      "PLATFORM_COMMON_VERSION_CONFLICT",
+      "TERMINAL_UPDATE_RULE_TARGET_INVALID"
+    ],
+    "getOperationsTerminalUpdateArtifactCandidatePage": [
+      "PLATFORM_COMMON_VALIDATION_FAILED",
+      "TERMINAL_UPDATE_SCOPE_MISMATCH"
+    ],
+    "terminalReadProjectUpdateRuleSnapshotPage": [
+      "TERMINAL_UPDATE_SNAPSHOT_CHANGED",
+      "TERMINAL_UPDATE_SNAPSHOT_TOO_LARGE"
+    ],
+    "issueTerminalUpdateArtifactDownloadGrant": [
+      "TERMINAL_UPDATE_ARTIFACT_NOT_AUTHORIZED",
+      "TERMINAL_UPDATE_GRANT_EXPIRED",
+      "TERMINAL_UPDATE_BUSY"
+    ],
+    "downloadTerminalUpdateArtifact": [
+      "TERMINAL_UPDATE_GRANT_EXPIRED",
+      "TERMINAL_UPDATE_ARTIFACT_NOT_AUTHORIZED"
+    ],
+    "getOperationsProjectTerminalUpdateRuleStorePage": [
+      "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+      "PLATFORM_COMMON_VALIDATION_FAILED"
+    ],
+    "getOperationsProjectTerminalVersionDetail": [
+      "PLATFORM_COMMON_RESOURCE_NOT_FOUND"
+    ],
+    "submitTerminalUpdateReport": [
+      "PLATFORM_COMMON_VALIDATION_FAILED",
+      "PLATFORM_COMMON_ACCESS_DENIED",
+      "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+      "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+      "PLATFORM_DEPENDENCY_UNAVAILABLE",
+      "TERMINAL_BINDING_CREDENTIAL_INVALID",
+      "PLATFORM_COMMON_RESULT_UNKNOWN",
+      "TERMINAL_UPDATE_REPORT_IDENTITY_CONFLICT"
+    ],
+    "getOperationsProjectTerminalUpdateReportHistoryPage": [
+      "PLATFORM_COMMON_VALIDATION_FAILED",
+      "PLATFORM_COMMON_RESOURCE_NOT_FOUND"
     ]
   },
   "operationErrorSelectionRules": {
@@ -12042,6 +12217,1036 @@
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "PUBLIC_INVITATION",
       "focusedTestId": "edge.verifyPublicInvitationOtp"
+    },
+    {
+      "operationId": "stagePlatformTerminalUpdateArtifact",
+      "method": "POST",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/terminal-update-artifact-stages",
+      "face": "platform-admin",
+      "owner": "TERMINAL_UPDATE_PACKAGE",
+      "scenarioIds": [
+        "N-stage-full"
+      ],
+      "pageKey": "PLATFORM-TERMINAL-UPDATE-PACKAGES",
+      "disposition": "TERMINAL_VERSION_UPDATE",
+      "security": "PLATFORM_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey"
+      ],
+      "queryParameters": [],
+      "requestSchema": "TerminalUpdateArtifactStageRequest",
+      "responseSchema": "TerminalUpdateStageResult",
+      "successStatus": "201",
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.stagePlatformTerminalUpdateArtifact",
+      "requestContentType": "multipart/form-data"
+    },
+    {
+      "operationId": "registerPlatformTerminalUpdateArtifact",
+      "method": "POST",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/terminal-update-artifacts",
+      "face": "platform-admin",
+      "owner": "TERMINAL_UPDATE_PACKAGE",
+      "scenarioIds": [
+        "N-register-full"
+      ],
+      "pageKey": "PLATFORM-TERMINAL-UPDATE-PACKAGES",
+      "disposition": "TERMINAL_VERSION_UPDATE",
+      "security": "PLATFORM_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey"
+      ],
+      "queryParameters": [],
+      "requestSchema": "TerminalUpdateArtifactRegisterRequest",
+      "responseSchema": "TerminalUpdateArtifactDetail",
+      "successStatus": "201",
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.registerPlatformTerminalUpdateArtifact"
+    },
+    {
+      "operationId": "releasePlatformTerminalUpdateArtifactStage",
+      "method": "POST",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/terminal-update-artifact-stages/{stageRef}/release",
+      "face": "platform-admin",
+      "owner": "TERMINAL_UPDATE_PACKAGE",
+      "scenarioIds": [
+        "N-release"
+      ],
+      "pageKey": "PLATFORM-TERMINAL-UPDATE-PACKAGES",
+      "disposition": "TERMINAL_VERSION_UPDATE",
+      "security": "PLATFORM_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "stageRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "NoBody",
+      "responseSchema": "NoContent",
+      "successStatus": "204",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.releasePlatformTerminalUpdateArtifactStage",
+      "headerParameters": [
+        {
+          "name": "X-Asset-Bind-Grant",
+          "in": "header",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 32,
+            "maxLength": 256
+          }
+        }
+      ]
+    },
+    {
+      "operationId": "getPlatformTerminalUpdateArtifactPage",
+      "method": "GET",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/terminal-update-artifacts",
+      "face": "platform-admin",
+      "owner": "TERMINAL_UPDATE_PACKAGE",
+      "scenarioIds": [
+        "N-platform-page"
+      ],
+      "pageKey": "PLATFORM-TERMINAL-UPDATE-PACKAGES",
+      "disposition": "TERMINAL_VERSION_UPDATE",
+      "security": "PLATFORM_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey"
+      ],
+      "queryParameters": [
+        {
+          "name": "kind",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "FULL",
+              "HOT"
+            ]
+          }
+        },
+        {
+          "name": "appId",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "maxLength": 128
+          }
+        },
+        {
+          "name": "runtimeVersion",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "maxLength": 128
+          }
+        },
+        {
+          "name": "queryText",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "maxLength": 120
+          }
+        },
+        {
+          "name": "minimumFullNativeBuildNumber",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        {
+          "name": "minimumFullPublicationId",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "maxLength": 128
+          }
+        },
+        {
+          "name": "minimumFullApkSha256",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "maxLength": 512
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
+      ],
+      "requestSchema": "NoBody",
+      "responseSchema": "TerminalUpdateArtifactPage",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getPlatformTerminalUpdateArtifactPage"
+    },
+    {
+      "operationId": "getPlatformTerminalUpdateArtifactDetail",
+      "method": "GET",
+      "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/terminal-update-artifacts/{artifactRef}",
+      "face": "platform-admin",
+      "owner": "TERMINAL_UPDATE_PACKAGE",
+      "scenarioIds": [
+        "N-platform-detail"
+      ],
+      "pageKey": "PLATFORM-TERMINAL-UPDATE-PACKAGES",
+      "disposition": "TERMINAL_VERSION_UPDATE",
+      "security": "PLATFORM_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "artifactRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "NoBody",
+      "responseSchema": "TerminalUpdateArtifactDetail",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getPlatformTerminalUpdateArtifactDetail"
+    },
+    {
+      "operationId": "getOperationsProjectTerminalVersionPage",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-versions",
+      "face": "operations-admin",
+      "owner": "TERMINAL_UPDATE_RULE",
+      "scenarioIds": [
+        "N-report-page"
+      ],
+      "pageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+      "disposition": "TERMINAL_VERSION_UPDATE",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "projectRef"
+      ],
+      "queryParameters": [
+        {
+          "name": "expectedContextVersion",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        },
+        {
+          "name": "storeRef",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        {
+          "name": "queryText",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "maxLength": 120
+          }
+        },
+        {
+          "name": "currentApkVersion",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "maxLength": 128
+          }
+        },
+        {
+          "name": "currentJsVersion",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "maxLength": 128
+          }
+        },
+        {
+          "name": "runtimeVersion",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "maxLength": 128
+          }
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "maxLength": 512
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
+      ],
+      "requestSchema": "NoBody",
+      "responseSchema": "TerminalUpdateVersionPage",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsProjectTerminalVersionPage"
+    },
+    {
+      "operationId": "getOperationsProjectTerminalUpdateRulePage",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-update-rules",
+      "face": "operations-admin",
+      "owner": "TERMINAL_UPDATE_RULE",
+      "scenarioIds": [
+        "N-rule-page"
+      ],
+      "pageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+      "disposition": "TERMINAL_VERSION_UPDATE",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "projectRef"
+      ],
+      "queryParameters": [
+        {
+          "name": "expectedContextVersion",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        },
+        {
+          "name": "status",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "ENABLED",
+              "DISABLED"
+            ]
+          }
+        },
+        {
+          "name": "applicationId",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "maxLength": 128
+          }
+        },
+        {
+          "name": "createdFromEpochMillis",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        },
+        {
+          "name": "createdToEpochMillis",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "maxLength": 512
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
+      ],
+      "requestSchema": "NoBody",
+      "responseSchema": "TerminalUpdateRulePage",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsProjectTerminalUpdateRulePage"
+    },
+    {
+      "operationId": "getOperationsProjectTerminalUpdateRuleDetail",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-update-rules/{ruleRef}",
+      "face": "operations-admin",
+      "owner": "TERMINAL_UPDATE_RULE",
+      "scenarioIds": [
+        "N-rule-detail"
+      ],
+      "pageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+      "disposition": "TERMINAL_VERSION_UPDATE",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "projectRef",
+        "ruleRef"
+      ],
+      "queryParameters": [
+        {
+          "name": "expectedContextVersion",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      ],
+      "requestSchema": "NoBody",
+      "responseSchema": "TerminalUpdateRuleDetail",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsProjectTerminalUpdateRuleDetail"
+    },
+    {
+      "operationId": "createOperationsProjectTerminalUpdateRule",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-update-rules",
+      "face": "operations-admin",
+      "owner": "TERMINAL_UPDATE_RULE",
+      "scenarioIds": [
+        "N-create-pair-all"
+      ],
+      "pageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+      "disposition": "TERMINAL_VERSION_UPDATE",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "projectRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "TerminalUpdateRuleCreateRequest",
+      "responseSchema": "TerminalUpdateRuleDetail",
+      "successStatus": "201",
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.createOperationsProjectTerminalUpdateRule"
+    },
+    {
+      "operationId": "changeOperationsProjectTerminalUpdateRuleStatus",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-update-rules/{ruleRef}/status",
+      "face": "operations-admin",
+      "owner": "TERMINAL_UPDATE_RULE",
+      "scenarioIds": [
+        "N-enable"
+      ],
+      "pageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+      "disposition": "TERMINAL_VERSION_UPDATE",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "projectRef",
+        "ruleRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "TerminalUpdateRuleStatusRequest",
+      "responseSchema": "TerminalUpdateRuleDetail",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.changeOperationsProjectTerminalUpdateRuleStatus"
+    },
+    {
+      "operationId": "getOperationsTerminalUpdateArtifactCandidatePage",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/terminal-update-artifact-candidates",
+      "face": "operations-admin",
+      "owner": "TERMINAL_UPDATE_PACKAGE",
+      "scenarioIds": [
+        "N-candidate"
+      ],
+      "pageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+      "disposition": "TERMINAL_VERSION_UPDATE",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey"
+      ],
+      "queryParameters": [
+        {
+          "name": "expectedContextVersion",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        },
+        {
+          "name": "projectRef",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        {
+          "name": "queryText",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "maxLength": 120
+          }
+        },
+        {
+          "name": "kind",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "FULL",
+              "HOT"
+            ]
+          }
+        },
+        {
+          "name": "applicationId",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "maxLength": 128
+          }
+        },
+        {
+          "name": "runtimeVersion",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "maxLength": 128
+          }
+        },
+        {
+          "name": "minimumFullArtifactRef",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "maxLength": 512
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
+      ],
+      "requestSchema": "NoBody",
+      "responseSchema": "TerminalUpdateArtifactCandidatePage",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsTerminalUpdateArtifactCandidatePage"
+    },
+    {
+      "operationId": "terminalReadProjectUpdateRuleSnapshotPage",
+      "method": "GET",
+      "path": "/api/terminal/group-workspaces/{groupWorkspaceKey}/update-rules/projects/{projectRef}",
+      "face": "terminal",
+      "owner": "TERMINAL_UPDATE_RULE",
+      "scenarioIds": [
+        "N-snapshot-first"
+      ],
+      "pageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+      "disposition": "TERMINAL_VERSION_UPDATE",
+      "security": "TERMINAL_CREDENTIAL",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "projectRef"
+      ],
+      "queryParameters": [
+        {
+          "name": "cursor",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        {
+          "name": "collectionHash",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      ],
+      "requestSchema": "NoBody",
+      "responseSchema": "TerminalUpdateRuleSnapshotPage",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "TERMINAL_DATA_READ",
+      "focusedTestId": "edge.terminalReadProjectUpdateRuleSnapshotPage",
+      "authorizationMode": "TERMINAL_CREDENTIAL",
+      "headerParameters": [
+        {
+          "name": "X-Terminal-Ref",
+          "in": "header",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        {
+          "name": "X-Terminal-Device-Id",
+          "in": "header",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        }
+      ]
+    },
+    {
+      "operationId": "issueTerminalUpdateArtifactDownloadGrant",
+      "method": "POST",
+      "path": "/api/terminal/group-workspaces/{groupWorkspaceKey}/update-artifacts/{artifactRef}/download-grant",
+      "face": "terminal",
+      "owner": "TERMINAL_UPDATE_RULE",
+      "scenarioIds": [
+        "N-grant"
+      ],
+      "pageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+      "disposition": "TERMINAL_VERSION_UPDATE",
+      "security": "TERMINAL_CREDENTIAL",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "artifactRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "NoBody",
+      "responseSchema": "TerminalUpdateDownloadGrantResult",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "TERMINAL_DATA_READ",
+      "focusedTestId": "edge.issueTerminalUpdateArtifactDownloadGrant",
+      "authorizationMode": "TERMINAL_CREDENTIAL",
+      "headerParameters": [
+        {
+          "name": "X-Terminal-Ref",
+          "in": "header",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        {
+          "name": "X-Terminal-Device-Id",
+          "in": "header",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        }
+      ]
+    },
+    {
+      "operationId": "downloadTerminalUpdateArtifact",
+      "method": "GET",
+      "path": "/api/terminal/group-workspaces/{groupWorkspaceKey}/update-artifacts/{artifactRef}/content",
+      "face": "terminal",
+      "owner": "TERMINAL_UPDATE_PACKAGE",
+      "scenarioIds": [
+        "N-content"
+      ],
+      "pageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+      "disposition": "TERMINAL_VERSION_UPDATE",
+      "security": "TERMINAL_UPDATE_DOWNLOAD_GRANT",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "artifactRef"
+      ],
+      "queryParameters": [],
+      "requestSchema": "NoBody",
+      "responseSchema": "TerminalUpdateBinaryContent",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "TERMINAL_UPDATE_CONTENT_READ",
+      "focusedTestId": "edge.downloadTerminalUpdateArtifact",
+      "headerParameters": [
+        {
+          "name": "X-Terminal-Update-Grant",
+          "in": "header",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 32,
+            "maxLength": 256
+          }
+        }
+      ]
+    },
+    {
+      "operationId": "getOperationsProjectTerminalUpdateRuleStorePage",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-update-rules/{ruleRef}/stores",
+      "face": "operations-admin",
+      "owner": "TERMINAL_UPDATE_RULE",
+      "scenarioIds": [
+        "N-fixed-ref-page"
+      ],
+      "pageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+      "disposition": "TERMINAL_VERSION_UPDATE",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "projectRef",
+        "ruleRef"
+      ],
+      "queryParameters": [
+        {
+          "name": "expectedContextVersion",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "maxLength": 512
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
+      ],
+      "requestSchema": "NoBody",
+      "responseSchema": "TerminalUpdateRuleStorePage",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsProjectTerminalUpdateRuleStorePage"
+    },
+    {
+      "operationId": "getOperationsProjectTerminalVersionDetail",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-versions/{terminalRef}",
+      "face": "operations-admin",
+      "owner": "TERMINAL_UPDATE_RULE",
+      "scenarioIds": [
+        "N-report-detail"
+      ],
+      "pageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+      "disposition": "TERMINAL_VERSION_UPDATE",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "projectRef",
+        "terminalRef"
+      ],
+      "queryParameters": [
+        {
+          "name": "expectedContextVersion",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      ],
+      "requestSchema": "NoBody",
+      "responseSchema": "TerminalUpdateVersionDetail",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsProjectTerminalVersionDetail"
+    },
+    {
+      "operationId": "submitTerminalUpdateReport",
+      "method": "POST",
+      "path": "/api/terminal/group-workspaces/{groupWorkspaceKey}/update-reports",
+      "face": "terminal",
+      "owner": "TERMINAL_UPDATE_REPORT",
+      "scenarioIds": [
+        "N-report-write"
+      ],
+      "pageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+      "disposition": "TERMINAL_VERSION_UPDATE",
+      "security": "TERMINAL_CREDENTIAL",
+      "pathParameters": [
+        "groupWorkspaceKey"
+      ],
+      "queryParameters": [],
+      "requestSchema": "TerminalUpdateReportRequest",
+      "responseSchema": "TerminalUpdateReportReceipt",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "REQUIRED_16_128",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "TERMINAL_UPDATE_REPORT_WRITE",
+      "focusedTestId": "edge.submitTerminalUpdateReport",
+      "authorizationMode": "TERMINAL_CREDENTIAL",
+      "headerParameters": [
+        {
+          "name": "X-Terminal-Ref",
+          "in": "header",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        {
+          "name": "X-Terminal-Device-Id",
+          "in": "header",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        }
+      ]
+    },
+    {
+      "operationId": "getOperationsProjectTerminalUpdateReportHistoryPage",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-versions/{terminalRef}/update-reports",
+      "face": "operations-admin",
+      "owner": "TERMINAL_UPDATE_RULE",
+      "scenarioIds": [
+        "N-report-history"
+      ],
+      "pageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+      "disposition": "TERMINAL_VERSION_UPDATE",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "projectRef",
+        "terminalRef"
+      ],
+      "queryParameters": [
+        {
+          "name": "expectedContextVersion",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "maxLength": 512
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
+      ],
+      "requestSchema": "NoBody",
+      "responseSchema": "TerminalUpdateReportHistoryPage",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsProjectTerminalUpdateReportHistoryPage"
     }
   ],
   "scenarioOperationCrosswalk": [
@@ -14003,6 +15208,294 @@
           "disposition": "R5_EXTERNAL_COLLABORATION_IMPLEMENTATION",
           "positiveProofRef": "edge.transitionOperationsBusinessChannelStatus.positive",
           "negativeProofRef": "edge.transitionOperationsBusinessChannelStatus.negative"
+        }
+      ],
+      "candidateDispositions": []
+    },
+    {
+      "scenarioId": "N-stage-full",
+      "orderedSteps": [
+        {
+          "stepId": "N-stage-full-01",
+          "operationId": "stagePlatformTerminalUpdateArtifact",
+          "face": "platform-admin",
+          "owner": "TERMINAL_UPDATE_PACKAGE",
+          "pageKey": "PLATFORM-TERMINAL-UPDATE-PACKAGES",
+          "disposition": "TERMINAL_VERSION_UPDATE",
+          "positiveProofRef": "edge.stagePlatformTerminalUpdateArtifact.positive",
+          "negativeProofRef": "edge.stagePlatformTerminalUpdateArtifact.negative"
+        }
+      ],
+      "candidateDispositions": []
+    },
+    {
+      "scenarioId": "N-register-full",
+      "orderedSteps": [
+        {
+          "stepId": "N-register-full-01",
+          "operationId": "registerPlatformTerminalUpdateArtifact",
+          "face": "platform-admin",
+          "owner": "TERMINAL_UPDATE_PACKAGE",
+          "pageKey": "PLATFORM-TERMINAL-UPDATE-PACKAGES",
+          "disposition": "TERMINAL_VERSION_UPDATE",
+          "positiveProofRef": "edge.registerPlatformTerminalUpdateArtifact.positive",
+          "negativeProofRef": "edge.registerPlatformTerminalUpdateArtifact.negative"
+        }
+      ],
+      "candidateDispositions": []
+    },
+    {
+      "scenarioId": "N-release",
+      "orderedSteps": [
+        {
+          "stepId": "N-release-01",
+          "operationId": "releasePlatformTerminalUpdateArtifactStage",
+          "face": "platform-admin",
+          "owner": "TERMINAL_UPDATE_PACKAGE",
+          "pageKey": "PLATFORM-TERMINAL-UPDATE-PACKAGES",
+          "disposition": "TERMINAL_VERSION_UPDATE",
+          "positiveProofRef": "edge.releasePlatformTerminalUpdateArtifactStage.positive",
+          "negativeProofRef": "edge.releasePlatformTerminalUpdateArtifactStage.negative"
+        }
+      ],
+      "candidateDispositions": []
+    },
+    {
+      "scenarioId": "N-platform-page",
+      "orderedSteps": [
+        {
+          "stepId": "N-platform-page-01",
+          "operationId": "getPlatformTerminalUpdateArtifactPage",
+          "face": "platform-admin",
+          "owner": "TERMINAL_UPDATE_PACKAGE",
+          "pageKey": "PLATFORM-TERMINAL-UPDATE-PACKAGES",
+          "disposition": "TERMINAL_VERSION_UPDATE",
+          "positiveProofRef": "edge.getPlatformTerminalUpdateArtifactPage.positive",
+          "negativeProofRef": "edge.getPlatformTerminalUpdateArtifactPage.negative"
+        }
+      ],
+      "candidateDispositions": []
+    },
+    {
+      "scenarioId": "N-platform-detail",
+      "orderedSteps": [
+        {
+          "stepId": "N-platform-detail-01",
+          "operationId": "getPlatformTerminalUpdateArtifactDetail",
+          "face": "platform-admin",
+          "owner": "TERMINAL_UPDATE_PACKAGE",
+          "pageKey": "PLATFORM-TERMINAL-UPDATE-PACKAGES",
+          "disposition": "TERMINAL_VERSION_UPDATE",
+          "positiveProofRef": "edge.getPlatformTerminalUpdateArtifactDetail.positive",
+          "negativeProofRef": "edge.getPlatformTerminalUpdateArtifactDetail.negative"
+        }
+      ],
+      "candidateDispositions": []
+    },
+    {
+      "scenarioId": "N-report-page",
+      "orderedSteps": [
+        {
+          "stepId": "N-report-page-01",
+          "operationId": "getOperationsProjectTerminalVersionPage",
+          "face": "operations-admin",
+          "owner": "TERMINAL_UPDATE_RULE",
+          "pageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+          "disposition": "TERMINAL_VERSION_UPDATE",
+          "positiveProofRef": "edge.getOperationsProjectTerminalVersionPage.positive",
+          "negativeProofRef": "edge.getOperationsProjectTerminalVersionPage.negative"
+        }
+      ],
+      "candidateDispositions": []
+    },
+    {
+      "scenarioId": "N-rule-page",
+      "orderedSteps": [
+        {
+          "stepId": "N-rule-page-01",
+          "operationId": "getOperationsProjectTerminalUpdateRulePage",
+          "face": "operations-admin",
+          "owner": "TERMINAL_UPDATE_RULE",
+          "pageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+          "disposition": "TERMINAL_VERSION_UPDATE",
+          "positiveProofRef": "edge.getOperationsProjectTerminalUpdateRulePage.positive",
+          "negativeProofRef": "edge.getOperationsProjectTerminalUpdateRulePage.negative"
+        }
+      ],
+      "candidateDispositions": []
+    },
+    {
+      "scenarioId": "N-rule-detail",
+      "orderedSteps": [
+        {
+          "stepId": "N-rule-detail-01",
+          "operationId": "getOperationsProjectTerminalUpdateRuleDetail",
+          "face": "operations-admin",
+          "owner": "TERMINAL_UPDATE_RULE",
+          "pageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+          "disposition": "TERMINAL_VERSION_UPDATE",
+          "positiveProofRef": "edge.getOperationsProjectTerminalUpdateRuleDetail.positive",
+          "negativeProofRef": "edge.getOperationsProjectTerminalUpdateRuleDetail.negative"
+        }
+      ],
+      "candidateDispositions": []
+    },
+    {
+      "scenarioId": "N-create-pair-all",
+      "orderedSteps": [
+        {
+          "stepId": "N-create-pair-all-01",
+          "operationId": "createOperationsProjectTerminalUpdateRule",
+          "face": "operations-admin",
+          "owner": "TERMINAL_UPDATE_RULE",
+          "pageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+          "disposition": "TERMINAL_VERSION_UPDATE",
+          "positiveProofRef": "edge.createOperationsProjectTerminalUpdateRule.positive",
+          "negativeProofRef": "edge.createOperationsProjectTerminalUpdateRule.negative"
+        }
+      ],
+      "candidateDispositions": []
+    },
+    {
+      "scenarioId": "N-enable",
+      "orderedSteps": [
+        {
+          "stepId": "N-enable-01",
+          "operationId": "changeOperationsProjectTerminalUpdateRuleStatus",
+          "face": "operations-admin",
+          "owner": "TERMINAL_UPDATE_RULE",
+          "pageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+          "disposition": "TERMINAL_VERSION_UPDATE",
+          "positiveProofRef": "edge.changeOperationsProjectTerminalUpdateRuleStatus.positive",
+          "negativeProofRef": "edge.changeOperationsProjectTerminalUpdateRuleStatus.negative"
+        }
+      ],
+      "candidateDispositions": []
+    },
+    {
+      "scenarioId": "N-candidate",
+      "orderedSteps": [
+        {
+          "stepId": "N-candidate-01",
+          "operationId": "getOperationsTerminalUpdateArtifactCandidatePage",
+          "face": "operations-admin",
+          "owner": "TERMINAL_UPDATE_PACKAGE",
+          "pageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+          "disposition": "TERMINAL_VERSION_UPDATE",
+          "positiveProofRef": "edge.getOperationsTerminalUpdateArtifactCandidatePage.positive",
+          "negativeProofRef": "edge.getOperationsTerminalUpdateArtifactCandidatePage.negative"
+        }
+      ],
+      "candidateDispositions": []
+    },
+    {
+      "scenarioId": "N-snapshot-first",
+      "orderedSteps": [
+        {
+          "stepId": "N-snapshot-first-01",
+          "operationId": "terminalReadProjectUpdateRuleSnapshotPage",
+          "face": "terminal",
+          "owner": "TERMINAL_UPDATE_RULE",
+          "pageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+          "disposition": "TERMINAL_VERSION_UPDATE",
+          "positiveProofRef": "edge.terminalReadProjectUpdateRuleSnapshotPage.positive",
+          "negativeProofRef": "edge.terminalReadProjectUpdateRuleSnapshotPage.negative"
+        }
+      ],
+      "candidateDispositions": []
+    },
+    {
+      "scenarioId": "N-grant",
+      "orderedSteps": [
+        {
+          "stepId": "N-grant-01",
+          "operationId": "issueTerminalUpdateArtifactDownloadGrant",
+          "face": "terminal",
+          "owner": "TERMINAL_UPDATE_RULE",
+          "pageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+          "disposition": "TERMINAL_VERSION_UPDATE",
+          "positiveProofRef": "edge.issueTerminalUpdateArtifactDownloadGrant.positive",
+          "negativeProofRef": "edge.issueTerminalUpdateArtifactDownloadGrant.negative"
+        }
+      ],
+      "candidateDispositions": []
+    },
+    {
+      "scenarioId": "N-content",
+      "orderedSteps": [
+        {
+          "stepId": "N-content-01",
+          "operationId": "downloadTerminalUpdateArtifact",
+          "face": "terminal",
+          "owner": "TERMINAL_UPDATE_PACKAGE",
+          "pageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+          "disposition": "TERMINAL_VERSION_UPDATE",
+          "positiveProofRef": "edge.downloadTerminalUpdateArtifact.positive",
+          "negativeProofRef": "edge.downloadTerminalUpdateArtifact.negative"
+        }
+      ],
+      "candidateDispositions": []
+    },
+    {
+      "scenarioId": "N-fixed-ref-page",
+      "orderedSteps": [
+        {
+          "stepId": "N-fixed-ref-page-01",
+          "operationId": "getOperationsProjectTerminalUpdateRuleStorePage",
+          "face": "operations-admin",
+          "owner": "TERMINAL_UPDATE_RULE",
+          "pageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+          "disposition": "TERMINAL_VERSION_UPDATE",
+          "positiveProofRef": "edge.getOperationsProjectTerminalUpdateRuleStorePage.positive",
+          "negativeProofRef": "edge.getOperationsProjectTerminalUpdateRuleStorePage.negative"
+        }
+      ],
+      "candidateDispositions": []
+    },
+    {
+      "scenarioId": "N-report-detail",
+      "orderedSteps": [
+        {
+          "stepId": "N-report-detail-01",
+          "operationId": "getOperationsProjectTerminalVersionDetail",
+          "face": "operations-admin",
+          "owner": "TERMINAL_UPDATE_RULE",
+          "pageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+          "disposition": "TERMINAL_VERSION_UPDATE",
+          "positiveProofRef": "edge.getOperationsProjectTerminalVersionDetail.positive",
+          "negativeProofRef": "edge.getOperationsProjectTerminalVersionDetail.negative"
+        }
+      ],
+      "candidateDispositions": []
+    },
+    {
+      "scenarioId": "N-report-write",
+      "orderedSteps": [
+        {
+          "stepId": "N-report-write-01",
+          "operationId": "submitTerminalUpdateReport",
+          "face": "terminal",
+          "owner": "TERMINAL_UPDATE_REPORT",
+          "pageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+          "disposition": "TERMINAL_VERSION_UPDATE",
+          "positiveProofRef": "edge.submitTerminalUpdateReport.positive",
+          "negativeProofRef": "edge.submitTerminalUpdateReport.negative"
+        }
+      ],
+      "candidateDispositions": []
+    },
+    {
+      "scenarioId": "N-report-history",
+      "orderedSteps": [
+        {
+          "stepId": "N-report-history-01",
+          "operationId": "getOperationsProjectTerminalUpdateReportHistoryPage",
+          "face": "operations-admin",
+          "owner": "TERMINAL_UPDATE_RULE",
+          "pageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+          "disposition": "TERMINAL_VERSION_UPDATE",
+          "positiveProofRef": "edge.getOperationsProjectTerminalUpdateReportHistoryPage.positive",
+          "negativeProofRef": "edge.getOperationsProjectTerminalUpdateReportHistoryPage.negative"
         }
       ],
       "candidateDispositions": []
@@ -16746,6 +18239,99 @@
     },
     "TerminalServicePointRead": {
       "ref": "TerminalServicePointRead"
+    },
+    "TerminalUpdateArtifactStageRequest": {
+      "ref": "TerminalUpdateArtifactStageRequest"
+    },
+    "TerminalUpdateStageResult": {
+      "ref": "TerminalUpdateStageResult"
+    },
+    "TerminalUpdateArtifactRegisterRequest": {
+      "ref": "TerminalUpdateArtifactRegisterRequest"
+    },
+    "TerminalUpdateArtifactPageQuery": {
+      "ref": "TerminalUpdateArtifactPageQuery"
+    },
+    "TerminalUpdateArtifactSummary": {
+      "ref": "TerminalUpdateArtifactSummary"
+    },
+    "TerminalUpdateArtifactPage": {
+      "ref": "TerminalUpdateArtifactPage"
+    },
+    "TerminalUpdateArtifactDetail": {
+      "ref": "TerminalUpdateArtifactDetail"
+    },
+    "TerminalUpdateVersionPageQuery": {
+      "ref": "TerminalUpdateVersionPageQuery"
+    },
+    "TerminalUpdateVersionReportItem": {
+      "ref": "TerminalUpdateVersionReportItem"
+    },
+    "TerminalUpdateVersionPage": {
+      "ref": "TerminalUpdateVersionPage"
+    },
+    "TerminalUpdateRulePageQuery": {
+      "ref": "TerminalUpdateRulePageQuery"
+    },
+    "TerminalUpdateRuleSummary": {
+      "ref": "TerminalUpdateRuleSummary"
+    },
+    "TerminalUpdateRulePage": {
+      "ref": "TerminalUpdateRulePage"
+    },
+    "TerminalUpdateRuleCreateRequest": {
+      "ref": "TerminalUpdateRuleCreateRequest"
+    },
+    "TerminalUpdateRuleStatusRequest": {
+      "ref": "TerminalUpdateRuleStatusRequest"
+    },
+    "TerminalUpdateRuleDetail": {
+      "ref": "TerminalUpdateRuleDetail"
+    },
+    "TerminalUpdateArtifactCandidateQuery": {
+      "ref": "TerminalUpdateArtifactCandidateQuery"
+    },
+    "TerminalUpdateArtifactCandidatePage": {
+      "ref": "TerminalUpdateArtifactCandidatePage"
+    },
+    "TerminalUpdateRuleSnapshotQuery": {
+      "ref": "TerminalUpdateRuleSnapshotQuery"
+    },
+    "TerminalUpdateRuleSnapshotItem": {
+      "ref": "TerminalUpdateRuleSnapshotItem"
+    },
+    "TerminalUpdateRuleSnapshotPage": {
+      "ref": "TerminalUpdateRuleSnapshotPage"
+    },
+    "TerminalUpdateDownloadGrantResult": {
+      "ref": "TerminalUpdateDownloadGrantResult"
+    },
+    "TerminalUpdateBinaryContent": {
+      "ref": "TerminalUpdateBinaryContent"
+    },
+    "TerminalUpdateReportActual": {
+      "ref": "TerminalUpdateReportActual"
+    },
+    "TerminalUpdateReportRecent": {
+      "ref": "TerminalUpdateReportRecent"
+    },
+    "TerminalUpdateReportRequest": {
+      "ref": "TerminalUpdateReportRequest"
+    },
+    "TerminalUpdateReportReceipt": {
+      "ref": "TerminalUpdateReportReceipt"
+    },
+    "TerminalUpdateVersionDetail": {
+      "ref": "TerminalUpdateVersionDetail"
+    },
+    "TerminalUpdateReportHistoryQuery": {
+      "ref": "TerminalUpdateReportHistoryQuery"
+    },
+    "TerminalUpdateReportHistoryPage": {
+      "ref": "TerminalUpdateReportHistoryPage"
+    },
+    "TerminalUpdateRuleStorePage": {
+      "ref": "TerminalUpdateRuleStorePage"
     }
   },
   "componentReferenceClosure": {
@@ -18249,12 +19835,12 @@
     "status": "MATERIALIZED",
     "pipeline": "R24_P3C",
     "sourceOperationCount": 148,
-    "operationCount": 246,
+    "operationCount": 264,
     "faceCounts": {
-      "platform-admin": 61,
-      "operations-admin": 163,
+      "platform-admin": 66,
+      "operations-admin": 172,
       "public": 12,
-      "terminal": 10
+      "terminal": 14
     }
   },
   "sourceDescription": "The inherited analysis source is recorded for provenance only; generation reads only the repository-owned paths in sources."

@@ -53,7 +53,9 @@
     "OPERATIONS-BUSINESS-CHANNEL": "business-channel",
     "OPERATIONS-SALES-MENU": "sales-menu",
     "PG-STORE-SERVICE-POINT-QR": "store-service-point-qr",
-    "PG-STORE-TERMINALS": "store-terminals"
+    "PG-STORE-TERMINALS": "store-terminals",
+    "PLATFORM-TERMINAL-UPDATE-PACKAGES": "terminal-update-package",
+    "PG-PROJECT-TERMINAL-VERSION-RULES": "terminal-update-rule"
   },
   "operationOverrides": {
     "initializeCommercialGroup": {
@@ -211,6 +213,78 @@
     "terminalReadServicePoint": {
       "capability": "terminal-data-read",
       "pathFile": "paths/terminal/data-read.paths.json"
+    },
+    "stagePlatformTerminalUpdateArtifact": {
+      "capability": "TERMINAL_UPDATE_PACKAGE",
+      "pathFile": "contracts/openapi/paths/platform-admin/TERMINAL_UPDATE_PACKAGE.paths.json"
+    },
+    "registerPlatformTerminalUpdateArtifact": {
+      "capability": "TERMINAL_UPDATE_PACKAGE",
+      "pathFile": "contracts/openapi/paths/platform-admin/TERMINAL_UPDATE_PACKAGE.paths.json"
+    },
+    "releasePlatformTerminalUpdateArtifactStage": {
+      "capability": "TERMINAL_UPDATE_PACKAGE",
+      "pathFile": "contracts/openapi/paths/platform-admin/TERMINAL_UPDATE_PACKAGE.paths.json"
+    },
+    "getPlatformTerminalUpdateArtifactPage": {
+      "capability": "TERMINAL_UPDATE_PACKAGE",
+      "pathFile": "contracts/openapi/paths/platform-admin/TERMINAL_UPDATE_PACKAGE.paths.json"
+    },
+    "getPlatformTerminalUpdateArtifactDetail": {
+      "capability": "TERMINAL_UPDATE_PACKAGE",
+      "pathFile": "contracts/openapi/paths/platform-admin/TERMINAL_UPDATE_PACKAGE.paths.json"
+    },
+    "getOperationsProjectTerminalVersionPage": {
+      "capability": "TERMINAL_UPDATE_RULE",
+      "pathFile": "contracts/openapi/paths/operations-admin/TERMINAL_UPDATE_RULE.paths.json"
+    },
+    "getOperationsProjectTerminalUpdateRulePage": {
+      "capability": "TERMINAL_UPDATE_RULE",
+      "pathFile": "contracts/openapi/paths/operations-admin/TERMINAL_UPDATE_RULE.paths.json"
+    },
+    "getOperationsProjectTerminalUpdateRuleDetail": {
+      "capability": "TERMINAL_UPDATE_RULE",
+      "pathFile": "contracts/openapi/paths/operations-admin/TERMINAL_UPDATE_RULE.paths.json"
+    },
+    "createOperationsProjectTerminalUpdateRule": {
+      "capability": "TERMINAL_UPDATE_RULE",
+      "pathFile": "contracts/openapi/paths/operations-admin/TERMINAL_UPDATE_RULE.paths.json"
+    },
+    "changeOperationsProjectTerminalUpdateRuleStatus": {
+      "capability": "TERMINAL_UPDATE_RULE",
+      "pathFile": "contracts/openapi/paths/operations-admin/TERMINAL_UPDATE_RULE.paths.json"
+    },
+    "getOperationsTerminalUpdateArtifactCandidatePage": {
+      "capability": "TERMINAL_UPDATE_PACKAGE",
+      "pathFile": "contracts/openapi/paths/operations-admin/TERMINAL_UPDATE_PACKAGE.paths.json"
+    },
+    "terminalReadProjectUpdateRuleSnapshotPage": {
+      "capability": "TERMINAL_UPDATE_RULE",
+      "pathFile": "contracts/openapi/paths/terminal/TERMINAL_UPDATE_RULE.paths.json"
+    },
+    "issueTerminalUpdateArtifactDownloadGrant": {
+      "capability": "TERMINAL_UPDATE_RULE",
+      "pathFile": "contracts/openapi/paths/terminal/TERMINAL_UPDATE_RULE.paths.json"
+    },
+    "downloadTerminalUpdateArtifact": {
+      "capability": "TERMINAL_UPDATE_PACKAGE",
+      "pathFile": "contracts/openapi/paths/terminal/TERMINAL_UPDATE_PACKAGE.paths.json"
+    },
+    "getOperationsProjectTerminalUpdateRuleStorePage": {
+      "capability": "TERMINAL_UPDATE_RULE",
+      "pathFile": "contracts/openapi/paths/operations-admin/TERMINAL_UPDATE_RULE.paths.json"
+    },
+    "getOperationsProjectTerminalVersionDetail": {
+      "capability": "TERMINAL_UPDATE_RULE",
+      "pathFile": "contracts/openapi/paths/operations-admin/TERMINAL_UPDATE_RULE.paths.json"
+    },
+    "submitTerminalUpdateReport": {
+      "capability": "TERMINAL_UPDATE_REPORT",
+      "pathFile": "contracts/openapi/paths/terminal/TERMINAL_UPDATE_REPORT.paths.json"
+    },
+    "getOperationsProjectTerminalUpdateReportHistoryPage": {
+      "capability": "TERMINAL_UPDATE_RULE",
+      "pathFile": "contracts/openapi/paths/operations-admin/TERMINAL_UPDATE_RULE.paths.json"
     }
   },
   "componentFamilyRules": [
@@ -365,7 +439,38 @@
     "TerminalStoreServicePointAreasRead": "components/terminal/terminal-data-read.schemas.json",
     "TerminalServicePointAreaRead": "components/terminal/terminal-data-read.schemas.json",
     "TerminalStoreServicePointsRead": "components/terminal/terminal-data-read.schemas.json",
-    "TerminalServicePointRead": "components/terminal/terminal-data-read.schemas.json"
+    "TerminalServicePointRead": "components/terminal/terminal-data-read.schemas.json",
+    "TerminalUpdateArtifactStageRequest": "components/terminal-update/terminal-update.schemas.json",
+    "TerminalUpdateStageResult": "components/terminal-update/terminal-update.schemas.json",
+    "TerminalUpdateArtifactRegisterRequest": "components/terminal-update/terminal-update.schemas.json",
+    "TerminalUpdateArtifactPageQuery": "components/terminal-update/terminal-update.schemas.json",
+    "TerminalUpdateArtifactSummary": "components/terminal-update/terminal-update.schemas.json",
+    "TerminalUpdateArtifactPage": "components/terminal-update/terminal-update.schemas.json",
+    "TerminalUpdateArtifactDetail": "components/terminal-update/terminal-update.schemas.json",
+    "TerminalUpdateVersionPageQuery": "components/terminal-update/terminal-update.schemas.json",
+    "TerminalUpdateVersionReportItem": "components/terminal-update/terminal-update.schemas.json",
+    "TerminalUpdateVersionPage": "components/terminal-update/terminal-update.schemas.json",
+    "TerminalUpdateRulePageQuery": "components/terminal-update/terminal-update.schemas.json",
+    "TerminalUpdateRuleSummary": "components/terminal-update/terminal-update.schemas.json",
+    "TerminalUpdateRulePage": "components/terminal-update/terminal-update.schemas.json",
+    "TerminalUpdateRuleCreateRequest": "components/terminal-update/terminal-update.schemas.json",
+    "TerminalUpdateRuleStatusRequest": "components/terminal-update/terminal-update.schemas.json",
+    "TerminalUpdateRuleDetail": "components/terminal-update/terminal-update.schemas.json",
+    "TerminalUpdateArtifactCandidateQuery": "components/terminal-update/terminal-update.schemas.json",
+    "TerminalUpdateArtifactCandidatePage": "components/terminal-update/terminal-update.schemas.json",
+    "TerminalUpdateRuleSnapshotQuery": "components/terminal-update/terminal-update.schemas.json",
+    "TerminalUpdateRuleSnapshotItem": "components/terminal-update/terminal-update.schemas.json",
+    "TerminalUpdateRuleSnapshotPage": "components/terminal-update/terminal-update.schemas.json",
+    "TerminalUpdateDownloadGrantResult": "components/terminal-update/terminal-update.schemas.json",
+    "TerminalUpdateBinaryContent": "components/terminal-update/terminal-update.schemas.json",
+    "TerminalUpdateReportActual": "components/terminal-update/terminal-update.schemas.json",
+    "TerminalUpdateReportRecent": "components/terminal-update/terminal-update.schemas.json",
+    "TerminalUpdateReportRequest": "components/terminal-update/terminal-update.schemas.json",
+    "TerminalUpdateReportReceipt": "components/terminal-update/terminal-update.schemas.json",
+    "TerminalUpdateVersionDetail": "components/terminal-update/terminal-update.schemas.json",
+    "TerminalUpdateReportHistoryQuery": "components/terminal-update/terminal-update.schemas.json",
+    "TerminalUpdateReportHistoryPage": "components/terminal-update/terminal-update.schemas.json",
+    "TerminalUpdateRuleStorePage": "components/terminal-update/terminal-update.schemas.json"
   },
   "resolvedFieldContract": {
     "requiredOnEveryOperation": [
@@ -391,19 +496,19 @@
   "closure": {
     "sourceOperationCount": 148,
     "plannedAdditionalOperationCount": 82,
-    "expectedResolvedOperationCount": 246,
+    "expectedResolvedOperationCount": 264,
     "expectedUnresolvedOperationCount": 0,
     "expectedAmbiguousOperationCount": 0,
-    "sourceComponentCount": 295,
-    "expectedResolvedComponentCount": 294,
+    "sourceComponentCount": 351,
+    "expectedResolvedComponentCount": 350,
     "expectedExplicitNotCarriedComponentCount": 1,
     "expectedUnresolvedComponentCount": 0,
     "expectedAmbiguousComponentCount": 0,
     "faceCounts": {
-      "platform-admin": 61,
-      "operations-admin": 163,
+      "platform-admin": 66,
+      "operations-admin": 172,
       "public": 12,
-      "terminal": 10
+      "terminal": 14
     }
   }
 }

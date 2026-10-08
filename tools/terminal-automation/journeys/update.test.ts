@@ -101,6 +101,12 @@ let ownerExpoIdentity: TerminalAutomationProcessIdentity | undefined;
 let ownerSession: Awaited<ReturnType<NonNullable<typeof ownerDriver>['waitForSession']>> | undefined;
 
 const digest = (filePath: string): string => createHash('sha256').update(readFileSync(filePath)).digest('hex');
+const readZipEntry = (zipPath: string, entryName: string): Buffer => {
+  const result = spawnSync('unzip', ['-p', zipPath, entryName], {encoding: 'buffer'});
+  if (result.error || result.status !== 0 || !result.stdout.byteLength)
+    throw new Error(`TERMINAL_AUTOMATION_UPDATE_ZIP_ENTRY_READ_FAILED_${entryName}`);
+  return result.stdout;
+};
 
 const nextPatchVersion = (version: string): string => {
   const match = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/u.exec(version);
@@ -221,6 +227,12 @@ it.skipIf(updateCase !== 'update.artifacts')(
         apk: {path: string; sha256: string};
         publicationId: string;
       };
+      const fullPackage = JSON.parse(readFileSync(path.join(outputDirectory, 'full-package.json'), 'utf8')) as {
+        schemaVersion: number;
+        publicationId: string;
+        zip: {path: string; sha256: string};
+        apk: {path: string; sha256: string; certificateSha256: string};
+      };
       const hot = JSON.parse(readFileSync(path.join(outputDirectory, 'hot.json'), 'utf8')) as {
         applicationId: string;
         nativeVersion: string;
@@ -237,11 +249,16 @@ it.skipIf(updateCase !== 'update.artifacts')(
         publicationId: string;
       };
       const installApk = path.join(outputDirectory, install.apk.path);
-      const fullApk = path.join(outputDirectory, full.apk.path);
+      const fullZip = path.join(outputDirectory, fullPackage.zip.path);
       expect(statSync(installApk).size).toBeGreaterThan(0);
       expect(digest(installApk)).toBe(install.apk.sha256);
-      expect(digest(fullApk)).toBe(full.apk.sha256);
-      expect(digest(installApk)).toBe(digest(fullApk));
+      expect(fullPackage).toMatchObject({schemaVersion: 1, publicationId: full.publicationId});
+      expect(digest(fullZip)).toBe(fullPackage.zip.sha256);
+      const packagedApk = readZipEntry(fullZip, fullPackage.apk.path);
+      expect(packagedApk.byteLength).toBeGreaterThan(0);
+      expect(createHash('sha256').update(packagedApk).digest('hex')).toBe(fullPackage.apk.sha256);
+      expect(fullPackage.apk.sha256).toBe(full.apk.sha256);
+      expect(createHash('sha256').update(packagedApk).digest('hex')).toBe(digest(installApk));
       const identity = {
         applicationId: install.applicationId,
         nativeVersion: packageJson.version,

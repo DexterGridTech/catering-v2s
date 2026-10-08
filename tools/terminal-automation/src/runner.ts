@@ -58,6 +58,7 @@ const updateCasesRequiringManagedDev = new Set([
   'update.full-hot',
   'update.offline-assets',
   'update.boot-guard',
+  'update.interruption',
   'update.compatibility',
   'update.rollback',
 ]);
@@ -68,7 +69,9 @@ const implementedUpdateCases: Readonly<Record<AutomationPlatform, ReadonlySet<st
     'update.offline-assets',
     'update.boot-guard',
     'update.install-result',
+    'update.interruption',
     'update.compatibility',
+    'update.rollback',
   ]),
 });
 const phaseSuite: Readonly<Record<AutomationPlatform, Readonly<Partial<Record<AutomationPhase, string>>>>> =
@@ -139,11 +142,14 @@ export const updateScenarioAssertionsObserved = (
   execution: TerminalAutomationRunOptions,
   runId: string,
   output: string,
-): boolean =>
-  execution.phase !== 'update' ||
-  (execution.case !== 'update.compatibility' &&
-    (execution.platform !== 'android' || execution.case !== 'update.boot-guard')) ||
-  output.includes(`TERMINAL_AUTOMATION_UPDATE_CASE_ASSERTIONS_PASS case=${execution.case} run=${runId}`);
+): boolean => {
+  if (execution.phase !== 'update' || execution.case === undefined) return true;
+  const requiresMarker = execution.platform === 'android' || execution.case === 'update.compatibility';
+  return (
+    !requiresMarker ||
+    output.includes(`TERMINAL_AUTOMATION_UPDATE_CASE_ASSERTIONS_PASS case=${execution.case} run=${runId}`)
+  );
+};
 
 export const createAndroidDeviceCleanupTracker = () => {
   const tails = new Map<'stdout' | 'stderr', string>([
@@ -241,10 +247,19 @@ export const cleanupManagedRunArtifacts = (
       relativeTargets.push(
         `update/${app}/publication`,
         `update/${app}/embedded-metadata`,
+        `update/${app}/full-staging`,
         `update/${app}/hot-staging`,
         `update/${app}/${app}.apk`,
-        `update/${app}/${app}-full.apk`,
+        `update/${app}/${app}-full.zip`,
         `update/${app}/${app}-hot.zip`,
+        `update/${app}/${app}-compat-full.zip`,
+        `update/${app}/${app}-compat-external-full.zip`,
+        `update/${app}/${app}-compat-external.apk`,
+        `update/${app}/full-package.json`,
+        `update/${app}/compatibility-full-package.json`,
+        `update/${app}/compatibility-external-full-package.json`,
+        `update/${app}/${app}-compat-hot-five.zip`,
+        `update/${app}/${app}-compat-hot-six.zip`,
         `update/${app}/gradle-build`,
       );
     }
@@ -1230,7 +1245,7 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
   const androidDeviceCleanupStatus = execution.platform === 'android' ? androidDeviceCleanup.finish() : 'N/A';
   const deviceCleanupPassed = execution.platform !== 'android' || androidDeviceCleanupStatus === 'PASS';
   let scenarioProofFailure: string | null = null;
-  if (execution.phase === 'update' && execution.platform === 'android' && execution.case === 'update.boot-guard') {
+  if (execution.phase === 'update' && execution.platform === 'android') {
     try {
       const output = readFileSync(logPath, 'utf8');
       if (!updateScenarioAssertionsObserved(execution, manifest.runId, output)) {

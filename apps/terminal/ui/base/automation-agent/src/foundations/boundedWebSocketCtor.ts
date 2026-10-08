@@ -1,7 +1,35 @@
 const maxUnacknowledgedBytes = 1_048_576;
 
 type WebSocketConstructor = {new (url: string, protocols?: string | string[]): WebSocket};
-type PendingMessage = Readonly<{data: string; bytes: number; sent: boolean}>;
+type PendingMessage = Readonly<{data: string; bytes: number; sent: boolean; messageType: string; messageIdFamily: string}>;
+export type BoundedWebSocketFailure = Readonly<{
+  readonly reason:
+    | 'NON_TEXT_MESSAGE'
+    | 'INVALID_JSON'
+    | 'INVALID_MESSAGE_ID'
+    | 'DUPLICATE_MESSAGE_ID'
+    | 'MESSAGE_TOO_LARGE'
+    | 'UNACKNOWLEDGED_WINDOW_FULL'
+    | 'NATIVE_SEND_FAILED';
+  readonly limitBytes: number;
+  readonly messageBytes: number | null;
+  readonly pendingBytes: number;
+  readonly pendingMessages: number;
+  readonly messageType?: string;
+  readonly pendingMessageType?: string;
+  readonly messageIdFamily?: string;
+  readonly pendingMessageIdFamily?: string;
+}>;
+
+const messageIdFamily = (value: string): string => {
+  if (value.startsWith('runtime-event-')) return 'runtime-event';
+  if (value.startsWith('controls-event-')) return 'controls-event';
+  if (value.startsWith('reply-')) return 'reply';
+  if (value.startsWith('hello-')) return 'hello';
+  if (value.startsWith('ack-')) return 'ack';
+  if (value.startsWith('welcome-')) return 'welcome';
+  return 'opaque';
+};
 
 const utf8ByteLength = (value: string): number => {
   let bytes = 0;
@@ -37,7 +65,7 @@ const utf8ByteLength = (value: string): number => {
  */
 export const createBoundedWebSocketCtor = (
   NativeWebSocket: WebSocketConstructor,
-  onLimit: (socket: WebSocket) => void,
+  onLimit: (socket: WebSocket, failure: BoundedWebSocketFailure) => void,
   limit = maxUnacknowledgedBytes,
 ) => {
   const pending = new Map<string, PendingMessage>();
@@ -48,13 +76,28 @@ export const createBoundedWebSocketCtor = (
   let disposed = false;
   let failed = false;
 
-  const failClosed = (): void => {
+  const failClosed = (
+    reason: BoundedWebSocketFailure['reason'],
+    messageBytes: number | null = null,
+    detail?: Readonly<{messageType?: string; messageIdFamily?: string; pendingMessage?: PendingMessage}>,
+  ): void => {
     if (failed || disposed) return;
     failed = true;
+    const failure = Object.freeze({
+      reason,
+      limitBytes: limit,
+      messageBytes,
+      pendingBytes: unacknowledgedBytes,
+      pendingMessages: pending.size,
+      ...(detail?.messageType === undefined ? {} : {messageType: detail.messageType}),
+      ...(detail?.messageIdFamily === undefined ? {} : {messageIdFamily: detail.messageIdFamily}),
+      ...(detail?.pendingMessage === undefined ? {} : {pendingMessageType: detail.pendingMessage.messageType}),
+      ...(detail?.pendingMessage === undefined ? {} : {pendingMessageIdFamily: detail.pendingMessage.messageIdFamily}),
+    });
     pending.clear();
     sendOrder.length = 0;
     unacknowledgedBytes = 0;
-    if (socket !== undefined) onLimit(socket);
+    if (socket !== undefined) onLimit(socket, failure);
   };
 
   const flush = (): void => {
@@ -69,7 +112,7 @@ export const createBoundedWebSocketCtor = (
         nativeSend(entry.data);
         pending.set(messageId, Object.freeze({...entry, sent: true}));
       } catch {
-        failClosed();
+        failClosed('NATIVE_SEND_FAILED');
         return;
       }
     }
@@ -84,14 +127,14 @@ export const createBoundedWebSocketCtor = (
       value: (data: Parameters<WebSocket['send']>[0]): void => {
         if (disposed || failed) return;
         if (typeof data !== 'string') {
-          failClosed();
+          failClosed('NON_TEXT_MESSAGE');
           return;
         }
         let envelope: unknown;
         try {
           envelope = JSON.parse(data);
         } catch {
-          failClosed();
+          failClosed('INVALID_JSON');
           return;
         }
         if (
@@ -99,18 +142,47 @@ export const createBoundedWebSocketCtor = (
           envelope === null ||
           !('messageId' in envelope) ||
           typeof envelope.messageId !== 'string' ||
-          envelope.messageId.length === 0 ||
-          pending.has(envelope.messageId)
+          envelope.messageId.length === 0
         ) {
-          failClosed();
+          failClosed('INVALID_MESSAGE_ID');
           return;
         }
         const bytes = utf8ByteLength(data);
-        if (bytes > limit || unacknowledgedBytes + bytes > limit) {
-          failClosed();
+        const currentMessageType = 'type' in envelope && typeof envelope.type === 'string' ? envelope.type : undefined;
+        const currentIdFamily = messageIdFamily(envelope.messageId);
+        const duplicate = pending.get(envelope.messageId);
+        if (duplicate !== undefined) {
+          failClosed('DUPLICATE_MESSAGE_ID', bytes, {
+            ...(currentMessageType === undefined ? {} : {messageType: currentMessageType}),
+            messageIdFamily: currentIdFamily,
+            pendingMessage: duplicate,
+          });
           return;
         }
-        pending.set(envelope.messageId, Object.freeze({data, bytes, sent: false}));
+        if (bytes > limit) {
+          failClosed('MESSAGE_TOO_LARGE', bytes, {
+            ...(currentMessageType === undefined ? {} : {messageType: currentMessageType}),
+            messageIdFamily: currentIdFamily,
+          });
+          return;
+        }
+        if (unacknowledgedBytes + bytes > limit) {
+          failClosed('UNACKNOWLEDGED_WINDOW_FULL', bytes, {
+            ...(currentMessageType === undefined ? {} : {messageType: currentMessageType}),
+            messageIdFamily: currentIdFamily,
+          });
+          return;
+        }
+        pending.set(
+          envelope.messageId,
+          Object.freeze({
+            data,
+            bytes,
+            sent: false,
+            messageType: currentMessageType ?? 'unknown',
+            messageIdFamily: currentIdFamily,
+          }),
+        );
         sendOrder.push(envelope.messageId);
         unacknowledgedBytes += bytes;
         flush();

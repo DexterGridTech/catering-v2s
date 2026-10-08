@@ -1,6 +1,6 @@
 # 阶段 B：当前源码、接口、依赖与验收附件
 
-本附件为设计导航，不是API运行证明。所有路径相对仓根。2026-10-07读取截面，A仍在Codex实施，行号/hash会变化；CP-01重开所属source，不能把历史SHA当最终版本。
+本附件为设计导航，不是API运行证明。所有路径相对仓根。§2 的 A owning source 已于 2026-10-09 静态读回更新，其余先例仍为 2026-10-07 导航；行号/hash会变化。A 尚未完全验收，CP-01重开所属source，不能把任一截面SHA当最终版本或运行证明。
 
 ### 2026-10-07 Dexter 最新裁决（覆盖旧报告方案）
 
@@ -26,13 +26,13 @@
 | 当前source/锚点 | 静态事实 | 截面SHA256（必要项） |
 | --- | --- | --- |
 | `contracts/terminal/terminal-update-artifact.schema.json:7–54` | manifest shape/五字段minFULL；无显式kind，不替代内容验证 | c0f7b889b5078c07d25efa3821b2eeb7e0fc45174d712b63d2173cd359365df8 |
-| `scripts/build/terminal-update-artifact.mjs:311–321,431–452,775–793` | 文件树pub/实际APK检查；普通FULL当前非ZIP | 4e9c2054b189ff8890b790ee329c3f5d20c714ad8c41759da9b26d764f4f2da8 |
-| `apps/terminal/kernel/base/platform-ports/src/types/update.ts:82–90` | 六方法，当前无授权header | 79a15449d59d1914fe3426cbee7eda1dc83c2faf7a5a46a877ab41d77158e4bd |
-| `apps/terminal/kernel/base/terminal-update/src/types/terminalUpdate.ts:11–49` | target/provider实际签名及task/recent | f4bd58f4c7d8a16cdb90555d36c92b647b745321c2742e6695db999d2c96a1d0 |
-| `.../terminal-update/src/features/actors/terminalUpdateActor.ts:102–107,279–291` | actual取port；accept后执行，不能用于保存snapshot | 历史截面已过期（原43566550…）；本轮重开当前actor，CP-01必须重新定位最终字节，不能沿用旧行号/SHA |
-| `apps/terminal/adapter/android/update/android/src/main/java/com/catering/v2s/terminal/adapter/android/update/TerminalUpdateRuntime.kt:211–235` | actual HOT差量：embedded字段与selected分开 | 0283adf25d8abcb441c13647adabdec06602ac477890d8f420e1c4043c52d9e6 |
-| 同目录 `TerminalUpdateArtifactPreparer.kt:57–60,115` | full直接APK；当前GET无grantheader | 46ad3b99ec490cc52d76aef43104d18a9003ff921dc89eafdbf68428fd7bb459 |
-| `.../terminal-data-client/src/features/actors/terminalDataClientActor.ts` | 凭证owner/HTTP/消息；B不复制其身份 | d72012be410be20295e1a3120bc1ecc83f1cc811e797f47f6dabca9e61e04f52 |
+| `scripts/build/terminal-update-artifact.mjs:800–827,856–873` | 两个FULL分支仅APK＋full.json；HOT ZIP；不能称正式FULL ZIP消费已闭合 | 9de1e8018108cdd05c8fbda907d8f9d819839c9330fb3a017ce1dc253cea2cf1 |
+| `apps/terminal/kernel/base/platform-ports/src/types/update.ts:26–59,82–96` | 六方法；actual 与 embedded 分开，当前无授权header | b3965304305067d88ac36094f35de35e19f9cb1c4e3fb63d2bd1dc520d811d60 |
+| `apps/terminal/kernel/base/terminal-update/src/types/terminalUpdate.ts:15–25,54–70,73–77` | strategy仅技术参数；recent仅四字段；resolveSourcePath为同步形状 | f144bfb1826b387145cd6f110ad6c5a809dd9dee51b9e6fa75c95d60e6785082 |
+| `.../terminal-update/src/features/actors/terminalUpdateActor.ts:99–103,333–342,370–426,436–437,492–505` | 同build误用HOT pub校FULL；普通unknown后FULL成功会丢续接；新boot释放task后没有普通HOT确认；B不得假报成功 | af93ec9ebc70000c0f37a96b55898e4b45c7daca537f6f6011fb60f1ca165243 |
+| `apps/terminal/adapter/android/update/android/src/main/java/com/catering/v2s/terminal/adapter/android/update/TerminalUpdateRuntime.kt:206,266–295,375–418,820–822` | actual已取selected record，embedded另列；每boot重置确认、下一HOT要求已确认；桥的actual仍须核发起上下文 | 65593a11ae195e2e43a059f330a770eb9d4db4d4bf19a17e7ddd1249acf9caf8 |
+| 同目录 `TerminalUpdateArtifactPreparer.kt:57–60,103–132,261–277` | JDK ZipFile；full直接APK；当前GET无grantheader | 2fd17d3ed6e32d5c5b32a41c06e5cad8f0f51a911503862b791adfeefea675b7 |
+| `.../terminal-data-client/src/features/actors/terminalDataClientActor.ts` | 凭证owner/HTTP/消息；B不复制其身份 | 0d5ed481d12fa840dd061afa21fd5792c864c4f315e5d4f7c48d24b55fcd7835 |
 | `.../store-basic/src/features/actors/actors.ts:388–397,574–628,750–763` | 当前周期storeloaded、HTTP/topic/flush前后确认范式 | ac7361811fe986436949a1adf21e31971d2186b4c1f93d3bfac4486207723f17 |
 
 缩写路径 `...` 在本表仅省展示：前两条属于 `apps/terminal/kernel/base/`，store-basic属于 `apps/terminal/kernel/feature/`；精确文件列表在 §4，不供程序解析。
@@ -45,7 +45,7 @@
 
 | 能力/当前依据 | 官方一手来源/可确认限度 | 状态/验证责任 |
 | --- | --- | --- |
-| ZIP：新候选 Commons Compress 1.28.0，与A候选同版 | [1.28官方ZIP说明](https://commons.apache.org/proper/commons-compress/zip.html)、[精确tag ZipFile](https://github.com/apache/commons-compress/blob/rel/commons-compress-1.28.0/src/main/java/org/apache/commons/compress/archivers/zip/ZipFile.java)；central directory能提供stream缺失的Unix属性/重复项事实。库不自动保证本项目路径/byte预算 | 官方页面/源码读取；未解析。CBS parser依赖专属模块，不引入所有owner；真实重复/symlink/炸弹测试 |
+| ZIP：Java 21 标准库 `java.util.zip.ZipFile`；不新增 Commons Compress | [Java21 ZipFile官方API](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/zip/ZipFile.html)：entries 枚举、getInputStream 读取、close/try-with-resources 释放已于本轮只读核对；普通路径/声明文件/摘要/实际字节预算仍由本 owner 负责，不能据该 API 声称识别 Unix symlink | 本轮仅官方文档与当前 A 用法读回；CBS 实际 JDK 补丁/实现及普通有效、无效工件 focused 仍 CP-01/02 NOT_RUN。symlink/截断/炸弹专项 NOT_COVERED/NOT_RUN，无专用依赖或 seam |
 | APK：Build Tools 36.0.0候选，不手写签名/manifest | [apksigner官方](https://developer.android.com/tools/apksigner)、[AAPT2官方dump](https://developer.android.com/tools/aapt2)；验签与真实manifest分别核实。官方说明未证明本机/远端实际版本；精确发行源码/工具安装摘要仍OPEN | CP-01工具版本与固定构建输入校验；上传路径不能当argv选项；输出有界/timeout；A来源需相同签名事实 |
 | 对象stream：已声明 Minio Java 8.5.17 | [8.5.17 MinioClient](https://github.com/minio/minio-java/blob/8.5.17/api/src/main/java/io/minio/MinioClient.java)，用该tag getObject/GetObjectResponse stream且close；当前latest9.0.3文档不作8.5.17依据 | 声明来自asset/build.gradle.kts；解析/网络/断流/私有bucket政策NOT_RUN |
 | SQL：Java21、Spring JDBC4.1.0、PG JDBC42.7.7声明 | 仓内root/asset Gradle；[PostgreSQL16事务隔离](https://www.postgresql.org/docs/16/transaction-iso.html)、[NOTIFY](https://www.postgresql.org/docs/16/sql-notify.html)、[advisory locks](https://www.postgresql.org/docs/16/explicit-locking.html#ADVISORY-LOCKS) | 实际Spring/PG解析及DEV server版本OPEN；NOTIFY不是持久消息。并发scope锁/重复同time/读隔离真实PG proof |
@@ -71,7 +71,7 @@ TDS拟新增 state/TdsTerminalUpdateRepository.java 只读规则topic具名函�
 ### 4.4 UI/测试/seed/runner
 platform `features/terminal-update-package/{model,ui,terminalUpdatePackageTestIds.ts}`；不扩运维报告入口。operations `features/terminal-update-rule/{model,ui,terminalUpdateRuleTestIds.ts}`；新增项目报告标准详情Drawer及同feature TestIds，既有store-terminal不改。两app catalog/routing/generated API/problemFeedback按唯一owning输入生成；所有businessstrings app自有，foundation不持业务文案。
 CBS acceptance新增 `src/test/java/com/catering/v2s/app/acceptance/TerminalUpdateAcceptanceScenarios.java`，协议扩 `TerminalConnectionContractScenarios.java`；owner/parser/asset、TDS、TDC、update、两后台直接tests。
-TER共享journey能力文件 `tools/terminal-automation/journeys/terminalUpdateSupply.test.ts` 与对应Android harness（能力名，不含B），扩唯一driverfixture/source注入，不新增入口或从旧test runner import。
+TER共享journey能力文件 `tools/terminal-automation/journeys/terminalUpdateSupply.test.ts` 与对应Android能力文件，扩唯一 `tools/terminal-automation/src/runner.ts` 的update.supply/update.supply-chain、case闭集/双平台集合/DEV准入/显式suite映射；wrapper仍 `scripts/test/terminal-automation.mjs`。同DEV链借用DEV-owned两Vite/tunnel，扩当前runner的Playwright browser/context/session及TestId动作、budget/profile/manifest与owned cleanup，复用凭据reader；不得调用browser-l2-runtime读取DEV或另建runner。隔离L2保持原数据面，详情见详设§15.2a。
 admin L2八policy文件/生成器、tools/terminal-update-l2-p1/cli.mjs checker、两个spec/唯一browser-l2-runtime suite及合法report生产者在详设§3a；只于UI/TestId前置PASS后写。seed完整paths在详设10b。
 
 ### 4.5 保留/删除
@@ -105,7 +105,7 @@ admin L2八policy文件/生成器、tools/terminal-update-l2-p1/cli.mjs checker�
 | 01 | update.artifact.register：消费A两App真实产物及四字段 | backend-acceptance＋实际A产物 | A三脚本/安装证明；C自动 |
 | 02 | update.artifact.reject：不同app/runtime声明与配对拒绝 | owner/HTTP | A/C本机拒绝 |
 | 03 | register/reject/isolation：实际ZIP/APK/pub/签名、跨空间同内容 | backend-acceptance＋Android实际解析 | 无B减档 |
-| 04 | reject/download.authorization：路径/超限/截断、ownedcleanup | focused/HTTP＋Android Aprepare差量 | Aactive/native完整保护 |
+| 04 | reject/download.authorization：普通路径/大小超限/缺文件/坏摘要、ownedcleanup | focused/HTTP＋Android有效FULL/HOT prepare差量 | 恶意 ZIP symlink、截断中央目录、炸弹专项 NOT_COVERED/NOT_RUN；不宣称 V-04 全部通过，A active/native保护另列 |
 | 05 | rule.permission/artifact.isolation/admin.journey | HTTP＋两后台L2 | 无B减档 |
 | 06 | rule.lifecycle/admin.journey：不可编辑/createdAt/N/M | HTTP＋两后台L2 | C调度 |
 | 07 | rule.lifecycle：ALL动态含新store、指定refs不扩、无用途字段 | owner/HTTP | C最新选择/同time稳定/零动作/App过滤 |
@@ -192,7 +192,7 @@ P=apps/frontend/platform-admin/src/features/terminal-update-package；O=apps/fro
 | create FULL-only | fullRef、scope/refs、status、N、description | app/platform/runtime、project/createdAt/ref由owner；无hot/M | PROJECT+W-P；server复核refs；不可编辑 |
 | create paired HOT | hotRef固定minFULL、scope/refs/status/N/strategy；IDLE有M | minFULL不可改；IMMEDIATE无M | 同上；cutpoint及epoch防旧选项提交 |
 | enable/disable | 确认本详情的动作 | ruleRef/revision当前readback、receiptkey；createdAt不改 | 当前授权/CAS；拒绝不自动再派 |
-| report/query | storeRef/queryText/pager，纯GET | currentproject=context，binding实际由owner判 | O-P/当前scope；无W-P、无target字段补actual |
+| report/query | storeRef/queryText/currentApkVersion/currentJsVersion/runtimeVersion/pager，纯GET | currentproject=context，binding实际由owner判 | O-P/当前scope；无W-P、无target字段补actual |
 | terminal供给/grant/report | 无人工页面/输入 | TDC凭证三头、transient grant、native actual；selector/command通路 | currentboot/binding/config/session；秘密不持久/不落日志 |
 
 ## 10 · 标准容器复用表（不新造容器）
@@ -244,7 +244,7 @@ register、release、所有GET、rule command、snapshot、grant/content authori
 | getOperationsProjectTerminalUpdateRulePage | projectRef；expectedContextVersion/status/appId/createdFrom/createdTo/cursor/limit→RulePage/200 | AUTHZ_READ；filter/cursor坏→COMMON_VALIDATION_FAILED422 | N-rule-page；6=6R/0W/0：O5＋page1 | ProjectReadHandler O→TaskRead.rules；createdAt DESC UUID DESC |
 | getOperationsProjectTerminalUpdateRuleDetail | projectRef/ruleRef；expectedContextVersion→RuleDetail/200 | AUTHZ_READ；无rule/异scope→COMMON_RESOURCE_NOT_FOUND404 | N-rule-detail；6=6R/0W/0：O5＋detail1 | ProjectReadHandler O→TaskRead.rule；refs另专用pager，不全量塞DTO |
 | createOperationsProjectTerminalUpdateRule | projectRef；expectedContextVersion/scope/fullRef/hotRef/status/N/strategy/M/description→RuleDetail/201 | OWNER_COMMAND；范围/refs错→SCOPE_MISMATCH403；pair/条件字段错→RULE_TARGET_INVALID422；idempotency同key异内容沿COMMON409 | N-create-pair-all；13=6R/5W/2锁：W2＋receipt/target/hash/readback4；rule/audit/topic/notify/receipt5；scope/receipt2 | RuleCommandHandler REQUIRED：resolve current W（不调用O读投影）→targets→scope lock→receipt→row/audit/hash/topic/notify/receipt/readback；scope查询在锁后 |
-| changeOperationsProjectTerminalUpdateRuleStatus | projectRef/ruleRef；expectedContextVersion/revision＋status（ENABLE或DISABLE目标）→RuleDetail/200 | OWNER_COMMAND；缺失→COMMON404；CAS旧→COMMON_VERSION_CONFLICT409；目标无效→RULE_TARGET_INVALID422 | N-enable；14=7R/5W/2锁：W2＋row/receipt/target/hash/readback5；与create同5W；scope/receipt2 | 同RuleCommandHandler REQUIRED；禁edge构造CommandContext；owner授权先receipt/CAS；createdAt不变 |
+| changeOperationsProjectTerminalUpdateRuleStatus | projectRef/ruleRef；expectedContextVersion/revision＋status（ENABLED或DISABLED目标状态）→RuleDetail/200 | OWNER_COMMAND；缺失→COMMON404；CAS旧→COMMON_VERSION_CONFLICT409；目标无效→RULE_TARGET_INVALID422 | N-enable；14=7R/5W/2锁：W2＋row/receipt/target/hash/readback5；与create同5W；scope/receipt2 | 同RuleCommandHandler REQUIRED；禁edge构造CommandContext；owner授权先receipt/CAS；createdAt不变 |
 | getOperationsTerminalUpdateArtifactCandidatePage | expectedContextVersion/projectRef/queryText/kind/appId/runtimeVersion/minimumFullRef/cursor/limit→ArtifactCandidatePage/200 | AUTHZ_READ；关联参数不合法→COMMON_VALIDATION_FAILED422 | N-candidate；6=6R/0W/0：O5＋candidate1 | ProjectReadHandler O→TaskRead.candidates，同space可读关联；不以W-P前置 |
 | terminalReadProjectUpdateRuleSnapshotPage | T；projectRef/cursor/limit/collectionHash→RuleSnapshotPage/200 | TERMINAL_DATA_READ；hash变化→SNAPSHOT_CHANGED409；总预算→SNAPSHOT_TOO_LARGE413 | N-snapshot-first；4=4R/0W/0：T2＋hash header1＋page1；末页再读hash则5 | TerminalSnapshotHandler短REPEATABLE_READ：T→当前hash→page→末页复核；TDC typed query、完整flush后accept |
 | issueTerminalUpdateArtifactDownloadGrant | T；artifactRef/NoBody→DownloadGrantResult/200 | TERMINAL_DATA_READ；target不属覆盖boundStore的合法已创建rule→ARTIFACT_NOT_AUTHORIZED403；32活跃满→BUSY503 | N-grant；8=5R/2W/1锁：T2＋target association1＋active budget1＋readback1；过期DELETE/insert2；复用AdvisoryLock binding预算锁1 | DownloadHandler REQUIRED：T→固定rule association（同project、ALL或refs含boundStore，含停用）→owner binding预算锁→bounded expire→budget→newtoken hash/insert；secret只返回一次 |
@@ -299,6 +299,7 @@ Pedge=`apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/
 | report selector/pending→升级actor→TDC typed command；grant→TDC | 两integration桥只交公开command/selector；升级actor持久失败正文，TDC当前credential→generated HTTP→CBS ReportHandler/owner；TDC public heartbeat广播→业务actor自有pending；无WS report业务副本 |
 | recordReport→Tedge submitTerminalUpdateReport | app TerminalUpdateReportHandler REQUIRED构造credential授权事实→TerminalUpdateReportCommandApi.recordReport→owner RecordReportService；无TDS写caller |
 | rule audit→既有通用audit GET | OperationsAuditTaskReadService新增TerminalUpdateRule封闭query→TerminalUpdateAuditReadApi PROJECT task read；OperationsAuditHistoryModal调用已有generated GET |
+| artifact audit→既有平台audit GET | getPlatformEntityAuditHistory→PlatformAuditHistoryController新增TERMINAL_UPDATE_ARTIFACT映射→PlatformAuditHistoryTaskReadService新增封闭工件query→TerminalUpdateAuditReadApi平台task read；已验证平台session/space，owner复核工件归属，不新增页面或operation |
 
 ### 11.4 报告有限值与原始事实归一（S-1）
 
@@ -337,7 +338,7 @@ canonical HTTP 类型经 edge/terminal 生成给 TER 与 CBS DTO；update owner�
 
 基础recent八态一一归一到大写；扩展显示态只覆盖能由同task/action事实证明的情况：确认恢复用ROLLED_BACK；配对FULL已安装但HOT未成功用PARTIALLY_SUCCEEDED；未出现上述两类时，有真实准入拒绝readback才用REJECTED；确认用户取消用WAITING_USER；C的真实等待闲时用WAITING_IDLE。只返回accept拒绝而未保留最近事实的路径（当前actor的SOURCE_UNAVAILABLE/TARGET_INVALID等）不能凭规则或历史日志编造最近拒绝。CP-01重开A最终readback来源，该输入未闭合时为OPEN_A_HANDOFF；本轮不另造结果缓存、不改A，也不把有限字典当成全部状态可实际报告的证明。`PARTIALLY_SUCCEEDED`须有同固定任务FULL已安装的actual/原生action readback，且配对HOT尚未成功；仍报告对应phase/失败reason，不能仅比较目标或规则推导。`ROLLED_BACK`须同失败HOT action与实际恢复入口已启动确认的readback关联；仅entryKind=file-recovery不足以证明本次回退，恢复失败用FAILED或UNKNOWN＋RECOVERY_FAILED。缺上述证据沿A原state或UNKNOWN，不宣称部分成功/回退。
 
-R-15四类分别为WAITING_USER/WAITING_IDLE、REJECTED、PARTIALLY_SUCCEEDED、FAILED/ROLLED_BACK。B不会创造闲时等待或自动任务：协议/字典与组件合法fixture覆盖全部闭集；真实A用户等待/部分执行/回退由已有A事实消费，C产生WAITING_IDLE。`recent=null`表示无最近任务；state=IDLE只用于A提供的空闲最近状态；NO_REPORT表示PG无行，不与UNKNOWN合并。
+R-15四类分别为WAITING_USER/WAITING_IDLE、REJECTED、PARTIALLY_SUCCEEDED、FAILED/ROLLED_BACK。B不会创造闲时等待或自动任务：协议/字典与组件合法fixture覆盖全部闭集；真实A用户等待/部分执行/回退由已有A事实消费，C产生WAITING_IDLE。`recent=null`只表示已收到的当前观察没有最近任务信息，不证明终端从未创建任务；state=IDLE只用于A提供的空闲最近状态；NO_REPORT表示PG无行，不与UNKNOWN合并。历史为空仅显示“还没有收到升级任务报告；终端可能尚未上报”，通信失败留本地pending的真实任务仍可能存在。
 
 reportPage/reportDetail在原集合任务SQL中LEFT JOIN规则/工件，返回稳定结构化发布事实（与§17同字段命名）；无行/旧关联有明确null，不添加标题字段、N次查询或新operation。UI§4.2统一字典，未知码不会变成可见ref/raw异常。focused/red覆盖全部finite值、未分类码、USER_CANCELLED等待、假partial/假rollback、missing关联、sameSQL多终端读取与旧binding提示。
 
@@ -535,6 +536,8 @@ report body taskId为null表示无更新任务的当前观察；非null必须等
 
 标准审计新增TERMINAL_UPDATE_RULE实体类型和CREATE/ENABLE/DISABLE事件，owner同事务写audit，幂等重放不另写。扩审计canonical error/enum、generated DTO、OperationsAuditTaskReadService封闭query与TerminalUpdateAuditReadApi、operations frontend operation request typing/OperationsAuditHistoryModal target。现有getOperationsEntityAuditHistory operation身份不变；主对象scope为真实PROJECT，GET不要求MANAGE_PROJECT_TERMINAL_VERSION。规则报告历史与规则审计是两种事实，不能互相替代。
 
+工件审计沿详设§3已声明的三件套闭合：TERMINAL_UPDATE_ARTIFACT保存事件由同owner在register事务写入；平台读复用既有getPlatformEntityAuditHistory，不新增包审计界面或HTTP operation。CP-01同步该实体类型的canonical/生成契约及AuditEntityTypes，CP-02扩`apps/backend/catering-business-server/src/main/java/com/catering/v2s/app/edge/platform/audit/PlatformAuditHistoryController.java`的wire映射、`modules/audit-read/src/main/java/com/catering/v2s/audit/read/PlatformAuditHistoryTaskReadService.java`的sealed query/dispatch，以及`modules/audit-read/build.gradle.kts`对terminal-update owner的任务读依赖；任务读限定已验证空间内的实际工件，不授予跨空间读取或写权限。生成后的`contracts/openapi/paths/platform-admin/audit-history.paths.json`枚举与Java/TS消费者必须一致，不手改生成物。规则链同样覆盖OperationsAuditHistoryController、operations-admin/audit-history.paths.json与audit-read依赖。focused及update.artifact.register必须经真实保存→既有平台审计GET读回同一工件的一次保存事件，并证明精确register重放不增事件、跨空间拒绝；update.rule.lifecycle经既有运营审计GET读回CREATE/ENABLE/DISABLE及重放不增事件。当前均PLANNED/NOT_RUN。
+
 ### 12.1 · 最新输入协议补充
 
 | 字段/动作 | 来源与匹配 | 上游失效 | 控件/校验与提交 |
@@ -549,3 +552,12 @@ report body taskId为null表示无更新任务的当前观察；非null必须等
 ### 13.2 · 新request fact来源补充
 
 报告history query={projectRef,terminalRef,expectedContextVersion,cursor,limit}由当前页context/已验证detail/标准pager生成；无写cap，不发送凭证body。规则audit query={entityType:TERMINAL_UPDATE_RULE,entityId:ruleRef,...现有audit分页/context}使用既有generated builder，不另拼URL。报告actual过滤只发三个已提交draft字段，不读当前页item反推。N/M分钟为V输入，canonical seconds为乘60所得V值，服务器验60倍数；读取详情除60明确分钟。
+
+## 20 · 2026-10-09 同DEV完整链与reset修订输入
+
+- 本阶段实施期按需受管reset已获Dexter授权，无需重复申请；当前仅文档。精确命令/准入/失败停止见计划§1.1/§10，UI链、账号、非秘密关联、before/after、两App各一条FULL→HOT正常链见详设§15.2a。
+- 同一 `UpdateTargetSourceProvider.readTarget` 输入增加ruleRef，sourceowner由当前完整snapshot物化指定规则并核scope/application/context；不从fixture造target、不实现C自动选择。现有accept command唯一，所有消费者typed差量同步。生产provider挂到两integration/application，真网络bytes只从CBS grant/content。
+- root在platform真实space；运营multi-role必须GROUP任职＋PROJECT节点及MANAGE_PROJECT_TERMINAL_VERSION，不能复用激活用PROJECT/STOREsession写规则。现IA权限无需扩展。
+- 新update.supply-chain当前未实现；当前A native harness的automation-runId规则、本机/update-target与full/hot供包不用于本链；保留同run package suffix、签名、automation driver/shape/真实CBS/TDS构建配置，移除UPDATE_TARGET_URL/UPDATE_REVISION两fixture输入，三产物真实版本关系见详设§15.2a。借用DEV的两Vite/tunnel不由TER cleanup停止，只回收本case拥有的browser/session等资源。复用其installer/重启/session/selector/cleanup能力不等于复用测试供给。隔离L2 HTTP报告fixture只证明显示，不能充真实更新成功。所有新运行与cleanup均NOT_RUN。
+
+`update.supply-chain` 对应V-03/05/06/10/11/17/27/28/29在B适用的真实工件、双后台权限/规则、静态配对、完整供给、授权下载、实际版本/任务报告和运营显示子断言；详设§11/§15.2a为fixture/oracle唯一正文，不恢复旧双后台报告或补C自动行为。既有V分支表保留focused/隔离L2反例，主线必须补同DEV关联，当前全部NOT_RUN。

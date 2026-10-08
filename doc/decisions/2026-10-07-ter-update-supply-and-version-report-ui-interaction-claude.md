@@ -181,7 +181,7 @@ roster 仅引用附件§9.1 PROJECT-REPORT 的全部同名常量；版本三字�
                                      [上一页] [下一页]
                                                      [关闭]
 ```
-历史为空：“还没有升级报告；该终端尚未产生更新任务。”读取历史失败只在历史标准区显示重试，不能把最新报告清成空或编造历史。history首次在已开合法详情后加载；page≤100，Table/CursorPagination真实服务器分页，不全量拉取、不嵌自创容器。roster仅引用附件§9.1 PROJECT-REPORT-DETAIL行，历史正文/行/前后页/重试均有具名常量。
+历史为空：“还没有收到升级任务报告；终端可能尚未上报。”读取历史失败只在历史标准区显示重试，不能把最新报告清成空或编造历史。history首次在已开合法详情后加载；page≤100，Table/CursorPagination真实服务器分页，不全量拉取、不嵌自创容器。roster仅引用附件§9.1 PROJECT-REPORT-DETAIL行，历史正文/行/前后页/重试均有具名常量。
 
 ### 附属交互 RULE-AUDIT（复用标准能力，不新增内容页）
 ```text
@@ -212,7 +212,7 @@ RULE-LIST无写cap只隐藏新建/写操作，保留列表/详情；空态明确
 
 | 字段/值 | 唯一可见中文 |
 | --- | --- |
-| recentState.IDLE | 未发生更新 |
+| recentState.IDLE | 无最近更新任务信息 |
 | recentState.FIXED | 更新任务已确定 |
 | recentState.PREPARING | 正在准备更新 |
 | recentState.APPLYING | 正在应用更新 |
@@ -262,7 +262,7 @@ RULE-LIST无写cap只隐藏新建/写操作，保留列表/详情；空态明确
 | entryKind.file-recovery | 恢复发布 |
 | entryKind.unknown | 发布来源待确认 |
 
-R-15四类分别WAITING_USER/WAITING_IDLE、REJECTED、PARTIALLY_SUCCEEDED、FAILED/ROLLED_BACK。部分成功/已回退必须满足附件11.4真实readback前提，file-recovery入口本身不证明本次回退。B不调度闲时，WAITING_IDLE由C事实或协议/组件合法fixture覆盖。NO_REPORT显示“尚无报告”；recent=null显示“未发生更新”；关联rule/artifact缺失显示“关联更新资料暂不可读取”，不得显示UUID。标题只用owner结构化应用/类型/版本或终端名称组装，三个详情为“〈包标题〉 · 更新包详情”“〈规则目标标题〉 · 版本规则详情”“〈终端名称〉 · 终端更新状态详情”。
+R-15四类分别WAITING_USER/WAITING_IDLE、REJECTED、PARTIALLY_SUCCEEDED、FAILED/ROLLED_BACK。部分成功/已回退必须满足附件11.4真实readback前提，file-recovery入口本身不证明本次回退。B不调度闲时，WAITING_IDLE由C事实或协议/组件合法fixture覆盖。NO_REPORT显示“尚无报告”；recent=null显示“无最近更新任务信息”，仅表示当前已收到的观察没有recent，不断言终端从未创建任务；关联rule/artifact缺失显示“关联更新资料暂不可读取”，不得显示UUID。标题只用owner结构化应用/类型/版本或终端名称组装，三个详情为“〈包标题〉 · 更新包详情”“〈规则目标标题〉 · 版本规则详情”“〈终端名称〉 · 终端更新状态详情”。
 
 ## 5 · 状态与边界表
 

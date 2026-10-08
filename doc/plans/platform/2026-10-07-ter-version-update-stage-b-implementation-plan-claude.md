@@ -1,5 +1,13 @@
 # TER 版本定义、完整更新与热更新：阶段 B 实施计划
 
+### 2026-10-09 · 本轮授权及执行面覆盖旧计划
+
+本次 Dexter 已授权关闭阶段 A 的 `D-S-1` 差量并通过 focused proof 后，连续完成阶段 B 实施和适用验收。无需再次申请阶段 B 进入许可；不包括阶段 C。
+
+本轮 TER 设备场景仅在一台单机双屏真机运行，console 与 wallpaper 两个 App 均覆盖详设适用判据；Expo Web、mobile、双机、双 VM 和全设备矩阵均为 `NOT_RUN` 或 `NOT_COVERED_BY_THIS_ASSIGNMENT`，不得作为 PASS 或交付前置。此执行面调整是 Dexter 对本轮的明确授权，不修改正式需求功能语义，也不推广为 TR-16 的全仓豁免。
+
+两个管理后台的工件上传/解析/保存、规则配置和版本/报告历史查询，仍须用真实页面及现有受管浏览器能力完成本链所需的 focused 场景；不运行无关的全量 Browser L2 suite。必要生成、类型检查、编译、构建、focused tests 和相关行为门按 CP 执行，不跑默认全仓 verify 或未受影响的全量回归。所有运行均通过受管入口；运行结果与 cleanup 分开报告。
+
 ### 2026-10-07 Dexter 最新裁决（覆盖旧报告方案）
 
 1. 报告存 CBS PostgreSQL，由 `terminal-update` owner 写入；运营右 Tab 可按门店和当前实际版本查询。Dexter 最终更正“仅包含启用”：范围为当前项目 **启用门店下的启用终端**，停用/作废均排除；未报告终端仍有列表行。显示门店名、终端名、实际版本、最新升级报告状态，点击终端打开标准详情 Drawer，显示最新报告及历史报告。
@@ -11,12 +19,12 @@
 
 后续直接确认：“每个更新任务一条报告”。阶段变化更新同一任务记录，历次任务保留；每次 HTTP 重送与心跳不新增历史行。此前“包含启用和停用”的答复已被“仅包含启用”覆盖，不作为当前输入。
 
-正式需求 R-15 中旧双后台、最后值而无任务历史、TDS 上报路径由上述直接裁决覆盖。本轮只改 B 设计包及 intake；需求正本、开发规范、项目记忆、A、源码均不修改。未来实施授权须覆盖正式来源同步与终端标准唯一正本中的心跳触发重试条款；当前仍无实施或运行授权。大致 IA 已确认，本次新增历史/筛选/审计细节为修订设计，未冒充逐控件看图或动态 PASS。
+正式需求 R-15 中旧双后台、最后值而无任务历史、TDS 上报路径由上述直接裁决覆盖。该段记录的是原设计修订时状态；2026-10-09 Dexter 已授权本轮阶段 B 实施以及明确的执行面，现由本计划开头的本轮授权条款覆盖。正式需求与 `terminal-coding-standard.md` 的来源同步属于 CP-01。
 
 ## 0 · 当前状态与授权
 
-STATUS=DRAFT_READY_FOR_DEXTER_CLAUDE_REVIEW；IMPLEMENTATION_AUTHORITY=false；UI_REVIEW=ACCEPTED@2026-10-07_SCOPE_APPROXIMATE_IA_DYNAMIC_NOT_RUN。
-正式需求、B详设/Journey/IA/UI/附件同批引用；当前只写文档。2026-10-07 Dexter：“大致IA内容已经确认了，可以下一步了”；本次继续设计完善，不推导实施或运行授权。A由Codex继续实施/验收，未继承任何PASS；未读取其运行产物，不发送追加任务。所有未来命令都为计划/NOT_RUN，不授权现在执行。
+STATUS=IMPLEMENTATION_AUTHORIZED@2026-10-09；IMPLEMENTATION_AUTHORITY=true；UI_REVIEW=ACCEPTED@2026-10-07_SCOPE_APPROXIMATE_IA_DYNAMIC_NOT_RUN。
+正式需求、B详设/Journey/IA/UI/附件是本批输入。原文中 `DRAFT_READY` 与 `IMPLEMENTATION_AUTHORITY=false` 是 2026-10-07 的历史状态，由本条及 2026-10-09 Dexter 授权覆盖。先完成 Stage A D-S-1 差量 focused proof，再按 CP-01～CP-06 实施阶段 B；历史 PASS 不继承为本轮证据。
 
 用户任务：运维上传/解析成功后保存真正 FULL/HOT；运营维护不可编辑项目规则及标准审计，查询启用门店下启用终端的实际版本、最新报告和每任务历史。主机保存完整规则供给，通过 CBS HTTP 上报并持久缓存失败；C 自动/双机不进入 B。
 
@@ -26,7 +34,7 @@ Dexter：“PLATFORM-REPORT这个业务……做成和RULE-LIST是一个页面�
 
 platform-admin 只负责更新包/版本定义；operations-admin“项目终端版本管理”同页左“更新规则”、右“终端更新状态”。右 Tab 查询当前项目启用门店下的启用终端，包含尚无报告者；标准详情 Drawer 显示最新报告及按任务保存的历史。规则操作历史使用现有标准审计 Modal；仍只有两个内容页/两个路由，无手工任务重试或任务看板。
 
-当前产品输入以“Dexter 最新裁决”节为准；旧 R-15 文字只作来源对照，不能恢复旧后台或旧报告通道。正式来源同步安排在未来实施授权内，当前仅设计、NOT_RUN。
+当前产品输入以“Dexter 最新裁决”节为准；旧 R-15 文字只作来源对照，不能恢复旧后台或旧报告通道。正式来源同步是本次实施授权覆盖的 CP-01 工作。
 
 ### 内部 DESIGN 历史与 Dexter 追加两轮授权
 
@@ -38,32 +46,42 @@ Dexter 追加原话：“授权你再多两轮对抗性review，然后再给另�
 
 ## 1 · 实施进入条件
 
-1. Dexter接受本批Journey/IA/线框/详设与计划，并另行授权实施及实际执行面；大致IA已确认，不重复申请同一页面/Tab确认；其余设计结论仍须接受。
-2. A实际交付/实施review与详设§0.1接口闭合，特别FULLZIP及actual HOT readback；A仍OPEN时可以写本计划，不能开始B生成/源码改动。
-3. 重开A当前字节与TDP/最新automation driver公开能力，列接口差量及消费者，不继承旧GO。当前没有工具/原始运行证据，不填PASS。
+1. 设计包已按既有授权接受；2026-10-09 Dexter 明确授权阶段 B 实施及本轮单机双屏真机/必要受管运行，不新增设计或进入许可前置。
+2. 本次进入 B 的前置是本轮 D-S-1 修复及 focused proof 已完成，并只核实 B 实际消费的 A 接口/字节。该修复的 31 项包测试与类型检查已记录在同日 intake；它不代表 A 整批重新验收，也不阻止本次已明确授权的 B。
+3. 重开 A 与 TDP/最新 automation driver 的真实公开能力，列出 B 接口差量和受影响消费者，不继承旧 GO。历史工具/运行证据按其原范围保留，不填成本轮 PASS。
 4. 依赖/资源工具在CP-01核实，跨阶段新增接口只在本次明确授权范围内变更，不重做A已完成且未受影响的对账。
+
+### 1.1 · reset 与真实完整链的当前授权输入
+
+Dexter 2026-10-09 已授权阶段 B 所需的受管非生产 reset/start/完整 seed；只有在全CP及全批6b、适用准入、当前完整seed dry-run与资源身份确认通过后执行。两个后台的必要真实页面场景只取本链的 focused 范围，不执行无关全量 Browser L2 suite；后台 focused 业务结果与同 DEV 真机更新链分别报告。C 自动择新/闲时/副机仍不实施。
 
 ## 2 · 实施纪律
 
 主agent唯一写入/运行；只读fresh reviewer按完整CP审查。每点写前重开原需求/IA/六维命中记忆/规范/owning source/可复用能力，focused后同组原文回读。CP内不按文件另拆审查；阶段所有点和必要修复后fresh三维MATCHED再下CP。发现同根失败先扫描整个有限输入/消费集合，最小修复＋真实red，不添加通用恢复框架。失败保留日志，禁止重复盲跑/延时救绿；business与cleanup分列。
 
+### 2026-10-09 · A 差量修复完成与避免极端设计
+
+阶段 A 的 D-S-1 非成功 readback boot 占位问题已由主 agent 修复并以同包 focused tests/typecheck 证明；证明及首败修正记录在 `doc/review/platform/2026-10-09-ter-version-update-stage-a-non-success-readback-intake-codex.md`。本记录只关闭该差量，不冒充 A 整批 review 或重跑。按 Dexter 同日授权，完成该 focused proof 后立即进入 B；CP-01 只重核 B 实际消费的 A 接口/字节，已 MATCHED 且未受影响部分不重做。
+
+ZIP 改用 JDK ZipFile，取消 Commons Compress、ZIP Unix symlink/截断中央目录/炸弹专项和专用测试 seam；保留清单、摘要、普通路径、实际读取大小、签名、身份与私有下载鉴权。正式 V-04 更宽的专项仍 NOT_COVERED/NOT_RUN，不宣称全部通过。D-41 的仓根输入符号链接逃逸门继续保留，它与 ZIP 条目专项是两个问题。报告 HTTP/pending/PONG、合法并发 grant、完整快照与当前 boot 身份隔离按已接受设计实施；不增加通用恢复框架。
+
 ## 3 · CP-01：A交接、契约与可执行输入
 
-1. 根据详设0.1/附件2读取A最终工件与源码/验收面。确认manifest、FULLZIP消费、pub/ZIP身份、真实actual、A六端口与provider最终签名。记录current/proposed接口，不自行修A源码作为本CP准备。若A未关闭，停止实施，记录具体OPEN。
-2. 原需求＋最新直接裁决→canonical/openapi-source/IAM/admin-catalog→materialize→edge-codegen→terminal generator/Java/TS。冻结完整18项HTTP roster、报告body/receipt/错误集/鉴权三头、具名PROJECT审计类型与标准读取扩展；protocol只新增规则topic，不新增版本report/ACK。随未来实施授权同步正式需求R-15及终端标准§4-F心跳重试规则与适用记忆；本轮不修改。
+1. 根据详设0.1/附件2读取A最终工件与源码/验收面。确认有效 FULL ZIP 打包与解出 APK 消费、pub/ZIP身份、native/embedded 与 HOT actual 身份分开、成功 HOT 冷启动后的当前 boot 就绪、FULL UNKNOWN→真实成功后的固定 HOT 续接，以及 A 六端口与 provider 最终签名。当前 recentStatus 仅四字段、终态 task 新 boot 释放、strategy 仅技术参数的事实要按详设0.1记录；B 不把它们误称完整报告关联或 N/M 调度。阶段 A 的 D-S-1 差量已在本轮 focused proof 关闭；核对 B 消费的接口与其余已批准 A 接缝，发现问题只按本轮 A 差量授权及 B 接口边界处置，不把未受影响的 A 整批历史验收重新设为门。
+2. 原需求＋最新直接裁决→canonical/openapi-source/IAM/admin-catalog→materialize→edge-codegen→terminal generator/Java/TS。冻结完整18项HTTP roster、报告body/receipt/错误集/鉴权三头、具名PROJECT规则审计及平台工件审计类型与既有标准读取扩展；protocol只新增规则topic，不新增版本report/ACK。CP-01 在生产消费前同步正式需求R-15及终端标准§4-F心跳重试规则与适用记忆。
 3. 落实详设§5真实getOperationsOrganizationCandidates PagePaged与新第15项getOperationsProjectTerminalUpdateRuleStorePage CursorPaged合同、DTO/排序/权限；验证停用/作废固定refs读回，不将协议选择留到实施期。
-4. 解析工具/依赖：CommonsCompress1.28.0、Minio实际版本、AndroidBuildTools36.0.0候选部署、官方tag/source/工具校验。证明实际安全读取/签名/metadata/res映射；unsupportedfailclosed。定位r5预算profile/principal/dependency/cache路径，不在Flyway安装SDK/创建bucket。
+4. 解析工具/依赖：核 Java 21 实际版本及 JDK ZipFile entries/getInputStream/close 官方依据、Minio实际版本、AndroidBuildTools36.0.0候选部署、官方tag/source/工具校验。证明普通有效工件读取/签名/metadata/res映射及普通无效输入拒绝；不安装 Commons Compress，不造 ZIP 专项解析 seam。定位r5预算profile/principal/dependency/cache路径，不在Flyway安装SDK/创建bucket。
 5. 当前受管resource profile中保存B用既有runner的kind/运行根，不能造第二runner。版本选择与永久工件业务数量无上限；技术预算明示/红例。生成src和registry同步、focused/check/adversarial完整CP对账。
 
-退出：A交接已验收、canonical与consumer类型可编译、依赖/预算准入明确、有限红例结构成立、完整CP-01 MATCHED。后续整体验收不回流到该CP。
+退出：B实际消费的A交接接口已核对；canonical与现有consumer生成输入闭合并可编译；依赖/预算准入和有限红例结构明确；完整CP-01独立三维对账为MATCHED。后续整体验收不回流到该CP。
 
 ## 4 · CP-02：真实工件与私有asset
 
 1. 新terminal-update模块/schema/api/persistence/receipt/audit接入唯一CBS；asset具名ZIP stage/claim/private stream扩展而非新平台。
-2. 按详设8.1实现stream/hash/bounds/ZipFile及工具验证；签名APKmetadata对应真实bundle/res；解析I/O不在TX，资源close与失败cleanup可见。
+2. 按详设8.1实现stream/hash/bounds/JDK ZipFile及工具验证；签名APKmetadata对应真实bundle/res；解析I/O不在TX，资源close与失败cleanup可见。只在现有 parser 测试中覆盖正常有效 FULL/HOT、坏摘要、缺文件、路径/大小与签名拒绝；不新增恶意归档专项库、解析框架或测试入口。
 3. stage→register transaction原子claim、全局pub同version内容冲突、samecontent跨space、HOT固定FULL五字段；未验收包不变可用对象。
 4. 私有bucket隔离publiccontroller/anonymouspolicy；不泄露URL/key；实现releaseownedstage拒绝crossspace/crosssession。
-5. owner/parser/assetdirecttests＋真实HTTP acceptance源码 `TerminalUpdateAcceptanceScenarios.java` 的artifact三个场景；注册generatedbinding/API文档与audit读取；平台最小FULL候选统一既有artifactPage的五事实server query（附件17），错误映射按IA4，focused验证和完整CP对账。
+5. owner/parser/assetdirecttests＋真实HTTP acceptance源码 `TerminalUpdateAcceptanceScenarios.java` 的artifact三个场景；注册generatedbinding/API文档与平台artifact审计读取：按附件19.1扩现有平台audit封闭query/dispatch及owner任务读依赖，经既有GET验证保存一事件、重放不增事件、跨空间拒绝，不新建UI/operation。平台最小FULL候选统一既有artifactPage的五事实server query（附件17），错误映射按IA4，focused验证和完整CP对账。
 
 退出：实际解析/reject/跨空间/private对象代码与focusedproof完整，CP-02 MATCHED。不接受只看response.ok或没有throw。
 
@@ -82,18 +100,18 @@ Dexter 追加原话：“授权你再多两轮对抗性review，然后再给另�
 
 1. sameupdate owner的独立snapshot持久slice/command/selector；资源桥先订阅后读初值，当前boot STORE/PROJECT各HTTP与flush成功组合gate（store-basic storeOrganizationPathLoadedCommand/selectStoreBasicLoadReadiness差量，composition晚装配从非持久selector重建两项，不依赖一次性STORE事件）、每readyHTTP、在线同time通知、epoch隔离、empty替换/flush后accept。复用TDCHTTP/公开selectors，不直接读state/persistence。
 2. 在同一升级owner新增持久报告descriptor：bindingIdentity/nextReportSequence/pendingReports/sendPaused/latestDeliveryFailure（同task合并，不同task保留；无任务observation不造历史），actual/recent归一selector和发送command。正文先flush再TDC typed POST；依详设§8.5结果表分类：通信/503/结果未知保留，终态报告拒绝移出并存同slice最近失败摘要，身份拒绝持久暂停，普通重启/断线不抹分类；CBS短REQUIRED＋binding最终复核＋owner锁/UPSERT，重复/乱序/旧绑定按详设8.5，收到匹配commit/SUPERSEDED receipt后再清匹配项且flush。测试同task一行、两task历史、响应丢失幂等、本地flush失败、较旧receipt不能删新pending及actual不取target；加409不阻塞下一task、422不阻塞observation、停用/凭证拒绝经多PONG及重启仍零补发、配置/绑定变化清旧pause、两种receipt与非匹配回包反例。只在同一slice保存最新递送失败摘要，不新增失败库/人工重试/后台显示。
-3. transientgrant sourceprovider与UpdatePort/native网络header扩展；旧同步签名删除；A所有直接消费者/单测/fixedFULLHOT续接做**受影响差量**，不重开A整批。secret无persist，scope/角色失效迟到不污染。
-4. 两integration装配update供给/报告桥、同一资源释放；readiness selector返回runtimeId/binding/projectRef/flush成功状态，迟到结果隔离，不以hydrated值触发；不调用accept-target/prepare/apply响应rulesnapshot；sourceprovider仅已固定A任务消费。rootreset/配置/绑定变化清旧报告pending/context（不得给旧task改签新binding）；retainedtask按A例外不变。
+3. transientgrant sourceprovider与UpdatePort/native网络header扩展；旧同步签名删除；FULL/HOT都下载完整 ZIP，expectedSha256 为该 ZIP 摘要，解出的 APK 用 manifest.apk.sha256 校验，publicationId 只标发布内容身份，不混用三种摘要。A所有直接消费者/单测/fixedFULLHOT续接做**受影响差量**，不重开A整批。secret无persist，scope/角色失效迟到不污染。
+4. 两integration装配update供给/报告桥、同一资源释放；readiness selector返回runtimeId/binding/projectRef/flush成功状态，迟到结果隔离，不以hydrated值触发；快照刷新不自动调用accept-target/prepare/apply；按详设§8.4扩同一selectionContext的ruleRef及真实snapshot物化接缝，受管验收显式调用A公开command固定规则，执行后sourceprovider仅该固定任务消费。rootreset/配置/绑定变化清旧报告pending/context（不得给旧task改签新binding）；retainedtask按A例外不变。
 5. TDC新增public/local terminalDataHeartbeatCommand：有效PONG完成存活/RTT更新后异步广播；禁用会transport.invalid的通用background失败路径。升级actor消耗此command补发持久pending，首await前inFlight、直到实际IO结束才释放；command timeout不误当IO结束，绑定/角色/上下文重验。focused含重复/未知PONG、不阻塞心跳、两业务consumer相互失败隔离、多tick重叠仅一真实IO及脱敏。TDS仅规则topic EXECUTE-only权限probe，无report函数/队列/WS ACK能力。
 
-退出：供给和观察完整focusedproof、sourcegrant/Aconsumer差量闭合、CP-04 MATCHED。是否需要受管focused动态由将来实施授权明确，不能用旧run宣称当前通过。
+退出：供给和观察完整focusedproof、sourcegrant/Aconsumer差量闭合、CP-04 MATCHED。报告最小接缝还须证明：同 owner 在终态 task 释放前保留显式 rule/FULL/HOT 关联，合法原绑定存在时持久化原任务 pending；task 清除后仍能准确发送，不能从 taskId/新绑定/目标版本猜事实。不增第二任务账本，不以 HTTP 不可达阻塞本机任务释放；无合法原绑定时遵守旧报告失效规则。是否需要受管focused动态由将来实施授权明确，不能用旧run宣称当前通过。
 
 ## 7 · CP-05：两后台、验收与唯一自动化接线
 
 1. 按IA§2全部页内交互的后台/菜单/宿主/控件/读与写权限实现，确认后才同步catalog/routing；先foundation/目录/类型TestIds/控件componenttests。upload实际fileinput/testID，candidatecursor/值回显（门店复用useOrganizationCandidates，最小透传既有loadNext，250ms防抖＋加载更多）；statusModal/dirty/focus/contextinvalid/readcap/createdAt/unknown全部component反例。
 2. 包列表/上传解析/保存禁用准入/详情；规则新建/详情/启停及OperationsAuditHistoryModal；运营右Tab按门店、实际APK/JS/runtime查询启用门店下启用终端，详情Descriptions＋历史Table/CursorPagination。全部复用标准容器；分钟InputNumber×60提交/÷60回显、标准审计真实PROJECT读取、未知/NO_REPORT/无任务/历史加载失败分开。无手工任务retry/每阶段流水。
 3. UI/TestId fresh前置PASS后才写完整L2 policy/generator/P1/check/spec，按详设3a逐case→fixture→actions。本run真实激活＋CBS报告HTTP作为REPORT-CURRENT生产者，至少两task/同task阶段更新；禁止SQL造report/旧DEV报告，不为report增TDS。readiness→同runP1 activation→生成链check→finalize→run；凭证仅内存，绑定/资产/浏览器按manifest身份cleanup。
-4. TER新场景走当前automation skill/API，selector先订阅再动作、精确requestId无空窗；Webtypedfixture不假nativeactual；Androidactualreport场景使用A真正执行核/UpdatePort与main绑定，reload后重建session/UI/selectorhelpers。不得复活旧runner/直接ADB驱动TER React节点。
+4. 实现详设§15.2a同DEV完整链：仅扩现有runner的update.supply-chain case、双平台集合/DEV准入/case→suite映射，借用DEV已拥有的两管理端Vite/tunnel，只新增Playwright browser/context/session与TestId动作及budget/profile/manifest/cleanup；真实UI保存工件和启用rule→snapshot→production provider/A公开accept→CBS grant/content→真port→HTTP报告→同DEV运营Tab/Drawer。共享A原生操作但禁本地target/供包fixture；账号GROUP/PROJECT、两个App各一条FULL→HOT逐项固定，FULL-only沿owner/Web/API focused复用，seed不代替本链UI。无新runner/C自动调度。TER新场景走当前automation skill/API，selector先订阅再动作、精确requestId无空窗；Webtypedfixture不假nativeactual；Androidactualreport场景使用A真正执行核/UpdatePort与main绑定，reload后重建session/UI/selectorhelpers。不得复活旧runner/直接ADB驱动TER React节点。
 5. sharedacceptancefixture/scenarios（详设11）由真实ownerHTTP建立；tool/ZIP坏包fixture本仓拥有/hash；所有旧运行不继承。readme/API文档完整、focused与CP对账。
 
 退出：UI/testIds/验收源码/完整控制面/唯一runner消费者完成，CP-05 MATCHED；独立L2脚本准入报告仍需整体验收前当前字节核对。
@@ -107,24 +125,24 @@ Dexter 追加原话：“授权你再多两轮对抗性review，然后再给另�
 
 ## 9 · 全部CP后：整批对账与动态前整体准入
 
-1. 新fresh子agent重开全批需求/详设IA/路由记忆、当前源码与逐点focused，做整批6b；不是CP verdict汇总，任OPEN根因修复/差量CP复查后再做全批复核，不重做无关A对账。
-2. `动态前整体准入`：所有CP MATCHED＋全批6b MATCHED；UI/testId与完整L2脚本/全部页内交互分母、budget/controls/source身份当前字节fresh `L2_SCRIPT_ADMISSION=PASS`；为本批首次L2、reset或seed，以上各项连同当前字节完整seed dry-run PASS必须同时满足；backend-acceptance不受此门约束。dry-run不等于真实seed或reset授权，本轮全部NOT_RUN。
-3. 实际执行授权分别列backend-acceptance、受管DEV/TERWebAndroid、adminL2；没有授权的一面保持NOT_AUTHORIZED/OPEN，不用低档局部PASS补足阶段出口。
+1. 新 fresh 子 agent 重开全批需求/详设 IA/路由记忆、当前源码与逐点 focused，做整批 6b；不是 CP verdict 汇总。任一 OPEN 根因修复并差量复核，不重做无关 A 对账。
+2. 首次受管真机、focused browser 或 reset/seed 前，按各自入口的现行准入和当前字节身份做预检；发生 reset/seed 前先满足本批全 CP、全批 6b、适用的脚本准入与完整 seed dry-run。后台页面只运行本链所需的 focused scenario，不要求生成无关全量 L2 的空分母。
+3. 执行面：本轮 TER 仅单机双屏真机；两后台本链走受管浏览器 focused 场景；DEV 后端使用批准的远端环境。未获准的 Expo Web/mobile/双机/双 VM及其它设备均保持 NOT_RUN/NOT_COVERED，不以低档结果替代真实端到端。
 
 ## 10 · 整体验收：执行面与顺序
 
-所有命令为未来计划。具体currentCLI在CP-01/CP-05依据`--help`/源码确定并写成完整argv；若新suite或journey未接线，先在对应CP完成入口，不能验收期边跑边发明。
+本计划中的命令以受管入口为准，CP-01/CP-05 重开当前 `--help` 与源码后记录实际 argv；当前执行授权有效。若新 suite/case 未接线，先在对应 CP 完成入口，不能验收期临时发明。
 
 1. 依赖/生成/compile/focused/verify：按本批owner实际入口；生成只用canonical，`scripts/verify --validate-only`与默认完整结论分列。
 2. CBS/TDS真实HTTP/PG/Minio：唯一 `scripts/test/backend-acceptance` focused TerminalUpdate场景和受影响TerminalConnection协议，再适用整批范围。不建立provider壳或新scenario注册分母。
 3. PG重启读回、topic listener恢复/同time、报告HTTP重复/乱序/binding/历史分页属于API闭环本run fixture；业务事件广播由TDC matchedPONG与owner-focused证明。遵受管DEV/Testcontainers联动及owned cleanup，绝不隐含seed。
-4. 两后台 UI：API闭环后受管 browser-l2-runtime 的terminal-update suite，按详设3a合法HTTP report producer跑全部case。包含上传/解析/保存准入、分钟换算、规则审计、版本筛选、enabled范围、NO_REPORT、最新/任务历史与切project隔离。readiness→同runP1 activation→generated-chain check→finalize→run；不借TER/DEV运行态，不用TERagent操控admin。脚本准入不替business/cleanup。
-5. TER的数据前置：API与两后台L2 business/cleanup都关闭后，且当前完整seed dry-run、CP/6b和适用准入已满足，只有Dexter明确授权DEV/reset/seed时，按受管 `scripts/dev/reset` → `scripts/dev/start` → 完整r5-full seed建立本批当前字节四真实工件/八规则。完整seed只在reset空库执行，不把历史seed、dry-run或L2隔离fixture当当前可用事实。未获该授权则TER阶段保持NOT_AUTHORIZED，批次整体验收不能完成；本计划不授予执行权。
-6. TER非adapter供给/持久化/失败/报告入口：上述当前完整seed成功后，先 `scripts/test/terminal-automation.mjs` 的受管ExpoWeb新共享清单，再同清单Androidapplication比较。Web真实CBS/TDP供给；Webportfixture只证明非native逻辑，禁止写成实际APK更新PASS；seed只提供DEV体验前提，不加入API/L2业务分母。
-7. Android原生依赖：用A同owner command/真实port应用最小真实更新后读actualselector/TDC/PG；后台报告显示另由L2自己的真实报告fixture证明，不跨层复用TER运行态。scope保持本run拥有设备/application/安装/reverse，用driver窄例外处理非Reactinstaller/settings，无旧独立UiAutomator入口。A旧run不等同本B报告链。
-8. business/CONTRACT/cleanup按层分列；artifact解析临时、private对象fixture、grant、process/container/tunnel/browser/APK/reverse各当前ownership受控释放，cleanup非PASS不得完成。失败不得自动清真实管理员保存的正常业务包。
+4. 两后台 UI：API闭环后，通过现有受管 browser-l2-runtime 执行本链必需的 terminal-update focused scenario。覆盖上传/解析/保存准入、规则配置、分钟换算、报告查询及历史读回；仅运行与本批判据对应的 cases，不运行无关全量 suite。管理端交互使用真实 DOM/TestId 与真实 HTTP/DB oracle；不得由 TER agent 操控后台。按所选 browser entry 当前要求保留资源身份和 cleanup，脚本准入不替代 business/cleanup。
+5. DEV完整链前置：API/隔离L2 business与cleanup关闭后，满足CP/6b、脚本准入及当前完整 `scripts/dev/seed --profile r5-full --dry-run` PASS；按§1.1既有实施期reset授权，根据需要执行 `R5_RESET_CONFIRMATION=EXPLICIT_R5_RESET scripts/dev/reset` → `scripts/dev/start` → `R5_SEED_CONFIRMATION=EXPLICIT_R5_SEED scripts/dev/seed --profile r5-full`，各步先读回成功再下一步。reset入口自身完整dry-run与Doris/PG身份检查仍保留；不因重复索要reset许可停止，不在长run内reset。seed只供真实账号/组织/终端等前提，不代替后续UI写入工件/规则或造报告；reset失败不得继续start/seed。
+6. TER 真机动态只在一台单机双屏设备执行。console 与 wallpaper 两个 App 各按本批适用主流程及更新判据验证；当前同设备序列和双屏拓扑由受管清单明确记录。Expo Web、本轮以外的 mobile/双机/双 VM 均 NOT_RUN 或 NOT_COVERED；不得声明跨面 parity。所有 UI/资源需 CP-05 接线而非验收时临时补入口。
+7. 同DEV真实端到端：按详设§15.2a，两App依次经真实打包→运维 UI 上传 FULL/HOT 并保存→运营 GROUP 任职/PROJECT 节点创建与启用规则→实际激活 TER snapshot→agent 显式 A command 固定该 ruleRef→CBS grant 下载同 artifact→指定单机双屏真机执行 Android FULL→HOT→同 task 实际 HTTP 报告→运营右 Tab 版本查询及 Drawer 同任务历史读回。工件/规则/绑定/任务/报告身份前后一一关联；不得用 A local target server 或合成报告代替。管理端经受管 Playwright/现有 TestId，TER React 经最新 automation-agent，系统 installer 只走 driver 已批准窄例外。运行期间不 reset/seed、不重建 namespace；本链之外的 L2 和设备矩阵不执行。
+8. business/CONTRACT/cleanup分列；同父run精确资源身份回收。链中禁止reset/seed、停止并重建后台namespace或补造task/report；保留run拥有的真实rule/report正常历史、不新增删除API/SQL清理，下一run必要时经受管reset。每App开始前终端inactive，每App单任务内同binding保持，两App间身份匹配回收；未拥有的应用/进程/绑定不得动。
 
-没有无条件reset→seed收尾安排：B执行授权尚未存在。这里的DEV完整seed是TER体验验证的前置，必须位于API/L2闭环之后、TER之前，不能后置成验收后的可选收尾；缺授权即在该边界停止。最后保留DEV与否按未来Dexter授权执行。每层独立runId、fixture/readback和cleanup，不重跑未受B影响已MATCHED的A对账。
+当前执行按本段明确授权进行。未受影响且已 MATCHED 的 A 内容不重复对账、不要求完整 A 动态重跑；新增 CBS 生产供给/真实报告/两后台读回链不得被旧 A 通过替代。DEV 是否保留以本轮授权和实际 cleanup 记录为准。
 
 ## 11 · 逐代码与详设对账
 
@@ -134,17 +152,17 @@ Dexter 追加原话：“授权你再多两轮对抗性review，然后再给另�
 
 fresh独立 `REVIEW_TARGET=IMPLEMENTATION` 从真实需求/详设/源码/用户行为重新判断合理性，不用“符合设计”豁免。finding核验同根、最低成本修复再focused及受影响CP/6b/13c差量，未受影响已MATCHED不重复；整批review重开全范围不能只看修复文件。
 
-交付给Dexter/Claude：当前字节范围、实际命令/run/source/层级、CP及全批6b/逐代码MATCHED、首败/cleanup、每条V本期子断言与A/C边界、NOT_RUN/NOT_AUTHORIZED，两个后台各自UI与运营后台真正A更新后报告证据。不得把B供给保存称自动更新完成。Git完全由Dexter控制，非完成门。
+交付给Dexter/Claude：当前字节范围、实际命令/run/source/层级、CP及全批6b/逐代码 MATCHED、首败/cleanup、每条 V 本期子断言与 A/C 边界、NOT_RUN/NOT_COVERED；包含两后台本链 focused 真实页面证据，以及§15.2a同 DEV 同规则/同终端/真实任务的 UI→TER更新→CBS报告→运营UI闭环证据。管理页面运行与设备运行分别报告，但通过同一业务身份链关联；不得用独立 fixture 与本地 A 更新拼接成端到端 PASS。不得把 B 供给保存称自动更新完成。
 
 ## 13 · 本轮文档交付的独立设计审查
 
-默认DESIGN上限两轮；Dexter先追加R3/R4，又条件授权R4仍NO-GO且主agent确认真问题时追加R5/R6，该条件已触发。保留同cycle、本次上限6，原话与确认依据见§0，R6因工具线程上限未执行且无verdict，已停止。原始verdict由fresh reviewer独立出具，作者只有intake/修订权。外部Claude经Dexter转交。当前全部实施/运行/cleanup=NOT_RUN。
+本段记录已结束的 DESIGN cycle 和当时各轮状态，不是本次实施进度或权限声明。原始 verdict 保留在对应文件；当前实施及运行状态只以后续 CP/run 记录为准。
 
 本次Dexter改变报告消费后台与同页双Tab Journey，旧cycle R1 NO-GO及R2受控STOPPED_SCOPE_CHANGED/NOT_ISSUED仅历史。当前cycle ter-version-update-stage-b-project-tabs-20261007原按两轮结束；随后按两次直接授权完成R3/R4及条件触发后的R5；R6因工具线程上限未执行且没有verdict，本cycle本次例外上限6，不重建cycle。旧scope cycle的停止及结论仍仅历史。所有行为/cleanup仍NOT_RUN。
 
 CP-05逐交互面落实附件§10标准容器：ProTable/查询/唯一cursor分页、编辑/详情Drawer、StatusChangeConfirm/Tabs，规则操作历史复用OperationsAuditHistoryModal。新增HTTP roster18项；规则审计扩既有通用GET不另计新operation；历史GET第18项。UI/TestId前置完成才写L2脚本，当前NOT_RUN。
 
-CP-06 seed完整输入与四工件/八规则/role-group写、role-project读及COUNT_KEYS父链同步按详设§15.1执行；CP-05唯一runner实际扩展case/suite、fixture/manifest/首败清理按§15.2。这些是CP必交付源码，不可用验收时临时脚本替代。完整seed dry-run和reset/seed分别守未来授权/准入，本轮均NOT_RUN。
+CP-06 seed完整输入与四工件/八规则/role-group写、role-project读及COUNT_KEYS父链同步按详设§15.1执行；CP-05唯一runner实际扩展case/suite、fixture/manifest/首败清理按§15.2。这些是CP必交付源码，不可用验收时临时脚本替代。完整seed dry-run与实际reset/seed守§1.1既有reset授权和实际实施执行面准入，本轮均NOT_RUN。
 
 ## 14 · 修订设计的CP必需输入
 
@@ -159,7 +177,7 @@ CP-06 seed完整输入与四工件/八规则/role-group写、role-project读及C
 | CP-03 | 规则审计同REQUIRED，N/M分钟×60秒；合同scope不变 | create/启停各一审计，同key回放不重复，拒绝零审计；59/61秒及越界拒绝 |
 | CP-04 | CBS每task行、actual观察；升级持久pending与TDC有效PONG广播/HTTP receipt | 两task不丢；同task更新不增行；HTTP失败/失响应/flush失败/hydration/迟到；PONG有效性、零重连副作用、真实IO single-flight |
 | CP-05 | 启用门店＋启用终端SQL范围、actual版本filters、Drawer历史分页/标准审计Modal与真实HTTP L2 fixture | 两个停用维度各排除；未报告行；server过滤跨页；101历史分页不全拉；不同PROJECT/无写cap读/切上下文拒旧结果 |
-| CP-06 | 新域seed四工件八规则；正常N=5/M=10分钟；父count不变 | seed不伪report/审计；业务测试经ownerHTTP产报告，两task/history仅测试fixture；完整dry-run结构按父链验证 |
+| CP-06 | 新域seed四工件八规则；正常N=5/M=10分钟；父子count按新增域与真实asset事实同步，既有终端key不变 | seed不伪report/审计；业务测试经ownerHTTP产报告，两task/history仅测试fixture；完整dry-run结构按父链验证 |
 
 原有已MATCHED且未受影响的A内容不重复对账；新增报告descriptor/typedPOST/心跳标准/审计与消费者差量必须分别纳入其完整CP及全批6b，不能把“无需重复”误用于本次变化。
 

@@ -1978,6 +1978,75 @@
         ],
         "scopeApplicability": "SELECTED_STORE_SCOPE"
       }
+    },
+    {
+      "key": "PLATFORM-TERMINAL-UPDATE-PACKAGES",
+      "kind": "PAGE",
+      "consumerFace": "platform-admin",
+      "display": {
+        "label": "终端更新包管理"
+      },
+      "page": {
+        "kind": "BUSINESS"
+      },
+      "workspaceRequirement": "GLOBAL_OR_OPTIONAL",
+      "navigation": {
+        "order": 90,
+        "iconKey": "PACKAGE"
+      }
+    },
+    {
+      "key": "PG-PROJECT-TERMINAL-VERSION-RULES",
+      "kind": "PAGE",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "项目终端版本管理"
+      },
+      "page": {
+        "kind": "BUSINESS"
+      },
+      "navigation": {
+        "groupKey": "NAV-CATALOG-SERVICES",
+        "order": 315
+      },
+      "pageAccess": {
+        "pageAccessManaged": true,
+        "grantableRoleNodeTypes": [
+          "GROUP",
+          "PROJECT"
+        ],
+        "requiredDataNodeType": "PROJECT"
+      },
+      "experience": {
+        "pageDescription": "按当前项目维护终端更新规则并查看终端实际版本与报告。",
+        "dataNodeCascaderLabel": "可视项目",
+        "noDataNodePrompt": "请选择项目数据节点",
+        "noCandidatePrompt": "当前角色没有可选择的项目数据节点",
+        "cascadeLevelLabels": [
+          "项目"
+        ],
+        "forbiddenAlternatives": [
+          "终端版本任务看板",
+          "自动择新调度"
+        ]
+      }
+    },
+    {
+      "key": "MANAGE_PROJECT_TERMINAL_VERSION",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "管理项目终端版本"
+      },
+      "action": {
+        "groupKey": "STORE_MANAGEMENT",
+        "targetPageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+        "grantableRoleNodeTypes": [
+          "GROUP",
+          "PROJECT"
+        ],
+        "scopeApplicability": "SELECTED_PROJECT_SCOPE"
+      }
     }
   ]
 }

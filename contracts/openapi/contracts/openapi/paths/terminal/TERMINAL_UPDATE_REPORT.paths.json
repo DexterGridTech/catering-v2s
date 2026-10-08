@@ -1,0 +1,129 @@
+{
+  "paths": {
+    "/api/terminal/group-workspaces/{groupWorkspaceKey}/update-reports": {
+      "post": {
+        "operationId": "submitTerminalUpdateReport",
+        "tags": [
+          "TERMINAL_UPDATE_REPORT"
+        ],
+        "x-consumer-faces": [
+          "terminal"
+        ],
+        "x-owner-module": "TERMINAL_UPDATE_REPORT",
+        "x-scenario-ids": [
+          "N-report-write"
+        ],
+        "x-page-key": "PG-PROJECT-TERMINAL-VERSION-RULES",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_DEPENDENCY_UNAVAILABLE",
+          "TERMINAL_BINDING_CREDENTIAL_INVALID",
+          "TERMINAL_UPDATE_REPORT_IDENTITY_CONFLICT"
+        ],
+        "security": [
+          {
+            "terminalCredential": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+            }
+          },
+          {
+            "name": "X-Terminal-Ref",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-Terminal-Device-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../../../components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateReportReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "422": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-authorization-mode": "TERMINAL_CREDENTIAL",
+        "x-required-terminal-credential": "REQ_SUBMIT_TERMINAL_UPDATE_REPORT",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../../../components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateReportRequest"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

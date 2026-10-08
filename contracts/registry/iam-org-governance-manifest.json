@@ -270,6 +270,14 @@
       "requiredInOwnerCommand": true,
       "transactionRequirement": "REQUIRED",
       "crossOwnerWritesUsePublicCommandApi": true
+    },
+    {
+      "ownerRecheckId": "OWNER_RECHECK_TERMINAL_UPDATE",
+      "ownerModule": "terminal-update",
+      "beforeReceipt": true,
+      "requiredInOwnerCommand": true,
+      "transactionRequirement": "REQUIRED",
+      "crossOwnerWritesUsePublicCommandApi": true
     }
   ],
   "typedProblemMappings": [
@@ -381,6 +389,13 @@
     {
       "typedProblemMappingId": "PROBLEM_STORE_CONTRACT_TYPED_OWNER_EXCEPTION",
       "ownerModule": "store-contract",
+      "typedProblemOnly": true,
+      "noTestCodeInResponse": true,
+      "unmappedExceptionFails": true
+    },
+    {
+      "typedProblemMappingId": "PROBLEM_TERMINAL_UPDATE_TYPED_OWNER_EXCEPTION",
+      "ownerModule": "terminal-update",
       "typedProblemOnly": true,
       "noTestCodeInResponse": true,
       "unmappedExceptionFails": true
@@ -4467,6 +4482,139 @@
       "ownerRecheckId": "OWNER_RECHECK_ORGANIZATION",
       "typedProblemMappingId": "PROBLEM_ORGANIZATION_TYPED_OWNER_EXCEPTION",
       "redFixtureId": "RED_TERMINAL_READ_SERVICE_POINT",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_STAGE_PLATFORM_TERMINAL_UPDATE_ARTIFACT",
+      "operationIdentity": {
+        "operationId": "stagePlatformTerminalUpdateArtifact",
+        "method": "POST",
+        "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/terminal-update-artifact-stages",
+        "consumerFace": "platform-admin",
+        "ownerModule": "TERMINAL_UPDATE_PACKAGE"
+      },
+      "authorizationMode": "AUTHENTICATED_PLATFORM_SUPER_ADMIN",
+      "resolverId": "PLATFORM_SESSION_ENABLED_ADMIN",
+      "ownerModule": "TERMINAL_UPDATE_PACKAGE",
+      "ownerRecheckId": "OWNER_RECHECK_TERMINAL_UPDATE",
+      "typedProblemMappingId": "PROBLEM_TERMINAL_UPDATE_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_STAGE_PLATFORM_TERMINAL_UPDATE_ARTIFACT",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_REGISTER_PLATFORM_TERMINAL_UPDATE_ARTIFACT",
+      "operationIdentity": {
+        "operationId": "registerPlatformTerminalUpdateArtifact",
+        "method": "POST",
+        "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/terminal-update-artifacts",
+        "consumerFace": "platform-admin",
+        "ownerModule": "TERMINAL_UPDATE_PACKAGE"
+      },
+      "authorizationMode": "AUTHENTICATED_PLATFORM_SUPER_ADMIN",
+      "resolverId": "PLATFORM_SESSION_ENABLED_ADMIN",
+      "ownerModule": "TERMINAL_UPDATE_PACKAGE",
+      "ownerRecheckId": "OWNER_RECHECK_TERMINAL_UPDATE",
+      "typedProblemMappingId": "PROBLEM_TERMINAL_UPDATE_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REGISTER_PLATFORM_TERMINAL_UPDATE_ARTIFACT",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_CREATE_OPERATIONS_PROJECT_TERMINAL_UPDATE_RULE",
+      "operationIdentity": {
+        "operationId": "createOperationsProjectTerminalUpdateRule",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-update-rules",
+        "consumerFace": "operations-admin",
+        "ownerModule": "TERMINAL_UPDATE_RULE"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {
+        "kind": "SERVER_RESOLVED_RESOURCE_TYPE",
+        "resourceTypeCapabilities": {
+          "PROJECT": "MANAGE_PROJECT_TERMINAL_VERSION"
+        },
+        "unsupportedResourceTypeDecision": "DENY"
+      },
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "TERMINAL_UPDATE_RULE",
+      "ownerRecheckId": "OWNER_RECHECK_TERMINAL_UPDATE",
+      "typedProblemMappingId": "PROBLEM_TERMINAL_UPDATE_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_CREATE_OPERATIONS_PROJECT_TERMINAL_UPDATE_RULE",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_CHANGE_OPERATIONS_PROJECT_TERMINAL_UPDATE_RULE_STATUS",
+      "operationIdentity": {
+        "operationId": "changeOperationsProjectTerminalUpdateRuleStatus",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-update-rules/{ruleRef}/status",
+        "consumerFace": "operations-admin",
+        "ownerModule": "TERMINAL_UPDATE_RULE"
+      },
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "capabilityMapping": {
+        "kind": "SERVER_RESOLVED_RESOURCE_TYPE",
+        "resourceTypeCapabilities": {
+          "PROJECT": "MANAGE_PROJECT_TERMINAL_VERSION"
+        },
+        "unsupportedResourceTypeDecision": "DENY"
+      },
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "TERMINAL_UPDATE_RULE",
+      "ownerRecheckId": "OWNER_RECHECK_TERMINAL_UPDATE",
+      "typedProblemMappingId": "PROBLEM_TERMINAL_UPDATE_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_CHANGE_OPERATIONS_PROJECT_TERMINAL_UPDATE_RULE_STATUS",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_TERMINAL_READ_PROJECT_UPDATE_RULE_SNAPSHOT_PAGE",
+      "operationIdentity": {
+        "operationId": "terminalReadProjectUpdateRuleSnapshotPage",
+        "method": "GET",
+        "path": "/api/terminal/group-workspaces/{groupWorkspaceKey}/update-rules/projects/{projectRef}",
+        "consumerFace": "terminal",
+        "ownerModule": "TERMINAL_UPDATE_RULE"
+      },
+      "authorizationMode": "TERMINAL_CREDENTIAL",
+      "resolverId": "TERMINAL_CREDENTIAL_AUTHENTICATOR",
+      "ownerModule": "TERMINAL_UPDATE_RULE",
+      "ownerRecheckId": "OWNER_RECHECK_TERMINAL_UPDATE",
+      "typedProblemMappingId": "PROBLEM_TERMINAL_UPDATE_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_TERMINAL_READ_PROJECT_UPDATE_RULE_SNAPSHOT_PAGE",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_ISSUE_TERMINAL_UPDATE_ARTIFACT_DOWNLOAD_GRANT",
+      "operationIdentity": {
+        "operationId": "issueTerminalUpdateArtifactDownloadGrant",
+        "method": "POST",
+        "path": "/api/terminal/group-workspaces/{groupWorkspaceKey}/update-artifacts/{artifactRef}/download-grant",
+        "consumerFace": "terminal",
+        "ownerModule": "TERMINAL_UPDATE_RULE"
+      },
+      "authorizationMode": "TERMINAL_CREDENTIAL",
+      "resolverId": "TERMINAL_CREDENTIAL_AUTHENTICATOR",
+      "ownerModule": "TERMINAL_UPDATE_RULE",
+      "ownerRecheckId": "OWNER_RECHECK_TERMINAL_UPDATE",
+      "typedProblemMappingId": "PROBLEM_TERMINAL_UPDATE_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_ISSUE_TERMINAL_UPDATE_ARTIFACT_DOWNLOAD_GRANT",
+      "noClientDerivedAuthorization": true
+    },
+    {
+      "requirementId": "REQ_SUBMIT_TERMINAL_UPDATE_REPORT",
+      "operationIdentity": {
+        "operationId": "submitTerminalUpdateReport",
+        "method": "POST",
+        "path": "/api/terminal/group-workspaces/{groupWorkspaceKey}/update-reports",
+        "consumerFace": "terminal",
+        "ownerModule": "TERMINAL_UPDATE_REPORT"
+      },
+      "authorizationMode": "TERMINAL_CREDENTIAL",
+      "resolverId": "TERMINAL_CREDENTIAL_AUTHENTICATOR",
+      "ownerModule": "TERMINAL_UPDATE_REPORT",
+      "ownerRecheckId": "OWNER_RECHECK_TERMINAL_UPDATE",
+      "typedProblemMappingId": "PROBLEM_TERMINAL_UPDATE_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_SUBMIT_TERMINAL_UPDATE_REPORT",
       "noClientDerivedAuthorization": true
     }
   ]

@@ -35,3 +35,9 @@ export type RequestExecutionView = Readonly<{
   timeSource: 'local' | 'peer';
   commands: readonly RequestExecutionCommandView[];
 }>;
+
+/** Small request identity used when an observer only needs to correlate a new command. */
+export type RequestExecutionCandidate = Readonly<{
+  requestId: RequestId;
+  workspace: 'MAIN' | 'BRANCH' | null;
+}>;

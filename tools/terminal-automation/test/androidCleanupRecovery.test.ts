@@ -57,6 +57,38 @@ describe('failed Android run cleanup recovery guard', () => {
     }
   });
 
+  it('allows the managed interruption case but still rejects unregistered cases', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'ter-android-cleanup-'));
+    try {
+      writeSourceManifest(root, {
+        execution: {
+          phase: 'update',
+          platform: 'android',
+          shape: 'dual',
+          case: 'update.interruption',
+          sample: 'console',
+          deviceSerial: 'emulator-5560',
+        },
+      });
+      expect(resolveFailedAndroidRunCleanupTarget(root, runId, 'emulator-5560', []).shape).toBe('dual');
+      writeSourceManifest(root, {
+        execution: {
+          phase: 'update',
+          platform: 'android',
+          shape: 'dual',
+          case: 'update.unregistered',
+          sample: 'console',
+          deviceSerial: 'emulator-5560',
+        },
+      });
+      expect(() => resolveFailedAndroidRunCleanupTarget(root, runId, 'emulator-5560', [])).toThrow(
+        'TERMINAL_AUTOMATION_RECOVERY_SOURCE_IDENTITY_MISMATCH',
+      );
+    } finally {
+      rmSync(root, {recursive: true, force: true});
+    }
+  });
+
   it('rejects a different device, installed-package identity, nonfailed run, and live owner process', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'ter-android-cleanup-'));
     try {

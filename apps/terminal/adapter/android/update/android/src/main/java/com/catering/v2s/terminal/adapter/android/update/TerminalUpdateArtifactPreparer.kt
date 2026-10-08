@@ -54,10 +54,10 @@ internal object TerminalUpdateArtifactPreparer {
     require(directory.mkdirs()) { "TERMINAL_UPDATE_PREPARED_DIRECTORY_CREATE_FAILED" }
     try {
       File(directory, "artifact.json").writeText(artifact.toString(), Charsets.UTF_8)
-      val archive = File(directory, if (kind == "full") "candidate.apk" else "candidate.zip")
+      val archive = File(directory, "candidate.zip")
       download(context, downloadUrl, expectedSha256.lowercase(), timeoutMs, proxy, archive)
       if (kind == "hot") extractHot(archive, directory, artifact)
-      else validateFull(context, archive, artifact)
+      else validateFull(context, extractFull(archive, directory, artifact), artifact)
       Log.i(TAG, "event=artifact-prepared kind=$kind bytes=${archive.length()} files=${artifact.optJSONArray("files")?.length() ?: 0}")
       return Prepared(directory.name, directory)
     } catch (error: Throwable) {
@@ -256,6 +256,43 @@ internal object TerminalUpdateArtifactPreparer {
       require(expanded <= MAX_EXPANDED_BYTES) { "TERMINAL_UPDATE_EXPANDED_SIZE_LIMIT" }
     }
     archive.delete()
+  }
+
+  internal fun extractFull(archive: File, directory: File, artifact: JSONObject): File {
+    val identity = artifact.optJSONObject("apk") ?: error("TERMINAL_UPDATE_APK_IDENTITY_INVALID")
+    val entryName = safeRelative(identity.getString("path"))
+    require('/' !in entryName) { "TERMINAL_UPDATE_FULL_ZIP_ENTRY_INVALID" }
+    val output = File(directory, "candidate.apk")
+    ZipFile(archive).use { zip ->
+      val entries = zip.entries().asSequence().toList()
+      require(entries.size == 1 && !entries.single().isDirectory && entries.single().name == entryName) {
+        "TERMINAL_UPDATE_FULL_ZIP_ENTRY_INVALID"
+      }
+      val entry = entries.single()
+      require(entry.size in 1..MAX_ARCHIVE_BYTES) { "TERMINAL_UPDATE_APK_SIZE_INVALID" }
+      val digest = MessageDigest.getInstance("SHA-256")
+      var written = 0L
+      zip.getInputStream(entry).use { input ->
+        output.outputStream().buffered(64 * 1024).use { stream ->
+          val buffer = ByteArray(64 * 1024)
+          while (true) {
+            val read = input.read(buffer)
+            if (read < 0) break
+            written += read
+            require(written <= entry.size && written <= MAX_ARCHIVE_BYTES) {
+              "TERMINAL_UPDATE_APK_SIZE_INVALID"
+            }
+            digest.update(buffer, 0, read)
+            stream.write(buffer, 0, read)
+          }
+        }
+      }
+      require(written == entry.size && digest.digest().hex() == identity.getString("sha256")) {
+        "TERMINAL_UPDATE_APK_DIGEST_MISMATCH"
+      }
+    }
+    archive.delete()
+    return output
   }
 
   private fun validateFull(context: Context, apk: File, artifact: JSONObject) {

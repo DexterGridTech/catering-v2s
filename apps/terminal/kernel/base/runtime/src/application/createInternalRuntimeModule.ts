@@ -4,6 +4,7 @@ import {
   runtimeInstanceModeChangedCommand,
   setRuntimeInstanceModeCommand,
   helloWorldCommand,
+  primarySurfaceReadyCommand,
 } from '../features/commands';
 import {runtimeInstanceModeSlice, runtimeInstanceModeSliceName} from '../features/slices/runtimeInstanceMode';
 import {
@@ -23,6 +24,7 @@ import {resetRuntimeAfterSystemFailureCommand} from '../features/commands/resetR
 import {defaultRequestMaxResidenceMs, defaultRequestRetentionMs, type RuntimeLimits} from '../types/limits';
 import {selectRequestExecutionView} from '../selectors/selectRequestExecutionView';
 import {selectRequestExecutionCommands, selectRequestExecutionViews} from '../selectors/selectRequestExecutionViews';
+import {selectRequestExecutionCandidates} from '../selectors/selectRequestExecutionCandidates';
 import {selectRuntimeInstanceMode} from '../selectors/selectRuntimeInstanceMode';
 
 export const createInternalRuntimeModule = (
@@ -47,6 +49,7 @@ export const createInternalRuntimeModule = (
       {name: `${moduleName}.set-instance-mode`, visibility: 'internal' as const},
       {name: `${moduleName}.cleanup-request-ledger`, visibility: 'internal' as const},
       {name: `${moduleName}.instance-mode-changed`, visibility: 'internal' as const},
+      {name: `${moduleName}.primary-surface-ready`, visibility: 'internal' as const},
       {name: resetRuntimeAfterSystemFailureCommand.commandName, visibility: 'public' as const},
       {name: helloWorldCommand.commandName, visibility: 'public' as const},
     ],
@@ -55,6 +58,7 @@ export const createInternalRuntimeModule = (
       setRuntimeInstanceModeCommand,
       cleanupRequestLedgerCommand,
       runtimeInstanceModeChangedCommand,
+      primarySurfaceReadyCommand,
       resetRuntimeAfterSystemFailureCommand,
       helloWorldCommand,
     ],
@@ -62,6 +66,7 @@ export const createInternalRuntimeModule = (
       selectRequestExecutionView,
       selectRequestExecutionViews,
       selectRequestExecutionCommands,
+      selectRequestExecutionCandidates,
       selectRuntimeInstanceMode,
     ],
     actors: [

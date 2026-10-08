@@ -161,9 +161,10 @@
         "EDIT_STORE_SERVICE_POINT_QR",
         "EDIT_STORE_TERMINAL",
         "BC-BUSINESS-CHANNEL-PROJECT-EDIT",
-        "BC-BUSINESS-CHANNEL-STORE-EDIT"
+        "BC-BUSINESS-CHANNEL-STORE-EDIT",
+        "MANAGE_PROJECT_TERMINAL_VERSION"
       ],
-      "count": 40,
+      "count": 43,
       "rule": "page access grants read entry; only these action keys grant mutations, and neither set implies the other"
     },
     "drawerLifecycleAdaptation": {
@@ -867,7 +868,9 @@
       "HOME-REGION": "OPERATIONS-FIVE-HOME-BOOTSTRAPS",
       "HOME-PROJECT": "OPERATIONS-FIVE-HOME-BOOTSTRAPS",
       "HOME-HEAD-COMPANY": "OPERATIONS-FIVE-HOME-BOOTSTRAPS",
-      "HOME-STORE": "OPERATIONS-FIVE-HOME-BOOTSTRAPS"
+      "HOME-STORE": "OPERATIONS-FIVE-HOME-BOOTSTRAPS",
+      "PLATFORM-TERMINAL-UPDATE-PACKAGES": "PLATFORM-TERMINAL-UPDATE-PACKAGES",
+      "PG-PROJECT-TERMINAL-VERSION-RULES": "PG-PROJECT-TERMINAL-VERSION-RULES"
     },
     "bySurface": {
       "PLATFORM-WORKSPACES": [

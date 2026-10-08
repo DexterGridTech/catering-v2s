@@ -26,7 +26,7 @@ describe('createAndroidUpdatePort', () => {
     native.prepareArtifact.mockResolvedValue({preparedId: 'prepared'});
     native.applyPrepared.mockResolvedValue({} satisfies Partial<UpdateAction>);
     native.readAction.mockResolvedValue(null);
-    native.confirmBoot.mockResolvedValue({} satisfies Partial<UpdateAction>);
+    native.confirmBoot.mockResolvedValue({confirmed: true as const});
     native.releasePrepared.mockResolvedValue({released: true});
   });
 
@@ -54,7 +54,7 @@ describe('createAndroidUpdatePort', () => {
       sourceRef: 'full-2',
       expectedSha256: 'a'.repeat(64),
       artifact,
-      sourcePath: '/full.apk',
+      sourcePath: '/full.zip',
       network: {
         addresses: [{addressName: 'business', baseUrl: 'http://127.0.0.1:28080/api/'}],
         proxy: {protocol: 'http', host: 'proxy.example', port: 8080, username: 'user', password: 'secret'},
@@ -64,7 +64,7 @@ describe('createAndroidUpdatePort', () => {
     const prepared = await port.prepareArtifact(prepareInput);
     expect(prepared.status).toBe('succeeded');
     expect(native.prepareArtifact).toHaveBeenCalledWith(
-      'http://127.0.0.1:28080/full.apk',
+      'http://127.0.0.1:28080/full.zip',
       120_000,
       'a'.repeat(64),
       JSON.stringify(artifact),
@@ -94,8 +94,14 @@ describe('createAndroidUpdatePort', () => {
     await port.readAction({timeoutMs: 10_000, taskId: 'task-1', actionId: 'action-1'});
     expect(native.readAction).toHaveBeenCalledWith('task-1', 'action-1');
 
-    native.confirmBoot.mockResolvedValue(action);
-    await port.confirmBoot({timeoutMs: 60_000, bootToken: 'boot-token', publicationId: 'publication-2'});
+    native.confirmBoot.mockResolvedValue({confirmed: true});
+    const confirmed = await port.confirmBoot({
+      timeoutMs: 60_000,
+      bootToken: 'boot-token',
+      publicationId: 'publication-2',
+    });
+    expect(confirmed.status).toBe('succeeded');
+    if (confirmed.status === 'succeeded') expect(confirmed.value).toEqual({confirmed: true});
     expect(native.confirmBoot).toHaveBeenCalledWith('boot-token', 'publication-2');
 
     await port.releasePrepared({timeoutMs: 10_000, preparedId: 'prepared'});
@@ -126,7 +132,7 @@ describe('createAndroidUpdatePort', () => {
     );
   });
 
-  it('preserves an allowlisted native failure code without exposing the native message', async () => {
+  it('preserves a format-validated native failure code without exposing the native message', async () => {
     native.readFacts.mockRejectedValueOnce(new Error('TERMINAL_UPDATE_APK_SIGNER_MISMATCH'));
     const result = await createAndroidUpdatePort().readFacts({timeoutMs: 10_000});
 

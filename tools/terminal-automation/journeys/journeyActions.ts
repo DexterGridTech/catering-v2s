@@ -11,6 +11,7 @@ export type JourneyActionPort = Readonly<{
   readonly sessionId: string;
   readonly click: (testID: string, display: JourneyDisplay) => Promise<void>;
   readonly diagnostics?: JourneyDiagnostics;
+  readonly onRequestObserverStep?: (step: string) => void;
 }>;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -55,6 +56,7 @@ export const dispatchObservedJourneyCommand = async (
     timeoutMs: 30_000,
     onRequestIdentified: port.diagnostics?.requestStarted,
     onRequestFinished: port.diagnostics?.requestFinished,
+    onObserverStep: port.onRequestObserverStep,
   });
 };
 

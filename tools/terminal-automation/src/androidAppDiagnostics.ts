@@ -40,6 +40,19 @@ type RuntimeFailureDiagnostic = Readonly<{
   readonly transportErrorCode?: string;
   readonly transportCauseName?: string;
   readonly transportCauseCode?: string;
+  readonly sessionId?: string;
+  readonly selectorName?: string;
+  readonly budgetMs?: number;
+  readonly closeCode?: number;
+  readonly messageCount?: number;
+  readonly limitBytes?: number;
+  readonly messageBytes?: number;
+  readonly pendingBytes?: number;
+  readonly pendingMessages?: number;
+  readonly messageType?: string;
+  readonly pendingMessageType?: string;
+  readonly messageIdFamily?: string;
+  readonly pendingMessageIdFamily?: string;
 }>;
 
 const safeToken = (value: unknown): string | undefined =>
@@ -190,10 +203,121 @@ export const projectAndroidTransportFailureLog = (line: string): RuntimeFailureD
   return output;
 };
 
+/** Keep automation socket lifecycle metadata so Android session loss has an observable close code. */
+export const projectAndroidAutomationConnectionLog = (line: string): RuntimeFailureDiagnostic | null => {
+  const match = line.match(/^[VDIWEF]\/ReactNativeJS\s*\(\s*\d+\):\s*(\{.*\})\s*$/u);
+  if (!match) return null;
+  let value: unknown;
+  try {
+    value = JSON.parse(match[1]!);
+  } catch {
+    return null;
+  }
+  const event = record(value);
+  const name = safeToken(event?.event);
+  const level = safeToken(event?.level);
+  if (
+    event?.category !== 'automation.connection' ||
+    ![
+      'connection.opened',
+      'connection.authenticated',
+      'connection.closed',
+      'connection.failed',
+      'outbound.window.limit',
+    ].includes(name ?? '') ||
+    (level !== 'info' && level !== 'warn' && level !== 'error')
+  )
+    return null;
+  const data = record(event?.data);
+  const closeCode = safeNumber(data?.code);
+  const messageCount = safeNumber(data?.pendingMessages);
+  const reasonCode = safeToken(data?.reasonCode);
+  const limitBytes = safeNumber(data?.limitBytes);
+  const messageBytes = safeNumber(data?.messageBytes);
+  const pendingBytes = safeNumber(data?.pendingBytes);
+  const pendingMessages = safeNumber(data?.pendingMessages);
+  const rawLimitReason = name === 'outbound.window.limit' ? data?.reason : undefined;
+  const limitReason =
+    typeof rawLimitReason === 'string' &&
+    [
+      'NON_TEXT_MESSAGE',
+      'INVALID_JSON',
+      'INVALID_MESSAGE_ID',
+      'DUPLICATE_MESSAGE_ID',
+      'MESSAGE_TOO_LARGE',
+      'UNACKNOWLEDGED_WINDOW_FULL',
+      'NATIVE_SEND_FAILED',
+    ].includes(rawLimitReason)
+      ? rawLimitReason
+      : undefined;
+  const messageType = name === 'outbound.window.limit' ? safeToken(data?.messageType) : undefined;
+  const pendingMessageType = name === 'outbound.window.limit' ? safeToken(data?.pendingMessageType) : undefined;
+  const messageIdFamily = name === 'outbound.window.limit' ? safeToken(data?.messageIdFamily) : undefined;
+  const pendingMessageIdFamily = name === 'outbound.window.limit' ? safeToken(data?.pendingMessageIdFamily) : undefined;
+  return Object.freeze({
+    category: 'automation.connection',
+    event: name!,
+    level,
+    ...(safeToken(data?.sessionId) === undefined ? {} : {sessionId: safeToken(data?.sessionId)}),
+    ...(closeCode === undefined ? {} : {closeCode}),
+    ...(reasonCode === undefined ? {} : {reasonCode}),
+    ...(messageCount === undefined ? {} : {messageCount}),
+    ...(limitReason === undefined ? {} : {limitReason}),
+    ...(limitBytes === undefined ? {} : {limitBytes}),
+    ...(messageBytes === undefined ? {} : {messageBytes}),
+    ...(pendingBytes === undefined ? {} : {pendingBytes}),
+    ...(pendingMessages === undefined ? {} : {pendingMessages}),
+    ...(messageType === undefined ? {} : {messageType}),
+    ...(pendingMessageType === undefined ? {} : {pendingMessageType}),
+    ...(messageIdFamily === undefined ? {} : {messageIdFamily}),
+    ...(pendingMessageIdFamily === undefined ? {} : {pendingMessageIdFamily}),
+  });
+};
+
+/** Retain only bounded selector failure metadata; selector arguments and values are never projected. */
+export const projectAndroidAutomationSelectorFailureLog = (line: string): RuntimeFailureDiagnostic | null => {
+  const match = line.match(/^[VDIWEF]\/ReactNativeJS\s*\(\s*\d+\):\s*(\{.*\})\s*$/u);
+  if (!match) return null;
+  let value: unknown;
+  try {
+    value = JSON.parse(match[1]!);
+  } catch {
+    return null;
+  }
+  const event = record(value);
+  const data = record(event?.data);
+  if (
+    event?.category !== 'automation.selector' ||
+    event.event !== 'selector.evaluation.failed' ||
+    safeToken(event.level) !== 'warn' ||
+    !data
+  ) {
+    return null;
+  }
+  const phase = safeToken(data.phase);
+  if (!['evaluate', 'json-validation', 'json-stringify', 'message-size'].includes(phase ?? '')) return null;
+  return Object.freeze({
+    category: 'automation.selector',
+    event: 'selector.evaluation.failed',
+    level: 'warn',
+    ...(safeToken(data.selectorName) === undefined ? {} : {selectorName: safeToken(data.selectorName)}),
+    ...(safeToken(data.failureCode) === undefined ? {} : {failureCode: safeToken(data.failureCode)}),
+    phase,
+    ...(safeNumber(data.elapsedMs) === undefined ? {} : {elapsedMs: safeNumber(data.elapsedMs)}),
+    ...(safeNumber(data.budgetMs) === undefined ? {} : {budgetMs: safeNumber(data.budgetMs)}),
+  });
+};
+
 export const collectAndroidRuntimeFailureDiagnostics = (logcat: string): string =>
   logcat
     .split(/\r?\n/u)
-    .map(line => projectAndroidRuntimeFailureLog(line) ?? projectAndroidTransportFailureLog(line))
+    .map(
+      line =>
+        projectAndroidRuntimeFailureLog(line) ??
+        projectAndroidTransportFailureLog(line) ??
+        projectAndroidAutomationConnectionLog(line) ??
+        projectAndroidAutomationSelectorFailureLog(line),
+    )
     .filter((value): value is RuntimeFailureDiagnostic => value !== null)
     .map(value => JSON.stringify(value))
     .join('\n');

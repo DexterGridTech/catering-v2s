@@ -77,8 +77,7 @@ class TerminalUpdateModule : Module() {
       val context = appContext.runtime.reactContext ?: error("TERMINAL_UPDATE_REACT_CONTEXT_NOT_READY")
       val confirmed = TerminalUpdateRuntime.markBootConfirmed(context, bootToken, publicationId)
       if (!confirmed) error("TERMINAL_UPDATE_BOOT_CONFIRMATION_REJECTED")
-      TerminalUpdateRuntime.readConfirmedHotAction(context, publicationId)
-        ?: error("TERMINAL_UPDATE_BOOT_ACTION_NOT_FOUND")
+      mapOf("confirmed" to true)
     }
   }
 }

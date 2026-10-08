@@ -10,6 +10,23 @@ const terminalRoot = path.join(repositoryRoot, 'apps/terminal');
 const gradleDirectory = path.join(terminalRoot, 'application/android/sample-terminal/android');
 const gradleWrapper = path.join(gradleDirectory, 'gradlew');
 const outputRoot = path.join(repositoryRoot, '.runtime/ter-third-party-usage-remediation/cp-a/a3');
+const moduleAliases = new Map([
+  ['adapter-android-device', 'apps/terminal/adapter/android/device/android'],
+  ['adapter-android-dual-screen', 'apps/terminal/adapter/android/dual-screen/android'],
+  ['adapter-android-update', 'apps/terminal/adapter/android/update/android'],
+  ['adapter-android-persist-kv', 'apps/terminal/adapter/android/persist-kv/android'],
+  ['application-base-android', 'apps/terminal/application/base/android/android'],
+]);
+
+function parseModuleSelection(argumentsList) {
+  const moduleIndex = argumentsList.indexOf('--module');
+  if (moduleIndex === -1) return null;
+  if (argumentsList.indexOf('--module', moduleIndex + 1) !== -1 || moduleIndex + 1 >= argumentsList.length)
+    throw new Error('TERMINAL_ANDROID_TESTS_MODULE_ARGUMENT_INVALID');
+  const alias = argumentsList[moduleIndex + 1];
+  if (!moduleAliases.has(alias)) throw new Error('TERMINAL_ANDROID_TESTS_MODULE_UNKNOWN');
+  return alias;
+}
 
 function repositoryOwnedPath(inputPath, logicalRoot, label) {
   let resolvedPath;
@@ -666,6 +683,21 @@ function fixtureInitScript(fixtureDirectory) {
 }
 
 function selfTest() {
+  if (parseModuleSelection(['--module', 'adapter-android-update']) !== 'adapter-android-update')
+    throw new Error('TERMINAL_ANDROID_TESTS_MODULE_SELF_TEST_FAILED');
+  for (const invalid of [
+    ['--module'],
+    ['--module', 'unknown'],
+    ['--module', 'adapter-android-update', '--module', 'adapter-android-device'],
+  ]) {
+    let rejected = false;
+    try {
+      parseModuleSelection(invalid);
+    } catch {
+      rejected = true;
+    }
+    if (!rejected) throw new Error('TERMINAL_ANDROID_TESTS_MODULE_SELF_TEST_FAILED');
+  }
   fs.mkdirSync(path.join(repositoryRoot, '.runtime'), {recursive: true});
   const fixture = fs.mkdtempSync(path.join(repositoryRoot, '.runtime', 'ter-owned-android-tests-'));
   const externalFixture = fs.mkdtempSync(path.join(os.tmpdir(), 'ter-owned-android-tests-outside-'));
@@ -848,19 +880,36 @@ async function main() {
   const argumentsList = process.argv.slice(2);
   if (argumentsList.length === 1 && argumentsList[0] === '--help') {
     process.stdout.write(
-      'Usage: node tools/terminal-shared/run-owned-android-tests.mjs [--self-test | --red-fixtures | --a9-lock-red-fixture]\n',
+      'Usage: node tools/terminal-shared/run-owned-android-tests.mjs [--self-test | --red-fixtures | --a9-lock-red-fixture | --module <known-module-alias>]\n',
     );
     return;
   }
-  if (
-    argumentsList.length > 1 ||
-    argumentsList.some(argument => !['--self-test', '--red-fixtures', '--a9-lock-red-fixture'].includes(argument))
-  ) {
+  const modes = ['--self-test', '--red-fixtures', '--a9-lock-red-fixture'];
+  const unsupportedArguments = argumentsList.filter((argument, index) => {
+    if (argument === '--module' || argumentsList[index - 1] === '--module') return false;
+    return !modes.includes(argument);
+  });
+  if (unsupportedArguments.length > 0 || modes.filter(argument => argumentsList.includes(argument)).length > 1) {
     process.stderr.write('TERMINAL_ANDROID_TESTS=FAIL reason=unknown-argument\n');
     process.exitCode = 2;
     return;
   }
   if (process.argv.includes('--self-test')) return selfTest();
+  let selectedModule;
+  try {
+    selectedModule = parseModuleSelection(argumentsList);
+  } catch (error) {
+    process.stderr.write(
+      `TERMINAL_ANDROID_TESTS=FAIL reason=${error instanceof Error ? error.message : 'MODULE_ARGUMENT_INVALID'}\n`,
+    );
+    process.exitCode = 2;
+    return;
+  }
+  if (selectedModule !== null && modes.some(argument => argumentsList.includes(argument))) {
+    process.stderr.write('TERMINAL_ANDROID_TESTS=FAIL reason=module-selection-mode-conflict\n');
+    process.exitCode = 2;
+    return;
+  }
   const mode = process.argv.includes('--red-fixtures') ? 'red-fixtures' : 'run';
   if (process.argv.includes('--a9-lock-red-fixture')) return runA9LockRedFixture();
   if (mode === 'red-fixtures') return runRedFixtures();
@@ -905,6 +954,12 @@ async function main() {
   ) {
     throw new Error(`Kotlin test source-set denominator changed unexpectedly: modules=${moduleRoots.length}`);
   }
+  const selectedModuleRoot = selectedModule === null ? null : path.join(repositoryRoot, moduleAliases.get(selectedModule));
+  const selectedModuleRoots =
+    selectedModuleRoot === null ? moduleRoots : moduleRoots.filter(moduleRoot => moduleRoot === selectedModuleRoot);
+  if (selectedModuleRoots.length !== (selectedModule === null ? moduleRoots.length : 1)) {
+    throw new Error('TERMINAL_ANDROID_TESTS_SELECTED_MODULE_NOT_DISCOVERED');
+  }
   const digestFiles = [
     ...testSourceFiles,
     ...walk(terminalRoot).filter(file => /\/android\/src\/main\/.*\.kt$/.test(file)),
@@ -920,6 +975,7 @@ async function main() {
     sourceSha256,
     startedAt: new Date().toISOString(),
     mode,
+    moduleSelection: selectedModule ?? 'all',
     androidIntermediates: {preexisting: [], created: [], removed: [], cleanup: 'RUNNING'},
     modules: [],
     processes: [],
@@ -929,8 +985,9 @@ async function main() {
   fs.writeFileSync(manifestPath, JSON.stringify(value, null, 2));
   writeEvent(logPath, runId, 'run.start', {
     sourceSha256,
-    moduleCount: moduleRoots.length,
-    testClassCount: [...classesByModule.values()].flat().length,
+    moduleSelection: selectedModule ?? 'all',
+    moduleCount: selectedModuleRoots.length,
+    testClassCount: selectedModuleRoots.flatMap(moduleRoot => classesByModule.get(moduleRoot) ?? []).length,
   });
   try {
     const projectsLog = path.join(outputRoot, `${runId}-projects.log`);
@@ -948,7 +1005,7 @@ async function main() {
     }
     const projectLocations = parseGradleProjectLocations(projects.output, gradleDirectory);
     const tasks = [];
-    for (const moduleRoot of moduleRoots) {
+    for (const moduleRoot of selectedModuleRoots) {
       const resolvedRoot = fs.realpathSync(moduleRoot);
       const match = [...projectLocations].find(
         ([, location]) => fs.existsSync(location) && fs.realpathSync(location) === resolvedRoot,

@@ -11,7 +11,12 @@ import {
   unavailableTopologyHostPort,
   type PortResult,
 } from '@catering-v2s/kernel-base-platform-ports';
-import {createRuntime, type Runtime, type RuntimeModule} from '@catering-v2s/kernel-base-runtime';
+import {
+  createRuntime,
+  primarySurfaceReadyCommand,
+  type Runtime,
+  type RuntimeModule,
+} from '@catering-v2s/kernel-base-runtime';
 import {releaseRuntimeForTestAsync} from '@catering-v2s/kernel-base-runtime/testing';
 import {moduleName as contractsModuleName} from '@catering-v2s/kernel-base-contracts';
 import {
@@ -24,6 +29,7 @@ import {
 import {moduleName as stateModuleName} from '@catering-v2s/kernel-base-state';
 import {
   acceptTerminalUpdateTargetCommand,
+  confirmTerminalUpdateBootCommand,
   createTerminalUpdateModule,
   reconcileTerminalUpdateCommand,
   selectTerminalUpdateRecentStatus,
@@ -110,7 +116,7 @@ const createFixture = (
     prepareArtifact: async () => ok({preparedId: 'prepared', artifact}),
     applyPrepared: async () => ok(noAction),
     readAction: async () => ok(noAction),
-    confirmBoot: async () => ok(noAction),
+    confirmBoot: async () => ok({confirmed: true}),
     releasePrepared: async () => ok({released: true}),
   };
   const modules: readonly RuntimeModule[] = [
@@ -272,7 +278,7 @@ describe('terminal-update local owner', () => {
         prepareArtifact: async () => ok({preparedId: 'prepared', artifact}),
         applyPrepared: async () => ok(noAction),
         readAction: async () => ok(noAction),
-        confirmBoot: async () => ok(noAction),
+        confirmBoot: async () => ok({confirmed: true}),
         releasePrepared: async () => ok({released: true}),
       },
     });
@@ -291,6 +297,127 @@ describe('terminal-update local owner', () => {
 
     expect(next.actorResults[0]?.result).toMatchObject({status: 'succeeded'});
     expect(selectTerminalUpdateTask(secondRuntime.getState())).toMatchObject({target: nextTarget, phase: 'succeeded'});
+  });
+
+  it('uses the observed boot for FULL-only success and releases it on the next boot', async () => {
+    const persistenceKey = 'terminal-update-full-only-success-next-boot-test';
+    const persistence = createStorage();
+    const fullArtifact = Object.freeze({...artifact, nativeBuildNumber: 2, publicationId: '8'.repeat(64)});
+    const fullOnlyTarget: FixedUpdateTarget = Object.freeze({
+      ...target,
+      full: Object.freeze({
+        sourceRef: 'artifact:full-only',
+        expectedSha256: fullArtifact.publicationId,
+        artifact: fullArtifact,
+      }),
+      hot: null,
+    });
+    const nextTarget: FixedUpdateTarget = Object.freeze({
+      ...target,
+      ruleRef: 'after-full-only-rule',
+      createdAt: 2 as TimestampMs,
+      full: null,
+      hot: Object.freeze({
+        sourceRef: 'artifact:after-full-only-hot',
+        expectedSha256: newerHotArtifact.publicationId,
+        artifact: newerHotArtifact,
+      }),
+    });
+    let offeredTarget = fullOnlyTarget;
+    let currentFacts = facts;
+    let currentAction: UpdateAction = noAction;
+    let preparedPublicationId = fullArtifact.publicationId;
+    const port: UpdatePort = {
+      readFacts: async () => ok(currentFacts),
+      prepareArtifact: async input => {
+        preparedPublicationId = input.artifact.publicationId;
+        return ok({preparedId: 'full-only-prepared', artifact: input.artifact});
+      },
+      applyPrepared: async input => {
+        currentAction = Object.freeze({
+          ...noAction,
+          taskId: input.taskId,
+          actionId: input.actionId,
+          state: 'accepted',
+          publicationId: preparedPublicationId,
+          bootId: null,
+        });
+        return ok(currentAction);
+      },
+      readAction: async () => ok(currentAction),
+      confirmBoot: async () => ok({confirmed: true}),
+      releasePrepared: async () => ok({released: true}),
+    };
+    const firstRuntime = createFixture({
+      persistKv: persistence,
+      persistenceKey,
+      readTarget: async () => offeredTarget,
+      port,
+    });
+    runtimes.push(firstRuntime);
+    await firstRuntime.start();
+
+    const acceptedFull = await firstRuntime.dispatchCommand(
+      acceptTerminalUpdateTargetCommand,
+      {selectionContext: fullOnlyTarget.selectionContext},
+      {requestId: createRequestId()},
+    );
+    expect(acceptedFull.actorResults[0]?.result).toMatchObject({status: 'applying'});
+    currentFacts = Object.freeze({
+      ...facts,
+      actual: Object.freeze({
+        ...facts.actual!,
+        nativeBuildNumber: fullArtifact.nativeBuildNumber,
+        bundleVersion: fullArtifact.bundleVersion,
+        publicationId: fullArtifact.publicationId,
+        bootId: 'full-only-success-boot',
+      }),
+      embedded: fullArtifact,
+      selectedPublicationId: fullArtifact.publicationId,
+    });
+    currentAction = Object.freeze({...currentAction, state: 'succeeded', bootId: null});
+    const completed = await firstRuntime.dispatchCommand(
+      reconcileTerminalUpdateCommand,
+      {resumeFixedTask: false},
+      {requestId: createRequestId()},
+    );
+    expect(completed.actorResults[0]?.result).toMatchObject({status: 'succeeded'});
+    expect(selectTerminalUpdateTask(firstRuntime.getState())).toMatchObject({
+      phase: 'succeeded',
+      bootId: 'full-only-success-boot',
+    });
+
+    offeredTarget = nextTarget;
+    const sameBoot = await firstRuntime.dispatchCommand(
+      acceptTerminalUpdateTargetCommand,
+      {selectionContext: nextTarget.selectionContext},
+      {requestId: createRequestId()},
+    );
+    expect(sameBoot.actorResults[0]?.result).toMatchObject({status: 'already-fixed'});
+    expect(selectTerminalUpdateTask(firstRuntime.getState())?.target).toEqual(fullOnlyTarget);
+    await releaseRuntimeForTestAsync(firstRuntime);
+    runtimes.splice(runtimes.indexOf(firstRuntime), 1);
+
+    currentFacts = Object.freeze({
+      ...currentFacts,
+      actual: Object.freeze({...currentFacts.actual!, bootId: 'after-full-only-next-boot'}),
+    });
+    const secondRuntime = createFixture({
+      persistKv: persistence,
+      persistenceKey,
+      readTarget: async () => nextTarget,
+      port,
+    });
+    runtimes.push(secondRuntime);
+    await secondRuntime.start();
+    expect(selectTerminalUpdateTask(secondRuntime.getState())).toBeNull();
+    const acceptedNext = await secondRuntime.dispatchCommand(
+      acceptTerminalUpdateTargetCommand,
+      {selectionContext: nextTarget.selectionContext},
+      {requestId: createRequestId()},
+    );
+    expect(acceptedNext.actorResults[0]?.result).toMatchObject({status: 'applying'});
+    expect(selectTerminalUpdateTask(secondRuntime.getState())).toMatchObject({target: nextTarget});
   });
 
   it('releases a failed task only after a new boot and retains the failed artifact identity', async () => {
@@ -337,7 +464,7 @@ describe('terminal-update local owner', () => {
             }),
           ),
         readAction: async () => ok(noAction),
-        confirmBoot: async () => ok(noAction),
+        confirmBoot: async () => ok({confirmed: true}),
         releasePrepared: async () => ok({released: true}),
       },
     });
@@ -397,7 +524,7 @@ describe('terminal-update local owner', () => {
             }),
           ),
         readAction: async () => ok(noAction),
-        confirmBoot: async () => ok(noAction),
+        confirmBoot: async () => ok({confirmed: true}),
         releasePrepared: async () => ok({released: true}),
       },
     });
@@ -454,7 +581,7 @@ describe('terminal-update local owner', () => {
       prepareArtifact: async () => ok({preparedId: 'prepared', artifact}),
       applyPrepared: async () => ok(noAction),
       readAction: async () => ok(noAction),
-      confirmBoot: async () => ok(noAction),
+      confirmBoot: async () => ok({confirmed: true}),
       releasePrepared: async () => ok({released: true}),
     };
     const runtime = createFixture({persistKv: persistence, port});
@@ -505,6 +632,7 @@ describe('terminal-update local owner', () => {
       target: fixedResumeTarget,
       phase: 'fixed' as const,
       actionId: null,
+      actionKind: null,
       preparedId: null,
       bootId: null,
       failureCode: null,
@@ -523,7 +651,7 @@ describe('terminal-update local owner', () => {
       prepareArtifact,
       applyPrepared: async () => ok(noAction),
       readAction: async () => ok(noAction),
-      confirmBoot: async () => ok(noAction),
+      confirmBoot: async () => ok({confirmed: true}),
       releasePrepared: async () => ok({released: true}),
     };
     const runtime = createFixture({port, persistKv: persistence, persistenceKey});
@@ -544,6 +672,113 @@ describe('terminal-update local owner', () => {
     expect(prepareArtifact).toHaveBeenCalledOnce();
   });
 
+  it('acknowledges primary readiness while resumed update work waits for its artifact', async () => {
+    const persistenceKey = 'terminal-update-primary-ready-nonblocking-test';
+    const persistence = createStorage();
+    const persistedTask = Object.freeze({
+      taskId: 'retained-fixed-task',
+      target: fixedResumeTarget,
+      originalBundleVersion: artifact.bundleVersion,
+      phase: 'fixed' as const,
+      actionId: null,
+      actionKind: null,
+      preparedId: null,
+      bootId: null,
+      failureCode: null,
+    });
+    persistence.values.set(
+      createPersistenceFieldKey({
+        persistenceKey,
+        sliceName: terminalUpdateRegistration.name,
+        storageKey: 'currentTask',
+      }),
+      JSON.stringify(persistedTask),
+    );
+
+    let resolvePrepareStarted!: () => void;
+    const prepareStarted = new Promise<void>(resolve => {
+      resolvePrepareStarted = resolve;
+    });
+    type PreparedResult = Awaited<ReturnType<UpdatePort['prepareArtifact']>>;
+    let resolvePrepared!: (result: PreparedResult) => void;
+    let prepareSettled = false;
+    const prepared = new Promise<PreparedResult>(resolve => {
+      resolvePrepared = resolve;
+    });
+    const prepareArtifact = vi.fn(() => {
+      resolvePrepareStarted();
+      return prepared.then(result => {
+        prepareSettled = true;
+        return result;
+      });
+    });
+    const port: UpdatePort = {
+      readFacts: async () => ok(facts),
+      prepareArtifact,
+      applyPrepared: async () => ok(noAction),
+      readAction: async () => ok(noAction),
+      confirmBoot: async () => ok({confirmed: true}),
+      releasePrepared: async () => ok({released: true}),
+    };
+    const runtime = createFixture({port, persistKv: persistence, persistenceKey});
+    runtimes.push(runtime);
+
+    await runtime.start();
+    const readiness = runtime.dispatchCommand(
+      primarySurfaceReadyCommand,
+      {contentReady: true},
+      {requestId: createRequestId()},
+    );
+
+    try {
+      await vi.waitFor(async () => expect((await readiness).status).toBe('completed'), {timeout: 500});
+      await prepareStarted;
+      expect(prepareArtifact).toHaveBeenCalledOnce();
+      expect(prepareSettled).toBe(false);
+    } finally {
+      resolvePrepared(ok({preparedId: 'resumed-hot-prepared', artifact: newerHotArtifact}));
+    }
+    await readiness;
+    await vi.waitFor(() => expect(prepareSettled).toBe(true));
+  });
+
+  it('confirms an ordinary HOT cold boot on PRIMARY ready even without an update task', async () => {
+    const actual = Object.freeze({
+      ...facts.actual!,
+      publicationId: newerHotArtifact.publicationId,
+      bundleVersion: newerHotArtifact.bundleVersion,
+      bootId: 'ordinary-hot-cold-boot',
+      entryKind: 'hot' as const,
+    });
+    const confirmBoot = vi.fn<UpdatePort['confirmBoot']>().mockResolvedValue(ok({confirmed: true as const}));
+    const port: UpdatePort = {
+      readFacts: async () => ok(Object.freeze({...facts, actual})),
+      prepareArtifact: async () => ok({preparedId: 'unused', artifact}),
+      applyPrepared: async () => ok(noAction),
+      readAction: async () => ok(null),
+      confirmBoot,
+      releasePrepared: async () => ok({released: true}),
+    };
+    const runtime = createFixture({port});
+    runtimes.push(runtime);
+    await runtime.start();
+
+    const readiness = await runtime.dispatchCommand(
+      primarySurfaceReadyCommand,
+      {contentReady: true},
+      {requestId: createRequestId()},
+    );
+    await vi.waitFor(() => expect(confirmBoot).toHaveBeenCalledOnce());
+
+    expect(readiness.status).toBe('completed');
+    expect(confirmBoot).toHaveBeenCalledWith({
+      timeoutMs: 10_000,
+      bootToken: actual.bootId,
+      publicationId: actual.publicationId,
+    });
+    expect(selectTerminalUpdateTask(runtime.getState())).toBeNull();
+  });
+
   it('records a completed FULL action without starting HOT during Runtime installation', async () => {
     const persistenceKey = 'terminal-update-full-readback-resume-test';
     const persistence = createStorage();
@@ -552,6 +787,7 @@ describe('terminal-update local owner', () => {
       target: fixedResumeTarget,
       phase: 'applying-full' as const,
       actionId: 'persisted-full-action',
+      actionKind: 'full' as const,
       preparedId: 'persisted-full-artifact',
       bootId: null,
       failureCode: null,
@@ -566,6 +802,15 @@ describe('terminal-update local owner', () => {
       JSON.stringify(persistedTask),
     );
     const prepareArtifact = vi.fn(async () => ok({preparedId: 'prepared', artifact}));
+    const releasePrepared = vi
+      .fn<UpdatePort['releasePrepared']>()
+      .mockResolvedValueOnce({
+        status: 'failed',
+        port: 'update',
+        capability: 'releasePrepared',
+        error: {code: 'FILESYSTEM_CLEANUP_FAILED', message: 'cleanup failed', retryable: true},
+      })
+      .mockResolvedValue(ok({released: true}));
     const port: UpdatePort = {
       readFacts: async () => ok(facts),
       prepareArtifact,
@@ -581,20 +826,98 @@ describe('terminal-update local owner', () => {
             bootId: 'full-boot',
           }),
         ),
-      confirmBoot: async () => ok(noAction),
-      releasePrepared: async () => ok({released: true}),
+      confirmBoot: async () => ok({confirmed: true}),
+      releasePrepared,
     };
     const runtime = createFixture({port, persistKv: persistence, persistenceKey});
     runtimes.push(runtime);
 
     await runtime.start();
 
+    expect(releasePrepared).toHaveBeenCalledOnce();
+    expect(releasePrepared).toHaveBeenCalledWith({timeoutMs: 10_000, preparedId: 'persisted-full-artifact'});
+    expect(selectTerminalUpdateTask(runtime.getState())).toMatchObject({
+      taskId: persistedTask.taskId,
+      phase: 'applying-full',
+      actionId: persistedTask.actionId,
+      preparedId: 'persisted-full-artifact',
+    });
+
+    await runtime.dispatchCommand(
+      reconcileTerminalUpdateCommand,
+      {resumeFixedTask: false},
+      {requestId: createRequestId()},
+    );
+
+    expect(releasePrepared).toHaveBeenCalledTimes(2);
     expect(selectTerminalUpdateTask(runtime.getState())).toMatchObject({
       taskId: persistedTask.taskId,
       phase: 'fixed',
       actionId: null,
+      preparedId: null,
     });
     expect(prepareArtifact).not.toHaveBeenCalled();
+  });
+
+  it('confirms the current primary boot without replacing a pending FULL action', async () => {
+    const persistenceKey = 'terminal-update-full-boot-confirmation-guard-test';
+    const persistence = createStorage();
+    const persistedTask = Object.freeze({
+      taskId: 'retained-full-task',
+      target: fixedResumeTarget,
+      phase: 'applying-full' as const,
+      actionId: 'persisted-full-action',
+      actionKind: 'full' as const,
+      preparedId: 'persisted-full-artifact',
+      bootId: null,
+      failureCode: null,
+      originalBundleVersion: '1.0.0',
+    });
+    persistence.values.set(
+      createPersistenceFieldKey({
+        persistenceKey,
+        sliceName: terminalUpdateRegistration.name,
+        storageKey: 'currentTask',
+      }),
+      JSON.stringify(persistedTask),
+    );
+    const confirmBoot = vi.fn<UpdatePort['confirmBoot']>().mockResolvedValue(ok({confirmed: true as const}));
+    const port: UpdatePort = {
+      readFacts: async () => ok(facts),
+      prepareArtifact: async () => ok({preparedId: 'prepared', artifact}),
+      applyPrepared: async () => ok(noAction),
+      readAction: async input =>
+        ok({
+          ...noAction,
+          taskId: input.taskId,
+          actionId: input.actionId,
+          state: 'accepted',
+        }),
+      confirmBoot,
+      releasePrepared: async () => ok({released: true}),
+    };
+    const runtime = createFixture({port, persistKv: persistence, persistenceKey});
+    runtimes.push(runtime);
+
+    await runtime.start();
+    const result = await runtime.dispatchCommand(
+      confirmTerminalUpdateBootCommand,
+      {bootToken: facts.actual!.bootId, publicationId: facts.actual!.publicationId},
+      {requestId: createRequestId()},
+    );
+
+    expect(result.status).toBe('completed');
+    expect(result.actorResults[0]?.result).toMatchObject({status: 'applying'});
+    expect(confirmBoot).toHaveBeenCalledWith({
+      timeoutMs: 60_000,
+      bootToken: facts.actual!.bootId,
+      publicationId: facts.actual!.publicationId,
+    });
+    expect(selectTerminalUpdateTask(runtime.getState())).toMatchObject({
+      taskId: persistedTask.taskId,
+      phase: 'applying-full',
+      actionId: persistedTask.actionId,
+    });
   });
 
   it('does not continue HOT after FULL when a restored task has no original JS version', async () => {
@@ -605,6 +928,7 @@ describe('terminal-update local owner', () => {
       target: fixedResumeTarget,
       phase: 'applying-full' as const,
       actionId: 'persisted-full-action',
+      actionKind: 'full' as const,
       preparedId: 'persisted-full-artifact',
       bootId: null,
       failureCode: null,
@@ -633,7 +957,7 @@ describe('terminal-update local owner', () => {
             publicationId: artifact.publicationId,
           }),
         ),
-      confirmBoot: async () => ok(noAction),
+      confirmBoot: async () => ok({confirmed: true}),
       releasePrepared: async () => ok({released: true}),
     };
     const runtime = createFixture({port, persistKv: persistence, persistenceKey});
@@ -792,7 +1116,7 @@ describe('terminal-update local owner', () => {
       prepareArtifact,
       applyPrepared,
       readAction: async () => ok(null),
-      confirmBoot: async () => ok(noAction),
+      confirmBoot: async () => ok({confirmed: true}),
       releasePrepared: async () => ok({released: true}),
     };
     const runtime = createFixture({readTarget: async () => fixedTarget, port});
@@ -818,6 +1142,146 @@ describe('terminal-update local owner', () => {
     expect(selectTerminalUpdateRecentStatus(runtime.getState()).state).toBe('waiting-user');
   });
 
+  it('compares a FULL target with the installed APK publication, not the selected HOT publication', async () => {
+    const fullArtifact = Object.freeze({...artifact, nativeBuildNumber: 2, publicationId: 'c'.repeat(64)});
+    const hotArtifact = Object.freeze({...fullArtifact, bundleVersion: '1.0.1', publicationId: 'd'.repeat(64)});
+    let selectedKind: 'full' | 'hot' | null = null;
+    const port: UpdatePort = {
+      readFacts: async () =>
+        ok(
+          Object.freeze({
+            ...facts,
+            actual: Object.freeze({
+              ...facts.actual!,
+              nativeBuildNumber: 2,
+              bundleVersion: '1.0.0',
+              publicationId: 'e'.repeat(64),
+              entryKind: 'hot' as const,
+            }),
+            embedded: fullArtifact,
+          }),
+        ),
+      prepareArtifact: async input => {
+        selectedKind = input.kind;
+        return ok({preparedId: 'prepared-hot', artifact: hotArtifact});
+      },
+      applyPrepared: async input =>
+        ok({...noAction, taskId: input.taskId, actionId: input.actionId, publicationId: hotArtifact.publicationId}),
+      readAction: async () => ok(null),
+      confirmBoot: async () => ok({confirmed: true}),
+      releasePrepared: async () => ok({released: true}),
+    };
+    const fixedTarget: FixedUpdateTarget = Object.freeze({
+      ...target,
+      full: Object.freeze({
+        sourceRef: 'artifact:full-2',
+        expectedSha256: fullArtifact.publicationId,
+        artifact: fullArtifact,
+      }),
+      hot: Object.freeze({
+        sourceRef: 'artifact:hot-2',
+        expectedSha256: hotArtifact.publicationId,
+        artifact: hotArtifact,
+      }),
+    });
+    const runtime = createFixture({readTarget: async () => fixedTarget, port});
+    runtimes.push(runtime);
+    await runtime.start();
+
+    await runtime.dispatchCommand(
+      acceptTerminalUpdateTargetCommand,
+      {selectionContext: target.selectionContext},
+      {requestId: createRequestId()},
+    );
+
+    expect(selectedKind).toBe('hot');
+    expect(selectTerminalUpdateTask(runtime.getState())).toMatchObject({actionKind: 'hot'});
+    expect(selectTerminalUpdateRecentStatus(runtime.getState()).state).toBe('applying');
+  });
+
+  it('continues the same fixed HOT target when a previously UNKNOWN FULL action later succeeds', async () => {
+    const fullArtifact = Object.freeze({...artifact, nativeBuildNumber: 2, publicationId: '8'.repeat(64)});
+    const hotArtifact = Object.freeze({...fullArtifact, bundleVersion: '1.0.1', publicationId: '9'.repeat(64)});
+    const fixedTarget: FixedUpdateTarget = Object.freeze({
+      ...target,
+      full: Object.freeze({
+        sourceRef: 'artifact:full-late',
+        expectedSha256: fullArtifact.publicationId,
+        artifact: fullArtifact,
+      }),
+      hot: Object.freeze({
+        sourceRef: 'artifact:hot-late',
+        expectedSha256: hotArtifact.publicationId,
+        artifact: hotArtifact,
+      }),
+    });
+    const actionKinds: Array<'full' | 'hot'> = [];
+    let action: UpdateAction | null = null;
+    let factsRead = 0;
+    const port: UpdatePort = {
+      readFacts: async () => {
+        factsRead += 1;
+        return ok(
+          factsRead <= 2
+            ? Object.freeze({...facts, actual: Object.freeze({...facts.actual!, nativeBuildNumber: 1})})
+            : Object.freeze({
+                ...facts,
+                actual: Object.freeze({
+                  ...facts.actual!,
+                  nativeBuildNumber: 2,
+                  bundleVersion: fullArtifact.bundleVersion,
+                  publicationId: fullArtifact.publicationId,
+                  entryKind: 'embedded' as const,
+                }),
+                embedded: fullArtifact,
+              }),
+        );
+      },
+      prepareArtifact: async input => ok({preparedId: `prepared-${input.kind}`, artifact: input.artifact}),
+      applyPrepared: async input => {
+        actionKinds.push(input.kind);
+        const result: UpdateAction = Object.freeze({
+          ...noAction,
+          taskId: input.taskId,
+          actionId: input.actionId,
+          state: input.kind === 'full' ? 'unknown' : 'accepted',
+          reason: input.kind === 'full' ? 'INSTALLER_STATE_UNAVAILABLE' : null,
+          publicationId: input.kind === 'full' ? fullArtifact.publicationId : hotArtifact.publicationId,
+        });
+        action = result;
+        return ok(result);
+      },
+      readAction: async () => ok(action),
+      confirmBoot: async () => ok({confirmed: true}),
+      releasePrepared: async () => ok({released: true}),
+    };
+    const runtime = createFixture({readTarget: async () => fixedTarget, port});
+    runtimes.push(runtime);
+    await runtime.start();
+    await runtime.dispatchCommand(
+      acceptTerminalUpdateTargetCommand,
+      {selectionContext: target.selectionContext},
+      {requestId: createRequestId()},
+    );
+    const pendingFull = selectTerminalUpdateTask(runtime.getState());
+    expect(pendingFull).toMatchObject({phase: 'unknown', actionKind: 'full', actionId: expect.any(String)});
+    action = Object.freeze({...action!, state: 'succeeded', reason: null, bootId: 'full-boot'});
+
+    const resumed = await runtime.dispatchCommand(
+      reconcileTerminalUpdateCommand,
+      {resumeFixedTask: true},
+      {requestId: createRequestId()},
+    );
+
+    expect(resumed.actorResults[0]?.result).toMatchObject({status: 'applying'});
+    expect(actionKinds).toEqual(['full', 'hot']);
+    expect(selectTerminalUpdateTask(runtime.getState())).toMatchObject({
+      phase: 'applying-hot',
+      actionKind: 'hot',
+      actionId: expect.not.stringMatching(pendingFull!.actionId!),
+    });
+  });
+
   it('reconciles a pending FULL installer action before retrying after a confirmed user cancellation', async () => {
     const fullArtifact = Object.freeze({...artifact, nativeBuildNumber: 2, publicationId: 'e'.repeat(64)});
     const hotArtifact = Object.freeze({...fullArtifact, bundleVersion: '1.0.1', publicationId: 'f'.repeat(64)});
@@ -838,6 +1302,15 @@ describe('terminal-update local owner', () => {
     let observedAction: UpdateAction | null = null;
     let applyCount = 0;
     const preparedRefs: string[] = [];
+    const releasePrepared = vi
+      .fn<UpdatePort['releasePrepared']>()
+      .mockResolvedValueOnce({
+        status: 'failed',
+        port: 'update',
+        capability: 'releasePrepared',
+        error: {code: 'FILESYSTEM_CLEANUP_FAILED', message: 'cleanup failed', retryable: true},
+      })
+      .mockResolvedValue(ok({released: true}));
     const port: UpdatePort = {
       readFacts: async () =>
         ok(Object.freeze({...facts, actual: Object.freeze({...facts.actual!, nativeBuildNumber: 1})})),
@@ -863,8 +1336,8 @@ describe('terminal-update local owner', () => {
         ok(
           observedAction?.taskId === input.taskId && observedAction.actionId === input.actionId ? observedAction : null,
         ),
-      confirmBoot: async () => ok(noAction),
-      releasePrepared: async () => ok({released: true}),
+      confirmBoot: async () => ok({confirmed: true}),
+      releasePrepared,
     };
     const runtime = createFixture({readTarget: async () => fixedTarget, port});
     runtimes.push(runtime);
@@ -886,20 +1359,153 @@ describe('terminal-update local owner', () => {
     expect(stillPendingAcceptance.actorResults[0]?.result).toMatchObject({status: 'already-fixed'});
     expect(selectTerminalUpdateTask(runtime.getState())?.actionId).toBe(firstTask?.actionId);
     expect(actions).toHaveLength(1);
+    expect(releasePrepared).not.toHaveBeenCalled();
 
     observedAction = Object.freeze({...actions[0]!, state: 'user-cancelled' as const, reason: 'ENDED_NOT_INSTALLED'});
+    const failedCleanupAcceptance = await accept();
+    expect(failedCleanupAcceptance.actorResults[0]?.result).toMatchObject({
+      status: 'cleanup-failed',
+      reason: 'PREPARED_RELEASE_FAILED',
+    });
+    expect(selectTerminalUpdateTask(runtime.getState())).toMatchObject({
+      taskId: firstTask?.taskId,
+      actionId: firstTask?.actionId,
+      preparedId: 'prepared-1',
+    });
+    expect(selectTerminalUpdateRecentStatus(runtime.getState())).toMatchObject({
+      state: 'unknown',
+      reason: 'PREPARED_RELEASE_FAILED',
+    });
+
     const cancelledAcceptance = await accept();
     expect(cancelledAcceptance.actorResults[0]?.result).toMatchObject({status: 'waiting-user'});
     const secondTask = selectTerminalUpdateTask(runtime.getState());
     expect(secondTask).toMatchObject({taskId: firstTask?.taskId, target: fixedTarget, phase: 'waiting-user'});
     expect(secondTask?.actionId).not.toBe(firstTask?.actionId);
     expect(preparedRefs).toEqual(['artifact:full-fixed', 'artifact:full-fixed']);
+    expect(releasePrepared).toHaveBeenCalledTimes(2);
+    expect(releasePrepared).toHaveBeenCalledWith({timeoutMs: 10_000, preparedId: 'prepared-1'});
     expect(actions).toHaveLength(2);
 
     const pendingAcceptance = await accept();
     expect(pendingAcceptance.actorResults[0]?.result).toMatchObject({status: 'already-fixed'});
     expect(actions).toHaveLength(2);
     expect(preparedRefs).toHaveLength(2);
+  });
+
+  it('does not treat cancellation of a non-FULL publication as permission to release the FULL artifact', async () => {
+    const fullArtifact = Object.freeze({...artifact, nativeBuildNumber: 2, publicationId: 'e'.repeat(64)});
+    const hotArtifact = Object.freeze({...fullArtifact, bundleVersion: '1.0.1', publicationId: 'f'.repeat(64)});
+    const fixedTarget: FixedUpdateTarget = Object.freeze({
+      ...target,
+      full: Object.freeze({
+        sourceRef: 'artifact:full-fixed',
+        expectedSha256: fullArtifact.publicationId,
+        artifact: fullArtifact,
+      }),
+      hot: Object.freeze({
+        sourceRef: 'artifact:hot-fixed',
+        expectedSha256: hotArtifact.publicationId,
+        artifact: hotArtifact,
+      }),
+    });
+    const action: UpdateAction = Object.freeze({
+      ...noAction,
+      state: 'user-cancelled',
+      reason: 'ENDED_NOT_INSTALLED',
+      publicationId: hotArtifact.publicationId,
+    });
+    let observedAction: UpdateAction | null = null;
+    const releasePrepared = vi.fn<UpdatePort['releasePrepared']>(async () => ok({released: true}));
+    const port: UpdatePort = {
+      readFacts: async () => ok(facts),
+      prepareArtifact: async () => ok({preparedId: 'prepared-full', artifact: fullArtifact}),
+      applyPrepared: async input => {
+        observedAction = Object.freeze({...action, taskId: input.taskId, actionId: input.actionId});
+        return ok(observedAction);
+      },
+      readAction: async input =>
+        ok(
+          observedAction?.taskId === input.taskId && observedAction.actionId === input.actionId ? observedAction : null,
+        ),
+      confirmBoot: async () => ok({confirmed: true}),
+      releasePrepared,
+    };
+    const runtime = createFixture({readTarget: async () => fixedTarget, port});
+    runtimes.push(runtime);
+    await runtime.start();
+
+    await runtime.dispatchCommand(
+      acceptTerminalUpdateTargetCommand,
+      {selectionContext: target.selectionContext},
+      {requestId: createRequestId()},
+    );
+    const before = selectTerminalUpdateTask(runtime.getState());
+    const result = await runtime.dispatchCommand(
+      acceptTerminalUpdateTargetCommand,
+      {selectionContext: target.selectionContext},
+      {requestId: createRequestId()},
+    );
+
+    expect(result.actorResults[0]?.result).toMatchObject({
+      status: 'unknown',
+      reason: 'ACTION_ARTIFACT_IDENTITY_MISMATCH',
+    });
+    expect(selectTerminalUpdateTask(runtime.getState())).toEqual(before);
+    expect(selectTerminalUpdateRecentStatus(runtime.getState())).toMatchObject({
+      state: 'unknown',
+      reason: 'ACTION_ARTIFACT_IDENTITY_MISMATCH',
+    });
+    expect(releasePrepared).not.toHaveBeenCalled();
+  });
+
+  it('keeps the committed action identity when applyPrepared returns another action', async () => {
+    const fullArtifact = Object.freeze({...artifact, nativeBuildNumber: 2, publicationId: 'e'.repeat(64)});
+    const fixedTarget: FixedUpdateTarget = Object.freeze({
+      ...target,
+      hot: null,
+      full: Object.freeze({
+        sourceRef: 'artifact:full-fixed',
+        expectedSha256: fullArtifact.publicationId,
+        artifact: fullArtifact,
+      }),
+    });
+    const wrongAction: UpdateAction = Object.freeze({
+      ...noAction,
+      taskId: 'another-task',
+      actionId: 'another-action',
+      state: 'succeeded',
+      publicationId: fullArtifact.publicationId,
+      bootId: 'wrong-boot',
+    });
+    const port: UpdatePort = {
+      readFacts: async () => ok(facts),
+      prepareArtifact: async () => ok({preparedId: 'prepared-full', artifact: fullArtifact}),
+      applyPrepared: async () => ok(wrongAction),
+      readAction: async () => ok(null),
+      confirmBoot: async () => ok({confirmed: true}),
+      releasePrepared: async () => ok({released: true}),
+    };
+    const runtime = createFixture({readTarget: async () => fixedTarget, port});
+    runtimes.push(runtime);
+    await runtime.start();
+
+    const result = await runtime.dispatchCommand(
+      acceptTerminalUpdateTargetCommand,
+      {selectionContext: target.selectionContext},
+      {requestId: createRequestId()},
+    );
+
+    expect(result.actorResults[0]?.result).toMatchObject({status: 'unknown', reason: 'ACTION_IDENTITY_MISMATCH'});
+    expect(selectTerminalUpdateTask(runtime.getState())).toMatchObject({
+      phase: 'applying-full',
+      actionId: expect.any(String),
+      preparedId: 'prepared-full',
+    });
+    expect(selectTerminalUpdateRecentStatus(runtime.getState())).toMatchObject({
+      state: 'unknown',
+      reason: 'ACTION_IDENTITY_MISMATCH',
+    });
   });
 
   it('continues a fixed FULL-to-HOT pair across a runtime change without downgrading the original JS version', async () => {
@@ -933,7 +1539,14 @@ describe('terminal-update local owner', () => {
     let fullActionId: string | null = null;
     const preparedKinds: string[] = [];
     const port: UpdatePort = {
-      readFacts: async () => ok(Object.freeze({...facts, actual})),
+      readFacts: async () =>
+        ok(
+          Object.freeze({
+            ...facts,
+            actual,
+            embedded: actual.nativeBuildNumber === fullArtifact.nativeBuildNumber ? fullArtifact : facts.embedded,
+          }),
+        ),
       prepareArtifact: async input => {
         preparedKinds.push(input.kind);
         const selectedArtifact = input.kind === 'full' ? fullArtifact : hotArtifact;
@@ -974,7 +1587,7 @@ describe('terminal-update local owner', () => {
             bootId: 'full-boot',
           }),
         ),
-      confirmBoot: async () => ok(noAction),
+      confirmBoot: async () => ok({confirmed: true}),
       releasePrepared: async () => ok({released: true}),
     };
     const runtime = createFixture({readTarget: async () => fixedTarget, port});
@@ -1069,7 +1682,7 @@ describe('terminal-update local owner', () => {
           }),
         ),
       readAction: async () => ok(null),
-      confirmBoot: async () => ok(noAction),
+      confirmBoot: async () => ok({confirmed: true}),
       releasePrepared: async () => ok({released: true}),
     };
     const runtime = createFixture({readTarget: async () => fixedTarget, port});
@@ -1146,7 +1759,7 @@ describe('terminal-update local owner', () => {
       prepareArtifact,
       applyPrepared: async () => ok(noAction),
       readAction: async () => ok(null),
-      confirmBoot: async () => ok(noAction),
+      confirmBoot: async () => ok({confirmed: true}),
       releasePrepared: async () => ok({released: true}),
     };
     const runtime = createFixture({readTarget: async () => fixedTarget, port});
@@ -1186,7 +1799,7 @@ describe('terminal-update local owner', () => {
       }),
       applyPrepared,
       readAction: async () => ok(null),
-      confirmBoot: async () => ok(noAction),
+      confirmBoot: async () => ok({confirmed: true}),
       releasePrepared: async () => ok({released: true}),
     };
     const runtime = createFixture({readTarget: async () => fixedTarget, port});
@@ -1245,7 +1858,7 @@ describe('terminal-update local owner', () => {
         }),
         applyPrepared: async () => ok(noAction),
         readAction: async () => ok(noAction),
-        confirmBoot: async () => ok(noAction),
+        confirmBoot: async () => ok({confirmed: true}),
         releasePrepared: async () => ok({released: true}),
       },
     });
@@ -1279,7 +1892,7 @@ describe('terminal-update local owner', () => {
         prepareArtifact,
         applyPrepared: async () => ok(noAction),
         readAction: async () => ok(noAction),
-        confirmBoot: async () => ok(noAction),
+        confirmBoot: async () => ok({confirmed: true}),
         releasePrepared: async () => ok({released: true}),
       },
     });
@@ -1291,23 +1904,47 @@ describe('terminal-update local owner', () => {
       {selectionContext: fullOnlyTarget.selectionContext},
       {requestId: createRequestId()},
     );
-    expect(retry.actorResults[0]?.result).toMatchObject({status: 'failed', reason: 'FAILED_ARTIFACT_REENTRY_FORBIDDEN'});
+    expect(retry.actorResults[0]?.result).toMatchObject({
+      status: 'failed',
+      reason: 'FAILED_ARTIFACT_REENTRY_FORBIDDEN',
+    });
     expect(prepareArtifact).not.toHaveBeenCalled();
     expect(nextRuntime.getState()['kernel.base.terminal-update.state']).toMatchObject({
       failedArtifactIds: [failedFullArtifact.publicationId],
     });
   });
 
-  it('records a failed FULL action readback without marking an unknown action as failed', async () => {
+  it('preserves the task boot through non-success FULL readbacks and releases the failure on the next boot', async () => {
+    const persistence = createStorage();
+    const persistenceKey = 'terminal-update-failed-full-readback-boot-test';
     const fullArtifact = Object.freeze({...artifact, nativeBuildNumber: 2, publicationId: '8'.repeat(64)});
+    const repairArtifact = Object.freeze({...artifact, nativeBuildNumber: 3, publicationId: '7'.repeat(64)});
     const fullOnlyTarget: FixedUpdateTarget = Object.freeze({
       ...target,
-      full: Object.freeze({sourceRef: 'artifact:full-readback', expectedSha256: fullArtifact.publicationId, artifact: fullArtifact}),
+      full: Object.freeze({
+        sourceRef: 'artifact:full-readback',
+        expectedSha256: fullArtifact.publicationId,
+        artifact: fullArtifact,
+      }),
+      hot: null,
+    });
+    const repairTarget: FixedUpdateTarget = Object.freeze({
+      ...target,
+      ruleRef: 'failed-full-repair-rule',
+      createdAt: 4 as TimestampMs,
+      full: Object.freeze({
+        sourceRef: 'artifact:full-repair',
+        expectedSha256: repairArtifact.publicationId,
+        artifact: repairArtifact,
+      }),
       hot: null,
     });
     let actionState: UpdateAction['state'] = 'accepted';
+    let currentFacts = facts;
+    let offeredTarget = fullOnlyTarget;
+    const releasePrepared = vi.fn(async () => ok({released: true}));
     const port: UpdatePort = {
-      readFacts: async () => ok(facts),
+      readFacts: async () => ok(currentFacts),
       prepareArtifact: async () => ok({preparedId: 'prepared-full', artifact: fullArtifact}),
       applyPrepared: async input =>
         ok({
@@ -1326,10 +1963,10 @@ describe('terminal-update local owner', () => {
           state: actionState,
           reason: actionState === 'failed' ? 'APK_INSTALL_FAILED' : null,
         }),
-      confirmBoot: async () => ok(noAction),
-      releasePrepared: async () => ok({released: true}),
+      confirmBoot: async () => ok({confirmed: true}),
+      releasePrepared,
     };
-    const runtime = createFixture({readTarget: async () => fullOnlyTarget, port});
+    const runtime = createFixture({persistKv: persistence, persistenceKey, readTarget: async () => offeredTarget, port});
     runtimes.push(runtime);
     await runtime.start();
 
@@ -1340,6 +1977,14 @@ describe('terminal-update local owner', () => {
     );
     expect(runtime.getState()['kernel.base.terminal-update.state']).toMatchObject({failedArtifactIds: []});
 
+    actionState = 'waiting-user';
+    await runtime.dispatchCommand(
+      reconcileTerminalUpdateCommand,
+      {resumeFixedTask: false},
+      {requestId: createRequestId()},
+    );
+    expect(selectTerminalUpdateTask(runtime.getState())).toMatchObject({phase: 'waiting-user', bootId: 'fixture-boot'});
+
     actionState = 'failed';
     await runtime.dispatchCommand(
       reconcileTerminalUpdateCommand,
@@ -1349,6 +1994,100 @@ describe('terminal-update local owner', () => {
     expect(runtime.getState()['kernel.base.terminal-update.state']).toMatchObject({
       failedArtifactIds: [fullArtifact.publicationId],
       recentStatus: {state: 'failed', reason: 'APK_INSTALL_FAILED'},
+      currentTask: {phase: 'failed', bootId: 'fixture-boot'},
+    });
+    expect(releasePrepared).toHaveBeenCalledOnce();
+    expect(releasePrepared).toHaveBeenCalledWith({timeoutMs: 10_000, preparedId: 'prepared-full'});
+
+    offeredTarget = repairTarget;
+    const sameBoot = await runtime.dispatchCommand(
+      acceptTerminalUpdateTargetCommand,
+      {selectionContext: repairTarget.selectionContext},
+      {requestId: createRequestId()},
+    );
+    expect(sameBoot.actorResults[0]?.result).toMatchObject({status: 'already-fixed'});
+    await releaseRuntimeForTestAsync(runtime);
+    runtimes.splice(runtimes.indexOf(runtime), 1);
+
+    currentFacts = Object.freeze({
+      ...facts,
+      actual: Object.freeze({...facts.actual!, bootId: 'failed-full-readback-next-boot'}),
+    });
+    offeredTarget = fullOnlyTarget;
+    const nextRuntime = createFixture({
+      persistKv: persistence,
+      persistenceKey,
+      readTarget: async () => offeredTarget,
+      port: {
+        ...port,
+        prepareArtifact: async input => ok({preparedId: 'prepared-next', artifact: input.artifact}),
+        applyPrepared: async input =>
+          ok({
+            ...noAction,
+            taskId: input.taskId,
+            actionId: input.actionId,
+            publicationId: fullArtifact.publicationId,
+            state: 'accepted',
+          }),
+        readAction: async () => ok(noAction),
+      },
+    });
+    runtimes.push(nextRuntime);
+    await nextRuntime.start();
+    expect(selectTerminalUpdateTask(nextRuntime.getState())).toBeNull();
+
+    const rejectedOldArtifact = await nextRuntime.dispatchCommand(
+      acceptTerminalUpdateTargetCommand,
+      {selectionContext: fullOnlyTarget.selectionContext},
+      {requestId: createRequestId()},
+    );
+    expect(rejectedOldArtifact.actorResults[0]?.result).toMatchObject({
+      status: 'failed',
+      reason: 'FAILED_ARTIFACT_REENTRY_FORBIDDEN',
+    });
+
+    await releaseRuntimeForTestAsync(nextRuntime);
+    runtimes.splice(runtimes.indexOf(nextRuntime), 1);
+
+    currentFacts = Object.freeze({
+      ...currentFacts,
+      actual: Object.freeze({...currentFacts.actual!, bootId: 'failed-full-repair-boot'}),
+    });
+    offeredTarget = repairTarget;
+    const repairRuntime = createFixture({
+      persistKv: persistence,
+      persistenceKey,
+      readTarget: async () => offeredTarget,
+      port: {
+        ...port,
+        prepareArtifact: async input => ok({preparedId: 'prepared-repair', artifact: input.artifact}),
+        applyPrepared: async input =>
+          ok({
+            ...noAction,
+            taskId: input.taskId,
+            actionId: input.actionId,
+            publicationId: repairArtifact.publicationId,
+            state: 'accepted',
+          }),
+        readAction: async () => ok(noAction),
+      },
+    });
+    runtimes.push(repairRuntime);
+    await repairRuntime.start();
+    expect(selectTerminalUpdateTask(repairRuntime.getState())).toBeNull();
+
+    const acceptedRepair = await repairRuntime.dispatchCommand(
+      acceptTerminalUpdateTargetCommand,
+      {selectionContext: repairTarget.selectionContext},
+      {requestId: createRequestId()},
+    );
+    expect(acceptedRepair.actorResults[0]?.result).toMatchObject({status: 'applying'});
+    expect(selectTerminalUpdateTask(repairRuntime.getState())).toMatchObject({
+      phase: 'applying-full',
+      target: {ruleRef: repairTarget.ruleRef, full: {artifact: {publicationId: repairArtifact.publicationId}}},
+    });
+    expect(repairRuntime.getState()['kernel.base.terminal-update.state']).toMatchObject({
+      failedArtifactIds: [fullArtifact.publicationId],
     });
   });
 
@@ -1376,7 +2115,7 @@ describe('terminal-update local owner', () => {
           publicationId: hotArtifact.publicationId,
         }),
       readAction: async () => ok(null),
-      confirmBoot: async () => ok(noAction),
+      confirmBoot: async () => ok({confirmed: true}),
       releasePrepared: async () => ok({released: true}),
     };
     const runtime = createFixture({readTarget: async () => fixedTarget, port});
@@ -1396,6 +2135,116 @@ describe('terminal-update local owner', () => {
       currentTask: {phase: 'failed', failureCode: 'HOT_BOOT_UNCONFIRMED'},
       failedArtifactIds: [hotArtifact.publicationId],
       recentStatus: {state: 'failed', reason: 'HOT_BOOT_UNCONFIRMED'},
+    });
+  });
+
+  it('records a HOT boot failure and blocks that publication after the task is released', async () => {
+    const hotArtifact = Object.freeze({...artifact, bundleVersion: '1.0.1', publicationId: 'd'.repeat(64)});
+    const hotOnlyTarget: FixedUpdateTarget = Object.freeze({
+      ...target,
+      full: null,
+      hot: Object.freeze({
+        sourceRef: 'artifact:failed-hot-boot',
+        expectedSha256: hotArtifact.publicationId,
+        artifact: hotArtifact,
+      }),
+    });
+    let currentFacts = facts;
+    let bootFailed = false;
+    let hotAction: Readonly<{taskId: string; actionId: string}> | null = null;
+    const prepareArtifact = vi.fn(async () => ok({preparedId: 'prepared-hot', artifact: hotArtifact}));
+    const applyPrepared = vi.fn<UpdatePort['applyPrepared']>(async input => {
+      hotAction = Object.freeze({taskId: input.taskId, actionId: input.actionId});
+      return ok({
+        taskId: input.taskId,
+        actionId: input.actionId,
+        publicationId: hotArtifact.publicationId,
+        state: 'accepted',
+        reason: null,
+        bootId: facts.actual!.bootId,
+      });
+    });
+    const runtime = createFixture({
+      readTarget: async () => hotOnlyTarget,
+      port: {
+        readFacts: async () => ok(currentFacts),
+        prepareArtifact,
+        applyPrepared,
+        readAction: async input =>
+          hotAction === null
+            ? ok(null)
+            : ok({
+                ...noAction,
+                taskId: input.taskId,
+                actionId: input.actionId,
+                publicationId: hotArtifact.publicationId,
+                state: bootFailed ? ('failed' as const) : ('accepted' as const),
+                reason: bootFailed ? 'HOT_BOOT_UNCONFIRMED' : null,
+                bootId: 'failed-hot-boot',
+              }),
+        confirmBoot: async () => ok({confirmed: true as const}),
+        releasePrepared: async () => ok({released: true}),
+      },
+    });
+    runtimes.push(runtime);
+    await runtime.start();
+
+    await runtime.dispatchCommand(
+      acceptTerminalUpdateTargetCommand,
+      {selectionContext: hotOnlyTarget.selectionContext},
+      {requestId: createRequestId()},
+    );
+    const applying = selectTerminalUpdateTask(runtime.getState());
+    expect(applying).toMatchObject({phase: 'applying-hot', actionId: expect.any(String)});
+
+    currentFacts = Object.freeze({
+      ...facts,
+      actual: Object.freeze({
+        ...facts.actual!,
+        publicationId: hotArtifact.publicationId,
+        bundleVersion: hotArtifact.bundleVersion,
+        bootId: 'failed-hot-boot',
+        entryKind: 'hot' as const,
+      }),
+    });
+    await runtime.dispatchCommand(
+      reconcileTerminalUpdateCommand,
+      {resumeFixedTask: false},
+      {requestId: createRequestId()},
+    );
+    bootFailed = true;
+
+    const confirmation = await runtime.dispatchCommand(
+      confirmTerminalUpdateBootCommand,
+      {bootToken: 'failed-hot-boot', publicationId: hotArtifact.publicationId},
+      {requestId: createRequestId()},
+    );
+    expect(confirmation.actorResults[0]?.result).toMatchObject({status: 'failed'});
+    expect(runtime.getState()['kernel.base.terminal-update.state']).toMatchObject({
+      failedArtifactIds: [hotArtifact.publicationId],
+      currentTask: {phase: 'failed', failureCode: 'HOT_BOOT_UNCONFIRMED'},
+    });
+
+    currentFacts = Object.freeze({
+      ...facts,
+      actual: Object.freeze({...facts.actual!, bootId: 'next-boot-after-hot-failure'}),
+    });
+    await runtime.dispatchCommand(
+      reconcileTerminalUpdateCommand,
+      {resumeFixedTask: false},
+      {requestId: createRequestId()},
+    );
+    const retry = await runtime.dispatchCommand(
+      acceptTerminalUpdateTargetCommand,
+      {selectionContext: hotOnlyTarget.selectionContext},
+      {requestId: createRequestId()},
+    );
+
+    expect(retry.actorResults[0]?.result).toEqual({status: 'failed', reason: 'FAILED_ARTIFACT_REENTRY_FORBIDDEN'});
+    expect(prepareArtifact).toHaveBeenCalledOnce();
+    expect(applyPrepared).toHaveBeenCalledOnce();
+    expect(runtime.getState()['kernel.base.terminal-update.state']).toMatchObject({
+      failedArtifactIds: [hotArtifact.publicationId],
     });
   });
 
@@ -1426,7 +2275,7 @@ describe('terminal-update local owner', () => {
           prepareArtifact: async () => ok({preparedId: 'none', artifact}),
           applyPrepared: async () => ok(noAction),
           readAction: async () => ok(noAction),
-          confirmBoot: async () => ok(noAction),
+          confirmBoot: async () => ok({confirmed: true}),
           releasePrepared: async () => ok({released: true}),
         },
         logUpload: unavailableLogUploadPort,
@@ -1449,6 +2298,7 @@ describe('terminal-update local owner', () => {
       target,
       phase: 'fixed' as const,
       actionId: null,
+      actionKind: null,
       preparedId: null,
       bootId: null,
       failureCode: null,

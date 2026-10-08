@@ -22,7 +22,7 @@ SKILL_USED=NONE
 DECISION_OWNER=Dexter
 UI_BEARING=true
 IMPLEMENTATION_AUTHORITY=false
-DEXTER_WIREFRAME_REVIEW=ACCEPTED@2026-10-07
+DEXTER_WIREFRAME_REVIEW=ACCEPTED@2026-10-07_SCOPE_APPROXIMATE_IA_DYNAMIC_NOT_RUN
 CORPUS_VERSION=project-memory/decisions/confirmed-business-language-corpus.md
 ```
 
@@ -119,3 +119,9 @@ platform-admin 只负责更新包/版本定义；operations-admin“项目终端
 ## 8 · 用户确认导航
 
 两个内容页及全部页内交互的后台、完整菜单入口、宿主控件、页面访问/真实数据节点读范围、具名动作cap及无权限表现以IA§2为唯一逐交互面定位。新运维“终端更新包”一级菜单、运营“门店经营→项目终端版本管理”、运营项目同页右侧终端更新状态Tab与运营报告详情Drawer大致IA已获Dexter确认；IA_ACCEPTANCE=CONFIRMED_BY_DEXTER，线框不能代替权限设计。
+
+## 9 · 2026-10-09 验收输入补充（不增加产品操作）
+
+阶段B未来实施agent可按需受管reset非生产库，无需重复请求Dexter授权；实际前置/准入与命令见实施计划§1.1/§10。当前仍只改设计、不运行。
+
+完整验收必须顺次保留同一DEV数据面：真实打包→运维UI上传解析保存→运营GROUP任职/PROJECT节点新建与启用规则→TER完整snapshot→automation显式发送既有A accept command固定该规则→CBS grant下载/真实FULL及HOT→CBS HTTP任务报告→运营右Tab与历史读回。具体fixture、权限、版本、身份、资源、cleanup在详设§15.2a唯一维护。本触发是受管基础设施验收，不增加用户按钮，不代表C自动择新/闲时/双机行为通过；隔离浏览器L2仍不读取DEV，正常数据报告来自本链TER而非fixture。

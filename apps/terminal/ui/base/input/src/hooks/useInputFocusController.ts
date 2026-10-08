@@ -86,6 +86,15 @@ export const useInputFocusController = ({
       }
       if (target.keyboardKind === 'virtual') {
         const metrics = calculateVirtualKeyboardMetrics(frameMetricsRef.current, target.layout);
+        if (metrics.capacity === 'unmeasured' && keyboardStateRef.current.activeFieldId === null) {
+          // The first real focus can arrive before the host reports its local
+          // frame. Preserve that intent as pending; measured unsupported sizes
+          // still fail closed below.
+          markBlockedField(fieldId, null);
+          rememberPendingFrame(fieldId, target.layout);
+          commitKeyboardState({activeFieldId: null, owner: 'none', layout: target.layout});
+          return true;
+        }
         if (metrics.capacity !== 'supported') {
           markBlockedField(fieldId, metrics.capacity);
           target.inputRef?.current?.blur();
@@ -151,6 +160,12 @@ export const useInputFocusController = ({
       }
       if (field.keyboardKind === 'virtual') {
         const metrics = calculateVirtualKeyboardMetrics(frameMetricsRef.current, field.layout);
+        if (metrics.capacity === 'unmeasured' && keyboardStateRef.current.activeFieldId === null) {
+          markBlockedField(fieldId, null);
+          rememberPendingFrame(fieldId, field.layout);
+          commitKeyboardState({activeFieldId: null, owner: 'none', layout: field.layout});
+          return;
+        }
         if (metrics.capacity !== 'supported') {
           markBlockedField(fieldId, metrics.capacity);
           field.inputRef?.current?.blur();

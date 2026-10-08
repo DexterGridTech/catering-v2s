@@ -216,6 +216,31 @@ describe('Runtime automation request handler', () => {
     expect(fixture.stateListenerCount()).toBe(0);
   });
 
+  it('rejects an initial selector evaluation before accepting the subscription', () => {
+    const fixture = makeContext();
+    const handler = createRuntimeRequestHandler({sessionId: 'session-1', context: fixture.context});
+    const send = vi.fn();
+
+    handler.handle(
+      request(
+        'selector.subscribe',
+        {subscriptionId: 'sub-missing-selector', selectorName: 'missing.selector', argsTuple: []},
+        'subscribe-missing-selector',
+      ),
+      send,
+    );
+
+    expect(send.mock.calls).toHaveLength(1);
+    expect(send.mock.calls[0]?.[0]).toMatchObject({
+      type: 'error',
+      messageId: 'reply-subscribe-missing-selector',
+      body: {requestMessageId: 'subscribe-missing-selector', code: 'SELECTOR_NOT_REGISTERED'},
+    });
+    expect(handler.activeSelectorSubscriptionCount).toBe(0);
+    expect(fixture.stateListenerCount()).toBe(0);
+    handler.dispose();
+  });
+
   it('coalesces state notifications across active subscriptions and reports the whole flush', async () => {
     const fixture = makeContext();
     const handler = createRuntimeRequestHandler({sessionId: 'session-1', context: fixture.context});
@@ -462,24 +487,11 @@ describe('Runtime automation request handler', () => {
       send,
     );
 
-    expect(send.mock.calls.map(([reply]) => reply)).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          type: 'response',
-          body: {
-            requestMessageId: 'subscribe-oversized',
-            result: {
-              subscriptionId: 'sub-oversized',
-              accepted: true,
-            },
-          },
-        }),
-        expect.objectContaining({
-          type: 'error',
-          body: {requestMessageId: 'subscribe-oversized', code: 'RESOURCE_LIMIT'},
-        }),
-      ]),
-    );
+    expect(send.mock.calls).toHaveLength(1);
+    expect(send.mock.calls[0]?.[0]).toMatchObject({
+      type: 'error',
+      body: {requestMessageId: 'subscribe-oversized', code: 'RESOURCE_LIMIT'},
+    });
     expect(handler.activeSelectorSubscriptionCount).toBe(0);
     expect(fixture.stateListenerCount()).toBe(0);
     expect(JSON.stringify(send.mock.calls)).not.toContain('x'.repeat(128));
@@ -488,6 +500,13 @@ describe('Runtime automation request handler', () => {
 
   it('rejects a selector whose JSON validation exceeds the serialization budget and releases it', () => {
     const fixture = makeContext();
+    const diagnostics: Readonly<{
+      selectorName: string;
+      failureCode: string;
+      phase: string;
+      elapsedMs: number;
+      budgetMs: number;
+    }>[] = [];
     const startedAt = performance.now();
     const slowJsonValue = new Proxy(
       {value: 1},
@@ -501,7 +520,11 @@ describe('Runtime automation request handler', () => {
       },
     );
     fixture.setSelectedValue(slowJsonValue);
-    const handler = createRuntimeRequestHandler({sessionId: 'session-1', context: fixture.context});
+    const handler = createRuntimeRequestHandler({
+      sessionId: 'session-1',
+      context: fixture.context,
+      onSelectorFailure: diagnostic => diagnostics.push(diagnostic),
+    });
     const send = vi.fn();
 
     handler.handle(
@@ -530,6 +553,16 @@ describe('Runtime automation request handler', () => {
     );
     expect(handler.activeSelectorSubscriptionCount).toBe(0);
     expect(fixture.stateListenerCount()).toBe(0);
+    expect(diagnostics).toMatchObject([
+      {
+        selectorName: 'example.value',
+        failureCode: 'SELECTOR_SERIALIZATION_BUDGET_EXCEEDED',
+        phase: 'json-validation',
+        budgetMs: 8,
+      },
+    ]);
+    expect(diagnostics[0]?.elapsedMs).toBeGreaterThanOrEqual(8);
+    expect(JSON.stringify(diagnostics)).not.toContain('value: 1');
     handler.dispose();
   });
 

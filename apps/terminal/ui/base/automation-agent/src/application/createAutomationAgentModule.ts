@@ -102,12 +102,12 @@ export const createAutomationAgentModule = (input: CreateAutomationAgentModuleIn
         let socket: WebSocketSubject<AutomationEnvelope> | undefined;
         const sessionId = (input.createSessionId ?? createSessionId)();
         activeSessionId = sessionId;
-        const outboundQueue = createBoundedWebSocketCtor(globalThis.WebSocket, boundedSocket => {
+        const outboundQueue = createBoundedWebSocketCtor(globalThis.WebSocket, (boundedSocket, failure) => {
           logger.warn({
             category: 'automation.connection',
             event: 'outbound.window.limit',
-            message: 'Automation WebSocket unacknowledged send window exceeded its session limit',
-            data: {address: config.addressDescription, sessionId},
+            message: 'Automation WebSocket rejected an outbound frame or unacknowledged window',
+            data: {address: config.addressDescription, sessionId, ...failure},
           });
           boundedSocket.close();
         });
@@ -144,7 +144,12 @@ export const createAutomationAgentModule = (input: CreateAutomationAgentModuleIn
                 category: 'automation.connection',
                 event: 'connection.closed',
                 message: 'Automation WebSocket closed',
-                data: {address: config.addressDescription, sessionId, code: event.code},
+                data: {
+                  address: config.addressDescription,
+                  sessionId,
+                  code: event.code,
+                  ...(/^[A-Z0-9_:-]{1,80}$/u.test(event.reason) ? {reasonCode: event.reason} : {}),
+                },
               });
             },
           },
@@ -162,6 +167,13 @@ export const createAutomationAgentModule = (input: CreateAutomationAgentModuleIn
           sessionId,
           context,
           deviceIdentity: input.deviceIdentity,
+          onSelectorFailure: diagnostic =>
+            logger.warn({
+              category: 'automation.selector',
+              event: 'selector.evaluation.failed',
+              message: 'Automation selector evaluation failed within its configured boundary',
+              data: diagnostic,
+            }),
         });
         activeControlHandler = controlHandler;
         activeRuntimeRequestHandler = runtimeRequestHandler;

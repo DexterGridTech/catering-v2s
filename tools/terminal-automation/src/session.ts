@@ -63,3 +63,32 @@ export const waitForAutomationSession = (
     onSession();
   });
 };
+
+/** Finds the next connection for this app after a Runtime recreation. */
+export const waitForReplacementAutomationSession = (
+  server: AutomationDriverServer,
+  previous: AutomationDriverSession,
+  timeoutMs = 5_000,
+): Promise<AutomationDriverSession> =>
+  waitForAutomationSession(
+    server,
+    candidate => candidate.appName === previous.appName && candidate.sessionId !== previous.sessionId,
+    timeoutMs,
+  );
+
+/** Prefers the new Runtime session if it arrives before the prior socket closes. */
+export const resolveCurrentAutomationSession = (
+  server: AutomationDriverServer,
+  previous: AutomationDriverSession,
+  timeoutMs = 5_000,
+): Promise<AutomationDriverSession> => {
+  const replacements = server
+    .getSessions()
+    .filter(candidate => candidate.appName === previous.appName && candidate.sessionId !== previous.sessionId);
+  if (replacements.length > 1) return Promise.reject(new Error('TERMINAL_AUTOMATION_SESSION_AMBIGUOUS'));
+  const replacement = replacements[0];
+  if (replacement !== undefined) return Promise.resolve(replacement);
+  const current = server.getSession(previous.sessionId);
+  if (current !== null && current.socket.readyState === current.socket.OPEN) return Promise.resolve(current);
+  return waitForReplacementAutomationSession(server, previous, timeoutMs);
+};

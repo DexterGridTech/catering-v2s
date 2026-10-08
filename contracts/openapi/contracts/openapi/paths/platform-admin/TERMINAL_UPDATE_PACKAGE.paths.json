@@ -1,0 +1,587 @@
+{
+  "paths": {
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/terminal-update-artifact-stages": {
+      "post": {
+        "operationId": "stagePlatformTerminalUpdateArtifact",
+        "tags": [
+          "TERMINAL_UPDATE_PACKAGE"
+        ],
+        "x-consumer-faces": [
+          "platform-admin"
+        ],
+        "x-owner-module": "TERMINAL_UPDATE_PACKAGE",
+        "x-scenario-ids": [
+          "N-stage-full"
+        ],
+        "x-page-key": "PLATFORM-TERMINAL-UPDATE-PACKAGES",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT",
+          "PLATFORM_DEPENDENCY_UNAVAILABLE",
+          "TERMINAL_UPDATE_ARTIFACT_INVALID",
+          "TERMINAL_UPDATE_BUSY"
+        ],
+        "security": [
+          {
+            "platformSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../../../components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateStageResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "422": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-required-platform-authorization": "REQ_STAGE_PLATFORM_TERMINAL_UPDATE_ARTIFACT",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "../../../../components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateArtifactStageRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/terminal-update-artifacts": {
+      "post": {
+        "operationId": "registerPlatformTerminalUpdateArtifact",
+        "tags": [
+          "TERMINAL_UPDATE_PACKAGE"
+        ],
+        "x-consumer-faces": [
+          "platform-admin"
+        ],
+        "x-owner-module": "TERMINAL_UPDATE_PACKAGE",
+        "x-scenario-ids": [
+          "N-register-full"
+        ],
+        "x-page-key": "PLATFORM-TERMINAL-UPDATE-PACKAGES",
+        "x-idempotency-policy": "REQUIRED_16_128",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT",
+          "TERMINAL_UPDATE_MINIMUM_FULL_INVALID",
+          "TERMINAL_UPDATE_PUBLICATION_CONFLICT",
+          "TERMINAL_UPDATE_STAGE_EXPIRED",
+          "TERMINAL_UPDATE_STAGE_NOT_OWNED"
+        ],
+        "security": [
+          {
+            "platformSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../../../components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateArtifactDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "422": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        },
+        "x-required-platform-authorization": "REQ_REGISTER_PLATFORM_TERMINAL_UPDATE_ARTIFACT",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../../../../components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateArtifactRegisterRequest"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "getPlatformTerminalUpdateArtifactPage",
+        "tags": [
+          "TERMINAL_UPDATE_PACKAGE"
+        ],
+        "x-consumer-faces": [
+          "platform-admin"
+        ],
+        "x-owner-module": "TERMINAL_UPDATE_PACKAGE",
+        "x-scenario-ids": [
+          "N-platform-page"
+        ],
+        "x-page-key": "PLATFORM-TERMINAL-UPDATE-PACKAGES",
+        "x-idempotency-policy": "FORBIDDEN",
+        "x-request-schema": "NoBody",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "TERMINAL_UPDATE_SNAPSHOT_TOO_LARGE"
+        ],
+        "security": [
+          {
+            "platformSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+            }
+          },
+          {
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "FULL",
+                "HOT"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "appId",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "in": "query",
+            "name": "runtimeVersion",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "in": "query",
+            "name": "queryText",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 120
+            }
+          },
+          {
+            "in": "query",
+            "name": "minimumFullNativeBuildNumber",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          {
+            "in": "query",
+            "name": "minimumFullPublicationId",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "in": "query",
+            "name": "minimumFullApkSha256",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 512
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../../../components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateArtifactPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "422": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        }
+      }
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/terminal-update-artifact-stages/{stageRef}/release": {
+      "post": {
+        "operationId": "releasePlatformTerminalUpdateArtifactStage",
+        "tags": [
+          "TERMINAL_UPDATE_PACKAGE"
+        ],
+        "x-consumer-faces": [
+          "platform-admin"
+        ],
+        "x-owner-module": "TERMINAL_UPDATE_PACKAGE",
+        "x-scenario-ids": [
+          "N-release"
+        ],
+        "x-page-key": "PLATFORM-TERMINAL-UPDATE-PACKAGES",
+        "x-idempotency-policy": "FORBIDDEN",
+        "x-request-schema": "NoBody",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT",
+          "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+          "PLATFORM_COMMON_RESULT_UNKNOWN",
+          "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT",
+          "TERMINAL_UPDATE_STAGE_NOT_OWNED"
+        ],
+        "security": [
+          {
+            "platformSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+            }
+          },
+          {
+            "name": "stageRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-Asset-Bind-Grant",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 32,
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No content"
+          },
+          "400": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "422": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        }
+      }
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/terminal-update-artifacts/{artifactRef}": {
+      "get": {
+        "operationId": "getPlatformTerminalUpdateArtifactDetail",
+        "tags": [
+          "TERMINAL_UPDATE_PACKAGE"
+        ],
+        "x-consumer-faces": [
+          "platform-admin"
+        ],
+        "x-owner-module": "TERMINAL_UPDATE_PACKAGE",
+        "x-scenario-ids": [
+          "N-platform-detail"
+        ],
+        "x-page-key": "PLATFORM-TERMINAL-UPDATE-PACKAGES",
+        "x-idempotency-policy": "FORBIDDEN",
+        "x-request-schema": "NoBody",
+        "x-error-codes": [
+          "PLATFORM_COMMON_ACCESS_DENIED",
+          "PLATFORM_COMMON_AUTHENTICATION_REQUIRED",
+          "PLATFORM_COMMON_CONTEXT_STALE",
+          "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+          "PLATFORM_COMMON_RESOURCE_NOT_FOUND"
+        ],
+        "security": [
+          {
+            "platformSessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupWorkspaceKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+            }
+          },
+          {
+            "name": "artifactRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner readback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../../../../components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateArtifactDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "401": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "403": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "404": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "409": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "422": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "429": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "500": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          },
+          "503": {
+            "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
+          }
+        }
+      }
+    }
+  }
+}

@@ -16,6 +16,17 @@ const maxCommandObservers = 32;
 const maxMessageBytes = 1_048_576;
 const selectorBudgetMs = 8;
 const commandObservationMs = 120_000;
+type SelectorFailurePhase = 'evaluate' | 'json-validation' | 'json-stringify' | 'message-size';
+
+class SelectorBudgetFailure extends Error {
+  constructor(
+    code: string,
+    readonly phase: SelectorFailurePhase,
+    readonly elapsedMs: number,
+  ) {
+    super(code);
+  }
+}
 
 export type RuntimeRequestReply = Readonly<{
   protocolVersion: 1;
@@ -140,21 +151,41 @@ const nonJsonReason = (value: unknown, seen: WeakSet<object>, path = 'root'): st
 const evaluateValue = (context: RuntimeModuleContext, name: string, argsTuple: readonly unknown[]): SelectorValue => {
   const evaluationStarted = performance.now();
   const value = context.evaluateSelector(name, argsTuple);
-  if (performance.now() - evaluationStarted > selectorBudgetMs) {
-    throw new Error('RUNTIME_SELECTOR_EVALUATION_BUDGET_EXCEEDED');
+  const evaluationElapsedMs = performance.now() - evaluationStarted;
+  if (evaluationElapsedMs > selectorBudgetMs) {
+    throw new SelectorBudgetFailure('RUNTIME_SELECTOR_EVALUATION_BUDGET_EXCEEDED', 'evaluate', evaluationElapsedMs);
   }
   const serializationStarted = performance.now();
   const reason = nonJsonReason(value, new WeakSet<object>());
-  if (performance.now() - serializationStarted > selectorBudgetMs) {
-    throw new Error('RUNTIME_SELECTOR_SERIALIZATION_BUDGET_EXCEEDED');
+  const validationElapsedMs = performance.now() - serializationStarted;
+  if (validationElapsedMs > selectorBudgetMs) {
+    throw new SelectorBudgetFailure(
+      'RUNTIME_SELECTOR_SERIALIZATION_BUDGET_EXCEEDED',
+      'json-validation',
+      validationElapsedMs,
+    );
   }
   if (reason !== undefined) return Object.freeze({valueState: 'NON_JSON', reason});
   const result = Object.freeze({valueState: 'JSON' as const, value});
   const encoded = JSON.stringify(result);
-  if (performance.now() - serializationStarted > selectorBudgetMs) {
-    throw new Error('RUNTIME_SELECTOR_SERIALIZATION_BUDGET_EXCEEDED');
+  const stringifyElapsedMs = performance.now() - serializationStarted;
+  if (stringifyElapsedMs > selectorBudgetMs) {
+    throw new SelectorBudgetFailure(
+      'RUNTIME_SELECTOR_SERIALIZATION_BUDGET_EXCEEDED',
+      'json-stringify',
+      stringifyElapsedMs,
+    );
   }
-  if (utf8Bytes(encoded) > maxMessageBytes) throw new Error('RUNTIME_SELECTOR_MESSAGE_LIMIT_EXCEEDED');
+  const messageBytes = utf8Bytes(encoded);
+  const messageSizeElapsedMs = performance.now() - serializationStarted;
+  if (messageSizeElapsedMs > selectorBudgetMs) {
+    throw new SelectorBudgetFailure(
+      'RUNTIME_SELECTOR_SERIALIZATION_BUDGET_EXCEEDED',
+      'message-size',
+      messageSizeElapsedMs,
+    );
+  }
+  if (messageBytes > maxMessageBytes) throw new Error('RUNTIME_SELECTOR_MESSAGE_LIMIT_EXCEEDED');
   return result;
 };
 
@@ -206,6 +237,13 @@ export const createRuntimeRequestHandler = (
     sessionId: string;
     context: RuntimeModuleContext;
     deviceIdentity?: Readonly<{available: boolean; deviceId: string | null}>;
+    onSelectorFailure?: (diagnostic: Readonly<{
+      selectorName: string;
+      failureCode: string;
+      phase: SelectorFailurePhase;
+      elapsedMs: number;
+      budgetMs: number;
+    }>) => void;
   }>,
 ) => {
   const selectorSubscriptions = new Map<string, SelectorSubscription>();
@@ -302,14 +340,20 @@ export const createRuntimeRequestHandler = (
     }
   };
 
-  const emitSubscriptionValue = (subscriptionId: string, subscription: SelectorSubscription): number => {
+  const emitSubscriptionValue = (
+    subscriptionId: string,
+    subscription: SelectorSubscription,
+    initialValue?: SelectorValue,
+  ): number => {
     if (!subscription.active || disposed) return 0;
-    const value = evaluate({
-      request: subscription.request,
-      send: subscription.send,
-      name: subscription.selectorName,
-      args: subscription.argsTuple,
-    });
+    const value =
+      initialValue ??
+      evaluate({
+        request: subscription.request,
+        send: subscription.send,
+        name: subscription.selectorName,
+        args: subscription.argsTuple,
+      });
     if (value === undefined) {
       removeSubscription(subscriptionId);
       return 0;
@@ -360,6 +404,7 @@ export const createRuntimeRequestHandler = (
     query: Readonly<{request: AutomationEnvelope; send: Send; name: string; args: readonly unknown[]}>,
   ): SelectorValue | undefined => {
     const {request, send, name, args} = query;
+    const startedAt = performance.now();
     try {
       const value = evaluateValue(input.context, name, args);
       return value;
@@ -376,6 +421,21 @@ export const createRuntimeRequestHandler = (
                 : error instanceof Error && error.message.startsWith('RUNTIME_SELECTOR_MESSAGE_LIMIT_EXCEEDED')
                   ? 'RESOURCE_LIMIT'
                   : 'SELECTOR_EVALUATION_FAILED';
+      const diagnosticSelectorName = /^[A-Za-z0-9_.:-]{1,160}$/u.test(name) ? name : 'INVALID_SELECTOR_NAME';
+      const diagnosticPhase = error instanceof SelectorBudgetFailure ? error.phase : 'evaluate';
+      const elapsedMs =
+        error instanceof SelectorBudgetFailure ? error.elapsedMs : performance.now() - startedAt;
+      try {
+        input.onSelectorFailure?.({
+          selectorName: diagnosticSelectorName,
+          failureCode: code,
+          phase: diagnosticPhase,
+          elapsedMs: Math.round(elapsedMs * 100) / 100,
+          budgetMs: selectorBudgetMs,
+        });
+      } catch {
+        // Diagnostics must not replace the selector's typed failure response.
+      }
       fail({request, send, code});
       return undefined;
     }
@@ -444,8 +504,18 @@ export const createRuntimeRequestHandler = (
       if (releaseStateListener === undefined) {
         releaseStateListener = input.context.subscribeState(() => stateChanges.next());
       }
+      const initialValue = evaluate({
+        request,
+        send,
+        name: subscription.selectorName,
+        args: subscription.argsTuple,
+      });
+      if (initialValue === undefined) {
+        removeSubscription(parsed.data.subscriptionId);
+        return;
+      }
       success({request: request, send: send, result: {subscriptionId: parsed.data.subscriptionId, accepted: true}});
-      emitSubscriptionValue(parsed.data.subscriptionId, subscription);
+      emitSubscriptionValue(parsed.data.subscriptionId, subscription, initialValue);
       return;
     }
     if (request.type === 'selector.unsubscribe') {

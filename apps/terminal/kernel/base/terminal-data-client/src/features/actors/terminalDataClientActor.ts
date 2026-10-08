@@ -899,7 +899,13 @@ export const createTerminalDataClientActor = (
     }),
     onCommand(initializeTerminalDataClientCommand, async context => {
       if (!isHostRuntime(context.getState())) return Object.freeze({status: 'not-host'});
-      if (readState(context.getState()).credential === null) return Object.freeze({status: 'inactive'});
+      const state = readState(context.getState());
+      if (state.credential === null) return Object.freeze({status: 'inactive'});
+      // Activation status is intentionally not persisted with the protected credential.
+      // Re-establish the active view from the restored credential before startup reads run.
+      if (state.activationStatus !== 'active') {
+        context.dispatchAction(terminalDataClientActions.setActivationStatus('active'));
+      }
       const result = await context.dispatchCommand(connectTerminalCommand, Object.freeze({}), {
         requestId: context.command.requestId ?? createRequestId(),
       });

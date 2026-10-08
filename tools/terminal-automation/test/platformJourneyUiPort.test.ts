@@ -79,6 +79,28 @@ describe('platform journey UI ports', () => {
     );
   });
 
+  it('rebuilds Android registered controls for a replacement Runtime session', async () => {
+    const tapRegisteredNode = vi.fn(async () => undefined);
+    const connection = {
+      tapRegisteredNode,
+      tapRegisteredInput: vi.fn(async () => undefined),
+    } as unknown as AndroidAutomationConnection;
+    const resolveSessionId = vi.fn(async (previous: string) => previous === 'session-old' ? 'session-new' : previous);
+    const oldPort = createAndroidJourneyUiPort({connection, sessionId: 'session-old', resolveSessionId});
+    const currentPort = await oldPort.refreshSession!();
+
+    await currentPort.click('sample.login.submit', {mode: 'PRIMARY', index: 0});
+
+    expect(resolveSessionId).toHaveBeenCalledWith('session-old');
+    expect(currentPort.sessionId).toBe('session-new');
+    expect(tapRegisteredNode).toHaveBeenCalledWith({
+      sessionId: 'session-new',
+      testID: 'sample.login.submit',
+      surface: 'primary',
+      displayIndex: 0,
+    });
+  });
+
   it('uses one Android journey port for registered app controls and native system controls', async () => {
     const tapRegisteredNode = vi.fn(async () => undefined);
     const button = {label: 'Update'} as never;

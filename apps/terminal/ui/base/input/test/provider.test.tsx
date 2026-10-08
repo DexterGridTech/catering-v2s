@@ -510,7 +510,7 @@ describe('input provider', () => {
     });
   });
 
-  it('does not render or commit a virtual keyboard before the frame is measured', async () => {
+  it('preserves the first virtual-keyboard focus until frame measurement completes', async () => {
     let state: ReturnType<typeof useInputKeyboardState> | undefined;
     setNativeTestRefFactory(() => measuredNodeMock());
     const renderer = await render(
@@ -534,13 +534,16 @@ describe('input provider', () => {
     expect(state?.capacity).toBe('unmeasured');
     const input = queryNodes(renderer, 'TextInput').find(node => node.props.testID === testId('sample:unmeasured'))!;
     await act(async () => {
+      input.props.onPressIn({stopPropagation: () => undefined});
       input.props.onFocus({nativeEvent: {}});
     });
     expect(state?.activeFieldId).toBeNull();
+    expect(state?.blockedFieldId).toBe('unmeasured');
+    expect(state?.blockedCapacity).toBeNull();
     expect(queryNodesByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard'))})).toHaveLength(0);
 
     await applyLayout(renderer);
-    await focusAndFinishKeyboard(renderer, input);
+    await finishKeyboardPresentation(renderer);
     expect(state?.activeFieldId).toBe('unmeasured');
     expect(getNodeByProps(renderer, {testID: testId(inputTestIds.node('virtual-keyboard'))})).toBeDefined();
     await act(async () => {

@@ -48,12 +48,50 @@ class TerminalUpdateInstallerPolicyTest {
   }
 
   @Test
+  fun `present pending user session remains accepted until a terminal installer outcome`() {
+    assertTrue(isPendingUserInstallerAction(true, "pending-user", "pending-user"))
+    // Confirmation launch/readback can be uncertain while PackageInstaller still owns
+    // the exact session. That local uncertainty must not erase the persisted pending action.
+    assertTrue(isPendingUserInstallerAction(true, "pending-user", "unknown"))
+    assertFalse(isPendingUserInstallerAction(false, "pending-user", "pending-user"))
+    assertFalse(isPendingUserInstallerAction(true, "committing", "pending-user"))
+    assertFalse(isPendingUserInstallerAction(true, "pending-user", "callback-success"))
+    assertFalse(isPendingUserInstallerAction(true, "pending-user", "callback-aborted"))
+    assertFalse(isPendingUserInstallerAction(true, "pending-user", "callback-failed"))
+    assertFalse(isPendingUserInstallerAction(true, "pending-user", "succeeded"))
+    assertFalse(isPendingUserInstallerAction(true, "pending-user", "failed"))
+  }
+
+  @Test
   fun `confirmation intent must resolve and carry the committed session identity`() {
     assertTrue(isMatchingInstallerConfirmation(7, 7, hasResolvedActivity = true))
     assertFalse(isMatchingInstallerConfirmation(7, 8, hasResolvedActivity = true))
     assertFalse(isMatchingInstallerConfirmation(7, -1, hasResolvedActivity = true))
     assertFalse(isMatchingInstallerConfirmation(7, 7, hasResolvedActivity = false))
     assertFalse(isMatchingInstallerConfirmation(-1, -1, hasResolvedActivity = true))
+  }
+
+  @Test
+  fun `pending confirmation retries in a fresh process but not on duplicate foreground callbacks`() {
+    fun shouldResume(attemptedInCurrentProcess: Boolean) = shouldResumePendingInstallerConfirmation(
+      actionKind = "full",
+      actionState = "pending-user",
+      installerState = "pending-user",
+      awaitingSourcePermission = true,
+      canRequestPackageInstalls = true,
+      attemptedInCurrentProcess = attemptedInCurrentProcess,
+    )
+
+    assertTrue(shouldResume(attemptedInCurrentProcess = false))
+    assertFalse(shouldResume(attemptedInCurrentProcess = true))
+    assertFalse(shouldResumePendingInstallerConfirmation(
+      actionKind = "hot",
+      actionState = "pending-user",
+      installerState = "pending-user",
+      awaitingSourcePermission = true,
+      canRequestPackageInstalls = true,
+      attemptedInCurrentProcess = false,
+    ))
   }
 
   private fun currentInstallerCallback(

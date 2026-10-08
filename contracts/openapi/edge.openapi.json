@@ -619,6 +619,54 @@
     },
     "/api/terminal/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-points": {
       "$ref": "./paths/terminal/data-read.paths.json#/paths/~1api~1terminal~1group-workspaces~1{groupWorkspaceKey}~1stores~1{storeRef}~1service-points"
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/terminal-update-artifact-stages": {
+      "$ref": "./contracts/openapi/paths/platform-admin/TERMINAL_UPDATE_PACKAGE.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1terminal-update-artifact-stages"
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/terminal-update-artifacts": {
+      "$ref": "./contracts/openapi/paths/platform-admin/TERMINAL_UPDATE_PACKAGE.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1terminal-update-artifacts"
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/terminal-update-artifact-stages/{stageRef}/release": {
+      "$ref": "./contracts/openapi/paths/platform-admin/TERMINAL_UPDATE_PACKAGE.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1terminal-update-artifact-stages~1{stageRef}~1release"
+    },
+    "/api/platform/group-workspaces/{groupWorkspaceKey}/terminal-update-artifacts/{artifactRef}": {
+      "$ref": "./contracts/openapi/paths/platform-admin/TERMINAL_UPDATE_PACKAGE.paths.json#/paths/~1api~1platform~1group-workspaces~1{groupWorkspaceKey}~1terminal-update-artifacts~1{artifactRef}"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-versions": {
+      "$ref": "./contracts/openapi/paths/operations-admin/TERMINAL_UPDATE_RULE.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1projects~1{projectRef}~1terminal-versions"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-update-rules": {
+      "$ref": "./contracts/openapi/paths/operations-admin/TERMINAL_UPDATE_RULE.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1projects~1{projectRef}~1terminal-update-rules"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-update-rules/{ruleRef}": {
+      "$ref": "./contracts/openapi/paths/operations-admin/TERMINAL_UPDATE_RULE.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1projects~1{projectRef}~1terminal-update-rules~1{ruleRef}"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-update-rules/{ruleRef}/status": {
+      "$ref": "./contracts/openapi/paths/operations-admin/TERMINAL_UPDATE_RULE.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1projects~1{projectRef}~1terminal-update-rules~1{ruleRef}~1status"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-update-rules/{ruleRef}/stores": {
+      "$ref": "./contracts/openapi/paths/operations-admin/TERMINAL_UPDATE_RULE.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1projects~1{projectRef}~1terminal-update-rules~1{ruleRef}~1stores"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-versions/{terminalRef}": {
+      "$ref": "./contracts/openapi/paths/operations-admin/TERMINAL_UPDATE_RULE.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1projects~1{projectRef}~1terminal-versions~1{terminalRef}"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-versions/{terminalRef}/update-reports": {
+      "$ref": "./contracts/openapi/paths/operations-admin/TERMINAL_UPDATE_RULE.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1projects~1{projectRef}~1terminal-versions~1{terminalRef}~1update-reports"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/terminal-update-artifact-candidates": {
+      "$ref": "./contracts/openapi/paths/operations-admin/TERMINAL_UPDATE_PACKAGE.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1terminal-update-artifact-candidates"
+    },
+    "/api/terminal/group-workspaces/{groupWorkspaceKey}/update-rules/projects/{projectRef}": {
+      "$ref": "./contracts/openapi/paths/terminal/TERMINAL_UPDATE_RULE.paths.json#/paths/~1api~1terminal~1group-workspaces~1{groupWorkspaceKey}~1update-rules~1projects~1{projectRef}"
+    },
+    "/api/terminal/group-workspaces/{groupWorkspaceKey}/update-artifacts/{artifactRef}/download-grant": {
+      "$ref": "./contracts/openapi/paths/terminal/TERMINAL_UPDATE_RULE.paths.json#/paths/~1api~1terminal~1group-workspaces~1{groupWorkspaceKey}~1update-artifacts~1{artifactRef}~1download-grant"
+    },
+    "/api/terminal/group-workspaces/{groupWorkspaceKey}/update-artifacts/{artifactRef}/content": {
+      "$ref": "./contracts/openapi/paths/terminal/TERMINAL_UPDATE_PACKAGE.paths.json#/paths/~1api~1terminal~1group-workspaces~1{groupWorkspaceKey}~1update-artifacts~1{artifactRef}~1content"
+    },
+    "/api/terminal/group-workspaces/{groupWorkspaceKey}/update-reports": {
+      "$ref": "./contracts/openapi/paths/terminal/TERMINAL_UPDATE_REPORT.paths.json#/paths/~1api~1terminal~1group-workspaces~1{groupWorkspaceKey}~1update-reports"
     }
   },
   "components": {
@@ -637,6 +685,11 @@
         "type": "http",
         "scheme": "Terminal",
         "description": "Terminal <generation>.<secret>"
+      },
+      "terminalUpdateDownloadGrant": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Terminal-Update-Grant"
       }
     },
     "schemas": {
@@ -1617,6 +1670,99 @@
       },
       "TerminalServicePointRead": {
         "$ref": "./components/terminal/terminal-data-read.schemas.json#/components/schemas/TerminalServicePointRead"
+      },
+      "TerminalUpdateArtifactStageRequest": {
+        "$ref": "./components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateArtifactStageRequest"
+      },
+      "TerminalUpdateStageResult": {
+        "$ref": "./components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateStageResult"
+      },
+      "TerminalUpdateArtifactRegisterRequest": {
+        "$ref": "./components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateArtifactRegisterRequest"
+      },
+      "TerminalUpdateArtifactPageQuery": {
+        "$ref": "./components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateArtifactPageQuery"
+      },
+      "TerminalUpdateArtifactSummary": {
+        "$ref": "./components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateArtifactSummary"
+      },
+      "TerminalUpdateArtifactPage": {
+        "$ref": "./components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateArtifactPage"
+      },
+      "TerminalUpdateArtifactDetail": {
+        "$ref": "./components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateArtifactDetail"
+      },
+      "TerminalUpdateVersionPageQuery": {
+        "$ref": "./components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateVersionPageQuery"
+      },
+      "TerminalUpdateVersionReportItem": {
+        "$ref": "./components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateVersionReportItem"
+      },
+      "TerminalUpdateVersionPage": {
+        "$ref": "./components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateVersionPage"
+      },
+      "TerminalUpdateRulePageQuery": {
+        "$ref": "./components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateRulePageQuery"
+      },
+      "TerminalUpdateRuleSummary": {
+        "$ref": "./components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateRuleSummary"
+      },
+      "TerminalUpdateRulePage": {
+        "$ref": "./components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateRulePage"
+      },
+      "TerminalUpdateRuleCreateRequest": {
+        "$ref": "./components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateRuleCreateRequest"
+      },
+      "TerminalUpdateRuleStatusRequest": {
+        "$ref": "./components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateRuleStatusRequest"
+      },
+      "TerminalUpdateRuleDetail": {
+        "$ref": "./components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateRuleDetail"
+      },
+      "TerminalUpdateArtifactCandidateQuery": {
+        "$ref": "./components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateArtifactCandidateQuery"
+      },
+      "TerminalUpdateArtifactCandidatePage": {
+        "$ref": "./components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateArtifactCandidatePage"
+      },
+      "TerminalUpdateRuleSnapshotQuery": {
+        "$ref": "./components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateRuleSnapshotQuery"
+      },
+      "TerminalUpdateRuleSnapshotItem": {
+        "$ref": "./components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateRuleSnapshotItem"
+      },
+      "TerminalUpdateRuleSnapshotPage": {
+        "$ref": "./components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateRuleSnapshotPage"
+      },
+      "TerminalUpdateDownloadGrantResult": {
+        "$ref": "./components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateDownloadGrantResult"
+      },
+      "TerminalUpdateBinaryContent": {
+        "$ref": "./components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateBinaryContent"
+      },
+      "TerminalUpdateReportActual": {
+        "$ref": "./components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateReportActual"
+      },
+      "TerminalUpdateReportRecent": {
+        "$ref": "./components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateReportRecent"
+      },
+      "TerminalUpdateReportRequest": {
+        "$ref": "./components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateReportRequest"
+      },
+      "TerminalUpdateReportReceipt": {
+        "$ref": "./components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateReportReceipt"
+      },
+      "TerminalUpdateVersionDetail": {
+        "$ref": "./components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateVersionDetail"
+      },
+      "TerminalUpdateReportHistoryQuery": {
+        "$ref": "./components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateReportHistoryQuery"
+      },
+      "TerminalUpdateReportHistoryPage": {
+        "$ref": "./components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateReportHistoryPage"
+      },
+      "TerminalUpdateRuleStorePage": {
+        "$ref": "./components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateRuleStorePage"
       },
       "EpochMillis": {
         "$ref": "./components/common/time.schemas.json#/components/schemas/EpochMillis"

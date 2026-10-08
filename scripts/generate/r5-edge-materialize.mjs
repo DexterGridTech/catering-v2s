@@ -12,6 +12,9 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const safeRetryableOperationIds = new Set(["activateTerminal", "cancelTerminalActivation"]);
 const terminalCredentialOperationIds = new Set([
   "cancelTerminalActivation",
+  "terminalReadProjectUpdateRuleSnapshotPage",
+  "issueTerminalUpdateArtifactDownloadGrant",
+  "submitTerminalUpdateReport",
   "terminalReadStoreBasic",
   "terminalReadStoreOrganizationPath",
   "terminalReadStoreActiveContracts",
@@ -214,11 +217,13 @@ function security(operation) {
   if (operation.security === "PLATFORM_SESSION_COOKIE") return [{ platformSessionCookie: [] }];
   if (operation.security === "OPERATIONS_SESSION_COOKIE") return [{ operationsSessionCookie: [] }];
   if (operation.security === "TERMINAL_CREDENTIAL") return [{ terminalCredential: [] }];
+  if (operation.security === "TERMINAL_UPDATE_DOWNLOAD_GRANT") return [{ terminalUpdateDownloadGrant: [] }];
   fail("R5_EDGE_SECURITY_UNRESOLVED", operation.operationId);
 }
 function successContentType(operation) {
   if (operation.responseSchema === "NoContent") return null;
   if (operation.responseSchema === "BinaryAssetContent") return "application/octet-stream";
+  if (operation.responseSchema === "TerminalUpdateBinaryContent") return "application/zip";
   return "application/json";
 }
 function requestContentType(operation) {
@@ -479,7 +484,8 @@ function materialize(rootDir = root, writeOutputs = true) {
       securitySchemes: {
         platformSessionCookie: { type: "apiKey", in: "cookie", name: "V2S_PLATFORM_SESSION" },
         operationsSessionCookie: { type: "apiKey", in: "cookie", name: "V2S_OPERATIONS_SESSION" },
-        terminalCredential: { type: "http", scheme: "Terminal", description: "Terminal <generation>.<secret>" }
+        terminalCredential: { type: "http", scheme: "Terminal", description: "Terminal <generation>.<secret>" },
+        terminalUpdateDownloadGrant: { type: "apiKey", in: "header", name: "X-Terminal-Update-Grant" }
       },
       schemas: Object.fromEntries([...componentFiles.entries()].map(([name, file]) => [name, { $ref: `./${file}#/components/schemas/${name}` }])),
       responses: { ProblemResponse: { description: "Typed problem", content: { "application/problem+json": { schema: { $ref: "#/components/schemas/Problem" } } } } }

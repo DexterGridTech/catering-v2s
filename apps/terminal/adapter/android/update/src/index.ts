@@ -1,6 +1,7 @@
 import {requireNativeModule} from 'expo-modules-core';
 export {moduleName} from './moduleName';
 export {dependencyModuleNames, devDependencyModuleNames} from './dependencies';
+export {createAndroidAutomationUpdateTargetSourceProvider} from './automationUpdateTargetSourceProvider';
 import type {
   PortResult,
   UpdateAction,
@@ -23,7 +24,7 @@ type NativeUpdateModule = Readonly<{
   ) => Promise<Readonly<{preparedId: string}>>;
   applyPrepared: (taskId: string, actionId: string, preparedId: string, kind: 'full' | 'hot') => Promise<UpdateAction>;
   readAction: (taskId: string, actionId: string) => Promise<UpdateAction | null>;
-  confirmBoot: (bootToken: string, publicationId: string) => Promise<UpdateAction>;
+  confirmBoot: (bootToken: string, publicationId: string) => Promise<Readonly<{confirmed: true}>>;
   releasePrepared: (preparedId: string) => Promise<Readonly<{released: boolean}>>;
 }>;
 
@@ -38,7 +39,7 @@ const failed = <TValue>(capability: string, code = 'NATIVE_UPDATE_OPERATION_FAIL
       message: 'native update operation failed',
       retryable: true,
     }),
-});
+  });
 
 const nativeFailureCode = (error: unknown): string => {
   if (error instanceof Error && /^TERMINAL_UPDATE_[A-Z0-9_]{1,96}$/u.test(error.message)) return error.message;

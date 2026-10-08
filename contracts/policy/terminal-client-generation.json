@@ -10,7 +10,8 @@
     "contracts/openapi/components/organization/store.schemas.json",
     "contracts/openapi/components/organization/store-operating-rule-schemas.generated.json",
     "contracts/openapi/components/contract/contract.schemas.json",
-    "contracts/openapi/components/organization/store-service-point-qr.schemas.json"
+    "contracts/openapi/components/organization/store-service-point-qr.schemas.json",
+    "contracts/openapi-source/terminal-update.schemas.json"
   ],
   "targets": [
     {
@@ -18,7 +19,8 @@
       "tags": [
         "terminal-binding",
         "organization",
-        "store-contract"
+        "store-contract",
+        "terminal-update"
       ],
       "includeOperationIds": [
         "activateTerminal",
@@ -30,7 +32,10 @@
         "terminalReadStoreServicePointAreas",
         "terminalReadServicePointArea",
         "terminalReadStoreServicePoints",
-        "terminalReadServicePoint"
+        "terminalReadServicePoint",
+        "terminalReadProjectUpdateRuleSnapshotPage",
+        "issueTerminalUpdateArtifactDownloadGrant",
+        "submitTerminalUpdateReport"
       ],
       "excludeOperationIds": [],
       "stripPathPrefix": "/api/terminal/group-workspaces/{groupWorkspaceKey}",

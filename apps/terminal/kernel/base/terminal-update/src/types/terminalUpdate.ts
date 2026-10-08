@@ -38,6 +38,8 @@ export interface TerminalUpdateTask {
     | 'succeeded'
     | 'failed';
   readonly actionId: string | null;
+  /** Artifact kind bound to actionId while its outcome is pending or being reconciled. */
+  readonly actionKind: 'full' | 'hot' | null;
   readonly preparedId: string | null;
   readonly bootId: string | null;
   readonly failureCode: string | null;

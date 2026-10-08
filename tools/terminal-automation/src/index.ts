@@ -23,7 +23,7 @@ export type {
 export {createManagedRun} from './managedRun.js';
 export {createAutomationDriverServer} from './server.js';
 export {createJourneyFailureDiagnostics} from './journeyFailureDiagnostics.js';
-export {waitForAutomationSession} from './session.js';
+export {resolveCurrentAutomationSession, waitForAutomationSession, waitForReplacementAutomationSession} from './session.js';
 export {readApplicationDeviceId} from './runtimeInfo.js';
 export {createTerminalAutomationDriver} from './driver.js';
 export type {TerminalAutomationDriver} from './driver.js';

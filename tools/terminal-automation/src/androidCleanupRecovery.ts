@@ -108,7 +108,12 @@ export const resolveFailedAndroidRunCleanupTarget = (
   const runExecution = execution as Record<string, unknown>;
   const sampleValue = runExecution.sample === undefined ? 'console' : runExecution.sample;
   const shapeValue = runExecution.shape;
-  const allowedCases = new Set(['update.full-hot', 'update.offline-assets', 'update.boot-guard']);
+  const allowedCases = new Set([
+    'update.full-hot',
+    'update.offline-assets',
+    'update.boot-guard',
+    'update.interruption',
+  ]);
   const packageId = manifest.androidPackageId;
   if (
     runExecution.platform !== 'android' ||
