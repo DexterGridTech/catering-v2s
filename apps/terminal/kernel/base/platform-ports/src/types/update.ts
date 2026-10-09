@@ -54,6 +54,8 @@ export interface UpdateSource {
 export interface PrepareUpdateArtifactInput extends UpdateCall, UpdateSource {
   /** Relative path resolved by the trusted composition provider for this opaque sourceRef. */
   readonly sourcePath: string;
+  /** One-attempt CBS grant for private artifact content; never persisted or logged. */
+  readonly downloadGrant?: string;
   readonly network: UpdateNetworkSnapshot;
   readonly kind: 'full' | 'hot';
 }

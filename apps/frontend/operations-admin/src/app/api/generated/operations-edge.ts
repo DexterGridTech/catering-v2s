@@ -72,6 +72,13 @@ export const OPERATIONS_ADMIN_OPERATIONS = [
     "requiresSession": true
   },
   {
+    "operationId": "changeOperationsProjectTerminalUpdateRuleStatus",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-update-rules/{ruleRef}/status",
+    "owner": "TERMINAL_UPDATE_RULE",
+    "requiresSession": true
+  },
+  {
     "operationId": "copyOperationsSalesMenu",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}/copies",
@@ -146,6 +153,13 @@ export const OPERATIONS_ADMIN_OPERATIONS = [
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding",
     "owner": "collaboration",
+    "requiresSession": true
+  },
+  {
+    "operationId": "createOperationsProjectTerminalUpdateRule",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-update-rules",
+    "owner": "TERMINAL_UPDATE_RULE",
     "requiresSession": true
   },
   {
@@ -408,6 +422,48 @@ export const OPERATIONS_ADMIN_OPERATIONS = [
     "requiresSession": true
   },
   {
+    "operationId": "getOperationsProjectTerminalUpdateReportHistoryPage",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-versions/{terminalRef}/update-reports",
+    "owner": "TERMINAL_UPDATE_RULE",
+    "requiresSession": true
+  },
+  {
+    "operationId": "getOperationsProjectTerminalUpdateRuleDetail",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-update-rules/{ruleRef}",
+    "owner": "TERMINAL_UPDATE_RULE",
+    "requiresSession": true
+  },
+  {
+    "operationId": "getOperationsProjectTerminalUpdateRulePage",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-update-rules",
+    "owner": "TERMINAL_UPDATE_RULE",
+    "requiresSession": true
+  },
+  {
+    "operationId": "getOperationsProjectTerminalUpdateRuleStorePage",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-update-rules/{ruleRef}/stores",
+    "owner": "TERMINAL_UPDATE_RULE",
+    "requiresSession": true
+  },
+  {
+    "operationId": "getOperationsProjectTerminalVersionDetail",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-versions/{terminalRef}",
+    "owner": "TERMINAL_UPDATE_RULE",
+    "requiresSession": true
+  },
+  {
+    "operationId": "getOperationsProjectTerminalVersionPage",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-versions",
+    "owner": "TERMINAL_UPDATE_RULE",
+    "requiresSession": true
+  },
+  {
     "operationId": "getOperationsSalesMenu",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/sales-menus/{salesMenuRef}",
@@ -566,6 +622,13 @@ export const OPERATIONS_ADMIN_OPERATIONS = [
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/tag-candidates",
     "owner": "store-terminal",
+    "requiresSession": true
+  },
+  {
+    "operationId": "getOperationsTerminalUpdateArtifactCandidatePage",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/terminal-update-artifact-candidates",
+    "owner": "TERMINAL_UPDATE_PACKAGE",
     "requiresSession": true
   },
   {
@@ -1144,2331 +1207,7 @@ export const OPERATIONS_ADMIN_OPERATIONS = [
   }
 ] as const;
 
-export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {
-  "addOperationsOrganizationHeadCompanyBrandAuthorization": {
-    "kind": "FIXED",
-    "max": 18,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 18,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "addOperationsSalesMenuItems": {
-    "kind": "FIXED",
-    "max": 32,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 32,
-        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "archiveOperationsSalesMenu": {
-    "kind": "FIXED",
-    "max": 27,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 27,
-        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "cancelOperationsStoreTerminalActivation": {
-    "kind": "FIXED",
-    "max": 17,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 17,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "cancelOperationsWorkspaceGroupInvitation": {
-    "kind": "FIXED",
-    "max": 22,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 22,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "cancelOperationsWorkspaceHeadCompanyInvitation": {
-    "kind": "FIXED",
-    "max": 22,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 22,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "cancelOperationsWorkspaceProjectInvitation": {
-    "kind": "FIXED",
-    "max": 21,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 21,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "cancelOperationsWorkspaceRegionInvitation": {
-    "kind": "FIXED",
-    "max": 22,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 22,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "cancelOperationsWorkspaceStoreInvitation": {
-    "kind": "FIXED",
-    "max": 21,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 21,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "changeCurrentWorkspacePassword": {
-    "kind": "FIXED",
-    "max": 10,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 10,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "copyOperationsSalesMenu": {
-    "kind": "FIXED",
-    "max": 39,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 39,
-        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "createOperationsBusinessChannel": {
-    "kind": "FIXED",
-    "max": 20,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 20,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "createOperationsBusinessChannelTemplate": {
-    "kind": "FIXED",
-    "max": 21,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 21,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "createOperationsContract": {
-    "kind": "FIXED",
-    "max": 26,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 26,
-        "reason": "Dexter authorized reasonable single-FIXED-operation budget updates on 2026-10-05: the three managed CP-05 runs include required TDP owner snapshot/topic notification writes; generic P3 ceiling remains 20.",
-        "decisionRef": "IMPLEMENTATION-AGENT-2026-10-05-TDP-CONTRACT-CREATE-P3"
-      }
-    ]
-  },
-  "createOperationsOrganizationBrand": {
-    "kind": "FIXED",
-    "max": 22,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 22,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "createOperationsOrganizationHeadCompany": {
-    "kind": "FIXED",
-    "max": 22,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 22,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "createOperationsOrganizationProject": {
-    "kind": "FIXED",
-    "max": 24,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 24,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "createOperationsOrganizationRegion": {
-    "kind": "FIXED",
-    "max": 24,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 24,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "createOperationsOrganizationStore": {
-    "kind": "FIXED",
-    "max": 28,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 28,
-        "reason": "Dexter authorized implementation-agent single-FIXED-operation exception on 2026-10-05: three managed CP-05 runs measured 28; preserve required TDP snapshots, notifications, complete owner transaction and authoritative readback. Generic P3 ceiling remains 20.",
-        "decisionRef": "IMPLEMENTATION-AGENT-2026-10-05-TDP-STORE-CREATE-P3"
-      }
-    ]
-  },
-  "createOperationsOrganizationTenant": {
-    "kind": "FIXED",
-    "max": 22,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 22,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "createOperationsOwnerBinding": {
-    "kind": "FIXED",
-    "max": 22,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 22,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "createOperationsSalesMenu": {
-    "kind": "FIXED",
-    "max": 33,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 33,
-        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "createOperationsSalesMenuSection": {
-    "kind": "FIXED",
-    "max": 30,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 30,
-        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "createOperationsWorkspaceGroupInvitation": {
-    "kind": "FIXED",
-    "max": 21,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 21,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "createOperationsWorkspaceHeadCompanyInvitation": {
-    "kind": "FIXED",
-    "max": 21,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 21,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "createOperationsWorkspaceProjectInvitation": {
-    "kind": "FIXED",
-    "max": 20,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 20,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "createOperationsWorkspaceRegionInvitation": {
-    "kind": "FIXED",
-    "max": 21,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 21,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "createOperationsWorkspaceStoreInvitation": {
-    "kind": "FIXED",
-    "max": 20,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 20,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "deleteOperationsOwnerBinding": {
-    "kind": "FIXED",
-    "max": 22,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 22,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "deleteOperationsSalesMenuItem": {
-    "kind": "FIXED",
-    "max": 34,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 34,
-        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "deleteOperationsSalesMenuSection": {
-    "kind": "FIXED",
-    "max": 31,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 31,
-        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "getOperationsBusinessChannelDetail": {
-    "kind": "FIXED",
-    "max": 13,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 13,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsBusinessChannelTemplates": {
-    "kind": "FIXED",
-    "max": 12,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 12,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsBusinessChannelTemplateVisibleStores": {
-    "kind": "FIXED",
-    "max": 12,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 12,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsContract": {
-    "kind": "FIXED",
-    "max": 8,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 8,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsContractCandidates": {
-    "kind": "FIXED",
-    "max": 8,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 8,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsContractExtensionDefinition": {
-    "kind": "FIXED",
-    "max": 8,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 8,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsContracts": {
-    "kind": "FIXED",
-    "max": 10,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 10,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsEntityAuditHistory": {
-    "kind": "FIXED",
-    "max": 7,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 7,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsExternalCapabilityDictionary": {
-    "kind": "FIXED",
-    "max": 7,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 7,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsExternalProviderCandidates": {
-    "kind": "FIXED",
-    "max": 7,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 7,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsFixedStoreContracts": {
-    "kind": "FIXED",
-    "max": 9,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 9,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsOrganizationBrand": {
-    "kind": "FIXED",
-    "max": 8,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 8,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsOrganizationBrands": {
-    "kind": "FIXED",
-    "max": 11,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 11,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsOrganizationBusinessEntityExtensionDefinition": {
-    "kind": "FIXED",
-    "max": 8,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 8,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsOrganizationCandidates": {
-    "kind": "FIXED",
-    "max": 7,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 7,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsOrganizationHeadCompanies": {
-    "kind": "FIXED",
-    "max": 11,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 11,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsOrganizationHeadCompany": {
-    "kind": "FIXED",
-    "max": 10,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 10,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsOrganizationHierarchy": {
-    "kind": "FIXED",
-    "max": 9,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 9,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsOrganizationHierarchyExtensionDefinition": {
-    "kind": "FIXED",
-    "max": 8,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 8,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsOrganizationStore": {
-    "kind": "FIXED",
-    "max": 13,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 13,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsOrganizationStoreExtensionDefinition": {
-    "kind": "FIXED",
-    "max": 8,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 8,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsOrganizationStoreOperatingRule": {
-    "kind": "FIXED",
-    "max": 13,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 13,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsOrganizationStores": {
-    "kind": "FIXED",
-    "max": 16,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 16,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsOrganizationTenant": {
-    "kind": "FIXED",
-    "max": 8,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 8,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsOrganizationTenants": {
-    "kind": "FIXED",
-    "max": 11,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 11,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsOwnerBindingDetail": {
-    "kind": "FIXED",
-    "max": 15,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 15,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsProjectBusinessChannels": {
-    "kind": "FIXED",
-    "max": 10,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 10,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsSalesMenu": {
-    "kind": "FIXED",
-    "max": 14,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 14,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsSalesMenuDraftItem": {
-    "kind": "FIXED",
-    "max": 24,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 24,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsSalesMenuDraftItems": {
-    "kind": "FIXED",
-    "max": 24,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 24,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsSalesMenuDraftSections": {
-    "kind": "FIXED",
-    "max": 13,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 13,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsSalesMenuItemCandidates": {
-    "kind": "FIXED",
-    "max": 17,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 17,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsSalesMenuOperationRecords": {
-    "kind": "FIXED",
-    "max": 13,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 13,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsSalesMenuPublicationPreview": {
-    "kind": "FIXED",
-    "max": 24,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 24,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsSalesMenuPublishedItem": {
-    "kind": "FIXED",
-    "max": 22,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 22,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsSalesMenuPublishedItems": {
-    "kind": "FIXED",
-    "max": 21,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 21,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsSalesMenuPublishedSections": {
-    "kind": "FIXED",
-    "max": 13,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 13,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsSalesMenus": {
-    "kind": "FIXED",
-    "max": 13,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 13,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsStoreBusinessChannels": {
-    "kind": "FIXED",
-    "max": 13,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 13,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsStoreBusinessChannelTemplateCandidates": {
-    "kind": "FIXED",
-    "max": 14,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 14,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsStoreProfile": {
-    "kind": "FIXED",
-    "max": 12,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 12,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsStoreQrChannelCandidates": {
-    "kind": "FIXED",
-    "max": 8,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 8,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsStoreQrConfiguration": {
-    "kind": "FIXED",
-    "max": 10,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 10,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsStoreServicePoint": {
-    "kind": "FIXED",
-    "max": 12,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 12,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsStoreServicePointAreas": {
-    "kind": "FIXED",
-    "max": 11,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 11,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsStoreServicePoints": {
-    "kind": "FIXED",
-    "max": 11,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 11,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsStoreTerminal": {
-    "kind": "FIXED",
-    "max": 11,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 11,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsStoreTerminalAreaCandidates": {
-    "kind": "FIXED",
-    "max": 11,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 11,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsStoreTerminals": {
-    "kind": "FIXED",
-    "max": 10,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 10,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsStoreTerminalTagCandidates": {
-    "kind": "FIXED",
-    "max": 10,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 10,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsWorkspaceGroupInvitationCandidates": {
-    "kind": "FIXED",
-    "max": 13,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 13,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsWorkspaceGroupInvitations": {
-    "kind": "FIXED",
-    "max": 14,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 14,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsWorkspaceGroupUser": {
-    "kind": "FIXED",
-    "max": 18,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 18,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsWorkspaceGroupUserAccount": {
-    "kind": "FIXED",
-    "max": 17,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 17,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsWorkspaceHeadCompanyInvitationCandidates": {
-    "kind": "FIXED",
-    "max": 12,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 12,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsWorkspaceHeadCompanyInvitations": {
-    "kind": "FIXED",
-    "max": 14,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 14,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsWorkspaceHeadCompanyUser": {
-    "kind": "FIXED",
-    "max": 18,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 18,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsWorkspaceHeadCompanyUserAccount": {
-    "kind": "FIXED",
-    "max": 17,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 17,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsWorkspaceLoginEntry": {
-    "kind": "FIXED",
-    "max": 4,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 4,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsWorkspaceProjectInvitationCandidates": {
-    "kind": "FIXED",
-    "max": 10,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 10,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsWorkspaceProjectInvitations": {
-    "kind": "FIXED",
-    "max": 12,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 12,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsWorkspaceProjectUser": {
-    "kind": "FIXED",
-    "max": 16,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 16,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsWorkspaceProjectUserAccount": {
-    "kind": "FIXED",
-    "max": 15,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 15,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsWorkspaceRegionInvitationCandidates": {
-    "kind": "FIXED",
-    "max": 11,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 11,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsWorkspaceRegionInvitations": {
-    "kind": "FIXED",
-    "max": 13,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 13,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsWorkspaceRegionUser": {
-    "kind": "FIXED",
-    "max": 17,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 17,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsWorkspaceRegionUserAccount": {
-    "kind": "FIXED",
-    "max": 16,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 16,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsWorkspaceSessionEntry": {
-    "kind": "FIXED",
-    "max": 11,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 11,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsWorkspaceStoreInvitationCandidates": {
-    "kind": "FIXED",
-    "max": 11,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 11,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsWorkspaceStoreInvitations": {
-    "kind": "FIXED",
-    "max": 12,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 12,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsWorkspaceStoreUser": {
-    "kind": "FIXED",
-    "max": 17,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 17,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getOperationsWorkspaceStoreUserAccount": {
-    "kind": "FIXED",
-    "max": 15,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 15,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "invalidateOperationsContract": {
-    "kind": "FIXED",
-    "max": 25,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 25,
-        "reason": "Dexter authorized reasonable single-FIXED-operation budget updates on 2026-10-05: the three managed CP-05 runs include required TDP owner snapshot/topic notification writes; generic P3 ceiling remains 20.",
-        "decisionRef": "IMPLEMENTATION-AGENT-2026-10-05-TDP-CONTRACT-INVALIDATE-P3"
-      }
-    ]
-  },
-  "moveOperationsSalesMenuItem": {
-    "kind": "FIXED",
-    "max": 34,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 34,
-        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "moveOperationsSalesMenuSection": {
-    "kind": "FIXED",
-    "max": 34,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 34,
-        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "operationsWorkspaceLogout": {
-    "kind": "FIXED",
-    "max": 4,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 4,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "operationsWorkspacePasswordLogin": {
-    "kind": "FIXED",
-    "max": 22,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 22,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "patchOperationsStoreQrConfiguration": {
-    "kind": "FIXED",
-    "max": 20,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 20,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "patchOperationsStoreServicePoint": {
-    "kind": "FIXED",
-    "max": 29,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 29,
-        "reason": "Dexter 2026-09-18 implementation authorization: retain the complete owner transaction, security boundaries and authoritative readback after three managed CP-05 measurements; no safe consolidation remains.",
-        "decisionRef": "IMPLEMENTATION-AGENT-2026-10-05-TDP-SERVICE-POINT-PATCH-P3"
-      }
-    ]
-  },
-  "patchOperationsStoreServicePointArea": {
-    "kind": "FIXED",
-    "max": 24,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 24,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "postOperationsStoreServicePoint": {
-    "kind": "FIXED",
-    "max": 33,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 33,
-        "reason": "Dexter 2026-09-18 implementation authorization: retain the complete owner transaction, security boundaries and authoritative readback after three managed CP-05 measurements; no safe consolidation remains.",
-        "decisionRef": "IMPLEMENTATION-AGENT-2026-10-05-TDP-SERVICE-POINT-CREATE-P3"
-      }
-    ]
-  },
-  "postOperationsStoreServicePointArea": {
-    "kind": "FIXED",
-    "max": 25,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 25,
-        "reason": "Dexter authorized reasonable single-FIXED-operation budget updates on 2026-10-05: the three managed CP-05 runs include required TDP owner snapshot/topic notification writes; generic P3 ceiling remains 20.",
-        "decisionRef": "IMPLEMENTATION-AGENT-2026-10-05-TDP-AREA-CREATE-P3"
-      }
-    ]
-  },
-  "postOperationsStoreServicePointAreaOrder": {
-    "kind": "FIXED",
-    "max": 23,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 23,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "postOperationsStoreServicePointAreaStatus": {
-    "kind": "FIXED",
-    "max": 26,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 26,
-        "reason": "Dexter authorized reasonable single-FIXED-operation budget updates on 2026-10-05: the three managed CP-05 runs include required TDP owner snapshot/topic notification writes; generic P3 ceiling remains 20.",
-        "decisionRef": "IMPLEMENTATION-AGENT-2026-10-05-TDP-AREA-STATUS-P3"
-      }
-    ]
-  },
-  "postOperationsStoreServicePointOrder": {
-    "kind": "FIXED",
-    "max": 24,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 24,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "postOperationsStoreServicePointStatus": {
-    "kind": "FIXED",
-    "max": 28,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 28,
-        "reason": "Dexter authorized reasonable single-FIXED-operation budget updates on 2026-10-05: the three managed CP-05 runs include required TDP owner snapshot/topic notification writes; generic P3 ceiling remains 20.",
-        "decisionRef": "IMPLEMENTATION-AGENT-2026-10-05-TDP-POINT-STATUS-P3"
-      }
-    ]
-  },
-  "postOperationsStoreTerminal": {
-    "kind": "FIXED",
-    "max": 20,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 20,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "postOperationsStoreTerminalStatus": {
-    "kind": "FIXED",
-    "max": 23,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 18,
-        "to": 23,
-        "reason": "D-39 implementation-agent decision: preserve atomic store-terminal transition and terminal-binding owner closure after three current-byte CP-05 measurements; no safe owner fan-out can be removed.",
-        "decisionRef": "IMPLEMENTATION-AGENT-2026-09-29-TERMINAL-VOID-STATUS-CP05"
-      }
-    ]
-  },
-  "publishOperationsSalesMenu": {
-    "kind": "FIXED",
-    "max": 48,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 48,
-        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "putOperationsStoreTerminal": {
-    "kind": "FIXED",
-    "max": 21,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 21,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "reissueOperationsWorkspaceGroupInvitation": {
-    "kind": "FIXED",
-    "max": 29,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 29,
-        "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
-        "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "reissueOperationsWorkspaceHeadCompanyInvitation": {
-    "kind": "FIXED",
-    "max": 29,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 29,
-        "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
-        "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "reissueOperationsWorkspaceProjectInvitation": {
-    "kind": "FIXED",
-    "max": 28,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 28,
-        "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
-        "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "reissueOperationsWorkspaceRegionInvitation": {
-    "kind": "FIXED",
-    "max": 29,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 29,
-        "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
-        "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "reissueOperationsWorkspaceStoreInvitation": {
-    "kind": "FIXED",
-    "max": 28,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 28,
-        "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
-        "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "releaseOperationsSalesMenuStagedAsset": {
-    "kind": "FIXED",
-    "max": 31,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 31,
-        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "releaseStagedStoreServicePointImage": {
-    "kind": "FIXED",
-    "max": 18,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 18,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "removeOperationsOrganizationHeadCompanyBrandAuthorization": {
-    "kind": "FIXED",
-    "max": 19,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 19,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "renameOperationsSalesMenu": {
-    "kind": "FIXED",
-    "max": 27,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 27,
-        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "renameOperationsSalesMenuSection": {
-    "kind": "FIXED",
-    "max": 30,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 30,
-        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "restoreOperationsSalesMenuItemSale": {
-    "kind": "FIXED",
-    "max": 36,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 36,
-        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "revokeOperationsWorkspaceGroupUserAssignment": {
-    "kind": "FIXED",
-    "max": 28,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 28,
-        "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
-        "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "revokeOperationsWorkspaceHeadCompanyUserAssignment": {
-    "kind": "FIXED",
-    "max": 28,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 28,
-        "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
-        "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "revokeOperationsWorkspaceProjectUserAssignment": {
-    "kind": "FIXED",
-    "max": 26,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 26,
-        "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
-        "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "revokeOperationsWorkspaceRegionUserAssignment": {
-    "kind": "FIXED",
-    "max": 28,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 28,
-        "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
-        "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "revokeOperationsWorkspaceStoreUserAssignment": {
-    "kind": "FIXED",
-    "max": 26,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 26,
-        "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
-        "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "selectOperationsWorkspaceSessionContext": {
-    "kind": "FIXED",
-    "max": 16,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 16,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "selectOperationsWorkspaceSessionDataNode": {
-    "kind": "FIXED",
-    "max": 15,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 15,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "sendOperationsWorkspaceOtp": {
-    "kind": "FIXED",
-    "max": 10,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 10,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "setOperationsSalesMenuActivation": {
-    "kind": "FIXED",
-    "max": 32,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 32,
-        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "setOperationsSalesMenuItemSoldOut": {
-    "kind": "FIXED",
-    "max": 36,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 36,
-        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "stageOperationsSalesMenuAsset": {
-    "kind": "FIXED",
-    "max": 36,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 36,
-        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "stageStoreServicePointImage": {
-    "kind": "FIXED",
-    "max": 25,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 25,
-        "reason": "Dexter 2026-09-18 implementation authorization: retain the complete owner transaction, security boundaries and authoritative readback after three managed CP-05 measurements; no safe consolidation remains.",
-        "decisionRef": "IMPLEMENTATION-AGENT-2026-09-18-SERVICE-POINT-ASSET-STAGE-P3"
-      }
-    ]
-  },
-  "transitionOperationsBusinessChannelStatus": {
-    "kind": "FIXED",
-    "max": 23,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 23,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "transitionOperationsBusinessChannelTemplateStatus": {
-    "kind": "FIXED",
-    "max": 23,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 23,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "transitionOperationsOrganizationBrandStatus": {
-    "kind": "FIXED",
-    "max": 23,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 23,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "transitionOperationsOrganizationHeadCompanyStatus": {
-    "kind": "FIXED",
-    "max": 19,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 19,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "transitionOperationsOrganizationNodeStatus": {
-    "kind": "FIXED",
-    "max": 24,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 24,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "transitionOperationsOrganizationStoreStatus": {
-    "kind": "FIXED",
-    "max": 20,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 20,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "transitionOperationsOrganizationTenantStatus": {
-    "kind": "FIXED",
-    "max": 23,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 23,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "updateOperationsBusinessChannel": {
-    "kind": "FIXED",
-    "max": 23,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 23,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "updateOperationsBusinessChannelTemplate": {
-    "kind": "FIXED",
-    "max": 24,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 24,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "updateOperationsCommercialGroup": {
-    "kind": "FIXED",
-    "max": 25,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 25,
-        "reason": "Dexter authorized reasonable single-FIXED-operation budget updates on 2026-10-05: the three managed CP-05 runs include required TDP owner snapshot/topic notification writes; generic P3 ceiling remains 20.",
-        "decisionRef": "IMPLEMENTATION-AGENT-2026-10-05-TDP-COMMERCIAL-GROUP-UPDATE-P3"
-      }
-    ]
-  },
-  "updateOperationsContract": {
-    "kind": "FIXED",
-    "max": 23,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 23,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "updateOperationsOrganizationBrand": {
-    "kind": "FIXED",
-    "max": 23,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 23,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "updateOperationsOrganizationHeadCompany": {
-    "kind": "FIXED",
-    "max": 23,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 23,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "updateOperationsOrganizationNode": {
-    "kind": "FIXED",
-    "max": 23,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 23,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "updateOperationsOrganizationStore": {
-    "kind": "FIXED",
-    "max": 25,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 25,
-        "reason": "Dexter authorized reasonable single-FIXED-operation budget updates on 2026-10-05: the three managed CP-05 runs include required TDP owner snapshot/topic notification writes; generic P3 ceiling remains 20.",
-        "decisionRef": "IMPLEMENTATION-AGENT-2026-10-05-TDP-STORE-UPDATE-P3"
-      }
-    ]
-  },
-  "updateOperationsOrganizationTenant": {
-    "kind": "FIXED",
-    "max": 23,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 23,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "updateOperationsSalesMenuItem": {
-    "kind": "FIXED",
-    "max": 51,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 51,
-        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "updateOperationsSalesMenuSchedule": {
-    "kind": "FIXED",
-    "max": 29,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 29,
-        "reason": "Dexter 2026-09-02: the Sales Menu command keeps its complete owner transaction and authoritative readback after three managed CP-05 calibration runs; no safe consolidation can remove the remaining natural multi-table business facts.",
-        "decisionRef": "DEXTER-2026-09-02-SALES-MENU-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "verifyOperationsWorkspaceOtp": {
-    "kind": "FIXED",
-    "max": 21,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 21,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  }
-} as const;
+export const OPERATIONS_ADMIN_DATABASE_OPERATION_BUDGETS = {} as const;
 
 export const OPERATIONS_ADMIN_OPERATION_IDS = {
   "addOperationsOrganizationHeadCompanyBrandAuthorization": "addOperationsOrganizationHeadCompanyBrandAuthorization",
@@ -3481,6 +1220,7 @@ export const OPERATIONS_ADMIN_OPERATION_IDS = {
   "cancelOperationsWorkspaceRegionInvitation": "cancelOperationsWorkspaceRegionInvitation",
   "cancelOperationsWorkspaceStoreInvitation": "cancelOperationsWorkspaceStoreInvitation",
   "changeCurrentWorkspacePassword": "changeCurrentWorkspacePassword",
+  "changeOperationsProjectTerminalUpdateRuleStatus": "changeOperationsProjectTerminalUpdateRuleStatus",
   "copyOperationsSalesMenu": "copyOperationsSalesMenu",
   "createOperationsBusinessChannel": "createOperationsBusinessChannel",
   "createOperationsBusinessChannelTemplate": "createOperationsBusinessChannelTemplate",
@@ -3492,6 +1232,7 @@ export const OPERATIONS_ADMIN_OPERATION_IDS = {
   "createOperationsOrganizationStore": "createOperationsOrganizationStore",
   "createOperationsOrganizationTenant": "createOperationsOrganizationTenant",
   "createOperationsOwnerBinding": "createOperationsOwnerBinding",
+  "createOperationsProjectTerminalUpdateRule": "createOperationsProjectTerminalUpdateRule",
   "createOperationsSalesMenu": "createOperationsSalesMenu",
   "createOperationsSalesMenuSection": "createOperationsSalesMenuSection",
   "createOperationsWorkspaceGroupInvitation": "createOperationsWorkspaceGroupInvitation",
@@ -3529,6 +1270,12 @@ export const OPERATIONS_ADMIN_OPERATION_IDS = {
   "getOperationsOrganizationTenants": "getOperationsOrganizationTenants",
   "getOperationsOwnerBindingDetail": "getOperationsOwnerBindingDetail",
   "getOperationsProjectBusinessChannels": "getOperationsProjectBusinessChannels",
+  "getOperationsProjectTerminalUpdateReportHistoryPage": "getOperationsProjectTerminalUpdateReportHistoryPage",
+  "getOperationsProjectTerminalUpdateRuleDetail": "getOperationsProjectTerminalUpdateRuleDetail",
+  "getOperationsProjectTerminalUpdateRulePage": "getOperationsProjectTerminalUpdateRulePage",
+  "getOperationsProjectTerminalUpdateRuleStorePage": "getOperationsProjectTerminalUpdateRuleStorePage",
+  "getOperationsProjectTerminalVersionDetail": "getOperationsProjectTerminalVersionDetail",
+  "getOperationsProjectTerminalVersionPage": "getOperationsProjectTerminalVersionPage",
   "getOperationsSalesMenu": "getOperationsSalesMenu",
   "getOperationsSalesMenuDraftItem": "getOperationsSalesMenuDraftItem",
   "getOperationsSalesMenuDraftItems": "getOperationsSalesMenuDraftItems",
@@ -3552,6 +1299,7 @@ export const OPERATIONS_ADMIN_OPERATION_IDS = {
   "getOperationsStoreTerminalAreaCandidates": "getOperationsStoreTerminalAreaCandidates",
   "getOperationsStoreTerminals": "getOperationsStoreTerminals",
   "getOperationsStoreTerminalTagCandidates": "getOperationsStoreTerminalTagCandidates",
+  "getOperationsTerminalUpdateArtifactCandidatePage": "getOperationsTerminalUpdateArtifactCandidatePage",
   "getOperationsWorkspaceGroupInvitationCandidates": "getOperationsWorkspaceGroupInvitationCandidates",
   "getOperationsWorkspaceGroupInvitations": "getOperationsWorkspaceGroupInvitations",
   "getOperationsWorkspaceGroupUser": "getOperationsWorkspaceGroupUser",
@@ -3739,6 +1487,9 @@ export const EDGE_PROBLEM_CODES = [
   "STORE_TERMINAL_VOIDED_IMMUTABLE",
   "TERMINAL_BINDING_CHANGED",
   "TERMINAL_BINDING_NOT_ACTIVE",
+  "TERMINAL_UPDATE_RULE_TARGET_INVALID",
+  "TERMINAL_UPDATE_SCOPE_MISMATCH",
+  "TERMINAL_UPDATE_SNAPSHOT_TOO_LARGE",
   "VERSION_CONFLICT",
   "VOIDED_RECORD_IMMUTABLE",
   "WORKSPACE_IAM_ACCOUNT_DISABLED",
@@ -5306,6 +3057,135 @@ export type TenantUpdateRequest = (TenantCreateRequest) & ({
   expectedVersion: number;
 });
 
+export type TerminalUpdateArtifactCandidatePage = {
+  items: Array<TerminalUpdateArtifactSummary>;
+  nextCursor: string | null;
+};
+
+export type TerminalUpdateArtifactSummary = {
+  artifactRef: string & { readonly __uuid: "Uuid" };
+  kind: "FULL" | "HOT";
+  applicationId: string;
+  runtimeVersion: string;
+  nativeBuildNumber: number;
+  apkVersion: string;
+  jsVersion: string;
+  publicationId: string;
+  zipSha256: string;
+  byteSize: number;
+  createdAtEpochMillis: number;
+};
+
+export type TerminalUpdateReportActual = {
+  apkVersion: string | null;
+  nativeBuildNumber: number | null;
+  applicationId: string;
+  runtimeVersion: string;
+  jsVersion: string | null;
+  publicationId: string | null;
+  apkSha256: string | null;
+  bundleSha256: string | null;
+  entryKind: "INSTALLED_APK" | "EMBEDDED_BUNDLE" | "HOT_BUNDLE" | "UNKNOWN";
+  unknownReason: "READBACK_UNAVAILABLE" | "NOT_INSTALLED" | "MISMATCH" | "OTHER" | null | null;
+};
+
+export type TerminalUpdateReportHistoryPage = {
+  items: Array<{
+  reportId: string & { readonly __uuid: "Uuid" };
+  taskId: string & { readonly __uuid: "Uuid" } | null;
+  reportSequence: number;
+  actual: TerminalUpdateReportActual;
+  recent: TerminalUpdateReportRecent;
+  receivedAtEpochMillis: number;
+}>;
+  nextCursor: string | null;
+};
+
+export type TerminalUpdateReportRecent = {
+  state: "WAITING_USER" | "DOWNLOADING" | "VERIFYING" | "INSTALLING" | "APPLYING_HOT" | "SUCCEEDED" | "FAILED" | "CANCELLED" | "UNKNOWN";
+  reason: "NONE" | "NETWORK" | "HTTP_REJECTED" | "HASH_MISMATCH" | "PREPARE_FAILED" | "INSTALLER_CANCELLED" | "INSTALL_FAILED" | "HOT_APPLY_FAILED" | "UNKNOWN";
+  changedAtEpochMillis: number;
+  ruleRef: string & { readonly __uuid: "Uuid" } | null;
+  fullArtifactRef: string & { readonly __uuid: "Uuid" } | null;
+  hotArtifactRef: string & { readonly __uuid: "Uuid" } | null;
+};
+
+export type TerminalUpdateRuleCreateRequest = {
+  targetMode: "ALL" | "STORE_REFS";
+  storeRefs?: Array<string & { readonly __uuid: "Uuid" }>;
+  fullArtifactRef: string & { readonly __uuid: "Uuid" };
+  hotArtifactRef?: string & { readonly __uuid: "Uuid" };
+  status: "ENABLED" | "DISABLED";
+  nSeconds: number;
+  hotStrategy: "IMMEDIATE" | "IDLE";
+  mSeconds?: number;
+  description?: string;
+};
+
+export type TerminalUpdateRuleDetail = (TerminalUpdateRuleSummary);
+
+export type TerminalUpdateRulePage = {
+  items: Array<TerminalUpdateRuleSummary>;
+  nextCursor: string | null;
+};
+
+export type TerminalUpdateRuleStatusRequest = {
+  revision: number;
+  status: "ENABLED" | "DISABLED";
+  reason?: string;
+};
+
+export type TerminalUpdateRuleStorePage = {
+  items: Array<{
+  storeRef: string & { readonly __uuid: "Uuid" };
+  name: string | null;
+  code: string | null;
+  status: "ENABLED" | "DISABLED" | "VOIDED" | "UNKNOWN";
+  unknownReason: "MISSING_OR_OUT_OF_PROJECT" | null | null;
+}>;
+  nextCursor: string | null;
+};
+
+export type TerminalUpdateRuleSummary = {
+  ruleRef: string & { readonly __uuid: "Uuid" };
+  projectRef: string & { readonly __uuid: "Uuid" };
+  status: "ENABLED" | "DISABLED";
+  targetMode: "ALL" | "STORE_REFS";
+  fullArtifactRef: string & { readonly __uuid: "Uuid" };
+  hotArtifactRef: string & { readonly __uuid: "Uuid" } | null;
+  nSeconds: number;
+  hotStrategy: "IMMEDIATE" | "IDLE";
+  mSeconds: number | null;
+  description?: string | null;
+  createdAtEpochMillis: number;
+  revision: number;
+};
+
+export type TerminalUpdateVersionDetail = {
+  terminalRef: string & { readonly __uuid: "Uuid" };
+  terminalName: string;
+  storeRef: string & { readonly __uuid: "Uuid" };
+  storeName: string;
+  hasReport: boolean;
+  latest: Record<string, JsonValue> | null;
+  historyCursor: string | null;
+};
+
+export type TerminalUpdateVersionPage = {
+  items: Array<TerminalUpdateVersionReportItem>;
+  nextCursor: string | null;
+};
+
+export type TerminalUpdateVersionReportItem = {
+  terminalRef: string & { readonly __uuid: "Uuid" };
+  terminalName: string;
+  storeRef: string & { readonly __uuid: "Uuid" };
+  storeName: string;
+  hasReport: boolean;
+  actual: Record<string, JsonValue> | null;
+  recent: Record<string, JsonValue> | null;
+};
+
 export type WorkspaceAccountStatus = "ENABLED" | "DISABLED" | "VOIDED";
 
 export type WorkspaceCurrentPasswordChangeRequest = {
@@ -5746,6 +3626,25 @@ export type FaceOperationContracts = {
   };
     headersRequired: true;
   };
+  "changeOperationsProjectTerminalUpdateRuleStatus": {
+    request: TerminalUpdateRuleStatusRequest;
+    response: TerminalUpdateRuleDetail;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    projectRef: string & { readonly __uuid: "Uuid" };
+    ruleRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: {
+    expectedContextVersion: number;
+  };
+    queryRequired: true;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
   "copyOperationsSalesMenu": {
     request: SalesMenuCopyRequest;
     response: SalesMenuCommandReadback;
@@ -5910,6 +3809,24 @@ export type FaceOperationContracts = {
   };
     query: Record<string, never>;
     queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "createOperationsProjectTerminalUpdateRule": {
+    request: TerminalUpdateRuleCreateRequest;
+    response: TerminalUpdateRuleDetail;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    projectRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: {
+    expectedContextVersion: number;
+  };
+    queryRequired: true;
     headers: {
     "Idempotency-Key": string;
   };
@@ -6211,8 +4128,9 @@ export type FaceOperationContracts = {
     path: Record<string, never>;
     query: {
     groupWorkspaceKey: string;
-    entityType: "WORKSPACE_ACCOUNT" | "WORKSPACE_INVITATION" | "COMMERCIAL_GROUP" | "ORGANIZATION_NODE" | "BRAND" | "TENANT" | "HEAD_COMPANY" | "STORE" | "STORE_SERVICE_POINT_AREA" | "STORE_SERVICE_POINT" | "STORE_QR_CONFIGURATION" | "STORE_TERMINAL" | "STORE_CONTRACT";
+    entityType: "WORKSPACE_ACCOUNT" | "WORKSPACE_INVITATION" | "COMMERCIAL_GROUP" | "ORGANIZATION_NODE" | "BRAND" | "TENANT" | "HEAD_COMPANY" | "STORE" | "STORE_SERVICE_POINT_AREA" | "STORE_SERVICE_POINT" | "STORE_QR_CONFIGURATION" | "STORE_TERMINAL" | "STORE_CONTRACT" | "TERMINAL_UPDATE_RULE";
     entityId: string;
+    projectRef?: string & { readonly __uuid: "Uuid" };
     page?: number;
     pageSize?: number;
   };
@@ -6559,6 +4477,123 @@ export type FaceOperationContracts = {
     sortDirection?: SortDirection;
   };
     queryRequired: false;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsProjectTerminalUpdateReportHistoryPage": {
+    request: NoBody;
+    response: TerminalUpdateReportHistoryPage;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    projectRef: string & { readonly __uuid: "Uuid" };
+    terminalRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: {
+    expectedContextVersion: number;
+    cursor?: string;
+    limit: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsProjectTerminalUpdateRuleDetail": {
+    request: NoBody;
+    response: TerminalUpdateRuleDetail;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    projectRef: string & { readonly __uuid: "Uuid" };
+    ruleRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: {
+    expectedContextVersion: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsProjectTerminalUpdateRulePage": {
+    request: NoBody;
+    response: TerminalUpdateRulePage;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    projectRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: {
+    expectedContextVersion: number;
+    status?: "ENABLED" | "DISABLED";
+    applicationId?: string;
+    createdFromEpochMillis?: number;
+    createdToEpochMillis?: number;
+    cursor?: string;
+    limit: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsProjectTerminalUpdateRuleStorePage": {
+    request: NoBody;
+    response: TerminalUpdateRuleStorePage;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    projectRef: string & { readonly __uuid: "Uuid" };
+    ruleRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: {
+    expectedContextVersion: number;
+    cursor?: string;
+    limit: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsProjectTerminalVersionDetail": {
+    request: NoBody;
+    response: TerminalUpdateVersionDetail;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    projectRef: string & { readonly __uuid: "Uuid" };
+    terminalRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: {
+    expectedContextVersion: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsProjectTerminalVersionPage": {
+    request: NoBody;
+    response: TerminalUpdateVersionPage;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    projectRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: {
+    expectedContextVersion: number;
+    storeRef?: string & { readonly __uuid: "Uuid" };
+    queryText?: string;
+    currentApkVersion?: string;
+    currentJsVersion?: string;
+    runtimeVersion?: string;
+    cursor?: string;
+    limit: number;
+  };
+    queryRequired: true;
     headers: Record<string, never>;
     headersRequired: false;
   };
@@ -6956,6 +4991,29 @@ export type FaceOperationContracts = {
     pageSize?: number;
   };
     queryRequired: false;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getOperationsTerminalUpdateArtifactCandidatePage": {
+    request: NoBody;
+    response: TerminalUpdateArtifactCandidatePage;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: {
+    expectedContextVersion: number;
+    projectRef: string & { readonly __uuid: "Uuid" };
+    queryText?: string;
+    kind?: "FULL" | "HOT";
+    applicationId?: string;
+    runtimeVersion?: string;
+    minimumFullArtifactRef?: string & { readonly __uuid: "Uuid" };
+    cursor?: string;
+    limit: number;
+  };
+    queryRequired: true;
     headers: Record<string, never>;
     headersRequired: false;
   };
@@ -8517,6 +6575,14 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       requiresSession: true,
       ...options,
     }),
+    changeOperationsProjectTerminalUpdateRuleStatus: (pathParameters: FaceOperationContracts["changeOperationsProjectTerminalUpdateRuleStatus"]["path"], options: FaceOperationOptions<"changeOperationsProjectTerminalUpdateRuleStatus">) => execute({
+      operationId: "changeOperationsProjectTerminalUpdateRuleStatus",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-update-rules/{ruleRef}/status",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
     copyOperationsSalesMenu: (pathParameters: FaceOperationContracts["copyOperationsSalesMenu"]["path"], options: FaceOperationOptions<"copyOperationsSalesMenu">) => execute({
       operationId: "copyOperationsSalesMenu",
       method: "POST",
@@ -8601,6 +6667,14 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       operationId: "createOperationsOwnerBinding",
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    createOperationsProjectTerminalUpdateRule: (pathParameters: FaceOperationContracts["createOperationsProjectTerminalUpdateRule"]["path"], options: FaceOperationOptions<"createOperationsProjectTerminalUpdateRule">) => execute({
+      operationId: "createOperationsProjectTerminalUpdateRule",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-update-rules",
       pathParameters,
       requiresSession: true,
       ...options,
@@ -8901,6 +6975,54 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       requiresSession: true,
       ...options,
     }),
+    getOperationsProjectTerminalUpdateReportHistoryPage: (pathParameters: FaceOperationContracts["getOperationsProjectTerminalUpdateReportHistoryPage"]["path"], options: FaceOperationOptions<"getOperationsProjectTerminalUpdateReportHistoryPage">) => execute({
+      operationId: "getOperationsProjectTerminalUpdateReportHistoryPage",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-versions/{terminalRef}/update-reports",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsProjectTerminalUpdateRuleDetail: (pathParameters: FaceOperationContracts["getOperationsProjectTerminalUpdateRuleDetail"]["path"], options: FaceOperationOptions<"getOperationsProjectTerminalUpdateRuleDetail">) => execute({
+      operationId: "getOperationsProjectTerminalUpdateRuleDetail",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-update-rules/{ruleRef}",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsProjectTerminalUpdateRulePage: (pathParameters: FaceOperationContracts["getOperationsProjectTerminalUpdateRulePage"]["path"], options: FaceOperationOptions<"getOperationsProjectTerminalUpdateRulePage">) => execute({
+      operationId: "getOperationsProjectTerminalUpdateRulePage",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-update-rules",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsProjectTerminalUpdateRuleStorePage: (pathParameters: FaceOperationContracts["getOperationsProjectTerminalUpdateRuleStorePage"]["path"], options: FaceOperationOptions<"getOperationsProjectTerminalUpdateRuleStorePage">) => execute({
+      operationId: "getOperationsProjectTerminalUpdateRuleStorePage",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-update-rules/{ruleRef}/stores",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsProjectTerminalVersionDetail: (pathParameters: FaceOperationContracts["getOperationsProjectTerminalVersionDetail"]["path"], options: FaceOperationOptions<"getOperationsProjectTerminalVersionDetail">) => execute({
+      operationId: "getOperationsProjectTerminalVersionDetail",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-versions/{terminalRef}",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsProjectTerminalVersionPage: (pathParameters: FaceOperationContracts["getOperationsProjectTerminalVersionPage"]["path"], options: FaceOperationOptions<"getOperationsProjectTerminalVersionPage">) => execute({
+      operationId: "getOperationsProjectTerminalVersionPage",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-versions",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
     getOperationsSalesMenu: (pathParameters: FaceOperationContracts["getOperationsSalesMenu"]["path"], options: FaceOperationOptions<"getOperationsSalesMenu">) => execute({
       operationId: "getOperationsSalesMenu",
       method: "GET",
@@ -9081,6 +7203,14 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       operationId: "getOperationsStoreTerminalTagCandidates",
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/tag-candidates",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsTerminalUpdateArtifactCandidatePage: (pathParameters: FaceOperationContracts["getOperationsTerminalUpdateArtifactCandidatePage"]["path"], options: FaceOperationOptions<"getOperationsTerminalUpdateArtifactCandidatePage">) => execute({
+      operationId: "getOperationsTerminalUpdateArtifactCandidatePage",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/terminal-update-artifact-candidates",
       pathParameters,
       requiresSession: true,
       ...options,

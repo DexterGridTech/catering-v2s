@@ -14,6 +14,7 @@ export {
   selectStore,
   selectStoreBasicBinding,
   selectStoreBasicState,
+  selectStoreBasicLoadReadiness,
   selectStoreBasicTopicState,
   selectStoreCommercialGroup,
   selectStoreOperatingRules,

@@ -17,6 +17,7 @@ import com.catering.v2s.platform.iam.application.PlatformIamAuditHistoryService;
 import com.catering.v2s.platform.workspace.api.WorkspaceAdministrationReadback;
 import com.catering.v2s.platform.workspace.application.PlatformWorkspaceAuditHistoryService;
 import com.catering.v2s.platform.workspace.application.WorkspaceAdministrationService;
+import com.catering.v2s.terminalupdate.api.TerminalUpdateArtifactOwnerApi;
 import com.catering.v2s.workspace.iam.application.WorkspaceIamAuditHistoryService;
 import java.util.List;
 import java.util.UUID;
@@ -42,7 +43,8 @@ class PlatformAuditHistoryTaskReadServiceTest {
                 fixture.groupWorkspaceAudit,
                 fixture.workspaceIamAudit,
                 fixture.extensionAudit,
-                fixture.contractAudit);
+                fixture.contractAudit,
+                fixture.terminalUpdateArtifacts);
     }
 
     @ParameterizedTest
@@ -90,7 +92,9 @@ class PlatformAuditHistoryTaskReadServiceTest {
                 new PlatformAuditHistoryQuery.ExtensionDefinition(
                         new AuditTarget("EXTENSION_DEFINITION", "STORE"), WORKSPACE_KEY, 1, 20),
                 new PlatformAuditHistoryQuery.StoreContract(
-                        new AuditTarget("STORE_CONTRACT", id), WORKSPACE_KEY, 1, 20));
+                        new AuditTarget("STORE_CONTRACT", id), WORKSPACE_KEY, 1, 20),
+                new PlatformAuditHistoryQuery.TerminalUpdateArtifact(
+                        new AuditTarget("TERMINAL_UPDATE_ARTIFACT", id), WORKSPACE_KEY, 1, 20));
     }
 
     private static void stubWorkspaceHostedProjection(
@@ -115,6 +119,9 @@ class PlatformAuditHistoryTaskReadServiceTest {
             case PlatformAuditHistoryQuery.StoreContract ignored -> when(fixture.contractAudit.readStoreContract(
                             scope, id, 1, 20))
                     .thenReturn(empty());
+            case PlatformAuditHistoryQuery.TerminalUpdateArtifact ignored -> when(fixture.terminalUpdateArtifacts
+                            .readAuditHistory(scope.workspaceUuid(), scope.groupWorkspaceKey(), UUID.fromString(id), 1, 20))
+                    .thenReturn(empty());
             case PlatformAuditHistoryQuery.PlatformAdmin ignored -> throw new AssertionError("not workspace hosted");
         }
     }
@@ -135,6 +142,8 @@ class PlatformAuditHistoryTaskReadServiceTest {
                     .readExtensionDefinition(scope, id, 1, 20);
             case PlatformAuditHistoryQuery.StoreContract ignored -> verify(fixture.contractAudit)
                     .readStoreContract(scope, id, 1, 20);
+            case PlatformAuditHistoryQuery.TerminalUpdateArtifact ignored -> verify(fixture.terminalUpdateArtifacts)
+                    .readAuditHistory(scope.workspaceUuid(), scope.groupWorkspaceKey(), UUID.fromString(id), 1, 20);
             case PlatformAuditHistoryQuery.PlatformAdmin ignored -> throw new AssertionError("not workspace hosted");
         }
     }
@@ -150,6 +159,7 @@ class PlatformAuditHistoryTaskReadServiceTest {
         WorkspaceIamAuditHistoryService workspaceIamAudit = mock(WorkspaceIamAuditHistoryService.class);
         ExtensionAuditHistoryService extensionAudit = mock(ExtensionAuditHistoryService.class);
         ContractAuditHistoryService contractAudit = mock(ContractAuditHistoryService.class);
+        TerminalUpdateArtifactOwnerApi terminalUpdateArtifacts = mock(TerminalUpdateArtifactOwnerApi.class);
         WorkspaceAdministrationReadback workspace = new WorkspaceAdministrationReadback(
                 UUID.randomUUID(),
                 WORKSPACE_KEY,
@@ -172,7 +182,8 @@ class PlatformAuditHistoryTaskReadServiceTest {
                         platformIamAudit,
                         workspaceIamAudit,
                         extensionAudit,
-                        contractAudit),
+                        contractAudit,
+                        terminalUpdateArtifacts),
                 session,
                 workspaces,
                 groupWorkspaceAudit,
@@ -180,6 +191,7 @@ class PlatformAuditHistoryTaskReadServiceTest {
                 workspaceIamAudit,
                 extensionAudit,
                 contractAudit,
+                terminalUpdateArtifacts,
                 workspace);
     }
 
@@ -192,6 +204,7 @@ class PlatformAuditHistoryTaskReadServiceTest {
             WorkspaceIamAuditHistoryService workspaceIamAudit,
             ExtensionAuditHistoryService extensionAudit,
             ContractAuditHistoryService contractAudit,
+            TerminalUpdateArtifactOwnerApi terminalUpdateArtifacts,
             WorkspaceAdministrationReadback workspace) {
         AuditReadScope scope() {
             return new AuditReadScope(workspace.workspaceUuid(), workspace.groupWorkspaceKey());

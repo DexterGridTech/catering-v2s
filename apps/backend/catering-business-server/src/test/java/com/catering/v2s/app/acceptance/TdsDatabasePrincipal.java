@@ -95,7 +95,7 @@ final class TdsDatabasePrincipal implements AutoCloseable {
             statement.execute("GRANT CONNECT ON DATABASE " + quoteIdentifier(database) + " TO " + username);
             for (String schema : new String[] {
                 "platform_workspace", "store_terminal", "organization",
-                "terminal_binding", "terminal_connection", "contract"
+                "terminal_binding", "terminal_connection", "contract", "terminal_update"
             }) {
                 statement.execute("GRANT USAGE ON SCHEMA " + schema + " TO " + username);
             }
@@ -122,6 +122,12 @@ final class TdsDatabasePrincipal implements AutoCloseable {
                     ("""
                     GRANT EXECUTE ON FUNCTION contract.read_terminal_topic_time(
                         UUID, VARCHAR, UUID, VARCHAR, UUID) TO %s
+                    """)
+                            .formatted(username));
+            statement.execute(
+                    ("""
+                    GRANT EXECUTE ON FUNCTION terminal_update.read_rule_topic_time(
+                        UUID, VARCHAR, UUID, UUID) TO %s
                     """)
                             .formatted(username));
             if (terminalControlAvailable) {
@@ -205,6 +211,12 @@ final class TdsDatabasePrincipal implements AutoCloseable {
                     SELECT count(*) FROM contract.read_terminal_topic_time(
                         NULL::uuid, NULL::varchar, NULL::uuid, 'CONTRACT', NULL::uuid)
                     """);
+            verifyQuery(
+                    statement,
+                    """
+                    SELECT count(*) FROM terminal_update.read_rule_topic_time(
+                        NULL::uuid, NULL::varchar, NULL::uuid, NULL::uuid)
+                    """);
             if (terminalControlAvailable) {
                 verifyQuery(
                         statement,
@@ -226,6 +238,18 @@ final class TdsDatabasePrincipal implements AutoCloseable {
             } catch (SQLException denied) {
                 Assertions.assertEquals(
                         "42501", denied.getSQLState(), "TDS_OWNER_DML_FAILURE_MUST_BE_PERMISSION_DENIED");
+            }
+            for (String sql : new String[] {
+                "SELECT rule_ref FROM terminal_update.project_rule LIMIT 0",
+                "SELECT project_ref FROM terminal_update.rule_topic_snapshot LIMIT 0"
+            }) {
+                try {
+                    statement.execute(sql);
+                    Assertions.fail("TDS_TERMINAL_UPDATE_TABLE_SELECT_MUST_BE_DENIED");
+                } catch (SQLException denied) {
+                    Assertions.assertEquals("42501", denied.getSQLState(),
+                            "TDS_TERMINAL_UPDATE_DIRECT_READ_FAILURE_MUST_BE_PERMISSION_DENIED");
+                }
             }
             if (terminalControlAvailable) {
                 for (String sql : new String[] {

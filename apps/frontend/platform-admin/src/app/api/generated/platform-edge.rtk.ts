@@ -238,6 +238,22 @@ export const platformAdminRtkRequest = {
       requiresSession: true,
       ...options,
     }),
+    getPlatformTerminalUpdateArtifactDetail: (pathParameters: FaceOperationContracts["getPlatformTerminalUpdateArtifactDetail"]["path"], options: FaceOperationOptions<"getPlatformTerminalUpdateArtifactDetail">): FaceOperationRequest<"getPlatformTerminalUpdateArtifactDetail"> => ({
+      operationId: "getPlatformTerminalUpdateArtifactDetail",
+      method: "GET",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/terminal-update-artifacts/{artifactRef}",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getPlatformTerminalUpdateArtifactPage: (pathParameters: FaceOperationContracts["getPlatformTerminalUpdateArtifactPage"]["path"], options: FaceOperationOptions<"getPlatformTerminalUpdateArtifactPage">): FaceOperationRequest<"getPlatformTerminalUpdateArtifactPage"> => ({
+      operationId: "getPlatformTerminalUpdateArtifactPage",
+      method: "GET",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/terminal-update-artifacts",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
     getWorkspaceAccount: (pathParameters: FaceOperationContracts["getWorkspaceAccount"]["path"], options: FaceOperationOptions<"getWorkspaceAccount">): FaceOperationRequest<"getWorkspaceAccount"> => ({
       operationId: "getWorkspaceAccount",
       method: "GET",
@@ -326,6 +342,14 @@ export const platformAdminRtkRequest = {
       requiresSession: false,
       ...options,
     }),
+    registerPlatformTerminalUpdateArtifact: (pathParameters: FaceOperationContracts["registerPlatformTerminalUpdateArtifact"]["path"], options: FaceOperationOptions<"registerPlatformTerminalUpdateArtifact">): FaceOperationRequest<"registerPlatformTerminalUpdateArtifact"> => ({
+      operationId: "registerPlatformTerminalUpdateArtifact",
+      method: "POST",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/terminal-update-artifacts",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
     reissueWorkspaceInvitation: (pathParameters: FaceOperationContracts["reissueWorkspaceInvitation"]["path"], options: FaceOperationOptions<"reissueWorkspaceInvitation">): FaceOperationRequest<"reissueWorkspaceInvitation"> => ({
       operationId: "reissueWorkspaceInvitation",
       method: "POST",
@@ -338,6 +362,14 @@ export const platformAdminRtkRequest = {
       operationId: "releasePlatformStagedAsset",
       method: "POST",
       path: "/api/platform/assets/staging/{assetRef}/release",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    releasePlatformTerminalUpdateArtifactStage: (pathParameters: FaceOperationContracts["releasePlatformTerminalUpdateArtifactStage"]["path"], options: FaceOperationOptions<"releasePlatformTerminalUpdateArtifactStage">): FaceOperationRequest<"releasePlatformTerminalUpdateArtifactStage"> => ({
+      operationId: "releasePlatformTerminalUpdateArtifactStage",
+      method: "POST",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/terminal-update-artifact-stages/{stageRef}/release",
       pathParameters,
       requiresSession: true,
       ...options,
@@ -394,6 +426,14 @@ export const platformAdminRtkRequest = {
       operationId: "stagePlatformAsset",
       method: "POST",
       path: "/api/platform/assets/staging",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    stagePlatformTerminalUpdateArtifact: (pathParameters: FaceOperationContracts["stagePlatformTerminalUpdateArtifact"]["path"], options: FaceOperationOptions<"stagePlatformTerminalUpdateArtifact">): FaceOperationRequest<"stagePlatformTerminalUpdateArtifact"> => ({
+      operationId: "stagePlatformTerminalUpdateArtifact",
+      method: "POST",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/terminal-update-artifact-stages",
       pathParameters,
       requiresSession: true,
       ...options,
@@ -625,6 +665,14 @@ export function createPlatformAdminRtkEndpoints<TagTypes extends PlatformAdminRt
       query: (request) => toWireRequest(request),
       providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
+    getPlatformTerminalUpdateArtifactDetail: build.query<FaceOperationContracts["getPlatformTerminalUpdateArtifactDetail"]["response"], FaceOperationRequest<"getPlatformTerminalUpdateArtifactDetail">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
+    getPlatformTerminalUpdateArtifactPage: build.query<FaceOperationContracts["getPlatformTerminalUpdateArtifactPage"]["response"], FaceOperationRequest<"getPlatformTerminalUpdateArtifactPage">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
     getWorkspaceAccount: build.query<FaceOperationContracts["getWorkspaceAccount"]["response"], FaceOperationRequest<"getWorkspaceAccount">>({
       query: (request) => toWireRequest(request),
       providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
@@ -669,11 +717,19 @@ export function createPlatformAdminRtkEndpoints<TagTypes extends PlatformAdminRt
       query: (request) => toWireRequest(request),
       invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
+    registerPlatformTerminalUpdateArtifact: build.mutation<FaceOperationContracts["registerPlatformTerminalUpdateArtifact"]["response"], FaceOperationRequest<"registerPlatformTerminalUpdateArtifact">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
     reissueWorkspaceInvitation: build.mutation<FaceOperationContracts["reissueWorkspaceInvitation"]["response"], FaceOperationRequest<"reissueWorkspaceInvitation">>({
       query: (request) => toWireRequest(request),
       invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     releasePlatformStagedAsset: build.mutation<FaceOperationContracts["releasePlatformStagedAsset"]["response"], FaceOperationRequest<"releasePlatformStagedAsset">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
+    releasePlatformTerminalUpdateArtifactStage: build.mutation<FaceOperationContracts["releasePlatformTerminalUpdateArtifactStage"]["response"], FaceOperationRequest<"releasePlatformTerminalUpdateArtifactStage">>({
       query: (request) => toWireRequest(request),
       invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
@@ -702,6 +758,10 @@ export function createPlatformAdminRtkEndpoints<TagTypes extends PlatformAdminRt
       invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     stagePlatformAsset: build.mutation<FaceOperationContracts["stagePlatformAsset"]["response"], FaceOperationRequest<"stagePlatformAsset">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
+    stagePlatformTerminalUpdateArtifact: build.mutation<FaceOperationContracts["stagePlatformTerminalUpdateArtifact"]["response"], FaceOperationRequest<"stagePlatformTerminalUpdateArtifact">>({
       query: (request) => toWireRequest(request),
       invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),

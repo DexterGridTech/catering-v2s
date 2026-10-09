@@ -254,6 +254,39 @@
       "notApplicableReason": "The table is the current store's upstream-eligible template projection with session-scoped data, no query form or pagination, and no independent CRUD query surface."
     },
     {
+      "id": "operations-terminal-update-rules",
+      "source": "apps/frontend/operations-admin/src/features/terminal-update/ui/ProjectTerminalUpdatePage.tsx",
+      "primaryKinds": ["TERMINAL_UPDATE_RULE"],
+      "tableIndex": 0,
+      "filterKeys": ["status"],
+      "filterColumnMappings": [{"filterKey": "status", "visibleColumnTitle": "状态"}],
+      "additionalVisibleColumnTitles": ["规则", "范围", "FULL", "HOT", "检查间隔", "创建时间"]
+    },
+    {
+      "id": "operations-terminal-version-reports",
+      "source": "apps/frontend/operations-admin/src/features/terminal-update/ui/ProjectTerminalUpdatePage.tsx",
+      "primaryKinds": ["TERMINAL_VERSION_REPORT"],
+      "tableIndex": 1,
+      "filterKeys": ["queryText", "storeRef", "currentApkVersion", "currentJsVersion", "runtimeVersion"],
+      "filterColumnMappings": [
+        {"filterKey": "queryText", "visibleColumnTitle": "终端"},
+        {"filterKey": "storeRef", "visibleColumnTitle": "门店"},
+        {"filterKey": "currentApkVersion", "visibleColumnTitle": "实际 APK"},
+        {"filterKey": "currentJsVersion", "visibleColumnTitle": "实际 JS"},
+        {"filterKey": "runtimeVersion", "visibleColumnTitle": "Runtime"}
+      ],
+      "additionalVisibleColumnTitles": ["最新实际状态"]
+    },
+    {
+      "id": "platform-terminal-update-artifacts",
+      "source": "apps/frontend/platform-admin/src/features/terminal-update/ui/TerminalUpdatePackagesPage.tsx",
+      "primaryKinds": ["TERMINAL_UPDATE_ARTIFACT"],
+      "tableIndex": 0,
+      "filterKeys": ["kind"],
+      "filterColumnMappings": [{"filterKey": "kind", "visibleColumnTitle": "类型"}],
+      "additionalVisibleColumnTitles": ["应用", "原生版本", "APK 版本", "JS 版本", "Runtime", "创建时间"]
+    },
+    {
       "id": "platform-owner-binding-list",
       "source": "apps/frontend/platform-admin/src/features/external-collaboration/ui/OwnerBindingList.tsx",
       "filterKeys": ["bindingName", "nodeQueryText"],

@@ -12,7 +12,10 @@ describe('generated terminal API contract', () => {
     expect(Object.keys(terminalOperationContracts)).toEqual([
       'activateTerminal',
       'cancelTerminalActivation',
+      'issueTerminalUpdateArtifactDownloadGrant',
+      'submitTerminalUpdateReport',
       'terminalReadContract',
+      'terminalReadProjectUpdateRuleSnapshotPage',
       'terminalReadServicePoint',
       'terminalReadServicePointArea',
       'terminalReadStoreActiveContracts',

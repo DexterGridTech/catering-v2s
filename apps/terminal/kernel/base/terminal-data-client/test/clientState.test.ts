@@ -54,6 +54,7 @@ describe('terminal-data-client selectors', () => {
     state = terminalDataClientReducer(
       state,
       terminalDataClientActions.sessionReady({
+        sessionId: 'tds-session-1',
         nodeId: 'tds-1',
         heartbeatIntervalMs: 10_000,
         observedAt: 100,
@@ -66,7 +67,7 @@ describe('terminal-data-client selectors', () => {
       latency: selectConnectionLatency(root(state), 120),
     };
     expect(selectors.activation.status).toBe('active');
-    expect(selectors.connection).toMatchObject({status: 'connected', nodeId: 'tds-1'});
+    expect(selectors.connection).toMatchObject({status: 'connected', nodeId: 'tds-1', sessionId: 'tds-session-1'});
     expect(selectors.latency).toEqual({lastRttMs: 23, samples: [{rttMs: 23, observedAt: 110}]});
     expect(JSON.stringify(selectors).includes(secret)).toBe(false);
     expect(JSON.stringify(selectors).includes('credentialSecret')).toBe(false);
@@ -77,6 +78,7 @@ describe('terminal-data-client selectors', () => {
     state = terminalDataClientReducer(
       state,
       terminalDataClientActions.sessionReady({
+        sessionId: 'tds-session-2',
         nodeId: 'tds-1',
         heartbeatIntervalMs: 3_600_000,
         observedAt: 7_200_002,

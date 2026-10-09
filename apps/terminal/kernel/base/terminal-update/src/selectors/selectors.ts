@@ -27,3 +27,21 @@ export const selectTerminalUpdateRecentStatus = defineStateSelector(moduleName, 
   parameters: [],
   selector: (root: StateRoot) => readState(root).recentStatus,
 });
+export const selectTerminalUpdateReportDelivery = defineStateSelector(moduleName, 'selectTerminalUpdateReportDelivery', {
+  parameters: [],
+  selector: (root: StateRoot) => {
+    const descriptor = readState(root).reportDescriptor;
+    return Object.freeze({
+      pendingCount: Object.keys(descriptor?.pendingReports ?? {}).length,
+      sendPaused: descriptor?.sendPaused ?? false,
+      latestDeliveryFailure: descriptor?.latestDeliveryFailure ?? null,
+    });
+  },
+});
+export const selectTerminalUpdateRuleSnapshot = defineStateSelector(moduleName, 'selectTerminalUpdateRuleSnapshot', {
+  parameters: [],
+  selector: (root: StateRoot) => Object.freeze({
+    ...readState(root).ruleSnapshot,
+    ...readState(root).ruleSnapshotStatus,
+  }),
+});

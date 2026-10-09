@@ -56,7 +56,8 @@
                 "STORE_SERVICE_POINT",
                 "STORE_QR_CONFIGURATION",
                 "STORE_TERMINAL",
-                "STORE_CONTRACT"
+                "STORE_CONTRACT",
+                "TERMINAL_UPDATE_RULE"
               ]
             }
           },
@@ -68,6 +69,15 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 128
+            }
+          },
+          {
+            "in": "query",
+            "name": "projectRef",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
             }
           },
           {

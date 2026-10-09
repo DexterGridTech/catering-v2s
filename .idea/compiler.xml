@@ -65,6 +65,9 @@
       <module name="catering-v2s.apps.backend.catering-business-server.modules.terminal-control" options="-parameters" />
       <module name="catering-v2s.apps.backend.catering-business-server.modules.terminal-control.main" options="-parameters" />
       <module name="catering-v2s.apps.backend.catering-business-server.modules.terminal-control.test" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.terminal-update" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.terminal-update.main" options="-parameters" />
+      <module name="catering-v2s.apps.backend.catering-business-server.modules.terminal-update.test" options="-parameters" />
       <module name="catering-v2s.apps.backend.catering-business-server.modules.test" options="-parameters" />
       <module name="catering-v2s.apps.backend.catering-business-server.modules.workspace" options="-parameters" />
       <module name="catering-v2s.apps.backend.catering-business-server.modules.workspace-iam" options="-parameters" />

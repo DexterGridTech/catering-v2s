@@ -1,6 +1,5 @@
 import packageJson from '../../package.json';
 import {createAndroidPlatformBinding} from '@catering-v2s/application-base-android';
-import {createAndroidAutomationUpdateTargetSourceProvider} from '@catering-v2s/adapter-android-update';
 import {createSampleAssembly, type SurfaceForm} from '@catering-v2s/ui-integration-sample-console';
 import {resolveManagedServerSpaces} from './managedServerSpaces';
 
@@ -33,7 +32,6 @@ export const createSampleTerminalAssembly = (input: Readonly<{readonly surfaceFo
     surfaceForm: input.surfaceForm,
     terminalSurfaces: packageJson.terminalSurfaces,
     serverSpaces: serverSpaces(),
-    terminalUpdateSourceProvider: createAndroidAutomationUpdateTargetSourceProvider(),
     showAdminPassword: packageJson.showAdminPassword,
   });
 };

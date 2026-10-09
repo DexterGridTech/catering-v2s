@@ -31,6 +31,13 @@ class TdsTerminalTopicRepositoryTest {
             assertThat(jdbc.arguments).containsExactly(WORKSPACE, "GROUP-1", STORE, topic, OWNER);
         }
 
+        CapturingJdbcTemplate terminalUpdateJdbc = new CapturingJdbcTemplate();
+        assertThat(new TdsTerminalTopicRepository(terminalUpdateJdbc)
+                        .readTime(WORKSPACE, "GROUP-1", STORE, "TERMINAL_UPDATE_RULES", OWNER))
+                .isEqualTo(OptionalLong.of(123));
+        assertThat(terminalUpdateJdbc.sql).contains("terminal_update.read_rule_topic_time");
+        assertThat(terminalUpdateJdbc.arguments).containsExactly(WORKSPACE, "GROUP-1", STORE, OWNER);
+
         CapturingJdbcTemplate contractJdbc = new CapturingJdbcTemplate();
         assertThat(new TdsTerminalTopicRepository(contractJdbc)
                         .readTime(WORKSPACE, "GROUP-1", STORE, "CONTRACT", OWNER))
@@ -72,6 +79,12 @@ class TdsTerminalTopicRepositoryTest {
         CapturingJdbcTemplate exactJdbc = new CapturingJdbcTemplate();
         exactJdbc.value = null;
         assertThat(new TdsTerminalTopicRepository(exactJdbc).readTime(WORKSPACE, "GROUP-1", STORE, "CONTRACT", OWNER))
+                .isEmpty();
+
+        CapturingJdbcTemplate terminalUpdateJdbc = new CapturingJdbcTemplate();
+        terminalUpdateJdbc.value = null;
+        assertThat(new TdsTerminalTopicRepository(terminalUpdateJdbc)
+                        .readTime(WORKSPACE, "GROUP-1", STORE, "TERMINAL_UPDATE_RULES", OWNER))
                 .isEmpty();
     }
 

@@ -13,6 +13,23 @@ public final class PlatformAssetServiceSql {
             "sha256, status, created_at_epoch_millis, version) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ";
     public static final String PLATFORM_ASSET_SERVICE_PARAMETER_PLACEHOLDER = "?, ?, ";
     public static final String PLATFORM_ASSET_SERVICE_STAGED = "'STAGED', ?, 1)";
+    public static final String TERMINAL_UPDATE_ASSET_SELECT_FOR_SCOPE =
+            "SELECT asset_ref, usage, status, version, size_bytes, bucket_name, object_key, content_type, sha256 "
+                    + "FROM platform_asset.staged_asset WHERE asset_ref=? AND usage='TERMINAL_UPDATE_PACKAGE' "
+                    + "AND workspace_uuid=? AND group_workspace_key=?";
+    public static final String TERMINAL_UPDATE_ASSET_CLAIM =
+            "UPDATE platform_asset.staged_asset SET status='ACTIVE', claimed_by_type='TERMINAL_UPDATE_PACKAGE', "
+                    + "claimed_by_id=asset_ref, activated_at_epoch_millis=?, version=version+1 "
+                    + "WHERE asset_ref=? AND usage='TERMINAL_UPDATE_PACKAGE' AND workspace_uuid=? "
+                    + "AND group_workspace_key=? AND status='STAGED' AND sha256=? AND EXISTS ("
+                    + "SELECT 1 FROM platform_asset.asset_bind_grant WHERE asset_ref=? "
+                    + "AND consumed_at_epoch_millis IS NULL AND expires_at_epoch_millis>=? AND grant_hash=?)";
+    public static final String TERMINAL_UPDATE_ASSET_RELEASE_STAGE =
+            "UPDATE platform_asset.staged_asset SET status='RELEASED', released_at_epoch_millis=?, version=version+1 "
+                    + "WHERE asset_ref=? AND usage='TERMINAL_UPDATE_PACKAGE' AND workspace_uuid=? "
+                    + "AND group_workspace_key=? AND status='STAGED' AND EXISTS ("
+                    + "SELECT 1 FROM platform_asset.asset_bind_grant WHERE asset_ref=? "
+                    + "AND consumed_at_epoch_millis IS NULL AND expires_at_epoch_millis>=? AND grant_hash=?)";
     public static final String PLATFORM_ASSET_SERVICE_UPDATE_STAGED_ASSET_STATUS_RELEASED_RELEASED_AT_EPOCH_MILLIS =
             "UPDATE platform_asset.staged_asset SET status='RELEASED', released_at_epoch_millis=?, ";
     public static final String PLATFORM_ASSET_SERVICE_VERSION_ASSET_REF_USAGE_STATUS =
@@ -112,10 +129,10 @@ public final class PlatformAssetServiceSql {
     public static final String PLATFORM_ASSET_SERVICE_ASSET_REF_USAGE_CATALOG_ITEM_IMAGE_WORKSPACE_UUID =
             "asset_ref=? AND usage='CATALOG_ITEM_IMAGE' AND workspace_uuid=?";
     public static final String PLATFORM_ASSET_SERVICE_SELECT_STAGED_ASSET_OBJECT_KEY_CONTENT_TYPE_SHA256_ASSET_REF =
-            "SELECT object_key, content_type, sha256 FROM platform_asset.staged_asset WHERE asset_ref=? AND ";
+            "SELECT usage, object_key, content_type, sha256 FROM platform_asset.staged_asset WHERE asset_ref=? AND ";
     public static final String PLATFORM_ASSET_SERVICE_STATUS_ACTIVE = "status='ACTIVE'";
     public static final String PLATFORM_ASSET_SERVICE_SELECT_STAGED_ASSET_ASSET_REF_OBJECT_KEY_CONTENT_TYPE_SHA256 =
-            "SELECT asset_ref, object_key, content_type, sha256 FROM platform_asset.staged_asset WHERE ";
+            "SELECT asset_ref, usage, object_key, content_type, sha256 FROM platform_asset.staged_asset WHERE ";
     public static final String PLATFORM_ASSET_SERVICE_STATUS_ACTIVE_ASSET_REF = "status='ACTIVE' AND asset_ref IN (";
     public static final String PLATFORM_ASSET_SERVICE_CLOSE_PAREN_ALTERNATE_A = ")";
     public static final String PLATFORM_ASSET_SERVICE_SELECT_STAGED_ASSET_BUCKET_NAME_OBJECT_KEY =

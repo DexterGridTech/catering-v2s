@@ -193,6 +193,7 @@
           "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
           "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
           "PLATFORM_COMMON_VALIDATION_FAILED",
+          "PLATFORM_COMMON_VERSION_CONFLICT",
           "TERMINAL_UPDATE_SNAPSHOT_TOO_LARGE"
         ],
         "security": [
@@ -391,6 +392,16 @@
             }
           },
           {
+            "in": "query",
+            "name": "expectedContextVersion",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            }
+          },
+          {
             "name": "Idempotency-Key",
             "in": "header",
             "required": true,
@@ -440,6 +451,7 @@
             "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
           }
         },
+        "x-expected-version-policy": "REQUIRED_CONTEXT_VERSION",
         "x-required-capability": "REQ_CREATE_OPERATIONS_PROJECT_TERMINAL_UPDATE_RULE",
         "requestBody": {
           "required": true,
@@ -635,6 +647,16 @@
             }
           },
           {
+            "in": "query",
+            "name": "expectedContextVersion",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            }
+          },
+          {
             "name": "Idempotency-Key",
             "in": "header",
             "required": true,
@@ -684,6 +706,7 @@
             "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
           }
         },
+        "x-expected-version-policy": "REQUIRED_CONTEXT_VERSION",
         "x-required-capability": "REQ_CHANGE_OPERATIONS_PROJECT_TERMINAL_UPDATE_RULE_STATUS",
         "requestBody": {
           "required": true,

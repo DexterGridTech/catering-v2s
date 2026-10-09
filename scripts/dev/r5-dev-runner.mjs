@@ -348,6 +348,11 @@ export async function syncRemoteSource(host, remoteRoot) {
   return {remoteRoot, workspace: `${remoteRoot}/workspace`};
 }
 const remoteEnvLine = (name, value) => `${name}=${String(value ?? '')}`;
+export function resolveBackendPerformanceProjectionMode(value) {
+  if (value === undefined || value === '') return 'CALIBRATED';
+  if (value !== 'IDENTITY_ONLY') fail('BACKEND_PERFORMANCE_PROJECTION_MODE_INVALID');
+  return value;
+}
 export async function startRemoteJava(
   host,
   {
@@ -374,6 +379,16 @@ export async function startRemoteJava(
   const remoteSeedEventsPath = `${remoteResults}/seed-request-events.jsonl`;
   const remoteDbOperationsPath = `${remoteResults}/db-operations.jsonl`;
   const remoteStatementDictionaryPath = `${remoteResults}/statement-dictionary.json`;
+  const terminalUpdateBuildToolsDirectory =
+    env.environment.V2S_DEV_REMOTE_TERMINAL_UPDATE_ANDROID_BUILD_TOOLS_DIRECTORY;
+  if (typeof terminalUpdateBuildToolsDirectory !== 'string' ||
+      !/^\/[A-Za-z0-9._/-]+$/.test(terminalUpdateBuildToolsDirectory) ||
+      terminalUpdateBuildToolsDirectory.split('/').includes('..')) {
+    fail('REMOTE_TERMINAL_UPDATE_BUILD_TOOLS_DIRECTORY_INVALID');
+  }
+  const performanceProjectionMode = resolveBackendPerformanceProjectionMode(
+    process.env.V2S_BACKEND_PERFORMANCE_PROJECTION_MODE,
+  );
   const backendAcceptanceVerificationMode = env.environment.V2S_BACKEND_ACCEPTANCE_VERIFICATION_MODE;
   if (
     backendAcceptanceVerificationMode !== undefined &&
@@ -397,6 +412,10 @@ export async function startRemoteJava(
       ? {}
       : {V2S_BACKEND_ACCEPTANCE_VERIFICATION_MODE: backendAcceptanceVerificationMode}),
     V2S_DEV_NAMESPACE: env.namespace,
+    TERMINAL_UPDATE_ANDROID_BUILD_TOOLS_DIRECTORY: terminalUpdateBuildToolsDirectory,
+    ...(performanceProjectionMode === 'IDENTITY_ONLY'
+      ? {V2S_BACKEND_PERFORMANCE_PROJECTION_MODE: performanceProjectionMode}
+      : {}),
     V2S_CATALOG_TEST_FAULTS: catalogTestFaultsAdmitted ? 'true' : 'false',
     V2S_SEED_OTP_FIXED_VALUE: credential.values.V2S_SEED_OTP_FIXED_VALUE ?? credential.values.V2S_L2_TEST_OTP,
     V2S_SEED_REPORT_RUN_ID: runId,
@@ -409,6 +428,8 @@ export async function startRemoteJava(
     CATERING_ASSET_OBJECT_STORAGE_ACCESS_KEY: credential.values.CATERING_ASSET_S3_ACCESS_KEY,
     CATERING_ASSET_OBJECT_STORAGE_SECRET_KEY: credential.values.CATERING_ASSET_S3_SECRET_KEY,
     CATERING_ASSET_OBJECT_STORAGE_BUCKET: 'catering-v2s-r5-assets',
+    CATERING_ASSET_TERMINAL_UPDATE_PRIVATE_BUCKET: 'catering-v2s-terminal-update-private',
+    CATERING_ASSET_TERMINAL_UPDATE_PRIVATE_OBJECT_PREFIX: assetObjectPrefix,
     // Object storage is remote-only, but this URL is consumed by the browser.
     // It must therefore be the selected local asset ingress, not the remote
     // MinIO port which is intentionally unreachable from the developer host.
@@ -443,8 +464,11 @@ export async function startRemoteJava(
       `run_id=${quote(runId)}`,
       `command_text=${quote(commandText)}`,
       `http_port=${quote(String(httpPort))}`,
+      `build_tools_directory=${quote(terminalUpdateBuildToolsDirectory)}`,
       'case "$root" in /tmp/r5-dev-[0-9]*-[0-9]*-[0-9a-f-]*) ;; *) exit 64 ;; esac',
       'test -d "$workspace"',
+      '[ -x "$build_tools_directory/aapt2" ] && [ -x "$build_tools_directory/apksigner" ] || { echo REMOTE_TERMINAL_UPDATE_BUILD_TOOLS_MISSING; exit 65; }',
+      'grep -qx "Pkg.Revision=36.0.0" "$build_tools_directory/source.properties" || { echo REMOTE_TERMINAL_UPDATE_BUILD_TOOLS_VERSION_MISMATCH; exit 66; }',
       `printf '%s\\n' ${envLines} > "$env_file"`,
       'chmod 600 "$env_file"',
       'printf \'%s\\n\' \'{"phase":"STARTING"}\' > "$phase_file"',
@@ -476,6 +500,8 @@ export async function startRemoteJava(
     ...control,
     workspace: remoteWorkspace,
     envFile: remoteEnvFile,
+    terminalUpdateBuildToolsDirectory,
+    backendPerformanceProjectionMode: performanceProjectionMode,
     diagnosticPaths: {
       seedEventsPath: remoteSeedEventsPath,
       dbOperationsPath: remoteDbOperationsPath,
@@ -939,7 +965,7 @@ function provisionRemoteTdsDatabasePrincipal(host, env, password) {
   if (!database) fail('REMOTE_TDS_DATABASE_URL_INVALID');
   const role = 'catering_v2s_tds_dev';
   const sql = `GRANT CONNECT ON DATABASE "${database}" TO ${role};
-GRANT USAGE ON SCHEMA platform_workspace, store_terminal, organization, terminal_binding, terminal_connection, contract TO ${role};
+GRANT USAGE ON SCHEMA platform_workspace, store_terminal, organization, terminal_binding, terminal_connection, contract, terminal_update TO ${role};
 GRANT SELECT (workspace_uuid, group_workspace_key, status) ON platform_workspace.group_workspace TO ${role};
 GRANT SELECT (workspace_uuid, group_workspace_key, terminal_ref, store_ref, status) ON store_terminal.terminal TO ${role};
 GRANT SELECT (workspace_uuid, group_workspace_key, id, status) ON organization.store TO ${role};
@@ -949,6 +975,7 @@ GRANT SELECT, INSERT, UPDATE ON terminal_connection.latest_state TO ${role};
 GRANT SELECT ON organization.terminal_topic_snapshot, contract.terminal_topic_snapshot TO ${role};
 GRANT EXECUTE ON FUNCTION organization.read_terminal_topic_time(UUID, VARCHAR, UUID, VARCHAR, UUID) TO ${role};
 GRANT EXECUTE ON FUNCTION contract.read_terminal_topic_time(UUID, VARCHAR, UUID, VARCHAR, UUID) TO ${role};
+GRANT EXECUTE ON FUNCTION terminal_update.read_rule_topic_time(UUID, VARCHAR, UUID, UUID) TO ${role};
 DO $tds_terminal_control_grants$
 DECLARE
   terminal_control_schema oid := to_regnamespace('terminal_control');
@@ -979,7 +1006,7 @@ $tds_terminal_control_grants$;`;
     `password=${quote(password)}`,
     `if [ "$(docker exec catering-postgres psql -U catering -d postgres -Atqc "SELECT 1 FROM pg_roles WHERE rolname='$role'")" = 1 ]; then docker exec catering-postgres psql -U catering -d postgres -v ON_ERROR_STOP=1 -q -c "ALTER ROLE $role WITH LOGIN PASSWORD '$password'"; else docker exec catering-postgres psql -U catering -d postgres -v ON_ERROR_STOP=1 -q -c "CREATE ROLE $role LOGIN PASSWORD '$password'"; fi`,
     `printf %s ${quote(encodedSql)} | base64 -d | docker exec -i catering-postgres psql -U catering -d "$database" -v ON_ERROR_STOP=1 -q`,
-    `docker exec -e PGPASSWORD="$password" catering-postgres psql -h 127.0.0.1 -U "$role" -d "$database" -v ON_ERROR_STOP=1 -q <<'SQL'\nSELECT workspace_uuid, group_workspace_key, status FROM platform_workspace.group_workspace LIMIT 0;\nSELECT workspace_uuid, group_workspace_key, terminal_ref, store_ref, status FROM store_terminal.terminal LIMIT 0;\nSELECT workspace_uuid, group_workspace_key, id, status FROM organization.store LIMIT 0;\nSELECT workspace_uuid, group_workspace_key, terminal_ref, generation, credential_digest, binding_status, bound_device_id, activated_at_epoch_millis FROM terminal_binding.latest_binding LIMIT 0;\nSELECT nextval('terminal_connection.session_sequence');\nSELECT * FROM organization.read_terminal_topic_time(NULL::uuid, NULL::varchar, NULL::uuid, 'STORE', NULL::uuid);\nSELECT * FROM contract.read_terminal_topic_time(NULL::uuid, NULL::varchar, NULL::uuid, 'CONTRACT', NULL::uuid);\nDO $check$\nDECLARE\n  terminal_control_schema oid := to_regnamespace('terminal_control');\n  online_operation_table oid := to_regclass('terminal_control.online_operation');\n  claim_function oid := to_regprocedure('terminal_control.claim_online_operation(uuid,character varying)');\n  report_function oid := to_regprocedure('terminal_control.accept_terminal_report(uuid,uuid,uuid,bigint,character varying,character varying,character varying,timestamp with time zone,jsonb,character varying)');\nBEGIN\n  IF terminal_control_schema IS NULL THEN\n    IF online_operation_table IS NOT NULL OR claim_function IS NOT NULL OR report_function IS NOT NULL THEN\n      RAISE EXCEPTION 'TDS_TERMINAL_CONTROL_OBJECT_SET_INCONSISTENT';\n    END IF;\n    RAISE NOTICE 'TDS_TERMINAL_CONTROL_ACCESS_NOT_APPLICABLE_OBJECTS_ABSENT';\n    RETURN;\n  END IF;\n  IF online_operation_table IS NULL OR claim_function IS NULL OR report_function IS NULL THEN\n    RAISE EXCEPTION 'TDS_TERMINAL_CONTROL_OBJECT_SET_INCOMPLETE';\n  END IF;\n  EXECUTE 'SELECT count(*) FROM terminal_control.claim_online_operation(NULL::uuid, ''dev-probe-node'')';\n  EXECUTE 'SELECT accepted FROM terminal_control.accept_terminal_report(NULL::uuid, NULL::uuid, NULL::uuid, 1, ''dev-probe-node'', ''dev-probe-session'', ''RECEIVED'', clock_timestamp(), NULL, NULL)';\n  BEGIN\n    EXECUTE 'SELECT operation_id FROM terminal_control.online_operation LIMIT 0';\n    RAISE EXCEPTION 'TDS_TERMINAL_CONTROL_DIRECT_SELECT_UNEXPECTEDLY_ALLOWED';\n  EXCEPTION WHEN insufficient_privilege THEN NULL;\n  END;\n  BEGIN\n    EXECUTE 'INSERT INTO terminal_control.online_operation(operation_id) VALUES (''00000000-0000-0000-0000-000000000000'')';\n    RAISE EXCEPTION 'TDS_TERMINAL_CONTROL_DIRECT_INSERT_UNEXPECTEDLY_ALLOWED';\n  EXCEPTION WHEN insufficient_privilege THEN NULL;\n  END;\n  BEGIN\n    EXECUTE 'UPDATE terminal_control.online_operation SET status=status WHERE false';\n    RAISE EXCEPTION 'TDS_TERMINAL_CONTROL_DIRECT_UPDATE_UNEXPECTEDLY_ALLOWED';\n  EXCEPTION WHEN insufficient_privilege THEN NULL;\n  END;\n  BEGIN\n    EXECUTE 'DELETE FROM terminal_control.online_operation WHERE false';\n    RAISE EXCEPTION 'TDS_TERMINAL_CONTROL_DIRECT_DELETE_UNEXPECTEDLY_ALLOWED';\n  EXCEPTION WHEN insufficient_privilege THEN NULL;\n  END;\nEND\n$check$;\nDO $check$ BEGIN BEGIN UPDATE organization.store SET name=name WHERE false; RAISE EXCEPTION 'TDS_OWNER_DML_UNEXPECTEDLY_ALLOWED'; EXCEPTION WHEN insufficient_privilege THEN NULL; END; END $check$;\nSQL`,
+    `docker exec -e PGPASSWORD="$password" catering-postgres psql -h 127.0.0.1 -U "$role" -d "$database" -v ON_ERROR_STOP=1 -q <<'SQL'\nSELECT workspace_uuid, group_workspace_key, status FROM platform_workspace.group_workspace LIMIT 0;\nSELECT workspace_uuid, group_workspace_key, terminal_ref, store_ref, status FROM store_terminal.terminal LIMIT 0;\nSELECT workspace_uuid, group_workspace_key, id, status FROM organization.store LIMIT 0;\nSELECT workspace_uuid, group_workspace_key, terminal_ref, generation, credential_digest, binding_status, bound_device_id, activated_at_epoch_millis FROM terminal_binding.latest_binding LIMIT 0;\nSELECT nextval('terminal_connection.session_sequence');\nSELECT * FROM organization.read_terminal_topic_time(NULL::uuid, NULL::varchar, NULL::uuid, 'STORE', NULL::uuid);\nSELECT * FROM contract.read_terminal_topic_time(NULL::uuid, NULL::varchar, NULL::uuid, 'CONTRACT', NULL::uuid);\nSELECT * FROM terminal_update.read_rule_topic_time(NULL::uuid, NULL::varchar, NULL::uuid, NULL::uuid);\nDO $check$\nDECLARE\n  terminal_control_schema oid := to_regnamespace('terminal_control');\n  online_operation_table oid := to_regclass('terminal_control.online_operation');\n  claim_function oid := to_regprocedure('terminal_control.claim_online_operation(uuid,character varying)');\n  report_function oid := to_regprocedure('terminal_control.accept_terminal_report(uuid,uuid,uuid,bigint,character varying,character varying,character varying,timestamp with time zone,jsonb,character varying)');\nBEGIN\n  IF terminal_control_schema IS NULL THEN\n    IF online_operation_table IS NOT NULL OR claim_function IS NOT NULL OR report_function IS NOT NULL THEN\n      RAISE EXCEPTION 'TDS_TERMINAL_CONTROL_OBJECT_SET_INCONSISTENT';\n    END IF;\n    RAISE NOTICE 'TDS_TERMINAL_CONTROL_ACCESS_NOT_APPLICABLE_OBJECTS_ABSENT';\n    RETURN;\n  END IF;\n  IF online_operation_table IS NULL OR claim_function IS NULL OR report_function IS NULL THEN\n    RAISE EXCEPTION 'TDS_TERMINAL_CONTROL_OBJECT_SET_INCOMPLETE';\n  END IF;\n  EXECUTE 'SELECT count(*) FROM terminal_control.claim_online_operation(NULL::uuid, ''dev-probe-node'')';\n  EXECUTE 'SELECT accepted FROM terminal_control.accept_terminal_report(NULL::uuid, NULL::uuid, NULL::uuid, 1, ''dev-probe-node'', ''dev-probe-session'', ''RECEIVED'', clock_timestamp(), NULL, NULL)';\n  BEGIN\n    EXECUTE 'SELECT operation_id FROM terminal_control.online_operation LIMIT 0';\n    RAISE EXCEPTION 'TDS_TERMINAL_CONTROL_DIRECT_SELECT_UNEXPECTEDLY_ALLOWED';\n  EXCEPTION WHEN insufficient_privilege THEN NULL;\n  END;\n  BEGIN\n    EXECUTE 'INSERT INTO terminal_control.online_operation(operation_id) VALUES (''00000000-0000-0000-0000-000000000000'')';\n    RAISE EXCEPTION 'TDS_TERMINAL_CONTROL_DIRECT_INSERT_UNEXPECTEDLY_ALLOWED';\n  EXCEPTION WHEN insufficient_privilege THEN NULL;\n  END;\n  BEGIN\n    EXECUTE 'UPDATE terminal_control.online_operation SET status=status WHERE false';\n    RAISE EXCEPTION 'TDS_TERMINAL_CONTROL_DIRECT_UPDATE_UNEXPECTEDLY_ALLOWED';\n  EXCEPTION WHEN insufficient_privilege THEN NULL;\n  END;\n  BEGIN\n    EXECUTE 'DELETE FROM terminal_control.online_operation WHERE false';\n    RAISE EXCEPTION 'TDS_TERMINAL_CONTROL_DIRECT_DELETE_UNEXPECTEDLY_ALLOWED';\n  EXCEPTION WHEN insufficient_privilege THEN NULL;\n  END;\nEND\n$check$;\nDO $check$ BEGIN BEGIN UPDATE organization.store SET name=name WHERE false; RAISE EXCEPTION 'TDS_OWNER_DML_UNEXPECTEDLY_ALLOWED'; EXCEPTION WHEN insufficient_privilege THEN NULL; END; END $check$;\nDO $check$ BEGIN BEGIN EXECUTE 'SELECT rule_ref FROM terminal_update.project_rule LIMIT 0'; RAISE EXCEPTION 'TDS_TERMINAL_UPDATE_DIRECT_SELECT_UNEXPECTEDLY_ALLOWED'; EXCEPTION WHEN insufficient_privilege THEN NULL; END; BEGIN EXECUTE 'SELECT project_ref FROM terminal_update.rule_topic_snapshot LIMIT 0'; RAISE EXCEPTION 'TDS_TERMINAL_UPDATE_SNAPSHOT_DIRECT_SELECT_UNEXPECTEDLY_ALLOWED'; EXCEPTION WHEN insufficient_privilege THEN NULL; END; END $check$;\nSQL`,
   ].join('\n');
   remoteExec(host, script);
 }
@@ -2196,6 +2223,7 @@ function readListeningProcessIdentity(port, expectedName, commandPattern = /Cate
 }
 
 async function start() {
+  resolveBackendPerformanceProjectionMode(process.env.V2S_BACKEND_PERFORMANCE_PROJECTION_MODE);
   run(path.join(root, 'scripts/env/check-runtime-resource-budget'), [
     '--profile',
     'admin-validation-with-ter',
@@ -2219,6 +2247,7 @@ async function start() {
   // business server. Do not leak it from the parent environment to either UI.
   const inheritedProcessEnvironment = {...process.env};
   delete inheritedProcessEnvironment.V2S_CATALOG_TEST_FAULTS;
+  delete inheritedProcessEnvironment.V2S_BACKEND_PERFORMANCE_PROJECTION_MODE;
   const freshFlag = process.env.V2S_R5_REQUIRE_FRESH_DATABASE;
   if (freshFlag !== undefined && freshFlag !== 'true' && freshFlag !== 'false') fail('FRESH_DATABASE_FLAG_INVALID');
   const requireFreshDatabase = freshFlag === 'true';
@@ -3004,6 +3033,16 @@ if (isMain && mode === '--self-test') {
   if (selectFirstAvailableTunnelPortPair([{http: '28080', asset: '29000'}], () => true) !== null)
     fail('R5_DEV_TUNNEL_PORT_EXHAUSTION_RED_NOT_DETECTED');
   if (JSON.stringify(defaultTunnelPortPairs).includes('postgres')) fail('R5_DEV_RUNNER_POSTGRES_FORWARD_NOT_RETIRED');
+  if (resolveBackendPerformanceProjectionMode(undefined) !== 'CALIBRATED' ||
+      resolveBackendPerformanceProjectionMode('IDENTITY_ONLY') !== 'IDENTITY_ONLY')
+    fail('R5_DEV_RUNNER_BUDGET_PROJECTION_MODE_NOT_RETAINED');
+  let invalidProjectionModeRejected = false;
+  try {
+    resolveBackendPerformanceProjectionMode('UNSUPPORTED');
+  } catch (error) {
+    invalidProjectionModeRejected = error?.message.includes('BACKEND_PERFORMANCE_PROJECTION_MODE_INVALID');
+  }
+  if (!invalidProjectionModeRejected) fail('R5_DEV_RUNNER_BUDGET_PROJECTION_MODE_INVALID_NOT_REJECTED');
   remoteJavaSelfTest();
   const syntheticManifest = {
     kind: 'r5-dev-run-manifest',

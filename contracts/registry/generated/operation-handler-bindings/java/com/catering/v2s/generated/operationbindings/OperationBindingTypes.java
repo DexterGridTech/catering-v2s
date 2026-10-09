@@ -338,6 +338,31 @@ public final class OperationBindingTypes {
     public record TerminalStoreOrganizationPathRead() {}
     public record TerminalStoreServicePointAreasRead() {}
     public record TerminalStoreServicePointsRead() {}
+    public record TerminalUpdateArtifactCandidatePage() {}
+    public record TerminalUpdateArtifactCandidateQuery() {}
+    public record TerminalUpdateArtifactDetail() {}
+    public record TerminalUpdateArtifactPage() {}
+    public record TerminalUpdateArtifactPageQuery() {}
+    public record TerminalUpdateArtifactRegisterRequest() {}
+    public record TerminalUpdateArtifactStageRequest() {}
+    public record TerminalUpdateBinaryContent() {}
+    public record TerminalUpdateDownloadGrantResult() {}
+    public record TerminalUpdateReportHistoryPage() {}
+    public record TerminalUpdateReportHistoryQuery() {}
+    public record TerminalUpdateReportReceipt() {}
+    public record TerminalUpdateReportRequest() {}
+    public record TerminalUpdateRuleCreateRequest() {}
+    public record TerminalUpdateRuleDetail() {}
+    public record TerminalUpdateRulePage() {}
+    public record TerminalUpdateRulePageQuery() {}
+    public record TerminalUpdateRuleSnapshotPage() {}
+    public record TerminalUpdateRuleSnapshotQuery() {}
+    public record TerminalUpdateRuleStatusRequest() {}
+    public record TerminalUpdateRuleStorePage() {}
+    public record TerminalUpdateStageResult() {}
+    public record TerminalUpdateVersionDetail() {}
+    public record TerminalUpdateVersionPage() {}
+    public record TerminalUpdateVersionPageQuery() {}
     public record WorkspaceAccount() {}
     public record WorkspaceAccountPage() {}
     public record WorkspaceAccountStatusTransitionRequest() {}

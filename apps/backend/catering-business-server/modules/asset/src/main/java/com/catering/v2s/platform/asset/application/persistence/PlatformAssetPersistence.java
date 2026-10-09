@@ -23,7 +23,18 @@ public class PlatformAssetPersistence {
 
     public record AssetRow(UUID assetRef, String usage, String status, long version, long sizeBytes) {}
 
-    public record ActiveAsset(String objectKey, String contentType, String sha256) {}
+    public record ActiveAsset(String usage, String objectKey, String contentType, String sha256) {}
+
+    public record TerminalUpdateAsset(
+            UUID assetRef,
+            String usage,
+            String status,
+            long version,
+            long sizeBytes,
+            String bucketName,
+            String objectKey,
+            String contentType,
+            String sha256) {}
 
     public record ExistingAsset(
             UUID assetRef,
@@ -291,6 +302,42 @@ public class PlatformAssetPersistence {
                 workspaceUuid);
     }
 
+    public TerminalUpdateAsset readTerminalUpdateAsset(UUID assetRef, UUID workspaceUuid, String groupWorkspaceKey) {
+        return jdbc.query(
+                PlatformAssetServiceSql.TERMINAL_UPDATE_ASSET_SELECT_FOR_SCOPE,
+                statement -> {
+                    statement.setObject(1, assetRef);
+                    statement.setObject(2, workspaceUuid);
+                    statement.setString(3, groupWorkspaceKey);
+                },
+                result -> result.next()
+                        ? new TerminalUpdateAsset(
+                                result.getObject("asset_ref", UUID.class),
+                                result.getString("usage"),
+                                result.getString("status"),
+                                result.getLong("version"),
+                                result.getLong("size_bytes"),
+                                result.getString("bucket_name"),
+                                result.getString("object_key"),
+                                result.getString("content_type"),
+                                result.getString("sha256"))
+                        : null);
+    }
+
+    public int claimTerminalUpdateAsset(
+            long now, UUID assetRef, UUID workspaceUuid, String groupWorkspaceKey, String sha256, String grantHash) {
+        return jdbc.update(
+                PlatformAssetServiceSql.TERMINAL_UPDATE_ASSET_CLAIM,
+                now, assetRef, workspaceUuid, groupWorkspaceKey, sha256, assetRef, now, grantHash);
+    }
+
+    public int releaseTerminalUpdateStage(
+            long now, UUID assetRef, UUID workspaceUuid, String groupWorkspaceKey, String grantHash) {
+        return jdbc.update(
+                PlatformAssetServiceSql.TERMINAL_UPDATE_ASSET_RELEASE_STAGE,
+                now, assetRef, workspaceUuid, groupWorkspaceKey, assetRef, now, grantHash);
+    }
+
     public int consumeStagedBindGrant(long now, UUID assetRef, String proof) {
         return jdbc.update(
                 PlatformAssetServiceSql.UPDATE_STAGED_ASSET_STATUS_RELEASED_ALT_B_004
@@ -432,6 +479,7 @@ public class PlatformAssetPersistence {
                 statement -> statement.setObject(1, assetRef),
                 result -> result.next()
                         ? new ActiveAsset(
+                                result.getString("usage"),
                                 result.getString("object_key"),
                                 result.getString("content_type"),
                                 result.getString("sha256"))
@@ -459,6 +507,7 @@ public class PlatformAssetPersistence {
                         resultById.put(
                                 result.getObject("asset_ref", UUID.class),
                                 new ActiveAsset(
+                                        result.getString("usage"),
                                         result.getString("object_key"),
                                         result.getString("content_type"),
                                         result.getString("sha256")));

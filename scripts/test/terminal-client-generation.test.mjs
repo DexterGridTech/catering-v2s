@@ -8,7 +8,10 @@ test('terminal API generation closes the face/tag operation set and rejects poli
   const expectedOperationIds = [
     'activateTerminal',
     'cancelTerminalActivation',
+    'issueTerminalUpdateArtifactDownloadGrant',
+    'submitTerminalUpdateReport',
     'terminalReadContract',
+    'terminalReadProjectUpdateRuleSnapshotPage',
     'terminalReadServicePoint',
     'terminalReadServicePointArea',
     'terminalReadStoreActiveContracts',
@@ -33,5 +36,7 @@ test('terminal API generation closes the face/tag operation set and rejects poli
   assert.match(fs.readFileSync(result.outputs[0].output, 'utf8'), /readonly "X-Terminal-Ref": string/);
   assert.match(fs.readFileSync(result.outputs[0].output, 'utf8'), /readonly "X-Terminal-Device-Id": string/);
   assert.match(fs.readFileSync(result.outputs[0].output, 'utf8'), /isTerminalActivationResult/);
+  assert.match(fs.readFileSync(result.outputs[0].output, 'utf8'), /"submitTerminalUpdateReport": \{[\s\S]*?idempotencyRequired: true/);
+  assert.doesNotMatch(result.operationIds.join(','), /downloadTerminalUpdateArtifact/);
   selfTest();
 });

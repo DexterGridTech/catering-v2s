@@ -487,7 +487,8 @@
           "503": {
             "$ref": "../../../../edge.openapi.json#/components/responses/ProblemResponse"
           }
-        }
+        },
+        "x-required-platform-authorization": "REQ_RELEASE_PLATFORM_TERMINAL_UPDATE_ARTIFACT_STAGE"
       }
     },
     "/api/platform/group-workspaces/{groupWorkspaceKey}/terminal-update-artifacts/{artifactRef}": {

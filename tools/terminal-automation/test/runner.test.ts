@@ -20,6 +20,7 @@ import {
   resolveAutomationSuite,
   createAndroidDeviceCleanupTracker,
   selectManagedTerminalBrowserOrigin,
+  selectManagedDevAdminOrigins,
   updateRequiresManagedDev,
   updateCaseImplemented,
   updateScenarioAssertionsObserved,
@@ -525,6 +526,60 @@ describe('managed terminal browser origin selection', () => {
   });
 });
 
+describe('managed DEV administration origins', () => {
+  const manifest = () => ({
+    processes: [
+      {
+        name: 'platform-admin',
+        port: 5174,
+        runtimeIdentity: {pid: 101, startToken: 'p-start'},
+      },
+      {
+        name: 'operations-admin',
+        port: 5175,
+        runtimeIdentity: {pid: 102, startToken: 'o-start'},
+      },
+    ],
+    readiness: {
+      vite: {
+        'platform-admin': {pid: 101, startToken: 'p-start'},
+        'operations-admin': {pid: 102, startToken: 'o-start'},
+      },
+    },
+  });
+
+  it('derives both local admin origins only from unique manifest entries matching readiness identity', () => {
+    expect(selectManagedDevAdminOrigins(manifest())).toEqual({
+      platformAdmin: 'http://127.0.0.1:5174',
+      operationsAdmin: 'http://127.0.0.1:5175',
+    });
+  });
+
+  it.each([
+    ['missing process', (value: ReturnType<typeof manifest>) => ({...value, processes: value.processes.slice(1)})],
+    [
+      'duplicate process',
+      (value: ReturnType<typeof manifest>) => ({...value, processes: [...value.processes, value.processes[0]]}),
+    ],
+    [
+      'stale PID',
+      (value: ReturnType<typeof manifest>) => ({
+        ...value,
+        readiness: {...value.readiness, vite: {...value.readiness.vite, 'operations-admin': {pid: 999, startToken: 'o-start'}}},
+      }),
+    ],
+    [
+      'stale start token',
+      (value: ReturnType<typeof manifest>) => ({
+        ...value,
+        readiness: {...value.readiness, vite: {...value.readiness.vite, 'platform-admin': {pid: 101, startToken: 'old'}}},
+      }),
+    ],
+  ])('fails closed for %s', (_label, mutate) => {
+    expect(selectManagedDevAdminOrigins(mutate(manifest()))).toBeUndefined();
+  });
+});
+
 describe('resolveAutomationSuite', () => {
   it('registers update cases in the current driver and requires DEV only for business-backed cases', () => {
     const web = parseAutomationRunArguments([
@@ -598,6 +653,37 @@ describe('resolveAutomationSuite', () => {
     expect(updateRequiresManagedDev(flush)).toBe(true);
     expect(updateRequiresManagedDev(offlineAssets)).toBe(true);
     expect(updateRequiresManagedDev(fullHot)).toBe(true);
+    const supplyChain = parseAutomationRunArguments([
+      '--phase',
+      'update',
+      '--platform',
+      'android',
+      '--shape',
+      'dual',
+      '--case',
+      'update.supply-chain',
+      '--sample',
+      'console',
+      '--device-serial',
+      'managed-device-01',
+    ]);
+    expect(updateRequiresManagedDev(supplyChain)).toBe(true);
+    expect(updateCaseImplemented(supplyChain)).toBe(true);
+    expect(() =>
+      parseAutomationRunArguments([
+        '--phase', 'update', '--platform', 'android', '--shape', 'mobile',
+        '--case', 'update.supply-chain', '--sample', 'console', '--device-serial', 'managed-device-01',
+      ]),
+    ).toThrow('TERMINAL_AUTOMATION_UPDATE_SUPPLY_CHAIN_REQUIRES_ANDROID_DUAL');
+    expect(updateCaseImplemented({
+      phase: 'update', platform: 'android', shape: 'mobile', case: 'update.supply-chain',
+    })).toBe(false);
+    expect(() =>
+      parseAutomationRunArguments([
+        '--phase', 'update', '--platform', 'web', '--shape', 'mobile',
+        '--case', 'update.supply-chain',
+      ]),
+    ).toThrow('TERMINAL_AUTOMATION_UPDATE_SUPPLY_CHAIN_REQUIRES_ANDROID_DUAL');
     expect(updateRequiresManagedDev(bootGuard)).toBe(true);
     expect(() =>
       parseAutomationRunArguments([
@@ -689,6 +775,12 @@ describe('resolveAutomationSuite', () => {
     expect(updateCaseImplemented({phase: 'update', platform: 'android', shape: 'dual', case: 'update.full-hot'})).toBe(
       true,
     );
+    expect(updateCaseImplemented({phase: 'update', platform: 'web', shape: 'mobile', case: 'update.supply-chain'})).toBe(
+      false,
+    );
+    expect(
+      updateCaseImplemented({phase: 'update', platform: 'android', shape: 'dual', case: 'update.supply-chain'}),
+    ).toBe(true);
     expect(
       parseAutomationRunArguments([
         '--phase',
@@ -766,6 +858,7 @@ describe('resolveAutomationSuite', () => {
     'update.install-result',
     'update.full-hot',
     'update.offline-assets',
+    'update.supply-chain',
   ] as const)('fails closed when Android %s final assertions were not observed', updateCase => {
     const execution = {phase: 'update', platform: 'android', shape: 'dual', case: updateCase} as const;
     expect(updateScenarioAssertionsObserved(execution, 'run-1', '')).toBe(false);

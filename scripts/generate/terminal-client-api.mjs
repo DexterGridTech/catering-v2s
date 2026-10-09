@@ -153,9 +153,10 @@ function loadModel(root = repoRoot) {
     const sourceSchemas = readJson(schemaPath, root).components?.schemas;
     if (!sourceSchemas || typeof sourceSchemas !== 'object') fail('TERMINAL_CLIENT_SCHEMA_SOURCE_INVALID', schemaPath);
     for (const [name, schema] of Object.entries(sourceSchemas)) {
-      if (schemas[name] && JSON.stringify(schemas[name]) !== JSON.stringify(schema))
+      const normalized = normalizeSchemaRefs(schema);
+      if (schemas[name] && JSON.stringify(schemas[name]) !== JSON.stringify(normalized))
         fail('TERMINAL_CLIENT_SCHEMA_SOURCE_AMBIGUOUS', name);
-      schemas[name] = schema;
+      schemas[name] = normalized;
     }
   }
   const targets = [];
@@ -235,9 +236,9 @@ function loadModel(root = repoRoot) {
       if (catalogOperation.owner !== operation.owner)
         fail('TERMINAL_CLIENT_OPERATION_OWNER_DRIFT', operation.operationId);
       const idempotencyHeader = catalogOperation.idempotency?.header;
-      if (!['REQUIRED', 'FORBIDDEN'].includes(idempotencyHeader) || operation.idempotencyPolicy !== idempotencyHeader)
+      if (!['REQUIRED', 'REQUIRED_16_128', 'FORBIDDEN'].includes(idempotencyHeader) || operation.idempotencyPolicy !== idempotencyHeader)
         fail('TERMINAL_CLIENT_OPERATION_IDEMPOTENCY_DRIFT', operation.operationId);
-      operation.idempotencyRequired = idempotencyHeader === 'REQUIRED';
+      operation.idempotencyRequired = idempotencyHeader !== 'FORBIDDEN';
       if (
         catalogOperation.authorizationMode !== operation.auth ||
         Boolean(catalogOperation.safeRetryable) !== operation.safeRetryable
@@ -292,7 +293,13 @@ function loadModel(root = repoRoot) {
   const assignedIds = [...assignmentCounts.keys()].sort();
   const duplicatedAssignment = [...assignmentCounts].find(([, count]) => count !== 1);
   if (duplicatedAssignment) fail('TERMINAL_CLIENT_OPERATION_DUPLICATE_ASSIGNMENT', duplicatedAssignment[0]);
-  if (!sameSet(terminalCatalogIds, assignedIds)) fail('TERMINAL_CLIENT_OPERATION_FACE_CLOSURE');
+  const excludedIds = policy.targets.flatMap(target => target.excludeOperationIds ?? []);
+  if (
+    new Set(excludedIds).size !== excludedIds.length ||
+    excludedIds.some(operationId => !terminalCatalogIds.includes(operationId)) ||
+    !sameSet(terminalCatalogIds, [...assignedIds, ...excludedIds])
+  )
+    fail('TERMINAL_CLIENT_OPERATION_FACE_CLOSURE');
   return {policy, targets, schemas};
 }
 
@@ -300,6 +307,14 @@ function sameSet(left, right) {
   const sortedLeft = [...left].sort();
   const sortedRight = [...right].sort();
   return sortedLeft.length === sortedRight.length && sortedLeft.every((value, index) => value === sortedRight[index]);
+}
+
+function normalizeSchemaRefs(value) {
+  if (Array.isArray(value)) return value.map(normalizeSchemaRefs);
+  if (!value || typeof value !== 'object') return value;
+  if (typeof value.ref === 'string' && Object.keys(value).length === 1)
+    return {$ref: `#/components/schemas/${value.ref}`};
+  return Object.fromEntries(Object.entries(value).map(([key, child]) => [key, normalizeSchemaRefs(child)]));
 }
 
 function identifier(value) {
@@ -834,7 +849,7 @@ export function selfTest() {
               type: 'object',
               additionalProperties: false,
               required: ['id'],
-              properties: {id: {type: 'string'}},
+              properties: {id: {type: 'string'}, nested: {ref: 'Request'}},
             },
           },
         },
@@ -861,6 +876,57 @@ export function selfTest() {
       validTargetModuleName,
     );
     const model = loadModel(root);
+    const binaryPathFile = path.join(root, 'paths/terminal.json');
+    const catalogFile = path.join(root, 'catalog.json');
+    const originalPaths = JSON.parse(fs.readFileSync(binaryPathFile, 'utf8'));
+    const originalCatalog = JSON.parse(fs.readFileSync(catalogFile, 'utf8'));
+    const binaryOperation = {
+      ...operation,
+      operationId: 'downloadTerminalUpdateArtifact',
+      path: '/api/terminal/group-workspaces/{groupWorkspaceKey}/update-artifacts/{artifactRef}/content',
+      method: 'GET',
+      tags: ['terminal-update'],
+      'x-idempotency-policy': 'FORBIDDEN',
+      parameters: [
+        {name: 'groupWorkspaceKey', in: 'path', required: true, schema: {type: 'string'}},
+        {name: 'artifactRef', in: 'path', required: true, schema: {type: 'string'}},
+      ],
+      responses: {200: {content: {'application/zip': {schema: {type: 'string', format: 'binary'}}}}},
+    };
+    originalPaths.paths[binaryOperation.path] = {get: binaryOperation};
+    fs.writeFileSync(binaryPathFile, JSON.stringify(originalPaths));
+    originalCatalog.operations.push({
+      operationId: binaryOperation.operationId,
+      face: 'terminal',
+      method: 'GET',
+      path: binaryOperation.path,
+      owner: 'TERMINAL_UPDATE_RULE',
+      authorizationMode: 'TERMINAL_UPDATE_DOWNLOAD_GRANT',
+      safeRetryable: true,
+      successStatus: '200',
+      idempotency: {header: 'FORBIDDEN'},
+    });
+    fs.writeFileSync(catalogFile, JSON.stringify(originalCatalog));
+    const withBinaryExclusion = {
+      ...policy,
+      targets: [{...singleTarget, excludeOperationIds: ['downloadTerminalUpdateArtifact']}],
+    };
+    writePolicy(withBinaryExclusion);
+    if (!sameSet(loadModel(root).targets[0].selected.map(row => row.operationId), ['activateTerminal', 'cancelTerminalActivation']))
+      fail('TERMINAL_CLIENT_RED_EXCLUDED_BINARY_WAS_SELECTED');
+    writePolicy(policy);
+    try {
+      loadModel(root);
+      fail('TERMINAL_CLIENT_RED_UNDECLARED_EXCLUSION_NOT_DETECTED');
+    } catch (error) {
+      if (error.code !== 'TERMINAL_CLIENT_OPERATION_FACE_CLOSURE') throw error;
+    }
+    fs.writeFileSync(binaryPathFile, JSON.stringify({paths: {
+      [operation.path]: {post: operation},
+      [secondOperation.path]: {post: secondOperation},
+    }}));
+    fs.writeFileSync(catalogFile, JSON.stringify({operations: [operation, secondOperation].map(catalogOperation)}));
+    writePolicy(policy);
     const generatedById = new Map(model.targets[0].selected.map(row => [row.operationId, row]));
     if (
       generatedById.get('activateTerminal')?.generatedPath !== '/activation' ||

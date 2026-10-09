@@ -50,7 +50,8 @@
                 "WORKSPACE_ACCOUNT",
                 "WORKSPACE_INVITATION",
                 "EXTENSION_DEFINITION",
-                "STORE_CONTRACT"
+                "STORE_CONTRACT",
+                "TERMINAL_UPDATE_ARTIFACT"
               ]
             }
           },

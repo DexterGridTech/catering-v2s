@@ -600,7 +600,20 @@ public final class TdsTerminalSessionActors {
                         session.storeRef(),
                         request.topicKey(),
                         request.ownerRef());
-                if (current.isEmpty()) return rejectMissingTopic(session, subscription);
+                if (current.isEmpty()) {
+                    TdsAsyncLog.enqueue(
+                            logScheduler,
+                            () -> LOGGER.warn(
+                                    "event=tds_topic_owner_time_missing connectionId={} topicKey={} "
+                                            + "workspaceUuid={} groupWorkspaceKey={} storeRef={} ownerRef={}",
+                                    connection.connectionId(),
+                                    request.topicKey(),
+                                    session.identity().workspaceUuid(),
+                                    session.identity().groupWorkspaceKey(),
+                                    session.storeRef(),
+                                    request.ownerRef()));
+                    return rejectMissingTopic(session, subscription);
+                }
                 return sendTopicChange(session, subscription, current.getAsLong(), false);
             } catch (RuntimeException failure) {
                 removeSubscription(session, subscription);
@@ -760,7 +773,8 @@ public final class TdsTerminalSessionActors {
                         "VALID_CONTRACT_COLLECTION",
                         "SERVICE_POINT_AREA_COLLECTION",
                         "SERVICE_POINT_COLLECTION" -> ownerRef.equals(session.storeRef());
-                case "PROJECT", "REGION", "COMMERCIAL_GROUP", "CONTRACT", "SERVICE_POINT_AREA", "SERVICE_POINT" -> true;
+                case "PROJECT", "REGION", "COMMERCIAL_GROUP", "CONTRACT", "SERVICE_POINT_AREA", "SERVICE_POINT",
+                        "TERMINAL_UPDATE_RULES" -> true;
                 default -> false;
             };
         }

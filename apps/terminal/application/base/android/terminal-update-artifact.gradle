@@ -1,11 +1,7 @@
-import org.gradle.api.file.DuplicatesStrategy
-import org.gradle.api.tasks.bundling.Zip
 import groovy.json.JsonOutput
 import java.security.MessageDigest
 import java.nio.charset.StandardCharsets
 
-def terminalArtifactRoot = providers.gradleProperty('terTerminalArtifactRoot')
-def terminalArtifactOutput = providers.gradleProperty('terTerminalArtifactOutput')
 def terminalPublicationMetadata = providers.gradleProperty('terTerminalPublicationMetadata')
 
 // Expo inlines EXPO_PUBLIC_* into Metro bundles. Include a hash of those
@@ -89,26 +85,6 @@ if (terminalArtifactManagedBuildDirectory.isPresent()) {
         registrations.each { registration ->
             def link = new File(registration.path)
             java.nio.file.Files.createSymbolicLink(link.toPath(), new File(registration.target).toPath())
-        }
-    }
-}
-
-['terminalHotZip', 'terminalFullZip'].each { zipTaskName ->
-    tasks.register(zipTaskName, Zip) {
-        onlyIf { terminalArtifactRoot.isPresent() && terminalArtifactOutput.isPresent() }
-        from(terminalArtifactRoot.map { file(it) })
-        archiveFileName.set(terminalArtifactOutput.map { file(it).name })
-        destinationDirectory.set(project.layout.dir(terminalArtifactOutput.map { file(it).parentFile }))
-        duplicatesStrategy = DuplicatesStrategy.FAIL
-        setReproducibleFileOrder(true)
-        setPreserveFileTimestamps(false)
-        doFirst {
-            if (!terminalArtifactRoot.isPresent() || !terminalArtifactOutput.isPresent()) {
-                throw new GradleException("TERMINAL_UPDATE_${zipTaskName == 'terminalHotZip' ? 'HOT' : 'FULL'}_ZIP_INPUT_REQUIRED")
-            }
-            if (terminalArtifactRoot.get().trim().isEmpty() || terminalArtifactOutput.get().trim().isEmpty()) {
-                throw new GradleException("TERMINAL_UPDATE_${zipTaskName == 'terminalHotZip' ? 'HOT' : 'FULL'}_ZIP_INPUT_INVALID")
-            }
         }
     }
 }

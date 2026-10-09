@@ -69,6 +69,9 @@ const OWNER_NAMESPACES = Object.freeze({
   "sales-menu": "salesmenu",
   "store-terminal": "storeterminal",
   "terminal-binding": "terminalbinding",
+  "TERMINAL_UPDATE_PACKAGE": "terminalupdate",
+  "TERMINAL_UPDATE_RULE": "terminalupdate",
+  "TERMINAL_UPDATE_REPORT": "terminalupdate",
 });
 // Only the app-owned operation adapters physically moved during the split-package
 // repair use application.operations.  Owner reads/protocols in the same namespace
@@ -186,6 +189,12 @@ const COPY_ROLE_BY_OPERATION = Object.freeze({
 // operationId so a future binding reorder cannot silently widen it.
 const CONTEXT_KIND_BY_OPERATION = Object.freeze({
   changeCurrentWorkspacePassword: "WORKSPACE_PROTOCOL_CONTEXT",
+  stagePlatformTerminalUpdateArtifact: "PLATFORM_COMMAND_CONTEXT",
+  registerPlatformTerminalUpdateArtifact: "PLATFORM_COMMAND_CONTEXT",
+  releasePlatformTerminalUpdateArtifactStage: "PLATFORM_COMMAND_CONTEXT",
+  terminalReadProjectUpdateRuleSnapshotPage: "TERMINAL_CREDENTIAL_READ_CONTEXT",
+  issueTerminalUpdateArtifactDownloadGrant: "TERMINAL_CREDENTIAL_CONTEXT",
+  submitTerminalUpdateReport: "TERMINAL_CREDENTIAL_CONTEXT",
   terminalReadStoreBasic: "TERMINAL_CREDENTIAL_READ_CONTEXT",
   terminalReadStoreOrganizationPath: "TERMINAL_CREDENTIAL_READ_CONTEXT",
   terminalReadStoreActiveContracts: "TERMINAL_CREDENTIAL_READ_CONTEXT",
@@ -368,6 +377,9 @@ function expectedAdapter(operation) {
   if (operation.operationId === "stageOperationsSalesMenuAsset") {
     return "com.catering.v2s.salesmenu.application.operations.StageOperationsSalesMenuAssetMultipartOperation";
   }
+  if (operation.owner.startsWith("TERMINAL_UPDATE_")) {
+    return `com.catering.v2s.app.application.terminalupdate.${pascal(operation.operationId)}Operation`;
+  }
   const packageSegment = OPERATIONS_ADAPTER_OPERATION_IDS.has(operation.operationId) ? "application.operations" : "application";
   return `com.catering.v2s.${namespace}.${packageSegment}.${pascal(operation.operationId)}Operation`;
 }
@@ -455,7 +467,9 @@ function validateBindingContract(root, binding, routes = routeOperations(root)) 
         ? "TERMINAL_CREDENTIAL_CONTEXT"
         : row.operationId === "activateTerminal"
           ? "PUBLIC_PROTOCOL_CONTEXT"
-          : undefined;
+          : ["issueTerminalUpdateArtifactDownloadGrant", "submitTerminalUpdateReport"].includes(row.operationId)
+            ? "TERMINAL_CREDENTIAL_CONTEXT"
+            : undefined;
       if (!expectedTerminalContext || row.contextKind !== expectedTerminalContext) {
         fail("BP_U02_BINDING_TERMINAL_CONTEXT_DRIFT", `${row.operationId}:${row.contextKind}:${expectedTerminalContext || "UNKNOWN"}`);
       }
@@ -763,6 +777,24 @@ function expectedJavaSources(root = ROOT) {
 // route source before validating exact-set/count invariants; hand-editing a
 // generated row would create a second source of truth.
 const ADDITIONAL_ROUTE_WIRE_TYPES = Object.freeze({
+  stagePlatformTerminalUpdateArtifact: ["TerminalUpdateArtifactStageRequest", "TerminalUpdateStageResult"],
+  registerPlatformTerminalUpdateArtifact: ["TerminalUpdateArtifactRegisterRequest", "TerminalUpdateArtifactDetail"],
+  releasePlatformTerminalUpdateArtifactStage: ["NoBody", "NoContent"],
+  getPlatformTerminalUpdateArtifactPage: ["TerminalUpdateArtifactPageQuery", "TerminalUpdateArtifactPage"],
+  getPlatformTerminalUpdateArtifactDetail: ["NoBody", "TerminalUpdateArtifactDetail"],
+  getOperationsProjectTerminalVersionPage: ["TerminalUpdateVersionPageQuery", "TerminalUpdateVersionPage"],
+  getOperationsProjectTerminalUpdateRulePage: ["TerminalUpdateRulePageQuery", "TerminalUpdateRulePage"],
+  getOperationsProjectTerminalUpdateRuleDetail: ["NoBody", "TerminalUpdateRuleDetail"],
+  createOperationsProjectTerminalUpdateRule: ["TerminalUpdateRuleCreateRequest", "TerminalUpdateRuleDetail"],
+  changeOperationsProjectTerminalUpdateRuleStatus: ["TerminalUpdateRuleStatusRequest", "TerminalUpdateRuleDetail"],
+  getOperationsTerminalUpdateArtifactCandidatePage: ["TerminalUpdateArtifactCandidateQuery", "TerminalUpdateArtifactCandidatePage"],
+  terminalReadProjectUpdateRuleSnapshotPage: ["TerminalUpdateRuleSnapshotQuery", "TerminalUpdateRuleSnapshotPage"],
+  issueTerminalUpdateArtifactDownloadGrant: ["NoBody", "TerminalUpdateDownloadGrantResult"],
+  downloadTerminalUpdateArtifact: ["NoBody", "TerminalUpdateBinaryContent"],
+  getOperationsProjectTerminalUpdateRuleStorePage: ["NoBody", "TerminalUpdateRuleStorePage"],
+  getOperationsProjectTerminalVersionDetail: ["NoBody", "TerminalUpdateVersionDetail"],
+  submitTerminalUpdateReport: ["TerminalUpdateReportRequest", "TerminalUpdateReportReceipt"],
+  getOperationsProjectTerminalUpdateReportHistoryPage: ["TerminalUpdateReportHistoryQuery", "TerminalUpdateReportHistoryPage"],
   listOperationsCatalogUnits: ["CatalogUnitListQuery", "CatalogUnitList"],
   createOperationsCatalogUnit: ["CatalogUnitCreateRequest", "CatalogUnitReadback"],
   updateOperationsCatalogUnit: ["CatalogUnitUpdateRequest", "CatalogUnitReadback"],

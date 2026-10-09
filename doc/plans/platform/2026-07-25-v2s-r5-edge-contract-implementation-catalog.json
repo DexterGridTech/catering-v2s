@@ -112,7 +112,7 @@
     },
     {
       "path": "contracts/openapi-source/terminal-update.schemas.json",
-      "sha256": "5161860b9e87bf3b39d9b1cf4c84e8d8eed57ddb841d7aabeb4198bc62474b3d"
+      "sha256": "15fae2974b362c51afd6f19832bfeb19082dc6e7333a0eee57b7b21f224c00c7"
     }
   ],
   "denominator": {
@@ -1224,6 +1224,7 @@
     ],
     "getOperationsProjectTerminalUpdateRulePage": [
       "PLATFORM_COMMON_VALIDATION_FAILED",
+      "PLATFORM_COMMON_VERSION_CONFLICT",
       "TERMINAL_UPDATE_SNAPSHOT_TOO_LARGE"
     ],
     "getOperationsProjectTerminalUpdateRuleDetail": [
@@ -3148,7 +3149,8 @@
               "STORE_SERVICE_POINT",
               "STORE_QR_CONFIGURATION",
               "STORE_TERMINAL",
-              "STORE_CONTRACT"
+              "STORE_CONTRACT",
+              "TERMINAL_UPDATE_RULE"
             ]
           }
         },
@@ -3160,6 +3162,15 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 128
+          }
+        },
+        {
+          "name": "projectRef",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
           }
         },
         {
@@ -7889,7 +7900,8 @@
               "WORKSPACE_ACCOUNT",
               "WORKSPACE_INVITATION",
               "EXTENSION_DEFINITION",
-              "STORE_CONTRACT"
+              "STORE_CONTRACT",
+              "TERMINAL_UPDATE_ARTIFACT"
             ]
           }
         },
@@ -12712,7 +12724,18 @@
         "groupWorkspaceKey",
         "projectRef"
       ],
-      "queryParameters": [],
+      "queryParameters": [
+        {
+          "name": "expectedContextVersion",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      ],
       "requestSchema": "TerminalUpdateRuleCreateRequest",
       "responseSchema": "TerminalUpdateRuleDetail",
       "successStatus": "201",
@@ -12720,7 +12743,7 @@
         "header": "REQUIRED_16_128",
         "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
       },
-      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "expectedVersion": "REQUIRED_CONTEXT_VERSION",
       "errorSetRef": "OWNER_COMMAND",
       "focusedTestId": "edge.createOperationsProjectTerminalUpdateRule"
     },
@@ -12741,7 +12764,18 @@
         "projectRef",
         "ruleRef"
       ],
-      "queryParameters": [],
+      "queryParameters": [
+        {
+          "name": "expectedContextVersion",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      ],
       "requestSchema": "TerminalUpdateRuleStatusRequest",
       "responseSchema": "TerminalUpdateRuleDetail",
       "successStatus": "200",
@@ -12749,7 +12783,7 @@
         "header": "REQUIRED_16_128",
         "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
       },
-      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "expectedVersion": "REQUIRED_CONTEXT_VERSION",
       "errorSetRef": "OWNER_COMMAND",
       "focusedTestId": "edge.changeOperationsProjectTerminalUpdateRuleStatus"
     },

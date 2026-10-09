@@ -62,6 +62,9 @@ describe('terminal-data-client package identity', () => {
       `${moduleName}.unsubscribe-topic`,
       `${moduleName}.accept-topic-notification`,
       `${moduleName}.read-terminal-data`,
+      `${moduleName}.request-terminal-update-download-grant`,
+      `${moduleName}.submit-terminal-update-report`,
+      `${moduleName}.terminal-data-heartbeat`,
       `${moduleName}.topic-changed`,
       `${moduleName}.initialize-terminal-data-client`,
       `${moduleName}.refresh-status-projection`,
@@ -160,7 +163,7 @@ describe('terminal-data-client package identity', () => {
         },
         pendingActivations: {},
         activationStatus: 'active',
-        connection: {status: 'connected', addressName: 'primary', nodeId: 'tds-1', lastCloseReason: null},
+        connection: {status: 'connected', addressName: 'primary', nodeId: 'tds-1', sessionId: 'session-host-only', lastCloseReason: null},
         heartbeatIntervalMs: 10_000,
         nextPingSequence: 2,
         lastRttMs: 17,
@@ -180,6 +183,7 @@ describe('terminal-data-client package identity', () => {
     expect(await handler.handle(context)).toEqual({status: 'updated'});
     expect(JSON.stringify(actions)).not.toContain(secret);
     expect(JSON.stringify(actions)).not.toContain('credentialSecret');
+    expect(JSON.stringify(actions)).not.toContain('session-host-only');
     expect(JSON.stringify(actions)).toContain('terminal-1');
     expect(JSON.stringify(actions)).toContain('17');
   });

@@ -198,6 +198,20 @@ export const PLATFORM_ADMIN_OPERATIONS = [
     "requiresSession": true
   },
   {
+    "operationId": "getPlatformTerminalUpdateArtifactDetail",
+    "method": "GET",
+    "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/terminal-update-artifacts/{artifactRef}",
+    "owner": "TERMINAL_UPDATE_PACKAGE",
+    "requiresSession": true
+  },
+  {
+    "operationId": "getPlatformTerminalUpdateArtifactPage",
+    "method": "GET",
+    "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/terminal-update-artifacts",
+    "owner": "TERMINAL_UPDATE_PACKAGE",
+    "requiresSession": true
+  },
+  {
     "operationId": "getWorkspaceAccount",
     "method": "GET",
     "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/accounts/{accountId}",
@@ -275,6 +289,13 @@ export const PLATFORM_ADMIN_OPERATIONS = [
     "requiresSession": false
   },
   {
+    "operationId": "registerPlatformTerminalUpdateArtifact",
+    "method": "POST",
+    "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/terminal-update-artifacts",
+    "owner": "TERMINAL_UPDATE_PACKAGE",
+    "requiresSession": true
+  },
+  {
     "operationId": "reissueWorkspaceInvitation",
     "method": "POST",
     "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/invitations/{invitationId}/reissue",
@@ -286,6 +307,13 @@ export const PLATFORM_ADMIN_OPERATIONS = [
     "method": "POST",
     "path": "/api/platform/assets/staging/{assetRef}/release",
     "owner": "platform-asset",
+    "requiresSession": true
+  },
+  {
+    "operationId": "releasePlatformTerminalUpdateArtifactStage",
+    "method": "POST",
+    "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/terminal-update-artifact-stages/{stageRef}/release",
+    "owner": "TERMINAL_UPDATE_PACKAGE",
     "requiresSession": true
   },
   {
@@ -335,6 +363,13 @@ export const PLATFORM_ADMIN_OPERATIONS = [
     "method": "POST",
     "path": "/api/platform/assets/staging",
     "owner": "platform-asset",
+    "requiresSession": true
+  },
+  {
+    "operationId": "stagePlatformTerminalUpdateArtifact",
+    "method": "POST",
+    "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/terminal-update-artifact-stages",
+    "owner": "TERMINAL_UPDATE_PACKAGE",
     "requiresSession": true
   },
   {
@@ -430,864 +465,7 @@ export const PLATFORM_ADMIN_OPERATIONS = [
   }
 ] as const;
 
-export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {
-  "cancelWorkspaceInvitation": {
-    "kind": "FIXED",
-    "max": 24,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 24,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "changeCurrentPlatformPassword": {
-    "kind": "FIXED",
-    "max": 6,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 6,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "completePlatformPasswordRecovery": {
-    "kind": "FIXED",
-    "max": 8,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 8,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "createPlatformAdmin": {
-    "kind": "FIXED",
-    "max": 16,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 16,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "createPlatformGroupWorkspace": {
-    "kind": "FIXED",
-    "max": 16,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 16,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "createPlatformOwnerBinding": {
-    "kind": "FIXED",
-    "max": 19,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 19,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "createWorkspaceInvitation": {
-    "kind": "FIXED",
-    "max": 26,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 26,
-        "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
-        "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "createWorkspaceRole": {
-    "kind": "FIXED",
-    "max": 18,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 18,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "deletePlatformOwnerBinding": {
-    "kind": "FIXED",
-    "max": 21,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 21,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getCurrentPlatformSession": {
-    "kind": "FIXED",
-    "max": 4,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 4,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getExtensionDefinition": {
-    "kind": "FIXED",
-    "max": 7,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 7,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getExtensionEntityCatalog": {
-    "kind": "FIXED",
-    "max": 7,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 7,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getPlatformAdminDetail": {
-    "kind": "FIXED",
-    "max": 5,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 5,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getPlatformAdminPage": {
-    "kind": "FIXED",
-    "max": 6,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 6,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getPlatformContractOverviewDetail": {
-    "kind": "FIXED",
-    "max": 6,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 6,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getPlatformContractOverviewPage": {
-    "kind": "FIXED",
-    "max": 8,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 8,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getPlatformEntityAuditHistory": {
-    "kind": "FIXED",
-    "max": 7,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 7,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getPlatformExternalCapabilityDictionary": {
-    "kind": "FIXED",
-    "max": 4,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 4,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getPlatformExternalCollaborationTree": {
-    "kind": "FIXED",
-    "max": 6,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 6,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getPlatformExternalSystemDetail": {
-    "kind": "FIXED",
-    "max": 6,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 6,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getPlatformGroupWorkspaceDetail": {
-    "kind": "FIXED",
-    "max": 7,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 7,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getPlatformOrganizationCandidates": {
-    "kind": "FIXED",
-    "max": 6,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 6,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getPlatformOrganizationHierarchyTree": {
-    "kind": "FIXED",
-    "max": 6,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 6,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getPlatformOrganizationOverviewDetail": {
-    "kind": "FIXED",
-    "max": 8,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 8,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getPlatformOrganizationOverviewPage": {
-    "kind": "FIXED",
-    "max": 11,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 11,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getPlatformOwnerBindingDetail": {
-    "kind": "FIXED",
-    "max": 7,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 7,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getPlatformProviderProfileBindings": {
-    "kind": "FIXED",
-    "max": 6,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 6,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getPlatformProviderProfileDetail": {
-    "kind": "FIXED",
-    "max": 6,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 6,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getWorkspaceAccount": {
-    "kind": "FIXED",
-    "max": 7,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 7,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getWorkspaceAccounts": {
-    "kind": "FIXED",
-    "max": 7,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 7,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getWorkspaceInvitation": {
-    "kind": "FIXED",
-    "max": 7,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 7,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getWorkspaceInvitationCandidates": {
-    "kind": "FIXED",
-    "max": 8,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 8,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getWorkspaceInvitations": {
-    "kind": "FIXED",
-    "max": 7,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 7,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getWorkspaceRole": {
-    "kind": "FIXED",
-    "max": 6,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 6,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "getWorkspaceRoles": {
-    "kind": "FIXED",
-    "max": 6,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 6,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "initializeCommercialGroup": {
-    "kind": "FIXED",
-    "max": 17,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 17,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "listPlatformGroupWorkspaces": {
-    "kind": "FIXED",
-    "max": 6,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 6,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "platformLogout": {
-    "kind": "FIXED",
-    "max": 4,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 4,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "platformPasswordLogin": {
-    "kind": "FIXED",
-    "max": 11,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 11,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "reissueWorkspaceInvitation": {
-    "kind": "FIXED",
-    "max": 30,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": 20,
-        "to": 30,
-        "reason": "Dexter 2026-08-29: invitation and employment-assignment commands are inherently multi-table writes; preserve their complete business transaction.",
-        "decisionRef": "DEXTER-2026-08-29-BASE1-INVITATION-ASSIGNMENT-NATURAL-MULTI-TABLE-P3"
-      }
-    ]
-  },
-  "releasePlatformStagedAsset": {
-    "kind": "FIXED",
-    "max": 9,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 9,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "replaceExtensionDefinition": {
-    "kind": "FIXED",
-    "max": 20,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 20,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "requestWorkspaceCredentialReset": {
-    "kind": "FIXED",
-    "max": 20,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 20,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "resetPlatformAdminCredential": {
-    "kind": "FIXED",
-    "max": 17,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 17,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "revokePlatformWorkspaceAssignment": {
-    "kind": "FIXED",
-    "max": 18,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 18,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "sendPlatformLoginOtp": {
-    "kind": "FIXED",
-    "max": 14,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 14,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "sendPlatformPasswordRecoveryOtp": {
-    "kind": "FIXED",
-    "max": 14,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 14,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "stagePlatformAsset": {
-    "kind": "FIXED",
-    "max": 13,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 13,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "startPlatformPasswordRecovery": {
-    "kind": "FIXED",
-    "max": 17,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 17,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "transitionPlatformAdminStatus": {
-    "kind": "FIXED",
-    "max": 19,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 19,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "transitionPlatformExternalSystemStatus": {
-    "kind": "FIXED",
-    "max": 17,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 17,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "transitionPlatformGroupWorkspaceStatus": {
-    "kind": "FIXED",
-    "max": 19,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 19,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "transitionPlatformProviderProfileStatus": {
-    "kind": "FIXED",
-    "max": 20,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 20,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "transitionWorkspaceAccountStatus": {
-    "kind": "FIXED",
-    "max": 20,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 20,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "transitionWorkspaceRoleStatus": {
-    "kind": "FIXED",
-    "max": 19,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 19,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "updatePlatformAdminProfile": {
-    "kind": "FIXED",
-    "max": 15,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 15,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "updatePlatformGroupWorkspaceDisplay": {
-    "kind": "FIXED",
-    "max": 18,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 18,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "updatePlatformOwnerBinding": {
-    "kind": "FIXED",
-    "max": 21,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 21,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "updateWorkspaceRole": {
-    "kind": "FIXED",
-    "max": 19,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 19,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "verifyPlatformLoginOtp": {
-    "kind": "FIXED",
-    "max": 13,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 13,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  },
-  "verifyPlatformPasswordRecoveryOtp": {
-    "kind": "FIXED",
-    "max": 13,
-    "measurementScenarioIds": [
-      "performance.normal-path"
-    ],
-    "history": [
-      {
-        "from": null,
-        "to": 13,
-        "reason": "CP-05 maximum database operation count across three runs"
-      }
-    ]
-  }
-} as const;
+export const PLATFORM_ADMIN_DATABASE_OPERATION_BUDGETS = {} as const;
 
 export const PLATFORM_ADMIN_OPERATION_IDS = {
   "cancelWorkspaceInvitation": "cancelWorkspaceInvitation",
@@ -1318,6 +496,8 @@ export const PLATFORM_ADMIN_OPERATION_IDS = {
   "getPlatformOwnerBindingDetail": "getPlatformOwnerBindingDetail",
   "getPlatformProviderProfileBindings": "getPlatformProviderProfileBindings",
   "getPlatformProviderProfileDetail": "getPlatformProviderProfileDetail",
+  "getPlatformTerminalUpdateArtifactDetail": "getPlatformTerminalUpdateArtifactDetail",
+  "getPlatformTerminalUpdateArtifactPage": "getPlatformTerminalUpdateArtifactPage",
   "getWorkspaceAccount": "getWorkspaceAccount",
   "getWorkspaceAccounts": "getWorkspaceAccounts",
   "getWorkspaceInvitation": "getWorkspaceInvitation",
@@ -1329,8 +509,10 @@ export const PLATFORM_ADMIN_OPERATION_IDS = {
   "listPlatformGroupWorkspaces": "listPlatformGroupWorkspaces",
   "platformLogout": "platformLogout",
   "platformPasswordLogin": "platformPasswordLogin",
+  "registerPlatformTerminalUpdateArtifact": "registerPlatformTerminalUpdateArtifact",
   "reissueWorkspaceInvitation": "reissueWorkspaceInvitation",
   "releasePlatformStagedAsset": "releasePlatformStagedAsset",
+  "releasePlatformTerminalUpdateArtifactStage": "releasePlatformTerminalUpdateArtifactStage",
   "replaceExtensionDefinition": "replaceExtensionDefinition",
   "requestWorkspaceCredentialReset": "requestWorkspaceCredentialReset",
   "resetPlatformAdminCredential": "resetPlatformAdminCredential",
@@ -1338,6 +520,7 @@ export const PLATFORM_ADMIN_OPERATION_IDS = {
   "sendPlatformLoginOtp": "sendPlatformLoginOtp",
   "sendPlatformPasswordRecoveryOtp": "sendPlatformPasswordRecoveryOtp",
   "stagePlatformAsset": "stagePlatformAsset",
+  "stagePlatformTerminalUpdateArtifact": "stagePlatformTerminalUpdateArtifact",
   "startPlatformPasswordRecovery": "startPlatformPasswordRecovery",
   "transitionPlatformAdminStatus": "transitionPlatformAdminStatus",
   "transitionPlatformExternalSystemStatus": "transitionPlatformExternalSystemStatus",
@@ -1380,6 +563,7 @@ export const EDGE_PROBLEM_CODES = [
   "PLATFORM_COMMON_RESULT_UNKNOWN",
   "PLATFORM_COMMON_VALIDATION_FAILED",
   "PLATFORM_COMMON_VERSION_CONFLICT",
+  "PLATFORM_DEPENDENCY_UNAVAILABLE",
   "PLATFORM_IAM_ACCOUNT_DISABLED",
   "PLATFORM_IAM_CREDENTIAL_LOCKED",
   "PLATFORM_IAM_INVALID_CREDENTIALS",
@@ -1391,6 +575,13 @@ export const EDGE_PROBLEM_CODES = [
   "PLATFORM_WORKSPACE_NAME_CONFLICT",
   "PLATFORM_WORKSPACE_STATUS_TRANSITION_INVALID",
   "PROVIDER_NOT_ENABLED",
+  "TERMINAL_UPDATE_ARTIFACT_INVALID",
+  "TERMINAL_UPDATE_BUSY",
+  "TERMINAL_UPDATE_MINIMUM_FULL_INVALID",
+  "TERMINAL_UPDATE_PUBLICATION_CONFLICT",
+  "TERMINAL_UPDATE_SNAPSHOT_TOO_LARGE",
+  "TERMINAL_UPDATE_STAGE_EXPIRED",
+  "TERMINAL_UPDATE_STAGE_NOT_OWNED",
   "UNKNOWN_SUBMISSION_RESULT",
   "VALIDATION_FAILED",
   "VERSION_CONFLICT",
@@ -2148,6 +1339,49 @@ export type StoreContractSortKey = "CONTRACT_NO" | "EFFECTIVE_FROM" | "UPDATED_A
 
 export type StoreContractStatus = "VALID" | "INVALID";
 
+export type TerminalUpdateArtifactDetail = (TerminalUpdateArtifactSummary);
+
+export type TerminalUpdateArtifactPage = {
+  items: Array<TerminalUpdateArtifactSummary>;
+  nextCursor: string | null;
+};
+
+export type TerminalUpdateArtifactRegisterRequest = {
+  stageRef: string & { readonly __uuid: "Uuid" };
+  stageBindGrant: string;
+  kind: "FULL" | "HOT";
+  minimumFullArtifactRef?: string & { readonly __uuid: "Uuid" };
+};
+
+export type TerminalUpdateArtifactStageRequest = {
+  file: Blob;
+  sha256: string;
+  usage: "TERMINAL_UPDATE_ARTIFACT";
+};
+
+export type TerminalUpdateArtifactSummary = {
+  artifactRef: string & { readonly __uuid: "Uuid" };
+  kind: "FULL" | "HOT";
+  applicationId: string;
+  runtimeVersion: string;
+  nativeBuildNumber: number;
+  apkVersion: string;
+  jsVersion: string;
+  publicationId: string;
+  zipSha256: string;
+  byteSize: number;
+  createdAtEpochMillis: number;
+};
+
+export type TerminalUpdateStageResult = {
+  stageRef: string & { readonly __uuid: "Uuid" };
+  stageBindGrant: string;
+  expiresAtEpochMillis: number;
+  fileName: string;
+  sha256: string;
+  byteSize: number;
+};
+
 export type WorkspaceAccount = {
   id: string;
   groupWorkspaceKey: string;
@@ -2571,7 +1805,7 @@ export type FaceOperationContracts = {
     path: Record<string, never>;
     query: {
     groupWorkspaceKey?: string;
-    entityType: "GROUP_WORKSPACE" | "PLATFORM_ADMIN" | "WORKSPACE_ROLE" | "WORKSPACE_ACCOUNT" | "WORKSPACE_INVITATION" | "EXTENSION_DEFINITION" | "STORE_CONTRACT";
+    entityType: "GROUP_WORKSPACE" | "PLATFORM_ADMIN" | "WORKSPACE_ROLE" | "WORKSPACE_ACCOUNT" | "WORKSPACE_INVITATION" | "EXTENSION_DEFINITION" | "STORE_CONTRACT" | "TERMINAL_UPDATE_ARTIFACT";
     entityId: string;
     page?: number;
     pageSize?: number;
@@ -2758,6 +1992,43 @@ export type FaceOperationContracts = {
   };
     query: Record<string, never>;
     queryRequired: false;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getPlatformTerminalUpdateArtifactDetail": {
+    request: NoBody;
+    response: TerminalUpdateArtifactDetail;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    artifactRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
+  "getPlatformTerminalUpdateArtifactPage": {
+    request: NoBody;
+    response: TerminalUpdateArtifactPage;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: {
+    kind?: "FULL" | "HOT";
+    appId?: string;
+    runtimeVersion?: string;
+    queryText?: string;
+    minimumFullNativeBuildNumber?: number;
+    minimumFullPublicationId?: string;
+    minimumFullApkSha256?: string;
+    cursor?: string;
+    limit: number;
+  };
+    queryRequired: true;
     headers: Record<string, never>;
     headersRequired: false;
   };
@@ -2956,6 +2227,21 @@ export type FaceOperationContracts = {
   };
     headersRequired: true;
   };
+  "registerPlatformTerminalUpdateArtifact": {
+    request: TerminalUpdateArtifactRegisterRequest;
+    response: TerminalUpdateArtifactDetail;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
   "reissueWorkspaceInvitation": {
     request: WorkspaceInvitationReissueRequest;
     response: PlatformWorkspaceInvitation;
@@ -2979,6 +2265,22 @@ export type FaceOperationContracts = {
     requiresSession: true;
     path: {
     assetRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "X-Asset-Bind-Grant": string;
+  };
+    headersRequired: true;
+  };
+  "releasePlatformTerminalUpdateArtifactStage": {
+    request: NoBody;
+    response: NoContent;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    stageRef: string & { readonly __uuid: "Uuid" };
   };
     query: Record<string, never>;
     queryRequired: false;
@@ -3083,6 +2385,21 @@ export type FaceOperationContracts = {
     requestRequired: true;
     requiresSession: true;
     path: Record<string, never>;
+    query: Record<string, never>;
+    queryRequired: false;
+    headers: {
+    "Idempotency-Key": string;
+  };
+    headersRequired: true;
+  };
+  "stagePlatformTerminalUpdateArtifact": {
+    request: TerminalUpdateArtifactStageRequest;
+    response: TerminalUpdateStageResult;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+  };
     query: Record<string, never>;
     queryRequired: false;
     headers: {
@@ -3532,6 +2849,22 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       requiresSession: true,
       ...options,
     }),
+    getPlatformTerminalUpdateArtifactDetail: (pathParameters: FaceOperationContracts["getPlatformTerminalUpdateArtifactDetail"]["path"], options: FaceOperationOptions<"getPlatformTerminalUpdateArtifactDetail">) => execute({
+      operationId: "getPlatformTerminalUpdateArtifactDetail",
+      method: "GET",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/terminal-update-artifacts/{artifactRef}",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getPlatformTerminalUpdateArtifactPage: (pathParameters: FaceOperationContracts["getPlatformTerminalUpdateArtifactPage"]["path"], options: FaceOperationOptions<"getPlatformTerminalUpdateArtifactPage">) => execute({
+      operationId: "getPlatformTerminalUpdateArtifactPage",
+      method: "GET",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/terminal-update-artifacts",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
     getWorkspaceAccount: (pathParameters: FaceOperationContracts["getWorkspaceAccount"]["path"], options: FaceOperationOptions<"getWorkspaceAccount">) => execute({
       operationId: "getWorkspaceAccount",
       method: "GET",
@@ -3620,6 +2953,14 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       requiresSession: false,
       ...options,
     }),
+    registerPlatformTerminalUpdateArtifact: (pathParameters: FaceOperationContracts["registerPlatformTerminalUpdateArtifact"]["path"], options: FaceOperationOptions<"registerPlatformTerminalUpdateArtifact">) => execute({
+      operationId: "registerPlatformTerminalUpdateArtifact",
+      method: "POST",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/terminal-update-artifacts",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
     reissueWorkspaceInvitation: (pathParameters: FaceOperationContracts["reissueWorkspaceInvitation"]["path"], options: FaceOperationOptions<"reissueWorkspaceInvitation">) => execute({
       operationId: "reissueWorkspaceInvitation",
       method: "POST",
@@ -3632,6 +2973,14 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       operationId: "releasePlatformStagedAsset",
       method: "POST",
       path: "/api/platform/assets/staging/{assetRef}/release",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    releasePlatformTerminalUpdateArtifactStage: (pathParameters: FaceOperationContracts["releasePlatformTerminalUpdateArtifactStage"]["path"], options: FaceOperationOptions<"releasePlatformTerminalUpdateArtifactStage">) => execute({
+      operationId: "releasePlatformTerminalUpdateArtifactStage",
+      method: "POST",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/terminal-update-artifact-stages/{stageRef}/release",
       pathParameters,
       requiresSession: true,
       ...options,
@@ -3688,6 +3037,14 @@ export function createPlatformAdminClient(execute: FaceExecutor) {
       operationId: "stagePlatformAsset",
       method: "POST",
       path: "/api/platform/assets/staging",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    stagePlatformTerminalUpdateArtifact: (pathParameters: FaceOperationContracts["stagePlatformTerminalUpdateArtifact"]["path"], options: FaceOperationOptions<"stagePlatformTerminalUpdateArtifact">) => execute({
+      operationId: "stagePlatformTerminalUpdateArtifact",
+      method: "POST",
+      path: "/api/platform/group-workspaces/{groupWorkspaceKey}/terminal-update-artifact-stages",
       pathParameters,
       requiresSession: true,
       ...options,

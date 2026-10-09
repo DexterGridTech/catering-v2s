@@ -12,6 +12,7 @@ export const terminalTopicKeys = [
   "SERVICE_POINT_AREA",
   "SERVICE_POINT_COLLECTION",
   "SERVICE_POINT",
+  "TERMINAL_UPDATE_RULES",
 ] as const;
 export type TerminalTopicKey = (typeof terminalTopicKeys)[number];
 

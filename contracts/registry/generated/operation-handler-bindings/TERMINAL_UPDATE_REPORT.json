@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "kind": "generated-owner-operation-bindings",
+  "owner": "TERMINAL_UPDATE_REPORT",
+  "operationCount": 1,
+  "readCount": 0,
+  "commandCount": 1,
+  "dispatchStrategy": "CLOSED_SWITCH",
+  "commandBindingBoundary": "KIND_SPECIFIC_TYPED_METHODS",
+  "dynamicDispatch": false,
+  "operations": [
+    {
+      "operationId": "submitTerminalUpdateReport",
+      "method": "POST",
+      "path": "/api/terminal/group-workspaces/{groupWorkspaceKey}/update-reports",
+      "normalizedPath": "/api/terminal/group-workspaces/{groupWorkspaceKey}/update-reports",
+      "face": "terminal",
+      "mode": "COMMAND",
+      "adapter": "com.catering.v2s.app.application.terminalupdate.SubmitTerminalUpdateReportOperation",
+      "wireRequest": "TerminalUpdateReportRequest",
+      "wireResponse": "TerminalUpdateReportReceipt",
+      "contextKind": "TERMINAL_CREDENTIAL_CONTEXT",
+      "transactionMode": "REQUIRED",
+      "copyRole": "NONE",
+      "commandBoundary": "OWNER_COMMAND",
+      "dispatchMethod": "submitTerminalUpdateReport"
+    }
+  ],
+  "commandContextGroups": {
+    "TERMINAL_CREDENTIAL_CONTEXT": [
+      "submitTerminalUpdateReport"
+    ]
+  }
+}

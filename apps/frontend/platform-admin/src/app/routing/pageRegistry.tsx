@@ -8,6 +8,7 @@ import {AccountsPage} from '../../features/workspace-iam/ui/AccountsPage';
 import {PlatformReadPage} from '../../features/organization-contract-overview/ui/PlatformReadPage';
 import {ExtensionsPage} from '../../features/extension-management/ui/ExtensionsPage';
 import {ExternalCollaborationPage} from '../../features/external-collaboration/ui/ExternalCollaborationPage';
+import {TerminalUpdatePackagesPage} from '../../features/terminal-update/ui/TerminalUpdatePackagesPage';
 
 type RouteRegistration = {path: string; element: ReactNode};
 const externalCollaborationPageKey = platformPageDesignKeys.PlatformExternalCollaboration;
@@ -30,6 +31,10 @@ const routeByPageDesignKey = {
   [platformPageDesignKeys.PlatformWorkspaceAccounts]: {path: '/platform/workspace-accounts', element: <AccountsPage />},
   [platformPageDesignKeys.PlatformExtensionFields]: {path: '/platform/extension-fields', element: <ExtensionsPage />},
   [externalCollaborationPageKey]: {path: '/platform/external-collaboration', element: <ExternalCollaborationPage />},
+  [platformPageDesignKeys.PlatformTerminalUpdatePackages]: {
+    path: '/platform/terminal-update-packages',
+    element: <TerminalUpdatePackagesPage />,
+  },
 } satisfies Record<PlatformPageDesignKey, RouteRegistration>;
 
 const platformPagesInCatalogOrder = adminCatalog.platformPages

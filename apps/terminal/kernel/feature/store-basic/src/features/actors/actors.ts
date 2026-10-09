@@ -21,7 +21,7 @@ import {
 import {moduleName} from '../../moduleName';
 import {selectStoreBasicState} from '../../selectors/selectors';
 import {storeBasicActions} from '../slices/slice';
-import type {StoreBasicBinding} from '../../types/types';
+import type {StoreBasicBinding, StoreBasicState} from '../../types/types';
 import {
   initializeStoreBasicCommand,
   initializeStoreServicePointsCommand,
@@ -226,6 +226,22 @@ const checkCurrentBinding = (context: ActorExecutionContext, binding: StoreBasic
   sameBinding(selectStoreBasicState(context.getState()).binding, binding);
 const checkCurrentMasterBinding = (context: ActorExecutionContext, binding: StoreBasicBinding): boolean =>
   selectRuntimeInstanceMode(context.getState()) === 'MASTER' && checkCurrentBinding(context, binding);
+const updateLoadReadiness = (
+  context: ActorExecutionContext,
+  binding: StoreBasicBinding,
+  patch: Partial<StoreBasicState['loadReadiness']>,
+): void => {
+  const current = selectStoreBasicState(context.getState()).loadReadiness;
+  const same = current.runtimeId === context.runtimeId && sameBinding(current.binding, binding);
+  context.dispatchAction(storeBasicActions.setLoadReadiness(Object.freeze({
+    runtimeId: context.runtimeId,
+    binding,
+    storeStatus: same ? current.storeStatus : 'idle',
+    projectStatus: same ? current.projectStatus : 'idle',
+    projectRef: same ? current.projectRef : null,
+    ...patch,
+  })));
+};
 const withBinding = async (context: ActorExecutionContext, binding: StoreBasicBinding): Promise<boolean> => {
   if (selectRuntimeInstanceMode(context.getState()) !== 'MASTER' || !sameBinding(currentBinding(context), binding))
     return false;
@@ -310,19 +326,37 @@ export const createStoreBasicActors = (): readonly ActorDefinition[] => {
       return {status: 'inactive-or-stale'};
     if (!(await withBinding(context, binding))) return {status: 'stale-binding'};
     const key = bindingKey(binding);
+    if (activeInitialLoads.has(key)) return {status: 'already-loading'};
     if (completedStoreLoads.has(key)) {
-      if (!completedServicePointLoads.has(key))
-        await context.dispatchCommand(
-          initializeStoreServicePointsCommand,
-          {binding},
-          {
-            requestId: childRequestId(context),
-          },
-        );
-      return {status: 'already-loaded'};
+      const readiness = selectStoreBasicState(context.getState()).loadReadiness;
+      const storeReady = readiness.runtimeId === context.runtimeId && sameBinding(readiness.binding, binding) &&
+        readiness.storeStatus === 'flushed';
+      if (!storeReady) {
+        completedStoreLoads.delete(key);
+        completedServicePointLoads.delete(key);
+      } else {
+        if (readiness.projectStatus !== 'flushed') {
+          activeInitialLoads.add(key);
+          try {
+            await loadOrganizationAndContracts(context, binding);
+          } finally {
+            activeInitialLoads.delete(key);
+          }
+        }
+        if (!completedServicePointLoads.has(key))
+          await context.dispatchCommand(
+            initializeStoreServicePointsCommand,
+            {binding},
+            {
+              requestId: childRequestId(context),
+            },
+          );
+        return {status: 'already-loaded'};
+      }
     }
     if (activeInitialLoads.has(key)) return {status: 'already-loading'};
     activeInitialLoads.add(key);
+    updateLoadReadiness(context, binding, {storeStatus: 'loading'});
     context.dispatchAction(storeBasicActions.setReadState({topicKey: 'STORE', status: 'loading'}));
     try {
       const result = await readOperation(context, {
@@ -331,6 +365,7 @@ export const createStoreBasicActors = (): readonly ActorDefinition[] => {
       });
       if (!checkCurrentMasterBinding(context, binding)) return {status: 'stale-binding'};
       if (result?.kind !== 'success') {
+        updateLoadReadiness(context, binding, {storeStatus: 'failed'});
         currentTopicStatus(
           context,
           'STORE',
@@ -361,10 +396,12 @@ export const createStoreBasicActors = (): readonly ActorDefinition[] => {
         await flush(context);
       } catch (error) {
         if (!checkCurrentMasterBinding(context, binding)) return {status: 'stale-binding'};
+        updateLoadReadiness(context, binding, {storeStatus: 'failed'});
         currentTopicStatus(context, 'STORE', error instanceof Error ? error.message : 'STORE_PERSISTENCE_FAILED');
         return {status: 'store-persistence-failed'};
       }
       if (!checkCurrentMasterBinding(context, binding)) return {status: 'stale-binding'};
+      updateLoadReadiness(context, binding, {storeStatus: 'flushed'});
       await subscribe({
         context,
         binding,
@@ -415,6 +452,7 @@ export const createStoreBasicActors = (): readonly ActorDefinition[] => {
     binding: StoreBasicBinding,
   ): Promise<void> => {
     if (!checkCurrentMasterBinding(context, binding)) return;
+    updateLoadReadiness(context, binding, {projectStatus: 'loading', projectRef: null});
     const pathResult = await readOperation(context, {
       operationId: 'terminalReadStoreOrganizationPath',
       pathParameters: {storeRef: binding.storeRef},
@@ -426,8 +464,16 @@ export const createStoreBasicActors = (): readonly ActorDefinition[] => {
       setLoaded(context, 'PROJECT');
       setLoaded(context, 'REGION');
       setLoaded(context, 'COMMERCIAL_GROUP');
-      await flush(context);
+      try {
+        await flush(context);
+      } catch (error) {
+        if (!checkCurrentMasterBinding(context, binding)) return;
+        updateLoadReadiness(context, binding, {projectStatus: 'failed', projectRef: null});
+        currentTopicStatus(context, 'PROJECT', error instanceof Error ? error.message : 'PROJECT_PERSISTENCE_FAILED');
+        return;
+      }
       if (!checkCurrentMasterBinding(context, binding)) return;
+      updateLoadReadiness(context, binding, {projectStatus: 'flushed', projectRef: path.projectRef});
       await subscribe({
         context,
         binding,
@@ -454,6 +500,7 @@ export const createStoreBasicActors = (): readonly ActorDefinition[] => {
       });
     } else {
       if (!checkCurrentMasterBinding(context, binding)) return;
+      updateLoadReadiness(context, binding, {projectStatus: 'failed', projectRef: null});
       const code = pathResult?.kind === 'business-rejection' ? pathResult.errorCode : 'ORGANIZATION_PATH_READ_FAILED';
       for (const key of ['PROJECT', 'REGION', 'COMMERCIAL_GROUP'] as const) currentTopicStatus(context, key, code);
     }

@@ -1,6 +1,7 @@
 package com.catering.v2s.platform.asset.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -10,6 +11,7 @@ import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.platform.asset.api.SalesMenuAssetCommandApi;
 import com.catering.v2s.platform.asset.api.SalesMenuAssetTarget;
 import com.catering.v2s.platform.asset.api.SalesMenuAssetUsage;
+import com.catering.v2s.platform.asset.api.TerminalUpdatePrivateObjectStorage;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -105,6 +107,56 @@ class PlatformAssetServiceTest {
         TimeProvider time = () -> now;
         objects = new MemoryObjects();
         assets = new PlatformAssetService(jdbc, time, objects);
+    }
+
+    @Test
+    void terminalUpdatePackageUsesPrivateBucketAndRequiresScopeAndClaimBeforeActiveRead() throws Exception {
+        byte[] zip = new byte[] {'P', 'K', 3, 4, 1, 2, 3, 4};
+        var firstStage = assets.stageTerminalUpdatePackage(
+                workspaceId,
+                "asset-flow",
+                "release.zip",
+                sha256(zip),
+                zip.length,
+                new ByteArrayInputStream(zip),
+                "terminal-update-package-stage-001");
+        var staged = assets.stageTerminalUpdatePackage(
+                workspaceId,
+                "asset-flow",
+                "release.zip",
+                sha256(zip),
+                zip.length,
+                new ByteArrayInputStream(zip),
+                "terminal-update-package-stage-001");
+
+        assertEquals(firstStage.assetRef(), staged.assetRef());
+        assertEquals("release.zip", staged.fileName());
+        assertEquals(sha256(zip), staged.sha256());
+        assertTrue(objects.privateObjects.containsKey("terminal-update/" + sha256(zip) + ".zip"));
+        assertThrows(PlatformAssetService.AssetIdempotencyConflictException.class, () ->
+                assets.stageTerminalUpdatePackage(
+                        workspaceId,
+                        "asset-flow",
+                        "renamed.zip",
+                        sha256(zip),
+                        zip.length,
+                        new ByteArrayInputStream(zip),
+                        "terminal-update-package-stage-001"));
+        assertThrows(PlatformAssetService.AssetClaimRejectedException.class, () -> assets.openTerminalUpdatePackage(
+                secondWorkspaceId, "asset-flow-b", staged.assetRef(), true));
+        try (var content = assets.openTerminalUpdatePackage(workspaceId, "asset-flow", staged.assetRef(), true)) {
+            assertArrayEquals(zip, content.content().readAllBytes());
+            assertEquals("application/zip", content.contentType());
+        }
+        assets.claimTerminalUpdatePackage(
+                workspaceId, "asset-flow", staged.assetRef(), staged.bindGrant(), staged.sha256());
+        assertThrows(PlatformAssetService.AssetClaimRejectedException.class, () -> assets.openTerminalUpdatePackage(
+                workspaceId, "asset-flow", staged.assetRef(), true));
+        try (var content = assets.openTerminalUpdatePackage(workspaceId, "asset-flow", staged.assetRef(), false)) {
+            assertArrayEquals(zip, content.content().readAllBytes());
+        }
+        assertThrows(PlatformAssetService.AssetNotFoundException.class,
+                () -> assets.requireActivePublicReference(staged.assetRef()));
     }
 
     @Test
@@ -1491,7 +1543,7 @@ class PlatformAssetServiceTest {
         });
     }
 
-    private static class MemoryObjects implements AssetObjectStorage {
+    private static class MemoryObjects implements AssetObjectStorage, TerminalUpdatePrivateObjectStorage {
         private enum StorageFailure {
             NONE,
             BUCKET_PREPARE,
@@ -1500,6 +1552,7 @@ class PlatformAssetServiceTest {
         }
 
         private final Map<String, byte[]> objects = new HashMap<>();
+        private final Map<String, byte[]> privateObjects = new HashMap<>();
         private boolean failStat;
         private StorageFailure storageFailure = StorageFailure.NONE;
         private boolean storageWasCalled;
@@ -1551,6 +1604,50 @@ class PlatformAssetServiceTest {
         @Override
         public void delete(String key) {
             objects.remove(key);
+        }
+
+        @Override
+        public String privateBucketName() {
+            return "r5-terminal-update-private";
+        }
+
+        @Override
+        public String privateObjectKey(String digest) {
+            return "terminal-update/" + digest + ".zip";
+        }
+
+        @Override
+        public boolean privateExists(String key) {
+            observeStorageTransaction();
+            return privateObjects.containsKey(key);
+        }
+
+        @Override
+        public boolean ownsPrivateObjectKey(String key) {
+            return key != null && key.matches("terminal-update/[a-f0-9]{64}\\.zip");
+        }
+
+        @Override
+        public void putPrivate(String key, long size, InputStream bytes) {
+            observeStorageTransaction();
+            try {
+                privateObjects.put(key, bytes.readAllBytes());
+            } catch (java.io.IOException failure) {
+                throw new IllegalStateException(failure);
+            }
+        }
+
+        @Override
+        public InputStream openPrivate(String key) {
+            byte[] value = privateObjects.get(key);
+            if (value == null) throw new AssetObjectStorageUnavailableException(
+                    "private-object.read", new IllegalStateException("missing private object"));
+            return new ByteArrayInputStream(value);
+        }
+
+        @Override
+        public void deletePrivate(String key) {
+            privateObjects.remove(key);
         }
 
         int size() {

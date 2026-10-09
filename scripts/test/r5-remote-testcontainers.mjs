@@ -59,6 +59,7 @@ export const TDS_HISTORY_RECORDS_SCENARIO = 'terminal.connection.history-records
 export const TDS_HISTORY_OUTAGE_BOUNDED_SCENARIO = 'terminal.connection.history-outage-bounded';
 export const TDS_CROSS_NODE_RECOVERY_SCENARIO = 'terminal.connection.vs13.cross-node-recovery';
 export const TDS_TOPIC_SUBSCRIPTION_SCENARIO = 'terminal.connection.topic.active-store-subscription';
+export const TDS_TERMINAL_UPDATE_TOPIC_SCENARIO = 'terminal.connection.topic.terminal-update-rules';
 export const TDS_REMOTE_COMMAND_SCENARIO = 'terminal.connection.remote-command';
 const TDS_CONTRACT_SCENARIO_PREFLIGHT = new Map([
   [V_S15_TDS_CONTRACT_SCENARIO, true],
@@ -67,6 +68,7 @@ const TDS_CONTRACT_SCENARIO_PREFLIGHT = new Map([
   [TDS_HISTORY_OUTAGE_BOUNDED_SCENARIO, false],
   [TDS_CROSS_NODE_RECOVERY_SCENARIO, true],
   [TDS_TOPIC_SUBSCRIPTION_SCENARIO, true],
+  [TDS_TERMINAL_UPDATE_TOPIC_SCENARIO, true],
   [TDS_REMOTE_COMMAND_SCENARIO, true],
 ]);
 const isTdsContractScenarioScopeValid = (scenario, topologyPreflight) =>
@@ -380,7 +382,11 @@ export const backendAcceptanceEnvironment = (
   ) {
     throw new Error('BACKEND_ACCEPTANCE_VS8_DIAGNOSTIC_ARGUMENT_INVALID');
   }
-  if (runId === null) return effectiveOperation === 'all' ? [] : ['export V2S_BACKEND_PERFORMANCE_PROJECTION_MODE=IDENTITY_ONLY'];
+  // A remote Gradle task without a backend-acceptance run may still compile
+  // generated sources whose budget projection is intentionally deferred until
+  // CP-05. It has no calibrated operation workload, so keep compilation on the
+  // identity-only projection path regardless of the default operation label.
+  if (runId === null) return ['export V2S_BACKEND_PERFORMANCE_PROJECTION_MODE=IDENTITY_ONLY'];
   return [
         'export V2S_RUNTIME_ENVIRONMENT=non-production',
         'export V2S_DEV_PROFILE=backend-acceptance',
@@ -1408,7 +1414,8 @@ export const inspectManagedDevState = ({
   exists = existsSync,
   read = readFileSync,
 } = {}) => {
-  if (!exists(manifestPath)) return Object.freeze({wasRunning: false, runId: null});
+  if (!exists(manifestPath))
+    return Object.freeze({wasRunning: false, runId: null, backendPerformanceProjectionMode: null});
   let manifest;
   try {
     manifest = JSON.parse(read(manifestPath, 'utf8'));
@@ -1424,7 +1431,14 @@ export const inspectManagedDevState = ({
   ) {
     throw new Error('DEV_MANIFEST_INVALID');
   }
-  return Object.freeze({wasRunning: true, runId: manifest.runId});
+  const projectionMode = manifest.remoteJava.backendPerformanceProjectionMode;
+  if (projectionMode !== undefined && !['CALIBRATED', 'IDENTITY_ONLY'].includes(projectionMode))
+    throw new Error('DEV_MANIFEST_INVALID');
+  return Object.freeze({
+    wasRunning: true,
+    runId: manifest.runId,
+    backendPerformanceProjectionMode: projectionMode ?? null,
+  });
 };
 
 export const classifyManagedDevLifecycleCommand = (result, marker) => {
@@ -3323,7 +3337,13 @@ const execute = async () => {
       if (!failure && manifest.testExecution.status === 'PASS' && manifest.cleanup.status === 'PASS') {
         beginBoundary('DEV_RESTORE');
         const startResult = commandResult(path.join(root, 'scripts/dev/start'), [], {
-          env: {...process.env, V2S_RUNTIME_DIR: runtime},
+          env: {
+            ...process.env,
+            V2S_RUNTIME_DIR: runtime,
+            ...(devState.backendPerformanceProjectionMode === null
+              ? {}
+              : {V2S_BACKEND_PERFORMANCE_PROJECTION_MODE: devState.backendPerformanceProjectionMode}),
+          },
         });
         manifest.devLifecycle.restore = classifyManagedDevLifecycleCommand(startResult, 'R5_DEV_START=PASS');
         if (manifest.devLifecycle.restore.status === 'PASS') manifest.devLifecycle.cleanup = 'PASS';

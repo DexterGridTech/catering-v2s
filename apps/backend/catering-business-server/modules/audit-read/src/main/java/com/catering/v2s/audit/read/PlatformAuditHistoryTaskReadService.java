@@ -10,12 +10,14 @@ import com.catering.v2s.platform.iam.api.PlatformSessionReadback;
 import com.catering.v2s.platform.iam.application.PlatformIamAuditHistoryService;
 import com.catering.v2s.platform.workspace.application.PlatformWorkspaceAuditHistoryService;
 import com.catering.v2s.platform.workspace.application.WorkspaceAdministrationService;
+import com.catering.v2s.terminalupdate.api.TerminalUpdateArtifactOwnerApi;
 import com.catering.v2s.workspace.iam.application.WorkspaceIamAuditHistoryService;
 import java.util.Objects;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Closed platform-audit task reader with seven compile-time target branches. */
+/** Closed platform-audit task reader with eight compile-time target branches. */
 @Service
 public class PlatformAuditHistoryTaskReadService {
     private final PlatformWorkspaceAuditHistoryService groupWorkspaceAudit;
@@ -24,6 +26,7 @@ public class PlatformAuditHistoryTaskReadService {
     private final WorkspaceIamAuditHistoryService workspaceIamAudit;
     private final ExtensionAuditHistoryService extensionAudit;
     private final ContractAuditHistoryService contractAudit;
+    private final TerminalUpdateArtifactOwnerApi terminalUpdateArtifacts;
 
     public PlatformAuditHistoryTaskReadService(
             PlatformWorkspaceAuditHistoryService groupWorkspaceAudit,
@@ -31,13 +34,15 @@ public class PlatformAuditHistoryTaskReadService {
             PlatformIamAuditHistoryService platformIamAudit,
             WorkspaceIamAuditHistoryService workspaceIamAudit,
             ExtensionAuditHistoryService extensionAudit,
-            ContractAuditHistoryService contractAudit) {
+            ContractAuditHistoryService contractAudit,
+            TerminalUpdateArtifactOwnerApi terminalUpdateArtifacts) {
         this.groupWorkspaceAudit = Objects.requireNonNull(groupWorkspaceAudit, "groupWorkspaceAudit");
         this.workspaces = Objects.requireNonNull(workspaces, "workspaces");
         this.platformIamAudit = Objects.requireNonNull(platformIamAudit, "platformIamAudit");
         this.workspaceIamAudit = Objects.requireNonNull(workspaceIamAudit, "workspaceIamAudit");
         this.extensionAudit = Objects.requireNonNull(extensionAudit, "extensionAudit");
         this.contractAudit = Objects.requireNonNull(contractAudit, "contractAudit");
+        this.terminalUpdateArtifacts = Objects.requireNonNull(terminalUpdateArtifacts, "terminalUpdateArtifacts");
     }
 
     @Transactional(readOnly = true)
@@ -61,6 +66,12 @@ public class PlatformAuditHistoryTaskReadService {
                     scope(value.groupWorkspaceKey()), value.target().entityRef(), value.page(), value.pageSize());
             case PlatformAuditHistoryQuery.StoreContract value -> contractAudit.readStoreContract(
                     scope(value.groupWorkspaceKey()), value.target().entityRef(), value.page(), value.pageSize());
+            case PlatformAuditHistoryQuery.TerminalUpdateArtifact value -> {
+                AuditReadScope scope = scope(value.groupWorkspaceKey());
+                yield terminalUpdateArtifacts.readAuditHistory(
+                        scope.workspaceUuid(), scope.groupWorkspaceKey(), UUID.fromString(value.target().entityRef()),
+                        value.page(), value.pageSize());
+            }
         };
     }
 
@@ -79,7 +90,8 @@ public class PlatformAuditHistoryTaskReadService {
                     PlatformAuditHistoryQuery.WorkspaceAccount,
                     PlatformAuditHistoryQuery.WorkspaceInvitation,
                     PlatformAuditHistoryQuery.ExtensionDefinition,
-                    PlatformAuditHistoryQuery.StoreContract {
+                    PlatformAuditHistoryQuery.StoreContract,
+                    PlatformAuditHistoryQuery.TerminalUpdateArtifact {
         AuditTarget target();
 
         long page();
@@ -134,6 +146,15 @@ public class PlatformAuditHistoryTaskReadService {
                 implements PlatformAuditHistoryQuery {
             public StoreContract {
                 requireType(target, "STORE_CONTRACT");
+                groupWorkspaceKey = requireWorkspaceKey(groupWorkspaceKey);
+            }
+        }
+
+        record TerminalUpdateArtifact(AuditTarget target, String groupWorkspaceKey, long page, long pageSize)
+                implements PlatformAuditHistoryQuery {
+            public TerminalUpdateArtifact {
+                requireType(target, "TERMINAL_UPDATE_ARTIFACT");
+                UUID.fromString(target.entityRef());
                 groupWorkspaceKey = requireWorkspaceKey(groupWorkspaceKey);
             }
         }

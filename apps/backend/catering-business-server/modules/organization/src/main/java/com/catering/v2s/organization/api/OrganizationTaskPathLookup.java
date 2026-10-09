@@ -113,6 +113,16 @@ public interface OrganizationTaskPathLookup {
             UUID workspaceUuid, String groupWorkspaceKey, List<TaskPathRef> targets);
 
     /**
+     * Bounded presentation read for immutable Store refs already persisted on an owner record. Only Stores still in
+     * the selected Project are returned; missing, moved, and out-of-scope refs remain absent for the caller to render
+     * as an unknown persisted reference without revealing another Project's facts.
+     */
+    default Map<UUID, PersistedStoreFact> describePersistedStoresInProject(
+            UUID workspaceUuid, String groupWorkspaceKey, UUID projectRef, List<UUID> storeRefs) {
+        throw new UnsupportedOperationException("persisted project store facts are not implemented by this owner");
+    }
+
+    /**
      * Owner-owned, non-throwing availability read for persisted role assignments. Missing or disabled targets are
      * deliberately absent, so session assembly can discard them without turning one stale assignment into a request
      * failure.
@@ -176,6 +186,8 @@ public interface OrganizationTaskPathLookup {
     record TaskPathNode(UUID ref, String code, String name, String nodeType) {}
 
     record TaskPathRef(String targetType, UUID targetId) {}
+
+    record PersistedStoreFact(UUID storeRef, String code, String name, String status) {}
 
     record CommandTaskPathFacts(TaskPath taskPath, boolean assignmentScopeAllowed) {}
 

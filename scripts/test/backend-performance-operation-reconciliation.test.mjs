@@ -12,6 +12,7 @@ import {
 } from './backend-performance-cp05-reclassification.mjs';
 import {
   buildBudgetProjection,
+  EXPECTED_OPERATION_COUNT,
   isCp05IdentityOnlyProjectionMode,
   readCp05CalibrationReport,
   validateBudgetRegistry,
@@ -100,8 +101,8 @@ test('ordinary acceptance registry carries the complete current CP-05 budget pro
     registry.map(({operationId, databaseOperationBudget}) => [operationId, databaseOperationBudget]),
   );
 
-  assert.equal(registry.length, 304);
-  assert.equal(Object.keys(actualBudgets).length, 304);
+  assert.equal(registry.length, EXPECTED_OPERATION_COUNT);
+  assert.equal(Object.keys(actualBudgets).length, EXPECTED_OPERATION_COUNT);
   for (const [operationId, expectedBudget] of Object.entries(expectedBudgets)) {
     assert.deepEqual(
       actualBudgets[operationId],

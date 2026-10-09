@@ -12,7 +12,15 @@ const dataScopeOptionTestId = (dataNodeType: string, dataNodeRef: string) => {
   return `${prefix ?? `operations-data-scope-option-${slug(dataNodeType)}-`}${slug(dataNodeRef)}`;
 };
 
+export const roleHomeDataScopeOptionPrefix = (dataNodeType: string) =>
+  dataScopeOptionPrefixes[dataNodeType as keyof typeof dataScopeOptionPrefixes] ??
+  `operations-data-scope-option-${slug(dataNodeType)}-`;
+
 export const roleHomeTestIds = {
+  roleContext: {
+    optionPrefix: 'operations-role-context-option-',
+    option: (roleAssignmentRef: string) => `operations-role-context-option-${slug(roleAssignmentRef)}`,
+  },
   dataScope: {
     trigger: 'operations-data-scope-trigger',
     headCompany: 'operations-data-scope-head-company',

@@ -15,6 +15,7 @@ import {
   type PlatformApiProblem,
 } from '../api/PlatformTransport';
 import type {GroupWorkspacePage} from '../api/generated/platform-edge';
+import {platformWorkspaceTestIds} from '../automation/platformWorkspaceTestIds';
 
 type WorkspaceScopeValue = {
   result?: GroupWorkspacePage;
@@ -189,7 +190,10 @@ export function WorkspaceScopeSelector() {
             value: row.groupWorkspaceKey,
             label: <NameCodeText name={row.name} code={row.groupWorkspaceKey} />,
           }))}
-          {...testId('platform-workspace-selector')}
+          optionRender={option => (
+            <span {...testId(platformWorkspaceTestIds.option(String(option.value)))}>{option.label}</span>
+          )}
+          {...testId(platformWorkspaceTestIds.selector)}
         />
       </Space>
     </>

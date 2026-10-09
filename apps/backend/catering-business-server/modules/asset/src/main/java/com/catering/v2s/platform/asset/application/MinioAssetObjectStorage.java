@@ -4,9 +4,11 @@ import io.minio.BucketExistsArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
+import io.minio.GetObjectArgs;
 import io.minio.RemoveObjectArgs;
 import io.minio.SetBucketPolicyArgs;
 import io.minio.StatObjectArgs;
+import com.catering.v2s.platform.asset.api.TerminalUpdatePrivateObjectStorage;
 import io.minio.errors.ErrorResponseException;
 import java.io.InputStream;
 import java.net.URI;
@@ -18,7 +20,7 @@ import org.springframework.stereotype.Component;
 
 /** S3-compatible object adapter; callers receive public URLs but never manufacture them. */
 @Component
-final class MinioAssetObjectStorage implements AssetObjectStorage {
+final class MinioAssetObjectStorage implements AssetObjectStorage, TerminalUpdatePrivateObjectStorage {
     static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(10);
     static final Duration DEFAULT_WRITE_TIMEOUT = Duration.ofSeconds(30);
     static final Duration DEFAULT_READ_TIMEOUT = Duration.ofSeconds(30);
@@ -27,7 +29,10 @@ final class MinioAssetObjectStorage implements AssetObjectStorage {
     private final String bucket;
     private final String publicBaseUrl;
     private final String objectPrefix;
+    private final String privateBucket;
+    private final String privateObjectPrefix;
     private boolean bucketPrepared;
+    private boolean privateBucketPrepared;
 
     @Autowired
     MinioAssetObjectStorage(
@@ -36,8 +41,25 @@ final class MinioAssetObjectStorage implements AssetObjectStorage {
             @Value("${catering.asset.object-storage.secret-key}") String secretKey,
             @Value("${catering.asset.object-storage.bucket}") String bucket,
             @Value("${catering.asset.public-base-url}") String publicBaseUrl,
-            @Value("${catering.asset.object-storage.object-prefix}") String objectPrefix) {
-        this(endpoint, accessKey, secretKey, bucket, publicBaseUrl, objectPrefix, DEFAULT_CALL_TIMEOUT);
+            @Value("${catering.asset.object-storage.object-prefix}") String objectPrefix,
+            @Value("${catering.asset.terminal-update.private-bucket:terminal-update-private-assets}") String privateBucket,
+            @Value("${catering.asset.terminal-update.private-object-prefix:terminal-update/}") String privateObjectPrefix) {
+        this(endpoint, accessKey, secretKey, bucket, publicBaseUrl, objectPrefix, privateBucket,
+                privateObjectPrefix, DEFAULT_CALL_TIMEOUT);
+    }
+
+    MinioAssetObjectStorage(
+            String endpoint,
+            String accessKey,
+            String secretKey,
+            String bucket,
+            String publicBaseUrl,
+            String objectPrefix,
+            String privateBucket,
+            String privateObjectPrefix,
+            Duration callTimeout) {
+        this(boundedClient(endpoint, accessKey, secretKey, callTimeout), bucket, publicBaseUrl, objectPrefix,
+                privateBucket, privateObjectPrefix);
     }
 
     MinioAssetObjectStorage(
@@ -48,14 +70,34 @@ final class MinioAssetObjectStorage implements AssetObjectStorage {
             String publicBaseUrl,
             String objectPrefix,
             Duration callTimeout) {
-        this(boundedClient(endpoint, accessKey, secretKey, callTimeout), bucket, publicBaseUrl, objectPrefix);
+        this(endpoint, accessKey, secretKey, bucket, publicBaseUrl, objectPrefix,
+                bucket + "-private", "terminal-update/", callTimeout);
     }
 
-    MinioAssetObjectStorage(MinioClient client, String bucket, String publicBaseUrl, String objectPrefix) {
+    MinioAssetObjectStorage(
+            String endpoint,
+            String accessKey,
+            String secretKey,
+            String bucket,
+            String publicBaseUrl,
+            String objectPrefix) {
+        this(endpoint, accessKey, secretKey, bucket, publicBaseUrl, objectPrefix, DEFAULT_CALL_TIMEOUT);
+    }
+
+    MinioAssetObjectStorage(MinioClient client, String bucket, String publicBaseUrl, String objectPrefix,
+            String privateBucket, String privateObjectPrefix) {
         this.client = client;
         this.bucket = requiredBucket(bucket);
         this.publicBaseUrl = normalizeBase(publicBaseUrl);
         this.objectPrefix = requiredPrefix(objectPrefix);
+        this.privateBucket = requiredBucket(privateBucket);
+        if (this.bucket.equals(this.privateBucket))
+            throw new IllegalArgumentException("terminal update bucket must be private and distinct");
+        this.privateObjectPrefix = requiredPrefix(privateObjectPrefix);
+    }
+
+    MinioAssetObjectStorage(MinioClient client, String bucket, String publicBaseUrl, String objectPrefix) {
+        this(client, bucket, publicBaseUrl, objectPrefix, bucket + "-private", objectPrefix);
     }
 
     private static MinioClient boundedClient(
@@ -90,6 +132,76 @@ final class MinioAssetObjectStorage implements AssetObjectStorage {
         } catch (Exception failure) {
             throw unavailable("bucket.prepare", failure);
         }
+    }
+
+    private synchronized void ensurePrivateBucket() {
+        if (privateBucketPrepared) return;
+        try {
+            if (!client.bucketExists(BucketExistsArgs.builder().bucket(privateBucket).build()))
+                client.makeBucket(MakeBucketArgs.builder().bucket(privateBucket).build());
+            // Deliberately do not apply the public asset bucket policy to update packages.
+            privateBucketPrepared = true;
+        } catch (Exception failure) {
+            throw unavailable("private-bucket.prepare", failure);
+        }
+    }
+
+    @Override
+    public String privateBucketName() {
+        return privateBucket;
+    }
+
+    @Override
+    public String privateObjectKey(String sha256) {
+        if (sha256 == null || !sha256.matches("[a-f0-9]{64}"))
+            throw new IllegalArgumentException("invalid private asset digest");
+        return privateObjectPrefix + "terminal-update/" + sha256 + ".zip";
+    }
+
+    @Override
+    public boolean privateExists(String objectKey) {
+        ensurePrivateBucket();
+        return existsWith(() -> client.statObject(StatObjectArgs.builder()
+                .bucket(privateBucket).object(validPrivateKey(objectKey)).build()));
+    }
+
+    @Override
+    public void putPrivate(String objectKey, long sizeBytes, InputStream bytes) {
+        try {
+            ensurePrivateBucket();
+            client.putObject(PutObjectArgs.builder().bucket(privateBucket).object(validPrivateKey(objectKey))
+                    .contentType("application/zip").stream(bytes, sizeBytes, -1).build());
+        } catch (Exception failure) {
+            throw unavailable("private-object.put", failure);
+        }
+    }
+
+    @Override
+    public InputStream openPrivate(String objectKey) {
+        try {
+            ensurePrivateBucket();
+            return client.getObject(GetObjectArgs.builder().bucket(privateBucket)
+                    .object(validPrivateKey(objectKey)).build());
+        } catch (Exception failure) {
+            throw unavailable("private-object.read", failure);
+        }
+    }
+
+    @Override
+    public void deletePrivate(String objectKey) {
+        try {
+            client.removeObject(RemoveObjectArgs.builder().bucket(privateBucket)
+                    .object(validPrivateKey(objectKey)).build());
+        } catch (Exception failure) {
+            throw unavailable("private-object.delete", failure);
+        }
+    }
+
+    @Override
+    public boolean ownsPrivateObjectKey(String value) {
+        return value != null && value.startsWith(privateObjectPrefix + "terminal-update/")
+                && value.substring((privateObjectPrefix + "terminal-update/").length())
+                        .matches("[a-f0-9]{64}\\.zip");
     }
 
     @Override
@@ -215,6 +327,11 @@ final class MinioAssetObjectStorage implements AssetObjectStorage {
                 || !value.startsWith(objectPrefix)
                 || !value.substring(objectPrefix.length()).matches("static/[a-f0-9]{64}(?:\\.[a-z0-9]{2,5})?"))
             throw new IllegalArgumentException("invalid asset object key");
+        return value;
+    }
+
+    private String validPrivateKey(String value) {
+        if (!ownsPrivateObjectKey(value)) throw new IllegalArgumentException("invalid private asset object key");
         return value;
     }
 

@@ -1163,10 +1163,18 @@ function frontend(base = root) {
   const sortedGeneratedIds = [...terminalGeneratedIds].sort();
   if (new Set(sortedGeneratedIds).size !== sortedGeneratedIds.length)
     fail('R5_TERMINAL_GENERATED_FACE_DUPLICATE_ASSIGNMENT');
-  if (!sameIds(terminalRegistryIds, sortedGeneratedIds)) fail('R5_TERMINAL_GENERATED_FACE_DRIFT');
+  const terminalClientPolicy = JSON.parse(read('contracts/policy/terminal-client-generation.json', base));
+  const declaredTerminalExclusions = terminalClientPolicy.targets.flatMap(
+    target => target.excludeOperationIds ?? [],
+  ).sort();
+  // Binary artifact content is terminal-facing but intentionally consumed by
+  // the UpdatePort, not generated into the JSON terminal-data-client API.
+  const terminalClientClosureIds = [...sortedGeneratedIds, ...declaredTerminalExclusions].sort();
+  if (!sameIds(terminalRegistryIds, terminalClientClosureIds)) fail('R5_TERMINAL_GENERATED_FACE_DRIFT');
   const terminalProjection = terminalClientApi.operationIds;
   const sortedTerminalProjection = [...terminalProjection].sort();
-  if (!sameIds(terminalRegistryIds, [...sortedTerminalProjection].sort())) fail('R5_TERMINAL_POLICY_EDGE_FACE_DRIFT');
+  if (!sameIds(terminalRegistryIds, [...sortedTerminalProjection, ...declaredTerminalExclusions].sort()))
+    fail('R5_TERMINAL_POLICY_EDGE_FACE_DRIFT');
   process.stdout.write('R5_TERMINAL_GENERATED_FACE_RECONCILIATION=PASS\n');
   const terminalOnlyOperation = allRegistryOperations.find(
     operation => operation.consumerFaces.length > 0 && operation.consumerFaces.every(face => face === 'terminal'),

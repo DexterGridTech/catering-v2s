@@ -30,6 +30,7 @@
             <option value="$PROJECT_DIR$/apps/backend/catering-business-server/modules/store-terminal" />
             <option value="$PROJECT_DIR$/apps/backend/catering-business-server/modules/terminal-binding" />
             <option value="$PROJECT_DIR$/apps/backend/catering-business-server/modules/terminal-control" />
+            <option value="$PROJECT_DIR$/apps/backend/catering-business-server/modules/terminal-update" />
             <option value="$PROJECT_DIR$/apps/backend/catering-business-server/modules/workspace" />
             <option value="$PROJECT_DIR$/apps/backend/catering-business-server/modules/workspace-iam" />
             <option value="$PROJECT_DIR$/apps/backend/terminal-data-server" />

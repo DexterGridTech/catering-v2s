@@ -1080,7 +1080,9 @@ test('backend acceptance remote preflight fails closed for missing or mismatched
 });
 
 test('backend acceptance supplies every non-production server prerequisite and selection', () => {
-  assert.deepEqual(backendAcceptanceEnvironment(null), []);
+  assert.deepEqual(backendAcceptanceEnvironment(null), [
+    'export V2S_BACKEND_PERFORMANCE_PROJECTION_MODE=IDENTITY_ONLY',
+  ]);
   assert.deepEqual(backendAcceptanceEnvironment(null, 'focused-owner-test'), [
     'export V2S_BACKEND_PERFORMANCE_PROJECTION_MODE=IDENTITY_ONLY',
   ]);
@@ -1975,7 +1977,7 @@ test('managed Testcontainers lifecycle only stops a valid owned DEV manifest and
     kind: 'r5-dev-run-manifest',
     runId: 'r5-dev-1786638000000-123-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
     processes: [{name: 'remote-java', pid: 123}],
-    remoteJava: {pid: 123},
+    remoteJava: {pid: 123, backendPerformanceProjectionMode: 'IDENTITY_ONLY'},
     remoteHostTrust: {host: 'development-host'},
   });
   assert.deepEqual(
@@ -1984,14 +1986,27 @@ test('managed Testcontainers lifecycle only stops a valid owned DEV manifest and
       exists: () => true,
       read: () => manifest,
     }),
-    {wasRunning: true, runId: 'r5-dev-1786638000000-123-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'},
+    {
+      wasRunning: true,
+      runId: 'r5-dev-1786638000000-123-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+      backendPerformanceProjectionMode: 'IDENTITY_ONLY',
+    },
   );
   assert.deepEqual(inspectManagedDevState({manifestPath: '/managed/run-manifest.json', exists: () => false}), {
     wasRunning: false,
     runId: null,
+    backendPerformanceProjectionMode: null,
   });
   assert.throws(
     () => inspectManagedDevState({manifestPath: '/managed/run-manifest.json', exists: () => true, read: () => '{}'}),
+    /DEV_MANIFEST_INVALID/,
+  );
+  assert.throws(
+    () => inspectManagedDevState({
+      manifestPath: '/managed/run-manifest.json',
+      exists: () => true,
+      read: () => manifest.replace('IDENTITY_ONLY', 'UNSUPPORTED'),
+    }),
     /DEV_MANIFEST_INVALID/,
   );
   assert.deepEqual(classifyManagedDevLifecycleCommand({status: 0, stdout: 'R5_DEV_STOP=PASS;'}, 'R5_DEV_STOP=PASS'), {

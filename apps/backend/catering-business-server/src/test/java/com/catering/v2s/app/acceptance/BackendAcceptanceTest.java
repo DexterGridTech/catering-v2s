@@ -631,6 +631,42 @@ class BackendAcceptanceTest {
             "transitionPlatformGroupWorkspaceStatus", "/api/platform/group-workspaces/{groupWorkspaceKey}/status");
     static final RouteIdentity PLATFORM_AUDIT_HISTORY =
             new RouteIdentity("getPlatformEntityAuditHistory", "/api/platform/audit-history");
+    static final RouteIdentity PLATFORM_TERMINAL_UPDATE_ARTIFACT_STAGE = new RouteIdentity(
+            "stagePlatformTerminalUpdateArtifact",
+            "/api/platform/group-workspaces/{groupWorkspaceKey}/terminal-update-artifact-stages");
+    static final RouteIdentity PLATFORM_TERMINAL_UPDATE_ARTIFACT_REGISTER = new RouteIdentity(
+            "registerPlatformTerminalUpdateArtifact",
+            "/api/platform/group-workspaces/{groupWorkspaceKey}/terminal-update-artifacts");
+    static final RouteIdentity PLATFORM_TERMINAL_UPDATE_ARTIFACT_RELEASE_STAGE = new RouteIdentity(
+            "releasePlatformTerminalUpdateArtifactStage",
+            "/api/platform/group-workspaces/{groupWorkspaceKey}/terminal-update-artifact-stages/{stageRef}/release");
+    static final RouteIdentity PLATFORM_TERMINAL_UPDATE_ARTIFACT_PAGE = new RouteIdentity(
+            "getPlatformTerminalUpdateArtifactPage",
+            "/api/platform/group-workspaces/{groupWorkspaceKey}/terminal-update-artifacts");
+    static final RouteIdentity PLATFORM_TERMINAL_UPDATE_ARTIFACT_DETAIL = new RouteIdentity(
+            "getPlatformTerminalUpdateArtifactDetail",
+            "/api/platform/group-workspaces/{groupWorkspaceKey}/terminal-update-artifacts/{artifactRef}");
+    static final RouteIdentity OPERATIONS_TERMINAL_UPDATE_RULE_CREATE = new RouteIdentity(
+            "createOperationsProjectTerminalUpdateRule",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-update-rules");
+    static final RouteIdentity OPERATIONS_TERMINAL_UPDATE_RULE_STATUS = new RouteIdentity(
+            "changeOperationsProjectTerminalUpdateRuleStatus",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-update-rules/{ruleRef}/status");
+    static final RouteIdentity OPERATIONS_TERMINAL_UPDATE_RULE_PAGE = new RouteIdentity(
+            "getOperationsProjectTerminalUpdateRulePage",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-update-rules");
+    static final RouteIdentity OPERATIONS_TERMINAL_UPDATE_RULE_STORES = new RouteIdentity(
+            "getOperationsProjectTerminalUpdateRuleStorePage",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-update-rules/{ruleRef}/stores");
+    static final RouteIdentity TERMINAL_UPDATE_RULE_SNAPSHOT = new RouteIdentity(
+            "terminalReadProjectUpdateRuleSnapshotPage",
+            "/api/terminal/group-workspaces/{groupWorkspaceKey}/update-rules/projects/{projectRef}", true);
+    static final RouteIdentity TERMINAL_UPDATE_DOWNLOAD_GRANT = new RouteIdentity(
+            "issueTerminalUpdateArtifactDownloadGrant",
+            "/api/terminal/group-workspaces/{groupWorkspaceKey}/update-artifacts/{artifactRef}/download-grant", true);
+    static final RouteIdentity TERMINAL_UPDATE_ARTIFACT_CONTENT = new RouteIdentity(
+            "downloadTerminalUpdateArtifact",
+            "/api/terminal/group-workspaces/{groupWorkspaceKey}/update-artifacts/{artifactRef}/content", true);
     static final RouteIdentity OPERATIONS_AUDIT_HISTORY =
             new RouteIdentity("getOperationsEntityAuditHistory", "/api/operations/audit-history");
     static final RouteIdentity PLATFORM_ORGANIZATION_OVERVIEW = new RouteIdentity(
@@ -1041,6 +1077,12 @@ class BackendAcceptanceTest {
                 }
             }
         }
+        try {
+            TerminalUpdateAcceptanceFixtures.cleanup();
+        } catch (Exception failure) {
+            if (cleanupFailure == null) cleanupFailure = failure;
+            else cleanupFailure.addSuppressed(failure);
+        }
         if (cleanupFailure != null) throw cleanupFailure;
     }
 
@@ -1154,6 +1196,13 @@ class BackendAcceptanceTest {
                     System.getenv("V2S_BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT"),
                     "BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_TOPOLOGY_PREFLIGHT_REQUIRED");
             return TerminalConnectionContractScenarios.topicSubscriptionScenarios(this, tdsAcceptanceProcess);
+        }
+        if (TdsAcceptanceProcess.TdsStartConfiguration.TERMINAL_UPDATE_TOPIC_SCENARIO_ID.equals(selectedScenario)) {
+            assertEquals(
+                    "true",
+                    System.getenv("V2S_BACKEND_ACCEPTANCE_TOPOLOGY_PREFLIGHT"),
+                    "BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_TOPOLOGY_PREFLIGHT_REQUIRED");
+            return TerminalConnectionContractScenarios.terminalUpdateTopicScenarios(this, tdsAcceptanceProcess);
         }
         if (TdsAcceptanceProcess.TdsStartConfiguration.REMOTE_COMMAND_SCENARIO_ID.equals(selectedScenario)) {
             assertEquals(
@@ -1298,6 +1347,10 @@ class BackendAcceptanceTest {
                 Map.entry("catering.asset.object-storage.secret-key", () -> OBJECT_STORAGE_SECRET_KEY),
                 Map.entry("catering.asset.object-storage.bucket", () -> OBJECT_STORAGE_BUCKET),
                 Map.entry("catering.asset.object-storage.object-prefix", () -> "acceptance/"),
+                Map.entry("catering.asset.terminal-update.private-bucket", () -> "catering-v2s-terminal-update-private"),
+                Map.entry("catering.asset.terminal-update.private-object-prefix", () -> "acceptance/"),
+                Map.entry("catering.terminal-update.android-build-tools-directory",
+                        () -> TerminalUpdateAcceptanceFixtures.androidBuildToolsDirectory().toString()),
                 Map.entry("catering.asset.public-base-url", BackendAcceptanceTest::objectStorageEndpoint));
     }
 
@@ -2460,6 +2513,30 @@ class BackendAcceptanceTest {
             return send(route, "GET", path, cookie, (String) null, null, headers, expected);
         }
 
+        HttpResponse<byte[]> getBinary(RouteIdentity route, String path, Map<String, String> headers,
+                Set<Integer> expected) throws Exception {
+            HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + targetPort + path))
+                    .header("Accept", "application/zip")
+                    .header("X-Correlation-Id", correlationId)
+                    .header("X-Backend-Acceptance-Run-Id",
+                            requiredEnvironment(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_RUN_ID))
+                    .header("X-Backend-Acceptance-Secret",
+                            requiredEnvironment(RuntimeEnvironmentKeys.V2S_BACKEND_ACCEPTANCE_SECRET))
+                    .header("X-Backend-Acceptance-Operation-Id", route.operationId())
+                    .header("X-Backend-Acceptance-Route-Template", route.routeTemplate())
+                    .header("X-Backend-Acceptance-Measurement-Scenario-Id", measurementScenarioId)
+                    .header("X-Request-Id", UUID.randomUUID().toString())
+                    .GET();
+            if (headers != null) headers.forEach(builder::header);
+            HttpResponse<byte[]> response = client.send(builder.build(), HttpResponse.BodyHandlers.ofByteArray());
+            if (!expected.contains(response.statusCode())) {
+                contractPass = false;
+                throw new AssertionError("CONTRACT: binary HTTP response expected=" + expected + " actual="
+                        + response.statusCode() + " requestPath=" + path + " operationId=" + route.operationId());
+            }
+            return response;
+        }
+
         Response post(RouteIdentity route, String path, String cookie, Map<String, Object> body, Set<Integer> expected)
                 throws Exception {
             return send(route, "POST", path, cookie, requestJson(body), null, expected);
@@ -2513,6 +2590,32 @@ class BackendAcceptanceTest {
                     null,
                     Map.of(),
                     expected,
+                    "performance.coverage-only");
+        }
+
+        Response postCoverageOnly(
+                RouteIdentity route,
+                String path,
+                String cookie,
+                Map<String, Object> body,
+                Map<String, String> headers,
+                Set<Integer> expected)
+                throws Exception {
+            return send(
+                    route,
+                    "POST",
+                    path,
+                    cookie,
+                    requestJson(body).getBytes(StandardCharsets.UTF_8),
+                    null,
+                    headers,
+                    expected,
+                    "performance.coverage-only");
+        }
+
+        Response postNoBodyCoverageOnly(RouteIdentity route, String path, String cookie,
+                Map<String, String> headers, Set<Integer> expected) throws Exception {
+            return send(route, "POST", path, cookie, new byte[0], null, headers, expected,
                     "performance.coverage-only");
         }
 
@@ -2691,6 +2794,25 @@ class BackendAcceptanceTest {
             writePart(content, boundary, "file", fileName, mediaType, bytes);
             content.write(("--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8));
             return send(route, "POST", path, cookie, content.toByteArray(), boundary, expected);
+        }
+
+        Response multipartTerminalUpdatePackage(
+                RouteIdentity route,
+                String path,
+                String cookie,
+                String sha256,
+                byte[] bytes,
+                String idempotencyKey,
+                Set<Integer> expected)
+                throws Exception {
+            String boundary = "----backend-acceptance-" + UUID.randomUUID();
+            ByteArrayOutputStream content = new ByteArrayOutputStream();
+            writeTextPart(content, boundary, "usage", "TERMINAL_UPDATE_PACKAGE");
+            writeTextPart(content, boundary, "sha256", sha256);
+            writePart(content, boundary, "file", "terminal-update.zip", "application/zip", bytes);
+            content.write(("--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8));
+            return send(route, "POST", path, cookie, content.toByteArray(), boundary,
+                    Map.of("Idempotency-Key", idempotencyKey), expected);
         }
 
         private Response send(

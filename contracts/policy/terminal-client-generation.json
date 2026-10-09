@@ -20,7 +20,9 @@
         "terminal-binding",
         "organization",
         "store-contract",
-        "terminal-update"
+        "terminal-update",
+        "TERMINAL_UPDATE_RULE",
+        "TERMINAL_UPDATE_REPORT"
       ],
       "includeOperationIds": [
         "activateTerminal",
@@ -37,7 +39,9 @@
         "issueTerminalUpdateArtifactDownloadGrant",
         "submitTerminalUpdateReport"
       ],
-      "excludeOperationIds": [],
+      "excludeOperationIds": [
+        "downloadTerminalUpdateArtifact"
+      ],
       "stripPathPrefix": "/api/terminal/group-workspaces/{groupWorkspaceKey}",
       "output": "apps/terminal/kernel/base/terminal-data-client/src/generated/terminalApi.ts"
     }

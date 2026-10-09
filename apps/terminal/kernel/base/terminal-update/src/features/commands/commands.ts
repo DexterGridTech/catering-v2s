@@ -11,7 +11,20 @@ export const confirmTerminalUpdateBootCommand = defineCommand<Readonly<{bootToke
   {name: 'confirm-boot', visibility: 'public'},
 );
 
+export const refreshTerminalUpdateRuleSnapshotCommand = defineCommand<Readonly<{}>>(moduleName, {
+  name: 'refresh-rule-snapshot',
+  visibility: 'internal',
+  allowNoActor: false,
+  allowReentry: false,
+  defaultTarget: 'local',
+});
+
 export const reconcileTerminalUpdateCommand = defineCommand<Readonly<{resumeFixedTask: boolean}>>(moduleName, {
   name: 'reconcile-native-facts',
+  visibility: 'internal',
+});
+
+export const clearTerminalUpdateReportContextCommand = defineCommand<Readonly<{}>>(moduleName, {
+  name: 'clear-report-context',
   visibility: 'internal',
 });

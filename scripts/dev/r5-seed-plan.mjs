@@ -574,5 +574,5 @@ if (Object.hasOwn(profile, 'expectedCounts')) throw new Error('R5_SEED_PROFILE_C
 if (fixture.scenarioPrerequisitePolicy.denominator !== profile.scenarioDenominator)
   throw new Error('R5_SEED_SCENARIO_DENOMINATOR_DRIFT');
 process.stdout.write(
-  `R5_SEED_DRY_RUN=PASS; PROFILE=${profile.profile}; SCENARIOS=${profile.scenarioDenominator}; FIXTURES=${Object.keys(facts).length}; STAGES=${fixture.seedStages.map(stage => stage.id).join(',')}\n`,
+  `R5_SEED_DRY_RUN=PASS; PROFILE=${profile.profile}; SCENARIOS=${profile.scenarioDenominator}; FIXTURES=${Object.keys(facts).length}; TERMINAL_UPDATE_ARTIFACTS=${fixtureContract.artifacts}; TERMINAL_UPDATE_RULES=${fixtureContract.rules}; STAGES=${fixture.seedStages.map(stage => stage.id).join(',')}\n`,
 );

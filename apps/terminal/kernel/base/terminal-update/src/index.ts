@@ -7,12 +7,14 @@ export {
 export {
   acceptTerminalUpdateTargetCommand,
   confirmTerminalUpdateBootCommand,
+  refreshTerminalUpdateRuleSnapshotCommand,
   reconcileTerminalUpdateCommand,
 } from './features/commands/commands';
 export {
   selectTerminalUpdateActualVersions,
   selectTerminalUpdateRecentStatus,
   selectTerminalUpdateTask,
+  selectTerminalUpdateRuleSnapshot,
 } from './selectors/selectors';
 export type {
   FixedUpdateTarget,
@@ -21,4 +23,5 @@ export type {
   TerminalUpdateState,
   UpdateTargetSourceProvider,
   UpdateNetworkSnapshotReader,
+  UpdateRuleSnapshotContext,
 } from './types/terminalUpdate';

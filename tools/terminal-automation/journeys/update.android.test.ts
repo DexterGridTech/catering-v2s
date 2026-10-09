@@ -30,9 +30,10 @@ import {
 import {createManagedActivationFixtureApi} from '../fixtures/managedActivation.ts';
 import {mainSampleTestIds} from '../src/mainSampleTestIds.ts';
 import {terminalUpdateSampleConfig} from '../src/updateSample.ts';
-import {mainSampleSurfaceForm, parseMainSampleShape} from '../src/mainSampleJourneyConfig.ts';
+import {mainSampleSeedKey, mainSampleSurfaceForm, parseMainSampleShape} from '../src/mainSampleJourneyConfig.ts';
 import {prepareAndroidJourneySurface} from '../src/journeySurface.ts';
 import {loginSampleStaff} from './sampleStaffLogin.js';
+import {assertTerminalUpdateReportInUi, createTerminalUpdateSupplyUi, type TerminalUpdateSupplyUi} from './terminalUpdateSupplyUi.ts';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const runId = process.env.TERMINAL_AUTOMATION_RUN_ID;
@@ -41,6 +42,7 @@ const selectedSample = process.env.TERMINAL_AUTOMATION_SAMPLE ?? 'console';
 const sample = terminalUpdateSampleConfig(selectedSample);
 const appName = selectedSample === 'console' ? 'sample-terminal' : 'sample-wallpaper-terminal';
 const updateCase = process.env.TERMINAL_AUTOMATION_CASE;
+const isSupplyChainCase = updateCase === 'update.supply-chain';
 const adbPath = process.env.ADB_PATH || 'adb';
 const installerPackagePrefixes = ['com.android.packageinstaller', 'com.google.android.packageinstaller'] as const;
 const settingsPackagePrefixes = ['com.android.settings'] as const;
@@ -67,10 +69,24 @@ type UpdateTarget = Readonly<{
     readonly artifact: ArtifactManifest;
   }>;
   readonly strategy: Readonly<{readonly maxNetworkAttempts: number; readonly bootTimeoutMs: number}>;
-  readonly selectionContext: Readonly<{readonly selectedSpace: 'development'; readonly contextIdentity: string}>;
+  readonly selectionContext: Readonly<{readonly selectedSpace: 'development'; readonly contextIdentity: string; readonly ruleRef: string}>;
 }>;
 
 const sha256 = (value: Buffer): string => createHash('sha256').update(value).digest('hex');
+const managedLoopbackPort = (key: string): number => {
+  const raw = process.env[key];
+  if (!raw) throw new Error(`TERMINAL_AUTOMATION_ENV_MISSING_${key}`);
+  const parsed = new URL(raw);
+  if (
+    parsed.protocol !== 'ws:' && parsed.protocol !== 'wss:' ||
+    (parsed.hostname !== '127.0.0.1' && parsed.hostname !== 'localhost') ||
+    parsed.port.length === 0
+  ) throw new Error(`TERMINAL_AUTOMATION_MANAGED_TDS_URL_INVALID_${key}`);
+  const port = Number(parsed.port);
+  if (!Number.isInteger(port) || port < 1 || port > 65535)
+    throw new Error(`TERMINAL_AUTOMATION_MANAGED_TDS_PORT_INVALID_${key}`);
+  return port;
+};
 const sha256File = async (filePath: string): Promise<string> => {
   const digest = createHash('sha256');
   for await (const chunk of createReadStream(filePath)) digest.update(chunk);
@@ -261,6 +277,10 @@ let installAttempted = false;
 let httpServer: HttpServer | undefined;
 let tdsOneSink: NetServer | undefined;
 let tdsTwoSink: NetServer | undefined;
+let supplyUi: TerminalUpdateSupplyUi | undefined;
+let supplyStoreRef: string | undefined;
+let supplyTerminalRef: string | undefined;
+let supplyTerminalName: string | undefined;
 let targetDocument: Readonly<{target: UpdateTarget; sourcePaths: Readonly<Record<string, string>>}> | undefined;
 let hotSourceRequested: Promise<void> | undefined;
 let signalHotSourceRequested: (() => void) | undefined;
@@ -617,12 +637,14 @@ const buildArtifact = (
     EXPO_PUBLIC_TER_AUTOMATION_RUN_ID: runId,
     EXPO_PUBLIC_TER_AUTOMATION_SURFACE_FORM: surfaceForm,
     EXPO_PUBLIC_TER_AUTOMATION_ANDROID_PACKAGE_ID: packageId,
-    EXPO_PUBLIC_TER_AUTOMATION_UPDATE_TARGET_URL: `http://127.0.0.1:28080/update-target`,
-    EXPO_PUBLIC_TER_AUTOMATION_UPDATE_REVISION: kind,
     EXPO_PUBLIC_TER_MANAGED_GROUP_WORKSPACE_BASE_URL: 'http://127.0.0.1:28080/api/terminal/group-workspaces/aurora',
     EXPO_PUBLIC_TER_MANAGED_TDS_ENTRY_ONE_WS_URL: 'ws://127.0.0.1:28180',
     EXPO_PUBLIC_TER_MANAGED_TDS_ENTRY_TWO_WS_URL: 'ws://127.0.0.1:28181',
   };
+  if (updateCase !== 'update.supply-chain') {
+    environment.EXPO_PUBLIC_TER_AUTOMATION_UPDATE_TARGET_URL = 'http://127.0.0.1:28080/update-target';
+    environment.EXPO_PUBLIC_TER_AUTOMATION_UPDATE_REVISION = kind;
+  }
   delete environment.EXPO_PUBLIC_TER_AUTOMATION_UPDATE_ASSET_PROBE;
   if (selectedSample === 'wallpaper') environment.EXPO_PUBLIC_TER_AUTOMATION_UPDATE_ASSET_PROBE = 'true';
   delete environment.V2S_SEED_OPERATIONS_DEFAULT_PASSWORD;
@@ -745,7 +767,7 @@ const updateDocument = (
           : Object.freeze({sourceRef: fullRef, expectedSha256: sha256(fullPayloadBytes!), artifact: full}),
       hot: Object.freeze({sourceRef: hotRef, expectedSha256: sha256(hotPayloadBytes), artifact: hot}),
       strategy: Object.freeze({maxNetworkAttempts: 0, bootTimeoutMs: 60_000}),
-      selectionContext: Object.freeze({selectedSpace: 'development', contextIdentity: runId}),
+      selectionContext: Object.freeze({selectedSpace: 'development', contextIdentity: runId, ruleRef: `automation-${runId}`}),
     }),
     sourcePaths: Object.freeze({...(full === null ? {} : {[fullRef]: '/full.zip'}), [hotRef]: '/hot.zip'}),
   });
@@ -772,7 +794,8 @@ beforeAll(
       updateCase !== 'update.install-result' &&
       updateCase !== 'update.interruption' &&
       updateCase !== 'update.compatibility' &&
-      updateCase !== 'update.rollback'
+      updateCase !== 'update.rollback' &&
+      updateCase !== 'update.supply-chain'
     )
       return;
     if (!runId || !runDirectory) throw new Error('TERMINAL_AUTOMATION_RUN_ID_REQUIRED');
@@ -870,10 +893,17 @@ beforeAll(
       response.end();
     });
     const businessLocalPort = await listen(httpServer);
-    tdsOneSink = createNetServer(socket => socket.destroy());
-    tdsTwoSink = createNetServer(socket => socket.destroy());
-    const tdsOneLocalPort = await listen(tdsOneSink);
-    const tdsTwoLocalPort = await listen(tdsTwoSink);
+    let tdsOneLocalPort: number;
+    let tdsTwoLocalPort: number;
+    if (isSupplyChainCase) {
+      tdsOneLocalPort = managedLoopbackPort('V2S_TERMINAL_DEV_TDS_ENTRY_ONE_WS_URL');
+      tdsTwoLocalPort = managedLoopbackPort('V2S_TERMINAL_DEV_TDS_ENTRY_TWO_WS_URL');
+    } else {
+      tdsOneSink = createNetServer(socket => socket.destroy());
+      tdsTwoSink = createNetServer(socket => socket.destroy());
+      tdsOneLocalPort = await listen(tdsOneSink);
+      tdsTwoLocalPort = await listen(tdsTwoSink);
+    }
 
     adb = createAndroidAdbClient({adbPath, timeoutMs: 10_000});
     connection = await createAndroidAutomationConnection({
@@ -1008,8 +1038,10 @@ beforeAll(
     if (updateCase === 'update.compatibility') {
       if (!compatibilityHotFive) throw new Error('TERMINAL_AUTOMATION_COMPATIBILITY_HOT_FIVE_MISSING');
       targetDocument = updateDocument(null, compatibilityHotFive);
-    } else {
+    } else if (!isSupplyChainCase) {
       targetDocument = updateDocument(full, hot, fullBytes, hotBytes);
+    } else {
+      targetDocument = undefined;
     }
 
     installAttempted = true;
@@ -1045,6 +1077,47 @@ beforeAll(
       await writeAndroidFailureDiagnostics({connection, packageId, runId, boundary: 'full-session'});
       throw error;
     }
+    if (isSupplyChainCase) {
+      const manifestPath = process.env.V2S_TERMINAL_DEV_MANIFEST;
+      const platformOrigin = process.env.TERMINAL_AUTOMATION_PLATFORM_ADMIN_ORIGIN;
+      const operationsOrigin = process.env.TERMINAL_AUTOMATION_OPERATIONS_ADMIN_ORIGIN;
+      const platformPassword = process.env.V2S_SEED_PLATFORM_ROOT_PASSWORD;
+      const operationsPassword = process.env.V2S_SEED_OPERATIONS_DEFAULT_PASSWORD;
+      if (!manifestPath || !platformOrigin || !operationsOrigin || !platformPassword || !operationsPassword)
+        throw new Error('TERMINAL_AUTOMATION_SUPPLY_UI_CONTEXT_MISSING');
+      const terminalName = mainSampleSeedKey(parseMainSampleShape(process.env.TERMINAL_AUTOMATION_SHAPE));
+      const {readManagedTerminalBindingByName} = await import('../../../scripts/dev/r5-dev-runner.mjs');
+      const bindings = readManagedTerminalBindingByName({
+        manifestPath,
+        runId: managedDevRunId,
+        groupWorkspaceKey: 'aurora',
+        terminalNames: [terminalName],
+      });
+      const binding = bindings[0];
+      if (
+        bindings.length !== 1 ||
+        binding?.bindingStatus !== 'ACTIVE' ||
+        binding.boundDeviceId !== initialDeviceId ||
+        binding.terminalStatus !== 'ENABLED'
+      ) throw new Error('TERMINAL_AUTOMATION_SUPPLY_TERMINAL_BINDING_READBACK_MISMATCH');
+      supplyStoreRef = binding.storeRef;
+      supplyTerminalRef = binding.terminalRef;
+      supplyTerminalName = terminalName;
+      supplyUi = await createTerminalUpdateSupplyUi({
+        platformOrigin,
+        operationsOrigin,
+        platformPassword,
+        operationsPassword,
+        fullZipPath,
+        hotZipPath: path.join(runDirectory, 'update', appName, `${appName}-hot.zip`),
+        applicationId: packageId,
+        storeRef: binding.storeRef,
+        runId,
+      });
+      process.stdout.write(
+        `TERMINAL_AUTOMATION_SUPPLY_IDENTITY run=${runId} terminal=${terminalName} binding=matched store=matched rule=${supplyUi.ruleRef} full=${supplyUi.full.artifactRef} hot=${supplyUi.hot.artifactRef}\n`,
+      );
+    }
   },
   90 * 60 * 1000,
 );
@@ -1057,7 +1130,8 @@ afterAll(async () => {
     updateCase !== 'update.install-result' &&
     updateCase !== 'update.interruption' &&
     updateCase !== 'update.compatibility' &&
-    updateCase !== 'update.rollback'
+    updateCase !== 'update.rollback' &&
+    updateCase !== 'update.supply-chain'
   )
     return;
   const errors: string[] = [];
@@ -1090,6 +1164,15 @@ afterAll(async () => {
       errors.push(code);
     }
   }
+  if (supplyUi !== undefined) {
+    try {
+      process.stdout.write(`TERMINAL_AUTOMATION_BROWSER_CLEANUP_STAGE run=${runId} stage=close\n`);
+      await supplyUi.browser.close();
+      supplyUi = undefined;
+    } catch {
+      errors.push('SUPPLY_BROWSER_CLEANUP_FAILED');
+    }
+  }
   for (const server of [httpServer, tdsOneSink, tdsTwoSink]) {
     try {
       await closeServer(server);
@@ -1111,7 +1194,8 @@ it.skipIf(
     updateCase !== 'update.install-result' &&
     updateCase !== 'update.interruption' &&
     updateCase !== 'update.compatibility' &&
-    updateCase !== 'update.rollback',
+    updateCase !== 'update.rollback' &&
+    updateCase !== 'update.supply-chain',
 )(
   'installs FULL then loads HOT on the same Android identity and verifies wallpaper images',
   async () => {
@@ -1120,7 +1204,7 @@ it.skipIf(
       !runDirectory ||
       connection === undefined ||
       packageId === undefined ||
-      targetDocument === undefined
+      (!isSupplyChainCase && targetDocument === undefined)
     ) {
       throw new Error('TERMINAL_AUTOMATION_UPDATE_ANDROID_NOT_READY');
     }
@@ -1261,6 +1345,7 @@ it.skipIf(
     if (updateCase === 'update.compatibility') {
       if (
         compatibilityTargetDocument === undefined ||
+        targetDocument === undefined ||
         targetDocument.target.full !== null ||
         targetDocument.target.hot.artifact.bundleVersion !== '1.0.5'
       ) {
@@ -1445,9 +1530,41 @@ it.skipIf(
         `TERMINAL_AUTOMATION_UPDATE_COMPATIBILITY_TASK run=${runId} stage=after-new-runtime state=released\n`,
       );
     }
-    const acceptedTarget = await dispatchUpdateCommand(commandName, {
-      selectionContext: targetDocument.target.selectionContext,
-    });
+    let targetSelectionContext: UpdateTarget['selectionContext'] | undefined = targetDocument?.target.selectionContext;
+    if (isSupplyChainCase) {
+      if (!supplyUi || !supplyStoreRef) throw new Error('TERMINAL_AUTOMATION_SUPPLY_UI_NOT_READY');
+      const ruleSnapshot = await waitForSelector(
+        connection.driver,
+        initial.sessionId,
+        'kernel.base.terminal-update.selectTerminalUpdateRuleSnapshot',
+        [],
+        value =>
+          isRecord(value) && value.status === 'ready' && typeof value.contextIdentity === 'string' &&
+          value.selectedSpace === 'development' && Array.isArray(value.items) &&
+          value.items.some(item => isRecord(item) && item.ruleRef === supplyUi!.ruleRef),
+        90_000,
+      );
+      if (!isRecord(ruleSnapshot) || typeof ruleSnapshot.contextIdentity !== 'string' || ruleSnapshot.selectedSpace !== 'development' || !Array.isArray(ruleSnapshot.items))
+        throw new Error('TERMINAL_AUTOMATION_SUPPLY_RULE_SNAPSHOT_INVALID');
+      const rule = ruleSnapshot.items.find(item => isRecord(item) && item.ruleRef === supplyUi!.ruleRef);
+      if (
+        !isRecord(rule) ||
+        rule.applicationId !== packageId ||
+        !isRecord(rule.full) || rule.full.artifactRef !== supplyUi.full.artifactRef ||
+        !isRecord(rule.hot) || rule.hot.artifactRef !== supplyUi.hot.artifactRef ||
+        rule.targetMode !== 'STORE_REFS' || !Array.isArray(rule.storeRefs) || !rule.storeRefs.includes(supplyStoreRef)
+      ) throw new Error('TERMINAL_AUTOMATION_SUPPLY_RULE_SNAPSHOT_IDENTITY_MISMATCH');
+      targetSelectionContext = Object.freeze({
+        selectedSpace: 'development',
+        contextIdentity: ruleSnapshot.contextIdentity,
+        ruleRef: supplyUi.ruleRef,
+      });
+      process.stdout.write(
+        `TERMINAL_AUTOMATION_SUPPLY_SNAPSHOT run=${runId} rule=${supplyUi.ruleRef} artifacts=matched store=matched state=ready\n`,
+      );
+    }
+    if (targetSelectionContext === undefined) throw new Error('TERMINAL_AUTOMATION_UPDATE_SELECTION_CONTEXT_MISSING');
+    const acceptedTarget = await dispatchUpdateCommand(commandName, {selectionContext: targetSelectionContext});
     const requestId = acceptedTarget.requestId;
     const updateOutcome = acceptedTarget.result;
     if (isRecord(updateOutcome) && (updateOutcome.status === 'failed' || updateOutcome.status === 'unknown')) {
@@ -1711,6 +1828,8 @@ it.skipIf(
         );
       }
       if (updateCase === 'update.install-result') {
+        if (targetDocument === undefined)
+          throw new Error('TERMINAL_AUTOMATION_INSTALL_RESULT_TARGET_MISSING');
         let cancelButton;
         try {
           cancelButton = await systemUi.waitForSystemButton({
@@ -2335,6 +2454,7 @@ it.skipIf(
       process.stdout.write(`TERMINAL_AUTOMATION_UPDATE_CASE_ASSERTIONS_PASS case=update.rollback run=${runId}\n`);
       return;
     }
+    const expectedRuleRef = supplyUi?.ruleRef ?? `automation-${runId}`;
     let task: unknown;
     try {
       task = await waitForSelector(
@@ -2345,7 +2465,7 @@ it.skipIf(
         value =>
           isRecord(value) &&
           isRecord(value.target) &&
-          value.target.ruleRef === `automation-${runId}` &&
+          value.target.ruleRef === expectedRuleRef &&
           (value.phase === 'succeeded' || value.phase === 'failed' || value.phase === 'unknown'),
         30_000,
       );
@@ -2362,7 +2482,7 @@ it.skipIf(
         `TERMINAL_AUTOMATION_UPDATE_TASK_TERMINAL_READBACK_TIMEOUT_${caseName.toUpperCase().replaceAll('.', '_')}`,
       );
     }
-    expect(task).toMatchObject({target: {ruleRef: `automation-${runId}`}, phase: 'succeeded'});
+    expect(task).toMatchObject({target: {ruleRef: expectedRuleRef}, phase: 'succeeded'});
     const status = await readSelector(
       connection.driver,
       hotSession.sessionId,
@@ -2370,6 +2490,35 @@ it.skipIf(
       [],
     );
     expect(status).toMatchObject({state: 'succeeded'});
+    if (isSupplyChainCase) {
+      if (!supplyUi || !supplyTerminalRef || !supplyTerminalName)
+        throw new Error('TERMINAL_AUTOMATION_SUPPLY_REPORT_CONTEXT_MISSING');
+      const actual = await readSelector(
+        connection.driver,
+        hotSession.sessionId,
+        'kernel.base.terminal-update.selectTerminalUpdateActualVersions',
+        [],
+      );
+      if (!isRecord(actual) || typeof actual.nativeVersion !== 'string' || typeof actual.bundleVersion !== 'string' || typeof actual.runtimeVersion !== 'string')
+        throw new Error('TERMINAL_AUTOMATION_SUPPLY_ACTUAL_VERSION_SELECTOR_INVALID');
+      expect(actual).toMatchObject({
+        applicationId: packageId,
+        nativeBuildNumber: full.nativeBuildNumber,
+        bundleVersion: hot.bundleVersion,
+        runtimeVersion: hot.runtimeVersion,
+        publicationId: hot.publicationId,
+        entryKind: 'hot',
+      });
+      await assertTerminalUpdateReportInUi({
+        page: supplyUi.operationsPage,
+        terminalName: supplyTerminalName,
+        terminalRef: supplyTerminalRef,
+        apkVersion: actual.nativeVersion,
+        jsVersion: actual.bundleVersion,
+        runtimeVersion: actual.runtimeVersion,
+        runId,
+      });
+    }
     process.stdout.write(`TERMINAL_AUTOMATION_UPDATE_CASE_ASSERTIONS_PASS case=${updateCase} run=${runId}\n`);
   },
   90 * 60 * 1000,

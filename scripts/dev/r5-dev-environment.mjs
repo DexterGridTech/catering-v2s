@@ -50,6 +50,10 @@ function effectiveEnvironment(env, tdsCapacity) {
     V2S_DEV_DATABASE_URL: env.V2S_DEV_DATABASE_URL ?? `jdbc:postgresql://127.0.0.1:5432/${expectedDatabase}`,
     V2S_DEV_REMOTE_HTTP_PORT: env.V2S_DEV_REMOTE_HTTP_PORT ?? "8080",
     V2S_DEV_REMOTE_ASSET_PORT: env.V2S_DEV_REMOTE_ASSET_PORT ?? "19000",
+    // Terminal update package validation runs on remote Java and invokes the
+    // exact Android Build Tools installed by the managed preparation entry.
+    V2S_DEV_REMOTE_TERMINAL_UPDATE_ANDROID_BUILD_TOOLS_DIRECTORY:
+      env.V2S_DEV_REMOTE_TERMINAL_UPDATE_ANDROID_BUILD_TOOLS_DIRECTORY ?? "/root/.cache/catering-v2s/android-sdk/build-tools/36.0.0",
     V2S_DEV_REMOTE_TDS_ENTRY_ONE_PORT: env.V2S_DEV_REMOTE_TDS_ENTRY_ONE_PORT ?? "18083",
     V2S_DEV_REMOTE_TDS_ENTRY_TWO_PORT: env.V2S_DEV_REMOTE_TDS_ENTRY_TWO_PORT ?? "18087",
     V2S_DEV_REMOTE_TDS_A_PORT: env.V2S_DEV_REMOTE_TDS_A_PORT ?? "18084",
@@ -79,6 +83,11 @@ function validate(input, mode) {
   try { parsedDatabaseUrl = new URL(databaseUrl.replace(/^jdbc:/, "")); } catch { fail("R5_DEV_DATABASE_URL_INVALID"); }
   if (parsedDatabaseUrl.hostname === "127.0.0.1" && [25432, 25433, 25434, 25435].includes(Number(parsedDatabaseUrl.port))) fail("R5_DEV_LEGACY_POSTGRES_TUNNEL_FORBIDDEN");
   validPort(env.V2S_DEV_REMOTE_HTTP_PORT, "R5_DEV_REMOTE_HTTP_PORT_INVALID");
+  if (typeof env.V2S_DEV_REMOTE_TERMINAL_UPDATE_ANDROID_BUILD_TOOLS_DIRECTORY !== "string" ||
+      !/^\/[A-Za-z0-9._/-]+$/.test(env.V2S_DEV_REMOTE_TERMINAL_UPDATE_ANDROID_BUILD_TOOLS_DIRECTORY) ||
+      env.V2S_DEV_REMOTE_TERMINAL_UPDATE_ANDROID_BUILD_TOOLS_DIRECTORY.split("/").includes("..")) {
+    fail("R5_DEV_TERMINAL_UPDATE_ANDROID_BUILD_TOOLS_DIRECTORY_INVALID");
+  }
   validateTerminalBrowserOrigins(env.V2S_TERMINAL_BROWSER_ALLOWED_ORIGINS);
   validPort(env.V2S_DEV_REMOTE_ASSET_PORT, "R5_DEV_REMOTE_ASSET_PORT_INVALID");
   const remoteTdsPorts = [

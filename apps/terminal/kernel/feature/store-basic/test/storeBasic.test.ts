@@ -18,6 +18,7 @@ import {
   selectServicePoints,
   selectStore,
   selectStoreBasicState,
+  selectStoreBasicLoadReadiness,
 } from '../src/index';
 import {storeBasicReducer, storeBasicSliceName, storeBasicStateRegistration} from '../src/features/slices/slice';
 import type {StoreBasicState} from '../src/types/types';
@@ -284,6 +285,10 @@ const createActorHarness = (
     },
     topicSubscriptions: () => Object.values(tdcState.topicSubscriptions),
     getFlushCount: () => flushCount,
+    rebuildStoreState: () => {
+      storeState = storeBasicReducer(undefined, {type: 'test/reset'});
+      for (const subscriptionId of Object.keys(tdcState.topicSubscriptions)) delete tdcState.topicSubscriptions[subscriptionId];
+    },
   };
 };
 
@@ -305,6 +310,64 @@ describe('store-basic feature owner', () => {
     expect(calls).toHaveLength(1);
     expect(calls[0]?.[0]).toBe(initializeStoreBasicCommand);
     expect(calls[0]?.[2]).toEqual({requestId: expect.stringMatching(/^req_/)});
+  });
+
+  it('reinitializes store-basic through its owner command after Runtime reset', async () => {
+    const module = createStoreBasicModule();
+    const calls: unknown[][] = [];
+    await module.onApplicationReset?.({
+      dispatchCommand: (...args: unknown[]) => {
+        calls.push(args);
+        return Promise.resolve({status: 'completed'});
+      },
+      platformPorts: {logger: {scope: () => ({error: () => undefined})}},
+    } as unknown as RuntimeModuleContext, {reason: 'test', previousState: {} as StateRoot} as never);
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.[0]).toBe(initializeStoreBasicCommand);
+    expect(calls[0]?.[2]).toEqual({requestId: expect.stringMatching(/^req_/) });
+  });
+
+  it('retries project readiness after an initial organization-path read failure', async () => {
+    const harness = createActorHarness({failFirstReadOperations: ['terminalReadStoreOrganizationPath']});
+    const initialize = harness.actor.handlers.find(item => item.commandName === initializeStoreBasicCommand.commandName);
+    if (initialize === undefined) throw new Error('store-basic initialize handler missing');
+
+    await expect(initialize.handle(harness.context)).resolves.toEqual({status: 'store-loaded'});
+    expect(selectStoreBasicLoadReadiness(harness.getState()).projectStatus).toBe('failed');
+    await expect(initialize.handle(harness.context)).resolves.toEqual({status: 'already-loaded'});
+
+    const organizationReads = harness.calls.filter(call =>
+      call.name === readTerminalDataCommand.commandName &&
+      (call.payload as {operationId?: string}).operationId === 'terminalReadStoreOrganizationPath',
+    );
+    expect(organizationReads).toHaveLength(2);
+    expect(selectStoreBasicLoadReadiness(harness.getState())).toMatchObject({
+      storeStatus: 'flushed',
+      projectStatus: 'flushed',
+      projectRef: 'project-1',
+    });
+  });
+
+  it('reloads store facts when Runtime reset rebuilt readiness but retained actor-local completion state', async () => {
+    const harness = createActorHarness();
+    const initialize = harness.actor.handlers.find(item => item.commandName === initializeStoreBasicCommand.commandName);
+    if (initialize === undefined) throw new Error('store-basic initialize handler missing');
+
+    await initialize.handle(harness.context);
+    harness.rebuildStoreState();
+    await expect(initialize.handle(harness.context)).resolves.toEqual({status: 'store-loaded'});
+
+    const storeReads = harness.calls.filter(call =>
+      call.name === readTerminalDataCommand.commandName &&
+      (call.payload as {operationId?: string}).operationId === 'terminalReadStoreBasic',
+    );
+    expect(storeReads).toHaveLength(2);
+    expect(selectStoreBasicLoadReadiness(harness.getState())).toMatchObject({
+      storeStatus: 'flushed',
+      projectStatus: 'flushed',
+      projectRef: 'project-1',
+    });
   });
 
   it('loads full business snapshots before subscribing to all current range and detail identities', async () => {
@@ -336,6 +399,13 @@ describe('store-basic feature owner', () => {
       'VALID_CONTRACT_COLLECTION',
     ]);
     expect(harness.getFlushCount()).toBeGreaterThanOrEqual(4);
+    expect(selectStoreBasicLoadReadiness(harness.getState())).toMatchObject({
+      runtimeId: 'test-runtime',
+      binding,
+      storeStatus: 'flushed',
+      projectStatus: 'flushed',
+      projectRef: 'project-1',
+    });
     const storePersistIndex = harness.timeline.findIndex(
       event => event.kind === 'flush' && event.state?.store !== null,
     );

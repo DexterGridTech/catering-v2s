@@ -23,6 +23,7 @@ import type {
 export const storeBasicSliceName = `${moduleName}.state` as const;
 
 export const initialStoreBasicState: StoreBasicState = Object.freeze({
+  loadReadiness: Object.freeze({runtimeId: null, binding: null, storeStatus: 'idle', projectStatus: 'idle', projectRef: null}),
   binding: null,
   store: null,
   operatingRules: null,
@@ -56,6 +57,7 @@ const setServicePoints = createAction<StoreFact<readonly TerminalServicePointDat
   `${storeBasicSliceName}/setServicePoints`,
 );
 const reset = createAction(`${storeBasicSliceName}/reset`);
+const setLoadReadiness = createAction<StoreBasicState['loadReadiness']>(`${storeBasicSliceName}/setLoadReadiness`);
 
 const readStatesFor = (
   state: StoreBasicState,
@@ -78,6 +80,7 @@ export const storeBasicReducer = (
   action: UnknownAction,
 ): StoreBasicState => {
   if (setBinding.match(action)) return Object.freeze({...initialStoreBasicState, binding: action.payload});
+  if (setLoadReadiness.match(action)) return Object.freeze({...state, loadReadiness: action.payload});
   if (setReadState.match(action))
     return Object.freeze({
       ...state,
@@ -140,6 +143,7 @@ export const storeBasicStateRegistration = defineStateRuntimeSlice<StoreBasicSta
         ...initialStoreBasicState,
         ...state,
         ...value,
+        loadReadiness: initialStoreBasicState.loadReadiness,
         readStates: Object.freeze({}),
         failures: Object.freeze({}),
       });
@@ -149,6 +153,7 @@ export const storeBasicStateRegistration = defineStateRuntimeSlice<StoreBasicSta
 
 export const storeBasicActions = Object.freeze({
   setBinding,
+  setLoadReadiness,
   setReadState,
   setFailure,
   setStore,

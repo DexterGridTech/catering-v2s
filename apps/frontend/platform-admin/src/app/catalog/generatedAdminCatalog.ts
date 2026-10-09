@@ -63,6 +63,13 @@ export const adminCatalog = {
       "iconKey": "EXTENSION",
       "menuOrder": 90,
       "workspaceRequirement": "REQUIRED"
+    },
+    {
+      "pageDesignKey": "PLATFORM-TERMINAL-UPDATE-PACKAGES",
+      "title": "终端更新包管理",
+      "iconKey": "PACKAGE",
+      "menuOrder": 90,
+      "workspaceRequirement": "GLOBAL_OR_OPTIONAL"
     }
   ],
   "platformShellCopy": {
@@ -81,7 +88,8 @@ export const platformPageDesignKeys = {
   "PlatformRoles": "PLATFORM-ROLES",
   "PlatformWorkspaceAccounts": "PLATFORM-WORKSPACE-ACCOUNTS",
   "PlatformExtensionFields": "PLATFORM-EXTENSION-FIELDS",
-  "PlatformExternalCollaboration": "PLATFORM-EXTERNAL-COLLABORATION"
+  "PlatformExternalCollaboration": "PLATFORM-EXTERNAL-COLLABORATION",
+  "PlatformTerminalUpdatePackages": "PLATFORM-TERMINAL-UPDATE-PACKAGES"
 } as const;
 export const platformShellCopyKeys = {
   "PlatformShellBrand": "PLATFORM-SHELL-BRAND",

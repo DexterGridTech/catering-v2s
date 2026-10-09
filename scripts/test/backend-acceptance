@@ -112,6 +112,9 @@ if [[ -n "$tds_contract_scenario" ]]; then
     terminal.connection.topic.active-store-subscription)
       expected_topology_preflight=true
       ;;
+    terminal.connection.topic.terminal-update-rules)
+      expected_topology_preflight=true
+      ;;
     terminal.connection.remote-command)
       expected_topology_preflight=true
       ;;

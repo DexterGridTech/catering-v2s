@@ -36,6 +36,8 @@ import type {
   TerminalTransportConnection,
   TerminalTopicNotification,
   TerminalTopicSubscription,
+  TerminalUpdateDownloadGrantPayload,
+  TerminalUpdateReportPayload,
 } from '../../types/client';
 import {
   selectActivationState,
@@ -65,6 +67,9 @@ import {
   terminalTopicChangedCommand,
   terminalTransportEventCommand,
   unsubscribeTerminalTopicCommand,
+  requestTerminalUpdateDownloadGrantCommand,
+  submitTerminalUpdateReportCommand,
+  terminalDataHeartbeatCommand,
 } from '../commands/terminalDataClientCommands';
 
 const profileId = 'terminal-data-client';
@@ -365,6 +370,7 @@ export const createTerminalDataClientActor = (
   let heartbeatTimer: ReturnType<typeof setInterval> | undefined;
   let heartbeatDeadline: ReturnType<typeof setTimeout> | undefined;
   let sessionReady = false;
+  let activeSessionId: string | null = null;
   let connectionGeneration = 0;
   let expectedHeartbeatTimeoutMs = 0;
   let currentConfigRevision: number | null = null;
@@ -841,6 +847,7 @@ export const createTerminalDataClientActor = (
     heartbeatTimer = undefined;
     sentAtBySequence.clear();
     sessionReady = false;
+    activeSessionId = null;
     unsubscribeConnection?.();
     unsubscribeConnection = undefined;
     connection = undefined;
@@ -880,11 +887,17 @@ export const createTerminalDataClientActor = (
         return Object.freeze({status: 'not-host'});
       }
       const state = context.getState();
+      const connection = selectConnectionState(state);
       const next = Object.freeze({
         available: true,
         sourceNodeId: context.localNodeId,
         activation: selectActivationState(state),
-        connection: selectConnectionState(state),
+        connection: Object.freeze({
+          status: connection.status,
+          addressName: connection.addressName,
+          nodeId: connection.nodeId,
+          lastCloseReason: connection.lastCloseReason,
+        }),
         lastRttMs: selectConnectionLatency(state, dependencies.now()).lastRttMs,
       });
       if (sameStatusProjection(readStatusProjection(state).projection, next)) {
@@ -943,12 +956,28 @@ export const createTerminalDataClientActor = (
         'X-Terminal-Device-Id': credential.deviceId,
         'X-Terminal-Ref': credential.terminalRef,
       });
-      const operation = terminalClient.client[payload.operationId as TerminalDataReadPayload['operationId']];
+      const operation = terminalClient.client[payload.operationId as keyof typeof terminalClient.client];
+      const queryParameters = payload.queryParameters ?? {};
+      const allowedQueryKeys = payload.operationId === 'terminalReadProjectUpdateRuleSnapshotPage'
+        ? new Set(['collectionHash', 'cursor', 'limit'])
+        : new Set<string>();
+      if (
+        queryParameters === null ||
+        typeof queryParameters !== 'object' ||
+        Object.keys(queryParameters).some(key => !allowedQueryKeys.has(key)) ||
+        (payload.operationId === 'terminalReadProjectUpdateRuleSnapshotPage' &&
+          (!Number.isSafeInteger((queryParameters as {limit?: unknown}).limit) ||
+            !((queryParameters as {collectionHash?: unknown}).collectionHash === null ||
+              typeof (queryParameters as {collectionHash?: unknown}).collectionHash === 'string') ||
+            !((queryParameters as {cursor?: unknown}).cursor === undefined ||
+              (queryParameters as {cursor?: unknown}).cursor === null ||
+              typeof (queryParameters as {cursor?: unknown}).cursor === 'string')))
+      ) return Object.freeze({kind: 'failure', category: 'not-delivered', code: 'INVALID_TERMINAL_READ'});
       const startedAt = dependencies.now();
       try {
         const result = await operation({
           pathParameters,
-          queryParameters: {},
+          queryParameters,
           headers,
         } as never);
         await terminalClient.acceptBusinessResponse(
@@ -993,6 +1022,66 @@ export const createTerminalDataClientActor = (
           });
         return Object.freeze({kind: 'failure', category: 'delivered-failure', code: 'TERMINAL_READ_THROWN'});
       }
+    }),
+    onCommand(requestTerminalUpdateDownloadGrantCommand, async context => {
+      const state = readState(context.getState());
+      const credential = state.credential;
+      const payload = context.command.payload as TerminalUpdateDownloadGrantPayload;
+      if (!isHostRuntime(context.getState()) || state.activationStatus !== 'active' || credential === null)
+        return Object.freeze({kind: 'failure', category: 'not-delivered', code: 'TERMINAL_NOT_ACTIVE'});
+      if (!isCanonicalUuid(payload?.artifactRef))
+        return Object.freeze({kind: 'failure', category: 'not-delivered', code: 'INVALID_TERMINAL_UPDATE_ARTIFACT_REF'});
+      const startedAt = dependencies.now();
+      const result = await terminalClient.client.issueTerminalUpdateArtifactDownloadGrant({
+        pathParameters: {artifactRef: payload.artifactRef},
+        queryParameters: {},
+        headers: {
+          Authorization: `Terminal ${credential.bindingGeneration}.${credential.credentialSecret}`,
+          'X-Terminal-Device-Id': credential.deviceId,
+          'X-Terminal-Ref': credential.terminalRef,
+        },
+        body: {},
+      });
+      await terminalClient.acceptBusinessResponse(profileId, dependencies.businessServerName, result);
+      context.platformPorts.logger.scope({moduleName, layer: 'kernel', subsystem: 'terminal-data-client', component: 'http-update'}).info({
+        category: 'terminal.update.download-grant', event: 'download-grant-completed',
+        message: 'Generated terminal download-grant request returned a classified result',
+        context: {commandId: context.command.commandId},
+        data: {elapsedMs: Math.max(0, dependencies.now() - startedAt), resultKind: result.kind,
+          ...(result.kind === 'success' ? {status: result.status} : result.kind === 'business-rejection'
+            ? {status: result.status, errorCode: result.errorCode} : {failureCategory: result.category, code: activationLogCode(result.code)})},
+      });
+      return result as TerminalOperationResult<'issueTerminalUpdateArtifactDownloadGrant'>;
+    }),
+    onCommand(submitTerminalUpdateReportCommand, async context => {
+      const state = readState(context.getState());
+      const credential = state.credential;
+      const payload = context.command.payload as TerminalUpdateReportPayload;
+      if (!isHostRuntime(context.getState()) || state.activationStatus !== 'active' || credential === null)
+        return Object.freeze({kind: 'failure', category: 'not-delivered', code: 'TERMINAL_NOT_ACTIVE'});
+      if (!isCanonicalUuid(payload?.idempotencyKey) || !isRecord(payload.body) || !isCanonicalUuid(payload.body.reportId) ||
+        !Number.isSafeInteger(payload.body.reportSequence) || payload.body.reportSequence < 1)
+        return Object.freeze({kind: 'failure', category: 'not-delivered', code: 'INVALID_TERMINAL_UPDATE_REPORT'});
+      const startedAt = dependencies.now();
+      const result = await terminalClient.client.submitTerminalUpdateReport({
+        pathParameters: {}, queryParameters: {}, body: payload.body,
+        headers: {
+          Authorization: `Terminal ${credential.bindingGeneration}.${credential.credentialSecret}`,
+          'X-Terminal-Device-Id': credential.deviceId,
+          'X-Terminal-Ref': credential.terminalRef,
+          'Idempotency-Key': payload.idempotencyKey,
+        },
+      });
+      await terminalClient.acceptBusinessResponse(profileId, dependencies.businessServerName, result);
+      context.platformPorts.logger.scope({moduleName, layer: 'kernel', subsystem: 'terminal-data-client', component: 'http-update'}).info({
+        category: 'terminal.update.report', event: 'report-submit-completed',
+        message: 'Generated terminal update-report request returned a classified result',
+        context: {commandId: context.command.commandId},
+        data: {reportSequence: payload.body.reportSequence, elapsedMs: Math.max(0, dependencies.now() - startedAt),
+          resultKind: result.kind, ...(result.kind === 'success' ? {status: result.status} : result.kind === 'business-rejection'
+            ? {status: result.status, errorCode: result.errorCode} : {failureCategory: result.category, code: activationLogCode(result.code)})},
+      });
+      return result as TerminalOperationResult<'submitTerminalUpdateReport'>;
     }),
     onCommand(activateTerminalCommand, async context => {
       if (!isHostRuntime(context.getState()))
@@ -1347,7 +1436,7 @@ export const createTerminalDataClientActor = (
       if (clientState.connection.status === 'backoff') clearLocalConnection();
       context.dispatchAction(
         terminalDataClientActions.setConnection(
-          Object.freeze({status: 'connecting', addressName: null, nodeId: null, lastCloseReason: null}),
+          Object.freeze({status: 'connecting', addressName: null, nodeId: null, sessionId: null, lastCloseReason: null}),
         ),
       );
       try {
@@ -1370,7 +1459,7 @@ export const createTerminalDataClientActor = (
         sessionReady = false;
         context.dispatchAction(
           terminalDataClientActions.setConnection(
-            Object.freeze({status: 'awaiting-ready', addressName: null, nodeId: null, lastCloseReason: null}),
+            Object.freeze({status: 'awaiting-ready', addressName: null, nodeId: null, sessionId: null, lastCloseReason: null}),
           ),
         );
         unsubscribeConnection = opened.subscribe(event =>
@@ -1386,7 +1475,7 @@ export const createTerminalDataClientActor = (
       } catch {
         context.dispatchAction(
           terminalDataClientActions.setConnection(
-            Object.freeze({status: 'backoff', addressName: null, nodeId: null, lastCloseReason: 'NETWORK_ERROR'}),
+            Object.freeze({status: 'backoff', addressName: null, nodeId: null, sessionId: null, lastCloseReason: 'NETWORK_ERROR'}),
           ),
         );
         await dependencies.transport.invalid({profileId, cause: 'NETWORK_ERROR'});
@@ -1680,9 +1769,11 @@ export const createTerminalDataClientActor = (
             return null;
           }
           sessionReady = true;
+          activeSessionId = parsed.sessionId;
           expectedHeartbeatTimeoutMs = Number(parsed.heartbeatTimeoutMs);
           context.dispatchAction(
             terminalDataClientActions.sessionReady({
+              sessionId: parsed.sessionId,
               nodeId: parsed.nodeId,
               heartbeatIntervalMs: Number(parsed.heartbeatIntervalMs),
               observedAt: dependencies.now(),
@@ -1773,6 +1864,30 @@ export const createTerminalDataClientActor = (
               context: {commandId: context.command.commandId},
               data: {profileId, sequence: Number(parsed.seq), rttMs},
             });
+          const credential = readState(context.getState()).credential;
+          if (credential !== null && activeSessionId !== null) {
+            void context.dispatchCommand(
+              terminalDataHeartbeatCommand,
+              Object.freeze({
+                bindingGeneration: credential.bindingGeneration,
+                sessionId: activeSessionId,
+                sequence: Number(parsed.seq),
+                observedAt,
+                rttMs,
+              }),
+            ).then(result => {
+              if (result.status === 'completed') return;
+              context.platformPorts.logger.scope({moduleName, layer: 'kernel', subsystem: 'terminal-data-client', component: 'connection'})
+                .warn({category: 'terminal.connection.heartbeat', event: 'heartbeat-consumer-not-completed',
+                  message: 'A local heartbeat consumer did not complete; connection health remains unchanged',
+                  context: {commandId: context.command.commandId}, data: {dispatchStatus: result.status}});
+            }).catch(() => {
+              context.platformPorts.logger.scope({moduleName, layer: 'kernel', subsystem: 'terminal-data-client', component: 'connection'})
+                .warn({category: 'terminal.connection.heartbeat', event: 'heartbeat-consumer-rejected',
+                  message: 'A local heartbeat consumer rejected; connection health remains unchanged',
+                  context: {commandId: context.command.commandId}, data: {code: 'LOCAL_CONSUMER_REJECTED'}});
+            });
+          }
         }
         if (parsed.type === 'TOPIC_CHANGED') {
           if (
@@ -1855,12 +1970,14 @@ export const createTerminalDataClientActor = (
         heartbeatTimer = undefined;
         sentAtBySequence.clear();
         sessionReady = false;
+        activeSessionId = null;
         context.dispatchAction(
           terminalDataClientActions.setConnection(
             Object.freeze({
               status: 'awaiting-ready',
               addressName: event.addressName ?? null,
               nodeId: null,
+              sessionId: null,
               lastCloseReason: null,
             }),
           ),
@@ -1890,6 +2007,7 @@ export const createTerminalDataClientActor = (
         heartbeatTimer = undefined;
         sentAtBySequence.clear();
         sessionReady = false;
+        activeSessionId = null;
         const reason: TerminalConnectionCloseReason =
           event.type === 'error'
             ? 'NETWORK_ERROR'
@@ -1902,6 +2020,7 @@ export const createTerminalDataClientActor = (
               status: 'backoff',
               addressName: readState(context.getState()).connection.addressName,
               nodeId: null,
+              sessionId: null,
               lastCloseReason: reason,
             }),
           ),

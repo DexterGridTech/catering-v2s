@@ -469,7 +469,10 @@
             "format": "uuid"
           },
           "hotArtifactRef": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "uuid"
           },
           "nSeconds": {
@@ -751,13 +754,13 @@
           "targetMode",
           "storeRefs",
           "applicationId",
+          "createdAtEpochMillis",
           "full",
           "hot",
           "nSeconds",
           "hotStrategy",
           "mSeconds",
-          "revision",
-          "updatedAtEpochMillis"
+          "description"
         ],
         "properties": {
           "ruleRef": {
@@ -781,15 +784,21 @@
           "applicationId": {
             "type": "string"
           },
+          "createdAtEpochMillis": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
           "full": {
             "$ref": "#/components/schemas/TerminalUpdateArtifactSummary"
           },
           "hot": {
-            "type": [
-              "object",
-              "null"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TerminalUpdateArtifactSummary"
+              }
             ],
-            "additionalProperties": true
+            "nullable": true
           },
           "nSeconds": {
             "type": "integer",
@@ -811,15 +820,12 @@
             "minimum": 60,
             "maximum": 86400
           },
-          "revision": {
-            "type": "integer",
-            "format": "int64",
-            "minimum": 0
-          },
-          "updatedAtEpochMillis": {
-            "type": "integer",
-            "format": "int64",
-            "minimum": 0
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 500
           }
         }
       },
@@ -859,7 +865,8 @@
           "expiresAtEpochMillis",
           "artifactRef",
           "zipSha256",
-          "byteSize"
+          "byteSize",
+          "artifact"
         ],
         "properties": {
           "relativeContentPath": {
@@ -889,6 +896,157 @@
             "type": "integer",
             "format": "int64",
             "minimum": 1
+          },
+          "artifact": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "schemaVersion",
+              "platform",
+              "applicationId",
+              "nativeVersion",
+              "nativeBuildNumber",
+              "bundleVersion",
+              "runtimeVersion",
+              "entry",
+              "files",
+              "publicationId",
+              "minimumFull",
+              "apk"
+            ],
+            "properties": {
+              "schemaVersion": {
+                "type": "integer",
+                "enum": [
+                  1
+                ]
+              },
+              "platform": {
+                "type": "string",
+                "enum": [
+                  "android"
+                ]
+              },
+              "applicationId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "nativeVersion": {
+                "type": "string",
+                "minLength": 1
+              },
+              "nativeBuildNumber": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "bundleVersion": {
+                "type": "string",
+                "minLength": 1
+              },
+              "runtimeVersion": {
+                "type": "string",
+                "minLength": 1
+              },
+              "entry": {
+                "type": "string",
+                "minLength": 1
+              },
+              "files": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "path",
+                    "sizeBytes",
+                    "sha256"
+                  ],
+                  "properties": {
+                    "path": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "sizeBytes": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    }
+                  }
+                }
+              },
+              "publicationId": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "minimumFull": {
+                "allOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "applicationId",
+                      "nativeBuildNumber",
+                      "runtimeVersion",
+                      "publicationId",
+                      "apkSha256"
+                    ],
+                    "properties": {
+                      "applicationId": {
+                        "type": "string"
+                      },
+                      "nativeBuildNumber": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "runtimeVersion": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "publicationId": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "apkSha256": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      }
+                    }
+                  }
+                ],
+                "nullable": true
+              },
+              "apk": {
+                "allOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "path",
+                      "sha256",
+                      "certificateSha256"
+                    ],
+                    "properties": {
+                      "path": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "sha256": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "certificateSha256": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      }
+                    }
+                  }
+                ],
+                "nullable": true
+              }
+            }
           }
         }
       },
@@ -1258,7 +1416,8 @@
                 "storeRef",
                 "name",
                 "code",
-                "status"
+                "status",
+                "unknownReason"
               ],
               "properties": {
                 "storeRef": {
@@ -1266,10 +1425,16 @@
                   "format": "uuid"
                 },
                 "name": {
-                  "type": "string"
+                  "type": [
+                    "string",
+                    "null"
+                  ]
                 },
                 "code": {
-                  "type": "string"
+                  "type": [
+                    "string",
+                    "null"
+                  ]
                 },
                 "status": {
                   "type": "string",
@@ -1278,6 +1443,16 @@
                     "DISABLED",
                     "VOIDED",
                     "UNKNOWN"
+                  ]
+                },
+                "unknownReason": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "MISSING_OR_OUT_OF_PROJECT",
+                    null
                   ]
                 }
               }

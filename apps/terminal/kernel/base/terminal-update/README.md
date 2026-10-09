@@ -36,7 +36,7 @@ terminal-invariants.json                     公开面与本包验证归属
 
 ## 用法
 
-composition 创建模块时注入实际 `UpdatePort` 和目标来源；没有可用目标来源时使用公开的 `unavailableUpdateTargetSourceProvider`。以下 command 调用与 selector 读取形态来自本包测试：
+composition 创建模块时注入实际 `UpdatePort`。未传入 `sourceProvider` 时，owner 从已持久化的 CBS 规则快照选择目标；只有明确的 focused fixture 才传本地 provider。需要显式拒绝本地目标来源时可传公开的 `unavailableUpdateTargetSourceProvider`。以下 command 调用与 selector 读取形态来自本包测试：
 
 ```ts
 import {

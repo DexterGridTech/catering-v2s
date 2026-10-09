@@ -25,6 +25,9 @@ export type {
   UnsubscribeTerminalTopicPayload,
   AcceptTerminalTopicNotificationPayload,
   TerminalDataReadPayload,
+  TerminalDataHeartbeatPayload,
+  TerminalUpdateDownloadGrantPayload,
+  TerminalUpdateReportPayload,
   TerminalActivationSucceededPayload,
   TerminalReadOperationId,
   TerminalTopicChangedPayload,
@@ -42,6 +45,9 @@ export {
   unsubscribeTerminalTopicCommand,
   acceptTerminalTopicNotificationCommand,
   readTerminalDataCommand,
+  requestTerminalUpdateDownloadGrantCommand,
+  submitTerminalUpdateReportCommand,
+  terminalDataHeartbeatCommand,
   terminalTopicChangedCommand,
 } from './features/commands/terminalDataClientCommands';
 export * from './generated/terminalApi';

@@ -742,6 +742,35 @@ export const adminCatalog = {
         "STORE"
       ],
       "userManagementTargetOrganizationType": null
+    },
+    {
+      "pageDesignKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+      "kind": "BUSINESS",
+      "pageAccessManaged": true,
+      "menuOrder": 315,
+      "menuGroupKey": "NAV-CATALOG-SERVICES",
+      "menuGroupIconKey": "CATALOG_SERVICES",
+      "menuGroupLabel": "商品与服务",
+      "menuLabel": "项目终端版本管理",
+      "pageTitle": "项目终端版本管理",
+      "contentTabLabel": "项目终端版本管理",
+      "pageDescription": "按当前项目维护终端更新规则并查看终端实际版本与报告。",
+      "dataNodeCascaderLabel": "可视项目",
+      "noDataNodePrompt": "请选择项目数据节点",
+      "noCandidatePrompt": "当前角色没有可选择的项目数据节点",
+      "cascadeLevelLabels": [
+        "项目"
+      ],
+      "forbiddenAlternatives": [
+        "终端版本任务看板",
+        "自动择新调度"
+      ],
+      "requiredDataNodeType": "PROJECT",
+      "supportedRoleNodeTypes": [
+        "GROUP",
+        "PROJECT"
+      ],
+      "userManagementTargetOrganizationType": null
     }
   ],
   "actionGroups": [
@@ -1772,6 +1801,28 @@ export const adminCatalog = {
         "PROJECT",
         "STORE"
       ]
+    },
+    {
+      "actionKey": "MANAGE_PROJECT_TERMINAL_VERSION",
+      "actionLabel": "管理项目终端版本",
+      "actionDescription": "管理项目终端版本",
+      "actionGroupKey": "STORE_MANAGEMENT",
+      "actionGroupLabel": "门店管理",
+      "actionGroupOrder": 200,
+      "pageBindings": [
+        {
+          "pageDesignKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+          "selectedIdentityTypes": [
+            "GROUP",
+            "PROJECT"
+          ],
+          "scopeApplicability": "SELECTED_PROJECT_SCOPE"
+        }
+      ],
+      "grantableRoleNodeTypes": [
+        "GROUP",
+        "PROJECT"
+      ]
     }
   ],
   "userManagementActionBindings": [
@@ -1889,7 +1940,8 @@ export const operationsPageDesignKeys = {
   "PgInventoryStoreStatus": "PG-INVENTORY-STORE-STATUS",
   "PgCatalogBrandItems": "PG-CATALOG-BRAND-ITEMS",
   "PgSalesMenuStore": "PG-SALES-MENU-STORE",
-  "PgStoreServicePointQr": "PG-STORE-SERVICE-POINT-QR"
+  "PgStoreServicePointQr": "PG-STORE-SERVICE-POINT-QR",
+  "PgProjectTerminalVersionRules": "PG-PROJECT-TERMINAL-VERSION-RULES"
 } as const;
 export type AdminCatalog = typeof adminCatalog;
 export type OperationsPageDesignKey = typeof operationsPageDesignKeys[keyof typeof operationsPageDesignKeys];
@@ -1935,7 +1987,8 @@ export const ACTION_CAPABILITIES = {
   "EDIT_STORE_INVENTORY": "EDIT_STORE_INVENTORY",
   "EDIT_STORE_SALES_MENU": "EDIT_STORE_SALES_MENU",
   "EDIT_STORE_SERVICE_POINT_QR": "EDIT_STORE_SERVICE_POINT_QR",
-  "EDIT_STORE_TERMINAL": "EDIT_STORE_TERMINAL"
+  "EDIT_STORE_TERMINAL": "EDIT_STORE_TERMINAL",
+  "MANAGE_PROJECT_TERMINAL_VERSION": "MANAGE_PROJECT_TERMINAL_VERSION"
 } as const;
 export type AdminActionCapabilityKey = typeof ACTION_CAPABILITIES[keyof typeof ACTION_CAPABILITIES];
 export const USER_MANAGEMENT_PAGE_DESIGN_KEYS = [

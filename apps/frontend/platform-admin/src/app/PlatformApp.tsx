@@ -7,6 +7,7 @@ import {
   FullscreenExitOutlined,
   FullscreenOutlined,
   LogoutOutlined,
+  AppstoreAddOutlined,
   ReloadOutlined,
   SafetyCertificateOutlined,
   SettingOutlined,
@@ -71,6 +72,7 @@ const menuIconByKey = {
   ROLE: <SafetyCertificateOutlined />,
   ACCOUNT: <UserOutlined />,
   EXTENSION: <TagsOutlined />,
+  PACKAGE: <AppstoreAddOutlined />,
 } as const;
 
 function Shell({session, logout}: {session: Session; logout: () => Promise<void>}) {

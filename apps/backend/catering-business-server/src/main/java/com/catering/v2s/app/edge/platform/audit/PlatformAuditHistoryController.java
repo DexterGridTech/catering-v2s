@@ -52,6 +52,8 @@ public final class PlatformAuditHistoryController {
                             target, requiredWorkspaceKey(groupWorkspaceKey), page, pageSize);
                     case "STORE_CONTRACT" -> new PlatformAuditHistoryQuery.StoreContract(
                             target, requiredWorkspaceKey(groupWorkspaceKey), page, pageSize);
+                    case "TERMINAL_UPDATE_ARTIFACT" -> new PlatformAuditHistoryQuery.TerminalUpdateArtifact(
+                            target, requiredWorkspaceKey(groupWorkspaceKey), page, pageSize);
                     default -> throw new InvalidEdgeRequestException("unsupported platform audit target");
                 });
         return AuditHistoryWireMapper.page(result);

@@ -20,6 +20,7 @@ type NativeUpdateModule = Readonly<{
     expectedSha256: string,
     artifactJson: string,
     kind: 'full' | 'hot',
+    downloadGrant: string | null,
     proxy: Readonly<Record<string, unknown>> | null,
   ) => Promise<Readonly<{preparedId: string}>>;
   applyPrepared: (taskId: string, actionId: string, preparedId: string, kind: 'full' | 'hot') => Promise<UpdateAction>;
@@ -93,6 +94,7 @@ export const createAndroidUpdatePort = (): UpdatePort =>
           input.expectedSha256,
           JSON.stringify(input.artifact),
           input.kind,
+          input.downloadGrant ?? null,
           input.network.proxy === undefined
             ? null
             : (input.network.proxy as unknown as Readonly<Record<string, unknown>>),

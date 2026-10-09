@@ -32,7 +32,8 @@ public final class TerminalConnectionFrameCodec {
             "SERVICE_POINT_AREA_COLLECTION",
             "SERVICE_POINT_AREA",
             "SERVICE_POINT_COLLECTION",
-            "SERVICE_POINT");
+            "SERVICE_POINT",
+            "TERMINAL_UPDATE_RULES");
 
     private final ObjectMapper objectMapper;
     private final TerminalConnectionProtocol protocol;

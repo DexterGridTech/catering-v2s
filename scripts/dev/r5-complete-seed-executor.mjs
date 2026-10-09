@@ -114,6 +114,11 @@ function validateStoreTerminalPostStep({terminalPostStep, fixture}) {
     throw failure("COMPLETE_SEED_STORE_TERMINAL_ROLE_READBACK_INVALID");
 }
 
+export function projectPostStepReceipt(step) {
+  const keys = ["id", "exitStatus", "business", "cleanup", "created", "detailReadback", "listReadback", "artifacts", "rules", "reportPath"];
+  return Object.fromEntries(keys.filter((key) => step[key] !== undefined).map((key) => [key, step[key]]));
+}
+
 /** Pure boundary validation; unit tests exercise every red case without DEV. */
 export function validateCompleteSeedEvidence({managedDevRunId, stages, fixture = null, postSteps = []}) {
   if (fixture) validateFixtureSeedStages(fixture);
@@ -156,7 +161,7 @@ export function validateCompleteSeedEvidence({managedDevRunId, stages, fixture =
       || salesMenu.report.catalogAvailabilityReceiptDigest !== catalog.availabilityReceiptSha256
       || salesMenu.report.catalogAvailabilityContractDigest !== availabilityContract.contractDigest)
     throw failure("COMPLETE_SEED_SALES_MENU_AVAILABILITY_READBACK_INVALID");
-  if (!Array.isArray(postSteps) || postSteps.length !== 1 || postSteps[0]?.id !== "store-terminal") {
+  if (!Array.isArray(postSteps) || postSteps.length !== 2 || postSteps.map((step) => step?.id).join(",") !== "store-terminal,terminal-update") {
     throw failure("COMPLETE_SEED_POST_STEP_DENOMINATOR_INVALID");
   }
   const terminalPostStep = postSteps[0];
@@ -181,7 +186,34 @@ export function validateCompleteSeedEvidence({managedDevRunId, stages, fixture =
     throw failure("COMPLETE_SEED_STORE_TERMINAL_POST_STEP_INVALID");
   }
   if (fixture) validateStoreTerminalPostStep({terminalPostStep, fixture});
-  return Object.freeze({managedDevRunId, sourceItems, eligibleItems, excludedItems, availabilityItemCount: availability.length, stageIds: [...COMPLETE_SEED_STAGE_IDS], postStepIds: ["store-terminal"]});
+  const updatePostStep = postSteps[1];
+  const updateReport = updatePostStep.report;
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  const expectedArtifacts = fixture?.stableFixtures?.terminalUpdate?.artifacts ?? [];
+  const expectedRules = fixture?.stableFixtures?.terminalUpdate?.rules ?? [];
+  const artifactRows = updateReport?.createdArtifacts;
+  const ruleRows = updateReport?.createdRules;
+  if (updatePostStep.exitStatus !== 0 || !updatePostStep.reportPath || !updateReport
+      || updateReport.managedDevRunId !== managedDevRunId
+      || updateReport.business !== "PASS"
+      || updateReport.cleanup !== "PASS_SOURCE_ARTIFACT_INPUTS_REMOVED"
+      || typeof updateReport.sourceArtifactRunId !== "string"
+      || !/^[0-9a-f]{64}$/.test(updateReport.sourceDigest ?? "")
+      || updateReport.roleGroup !== "WRITE_CONFIRMED"
+      || updateReport.roleProject !== "READ_PAGE_CONFIRMED"
+      || updateReport.roleStore !== "NOT_GRANTED"
+      || !Array.isArray(artifactRows) || artifactRows.length !== 4
+      || new Set(artifactRows.map((entry) => entry?.key)).size !== expectedArtifacts.length
+      || artifactRows.some((entry) => !expectedArtifacts.some((source) => source.key === entry?.key)
+        || !uuid.test(String(entry?.artifactRef ?? "")) || !/^[0-9a-f]{64}$/.test(entry?.zipSha256 ?? ""))
+      || !Array.isArray(ruleRows) || ruleRows.length !== 8
+      || new Set(ruleRows.map((entry) => entry?.key)).size !== expectedRules.length
+      || ruleRows.some((entry) => !expectedRules.some((source) => source.key === entry?.key) || !uuid.test(String(entry?.ruleRef ?? "")))) {
+    throw failure("COMPLETE_SEED_TERMINAL_UPDATE_POST_STEP_INVALID");
+  }
+  return Object.freeze({managedDevRunId, sourceItems, eligibleItems, excludedItems, availabilityItemCount: availability.length,
+    terminalUpdateArtifacts: artifactRows.length, terminalUpdateRules: ruleRows.length,
+    stageIds: [...COMPLETE_SEED_STAGE_IDS], postStepIds: ["store-terminal", "terminal-update"]});
 }
 
 function issueChildContext({directory, runId, managedDevRunId, stageId, catalogAvailabilityReceipt = null}) {
@@ -335,7 +367,7 @@ export function renderCompleteSeedMarkdown(report, componentDetails = loadCompon
     "## 终端后置 Seed",
     "",
     report.postSteps?.length
-      ? markdownTable(["后置步骤", "Business", "Cleanup", "创建数", "详情读回数", "列表读回数", "报告"], report.postSteps.map((step) => [step.id, step.business ?? "-", step.cleanup ?? "-", step.created ?? "-", step.detailReadback ?? "-", step.listReadback ?? "-", step.reportPath ?? "-"]))
+      ? markdownTable(["后置步骤", "Business", "Cleanup", "创建数", "详情读回数", "列表读回数", "工件数", "规则数", "报告"], report.postSteps.map((step) => [step.id, step.business ?? "-", step.cleanup ?? "-", step.created ?? "-", step.detailReadback ?? "-", step.listReadback ?? "-", step.artifacts ?? "-", step.rules ?? "-", step.reportPath ?? "-"]))
       : "未执行终端后置步骤。",
     "",
     "## Catalog / Inventory 数据计划",
@@ -390,10 +422,14 @@ function dryRun() {
     if (terminal.status !== 0) throw failure(`COMPLETE_SEED_STORE_TERMINAL_PLAN_FAILED:${childFirstFailure(terminal)}`);
     const terminalMarker = String(terminal.stdout ?? "").match(/R5_STORE_TERMINAL_SEED_PLAN=PASS; TERMINALS=(\d+); PLAN_DIGEST=([0-9a-f]{64})/);
     if (!terminalMarker || terminalMarker[1] !== "8") throw failure("COMPLETE_SEED_STORE_TERMINAL_PLAN_MARKER_INVALID");
+    const terminalUpdate = spawnSync(process.execPath, ["scripts/dev/terminal-update-seed-executor.mjs", "--plan-only"], {cwd: root, encoding: "utf8", env: process.env});
+    if (terminalUpdate.status !== 0) throw failure(`COMPLETE_SEED_TERMINAL_UPDATE_PLAN_FAILED:${childFirstFailure(terminalUpdate)}`);
+    const terminalUpdateMarker = String(terminalUpdate.stdout ?? "").match(/R5_TERMINAL_UPDATE_SEED_PLAN=PASS; SOURCE_RUN=([A-Za-z0-9_-]+); ARTIFACTS=(\d+); RULES=(\d+); SOURCE_DIGEST=([0-9a-f]{64})/);
+    if (!terminalUpdateMarker || terminalUpdateMarker[2] !== "4" || terminalUpdateMarker[3] !== "8") throw failure("COMPLETE_SEED_TERMINAL_UPDATE_PLAN_MARKER_INVALID");
     const plan = readJson(planPath, "COMPLETE_SEED_CATALOG_PLAN");
     const sourceItems = plan.sourceItems?.length;
     if (!Number.isInteger(sourceItems) || sourceItems !== plan.eligibleSourceItems?.length + plan.excludedSourceItems?.length) throw failure("COMPLETE_SEED_CATALOG_DENOMINATOR_INVALID");
-    process.stdout.write(`R5_COMPLETE_SEED_DRY_RUN=PASS; COMPONENTS=${COMPLETE_SEED_STAGE_IDS.join(",")}; SOURCE_ITEMS=${sourceItems}; CREATED_ITEMS=${plan.eligibleSourceItems.length}; EXCLUDED_ITEMS=${plan.excludedSourceItems.length}; MEDIA=${plan.mediaPlan.length}; TERMINALS=${terminalMarker[1]}; TERMINAL_PLAN_DIGEST=${terminalMarker[2]}\n`);
+    process.stdout.write(`R5_COMPLETE_SEED_DRY_RUN=PASS; COMPONENTS=${COMPLETE_SEED_STAGE_IDS.join(",")}; SOURCE_ITEMS=${sourceItems}; CREATED_ITEMS=${plan.eligibleSourceItems.length}; EXCLUDED_ITEMS=${plan.excludedSourceItems.length}; MEDIA=${plan.mediaPlan.length}; TERMINALS=${terminalMarker[1]}; TERMINAL_PLAN_DIGEST=${terminalMarker[2]}; UPDATE_SOURCE_RUN=${terminalUpdateMarker[1]}; UPDATE_ARTIFACTS=${terminalUpdateMarker[2]}; UPDATE_RULES=${terminalUpdateMarker[3]}; UPDATE_SOURCE_DIGEST=${terminalUpdateMarker[4]}\n`);
   } finally {
     fs.rmSync(temporary, {recursive: true, force: true});
   }
@@ -415,10 +451,10 @@ async function execute() {
   let business = "RUNNING";
   let cleanup = "RUNNING";
   let firstFailure = null;
-  const persist = () => atomicWrite(manifestPath, `${JSON.stringify({schemaVersion: 1, kind: "r5-complete-seed-manifest", runId, profile: "r5-full", managedDevRunId: manifest.runId, startedAt, business, cleanup, firstFailure, components, postSteps, phases}, null, 2)}\n`);
+  const persist = () => atomicWrite(manifestPath, `${JSON.stringify({schemaVersion: 1, kind: "r5-complete-seed-manifest", runId, profile: "r5-full", managedDevRunId: manifest.runId, startedAt, business, cleanup, firstFailure, components, postSteps: postSteps.map(projectPostStepReceipt), phases}, null, 2)}\n`);
   const phase = (stage, status, detail = {}) => { phases.push({at: new Date().toISOString(), stage, status, ...detail}); persist(); };
   const finish = () => {
-    const report = {schemaVersion: 1, kind: "r5-complete-seed-report", runId, profile: "r5-full", managedDevRunId: manifest.runId, startedAt, finishedAt: new Date().toISOString(), business, cleanup, firstFailure, components, postSteps};
+    const report = {schemaVersion: 1, kind: "r5-complete-seed-report", runId, profile: "r5-full", managedDevRunId: manifest.runId, startedAt, finishedAt: new Date().toISOString(), business, cleanup, firstFailure, components, postSteps: postSteps.map(projectPostStepReceipt)};
     persist();
     writeCompositeReport(reportPath, report);
   };
@@ -499,10 +535,24 @@ async function execute() {
     terminalPostStep.listReadback = Array.isArray(terminalPostStep.report.listReadback)
       ? terminalPostStep.report.listReadback.length
       : terminalPostStep.report.listReadback;
-    postSteps.push({id: terminalPostStep.id, business: terminalPostStep.business, cleanup: terminalPostStep.cleanup, created: terminalPostStep.created, detailReadback: terminalPostStep.detailReadback, listReadback: terminalPostStep.listReadback, reportPath: terminalPostStep.reportPath});
+    postSteps.push(terminalPostStep);
     if (terminalPostStep.exitStatus !== 0) throw failure(`COMPLETE_SEED_STORE_TERMINAL_POST_STEP_FAILED:${terminalPostStep.report?.firstFailure ?? terminalPostStep.exitStatus}`);
     phase("store-terminal-post-step", "PASS", {created: terminalPostStep.created, detailReadback: terminalPostStep.detailReadback, listReadback: terminalPostStep.listReadback});
-    validateCompleteSeedEvidence({managedDevRunId: manifest.runId, stages: [owner, businessChannel, catalog, salesMenu], fixture, postSteps: [terminalPostStep]});
+
+    phase("terminal-update-post-step", "RUNNING", {sourceRunId: process.env.R5_TERMINAL_UPDATE_SEED_SOURCE_RUN_ID ?? "MISSING"});
+    const updateResult = await runChild({name: "terminal-update", script: "scripts/dev/terminal-update-seed-executor.mjs", environment: process.env, phase});
+    const updateOutput = `${updateResult.stdout}\n${updateResult.stderr}`;
+    const updatePostStep = {id: "terminal-update", ...updateResult, reportPath: resultPath(updateOutput, "REPORT")};
+    if (!updatePostStep.reportPath) throw failure(`COMPLETE_SEED_TERMINAL_UPDATE_POST_STEP_FAILED:${childFirstFailure(updateResult)}`);
+    updatePostStep.report = readJson(updatePostStep.reportPath, "COMPLETE_SEED_TERMINAL_UPDATE_POST_STEP_REPORT");
+    updatePostStep.business = updatePostStep.report.business;
+    updatePostStep.cleanup = updatePostStep.report.cleanup;
+    updatePostStep.artifacts = updatePostStep.report.createdArtifacts?.length;
+    updatePostStep.rules = updatePostStep.report.createdRules?.length;
+    postSteps.push(updatePostStep);
+    if (updatePostStep.exitStatus !== 0) throw failure(`COMPLETE_SEED_TERMINAL_UPDATE_POST_STEP_FAILED:${updatePostStep.report?.firstFailure ?? updatePostStep.exitStatus}`);
+    phase("terminal-update-post-step", "PASS", {artifacts: updatePostStep.artifacts, rules: updatePostStep.rules});
+    validateCompleteSeedEvidence({managedDevRunId: manifest.runId, stages: [owner, businessChannel, catalog, salesMenu], fixture, postSteps});
     business = "PASS";
     cleanup = "PASS_PRESERVED_DEV_STATE";
     phase("COMPLETE_SEED_CLEANUP", "PASS", {policy: "PRESERVE_DEV_EXPERIENCE_STATE", destructiveCleanupOwner: "r5-reset", persistentSeedProcess: false});

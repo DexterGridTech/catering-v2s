@@ -16,15 +16,15 @@ describe('terminal update Expo automation fixture', () => {
     if (facts.value.actual === null) throw new Error('AUTOMATION_FIXTURE_ACTUAL_FACTS_MISSING');
     expect(facts.value.actual.applicationId).toBe('com.example.terminal');
 
-    const target = await fixture.sourceProvider.readTarget({selectedSpace: 'development', contextIdentity: 'fixture-run'});
+    const target = await fixture.sourceProvider.readTarget({selectedSpace: 'development', contextIdentity: 'fixture-run', ruleRef: 'automation-fixture-run'});
     expect(target?.applicationId).toBe('com.example.terminal');
-    expect(await fixture.sourceProvider.readTarget({selectedSpace: 'development', contextIdentity: 'other-run'})).toBeNull();
+    expect(await fixture.sourceProvider.readTarget({selectedSpace: 'development', contextIdentity: 'other-run', ruleRef: 'automation-fixture-run'})).toBeNull();
     expect(target?.full?.artifact.nativeBuildNumber).toBe(2);
 
     const prepared = await fixture.port.prepareArtifact({
       sourceRef: target!.full!.sourceRef,
       expectedSha256: target!.full!.expectedSha256,
-      artifact: target!.full!.artifact,
+      artifact: target!.full!.manifest!,
       sourcePath: '/fixtures/full.zip',
       network: {addresses: []},
       kind: 'full',

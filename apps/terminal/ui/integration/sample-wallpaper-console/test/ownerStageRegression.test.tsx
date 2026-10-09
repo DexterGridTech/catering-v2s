@@ -172,18 +172,17 @@ describe('sample-wallpaper-console integration owner-stage regressions', () => {
       selectionContext: Object.freeze({
         selectedSpace: 'development',
         contextIdentity: 'wallpaper-startup-confirm-test',
+        ruleRef: 'wallpaper-startup-confirm-rule',
       }),
     });
     const confirmations: Array<Readonly<{timeoutMs: number; bootToken: string; publicationId: string}>> = [];
     let appliedActionId: string | null = null;
-    let appliedTaskId: string | null = null;
     const success = <T,>(value: T): PortResult<T> => ({status: 'succeeded', value, completedAt: 1 as TimestampMs});
     const updatePort: UpdatePort = {
       readFacts: async () => success(facts),
       prepareArtifact: async () => success({preparedId: 'prepared-hot', artifact: hot}),
       applyPrepared: async input => {
         appliedActionId = input.actionId;
-        appliedTaskId = input.taskId;
         return success({
           actionId: input.actionId,
           taskId: input.taskId,
@@ -196,14 +195,7 @@ describe('sample-wallpaper-console integration owner-stage regressions', () => {
       readAction: async () => success(null),
       confirmBoot: async input => {
         confirmations.push(input);
-        return success({
-          actionId: appliedActionId ?? '',
-          taskId: appliedTaskId ?? '',
-          state: 'accepted',
-          reason: null,
-          publicationId: input.publicationId,
-          bootId: input.bootToken,
-        });
+        return success({confirmed: true as const});
       },
       releasePrepared: async () => success({released: true}),
     };

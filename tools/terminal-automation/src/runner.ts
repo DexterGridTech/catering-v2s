@@ -35,6 +35,8 @@ import {
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const driverRoot = path.join(root, 'tools/terminal-automation');
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
 type AutomationPlatform = 'web' | 'android';
 type AutomationPhase = 'feasibility' | 'capabilities' | 'journey' | 'skill' | 'f4' | 'update';
 const updateCases = new Set([
@@ -52,6 +54,7 @@ const updateCases = new Set([
   'update.rollback',
   'update.recent',
   'update.cleanup',
+  'update.supply-chain',
 ]);
 const updateCasesRequiringManagedDev = new Set([
   'update.flush',
@@ -61,6 +64,7 @@ const updateCasesRequiringManagedDev = new Set([
   'update.interruption',
   'update.compatibility',
   'update.rollback',
+  'update.supply-chain',
 ]);
 const implementedUpdateCases: Readonly<Record<AutomationPlatform, ReadonlySet<string>>> = Object.freeze({
   web: new Set(['update.artifacts', 'update.fixed', 'update.install-result', 'update.compatibility']),
@@ -72,6 +76,7 @@ const implementedUpdateCases: Readonly<Record<AutomationPlatform, ReadonlySet<st
     'update.interruption',
     'update.compatibility',
     'update.rollback',
+    'update.supply-chain',
   ]),
 });
 const phaseSuite: Readonly<Record<AutomationPlatform, Readonly<Partial<Record<AutomationPhase, string>>>>> =
@@ -136,7 +141,9 @@ export const updateRequiresManagedDev = (execution: TerminalAutomationRunOptions
 export const updateCaseImplemented = (execution: TerminalAutomationRunOptions): boolean =>
   execution.phase !== 'update' ||
   (execution.case !== undefined &&
-    implementedUpdateCases[execution.platform as AutomationPlatform]?.has(execution.case) === true);
+    implementedUpdateCases[execution.platform as AutomationPlatform]?.has(execution.case) === true &&
+    (execution.case !== 'update.supply-chain' ||
+      (execution.platform === 'android' && execution.shape === 'dual')));
 
 export const updateScenarioAssertionsObserved = (
   execution: TerminalAutomationRunOptions,
@@ -464,6 +471,10 @@ export const parseAutomationRunArguments = (argv: readonly string[]): TerminalAu
   } else if (caseName !== undefined || age !== undefined || sample !== undefined) {
     fail('TERMINAL_AUTOMATION_CASE_NOT_APPLICABLE');
   }
+  if (phase === 'update' && caseName === 'update.supply-chain'
+      && (checkedPlatform !== 'android' || checkedShape !== 'dual')) {
+    fail('TERMINAL_AUTOMATION_UPDATE_SUPPLY_CHAIN_REQUIRES_ANDROID_DUAL');
+  }
   const deviceSerial = values.get('--device-serial');
   const peerDeviceSerial = values.get('--peer-device-serial');
   if (checkedPlatform === 'android') {
@@ -508,6 +519,8 @@ type ManagedDevContext = Readonly<{
   readonly tdsEntryOneUrl: string;
   readonly tdsEntryTwoUrl: string;
   readonly webOrigin: string;
+  readonly platformAdminOrigin: string;
+  readonly operationsAdminOrigin: string;
   readonly operationsPassword: string;
   readonly platformRootPassword: string;
 }>;
@@ -539,6 +552,7 @@ const readManagedDevContext = async (): Promise<ManagedDevContext> => {
   const tdsEntryOneUrl = validated.localTdsWebSocketBaseUrl;
   const tdsEntryTwoUrl = validated.localTdsEntryTwoWebSocketBaseUrl;
   const webOrigin = selectManagedTerminalBrowserOrigin(validated.terminalBrowserAllowedOrigins);
+  const adminOrigins = selectManagedDevAdminOrigins(validated);
   const safeWebSocketUrl = (value: unknown): value is string => {
     if (typeof value !== 'string') return false;
     const url = new URL(value);
@@ -556,6 +570,7 @@ const readManagedDevContext = async (): Promise<ManagedDevContext> => {
   if (
     typeof validated.runId !== 'string' ||
     webOrigin === undefined ||
+    adminOrigins === undefined ||
     !isManagedDevHttpBaseUrl(localHttpBaseUrl) ||
     !safeWebSocketUrl(tdsEntryOneUrl) ||
     !safeWebSocketUrl(tdsEntryTwoUrl) ||
@@ -575,9 +590,48 @@ const readManagedDevContext = async (): Promise<ManagedDevContext> => {
     tdsEntryOneUrl,
     tdsEntryTwoUrl,
     webOrigin,
+    platformAdminOrigin: adminOrigins.platformAdmin,
+    operationsAdminOrigin: adminOrigins.operationsAdmin,
     operationsPassword,
     platformRootPassword,
   });
+};
+
+export const selectManagedDevAdminOrigins = (
+  value: unknown,
+): Readonly<{readonly platformAdmin: string; readonly operationsAdmin: string}> | undefined => {
+  if (!isRecord(value))
+    return undefined;
+  const processes = value.processes;
+  const readiness = value.readiness;
+  if (!Array.isArray(processes) || !isRecord(readiness) || !isRecord(readiness.vite)) return undefined;
+  const resolve = (name: 'platform-admin' | 'operations-admin'): string | undefined => {
+    const entries = processes.filter((entry): entry is Record<string, unknown> => isRecord(entry) && entry.name === name);
+    if (entries.length !== 1) return undefined;
+    const processEntry = entries[0];
+    const runtimeIdentity = processEntry.runtimeIdentity;
+    const viteReadiness = readiness.vite;
+    if (!isRecord(viteReadiness)) return undefined;
+    const readinessIdentity = viteReadiness[name];
+    if (
+      !Number.isInteger(processEntry.port) ||
+      (processEntry.port as number) < 1024 ||
+      (processEntry.port as number) > 65535 ||
+      !isRecord(runtimeIdentity) ||
+      !isRecord(readinessIdentity) ||
+      runtimeIdentity.pid !== readinessIdentity.pid ||
+      runtimeIdentity.startToken !== readinessIdentity.startToken ||
+      typeof runtimeIdentity.pid !== 'number' ||
+      typeof runtimeIdentity.startToken !== 'string' ||
+      runtimeIdentity.startToken.length === 0
+    )
+      return undefined;
+    return `http://127.0.0.1:${processEntry.port}`;
+  };
+  const platformAdmin = resolve('platform-admin');
+  const operationsAdmin = resolve('operations-admin');
+  if (!platformAdmin || !operationsAdmin || platformAdmin === operationsAdmin) return undefined;
+  return Object.freeze({platformAdmin, operationsAdmin});
 };
 
 export const selectManagedTerminalBrowserOrigin = (value: unknown): string | undefined => {
@@ -1068,6 +1122,8 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
           V2S_TERMINAL_DEV_TDS_ENTRY_ONE_WS_URL: managedDevContext.tdsEntryOneUrl,
           V2S_TERMINAL_DEV_TDS_ENTRY_TWO_WS_URL: managedDevContext.tdsEntryTwoUrl,
           TERMINAL_AUTOMATION_WEB_ORIGIN: managedDevContext.webOrigin,
+          TERMINAL_AUTOMATION_PLATFORM_ADMIN_ORIGIN: managedDevContext.platformAdminOrigin,
+          TERMINAL_AUTOMATION_OPERATIONS_ADMIN_ORIGIN: managedDevContext.operationsAdminOrigin,
           V2S_SEED_OPERATIONS_DEFAULT_PASSWORD: managedDevContext.operationsPassword,
           V2S_SEED_PLATFORM_ROOT_PASSWORD: managedDevContext.platformRootPassword,
           EXPO_PUBLIC_TER_MANAGED_GROUP_WORKSPACE_BASE_URL: `${managedDevContext.httpBaseUrl}/api/terminal/group-workspaces/aurora`,

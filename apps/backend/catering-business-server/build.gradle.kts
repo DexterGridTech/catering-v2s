@@ -76,6 +76,7 @@ dependencies {
     implementation(project(":apps:backend:catering-business-server:modules:store-terminal"))
     implementation(project(":apps:backend:catering-business-server:modules:terminal-binding"))
     implementation(project(":apps:backend:catering-business-server:modules:terminal-control"))
+    implementation(project(":apps:backend:catering-business-server:modules:terminal-update"))
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.springframework.boot:spring-boot-starter-jdbc")
     implementation("org.springframework.boot:spring-boot-starter-web")

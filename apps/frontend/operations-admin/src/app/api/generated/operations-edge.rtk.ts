@@ -158,6 +158,14 @@ export const operationsAdminRtkRequest = {
       requiresSession: true,
       ...options,
     }),
+    changeOperationsProjectTerminalUpdateRuleStatus: (pathParameters: FaceOperationContracts["changeOperationsProjectTerminalUpdateRuleStatus"]["path"], options: FaceOperationOptions<"changeOperationsProjectTerminalUpdateRuleStatus">): FaceOperationRequest<"changeOperationsProjectTerminalUpdateRuleStatus"> => ({
+      operationId: "changeOperationsProjectTerminalUpdateRuleStatus",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-update-rules/{ruleRef}/status",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
     copyOperationsSalesMenu: (pathParameters: FaceOperationContracts["copyOperationsSalesMenu"]["path"], options: FaceOperationOptions<"copyOperationsSalesMenu">): FaceOperationRequest<"copyOperationsSalesMenu"> => ({
       operationId: "copyOperationsSalesMenu",
       method: "POST",
@@ -242,6 +250,14 @@ export const operationsAdminRtkRequest = {
       operationId: "createOperationsOwnerBinding",
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}/owner-binding",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    createOperationsProjectTerminalUpdateRule: (pathParameters: FaceOperationContracts["createOperationsProjectTerminalUpdateRule"]["path"], options: FaceOperationOptions<"createOperationsProjectTerminalUpdateRule">): FaceOperationRequest<"createOperationsProjectTerminalUpdateRule"> => ({
+      operationId: "createOperationsProjectTerminalUpdateRule",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-update-rules",
       pathParameters,
       requiresSession: true,
       ...options,
@@ -542,6 +558,54 @@ export const operationsAdminRtkRequest = {
       requiresSession: true,
       ...options,
     }),
+    getOperationsProjectTerminalUpdateReportHistoryPage: (pathParameters: FaceOperationContracts["getOperationsProjectTerminalUpdateReportHistoryPage"]["path"], options: FaceOperationOptions<"getOperationsProjectTerminalUpdateReportHistoryPage">): FaceOperationRequest<"getOperationsProjectTerminalUpdateReportHistoryPage"> => ({
+      operationId: "getOperationsProjectTerminalUpdateReportHistoryPage",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-versions/{terminalRef}/update-reports",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsProjectTerminalUpdateRuleDetail: (pathParameters: FaceOperationContracts["getOperationsProjectTerminalUpdateRuleDetail"]["path"], options: FaceOperationOptions<"getOperationsProjectTerminalUpdateRuleDetail">): FaceOperationRequest<"getOperationsProjectTerminalUpdateRuleDetail"> => ({
+      operationId: "getOperationsProjectTerminalUpdateRuleDetail",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-update-rules/{ruleRef}",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsProjectTerminalUpdateRulePage: (pathParameters: FaceOperationContracts["getOperationsProjectTerminalUpdateRulePage"]["path"], options: FaceOperationOptions<"getOperationsProjectTerminalUpdateRulePage">): FaceOperationRequest<"getOperationsProjectTerminalUpdateRulePage"> => ({
+      operationId: "getOperationsProjectTerminalUpdateRulePage",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-update-rules",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsProjectTerminalUpdateRuleStorePage: (pathParameters: FaceOperationContracts["getOperationsProjectTerminalUpdateRuleStorePage"]["path"], options: FaceOperationOptions<"getOperationsProjectTerminalUpdateRuleStorePage">): FaceOperationRequest<"getOperationsProjectTerminalUpdateRuleStorePage"> => ({
+      operationId: "getOperationsProjectTerminalUpdateRuleStorePage",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-update-rules/{ruleRef}/stores",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsProjectTerminalVersionDetail: (pathParameters: FaceOperationContracts["getOperationsProjectTerminalVersionDetail"]["path"], options: FaceOperationOptions<"getOperationsProjectTerminalVersionDetail">): FaceOperationRequest<"getOperationsProjectTerminalVersionDetail"> => ({
+      operationId: "getOperationsProjectTerminalVersionDetail",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-versions/{terminalRef}",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsProjectTerminalVersionPage: (pathParameters: FaceOperationContracts["getOperationsProjectTerminalVersionPage"]["path"], options: FaceOperationOptions<"getOperationsProjectTerminalVersionPage">): FaceOperationRequest<"getOperationsProjectTerminalVersionPage"> => ({
+      operationId: "getOperationsProjectTerminalVersionPage",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-versions",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
     getOperationsSalesMenu: (pathParameters: FaceOperationContracts["getOperationsSalesMenu"]["path"], options: FaceOperationOptions<"getOperationsSalesMenu">): FaceOperationRequest<"getOperationsSalesMenu"> => ({
       operationId: "getOperationsSalesMenu",
       method: "GET",
@@ -722,6 +786,14 @@ export const operationsAdminRtkRequest = {
       operationId: "getOperationsStoreTerminalTagCandidates",
       method: "GET",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/terminals/tag-candidates",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    getOperationsTerminalUpdateArtifactCandidatePage: (pathParameters: FaceOperationContracts["getOperationsTerminalUpdateArtifactCandidatePage"]["path"], options: FaceOperationOptions<"getOperationsTerminalUpdateArtifactCandidatePage">): FaceOperationRequest<"getOperationsTerminalUpdateArtifactCandidatePage"> => ({
+      operationId: "getOperationsTerminalUpdateArtifactCandidatePage",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/terminal-update-artifact-candidates",
       pathParameters,
       requiresSession: true,
       ...options,
@@ -1433,6 +1505,10 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
       query: (request) => toWireRequest(request),
       invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
+    changeOperationsProjectTerminalUpdateRuleStatus: build.mutation<FaceOperationContracts["changeOperationsProjectTerminalUpdateRuleStatus"]["response"], FaceOperationRequest<"changeOperationsProjectTerminalUpdateRuleStatus">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
     copyOperationsSalesMenu: build.mutation<FaceOperationContracts["copyOperationsSalesMenu"]["response"], FaceOperationRequest<"copyOperationsSalesMenu">>({
       query: (request) => toWireRequest(request),
       invalidatesTags: (_result, _error, request) => resolveSalesMenuTags<TagTypes>([{"kind":"requestPath","prefix":"sales-menu-store","path":"storeRef"},{"kind":"static","id":"sales-menu-list"}] as const, request),
@@ -1474,6 +1550,10 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
       invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     createOperationsOwnerBinding: build.mutation<FaceOperationContracts["createOperationsOwnerBinding"]["response"], FaceOperationRequest<"createOperationsOwnerBinding">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
+    createOperationsProjectTerminalUpdateRule: build.mutation<FaceOperationContracts["createOperationsProjectTerminalUpdateRule"]["response"], FaceOperationRequest<"createOperationsProjectTerminalUpdateRule">>({
       query: (request) => toWireRequest(request),
       invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
@@ -1625,6 +1705,30 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
       query: (request) => toWireRequest(request),
       providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
+    getOperationsProjectTerminalUpdateReportHistoryPage: build.query<FaceOperationContracts["getOperationsProjectTerminalUpdateReportHistoryPage"]["response"], FaceOperationRequest<"getOperationsProjectTerminalUpdateReportHistoryPage">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
+    getOperationsProjectTerminalUpdateRuleDetail: build.query<FaceOperationContracts["getOperationsProjectTerminalUpdateRuleDetail"]["response"], FaceOperationRequest<"getOperationsProjectTerminalUpdateRuleDetail">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
+    getOperationsProjectTerminalUpdateRulePage: build.query<FaceOperationContracts["getOperationsProjectTerminalUpdateRulePage"]["response"], FaceOperationRequest<"getOperationsProjectTerminalUpdateRulePage">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
+    getOperationsProjectTerminalUpdateRuleStorePage: build.query<FaceOperationContracts["getOperationsProjectTerminalUpdateRuleStorePage"]["response"], FaceOperationRequest<"getOperationsProjectTerminalUpdateRuleStorePage">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
+    getOperationsProjectTerminalVersionDetail: build.query<FaceOperationContracts["getOperationsProjectTerminalVersionDetail"]["response"], FaceOperationRequest<"getOperationsProjectTerminalVersionDetail">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
+    getOperationsProjectTerminalVersionPage: build.query<FaceOperationContracts["getOperationsProjectTerminalVersionPage"]["response"], FaceOperationRequest<"getOperationsProjectTerminalVersionPage">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
     getOperationsSalesMenu: build.query<FaceOperationContracts["getOperationsSalesMenu"]["response"], FaceOperationRequest<"getOperationsSalesMenu">>({
       query: (request) => toWireRequest(request),
       providesTags: (_result, _error, request) => resolveSalesMenuTags<TagTypes>([{"kind":"requestPath","prefix":"sales-menu-store","path":"storeRef"},{"kind":"requestPath","prefix":"sales-menu","path":"salesMenuRef"},{"kind":"requestQuery","prefix":"sales-menu-channel","path":"channelRef"}] as const, request),
@@ -1716,6 +1820,10 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
     getOperationsStoreTerminalTagCandidates: build.query<FaceOperationContracts["getOperationsStoreTerminalTagCandidates"]["response"], FaceOperationRequest<"getOperationsStoreTerminalTagCandidates">>({
       query: (request) => toWireRequest(request),
       providesTags: (_result, _error, request) => resolveWireTags<TagTypes>([{"kind":"requestPath","prefix":"store-terminal-store","path":"storeRef"},{"kind":"static","id":"store-terminal-tag-candidates"}] as const, request),
+    }),
+    getOperationsTerminalUpdateArtifactCandidatePage: build.query<FaceOperationContracts["getOperationsTerminalUpdateArtifactCandidatePage"]["response"], FaceOperationRequest<"getOperationsTerminalUpdateArtifactCandidatePage">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     getOperationsWorkspaceGroupInvitationCandidates: build.query<FaceOperationContracts["getOperationsWorkspaceGroupInvitationCandidates"]["response"], FaceOperationRequest<"getOperationsWorkspaceGroupInvitationCandidates">>({
       query: (request) => toWireRequest(request),

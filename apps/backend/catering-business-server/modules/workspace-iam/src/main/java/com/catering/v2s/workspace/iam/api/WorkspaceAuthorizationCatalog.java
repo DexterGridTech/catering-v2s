@@ -33,6 +33,7 @@ public final class WorkspaceAuthorizationCatalog {
         public static final String PG_CATALOG_BRAND_ITEMS = "PG-CATALOG-BRAND-ITEMS";
         public static final String PG_SALES_MENU_STORE = "PG-SALES-MENU-STORE";
         public static final String PG_STORE_SERVICE_POINT_QR = "PG-STORE-SERVICE-POINT-QR";
+        public static final String PG_PROJECT_TERMINAL_VERSION_RULES = "PG-PROJECT-TERMINAL-VERSION-RULES";
     }
     public static final class CapabilityKeys {
         private CapabilityKeys() { }
@@ -78,6 +79,7 @@ public final class WorkspaceAuthorizationCatalog {
         public static final String EDIT_STORE_SALES_MENU = "EDIT_STORE_SALES_MENU";
         public static final String EDIT_STORE_SERVICE_POINT_QR = "EDIT_STORE_SERVICE_POINT_QR";
         public static final String EDIT_STORE_TERMINAL = "EDIT_STORE_TERMINAL";
+        public static final String MANAGE_PROJECT_TERMINAL_VERSION = "MANAGE_PROJECT_TERMINAL_VERSION";
     }
     public static List<CapabilityCatalogEntry> capabilityCatalog() { return List.of(
             capability("BC-ORG-GROUP-EDIT", "编辑集团资料", "ORGANIZATION_MANAGEMENT", "组织管理", 100, List.of("GROUP"), "PG-ORG-STRUCTURE", "GROUP_VISIBLE"),
@@ -121,7 +123,8 @@ public final class WorkspaceAuthorizationCatalog {
             capability("EDIT_STORE_INVENTORY", "编辑门店库存", "CATALOG_MANAGEMENT", "商品与服务", 500, List.of("GROUP", "REGION", "PROJECT", "STORE"), "PG-INVENTORY-STORE-STATUS", "SELECTED_STORE_SCOPE"),
             capability("EDIT_STORE_SALES_MENU", "编辑门店销售菜单", "CATALOG_MANAGEMENT", "商品与服务", 500, List.of("GROUP", "REGION", "PROJECT", "STORE"), "PG-SALES-MENU-STORE", "SELECTED_STORE_SCOPE"),
             capability("EDIT_STORE_SERVICE_POINT_QR", "编辑门店桌台与二维码", "CATALOG_MANAGEMENT", "商品与服务", 500, List.of("GROUP", "REGION", "PROJECT", "STORE"), "PG-STORE-SERVICE-POINT-QR", "SELECTED_STORE_SCOPE"),
-            capability("EDIT_STORE_TERMINAL", "编辑门店终端", "STORE_MANAGEMENT", "门店管理", 200, List.of("GROUP", "REGION", "PROJECT", "STORE"), "PG-STORE-TERMINALS", "SELECTED_STORE_SCOPE")); }
+            capability("EDIT_STORE_TERMINAL", "编辑门店终端", "STORE_MANAGEMENT", "门店管理", 200, List.of("GROUP", "REGION", "PROJECT", "STORE"), "PG-STORE-TERMINALS", "SELECTED_STORE_SCOPE"),
+            capability("MANAGE_PROJECT_TERMINAL_VERSION", "管理项目终端版本", "STORE_MANAGEMENT", "门店管理", 200, List.of("GROUP", "PROJECT"), "PG-PROJECT-TERMINAL-VERSION-RULES", "SELECTED_PROJECT_SCOPE")); }
     public static List<PageAccessCatalogEntry> pageCatalog() { return List.of(
             page("HOME-GROUP", "集团首页", "工作台", 10, "NONE", List.of("GROUP"), null, false),
             page("HOME-REGION", "大区首页", "工作台", 20, "NONE", List.of("REGION"), null, false),
@@ -147,7 +150,8 @@ public final class WorkspaceAuthorizationCatalog {
             page("PG-INVENTORY-STORE-STATUS", "门店库存管理", "商品与服务", 520, "STORE", List.of("GROUP", "REGION", "PROJECT", "STORE"), null, true),
             page("PG-CATALOG-BRAND-ITEMS", "品牌商品管理", "商品与服务", 530, "HEAD_COMPANY", List.of("GROUP", "HEAD_COMPANY"), null, true),
             page("PG-SALES-MENU-STORE", "门店销售菜单", "商品与服务", 540, "STORE", List.of("GROUP", "REGION", "PROJECT", "STORE"), null, true),
-            page("PG-STORE-SERVICE-POINT-QR", "门店桌台与二维码", "商品与服务", 550, "STORE", List.of("GROUP", "REGION", "PROJECT", "STORE"), null, true)); }
+            page("PG-STORE-SERVICE-POINT-QR", "门店桌台与二维码", "商品与服务", 550, "STORE", List.of("GROUP", "REGION", "PROJECT", "STORE"), null, true),
+            page("PG-PROJECT-TERMINAL-VERSION-RULES", "项目终端版本管理", "商品与服务", 315, "PROJECT", List.of("GROUP", "PROJECT"), null, true)); }
     public static List<UserManagementActionBinding> userManagementActionBindings() { return List.of(
             new UserManagementActionBinding("PG-IAM-GROUP-USERS", "GROUP", UserManagementAction.ROLE_REVOKE, "BC-IAM-GROUP-ROLE-REVOKE"),
             new UserManagementActionBinding("PG-IAM-REGION-USERS", "REGION", UserManagementAction.ROLE_REVOKE, "BC-IAM-REGION-ROLE-REVOKE"),

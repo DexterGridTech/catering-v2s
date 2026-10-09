@@ -67,8 +67,12 @@ export type TerminalConnectionView = Readonly<{
   readonly status: 'stopped' | 'disconnected' | 'connecting' | 'awaiting-ready' | 'connected' | 'backoff';
   readonly addressName: string | null;
   readonly nodeId: string | null;
+  /** Current protocol session identity, exposed only on the host selector. */
+  readonly sessionId?: string | null;
   readonly lastCloseReason: TerminalConnectionCloseReason | null;
 }>;
+
+export type TerminalConnectionStatusProjection = Omit<TerminalConnectionView, 'sessionId'>;
 
 export type TerminalLatencySample = Readonly<{readonly rttMs: number; readonly observedAt: number}>;
 
@@ -141,14 +145,21 @@ export type AcceptTerminalTopicNotificationPayload = Readonly<{
   readonly notificationId: string;
 }>;
 
-export type TerminalReadOperationId = Exclude<TerminalOperationId, 'activateTerminal' | 'cancelTerminalActivation'>;
-/** Read operation plus path only; TDC constructs all credential headers itself. */
+export type TerminalReadOperationId = Extract<TerminalOperationId, `terminalRead${string}`>;
+/** Generated read operation and its exact path/query shape; TDC constructs credential headers itself. */
 export type TerminalDataReadPayload = {
   readonly [OperationId in TerminalReadOperationId]: Readonly<{
     readonly operationId: OperationId;
     readonly pathParameters: TerminalRequestMap[OperationId]['pathParameters'];
+    readonly queryParameters?: TerminalRequestMap[OperationId]['queryParameters'];
   }>;
 }[TerminalReadOperationId];
+
+export type TerminalUpdateDownloadGrantPayload = Readonly<{artifactRef: string}>;
+export type TerminalUpdateReportPayload = Readonly<{
+  readonly idempotencyKey: string;
+  readonly body: TerminalRequestMap['submitTerminalUpdateReport']['body'];
+}>;
 
 /** Shared Runtime command fanned out to feature actors; each consumer matches its own subscription. */
 export type TerminalTopicChangedPayload = Readonly<{
@@ -158,12 +169,20 @@ export type TerminalTopicChangedPayload = Readonly<{
   readonly notification: TerminalTopicNotification;
 }>;
 
+export type TerminalDataHeartbeatPayload = Readonly<{
+  readonly bindingGeneration: number;
+  readonly sessionId: string;
+  readonly sequence: number;
+  readonly observedAt: number;
+  readonly rttMs: number;
+}>;
+
 /** Secret-free, current-host status shared read-only with a paired slave runtime. */
 export type TerminalClientStatusProjection = Readonly<{
   readonly available: boolean;
   readonly sourceNodeId: string | null;
   readonly activation: TerminalActivationView | null;
-  readonly connection: TerminalConnectionView | null;
+  readonly connection: TerminalConnectionStatusProjection | null;
   readonly lastRttMs: number | null;
   readonly updatedAt: number;
 }>;

@@ -18,6 +18,8 @@ public class TdsTerminalTopicRepository {
             "SELECT topic_time_epoch_millis FROM organization.read_terminal_topic_time(?, ?, ?, ?, ?)";
     private static final String READ_CONTRACT_EXACT =
             "SELECT topic_time_epoch_millis FROM contract.read_terminal_topic_time(?, ?, ?, ?, ?)";
+    private static final String READ_TERMINAL_UPDATE_RULES =
+            "SELECT topic_time_epoch_millis FROM terminal_update.read_rule_topic_time(?, ?, ?, ?)";
 
     private final JdbcTemplate jdbc;
 
@@ -39,6 +41,7 @@ public class TdsTerminalTopicRepository {
                     case "VALID_CONTRACT_COLLECTION" -> READ_CONTRACT_COLLECTION;
                     case "SERVICE_POINT_AREA_COLLECTION", "SERVICE_POINT_COLLECTION" -> READ_ORGANIZATION_COLLECTION;
                     case "CONTRACT" -> READ_CONTRACT_EXACT;
+                    case "TERMINAL_UPDATE_RULES" -> READ_TERMINAL_UPDATE_RULES;
                     case "STORE",
                             "PROJECT",
                             "REGION",
@@ -55,6 +58,7 @@ public class TdsTerminalTopicRepository {
                             "SERVICE_POINT_COLLECTION" -> new Object[] {
                         workspaceUuid, groupWorkspaceKey, boundStoreRef, topicKey
                     };
+                    case "TERMINAL_UPDATE_RULES" -> new Object[] {workspaceUuid, groupWorkspaceKey, boundStoreRef, ownerRef};
                     default -> new Object[] {workspaceUuid, groupWorkspaceKey, boundStoreRef, topicKey, ownerRef};
                 };
         Long value = jdbc.query(sql, result -> result.next() ? result.getLong(1) : null, arguments);

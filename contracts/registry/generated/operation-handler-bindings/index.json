@@ -1,8 +1,11 @@
 {
   "schemaVersion": 1,
   "kind": "generated-owner-operation-binding-index",
-  "operationCount": 304,
+  "operationCount": 322,
   "owners": [
+    "TERMINAL_UPDATE_PACKAGE",
+    "TERMINAL_UPDATE_REPORT",
+    "TERMINAL_UPDATE_RULE",
     "asset",
     "business-channel",
     "catalog",
@@ -21,6 +24,9 @@
     "workspace-iam"
   ],
   "outputs": [
+    "contracts/registry/generated/operation-handler-bindings/TERMINAL_UPDATE_PACKAGE.json",
+    "contracts/registry/generated/operation-handler-bindings/TERMINAL_UPDATE_REPORT.json",
+    "contracts/registry/generated/operation-handler-bindings/TERMINAL_UPDATE_RULE.json",
     "contracts/registry/generated/operation-handler-bindings/asset.json",
     "contracts/registry/generated/operation-handler-bindings/business-channel.json",
     "contracts/registry/generated/operation-handler-bindings/catalog.json",
@@ -40,6 +46,9 @@
   ],
   "javaOutputs": [
     "contracts/registry/generated/operation-handler-bindings/java/com/catering/v2s/generated/operationbindings/OperationBindingTypes.java",
+    "contracts/registry/generated/operation-handler-bindings/java/com/catering/v2s/generated/operationbindings/terminalupdatepackage/TERMINALUPDATEPACKAGEOperationBindings.java",
+    "contracts/registry/generated/operation-handler-bindings/java/com/catering/v2s/generated/operationbindings/terminalupdatereport/TERMINALUPDATEREPORTOperationBindings.java",
+    "contracts/registry/generated/operation-handler-bindings/java/com/catering/v2s/generated/operationbindings/terminalupdaterule/TERMINALUPDATERULEOperationBindings.java",
     "contracts/registry/generated/operation-handler-bindings/java/com/catering/v2s/generated/operationbindings/asset/AssetOperationBindings.java",
     "contracts/registry/generated/operation-handler-bindings/java/com/catering/v2s/generated/operationbindings/businesschannel/BusinessChannelOperationBindings.java",
     "contracts/registry/generated/operation-handler-bindings/java/com/catering/v2s/generated/operationbindings/catalog/CatalogOperationBindings.java",

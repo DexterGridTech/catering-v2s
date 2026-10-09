@@ -165,6 +165,26 @@ class MinioAssetObjectStorageTest {
         order.verify(client).statObject(any(StatObjectArgs.class));
     }
 
+    @Test
+    void privatePackageBucketIsPreparedWithoutPublicReadPolicy() throws Exception {
+        MinioClient client = mock(MinioClient.class);
+        org.mockito.Mockito.when(client.bucketExists(any(BucketExistsArgs.class)))
+                .thenReturn(false);
+        org.mockito.Mockito.when(client.statObject(any(StatObjectArgs.class))).thenThrow(error(404, "NoSuchKey"));
+        MinioAssetObjectStorage storage =
+                new MinioAssetObjectStorage(
+                        client, "public-assets", "https://assets.test", "tenant/", "private-assets", "terminal-update/");
+        String key = storage.privateObjectKey("a".repeat(64));
+
+        assertTrue(storage.ownsPrivateObjectKey(key));
+        assertFalse(storage.privateExists(key));
+        org.mockito.Mockito.verify(client, org.mockito.Mockito.never()).setBucketPolicy(any(SetBucketPolicyArgs.class));
+        InOrder order = inOrder(client);
+        order.verify(client).bucketExists(any(BucketExistsArgs.class));
+        order.verify(client).makeBucket(any(MakeBucketArgs.class));
+        order.verify(client).statObject(any(StatObjectArgs.class));
+    }
+
     private static ErrorResponseException error(int status, String code) {
         Response response = new Response.Builder()
                 .request(new Request.Builder()

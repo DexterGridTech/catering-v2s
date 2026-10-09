@@ -3,6 +3,7 @@ package com.catering.v2s.organization.application;
 import com.catering.v2s.organization.api.CatalogScopeLookup;
 import com.catering.v2s.organization.api.CommercialGroupLookup;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
+import com.catering.v2s.organization.api.OrganizationTaskPathLookup.PersistedStoreFact;
 import com.catering.v2s.organization.application.persistence.OrganizationTaskPathPersistence;
 import java.util.List;
 import java.util.Map;
@@ -85,6 +86,13 @@ public class OrganizationTaskPathService implements OrganizationTaskPathLookup {
     public Map<TaskPathRef, TaskPath> describePersistedTaskPaths(
             UUID workspaceUuid, String key, List<TaskPathRef> targets) {
         return persistence.describePersistedTaskPaths(workspaceUuid, key, targets);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<UUID, PersistedStoreFact> describePersistedStoresInProject(
+            UUID workspaceUuid, String key, UUID projectRef, List<UUID> storeRefs) {
+        return persistence.describePersistedStoresInProject(workspaceUuid, key, projectRef, storeRefs);
     }
 
     @Override

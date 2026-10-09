@@ -8,6 +8,7 @@ import {
   selectServicePoints,
   selectStore,
   selectStoreBasicBinding,
+  selectStoreBasicLoadReadiness,
   selectStoreBasicState,
   selectStoreBasicTopicState,
   selectStoreCommercialGroup,
@@ -55,6 +56,7 @@ export const createStoreBasicModule = (): RuntimeModule => {
       selectStore,
       selectStoreBasicBinding,
       selectStoreBasicState,
+      selectStoreBasicLoadReadiness,
       selectStoreBasicTopicState,
       selectStoreCommercialGroup,
       selectStoreOperatingRules,
@@ -91,6 +93,24 @@ export const createStoreBasicModule = (): RuntimeModule => {
               data: {errorCode: safeErrorCode(error)},
             });
         });
+    },
+    onApplicationReset: async (context: RuntimeModuleContext) => {
+      const result = await context.dispatchCommand(
+        initializeStoreBasicCommand,
+        Object.freeze({}),
+        {requestId: createRequestId()},
+      );
+      if (result.status !== 'completed') {
+        context.platformPorts.logger
+          .scope({moduleName, layer: 'kernel', subsystem: 'store-basic', component: 'reset'})
+          .error({
+            category: 'terminal.store-basic.initialization',
+            event: 'reset-command-failed',
+            message: 'Store basic initialization after Runtime reset did not complete',
+            data: {dispatchStatus: result.status},
+          });
+        throw new Error(`Store basic initialization after Runtime reset failed: ${result.status}`);
+      }
     },
   });
 };

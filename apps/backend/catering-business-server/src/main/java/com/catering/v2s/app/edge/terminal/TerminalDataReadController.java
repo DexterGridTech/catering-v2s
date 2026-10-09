@@ -33,12 +33,7 @@ import com.catering.v2s.organization.api.StoreServicePointOwnerApi;
 import com.catering.v2s.organization.application.BusinessEntityService;
 import com.catering.v2s.organization.application.OperationsOrganizationTaskReadService;
 import com.catering.v2s.organization.application.OrganizationOverviewTaskReadService;
-import com.catering.v2s.platform.identity.GroupWorkspaceKey;
-import com.catering.v2s.terminalbinding.api.TerminalCredentialContext;
-import com.catering.v2s.terminalbinding.api.TerminalCredentialParser;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi;
-import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.Credential;
-import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.Outcome;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.Verification;
 import java.util.List;
 import java.util.Map;
@@ -66,7 +61,6 @@ import tools.jackson.databind.ObjectMapper;
 public class TerminalDataReadController {
     private static final Logger log = LoggerFactory.getLogger(TerminalDataReadController.class);
     private static final ObjectMapper JSON = new ObjectMapper();
-    private static final String AUTHORIZATION_PREFIX = "Terminal ";
 
     @ExceptionHandler({DataAccessResourceFailureException.class, TransientDataAccessException.class})
     ResponseEntity<ContractProblemAdvice.Problem> dependencyUnavailable(
@@ -289,32 +283,7 @@ public class TerminalDataReadController {
     }
 
     private Verification verify(String groupKey, String authorization, String terminalRef, String deviceId) {
-        if (!GroupWorkspaceKey.isValid(groupKey)
-                || terminalRef == null
-                || deviceId == null
-                || deviceId.isBlank()
-                || deviceId.length() > 128
-                || authorization == null
-                || !authorization.startsWith(AUTHORIZATION_PREFIX)) throw invalid();
-        UUID terminal = uuid(terminalRef);
-        String serialized = authorization.substring(AUTHORIZATION_PREFIX.length());
-        try (TerminalCredentialContext context = TerminalCredentialParser.parseCredential(serialized)) {
-            byte[] digest = context.secretDigest();
-            try {
-                Verification verification =
-                        credentials.verify(new Credential(groupKey, terminal, context.generation(), digest, deviceId));
-                if (verification.outcome() != Outcome.VERIFIED) throw problem(verification.outcome());
-                if (!groupKey.equals(verification.groupWorkspaceKey())
-                        || !terminal.equals(verification.terminalRef())) {
-                    throw TerminalDataReadProblem.denied();
-                }
-                return verification;
-            } finally {
-                java.util.Arrays.fill(digest, (byte) 0);
-            }
-        } catch (IllegalArgumentException malformed) {
-            throw invalid(malformed);
-        }
+        return TerminalCredentialEdgeVerifier.verify(credentials, groupKey, authorization, terminalRef, deviceId);
     }
 
     private static OrganizationNodeReadback node(List<OrganizationNodeReadback> nodes, UUID ref) {
@@ -336,21 +305,8 @@ public class TerminalDataReadController {
         }
     }
 
-    private static InvalidEdgeRequestException invalid() {
-        return new InvalidEdgeRequestException("terminal read request is invalid");
-    }
-
     private static InvalidEdgeRequestException invalid(Throwable cause) {
         return new InvalidEdgeRequestException("terminal read request is invalid", cause);
-    }
-
-    private static TerminalDataReadProblem problem(Outcome outcome) {
-        return switch (outcome) {
-            case CREDENTIAL_INVALID, ACTIVATION_CANCELLED -> TerminalDataReadProblem.credentialInvalid();
-            case GROUP_WORKSPACE_DISABLED -> TerminalDataReadProblem.workspaceDisabled();
-            case TERMINAL_DISABLED -> TerminalDataReadProblem.terminalDisabled();
-            case VERIFIED -> throw new IllegalStateException("verified outcome has no problem mapping");
-        };
     }
 
     private static void logRead(String operationId, Verification binding) {

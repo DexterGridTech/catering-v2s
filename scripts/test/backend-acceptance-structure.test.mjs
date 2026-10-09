@@ -1860,6 +1860,19 @@ test('TDP active-store topic subscription is an exact managed TDS contract requi
   assert.doesNotMatch(missingTopology.stderr, /R5_TESTCONTAINERS/);
 });
 
+test('TERMINAL_UPDATE_RULES topic has its own managed TDS contract selector', () => {
+  const runner = readFileSync(backendAcceptanceRunnerPath, 'utf8');
+  const remoteRunner = readFileSync(path.join(root, 'scripts/test/r5-remote-testcontainers.mjs'), 'utf8');
+  const suite = readFileSync(suitePath, 'utf8');
+  const tdsProcess = readFileSync(tdsProcessPath, 'utf8');
+  const scenario = 'terminal.connection.topic.terminal-update-rules';
+  assert.ok(runner.includes(`${scenario})\n      expected_topology_preflight=true`));
+  assert.match(remoteRunner, /TDS_TERMINAL_UPDATE_TOPIC_SCENARIO = 'terminal\.connection\.topic\.terminal-update-rules'/);
+  assert.match(remoteRunner, /\[TDS_TERMINAL_UPDATE_TOPIC_SCENARIO, true\]/);
+  assert.ok(suite.includes('TERMINAL_UPDATE_TOPIC_SCENARIO_ID.equals(selectedScenario)'));
+  assert.ok(tdsProcess.includes(`TERMINAL_UPDATE_TOPIC_SCENARIO_ID = "${scenario}"`));
+});
+
 test('V-S13 acceptance selector owns two isolated TDS processes and a real cross-node recovery scenario', () => {
   const runner = readFileSync(backendAcceptanceRunnerPath, 'utf8');
   const remoteRunner = readFileSync(path.join(root, 'scripts/test/r5-remote-testcontainers.mjs'), 'utf8');

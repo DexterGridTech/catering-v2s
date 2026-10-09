@@ -231,12 +231,15 @@ const SESSION_PROBE_SCENARIOS = new Set([
   'terminal.connection.history-outage-bounded',
   'terminal.connection.vs13.cross-node-recovery',
   'terminal.connection.topic.active-store-subscription',
+  'terminal.connection.topic.terminal-update-rules',
   'terminal.connection.remote-command',
 ]);
 
 const SERVER_ERROR_SCENARIOS = new Set(['terminal.connection.vs12.auth-during-outage']);
 const TRACKED_CAPACITY_SCENARIOS = new Set(['terminal.connection.vs8.tracked-capacity']);
 const TOPIC_SUBSCRIPTION_SCENARIO = 'terminal.connection.topic.active-store-subscription';
+const TERMINAL_UPDATE_TOPIC_SCENARIO = 'terminal.connection.topic.terminal-update-rules';
+const TOPIC_SUBSCRIPTION_SCENARIOS = new Set([TOPIC_SUBSCRIPTION_SCENARIO, TERMINAL_UPDATE_TOPIC_SCENARIO]);
 const REMOTE_COMMAND_SCENARIO = 'terminal.connection.remote-command';
 
 function withUnknownMessageField(message) {
@@ -281,7 +284,7 @@ const SUPPORTED_SCENARIOS = new Set([
   ...OFFER_SCENARIOS,
   ...FRAME_SCENARIOS,
   ...COMPRESSION_SESSION_SCENARIOS,
-  TOPIC_SUBSCRIPTION_SCENARIO,
+  ...TOPIC_SUBSCRIPTION_SCENARIOS,
 ]);
 
 const expectedCloseForRequest = request => {
@@ -393,7 +396,7 @@ export function parseControlRequest(contents) {
     V10_SCENARIOS.has(request.scenario) ||
     TRACKED_CAPACITY_SCENARIOS.has(request.scenario) ||
     SESSION_PROBE_SCENARIOS.has(request.scenario) ||
-    request.scenario === TOPIC_SUBSCRIPTION_SCENARIO ||
+    TOPIC_SUBSCRIPTION_SCENARIOS.has(request.scenario) ||
     SERVER_ERROR_SCENARIOS.has(request.scenario) ||
     COMPRESSION_SESSION_SCENARIOS.has(request.scenario) ||
     request.scenario === 'terminal.connection.frame.raw-overflow' ||
@@ -461,7 +464,7 @@ export function parseControlRequest(contents) {
     || request.scenario === 'terminal.connection.auth.store-disabled-active'
     || TRACKED_CAPACITY_SCENARIOS.has(request.scenario)
     || SESSION_PROBE_SCENARIOS.has(request.scenario)
-    || request.scenario === TOPIC_SUBSCRIPTION_SCENARIO
+    || TOPIC_SUBSCRIPTION_SCENARIOS.has(request.scenario)
     || SERVER_ERROR_SCENARIOS.has(request.scenario)
     || OFFER_SCENARIOS.has(request.scenario)
     || FRAME_SCENARIOS.has(request.scenario)
@@ -482,13 +485,15 @@ export function parseControlRequest(contents) {
     throw new Error('TERMINAL_WIRE_CONTROL_EXTENSION_OFFER_FORBIDDEN');
   }
   let topicSubscription = null;
-  if (request.scenario === TOPIC_SUBSCRIPTION_SCENARIO) {
+  if (TOPIC_SUBSCRIPTION_SCENARIOS.has(request.scenario)) {
     const topic = request.topicSubscription;
     if (!topic || typeof topic !== 'object' || Array.isArray(topic)
         || Object.keys(topic).sort().join(',') !== 'lastAcceptedTimeEpochMillis,ownerRef,subscriptionId,topicKey'
         || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(topic.subscriptionId)
         || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(topic.ownerRef)
-        || topic.topicKey !== 'STORE'
+        || topic.topicKey !== (request.scenario === TERMINAL_UPDATE_TOPIC_SCENARIO
+          ? 'TERMINAL_UPDATE_RULES'
+          : 'STORE')
         || !Number.isSafeInteger(topic.lastAcceptedTimeEpochMillis)
         || topic.lastAcceptedTimeEpochMillis < 0) {
       throw new Error('TERMINAL_WIRE_TOPIC_SUBSCRIPTION_INVALID');
@@ -1438,6 +1443,23 @@ async function runTopicSubscriptionProbe(request, inputIterator) {
       subscriptionId: topic.subscriptionId,
       topicTimeEpochMillis: changed.message.topicTimeEpochMillis,
     })}\n`);
+    if (request.scenario === TERMINAL_UPDATE_TOPIC_SCENARIO) {
+      socket.sendClose(1000, '');
+      const close = await waitForServerClose(socket);
+      socket.socket.end();
+      if (close === null) throw new Error('TERMINAL_WIRE_TOPIC_CLIENT_CLOSE_NOT_ACKNOWLEDGED');
+      return {
+        status: 'PASS',
+        scenario: request.scenario,
+        sessionId: ready.sessionId,
+        eventTypes,
+        topicKey: topic.topicKey,
+        baselineTopicTimeEpochMillis: topic.lastAcceptedTimeEpochMillis,
+        topicTimeEpochMillis: changed.message.topicTimeEpochMillis,
+        clientCloseSent: 1000,
+        serverCloseReceived: true,
+      };
+    }
     const control = await inputIterator.next();
     if (control.done || Buffer.byteLength(control.value, 'utf8') > MAX_CONTROL_BYTES
         || control.value !== 'UPDATE_COMMITTED') {
@@ -1591,7 +1613,7 @@ async function runProtocolFailure(request) {
 async function run(request, inputIterator = null) {
   if (request.scenario === NO_FIRST_FRAME_SCENARIO) return runNoFirstFrame(request);
   if (NO_AUTH_CLOSE_SCENARIOS.has(request.scenario)) return runNoFirstFrame(request);
-  if (request.scenario === TOPIC_SUBSCRIPTION_SCENARIO) return runTopicSubscriptionProbe(request, inputIterator);
+  if (TOPIC_SUBSCRIPTION_SCENARIOS.has(request.scenario)) return runTopicSubscriptionProbe(request, inputIterator);
   if (SESSION_PROBE_SCENARIOS.has(request.scenario)) return runSessionProbe(request, inputIterator);
   if (request.scenario === 'terminal.connection.topology-probe'
       || AUTH_REJECTION_SCENARIOS.has(request.scenario)

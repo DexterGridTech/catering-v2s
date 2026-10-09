@@ -93,6 +93,14 @@ const FIXED_BUSINESS_CAPABILITY_OPERATIONS = new Map([
     "BC-CONTRACT-CREATE",
   ],
   [
+    "createOperationsProjectTerminalUpdateRule|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-update-rules|operations-admin",
+    "MANAGE_PROJECT_TERMINAL_VERSION",
+  ],
+  [
+    "changeOperationsProjectTerminalUpdateRuleStatus|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-update-rules/{ruleRef}/status|operations-admin",
+    "MANAGE_PROJECT_TERMINAL_VERSION",
+  ],
+  [
     "createOperationsOrganizationBrand|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/organization/brands|operations-admin",
     "BC-ORG-BRAND-CREATE",
   ],
@@ -843,6 +851,9 @@ function catalogInventoryManifestRequirement(operation) {
 export function mutatingOperationInventory(root = process.cwd()) {
   const rows = [];
   for (const sourcePath of walkOpenApi(root)) {
+    // This path shard is the terminal client generator's operation selector.
+    // The R5 catalog/materialized edge path is authoritative for capability inventory.
+    if (sourcePath === "contracts/openapi/paths/terminal/terminal-update.paths.json") continue;
     const document = json(root, sourcePath, "OPENAPI_DOCUMENT_INVALID");
     // P1's root is its finite, canonical operation definition. Its generated
     // path shards remain projections, and must not double-count the operation.
@@ -1765,6 +1776,12 @@ function selfTest() {
       process.stdout.write(`RED_TERMINAL_CREDENTIAL_READ_MARKER:${operationId}=PASS\n`);
     }
     writeFixture(root, terminalCredentialCancellation);
+
+    const terminalClientSelectorPath = path.join(root, "contracts/openapi/paths/terminal/terminal-update.paths.json");
+    fs.mkdirSync(path.dirname(terminalClientSelectorPath), {recursive: true});
+    fs.writeFileSync(terminalClientSelectorPath, fs.readFileSync(path.join(root, "contracts/openapi/fixture.json"), "utf8"));
+    if (mutatingOperationInventory(root).length !== 1) fail("CAPABILITY_SELF_TEST_TERMINAL_CLIENT_SELECTOR_DOUBLE_COUNTED");
+    fs.rmSync(terminalClientSelectorPath, {force: true});
 
     const projectionPath = path.join(root, "contracts/openapi/generated-catalog-path-shard.json");
     const canonicalDocument = json(root, "contracts/openapi/fixture.json", "CAPABILITY_SELF_TEST_FIXTURE_INVALID");

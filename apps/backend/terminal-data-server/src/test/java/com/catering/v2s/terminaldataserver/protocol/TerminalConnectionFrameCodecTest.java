@@ -114,6 +114,13 @@ class TerminalConnectionFrameCodecTest {
         assertThat(subscribe.topicKey()).isEqualTo("STORE");
         assertThat(subscribe.ownerRef()).isEqualTo(ownerRef);
 
+        var terminalUpdateSubscribe = codec.topicSubscribe(
+                "{\"type\":\"TOPIC_SUBSCRIBE\",\"subscriptionId\":\"" + subscriptionId
+                        + "\",\"topicKey\":\"TERMINAL_UPDATE_RULES\",\"ownerRef\":\"" + ownerRef
+                        + "\",\"lastAcceptedTimeEpochMillis\":0}");
+        assertThat(terminalUpdateSubscribe.topicKey()).isEqualTo("TERMINAL_UPDATE_RULES");
+        assertThat(terminalUpdateSubscribe.ownerRef()).isEqualTo(ownerRef);
+
         var accept = codec.topicAccept("{\"type\":\"TOPIC_ACCEPT\",\"notificationId\":\"" + notificationId
                 + "\",\"subscriptionId\":\"" + subscriptionId
                 + "\",\"topicKey\":\"STORE\",\"ownerRef\":\"" + ownerRef

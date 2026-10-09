@@ -6,11 +6,14 @@ import type {
   CancelTerminaActivationPayload,
   SubscribeTerminalTopicPayload,
   TerminalTopicChangedPayload,
+  TerminalDataHeartbeatPayload,
   TerminalTransportEvent,
   TerminalDataReadPayload,
   TerminalActivationSucceededPayload,
   UnsubscribeTerminalTopicPayload,
   RemoteOperationFact,
+  TerminalUpdateDownloadGrantPayload,
+  TerminalUpdateReportPayload,
 } from '../../types/client';
 
 export const activateTerminalCommand = defineCommand<ActivateTerminalPayload>(moduleName, {
@@ -83,6 +86,28 @@ export const readTerminalDataCommand = defineCommand<TerminalDataReadPayload>(mo
   name: 'read-terminal-data',
   visibility: 'public',
   allowNoActor: false,
+  allowReentry: false,
+  defaultTarget: 'local',
+});
+export const requestTerminalUpdateDownloadGrantCommand = defineCommand<TerminalUpdateDownloadGrantPayload>(moduleName, {
+  name: 'request-terminal-update-download-grant',
+  visibility: 'public',
+  allowNoActor: false,
+  allowReentry: false,
+  defaultTarget: 'local',
+});
+export const submitTerminalUpdateReportCommand = defineCommand<TerminalUpdateReportPayload>(moduleName, {
+  name: 'submit-terminal-update-report',
+  visibility: 'public',
+  allowNoActor: false,
+  allowReentry: false,
+  defaultTarget: 'local',
+});
+/** Internal local signal emitted only after a PONG matched a sent sequence. */
+export const terminalDataHeartbeatCommand = defineCommand<TerminalDataHeartbeatPayload>(moduleName, {
+  name: 'terminal-data-heartbeat',
+  visibility: 'public',
+  allowNoActor: true,
   allowReentry: false,
   defaultTarget: 'local',
 });

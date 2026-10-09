@@ -142,6 +142,105 @@ final class TerminalConnectionContractScenarios {
                 "terminal.connection.topic.active-store-subscription", () -> activeStoreTopicSubscription(host, tds)));
     }
 
+    static Stream<DynamicTest> terminalUpdateTopicScenarios(BackendAcceptanceTest host, TdsAcceptanceProcess tds) {
+        return Stream.of(DynamicTest.dynamicTest(
+                "terminal.connection.topic.terminal-update-rules", () -> terminalUpdateRuleTopicSubscription(host, tds)));
+    }
+
+    private static void terminalUpdateRuleTopicSubscription(BackendAcceptanceTest host, TdsAcceptanceProcess tds)
+            throws Exception {
+        String runId = requiredEnvironment("V2S_BACKEND_ACCEPTANCE_RUN_ID");
+        String scenario = TdsAcceptanceProcess.TdsStartConfiguration.TERMINAL_UPDATE_TOPIC_SCENARIO_ID;
+        BackendAcceptanceTest.ScenarioContext context = host.new ScenarioContext(null, "performance.normal-path");
+        StoreTerminalAcceptanceScenarios business = new StoreTerminalAcceptanceScenarios(host);
+        StoreTerminalAcceptanceScenarios.ConnectionFixture fixture = null;
+        TopicWireClient client = null;
+        boolean fixtureCancelled = false;
+        Throwable scenarioFailure = null;
+        try {
+            fixture = business.createConnectionContractFixture(context);
+            UUID ruleRef = TerminalUpdateAcceptanceScenarios.createEnabledRuleForTopic(host, context, fixture.fixture());
+            Map<String, Object> ownerTopicReadback = host.queryForMap(
+                    "SELECT store.status AS store_status, project.status AS project_status, "
+                            + "(SELECT topic_time_epoch_millis FROM terminal_update.read_rule_topic_time(?,?,?,?)) "
+                            + "AS topic_time_epoch_millis FROM organization.store store "
+                            + "JOIN organization.organization_node project ON project.id=store.project_id "
+                            + "WHERE store.id=?",
+                    fixture.fixture().workspaceUuid(), fixture.fixture().groupWorkspaceKey(),
+                    fixture.fixture().storeId(), fixture.fixture().projectId(), fixture.fixture().storeId());
+            Assertions.assertEquals("ENABLED", ownerTopicReadback.get("store_status"),
+                    "CONTRACT SETUP: terminal topic store fixture is enabled");
+            Assertions.assertEquals("ENABLED", ownerTopicReadback.get("project_status"),
+                    "CONTRACT SETUP: terminal topic project fixture is enabled");
+            Assertions.assertNotNull(ownerTopicReadback.get("topic_time_epoch_millis"),
+                    "CONTRACT SETUP: TDS owner query resolves the exact enabled store/project pair");
+            long expectedTopicTime = ((Number) ownerTopicReadback.get("topic_time_epoch_millis")).longValue();
+            Assertions.assertTrue(expectedTopicTime > 0,
+                    "CONTRACT SETUP: enabled rule creation advances the owner topic time");
+            System.out.printf(
+                    "BACKEND_ACCEPTANCE_TDS_TOPIC_OWNER_ORACLE workspaceUuid=%s groupWorkspaceKey=%s "
+                            + "storeRef=%s projectRef=%s storeStatus=%s projectStatus=%s topicTime=%d ruleRef=%s%n",
+                    fixture.fixture().workspaceUuid(), fixture.fixture().groupWorkspaceKey(),
+                    fixture.fixture().storeId(), fixture.fixture().projectId(),
+                    ownerTopicReadback.get("store_status"), ownerTopicReadback.get("project_status"),
+                    expectedTopicTime, ruleRef);
+            client = startTopicWireClient(tds, terminalWireClientScript(), scenario, fixture,
+                    "TERMINAL_UPDATE_RULES", fixture.fixture().projectId().toString());
+            Assertions.assertTrue(client.process().waitFor(CLIENT_DEADLINE.toMillis(), TimeUnit.MILLISECONDS),
+                    "TDS_TERMINAL_UPDATE_TOPIC_DEADLINE_EXCEEDED");
+            String outputLine = client.output().readLine();
+            Assertions.assertEquals(0, client.process().exitValue(), "TDS_TERMINAL_UPDATE_TOPIC_CLIENT_EXIT_NONZERO");
+            Assertions.assertNotNull(outputLine, "TDS_TERMINAL_UPDATE_TOPIC_RESULT_MISSING");
+            Assertions.assertNull(client.output().readLine(), "TDS_TERMINAL_UPDATE_TOPIC_OUTPUT_CARDINALITY_INVALID");
+            JsonNode result = JSON.readTree(outputLine);
+            Assertions.assertEquals("PASS", result.path("status").asText());
+            Assertions.assertEquals(scenario, result.path("scenario").asText());
+            Assertions.assertEquals("TERMINAL_UPDATE_RULES", result.path("topicKey").asText());
+            Assertions.assertEquals(List.of("SESSION_READY", "TOPIC_CHANGED"), JSON.convertValue(
+                    result.path("eventTypes"), JSON.getTypeFactory().constructCollectionType(List.class, String.class)));
+            Assertions.assertTrue(result.path("topicTimeEpochMillis").asLong() > 0,
+                    "TDS_TERMINAL_UPDATE_TOPIC_OWNER_TIME_NOT_READ");
+            Assertions.assertEquals(1000, result.path("clientCloseSent").asInt());
+            Assertions.assertTrue(result.path("serverCloseReceived").asBoolean());
+            writeContractResult(Map.ofEntries(
+                    Map.entry("type", "transport-contract"),
+                    Map.entry("operation", scenario),
+                    Map.entry("module", "TERMINAL_DATA_SERVER"),
+                    Map.entry("contract", "PASS"),
+                    Map.entry("status", "PASS"),
+                    Map.entry("runId", runId),
+                    Map.entry("topicKey", "TERMINAL_UPDATE_RULES"),
+                    Map.entry("ownerRef", fixture.fixture().projectId().toString()),
+                    Map.entry("ruleRef", ruleRef.toString()),
+                    Map.entry("ownerRawTimeRead", result.path("topicTimeEpochMillis").asLong()),
+                    Map.entry("eventTypes", List.of("SESSION_READY", "TOPIC_CHANGED")),
+                    Map.entry("acceptedNotification", true)));
+        } catch (Exception | Error failure) {
+            scenarioFailure = failure;
+            throw failure;
+        } finally {
+            TopicWireClient ownedClient = client;
+            Throwable cleanupFailure = ownedClient == null ? null
+                    : attemptCleanup(null, () -> stopOwnedClient(ownedClient.process(), ownedClient.log()));
+            if (fixture != null && !fixtureCancelled) {
+                try {
+                    business.performConnectionRevocation(context, fixture,
+                            StoreTerminalAcceptanceScenarios.ConnectionRevocationAction.DEVICE_CANCEL);
+                    business.assertConnectionFixtureInactive(context, fixture);
+                    fixtureCancelled = true;
+                } catch (Exception | Error failure) {
+                    if (cleanupFailure == null) cleanupFailure = failure;
+                    else cleanupFailure.addSuppressed(failure);
+                }
+            }
+            if (cleanupFailure != null) {
+                if (scenarioFailure != null) scenarioFailure.addSuppressed(cleanupFailure);
+                else if (cleanupFailure instanceof Exception exception) throw exception;
+                else throw (Error) cleanupFailure;
+            }
+        }
+    }
+
     static Stream<DynamicTest> remoteCommandScenarios(BackendAcceptanceTest host, TdsAcceptanceProcess tds) {
         return Stream.of(DynamicTest.dynamicTest("terminal.connection.remote-command", () -> remoteCommand(host, tds)));
     }
@@ -504,8 +603,18 @@ final class TerminalConnectionContractScenarios {
             String scenario,
             StoreTerminalAcceptanceScenarios.ConnectionFixture fixture)
             throws Exception {
+        return startTopicWireClient(tds, script, scenario, fixture, "STORE", fixture.fixture().storeId().toString());
+    }
+
+    private static TopicWireClient startTopicWireClient(
+            TdsAcceptanceProcess tds,
+            Path script,
+            String scenario,
+            StoreTerminalAcceptanceScenarios.ConnectionFixture fixture,
+            String topicKey,
+            String ownerRef)
+            throws Exception {
         String markerId = UUID.randomUUID().toString();
-        String storeRef = fixture.fixture().storeId().toString();
         Map<String, Object> request = Map.of(
                 "scenario",
                 scenario,
@@ -530,9 +639,9 @@ final class TerminalConnectionContractScenarios {
                         "subscriptionId",
                         UUID.randomUUID().toString(),
                         "topicKey",
-                        "STORE",
+                        topicKey,
                         "ownerRef",
-                        storeRef,
+                        ownerRef,
                         "lastAcceptedTimeEpochMillis",
                         0));
         ProcessBuilder builder =

@@ -6,8 +6,9 @@ import {
   useOverlayLock,
   useSubmissionLifecycle,
 } from '@catering-v2s/admin-ui-foundation';
-import {useState} from 'react';
+import {useState, type ReactNode} from 'react';
 import {operationsClient, operationsProblemOf} from '../../../app/api/OperationsTransport';
+import {roleHomeTestIds} from '../roleHomeTestIds';
 import {OPERATIONS_ADMIN_OPERATION_IDS, type WorkspaceSessionEntry} from '../../../app/api/generated/operations-edge';
 import {wireUuid} from '../../../app/api/wireUuid';
 
@@ -33,6 +34,10 @@ export function RoleContextSelector({entry, variant, disabled = false, onSelecte
     value: candidate.roleAssignmentRef,
     label: `${candidate.roleName} · ${candidate.roleNodeName}`,
   }));
+  const renderOption = (option: {value?: unknown; label?: ReactNode}) => {
+    if (typeof option.value !== 'string') throw new Error('OPERATIONS_ROLE_CONTEXT_OPTION_ID_INVALID');
+    return <span {...testId(roleHomeTestIds.roleContext.option(option.value))}>{option.label}</span>;
+  };
 
   const select = async (roleAssignmentRef: string) => {
     if (submitting || locked || disabled) return;
@@ -75,6 +80,7 @@ export function RoleContextSelector({entry, variant, disabled = false, onSelecte
           style={{width: 288}}
           value={selectedRef}
           options={options}
+          optionRender={renderOption}
           labelRender={({label}) => (
             <EllipsisTooltip title={label}>
               <span>{label}</span>
@@ -115,6 +121,7 @@ export function RoleContextSelector({entry, variant, disabled = false, onSelecte
             aria-label="可选角色"
             value={draftAssignmentRef}
             options={options}
+            optionRender={renderOption}
             onChange={setDraftAssignmentRef}
             {...testId('operations-role-context-select')}
           />

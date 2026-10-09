@@ -3,7 +3,18 @@ import {spawn, spawnSync} from 'node:child_process';
 import {createRequire} from 'node:module';
 import {createServer} from 'node:net';
 import {once} from 'node:events';
-import {existsSync, readFileSync, statSync} from 'node:fs';
+import {
+  closeSync,
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  openSync,
+  readFileSync,
+  readSync,
+  statSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {afterAll, beforeAll, expect, it} from 'vitest';
@@ -100,12 +111,68 @@ let ownerExpo: ReturnType<typeof spawn> | undefined;
 let ownerExpoIdentity: TerminalAutomationProcessIdentity | undefined;
 let ownerSession: Awaited<ReturnType<NonNullable<typeof ownerDriver>['waitForSession']>> | undefined;
 
-const digest = (filePath: string): string => createHash('sha256').update(readFileSync(filePath)).digest('hex');
-const readZipEntry = (zipPath: string, entryName: string): Buffer => {
-  const result = spawnSync('unzip', ['-p', zipPath, entryName], {encoding: 'buffer'});
-  if (result.error || result.status !== 0 || !result.stdout.byteLength)
-    throw new Error(`TERMINAL_AUTOMATION_UPDATE_ZIP_ENTRY_READ_FAILED_${entryName}`);
-  return result.stdout;
+const digest = (filePath: string): string => {
+  const descriptor = openSync(filePath, 'r');
+  const hash = createHash('sha256');
+  const buffer = Buffer.allocUnsafe(64 * 1024);
+  try {
+    let bytesRead: number;
+    while ((bytesRead = readSync(descriptor, buffer, 0, buffer.byteLength, null)) > 0)
+      hash.update(buffer.subarray(0, bytesRead));
+  } finally {
+    closeSync(descriptor);
+  }
+  return hash.digest('hex');
+};
+const exportSeedArtifacts = (): void => {
+  if (process.env.R5_TERMINAL_UPDATE_SEED_ARTIFACT_EXPORT !== '1') return;
+  if (!runId || !runDirectory) throw new Error('TERMINAL_UPDATE_SEED_EXPORT_RUN_ID_REQUIRED');
+  const exportDirectory = path.join(runDirectory, 'update', 'seed-inputs');
+  mkdirSync(exportDirectory, {recursive: true, mode: 0o700});
+  const files: {key: string; app: string; kind: string; path: string; sha256: string; byteSize: number}[] = [];
+  for (const app of ['sample-terminal', 'sample-wallpaper-terminal']) {
+    const outputDirectory = path.join(runDirectory, 'update', app);
+    for (const item of [
+      {key: `${app}-full`, kind: 'FULL', source: `${app}-full.zip`},
+      {key: `${app}-full-manifest`, kind: 'FULL_MANIFEST', source: 'full.json', exported: `${app}-full.json`},
+      {key: `${app}-full-package`, kind: 'FULL_PACKAGE', source: 'full-package.json', exported: `${app}-full-package.json`},
+      {key: `${app}-hot`, kind: 'HOT', source: `${app}-hot.zip`},
+      {key: `${app}-hot-manifest`, kind: 'HOT_MANIFEST', source: 'hot.json', exported: `${app}-hot.json`},
+    ]) {
+      const source = path.join(outputDirectory, item.source);
+      const destination = path.join(exportDirectory, item.exported ?? item.source);
+      if (!existsSync(source) || !statSync(source).isFile()) throw new Error(`TERMINAL_UPDATE_SEED_EXPORT_SOURCE_MISSING_${item.key}`);
+      copyFileSync(source, destination, 0);
+      const stat = statSync(destination);
+      files.push({key: item.key, app, kind: item.kind, path: path.basename(destination), sha256: digest(destination), byteSize: stat.size});
+    }
+  }
+  const totalBytes = files.reduce((sum, file) => sum + file.byteSize, 0);
+  if (totalBytes > 1024 * 1024 * 1024) throw new Error('TERMINAL_UPDATE_SEED_EXPORT_TOTAL_BYTES_EXCEEDED');
+  const manifest = {schemaVersion: 1, kind: 'terminal-update-seed-input-manifest', sourceRunId: runId, files, totalBytes};
+  writeFileSync(path.join(exportDirectory, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`, {mode: 0o600, flag: 'wx'});
+  process.stdout.write(`TERMINAL_UPDATE_SEED_ARTIFACT_EXPORT=PASS run=${runId} files=${files.length} bytes=${totalBytes}\n`);
+};
+const extractZipEntry = (zipPath: string, entryName: string, destination: string): void => {
+  mkdirSync(path.dirname(destination), {recursive: true, mode: 0o700});
+  const descriptor = openSync(destination, 'wx', 0o600);
+  let result;
+  try {
+    result = spawnSync('unzip', ['-p', zipPath, entryName], {
+      encoding: 'utf8',
+      maxBuffer: 64 * 1024,
+      stdio: ['ignore', descriptor, 'pipe'],
+    });
+  } catch (error) {
+    closeSync(descriptor);
+    unlinkSync(destination);
+    throw error;
+  }
+  closeSync(descriptor);
+  if (result.error || result.status !== 0 || statSync(destination).size === 0) {
+    unlinkSync(destination);
+    throw new Error(`TERMINAL_AUTOMATION_UPDATE_ZIP_ENTRY_READ_FAILED_${path.basename(entryName)}`);
+  }
 };
 
 const nextPatchVersion = (version: string): string => {
@@ -254,11 +321,12 @@ it.skipIf(updateCase !== 'update.artifacts')(
       expect(digest(installApk)).toBe(install.apk.sha256);
       expect(fullPackage).toMatchObject({schemaVersion: 1, publicationId: full.publicationId});
       expect(digest(fullZip)).toBe(fullPackage.zip.sha256);
-      const packagedApk = readZipEntry(fullZip, fullPackage.apk.path);
-      expect(packagedApk.byteLength).toBeGreaterThan(0);
-      expect(createHash('sha256').update(packagedApk).digest('hex')).toBe(fullPackage.apk.sha256);
+      const packagedApkPath = path.join(outputDirectory, 'full-staging', 'full-package-verified.apk');
+      extractZipEntry(fullZip, fullPackage.apk.path, packagedApkPath);
+      expect(statSync(packagedApkPath).size).toBeGreaterThan(0);
+      expect(digest(packagedApkPath)).toBe(fullPackage.apk.sha256);
       expect(fullPackage.apk.sha256).toBe(full.apk.sha256);
-      expect(createHash('sha256').update(packagedApk).digest('hex')).toBe(digest(installApk));
+      expect(digest(packagedApkPath)).toBe(digest(installApk));
       const identity = {
         applicationId: install.applicationId,
         nativeVersion: packageJson.version,
@@ -293,6 +361,7 @@ it.skipIf(updateCase !== 'update.artifacts')(
       const runAndroidBuild = path.join(runDirectory, 'android-build', app);
       expect(existsSync(path.join(runDirectory, 'android-build', 'native', app, 'app'))).toBe(true);
     }
+    exportSeedArtifacts();
   },
   90 * 60 * 1000,
 );

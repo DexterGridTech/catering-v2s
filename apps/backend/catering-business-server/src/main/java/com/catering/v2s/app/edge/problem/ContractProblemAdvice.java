@@ -42,6 +42,8 @@ import com.catering.v2s.storeterminal.domain.PrinterSpecification;
 import com.catering.v2s.storeterminal.domain.TerminalConfiguration;
 import com.catering.v2s.terminalbinding.api.TerminalBindingOwnerApi;
 import com.catering.v2s.terminalbinding.application.TerminalBindingOwnerService;
+import com.catering.v2s.terminalupdate.application.TerminalUpdateArtifactOwnerService;
+import com.catering.v2s.terminalupdate.application.TerminalUpdateRuleOwnerService;
 import com.catering.v2s.workspace.iam.application.CommandExecutionContextResolver;
 import com.catering.v2s.workspace.iam.application.WorkspaceAccountService;
 import com.catering.v2s.workspace.iam.application.WorkspaceAssignmentScopeService;
@@ -292,7 +294,9 @@ public final class ContractProblemAdvice {
         WorkspaceAssignmentScopeService.AssignmentScopeNotFoundException.class,
         WorkspaceAdministrationService.WorkspaceNotFoundException.class,
         PlatformAssetService.AssetNotFoundException.class,
-        PlatformAuthenticationService.PlatformAdminNotFoundException.class
+        PlatformAuthenticationService.PlatformAdminNotFoundException.class,
+        TerminalUpdateArtifactOwnerService.TerminalUpdateArtifactNotFoundException.class,
+        TerminalUpdateRuleOwnerService.TerminalUpdateRuleNotFoundException.class
     })
     ResponseEntity<Problem> notFound(RuntimeException exception, HttpServletRequest request) {
         String code = exception instanceof WorkspaceInvitationService.InvitationNotFoundException
@@ -301,6 +305,31 @@ public final class ContractProblemAdvice {
                         ? "PLATFORM_ASSET_NOT_FOUND"
                         : "PLATFORM_COMMON_RESOURCE_NOT_FOUND";
         return problem(HttpStatus.NOT_FOUND, code, "请求的 owner 资源不存在", request);
+    }
+
+    @ExceptionHandler({
+        TerminalUpdateRuleOwnerService.TerminalUpdateRuleStaleStateException.class,
+        TerminalUpdateRuleOwnerService.TerminalUpdateRuleIdempotencyConflictException.class
+    })
+    ResponseEntity<Problem> terminalUpdateRuleConflict(RuntimeException exception, HttpServletRequest request) {
+        String code = exception instanceof TerminalUpdateRuleOwnerService.TerminalUpdateRuleIdempotencyConflictException
+                ? "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT"
+                : "PLATFORM_COMMON_VERSION_CONFLICT";
+        return problem(HttpStatus.CONFLICT, code, "规则已变化，请重新读取后再操作", request);
+    }
+
+    @ExceptionHandler({
+        TerminalUpdateRuleOwnerService.TerminalUpdateRuleInvalidException.class,
+        TerminalUpdateRuleOwnerService.TerminalUpdateRuleTargetInvalidException.class,
+        TerminalUpdateRuleOwnerService.TerminalUpdateRuleScopeMismatchException.class
+    })
+    ResponseEntity<Problem> terminalUpdateRuleInvalid(RuntimeException exception, HttpServletRequest request) {
+        String code = exception instanceof TerminalUpdateRuleOwnerService.TerminalUpdateRuleTargetInvalidException
+                ? "TERMINAL_UPDATE_RULE_TARGET_INVALID"
+                : exception instanceof TerminalUpdateRuleOwnerService.TerminalUpdateRuleScopeMismatchException
+                        ? "TERMINAL_UPDATE_SCOPE_MISMATCH"
+                        : "PLATFORM_COMMON_VALIDATION_FAILED";
+        return problem(HttpStatus.UNPROCESSABLE_ENTITY, code, "终端更新规则不满足 owner 约束", request);
     }
 
     /** Must stay more specific than the organization conflict fallback: no store reference detail crosses the edge. */

@@ -46,4 +46,15 @@ public class TerminalCredentialVerificationService implements TerminalCredential
                 facts.generation(),
                 facts.activatedAtEpochMillis());
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isCurrentActiveBinding(java.util.UUID workspaceUuid, String groupWorkspaceKey,
+            java.util.UUID terminalRef, long generation) {
+        var facts = persistence.readAuthenticationFacts(groupWorkspaceKey, terminalRef);
+        return facts != null && workspaceUuid.equals(facts.workspaceUuid()) && facts.generation() != null
+                && facts.generation() == generation && "ACTIVE".equals(facts.bindingStatus())
+                && "ENABLED".equals(facts.groupStatus()) && "ENABLED".equals(facts.terminalStatus())
+                && "ENABLED".equals(facts.storeStatus());
+    }
 }

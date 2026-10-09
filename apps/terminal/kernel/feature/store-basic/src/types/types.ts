@@ -20,6 +20,13 @@ export type StoreBasicReadStates = Readonly<Partial<Record<string, StoreReadStat
 export type StoreBasicFailures = Readonly<Partial<Record<string, string>>>;
 
 export type StoreBasicState = Readonly<{
+  loadReadiness: Readonly<{
+    runtimeId: string | null;
+    binding: StoreBasicBinding | null;
+    storeStatus: 'idle' | 'loading' | 'flushed' | 'failed';
+    projectStatus: 'idle' | 'loading' | 'flushed' | 'failed';
+    projectRef: string | null;
+  }>;
   binding: StoreBasicBinding | null;
   store: StoreFact<OrganizationStore> | null;
   operatingRules: StoreFact<OrganizationStoreOperatingRuleValues> | null;

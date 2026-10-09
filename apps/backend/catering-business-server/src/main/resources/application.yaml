@@ -5,8 +5,8 @@ spring:
     password: ${CATERING_BUSINESS_DB_PASSWORD:}
   servlet:
     multipart:
-      max-file-size: 5MB
-      max-request-size: 6MB
+      max-file-size: 256MB
+      max-request-size: 258MB
   flyway:
     locations: classpath:db/migration
     default-schema: public
@@ -25,3 +25,6 @@ v2s:
     browser-allowed-origins: ${V2S_TERMINAL_BROWSER_ALLOWED_ORIGINS:}
   seed:
     fixed-otp-value: ${V2S_SEED_OTP_FIXED_VALUE:}
+catering:
+  terminal-update:
+    android-build-tools-directory: ${TERMINAL_UPDATE_ANDROID_BUILD_TOOLS_DIRECTORY:}

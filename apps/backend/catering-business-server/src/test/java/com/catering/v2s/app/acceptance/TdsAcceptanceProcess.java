@@ -627,6 +627,7 @@ final class TdsAcceptanceProcess implements AutoCloseable {
         static final String HISTORY_OUTAGE_BOUNDED_SCENARIO_ID = "terminal.connection.history-outage-bounded";
         static final String VS13_CROSS_NODE_RECOVERY_SCENARIO_ID = "terminal.connection.vs13.cross-node-recovery";
         static final String TOPIC_SUBSCRIPTION_SCENARIO_ID = "terminal.connection.topic.active-store-subscription";
+        static final String TERMINAL_UPDATE_TOPIC_SCENARIO_ID = "terminal.connection.topic.terminal-update-rules";
         static final String REMOTE_COMMAND_SCENARIO_ID = "terminal.connection.remote-command";
         static final String VS15_NODE_ID = "vs15-acceptance-node";
         static final String VS13_NODE_A_ID = "vs13-acceptance-node-a";
@@ -645,6 +646,7 @@ final class TdsAcceptanceProcess implements AutoCloseable {
                 return new TdsStartConfiguration(VS13_NODE_A_ID, null);
             }
             if (TOPIC_SUBSCRIPTION_SCENARIO_ID.equals(scenario)) return new TdsStartConfiguration(null, null);
+            if (TERMINAL_UPDATE_TOPIC_SCENARIO_ID.equals(scenario)) return new TdsStartConfiguration(null, null);
             if (REMOTE_COMMAND_SCENARIO_ID.equals(scenario)) return new TdsStartConfiguration(null, null);
             throw new IllegalArgumentException("BACKEND_ACCEPTANCE_TDS_CONTRACT_SCENARIO_UNKNOWN");
         }

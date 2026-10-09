@@ -174,18 +174,16 @@ describe('sample-console integration owner-stage regressions', () => {
       full: null,
       hot: Object.freeze({sourceRef: 'fixture:hot', expectedSha256: hot.publicationId, artifact: hot}),
       strategy: Object.freeze({maxNetworkAttempts: 1, bootTimeoutMs: 30_000}),
-      selectionContext: Object.freeze({selectedSpace: 'development', contextIdentity: 'startup-confirm-test'}),
+      selectionContext: Object.freeze({selectedSpace: 'development', contextIdentity: 'startup-confirm-test', ruleRef: 'startup-confirm-rule'}),
     });
     const confirmations: Array<Readonly<{bootToken: string; publicationId: string}>> = [];
     let appliedActionId: string | null = null;
-    let appliedTaskId: string | null = null;
     const success = <T,>(value: T): PortResult<T> => ({status: 'succeeded', value, completedAt: 1 as TimestampMs});
     const updatePort: UpdatePort = {
       readFacts: async () => success(facts),
       prepareArtifact: async () => success({preparedId: 'prepared-hot', artifact: hot}),
       applyPrepared: async input => {
         appliedActionId = input.actionId;
-        appliedTaskId = input.taskId;
         return success({
           actionId: input.actionId,
           taskId: input.taskId,
@@ -198,14 +196,7 @@ describe('sample-console integration owner-stage regressions', () => {
       readAction: async () => success(null),
       confirmBoot: async input => {
         confirmations.push(input);
-        return success({
-          actionId: appliedActionId ?? '',
-          taskId: appliedTaskId ?? '',
-          state: 'accepted',
-          reason: null,
-          publicationId: input.publicationId,
-          bootId: input.bootToken,
-        });
+        return success({confirmed: true as const});
       },
       releasePrepared: async () => success({released: true}),
     };
@@ -301,7 +292,7 @@ describe('sample-console integration owner-stage regressions', () => {
       full: Object.freeze({sourceRef: 'fixture:full', expectedSha256: full.publicationId, artifact: full}),
       hot: Object.freeze({sourceRef: 'fixture:hot', expectedSha256: hot.publicationId, artifact: hot}),
       strategy: Object.freeze({maxNetworkAttempts: 0, bootTimeoutMs: 30_000}),
-      selectionContext: Object.freeze({selectedSpace: 'development', contextIdentity: 'full-action-resume'}),
+      selectionContext: Object.freeze({selectedSpace: 'development', contextIdentity: 'full-action-resume', ruleRef: 'full-action-resume-rule'}),
     });
     const task = Object.freeze({
       taskId: 'full-action-resume-task',
@@ -365,16 +356,7 @@ describe('sample-console integration owner-stage regressions', () => {
         ),
       readAction: async () => succeeded(action(++readActionCount === 1 ? 'accepted' : 'succeeded')),
       confirmBoot: vi.fn<UpdatePort['confirmBoot']>(async input =>
-        succeeded(
-          Object.freeze({
-            taskId: task.taskId,
-            actionId: task.actionId!,
-            state: 'accepted' as const,
-            reason: null,
-            publicationId: input.publicationId,
-            bootId: input.bootToken,
-          }),
-        ),
+        succeeded(Object.freeze({confirmed: true as const})),
       ),
       releasePrepared: async () => succeeded({released: true}),
     };

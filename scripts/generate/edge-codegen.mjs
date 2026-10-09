@@ -1443,6 +1443,8 @@ function resolvedSchema(schema, components, seen = new Set()) {
     merged.required.push(...(resolved.required || []));
     if (resolved.additionalProperties === false) merged.additionalProperties = false;
   }
+  Object.assign(merged.properties, schema.properties || {});
+  merged.required.push(...(schema.required || []));
   merged.required = [...new Set(merged.required)];
   return merged;
 }
@@ -2252,6 +2254,27 @@ function selfTest() {
       recursive: true,
       filter: source => !source.includes('/build') && !source.includes('/dist') && !source.includes('/.git'),
     });
+    writeOutputs(scratch);
+    const ruleDetailPath = path.join(scratch, targets.wireJavaRoot, 'TerminalUpdateRuleDetail.java');
+    const ruleDetailSource = fs.readFileSync(ruleDetailPath, 'utf8');
+    if (!ruleDetailSource.includes('java.util.List<java.util.UUID> storeRefs'))
+      fail('R5_EDGE_ALLOF_SIBLING_PROPERTIES_NOT_GENERATED');
+    const terminalUpdateSchemasPath = path.join(
+      scratch,
+      'contracts/openapi/components/terminal-update/terminal-update.schemas.json',
+    );
+    const terminalUpdateSchemasSource = fs.readFileSync(terminalUpdateSchemasPath, 'utf8');
+    const terminalUpdateSchemas = JSON.parse(terminalUpdateSchemasSource);
+    delete terminalUpdateSchemas.components.schemas.TerminalUpdateRuleDetail.properties.storeRefs;
+    terminalUpdateSchemas.components.schemas.TerminalUpdateRuleDetail.required = [];
+    fs.writeFileSync(terminalUpdateSchemasPath, normalized(terminalUpdateSchemas));
+    try {
+      checkOutputs(scratch);
+      fail('R5_EDGE_ALLOF_SIBLING_PROPERTIES_DRIFT_RED_NOT_DETECTED');
+    } catch (error) {
+      if (error.code !== 'R5_EDGE_CODEGEN_DRIFT') throw error;
+    }
+    fs.writeFileSync(terminalUpdateSchemasPath, terminalUpdateSchemasSource);
     writeOutputs(scratch);
     const previousProjectionMode = process.env.V2S_BACKEND_PERFORMANCE_PROJECTION_MODE;
     process.env.V2S_BACKEND_PERFORMANCE_PROJECTION_MODE = 'IDENTITY_ONLY';

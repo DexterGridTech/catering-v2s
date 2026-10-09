@@ -14,6 +14,7 @@ import {
   terminalHeartbeatTickCommand,
   terminalRemoteOperationMutationCommand,
   terminalTransportEventCommand,
+  terminalDataHeartbeatCommand,
   readTerminalDataCommand,
 } from '../src/features/commands/terminalDataClientCommands';
 import {
@@ -1327,6 +1328,10 @@ describe('terminal-data-client activation command actor', () => {
       reportHttpAddressAvailable: vi.fn(async () => undefined),
     };
     const diagnostics = createActivationTestLogger();
+    const dispatchCommand = vi.fn(async (definition: CommandDefinition) => {
+      if (definition.commandName === terminalDataHeartbeatCommand.commandName) throw new Error('consumer-fixture-rejection');
+      return {status: 'completed' as const};
+    });
     const actor = createTerminalDataClientActor({
       transport,
       businessServerName: 'terminal-business-api',
@@ -1352,7 +1357,7 @@ describe('terminal-data-client activation command actor', () => {
         },
         flushPersistence: async () => ({status: 'succeeded'}),
         subscribeState: () => () => undefined,
-        dispatchCommand: async () => ({status: 'completed'}),
+        dispatchCommand,
         requestApplicationReset: () => undefined,
       }) as unknown as ActorExecutionContext;
     const findHandler = (commandName: string): NonNullable<(typeof actor.actor.handlers)[number]> => {
@@ -1415,6 +1420,19 @@ describe('terminal-data-client activation command actor', () => {
       lastRttMs: 1_237,
       samples: [{rttMs: 1_237, observedAt: now}],
     });
+    expect(dispatchCommand).toHaveBeenCalledWith(terminalDataHeartbeatCommand, expect.objectContaining({
+      bindingGeneration: 8,
+      sessionId: 'session-1',
+      sequence: 1,
+      observedAt: now,
+      rttMs: 1_237,
+    }));
+    await Promise.resolve();
+    expect(transport.invalid).not.toHaveBeenCalled();
+    expect(diagnostics.events).toContainEqual(expect.objectContaining({
+      event: 'heartbeat-consumer-rejected',
+      data: {code: 'LOCAL_CONSUMER_REJECTED'},
+    }));
     expect(diagnostics.events).toContainEqual(
       expect.objectContaining({
         category: 'terminal.connection.heartbeat',

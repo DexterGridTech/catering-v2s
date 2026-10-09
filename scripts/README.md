@@ -156,12 +156,16 @@ from being reported as a fresh technical PASS.
 “seed” 的唯一公开入口是：
 
 ```bash
-scripts/dev/seed --profile r5-full --dry-run
-R5_SEED_CONFIRMATION=EXPLICIT_R5_SEED scripts/dev/seed --profile r5-full
+R5_TERMINAL_UPDATE_SEED_SOURCE_RUN_ID=<成功的update.artifacts runId> scripts/dev/seed --profile r5-full --dry-run
+R5_TERMINAL_UPDATE_SEED_SOURCE_RUN_ID=<同一runId> R5_SEED_CONFIRMATION=EXPLICIT_R5_SEED scripts/dev/seed --profile r5-full
 ```
 
-它依次装载 R5 基础 owner facts 与 catalog/inventory 体验数据，不能选择或宣称单独的
-catalog/inventory 部分 seed。父 receipt 在 `.runtime/r5/seed/complete/`，有序链接两个子报告；
+它依次装载 R5 基础 owner facts、catalog/inventory 体验数据、门店终端以及 TER 更新域体验数据，不能选择或宣称单独的
+catalog/inventory 部分 seed。TER 更新域需要一个成功的本仓受管 `update.artifacts` run；先设置
+`R5_TERMINAL_UPDATE_SEED_ARTIFACT_EXPORT=1`，经 `scripts/test/terminal-automation.mjs --phase update --platform web --shape mobile --case update.artifacts`
+构建两个 Android App 的 FULL/HOT ZIP、descriptor 与 FULL package record，并导出到该 run 的
+`.runtime/terminal-automation/<runId>/update/seed-inputs/`。导入前 plan 会验证 run manifest、十个文件、路径边界、SHA-256、artifact schema 与 FULL/HOT 身份；完整seed成功后只删除该 run 的 `update/seed-inputs/` 导入副本，automation日志仍留在原run证据目录。
+父 receipt 在 `.runtime/r5/seed/complete/`，有序链接四个主阶段与两个 owner 后置步骤；
 任一组件的 business、cleanup、同一 managed DEV run 或 readback 不通过，完整 seed 即失败。
 `start/restart` 永不隐式 seed，seed 也不会自动 stop/reset/start；失败的部分体验数据只由下一次
 显式 reset 清理。
@@ -219,6 +223,16 @@ discovered/selected/results exact、join 完整、business PASS 且本机/远端
 - 测试失败不自动重启，原先没有 DEV 也不补启动；restart 不 seed，且 restart 自身的 business/cleanup/first-failure 证据必须单列。
 
 该隐含授权只覆盖受管 DEV stop/start，不覆盖 reset、seed、浏览器 L2、UAT 或任何数据动作。
+
+终端更新工件校验在远端 Java 主机调用 Android SDK Build Tools 36.0.0 的 `aapt2` 与
+`apksigner`。如该受管主机尚未安装，先确认当前 DEV manifest 有效，再运行
+`node scripts/dev/prepare-terminal-update-build-tools.mjs prepare`。入口核对同一 manifest
+绑定的 host、boot id、PID、start ticks 和命令摘要，从 Android 官方站点下载带固定 SHA-256 的
+Command-line Tools，并由官方当前推荐的 `android sdk install build-tools/36.0.0` 安装所需 Build Tools。安装包只暂存于当前 run-owned
+远端临时目录，结束后按日志与 manifest 读回清理；SDK 本身保留在远端
+`$HOME/.cache/catering-v2s/android-sdk/build-tools/36.0.0`。DEV Java 启动会预检版本和两个可执行文件，
+并通过 `TERMINAL_UPDATE_ANDROID_BUILD_TOOLS_DIRECTORY` 将同一路径交给工件解析器。该步骤不修改
+本机 SDK，也不改变 DEV 数据或服务拓扑。
 
 ### DEV 拓扑显式读回（必须先确认）
 

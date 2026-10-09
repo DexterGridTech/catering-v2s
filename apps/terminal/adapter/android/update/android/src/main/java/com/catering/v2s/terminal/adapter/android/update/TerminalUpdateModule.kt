@@ -30,12 +30,13 @@ class TerminalUpdateModule : Module() {
       expectedSha256: String,
       artifactJson: String,
       kind: String,
+      downloadGrant: String?,
       proxy: ReadableMap? ->
       Log.i("TerminalUpdate", "event=artifact-prepare-start kind=$kind timeoutMs=${timeoutMs.toLong()}")
       try {
         val context = appContext.reactContext?.applicationContext ?: error("TERMINAL_UPDATE_APPLICATION_NOT_READY")
         val prepared = TerminalUpdateArtifactPreparer.prepare(
-          context, downloadUrl, expectedSha256, artifactJson, kind, timeoutMs.toLong(), proxy,
+          context, downloadUrl, expectedSha256, artifactJson, kind, timeoutMs.toLong(), downloadGrant, proxy,
         )
         Log.i("TerminalUpdate", "event=artifact-prepare-complete kind=$kind")
         mapOf("preparedId" to prepared.id)

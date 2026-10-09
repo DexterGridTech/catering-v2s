@@ -18,7 +18,7 @@ const initialState: TerminalClientState = Object.freeze({
   credential: null,
   pendingActivations: Object.freeze({}),
   activationStatus: 'inactive',
-  connection: Object.freeze({status: 'stopped', addressName: null, nodeId: null, lastCloseReason: null}),
+  connection: Object.freeze({status: 'stopped', addressName: null, nodeId: null, sessionId: null, lastCloseReason: null}),
   heartbeatIntervalMs: null,
   nextPingSequence: 1,
   lastRttMs: 0,
@@ -64,9 +64,9 @@ const definition = createSlice({
     },
     sessionReady: (
       state,
-      action: PayloadAction<Readonly<{nodeId: string; heartbeatIntervalMs: number; observedAt: number}>>,
+      action: PayloadAction<Readonly<{sessionId: string; nodeId: string; heartbeatIntervalMs: number; observedAt: number}>>,
     ) => {
-      state.connection = {...state.connection, status: 'connected', nodeId: action.payload.nodeId};
+      state.connection = {...state.connection, status: 'connected', nodeId: action.payload.nodeId, sessionId: action.payload.sessionId};
       state.heartbeatIntervalMs = action.payload.heartbeatIntervalMs;
       const maxSamples = Math.floor(7_200_000 / action.payload.heartbeatIntervalMs);
       const cutoff = action.payload.observedAt - 7_200_000;
@@ -196,7 +196,7 @@ const definition = createSlice({
       state.remoteOperations = {};
     },
     clearConnection: state => {
-      state.connection = {...state.connection, status: 'stopped', addressName: null, nodeId: null};
+      state.connection = {...state.connection, status: 'stopped', addressName: null, nodeId: null, sessionId: null};
       state.heartbeatIntervalMs = null;
       state.nextPingSequence = 1;
       state.lastRttMs = 0;

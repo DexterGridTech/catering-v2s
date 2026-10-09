@@ -46,7 +46,7 @@ class OperationsAuditHistoryControllerTest {
             assertEquals(
                     0L,
                     fixture.controller
-                            .history(fixture.request, WORKSPACE_KEY, entityType, id.toString(), 1, 10)
+                            .history(fixture.request, WORKSPACE_KEY, entityType, id.toString(), null, 1, 10)
                             .total());
         }
         verify(fixture.reads, org.mockito.Mockito.times(14))
@@ -59,7 +59,7 @@ class OperationsAuditHistoryControllerTest {
         assertThrows(
                 com.catering.v2s.app.edge.problem.InvalidEdgeRequestException.class,
                 () -> fixture.controller.history(
-                        fixture.request, WORKSPACE_KEY, "WORKSPACE_ACCOUNT", "not-a-uuid", 1, 10));
+                        fixture.request, WORKSPACE_KEY, "WORKSPACE_ACCOUNT", "not-a-uuid", null, 1, 10));
         assertThrows(
                 com.catering.v2s.app.edge.problem.InvalidEdgeRequestException.class,
                 () -> fixture.controller.history(
@@ -67,6 +67,7 @@ class OperationsAuditHistoryControllerTest {
                         WORKSPACE_KEY,
                         "WORKSPACE_ACCOUNT",
                         UUID.randomUUID().toString(),
+                        null,
                         0,
                         10));
         assertThrows(
@@ -76,6 +77,7 @@ class OperationsAuditHistoryControllerTest {
                         WORKSPACE_KEY,
                         "WORKSPACE_ACCOUNT",
                         UUID.randomUUID().toString(),
+                        null,
                         Long.MAX_VALUE,
                         2));
         assertThrows(
@@ -85,6 +87,7 @@ class OperationsAuditHistoryControllerTest {
                         WORKSPACE_KEY,
                         "WORKSPACE_ACCOUNT",
                         UUID.randomUUID().toString(),
+                        null,
                         Long.MAX_VALUE,
                         1));
         org.mockito.Mockito.verifyNoInteractions(fixture.reads);

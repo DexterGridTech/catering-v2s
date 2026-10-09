@@ -40,6 +40,7 @@ internal object TerminalUpdateArtifactPreparer {
     artifactJson: String,
     kind: String,
     timeoutMs: Long,
+    downloadGrant: String?,
     proxy: ReadableMap?,
   ): Prepared {
     require(kind == "full" || kind == "hot") { "TERMINAL_UPDATE_KIND_INVALID" }
@@ -55,7 +56,10 @@ internal object TerminalUpdateArtifactPreparer {
     try {
       File(directory, "artifact.json").writeText(artifact.toString(), Charsets.UTF_8)
       val archive = File(directory, "candidate.zip")
-      download(context, downloadUrl, expectedSha256.lowercase(), timeoutMs, proxy, archive)
+      if (downloadGrant != null) require(downloadGrant.matches(Regex("[A-Za-z0-9_-]{43}"))) {
+        "TERMINAL_UPDATE_DOWNLOAD_GRANT_INVALID"
+      }
+      download(context, downloadUrl, expectedSha256.lowercase(), timeoutMs, downloadGrant, proxy, archive)
       if (kind == "hot") extractHot(archive, directory, artifact)
       else validateFull(context, extractFull(archive, directory, artifact), artifact)
       Log.i(TAG, "event=artifact-prepared kind=$kind bytes=${archive.length()} files=${artifact.optJSONArray("files")?.length() ?: 0}")
@@ -97,7 +101,7 @@ internal object TerminalUpdateArtifactPreparer {
     return directory
   }
 
-  private suspend fun download(context: Context, url: String, expectedSha: String, timeoutMs: Long, proxy: ReadableMap?, target: File) {
+  private suspend fun download(context: Context, url: String, expectedSha: String, timeoutMs: Long, downloadGrant: String?, proxy: ReadableMap?, target: File) {
     val builder = OkHttpClient.Builder()
       .connectTimeout(10, TimeUnit.SECONDS)
       .readTimeout(timeoutMs, TimeUnit.MILLISECONDS)
@@ -119,7 +123,9 @@ internal object TerminalUpdateArtifactPreparer {
         })
       }
     }
-    val call = builder.build().newCall(Request.Builder().url(url).get().build())
+    val request = Request.Builder().url(url).get()
+    if (downloadGrant != null) request.header("X-Terminal-Update-Grant", downloadGrant)
+    val call = builder.build().newCall(request.build())
     suspendCancellableCoroutine<Unit> { continuation ->
       continuation.invokeOnCancellation { call.cancel() }
       call.enqueue(object : Callback {

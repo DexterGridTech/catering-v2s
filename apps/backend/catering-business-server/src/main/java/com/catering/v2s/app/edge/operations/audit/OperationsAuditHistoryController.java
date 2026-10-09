@@ -33,6 +33,7 @@ public final class OperationsAuditHistoryController {
             @RequestParam String groupWorkspaceKey,
             @RequestParam String entityType,
             @RequestParam String entityId,
+            @RequestParam(required = false) String projectRef,
             @RequestParam(defaultValue = "1") long page,
             @RequestParam(defaultValue = "20") long pageSize) {
         var facts = sessions.requireWorkspaceReadFacts(request, groupWorkspaceKey);
@@ -60,6 +61,8 @@ public final class OperationsAuditHistoryController {
                             target, page, pageSize);
                     case AuditEntityTypes.TERMINAL_BINDING -> new OperationsAuditQuery.TerminalBinding(
                             target, page, pageSize);
+                    case AuditEntityTypes.TERMINAL_UPDATE_RULE -> new OperationsAuditQuery.TerminalUpdateRule(
+                            target, uuid(projectRef == null ? "" : projectRef), page, pageSize);
                     default -> throw new InvalidEdgeRequestException("unsupported operations audit target");
                 });
         return AuditHistoryWireMapper.page(result);

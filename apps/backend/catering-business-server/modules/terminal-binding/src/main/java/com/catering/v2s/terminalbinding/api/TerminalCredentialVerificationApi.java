@@ -10,6 +10,9 @@ import java.util.UUID;
 public interface TerminalCredentialVerificationApi {
     Verification verify(Credential credential);
 
+    /** Current non-secret binding check for short-lived capability authorization after initial credential verification. */
+    boolean isCurrentActiveBinding(UUID workspaceUuid, String groupWorkspaceKey, UUID terminalRef, long generation);
+
     enum Outcome {
         VERIFIED,
         CREDENTIAL_INVALID,

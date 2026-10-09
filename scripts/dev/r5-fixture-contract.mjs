@@ -22,6 +22,8 @@ const COUNT_KEYS = Object.freeze([
   "invitationStateFixtures",
   "passwordResetStateFixtures",
   "contracts",
+  "terminalUpdateArtifacts",
+  "terminalUpdateRules",
 ]);
 
 export const R5_FIXTURE_EXPECTED_COUNT_KEYS = COUNT_KEYS;
@@ -66,6 +68,7 @@ export function computeFixtureExpectedCounts(fixture) {
   const stable = fixture?.stableFixtures;
   const organization = stable?.organization;
   const workspaceIam = stable?.workspaceIam;
+  const terminalUpdate = stable?.terminalUpdate;
   const projects = collection(organization?.projects, "organization.projects");
   const assets = collection(stable?.assets, "assets");
   const storeServicePoints = organization?.storeServicePoints;
@@ -93,6 +96,8 @@ export function computeFixtureExpectedCounts(fixture) {
     invitationStateFixtures: collection(workspaceIam?.invitationStates, "workspaceIam.invitationStates").length,
     passwordResetStateFixtures: collection(workspaceIam?.passwordResetStates, "workspaceIam.passwordResetStates").length,
     contracts: collection(stable?.contracts, "contracts").length,
+    terminalUpdateArtifacts: collection(terminalUpdate?.artifacts, "terminalUpdate.artifacts").length,
+    terminalUpdateRules: collection(terminalUpdate?.rules, "terminalUpdate.rules").length,
   });
 }
 
@@ -155,6 +160,59 @@ export function validateFixtureContractPhaseNames(fixture) {
   return Object.freeze({contractCount: collection(stable?.contracts, "contracts").length});
 }
 
+export function validateTerminalUpdateSeedFixture(fixture) {
+  const terminalUpdate = fixture?.stableFixtures?.terminalUpdate;
+  const artifacts = collection(terminalUpdate?.artifacts, "terminalUpdate.artifacts");
+  const rules = collection(terminalUpdate?.rules, "terminalUpdate.rules");
+  if (artifacts.length !== 4 || rules.length !== 8) throw new Error("R5_TERMINAL_UPDATE_FIXTURE_DENOMINATOR_INVALID");
+  const artifactByKey = new Map();
+  for (const artifact of artifacts) {
+    if (!artifact || typeof artifact.key !== "string" || artifactByKey.has(artifact.key) ||
+        !["sample-terminal", "sample-wallpaper-terminal"].includes(artifact.app) ||
+        !["FULL", "HOT"].includes(artifact.kind)) throw new Error("R5_TERMINAL_UPDATE_ARTIFACT_FIXTURE_INVALID");
+    artifactByKey.set(artifact.key, artifact);
+  }
+  for (const app of ["sample-terminal", "sample-wallpaper-terminal"]) {
+    const pair = artifacts.filter((artifact) => artifact.app === app);
+    const full = pair.find((artifact) => artifact.kind === "FULL");
+    const hot = pair.find((artifact) => artifact.kind === "HOT");
+    if (pair.length !== 2 || !full || !hot || hot.minimumFullKey !== full.key) {
+      throw new Error(`R5_TERMINAL_UPDATE_ARTIFACT_PAIR_INVALID:${app}`);
+    }
+  }
+  const keys = new Set();
+  for (const rule of rules) {
+    const full = artifactByKey.get(rule?.fullArtifactKey);
+    const hot = rule?.hotArtifactKey == null ? null : artifactByKey.get(rule.hotArtifactKey);
+    if (!rule || typeof rule.key !== "string" || keys.has(rule.key) ||
+        !["sample-terminal", "sample-wallpaper-terminal"].includes(rule.app) ||
+        !["ALL", "STORE_REFS"].includes(rule.targetMode) || !Array.isArray(rule.storeKeys) ||
+        (rule.targetMode === "ALL" && rule.storeKeys.length !== 0) ||
+        (rule.targetMode === "STORE_REFS" && (rule.storeKeys.length === 0 || rule.storeKeys.some((key) => typeof key !== "string"))) ||
+        !full || full.app !== rule.app || full.kind !== "FULL" ||
+        (rule.hotArtifactKey != null && (!hot || hot.app !== rule.app || hot.kind !== "HOT" || hot.minimumFullKey !== full.key)) ||
+        !["ENABLED", "DISABLED"].includes(rule.status) || rule.nSeconds !== 300 ||
+        !["IMMEDIATE", "IDLE"].includes(rule.hotStrategy) ||
+        (rule.hotStrategy === "IMMEDIATE" && rule.mSeconds !== null) ||
+        (rule.hotStrategy === "IDLE" && rule.mSeconds !== 600)) {
+      throw new Error(`R5_TERMINAL_UPDATE_RULE_FIXTURE_INVALID:${rule?.key ?? "UNKNOWN"}`);
+    }
+    keys.add(rule.key);
+  }
+  const roleGroup = fixture?.stableFixtures?.workspaceIam?.roles?.find((role) => role.key === "role-group");
+  const roleProject = fixture?.stableFixtures?.workspaceIam?.roles?.find((role) => role.key === "role-project");
+  const roleStore = fixture?.stableFixtures?.workspaceIam?.roles?.find((role) => role.key === "role-store");
+  if (!roleGroup?.pageAccessKeys?.includes("PG-PROJECT-TERMINAL-VERSION-RULES") ||
+      !roleGroup.actionCapabilityKeys?.includes("MANAGE_PROJECT_TERMINAL_VERSION") ||
+      !roleProject?.pageAccessKeys?.includes("PG-PROJECT-TERMINAL-VERSION-RULES") ||
+      roleProject.actionCapabilityKeys?.includes("MANAGE_PROJECT_TERMINAL_VERSION") ||
+      roleStore?.pageAccessKeys?.includes("PG-PROJECT-TERMINAL-VERSION-RULES") ||
+      roleStore?.actionCapabilityKeys?.includes("MANAGE_PROJECT_TERMINAL_VERSION")) {
+    throw new Error("R5_TERMINAL_UPDATE_ROLE_BOUNDARY_INVALID");
+  }
+  return Object.freeze({artifacts: artifacts.length, rules: rules.length});
+}
+
 export function validateFixtureContract(fixture) {
   if (fixture?.profile?.middleware?.tdp !== "FORBIDDEN") {
     throw new Error("R5_SEED_FIXTURE_TDP_MUST_BE_FORBIDDEN");
@@ -162,5 +220,6 @@ export function validateFixtureContract(fixture) {
   const counts = validateFixtureExpectedCounts(fixture);
   const stages = validateFixtureSeedStages(fixture);
   const phaseNames = validateFixtureContractPhaseNames(fixture);
-  return Object.freeze({...counts, ...stages, ...phaseNames});
+  const terminalUpdate = validateTerminalUpdateSeedFixture(fixture);
+  return Object.freeze({...counts, ...stages, ...phaseNames, ...terminalUpdate});
 }

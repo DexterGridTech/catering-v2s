@@ -89,14 +89,16 @@ export const createTerminalUpdateAutomationFixture = (
       sourceRef: `run:${runId}:full`,
       expectedSha256: mode === 'compatibility' ? compatibilityFull.publicationId : targetArtifact.publicationId,
       artifact: mode === 'compatibility' ? compatibilityFull : targetArtifact,
+      manifest: mode === 'compatibility' ? compatibilityFull : targetArtifact,
     }),
     hot: Object.freeze({
       sourceRef: `run:${runId}:hot`,
       expectedSha256: mode === 'compatibility' ? compatibilityHot.publicationId : targetArtifact.publicationId,
       artifact: mode === 'compatibility' ? compatibilityHot : targetArtifact,
+      manifest: mode === 'compatibility' ? compatibilityHot : targetArtifact,
     }),
     strategy: Object.freeze({maxNetworkAttempts: 2, bootTimeoutMs: 60_000}),
-    selectionContext: Object.freeze({selectedSpace: 'development', contextIdentity: runId}),
+    selectionContext: Object.freeze({selectedSpace: 'development', contextIdentity: runId, ruleRef: `automation-${runId}`}),
   });
 
   let currentAction: UpdateAction | null = null;
@@ -155,7 +157,8 @@ export const createTerminalUpdateAutomationFixture = (
 
   const sourceProvider: UpdateTargetSourceProvider = {
     readTarget: async selectionContext =>
-      selectionContext.contextIdentity === runId && selectionContext.selectedSpace === 'development' ? target : null,
+      selectionContext.contextIdentity === runId && selectionContext.selectedSpace === 'development' &&
+      selectionContext.ruleRef === target.ruleRef ? target : null,
     resolveSourcePath: sourceRef =>
       sourceRef === target.full?.sourceRef
         ? '/fixtures/full.zip'

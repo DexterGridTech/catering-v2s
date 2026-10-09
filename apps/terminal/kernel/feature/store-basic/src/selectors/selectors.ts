@@ -56,6 +56,7 @@ const selectStoreBasicTopicStateImplementation = (root: StateRoot, topicKey: Ter
   const state = selectStoreBasicState(root);
   return Object.freeze({status: state.readStates[topicKey] ?? 'idle', errorCode: state.failures[topicKey] ?? null});
 };
+const selectStoreBasicLoadReadinessImplementation = (root: StateRoot) => selectStoreBasicState(root).loadReadiness;
 
 export const selectActiveContracts = defineStateSelector(moduleName, 'selectActiveContracts', {
   parameters: [],
@@ -80,6 +81,10 @@ export const selectStoreBasicBinding = defineStateSelector(moduleName, 'selectSt
 export const selectStoreBasicState = defineStateSelector(moduleName, 'selectStoreBasicState', {
   parameters: [],
   selector: selectStoreBasicStateImplementation,
+});
+export const selectStoreBasicLoadReadiness = defineStateSelector(moduleName, 'selectStoreBasicLoadReadiness', {
+  parameters: [],
+  selector: selectStoreBasicLoadReadinessImplementation,
 });
 export const selectStoreBasicTopicState = defineStateSelector(moduleName, 'selectStoreBasicTopicState', {
   parameters: [

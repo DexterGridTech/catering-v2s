@@ -11,6 +11,7 @@ import com.catering.v2s.organization.api.OrganizationTaskPathLookup.StoreProject
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup.TaskPath;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup.TaskPathNode;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup.TaskPathRef;
+import com.catering.v2s.organization.api.OrganizationTaskPathLookup.PersistedStoreFact;
 import com.catering.v2s.organization.application.BusinessEntityService;
 import com.catering.v2s.organization.application.OrganizationTaskPathService;
 import com.catering.v2s.platform.foundation.contract.ServiceNodeTypes;
@@ -418,6 +419,44 @@ public class OrganizationTaskPathPersistence {
                 || !result.keySet().equals(requested))
             throw new OrganizationTaskPathService.TaskPathNotFoundException();
         return result;
+    }
+
+    /** Presentation-only lookup for an owner's immutable Store refs; out-of-project refs are intentionally absent. */
+    public Map<UUID, PersistedStoreFact> describePersistedStoresInProject(
+            UUID workspaceUuid, String key, UUID projectRef, List<UUID> storeRefs) {
+        if (workspaceUuid == null || key == null || projectRef == null || storeRefs == null || storeRefs.size() > 100)
+            throw new OrganizationTaskPathService.TaskPathNotFoundException();
+        LinkedHashSet<UUID> requested = new LinkedHashSet<>();
+        for (UUID ref : storeRefs) {
+            if (ref == null || !requested.add(ref))
+                throw new OrganizationTaskPathService.TaskPathNotFoundException();
+        }
+        if (requested.isEmpty()) return Map.of();
+        return jdbc.query(
+                "SELECT id,code,name,status FROM organization.store "
+                        + "WHERE workspace_uuid=? AND group_workspace_key=? AND project_id=? AND id IN ("
+                        + placeholders(requested.size()) + ")",
+                statement -> {
+                    int index = 1;
+                    statement.setObject(index++, workspaceUuid);
+                    statement.setString(index++, key);
+                    statement.setObject(index++, projectRef);
+                    for (UUID ref : requested) statement.setObject(index++, ref);
+                },
+                rows -> {
+                    LinkedHashMap<UUID, PersistedStoreFact> facts = new LinkedHashMap<>();
+                    while (rows.next()) {
+                        UUID ref = rows.getObject("id", UUID.class);
+                        String status = rows.getString("status");
+                        if (!requested.contains(ref)
+                                || !Set.of("ENABLED", "DISABLED", "VOIDED").contains(status)
+                                || facts.put(ref, new PersistedStoreFact(ref, rows.getString("code"),
+                                        rows.getString("name"), status)) != null) {
+                            throw new OrganizationTaskPathService.TaskPathNotFoundException();
+                        }
+                    }
+                    return Map.copyOf(facts);
+                });
     }
 
     private static List<TaskPathNode> pathNodes(java.sql.ResultSet rows) throws SQLException {

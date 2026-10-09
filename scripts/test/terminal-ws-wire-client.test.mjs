@@ -572,6 +572,26 @@ test('TDS STORE topic subscription is a bounded authenticated wire contract', ()
   assert.throws(() => parseControlRequest(JSON.stringify(control)), /TERMINAL_WIRE_TOPIC_SUBSCRIPTION_INVALID/);
 });
 
+test('TDS terminal update topic subscription is a bounded authenticated wire contract', () => {
+  const scenario = 'terminal.connection.topic.terminal-update-rules';
+  assert.ok(wireClientSource.includes(`const TERMINAL_UPDATE_TOPIC_SCENARIO = '${scenario}'`));
+  assert.ok(terminalAcceptanceSource.includes(`"TERMINAL_UPDATE_RULES", fixture.fixture().projectId().toString()`));
+  assert.ok(tdsAcceptanceProcessSource.includes(`TERMINAL_UPDATE_TOPIC_SCENARIO_ID = "${scenario}"`));
+  const control = validRequest();
+  control.scenario = scenario;
+  delete control.expectedClose;
+  control.topicSubscription = {
+    subscriptionId: '8f9d3b15-ef5a-452a-9c8b-1100ae20dcb1',
+    topicKey: 'TERMINAL_UPDATE_RULES',
+    ownerRef: '66abf394-3b77-487a-a344-5a8209dfd573',
+    lastAcceptedTimeEpochMillis: 0,
+  };
+  const parsed = parseControlRequest(JSON.stringify(control));
+  assert.equal(parsed.topicSubscription.topicKey, 'TERMINAL_UPDATE_RULES');
+  control.topicSubscription.topicKey = 'STORE';
+  assert.throws(() => parseControlRequest(JSON.stringify(control)), /TERMINAL_WIRE_TOPIC_SUBSCRIPTION_INVALID/);
+});
+
 test('terminal wire control rejects unbounded, ambiguous, external and malformed credential input', () => {
   assert.throws(() => parseControlRequest('x'.repeat(8193)), /TERMINAL_WIRE_CONTROL_SIZE_INVALID/);
   assert.throws(

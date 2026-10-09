@@ -1,6 +1,5 @@
 import packageJson from '../../package.json';
 import {createAndroidPlatformBinding} from '@catering-v2s/application-base-android';
-import {createAndroidAutomationUpdateTargetSourceProvider} from '@catering-v2s/adapter-android-update';
 import {
   createSampleWallpaperConsoleAssembly,
   type SurfaceForm,
@@ -48,7 +47,6 @@ export const createSampleWallpaperTerminalAssembly = (
     surfaceForm: input.surfaceForm,
     terminalSurfaces: packageJson.terminalSurfaces,
     serverSpaces: serverSpaces(),
-    terminalUpdateSourceProvider: createAndroidAutomationUpdateTargetSourceProvider(),
     ...(process.env.EXPO_PUBLIC_TER_AUTOMATION_UPDATE_ASSET_PROBE === 'true'
       ? {renderAutomationChildren: renderTerminalUpdateAssetLoadProbe}
       : {}),

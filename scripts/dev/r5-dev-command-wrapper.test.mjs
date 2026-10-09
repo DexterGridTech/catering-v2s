@@ -408,7 +408,7 @@ test('TDS terminal-control grants and probes wait for the complete CP-06 object 
     runnerSource.indexOf('function provisionRemoteTdsDatabasePrincipal('),
     runnerSource.indexOf('function resolveManagedAcceptanceManifest('),
   );
-  assert.match(principalProvision, /GRANT USAGE ON SCHEMA platform_workspace, store_terminal, organization, terminal_binding, terminal_connection, contract TO \$\{role\}/);
+  assert.match(principalProvision, /GRANT USAGE ON SCHEMA platform_workspace, store_terminal, organization, terminal_binding, terminal_connection, contract, terminal_update TO \$\{role\}/);
   assert.match(
     principalProvision,
     /printf %s \$\{quote\(encodedSql\)\} \| base64 -d \| docker exec -i catering-postgres psql -U catering -d "\$database" -v ON_ERROR_STOP=1 -q/,
@@ -501,9 +501,14 @@ test('DEV requires capacity-derived TDS keys before start and validates the dedi
   assert.match(environmentSource, /V2S_TDS_NODE_ID: env\.V2S_TDS_NODE_ID \?\? "tds"/);
   assert.match(environmentSource, /V2S_TDS_READINESS_WITHDRAWAL_WAIT_MS: env\.V2S_TDS_READINESS_WITHDRAWAL_WAIT_MS \?\? "3000"/);
   assert.match(environmentSource, /V2S_TERMINAL_BROWSER_ALLOWED_ORIGINS: env\.V2S_TERMINAL_BROWSER_ALLOWED_ORIGINS \?\? "http:\/\/127\.0\.0\.1:8093"/);
+  assert.match(environmentSource, /V2S_DEV_REMOTE_TERMINAL_UPDATE_ANDROID_BUILD_TOOLS_DIRECTORY/);
+  assert.match(environmentSource, /R5_DEV_TERMINAL_UPDATE_ANDROID_BUILD_TOOLS_DIRECTORY_INVALID/);
   assert.match(environmentSource, /R5_DEV_TDS_NODE_ID_INVALID/);
   assert.match(environmentSource, /R5_DEV_TDS_READINESS_WITHDRAWAL_WAIT_INVALID/);
   assert.match(runnerSource, /V2S_DEV_REMOTE_TDS_ENTRY_ONE_PORT/);
+  assert.match(runnerSource, /TERMINAL_UPDATE_ANDROID_BUILD_TOOLS_DIRECTORY: terminalUpdateBuildToolsDirectory/);
+  assert.match(runnerSource, /REMOTE_TERMINAL_UPDATE_BUILD_TOOLS_MISSING/);
+  assert.match(runnerSource, /REMOTE_TERMINAL_UPDATE_BUILD_TOOLS_VERSION_MISMATCH/);
   assert.match(runnerSource, /V2S_DEV_REMOTE_TDS_A_PORT/);
   assert.match(runnerSource, /V2S_TDS_MAX_UNAUTHENTICATED_CONNECTIONS/);
   assert.match(runnerSource, /V2S_TDS_MAX_TRACKED_SESSIONS/);
@@ -634,6 +639,18 @@ test('remote Java binds the selected HTTP port instead of assuming one shared li
   assert.match(runnerSource, /httpPort = env\.environment\.V2S_DEV_REMOTE_HTTP_PORT/);
   assert.match(runnerSource, /SERVER_PORT: String\(httpPort\)/);
   assert.match(runnerSource, /httpPort.*\$http_port/);
+});
+
+test('remote Java preflights Build Tools without contaminating its JSON control response', () => {
+  const startRemoteJava = runnerSource.slice(
+    runnerSource.indexOf('export async function startRemoteJava('),
+    runnerSource.indexOf('export async function startRemoteTds('),
+  );
+  assert.match(startRemoteJava, /TERMINAL_UPDATE_ANDROID_BUILD_TOOLS_DIRECTORY: terminalUpdateBuildToolsDirectory/);
+  assert.match(startRemoteJava, /REMOTE_TERMINAL_UPDATE_BUILD_TOOLS_MISSING/);
+  assert.match(startRemoteJava, /REMOTE_TERMINAL_UPDATE_BUILD_TOOLS_VERSION_MISMATCH/);
+  assert.doesNotMatch(startRemoteJava, /TERMINAL_UPDATE_BUILD_TOOLS_READY=/,
+    'successful preflight must leave stdout as the single JSON control response');
 });
 
 test('DEV start forwards only an explicit backend verification mode to remote Java', () => {
