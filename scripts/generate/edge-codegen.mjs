@@ -1617,9 +1617,22 @@ function tsSchemaType(schema, components, context) {
     type = [...new Set(variants)].join(' | ');
   } else if (Array.isArray(schema.allOf)) {
     if (schema.allOf.length === 0) fail('R5_EDGE_TS_ALLOF_EMPTY', context);
-    type = schema.allOf
+    const inheritedType = schema.allOf
       .map((part, index) => `(${tsSchemaType(part, components, `${context}.allOf[${index}]`)})`)
       .join(' & ');
+    const siblingProperties = schema.properties || {};
+    if (Object.keys(siblingProperties).length > 0) {
+      const siblingNames = new Set(Object.keys(siblingProperties));
+      const siblingType = tsSchemaType({
+        type: 'object',
+        properties: siblingProperties,
+        required: (schema.required || []).filter(name => siblingNames.has(name)),
+        additionalProperties: schema.additionalProperties,
+      }, components, `${context}.siblings`);
+      type = `(${inheritedType}) & (${siblingType})`;
+    } else {
+      type = inheritedType;
+    }
   } else if (typeof schema.$ref === 'string') {
     const name = referenceName(schema.$ref);
     if (!components.has(name)) fail('R5_EDGE_TS_REFERENCE_TARGET_MISSING', `${context}:${name}`);
@@ -2259,6 +2272,14 @@ function selfTest() {
     const ruleDetailSource = fs.readFileSync(ruleDetailPath, 'utf8');
     if (!ruleDetailSource.includes('java.util.List<java.util.UUID> storeRefs'))
       fail('R5_EDGE_ALLOF_SIBLING_PROPERTIES_NOT_GENERATED');
+    const platformTsPath = path.join(scratch, targets.platformTs);
+    const platformTsSource = fs.readFileSync(platformTsPath, 'utf8');
+    const artifactDetailStart = platformTsSource.indexOf('export type TerminalUpdateArtifactDetail =');
+    const artifactDetailEnd = platformTsSource.indexOf('\nexport type ', artifactDetailStart + 1);
+    const artifactDetailType = platformTsSource.slice(artifactDetailStart, artifactDetailEnd);
+    if (!artifactDetailType.includes('minimumFullArtifactRef') || !artifactDetailType.includes('minimumFullFacts')
+      || !artifactDetailType.includes('publicationId'))
+      fail('R5_EDGE_TS_ALLOF_SIBLING_PROPERTIES_NOT_GENERATED');
     const terminalUpdateSchemasPath = path.join(
       scratch,
       'contracts/openapi/components/terminal-update/terminal-update.schemas.json',
@@ -2272,9 +2293,23 @@ function selfTest() {
       checkOutputs(scratch);
       fail('R5_EDGE_ALLOF_SIBLING_PROPERTIES_DRIFT_RED_NOT_DETECTED');
     } catch (error) {
-      if (error.code !== 'R5_EDGE_CODEGEN_DRIFT') throw error;
+      if (error.code !== 'R5_EDGE_CODEGEN_DRIFT' && error.code !== 'R5_EDGE_TS_GENERATED_DRIFT') throw error;
     }
     fs.writeFileSync(terminalUpdateSchemasPath, terminalUpdateSchemasSource);
+    const artifactDetailSchema = terminalUpdateSchemas.components.schemas.TerminalUpdateArtifactDetail;
+    const minimumFullFacts = artifactDetailSchema.properties.minimumFullFacts;
+    delete artifactDetailSchema.properties.minimumFullFacts;
+    delete artifactDetailSchema.required;
+    fs.writeFileSync(terminalUpdateSchemasPath, normalized(terminalUpdateSchemas));
+    try {
+      checkOutputs(scratch);
+      fail('R5_EDGE_TS_ALLOF_SIBLING_PROPERTIES_DRIFT_RED_NOT_DETECTED');
+    } catch (error) {
+      if (error.code !== 'R5_EDGE_CODEGEN_DRIFT' && error.code !== 'R5_EDGE_TS_GENERATED_DRIFT') throw error;
+    }
+    artifactDetailSchema.properties.minimumFullFacts = minimumFullFacts;
+    artifactDetailSchema.required = ['minimumFullArtifactRef', 'minimumFullFacts'];
+    fs.writeFileSync(terminalUpdateSchemasPath, normalized(terminalUpdateSchemas));
     writeOutputs(scratch);
     const previousProjectionMode = process.env.V2S_BACKEND_PERFORMANCE_PROJECTION_MODE;
     process.env.V2S_BACKEND_PERFORMANCE_PROJECTION_MODE = 'IDENTITY_ONLY';

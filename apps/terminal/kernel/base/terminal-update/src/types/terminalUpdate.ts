@@ -11,6 +11,8 @@ import type {TerminalUpdateRuleSnapshotItem} from '@catering-v2s/kernel-base-ter
 export interface UpdateArtifactSource {
   readonly sourceRef: string;
   readonly expectedSha256: string;
+  /** Required for registered FULL snapshot identities; null for HOT and optional only in local fixtures. */
+  readonly apkSha256?: string | null;
   readonly artifact: Pick<TerminalUpdateArtifact,
     'applicationId' | 'nativeVersion' | 'nativeBuildNumber' | 'bundleVersion' | 'runtimeVersion' | 'publicationId'>;
   /** Full immutable manifest is only carried by local test fixtures; CBS targets fetch it with the one-attempt grant. */
@@ -82,7 +84,13 @@ export interface TerminalUpdateState {
     readonly nextReportSequence: number;
     readonly pendingReports: Readonly<Record<string, TerminalUpdateReportPayload>>;
     readonly sendPaused: boolean;
-    readonly latestDeliveryFailure: Readonly<{reportId: string; code: string; changedAt: TimestampMs}> | null;
+    readonly latestDeliveryFailure: Readonly<{
+      taskId: string | null;
+      reportId: string;
+      reportSequence: number;
+      reasonCode: string;
+      observedAt: TimestampMs;
+    }> | null;
   }>;
 }
 
@@ -95,6 +103,7 @@ export type StoredTerminalUpdateArtifactSummary = Readonly<{
   apkVersion: string;
   jsVersion: string;
   publicationId: string;
+  apkSha256: string | null;
   zipSha256: string;
   byteSize: number;
   createdAtEpochMillis: number;
@@ -109,7 +118,7 @@ export type StoredTerminalUpdateRule = Readonly<{
   full: StoredTerminalUpdateArtifactSummary;
   hot: StoredTerminalUpdateArtifactSummary | null;
   nSeconds: number;
-  hotStrategy: 'IMMEDIATE' | 'IDLE';
+  hotStrategy: 'IMMEDIATE' | 'IDLE' | null;
   mSeconds: number | null;
   description: string | null;
 }>;

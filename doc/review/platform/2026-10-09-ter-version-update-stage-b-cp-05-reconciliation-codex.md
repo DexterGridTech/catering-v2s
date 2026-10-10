@@ -50,3 +50,16 @@ The focused runner test/typecheck were rerun after the guard. The app typechecks
 - Fresh reviewer: `cp05_reconcile_r5`.
 - Result: `MATCHED`, `M/S/N=0/0/0`, limited to CP-05 static reconciliation.
 - Reviewer checked the current D/P/source appendix, runner, focused test source, journey/helper and frontend TestId consumers. Reviewer did not run tests; runtime coverage remains `NOT_RUN`.
+
+## Current-byte differential addendum · 2026-10-09
+
+The prior record did not check whether fixed artifact and report-task identities were visible in the operations UI. Those two omissions were confirmed by `cp05_final2`; they are closed by the current source delta and independently rechecked by fresh reviewer `cp05_identity_recheck`.
+
+- `ProjectTerminalUpdatePage.tsx` now renders `fullArtifactRef` / `hotArtifactRef` in the rule list and read-only detail.
+- The latest report detail and task-history rows now render `ruleRef`, `fullArtifactRef`, and `hotArtifactRef` from the existing generated response fields.
+- `terminalUpdateSupplyUi.ts` asserts the exact FULL/HOT references in the rule list/detail and exact rule/FULL/HOT references in report detail/history. The runner passes the identities read from the actual UI-created rule and uploaded artifacts. Rule creation response is also checked against both artifacts.
+- Fresh reviewer `cp05_identity_recheck` returned `CP_DIFF_VERDICT=MATCHED`, `M/S/N=0/0/0`, `EVIDENCE_TIER=STATIC_CURRENT_BYTES_ONLY`; it also rescanned the prior request-identity protections. The reviewer did not run tests or read runtime evidence.
+- Main-agent focused checks on these current bytes: operations-admin typecheck, operations-admin single-file ESLint, terminal-automation typecheck, and `git diff --check`; all exited 0. These checks prove typing/lint/patch hygiene only.
+- The report-lifecycle backend acceptance PASS documented earlier remains a separate historical focused result; it is not the `update.supply-chain` browser/device business proof.
+
+Therefore CP-05 is `MATCHED` for static implementation reconciliation. Real browser rendering, the managed `update.supply-chain` scenario, device business result, and cleanup remain `NOT_RUN` until batch-level 6b and the plan's runtime preflight close.

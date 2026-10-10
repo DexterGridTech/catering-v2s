@@ -8,6 +8,8 @@ public record TerminalUpdateRuleDetail(
     @com.fasterxml.jackson.annotation.JsonProperty(value = "targetMode", required = true) String targetMode,
     @com.fasterxml.jackson.annotation.JsonProperty(value = "fullArtifactRef", required = true) java.util.UUID fullArtifactRef,
     @com.fasterxml.jackson.annotation.JsonProperty(value = "hotArtifactRef", required = true) java.util.UUID hotArtifactRef,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "fullArtifactIdentity", required = true) TerminalUpdateRuleDetailFullArtifactIdentity fullArtifactIdentity,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "hotArtifactIdentity", required = true) tools.jackson.databind.JsonNode hotArtifactIdentity,
     @com.fasterxml.jackson.annotation.JsonProperty(value = "nSeconds", required = true) Long nSeconds,
     @com.fasterxml.jackson.annotation.JsonProperty(value = "hotStrategy", required = true) String hotStrategy,
     @com.fasterxml.jackson.annotation.JsonProperty(value = "mSeconds", required = true) tools.jackson.databind.JsonNode mSeconds,

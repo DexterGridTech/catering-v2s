@@ -14,9 +14,11 @@ import {
   haproxyImageDigestLookupScript,
   parseRemoteRootCleanupResult,
   remoteRootCleanupScript,
+  remoteHaproxyStopScript,
   remoteProcessStopMarkerCommand,
   remoteTdsReadinessScript,
   stopAndCleanupStartedRemoteJava,
+  STOP_REMOTE_DIAGNOSTIC_REFRESH_KEYS,
   validateManagedRemoteJavaBinding,
 } from './r5-dev-runner.mjs';
 import {createHaproxyConfiguration, remoteHaproxyIdentityMatches, validateManagedTdsCluster, validateRemoteHaproxyControl} from './r5-managed-terminal-topology.mjs';
@@ -121,6 +123,97 @@ test('managed TDS topology has exact three-node identity and two protected ingre
   assert.throws(() => validateRemoteHaproxyControl({...haproxyControl, entryPorts: {one: 18083, two: 18084}}), /R5_REMOTE_HAPROXY_CONTROL_PORTS_INVALID/);
 });
 
+test('managed HAProxy stop proves exact absence without requiring a deleted control file', () => {
+  const runId = 'r5-dev-1789419999999-70098-1d53aa6c-cd00-444d-8f9a-125f6ee68081';
+  const remoteRoot = `/tmp/${runId}`;
+  const hostBootId = '0123456789abcdef0123456789abcdef';
+  const control = {
+    schemaVersion: 1,
+    kind: 'r5-dev-remote-haproxy-control',
+    runId,
+    remoteRoot,
+    hostBootId,
+    containerId: 'abcdef123456',
+    containerImageId: `sha256:${'a'.repeat(64)}`,
+    imageRef: `library/haproxy@sha256:${'b'.repeat(64)}`,
+    imageDigest: 'b'.repeat(64),
+    configSha256: 'c'.repeat(64),
+    memoryBudgetMiB: 128,
+    entryPorts: {one: 18083, two: 18087},
+    nodePorts: {a: 18084, b: 18085, c: 18086},
+    configPath: `${remoteRoot}/results/haproxy.cfg`,
+    logPath: `${remoteRoot}/results/haproxy.log`,
+    controlPath: `${remoteRoot}/results/haproxy-control.json`,
+    controlSocketPath: `${remoteRoot}/results/haproxy-control/admin.sock`,
+    phase: 'READY',
+  };
+  const identity = state => [
+    control.containerId,
+    control.containerImageId,
+    control.imageRef,
+    control.runId,
+    control.remoteRoot,
+    control.hostBootId,
+    control.imageRef,
+    control.configSha256,
+    state,
+  ].join('|');
+  const script = remoteHaproxyStopScript(control);
+  const execute = ({exists = false, inspect = '', exactPresent = false, runLabelPresent = false,
+    bootId = hostBootId, dockerAvailable = true} = {}) => childProcess.spawnSync('bash', ['-c', `
+docker() {
+  if [ "$1" = info ]; then [ "$DOCKER_AVAILABLE" = true ]; return; fi
+  if [ "$1" = inspect ]; then
+    [ "$CONTAINER_EXISTS" = true ] || return 1
+    printf '%s\\n' "$FAKE_INSPECT"
+    return
+  fi
+  if [ "$1" = ps ]; then
+    case "$*" in
+      *"label=com.catering-v2s.run-id="*) if [ "$RUN_LABEL_PRESENT" = true ]; then printf '%s\\n' "$CONTAINER_ID"; fi ;;
+      *"id="*) if [ "$EXACT_PRESENT" = true ]; then printf '%s\\n' "$CONTAINER_ID"; fi ;;
+      *) return 90 ;;
+    esac
+    return 0
+  fi
+  if [ "$1" = stop ] || [ "$1" = rm ]; then
+    CONTAINER_EXISTS=false
+    EXACT_PRESENT=false
+    RUN_LABEL_PRESENT=false
+    return
+  fi
+  return 91
+}
+cat() {
+  if [ "$1" = /proc/sys/kernel/random/boot_id ]; then printf '%s\\n' "$FAKE_BOOT_ID"; else command cat "$@"; fi
+}
+${script}
+`], {
+    cwd: root,
+    encoding: 'utf8',
+    env: {...process.env, CONTAINER_EXISTS: String(exists), EXACT_PRESENT: String(exactPresent),
+      RUN_LABEL_PRESENT: String(runLabelPresent), CONTAINER_ID: control.containerId, FAKE_INSPECT: inspect,
+      FAKE_BOOT_ID: bootId, DOCKER_AVAILABLE: String(dockerAvailable)},
+  });
+
+  const absent = execute();
+  assert.equal(absent.status, 0, `${absent.stderr}\n${absent.stdout}`);
+  assert.match(absent.stdout, /R5_REMOTE_HAPROXY_STOP=PASS STATUS=ALREADY_STOPPED/);
+
+  const validRunning = execute({exists: true, exactPresent: true, inspect: identity('true')});
+  assert.equal(validRunning.status, 0, validRunning.stderr);
+  assert.match(validRunning.stdout, /R5_REMOTE_HAPROXY_STOP=PASS STATUS=STOPPED/);
+
+  const wrongBoot = execute({bootId: 'fedcba9876543210fedcba9876543210'});
+  assert.notEqual(wrongBoot.status, 0);
+  const wrongIdentity = execute({exists: true, exactPresent: true, inspect: identity('true').replace(control.runId, 'r5-dev-other')});
+  assert.notEqual(wrongIdentity.status, 0);
+  const runScopedResourceRemains = execute({runLabelPresent: true});
+  assert.notEqual(runScopedResourceRemains.status, 0);
+  const dockerUnavailable = execute({dockerAvailable: false});
+  assert.notEqual(dockerUnavailable.status, 0);
+});
+
 test('remote stop protocol marker preserves every field in shell output', () => {
   const cases = [
     ['JAVA', null, 'R5_REMOTE_PROCESS_STOP=PASS SERVICE=JAVA'],
@@ -181,6 +274,15 @@ test('remote Java source sync excludes non-runtime repository payloads', () => {
   assert.match(syncSource, /'--no-acls'/);
   assert.match(syncSource, /'--no-mac-metadata'/);
   assert.match(syncSource, /COPYFILE_DISABLE: '1'/);
+});
+
+test('DEV stop refreshes only bounded remote diagnostics', () => {
+  assert.deepEqual(STOP_REMOTE_DIAGNOSTIC_REFRESH_KEYS, ['seedEventsPath', 'statementDictionaryPath']);
+  assert.doesNotMatch(runnerSource, /refreshManagedDiagnosticFiles\(manifest\)/);
+  assert.match(
+    runnerSource,
+    /refreshManagedDiagnosticFiles\(manifest, STOP_REMOTE_DIAGNOSTIC_REFRESH_KEYS\)/,
+  );
 });
 
 test('DEV stop retains remote-log evidence for already-stopped Java', () => {

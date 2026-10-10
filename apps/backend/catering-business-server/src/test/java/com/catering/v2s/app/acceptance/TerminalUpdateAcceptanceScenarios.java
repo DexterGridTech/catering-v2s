@@ -64,6 +64,15 @@ final class TerminalUpdateAcceptanceScenarios {
         assertTrue(bindGrant.length() >= 32, "BUSINESS: uploader receives the one-time stage bind proof");
         assertEquals(full.sha256(), staged.path("sha256").asText(), "BUSINESS: stage confirms ZIP bytes and digest");
         assertEquals(full.bytes().length, staged.path("byteSize").asLong(), "BUSINESS: stage confirms exact byte count");
+        assertEquals("FULL", staged.path("candidateKind").asText(), "BUSINESS: stage preview identifies the parsed FULL package");
+        assertEquals(TerminalUpdateAcceptanceFixtures.APPLICATION_ID, staged.path("applicationId").asText(),
+                "BUSINESS: stage preview returns the parsed application identity before save");
+        assertEquals(TerminalUpdateAcceptanceFixtures.NATIVE_BUILD, staged.path("nativeBuildNumber").asLong(),
+                "BUSINESS: stage preview returns the parsed native build before save");
+        assertEquals(full.publicationId(), staged.path("publicationId").asText(),
+                "BUSINESS: stage preview returns the parsed publication identity before save");
+        assertEquals(full.apkSha256(), staged.path("apkSha256").asText(),
+                "BUSINESS: stage preview distinguishes the embedded APK digest from the ZIP digest");
 
         String registerKey = "terminal-update-full-" + UUID.randomUUID();
         Map<String, Object> body = Map.of("stageRef", stageRef, "stageBindGrant", bindGrant, "kind", "FULL");
@@ -107,8 +116,10 @@ final class TerminalUpdateAcceptanceScenarios {
                 PLATFORM_TERMINAL_UPDATE_ARTIFACT_DETAIL,
                 ownerPrefix + "/terminal-update-artifacts/" + artifactRef,
                 platform.cookie(), Set.of(200)).json());
-        assertEquals(full.apkSha256(), detail.path("minimumFullFacts").path("apkSha256").asText(),
-                "BUSINESS: FULL detail exposes only the validated APK identity facts");
+        assertEquals(full.apkSha256(), detail.path("apkSha256").asText(),
+                "BUSINESS: artifact detail preserves the registered APK digest separately from the ZIP digest");
+        assertEquals(full.sha256(), detail.path("zipSha256").asText(),
+                "BUSINESS: artifact detail preserves the uploaded ZIP digest");
         JsonNode audit = payload(context.get(
                 PLATFORM_AUDIT_HISTORY,
                 "/api/platform/audit-history?groupWorkspaceKey=" + ownerWorkspace.groupWorkspaceKey()
@@ -145,8 +156,32 @@ final class TerminalUpdateAcceptanceScenarios {
                         "stageBindGrant", stagedFull.path("stageBindGrant").asText(), "kind", "FULL"),
                 Map.of("Idempotency-Key", "terminal-update-full-pair-" + UUID.randomUUID()), Set.of(201)).json());
 
+        String exactFullCandidatePath = prefix + "/terminal-update-artifacts?kind=FULL&appId="
+                + TerminalUpdateAcceptanceFixtures.APPLICATION_ID
+                + "&runtimeVersion=" + TerminalUpdateAcceptanceFixtures.RUNTIME
+                + "&minimumFullNativeBuildNumber=" + TerminalUpdateAcceptanceFixtures.NATIVE_BUILD
+                + "&minimumFullPublicationId=" + full.publicationId()
+                + "&minimumFullApkSha256=" + full.apkSha256() + "&limit=20";
+        BackendAcceptanceTest.Response partialFullFilter = context.get(PLATFORM_TERMINAL_UPDATE_ARTIFACT_PAGE,
+                prefix + "/terminal-update-artifacts?kind=FULL&appId=" + TerminalUpdateAcceptanceFixtures.APPLICATION_ID
+                        + "&runtimeVersion=" + TerminalUpdateAcceptanceFixtures.RUNTIME
+                        + "&minimumFullNativeBuildNumber=" + TerminalUpdateAcceptanceFixtures.NATIVE_BUILD + "&limit=20",
+                platform.cookie(), Set.of(422));
+        assertEquals("TERMINAL_UPDATE_ARTIFACT_INVALID", partialFullFilter.problemCode(),
+                "CONTRACT: partial minimum FULL identity filters are rejected as one invalid query");
+        JsonNode exactFullCandidates = payload(context.get(PLATFORM_TERMINAL_UPDATE_ARTIFACT_PAGE,
+                exactFullCandidatePath, platform.cookie(), Set.of(200)).json());
+        assertEquals(1, exactFullCandidates.path("items").size(),
+                "BUSINESS: exact five-fact platform filter returns the compatible FULL artifact");
+        assertEquals(savedFull.path("artifactRef").asText(), exactFullCandidates.path("items").get(0)
+                        .path("artifactRef").asText(),
+                "BUSINESS: FULL candidate filter matches the FULL row identity, not its HOT-only minimumFull JSON");
+
         TerminalUpdateAcceptanceFixtures.Package hot = TerminalUpdateAcceptanceFixtures.hot(full);
         JsonNode stagedHot = stage(context, prefix, platform.cookie(), hot);
+        assertEquals("HOT", stagedHot.path("candidateKind").asText(), "BUSINESS: HOT stage preview identifies parsed package kind");
+        assertEquals(full.apkSha256(), stagedHot.path("minimumFull").path("apkSha256").asText(),
+                "BUSINESS: HOT stage preview exposes its declared minimum FULL APK digest");
         BackendAcceptanceTest.Response saved = context.post(
                 PLATFORM_TERMINAL_UPDATE_ARTIFACT_REGISTER,
                 prefix + "/terminal-update-artifacts",
@@ -163,6 +198,22 @@ final class TerminalUpdateAcceptanceScenarios {
                 "BUSINESS: HOT stores the exact selected minimum FULL reference");
         assertEquals(full.apkSha256(), savedHot.path("minimumFullFacts").path("apkSha256").asText(),
                 "BUSINESS: HOT's required APK digest matches the selected FULL");
+        JsonNode hotDetail = payload(context.get(PLATFORM_TERMINAL_UPDATE_ARTIFACT_DETAIL,
+                prefix + "/terminal-update-artifacts/" + savedHot.path("artifactRef").asText(),
+                platform.cookie(), Set.of(200)).json());
+        JsonNode minimumFullFacts = hotDetail.path("minimumFullFacts");
+        assertEquals(savedFull.path("artifactRef").asText(), hotDetail.path("minimumFullArtifactRef").asText(),
+                "BUSINESS: saved HOT detail retains the selected FULL artifact identity");
+        assertEquals(TerminalUpdateAcceptanceFixtures.APPLICATION_ID, minimumFullFacts.path("applicationId").asText(),
+                "BUSINESS: saved HOT detail returns minimum FULL applicationId");
+        assertEquals(TerminalUpdateAcceptanceFixtures.RUNTIME, minimumFullFacts.path("runtimeVersion").asText(),
+                "BUSINESS: saved HOT detail returns minimum FULL runtimeVersion");
+        assertEquals(TerminalUpdateAcceptanceFixtures.NATIVE_BUILD, minimumFullFacts.path("nativeBuildNumber").asLong(),
+                "BUSINESS: saved HOT detail returns minimum FULL nativeBuildNumber");
+        assertEquals(full.publicationId(), minimumFullFacts.path("publicationId").asText(),
+                "BUSINESS: saved HOT detail returns minimum FULL publicationId");
+        assertEquals(full.apkSha256(), minimumFullFacts.path("apkSha256").asText(),
+                "BUSINESS: saved HOT detail returns minimum FULL APK digest");
     }
 
     @AcceptanceScenario(
@@ -315,6 +366,8 @@ final class TerminalUpdateAcceptanceScenarios {
                 "BUSINESS: terminal receives the first bounded page of the complete enabled project rule set");
         assertEquals(artifact.path("artifactRef").asText(), snapshot.path("items").get(0).path("full").path("artifactRef").asText(),
                 "BUSINESS: snapshot fixes the persisted FULL artifact, not a local candidate");
+        assertEquals(artifact.path("apkSha256").asText(), snapshot.path("items").get(0).path("full").path("apkSha256").asText(),
+                "BUSINESS: snapshot carries the registered FULL APK digest required for exact HOT compatibility");
         assertFalse(snapshot.path("items").get(0).has("revision"),
                 "BUSINESS: terminal execution snapshot does not expose mutable administration CAS state");
         assertFalse(snapshot.path("items").get(0).has("updatedAtEpochMillis"),
@@ -434,6 +487,244 @@ final class TerminalUpdateAcceptanceScenarios {
                 "BUSINESS: content grant cannot outlive the current active binding");
     }
 
+    @AcceptanceScenario(
+            id = "terminal-update.report-lifecycle",
+            module = "TERMINAL_UPDATE",
+            operation = "terminalUpdateReportLifecycle")
+    void reportSubmissionAndProjectReadbacksAreCommittedAndScoped(
+            BackendAcceptanceTest.ScenarioContext context) throws Exception {
+        StoreTerminalAcceptanceScenarios.ConnectionFixture terminal =
+                new StoreTerminalAcceptanceScenarios(host).createConnectionContractFixture(context);
+        BackendAcceptanceTest.Fixture operator = host.projectUserFixture(terminal.fixture(),
+                Set.of("PG-PROJECT-TERMINAL-VERSION-RULES"), Set.of("MANAGE_PROJECT_TERMINAL_VERSION"));
+        host.completeInvitation(context, operator);
+        BackendAcceptanceTest.Session operations = host.login(context, operator);
+
+        host.ensurePlatformAdministrator();
+        BackendAcceptanceTest.Session platform = host.platformLogin(context);
+        String workspacePrefix = "/api/platform/group-workspaces/" + terminal.fixture().groupWorkspaceKey();
+        TerminalUpdateAcceptanceFixtures.Package full = TerminalUpdateAcceptanceFixtures.full();
+        JsonNode staged = stage(context, workspacePrefix, platform.cookie(), full);
+        JsonNode artifact = payload(context.post(PLATFORM_TERMINAL_UPDATE_ARTIFACT_REGISTER,
+                workspacePrefix + "/terminal-update-artifacts", platform.cookie(),
+                Map.of("stageRef", staged.path("stageRef").asText(),
+                        "stageBindGrant", staged.path("stageBindGrant").asText(), "kind", "FULL"),
+                Map.of("Idempotency-Key", "terminal-update-report-full-" + UUID.randomUUID()), Set.of(201)).json());
+        String artifactRef = artifact.path("artifactRef").asText();
+        assertTrue(!artifactRef.isBlank(), "BUSINESS: platform FULL package creates a readable minimum target");
+
+        TerminalUpdateAcceptanceFixtures.Package hot = TerminalUpdateAcceptanceFixtures.hot(full);
+        JsonNode stagedHot = stage(context, workspacePrefix, platform.cookie(), hot);
+        JsonNode hotArtifact = payload(context.post(PLATFORM_TERMINAL_UPDATE_ARTIFACT_REGISTER,
+                workspacePrefix + "/terminal-update-artifacts", platform.cookie(),
+                Map.of("stageRef", stagedHot.path("stageRef").asText(),
+                        "stageBindGrant", stagedHot.path("stageBindGrant").asText(), "kind", "HOT",
+                        "minimumFullArtifactRef", artifactRef),
+                Map.of("Idempotency-Key", "terminal-update-report-hot-" + UUID.randomUUID()), Set.of(201)).json());
+        String hotArtifactRef = hotArtifact.path("artifactRef").asText();
+        assertEquals(artifactRef, hotArtifact.path("minimumFullArtifactRef").asText(),
+                "BUSINESS: saved HOT candidate is bound to the selected FULL identity");
+
+        String candidatePath = "/api/operations/group-workspaces/" + terminal.fixture().groupWorkspaceKey()
+                + "/terminal-update-artifact-candidates?expectedContextVersion=" + operations.contextVersion()
+                + "&projectRef=" + terminal.fixture().projectId()
+                + "&kind=HOT"
+                + "&minimumFullArtifactRef=" + artifactRef + "&limit=20";
+        JsonNode candidates = payload(context.get(OPERATIONS_TERMINAL_UPDATE_CANDIDATES,
+                candidatePath, operations.cookie(), Set.of(200)).json());
+        assertTrue(candidates.path("items").size() >= 1,
+                "BUSINESS: project operator reads the saved compatible HOT update candidate");
+        assertEquals(hotArtifactRef, candidates.path("items").get(0).path("artifactRef").asText(),
+                "BUSINESS: minimum FULL filtering retains the HOT bound to the selected FULL");
+
+        String rulePath = "/api/operations/group-workspaces/" + terminal.fixture().groupWorkspaceKey()
+                + "/projects/" + terminal.fixture().projectId() + "/terminal-update-rules";
+        JsonNode reportRule = payload(context.post(OPERATIONS_TERMINAL_UPDATE_RULE_CREATE,
+                rulePath + "?expectedContextVersion=" + operations.contextVersion(), operations.cookie(),
+                Map.of("targetMode", "STORE_REFS", "storeRefs", List.of(terminal.fixture().storeId().toString()),
+                        "fullArtifactRef", artifactRef, "hotArtifactRef", hotArtifactRef, "status", "DISABLED",
+                        "nSeconds", 300, "hotStrategy", "IMMEDIATE", "description", "report identity projection"),
+                Map.of("Idempotency-Key", "terminal-update-report-rule-" + UUID.randomUUID()), Set.of(201)).json());
+        String reportRuleRef = reportRule.path("ruleRef").asText();
+        assertTrue(!reportRuleRef.isBlank(), "BUSINESS: project report reference fixture has a saved rule identity");
+
+        UUID reportId = UUID.randomUUID();
+        UUID taskId = UUID.randomUUID();
+        long changedAt = System.currentTimeMillis();
+        Map<String, Object> actual = new java.util.LinkedHashMap<>();
+        actual.put("apkVersion", "2.0.0");
+        actual.put("nativeBuildNumber", 42);
+        actual.put("applicationId", TerminalUpdateAcceptanceFixtures.APPLICATION_ID);
+        actual.put("runtimeVersion", "2.0.0");
+        actual.put("jsVersion", null);
+        actual.put("publicationId", full.publicationId());
+        actual.put("apkSha256", full.apkSha256());
+        actual.put("bundleSha256", null);
+        actual.put("entryKind", "INSTALLED_APK");
+        actual.put("unknownReason", null);
+        Map<String, Object> recent = new java.util.LinkedHashMap<>();
+        recent.put("state", "SUCCEEDED");
+        recent.put("reason", "NONE");
+        recent.put("changedAtEpochMillis", changedAt);
+        recent.put("ruleRef", reportRuleRef);
+        recent.put("fullArtifactRef", artifactRef);
+        recent.put("hotArtifactRef", hotArtifactRef);
+        Map<String, Object> report = new java.util.LinkedHashMap<>();
+        report.put("reportId", reportId);
+        report.put("reportSequence", 1);
+        report.put("taskId", taskId);
+        report.put("actual", actual);
+        report.put("recent", recent);
+        Map<String, String> credential = Map.of(
+                "Authorization", "Terminal " + terminal.generation() + "." + terminal.credentialSecret(),
+                "X-Terminal-Ref", terminal.terminalRef().toString(),
+                "X-Terminal-Device-Id", terminal.deviceId());
+        Map<String, String> reportHeaders = new java.util.LinkedHashMap<>(credential);
+        reportHeaders.put("Idempotency-Key", reportId.toString());
+        String reportPath = "/api/terminal/group-workspaces/" + terminal.fixture().groupWorkspaceKey()
+                + "/update-reports";
+
+        BackendAcceptanceTest.Response accepted = context.post(TERMINAL_UPDATE_REPORT_SUBMIT,
+                reportPath, null, report, reportHeaders, Set.of(200));
+        assertEquals(reportId.toString(), accepted.json().path("reportId").asText(),
+                "BUSINESS: terminal receives a receipt for the committed report identity");
+        assertEquals("ACCEPTED", accepted.json().path("outcome").asText(),
+                "BUSINESS: first report is accepted only after persistence");
+        BackendAcceptanceTest.Response replay = context.post(TERMINAL_UPDATE_REPORT_SUBMIT,
+                reportPath, null, report, reportHeaders, Set.of(200));
+        assertEquals(accepted.json(), replay.json(), "BUSINESS: exact report replay returns the same committed receipt");
+
+        Map<String, Object> conflicting = new java.util.LinkedHashMap<>(report);
+        Map<String, Object> changedRecent = new java.util.LinkedHashMap<>(recent);
+        changedRecent.put("changedAtEpochMillis", changedAt + 1);
+        conflicting.put("recent", changedRecent);
+        BackendAcceptanceTest.Response conflict = context.post(TERMINAL_UPDATE_REPORT_SUBMIT,
+                reportPath, null, conflicting, reportHeaders, Set.of(409));
+        assertEquals("TERMINAL_UPDATE_REPORT_IDENTITY_CONFLICT", conflict.problemCode(),
+                "BUSINESS: sequence replay with changed report facts is rejected as an identity conflict");
+
+        String versions = "/api/operations/group-workspaces/" + terminal.fixture().groupWorkspaceKey()
+                + "/projects/" + terminal.fixture().projectId() + "/terminal-versions";
+        JsonNode page = payload(context.get(OPERATIONS_TERMINAL_VERSION_PAGE,
+                versions + "?expectedContextVersion=" + operations.contextVersion() + "&limit=100",
+                operations.cookie(), Set.of(200)).json());
+        JsonNode row = null;
+        for (JsonNode item : page.path("items")) {
+            if (terminal.terminalRef().toString().equals(item.path("terminalRef").asText())) row = item;
+        }
+        assertNotNull(row, "BUSINESS: project version page retains the active store terminal");
+        assertTrue(row.path("hasReport").asBoolean(), "BUSINESS: committed report is visible from the project page");
+        assertFalse(row.path("oldBinding").asBoolean(), "BUSINESS: active binding report is not marked as historical");
+        assertEquals("2.0.0", row.path("actual").path("apkVersion").asText(),
+                "BUSINESS: version page returns the persisted APK version");
+        assertEquals("SUCCEEDED", row.path("recent").path("state").asText(),
+                "BUSINESS: version page returns the persisted terminal result");
+        long pageReceivedAt = row.path("receivedAtEpochMillis").asLong(0);
+        assertTrue(pageReceivedAt > 0, "BUSINESS: version page exposes the server receipt time of its latest report");
+
+        String detail = versions + "/" + terminal.terminalRef()
+                + "?expectedContextVersion=" + operations.contextVersion();
+        JsonNode detailBody = payload(context.get(OPERATIONS_TERMINAL_VERSION_DETAIL,
+                detail, operations.cookie(), Set.of(200)).json());
+        assertTrue(detailBody.path("hasReport").asBoolean(), "BUSINESS: detail reads the same committed report");
+        assertFalse(detailBody.path("latest").path("oldBinding").asBoolean(),
+                "BUSINESS: detail agrees that the report belongs to the active binding");
+        assertEquals(full.publicationId(), detailBody.path("latest").path("actual").path("publicationId").asText(),
+                "BUSINESS: detail preserves the reported publication identity");
+        assertEquals(TerminalUpdateAcceptanceFixtures.APPLICATION_ID,
+                detailBody.path("latestReferences").path("ruleTarget").path("fullArtifactIdentity").path("applicationId").asText(),
+                "BUSINESS: detail projects the referenced rule target from scoped owner facts");
+        assertEquals("FULL", detailBody.path("latestReferences").path("fullArtifactIdentity").path("kind").asText(),
+                "BUSINESS: detail projects a linked FULL artifact identity without exposing its reference key");
+        assertEquals("HOT", detailBody.path("latestReferences").path("hotArtifactIdentity").path("kind").asText(),
+                "BUSINESS: detail projects a linked HOT artifact identity without exposing its reference key");
+        assertEquals("HOT", detailBody.path("latestReferences").path("ruleTarget").path("hotArtifactIdentity").path("kind").asText(),
+                "BUSINESS: detail rule target includes its saved HOT package identity");
+        assertEquals(pageReceivedAt, detailBody.path("receivedAtEpochMillis").asLong(0),
+                "BUSINESS: detail receipt time is the same latest report fact as the project page");
+
+        String historyPath = versions + "/" + terminal.terminalRef() + "/update-reports"
+                + "?expectedContextVersion=" + operations.contextVersion() + "&limit=20";
+        JsonNode history = payload(context.get(OPERATIONS_TERMINAL_UPDATE_REPORT_HISTORY,
+                historyPath, operations.cookie(), Set.of(200)).json());
+        assertEquals(1, history.path("items").size(), "BUSINESS: task history stores one row after exact replay");
+        assertEquals(taskId.toString(), history.path("items").get(0).path("taskId").asText(),
+                "BUSINESS: task history is correlated to the submitted operation");
+        assertEquals(TerminalUpdateAcceptanceFixtures.APPLICATION_ID,
+                history.path("items").get(0).path("references").path("ruleTarget").path("fullArtifactIdentity").path("applicationId").asText(),
+                "BUSINESS: task history projects the same scoped rule identity as detail");
+        assertEquals("HOT", history.path("items").get(0).path("references").path("hotArtifactIdentity").path("kind").asText(),
+                "BUSINESS: task history projects the linked HOT artifact identity");
+        assertEquals(pageReceivedAt, history.path("items").get(0).path("receivedAtEpochMillis").asLong(0),
+                "BUSINESS: project page, detail and task history share the server receipt time");
+
+        String activationCancel = "/api/terminal/group-workspaces/" + terminal.fixture().groupWorkspaceKey()
+                + "/terminals/" + terminal.terminalRef() + "/activation/cancel";
+        context.post(TERMINAL_DEVICE_ACTIVATION_CANCEL, activationCancel, null,
+                Map.of("deviceId", terminal.deviceId()),
+                Map.of("Authorization", "Terminal " + terminal.generation() + "." + terminal.credentialSecret()),
+                Set.of(200));
+        JsonNode afterCancellation = payload(context.get(OPERATIONS_TERMINAL_VERSION_PAGE,
+                versions + "?expectedContextVersion=" + operations.contextVersion() + "&limit=100",
+                operations.cookie(), Set.of(200)).json());
+        JsonNode cancelledBindingRow = null;
+        for (JsonNode item : afterCancellation.path("items")) {
+            if (terminal.terminalRef().toString().equals(item.path("terminalRef").asText())) cancelledBindingRow = item;
+        }
+        assertNotNull(cancelledBindingRow, "BUSINESS: enabled terminal remains visible after credential cancellation");
+        assertTrue(cancelledBindingRow.path("oldBinding").asBoolean(),
+                "BUSINESS: prior report is marked as belonging to the ended binding");
+        JsonNode cancelledBindingDetail = payload(context.get(OPERATIONS_TERMINAL_VERSION_DETAIL,
+                versions + "/" + terminal.terminalRef() + "?expectedContextVersion=" + operations.contextVersion(),
+                operations.cookie(), Set.of(200)).json());
+        assertTrue(cancelledBindingDetail.path("latest").path("oldBinding").asBoolean(),
+                "BUSINESS: detail carries the same ended-binding marker as the page");
+        BackendAcceptanceTest.Fixture noPageAccess = host.projectUserFixture(terminal.fixture(), Set.of(),
+                Set.of("MANAGE_PROJECT_TERMINAL_VERSION"));
+        host.completeInvitation(context, noPageAccess);
+        BackendAcceptanceTest.Session deniedOperator = host.login(context, noPageAccess);
+        BackendAcceptanceTest.Response denied = context.get(OPERATIONS_TERMINAL_VERSION_PAGE,
+                versions + "?expectedContextVersion=" + deniedOperator.contextVersion() + "&limit=100",
+                deniedOperator.cookie(), Set.of(403));
+        assertEquals("PLATFORM_COMMON_ACCESS_DENIED", denied.problemCode(),
+                "BUSINESS: report read requires the declared project page grant");
+
+        StoreTerminalAcceptanceScenarios terminals = new StoreTerminalAcceptanceScenarios(host);
+        UUID unboundTerminalRef = terminals.createUnboundEnabledTerminal(context, terminal.fixture(), terminal.session(),
+                "版本报表未激活终端");
+        JsonNode afterUnbound = payload(context.get(OPERATIONS_TERMINAL_VERSION_PAGE,
+                versions + "?expectedContextVersion=" + operations.contextVersion() + "&limit=100",
+                operations.cookie(), Set.of(200)).json());
+        JsonNode unboundRow = null;
+        for (JsonNode item : afterUnbound.path("items")) {
+            if (unboundTerminalRef.toString().equals(item.path("terminalRef").asText())) unboundRow = item;
+        }
+        assertNotNull(unboundRow, "BUSINESS: enabled terminal without a binding remains in the report denominator");
+        assertFalse(unboundRow.path("hasReport").asBoolean(), "BUSINESS: unbound enabled terminal is shown as NO_REPORT");
+        assertFalse(unboundRow.path("oldBinding").asBoolean(), "BUSINESS: NO_REPORT is not mislabeled as an old binding report");
+        JsonNode unboundDetail = payload(context.get(OPERATIONS_TERMINAL_VERSION_DETAIL,
+                versions + "/" + unboundTerminalRef + "?expectedContextVersion=" + operations.contextVersion(),
+                operations.cookie(), Set.of(200)).json());
+        assertFalse(unboundDetail.path("hasReport").asBoolean(),
+                "BUSINESS: unbound enabled terminal detail remains eligible without report facts");
+        JsonNode unboundHistory = payload(context.get(OPERATIONS_TERMINAL_UPDATE_REPORT_HISTORY,
+                versions + "/" + unboundTerminalRef + "/update-reports?expectedContextVersion="
+                        + operations.contextVersion() + "&limit=20",
+                operations.cookie(), Set.of(200)).json());
+        assertEquals(0, unboundHistory.path("items").size(),
+                "BUSINESS: eligible terminal with no task reports has an empty history");
+
+        terminals.disableTerminal(context, terminal.fixture(), terminal.session(), terminal.terminalRef());
+        BackendAcceptanceTest.Response disabledHistory = context.get(OPERATIONS_TERMINAL_UPDATE_REPORT_HISTORY,
+                historyPath, operations.cookie(), Set.of(404));
+        assertEquals("PLATFORM_COMMON_RESOURCE_NOT_FOUND", disabledHistory.problemCode(),
+                "BUSINESS: history rejects a terminal that became disabled after the detail was opened");
+        BackendAcceptanceTest.Response disabledDetail = context.get(OPERATIONS_TERMINAL_VERSION_DETAIL,
+                detail, operations.cookie(), Set.of(404));
+        assertEquals("PLATFORM_COMMON_RESOURCE_NOT_FOUND", disabledDetail.problemCode(),
+                "BUSINESS: disabled terminal detail uses the same target eligibility as history");
+    }
+
     private static List<BackendAcceptanceTest.Response> issueTwoConcurrentGrants(
             BackendAcceptanceTest.ScenarioContext context, String path, Map<String, String> credentialHeaders)
             throws Exception {
@@ -496,13 +787,15 @@ final class TerminalUpdateAcceptanceScenarios {
                 rulePath + "?expectedContextVersion=" + operations.contextVersion(), operations.cookie(),
                 Map.of("targetMode", "STORE_REFS", "storeRefs", List.of(storeRef.toString()),
                         "fullArtifactRef", fullArtifactRef, "status", "ENABLED", "nSeconds", 300,
-                        "hotStrategy", "IMMEDIATE", "description", "snapshot paging coverage"),
+                        "description", "snapshot paging coverage"),
                 Map.of("Idempotency-Key", "terminal-update-rule-coverage-" + UUID.randomUUID()), Set.of(201));
         JsonNode rule = payload(created.json());
         assertEquals(fixture.projectId().toString(), rule.path("projectRef").asText(),
                 "BUSINESS: coverage rule belongs to the exact project fixture");
         assertEquals("ENABLED", rule.path("status").asText(),
                 "BUSINESS: coverage rule is included in the active terminal snapshot");
+        assertTrue(rule.has("hotArtifactRef") && rule.path("hotArtifactRef").isNull(),
+                "BUSINESS: FULL-only coverage rule has no HOT artifact");
         return UUID.fromString(rule.path("ruleRef").asText());
     }
 
@@ -514,12 +807,14 @@ final class TerminalUpdateAcceptanceScenarios {
                 Map.of("targetMode", "STORE_REFS",
                         "storeRefs", storeRefs.stream().map(UUID::toString).toList(),
                         "fullArtifactRef", fullArtifactRef, "status", status, "nSeconds", 300,
-                        "hotStrategy", "IMMEDIATE", "description", "acceptance rule"),
+                        "description", "acceptance rule"),
                 Map.of("Idempotency-Key", "terminal-update-rule-" + UUID.randomUUID()), Set.of(201));
         JsonNode rule = payload(created.json());
         assertEquals(fixture.projectId().toString(), rule.path("projectRef").asText(),
                 "BUSINESS: rule creation is bound to the fixture project");
         assertEquals(status, rule.path("status").asText(), "BUSINESS: rule status is persisted from the command");
+        assertTrue(rule.has("hotArtifactRef") && rule.path("hotArtifactRef").isNull(),
+                "BUSINESS: FULL-only rule has no HOT artifact");
         return UUID.fromString(rule.path("ruleRef").asText());
     }
 

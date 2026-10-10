@@ -37,7 +37,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/api/platform/group-workspaces/{groupWorkspaceKey}")
 public final class PlatformTerminalUpdateArtifactController {
-    private static final String USAGE = "TERMINAL_UPDATE_PACKAGE";
+    private static final String USAGE = "TERMINAL_UPDATE_ARTIFACT";
     private static final tools.jackson.databind.ObjectMapper JSON = new tools.jackson.databind.ObjectMapper();
 
     private final PlatformSessionResolver sessions;
@@ -72,7 +72,11 @@ public final class PlatformTerminalUpdateArtifactController {
                 sha256, file.getSize(), file.getInputStream(), idempotencyKey, sessions.requireActor(request));
         return ResponseEntity.status(HttpStatus.CREATED).body(new TerminalUpdateStageResult(
                 result.stageRef(), result.stageBindGrant(), result.expiresAtEpochMillis(), result.fileName(),
-                result.sha256(), result.byteSize()));
+                result.sha256(), result.byteSize(), result.candidateKind(), result.applicationId(), result.platform(),
+                result.nativeVersion(), result.nativeBuildNumber(), result.bundleVersion(), result.runtimeVersion(),
+                result.publicationId(), result.apkSha256(), result.minimumFull() == null
+                        ? tools.jackson.databind.node.NullNode.getInstance()
+                        : JSON.valueToTree(result.minimumFull())));
     }
 
     @PostMapping("/terminal-update-artifacts")
@@ -222,7 +226,9 @@ public final class PlatformTerminalUpdateArtifactController {
     private static TerminalUpdateArtifactDetail detail(ArtifactReadback value) {
         return new TerminalUpdateArtifactDetail(value.artifactRef(), value.kind(), value.applicationId(),
                 value.runtimeVersion(), value.nativeBuildNumber(), value.nativeVersion(), value.bundleVersion(),
-                value.publicationId(), value.zipSha256(), value.byteSize(), value.createdAtEpochMillis(),
+                value.publicationId(), value.apkSha256() == null
+                        ? tools.jackson.databind.node.NullNode.getInstance() : JSON.valueToTree(value.apkSha256()),
+                value.zipSha256(), value.byteSize(), value.createdAtEpochMillis(),
                 value.minimumFullArtifactRef(), value.minimumFull() == null
                         ? tools.jackson.databind.node.NullNode.getInstance()
                         : JSON.valueToTree(value.minimumFull()));
@@ -231,7 +237,9 @@ public final class PlatformTerminalUpdateArtifactController {
     private static TerminalUpdateArtifactSummary summary(ArtifactReadback value) {
         return new TerminalUpdateArtifactSummary(value.artifactRef(), value.kind(), value.applicationId(),
                 value.runtimeVersion(), value.nativeBuildNumber(), value.nativeVersion(), value.bundleVersion(),
-                value.publicationId(), value.zipSha256(), value.byteSize(), value.createdAtEpochMillis());
+                value.publicationId(), value.apkSha256() == null
+                        ? tools.jackson.databind.node.NullNode.getInstance() : JSON.valueToTree(value.apkSha256()),
+                value.zipSha256(), value.byteSize(), value.createdAtEpochMillis());
     }
 
     public static final class PlatformTerminalUpdateRequestInvalidException extends RuntimeException {}

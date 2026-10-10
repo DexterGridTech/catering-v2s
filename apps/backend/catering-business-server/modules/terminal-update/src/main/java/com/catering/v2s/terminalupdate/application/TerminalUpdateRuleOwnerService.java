@@ -15,6 +15,7 @@ import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.terminalupdate.api.TerminalUpdateArtifactOwnerApi;
 import com.catering.v2s.terminalupdate.api.TerminalUpdateArtifactOwnerApi.ArtifactReadback;
 import com.catering.v2s.terminalupdate.api.TerminalUpdateRuleOwnerApi;
+import com.catering.v2s.terminalupdate.api.TerminalUpdateRuleOwnerApi.RuleArtifactIdentity;
 import com.catering.v2s.terminalupdate.api.TerminalUpdateRuleOwnerApi.ChangeRuleStatus;
 import com.catering.v2s.terminalupdate.api.TerminalUpdateRuleOwnerApi.CreateRule;
 import com.catering.v2s.terminalupdate.api.TerminalUpdateRuleOwnerApi.RuleReadback;
@@ -68,7 +69,8 @@ public class TerminalUpdateRuleOwnerService implements TerminalUpdateRuleOwnerAp
         Objects.requireNonNull(command, "command");
         String hash = createHash(command);
         persistence.lockCommand(command.groupWorkspaceKey(), CREATE, command.idempotencyKey());
-        Optional<RuleReadback> previous = receipt(command.groupWorkspaceKey(), CREATE, command.idempotencyKey(), hash);
+        Optional<RuleReadback> previous = receipt(command.workspaceUuid(), command.groupWorkspaceKey(),
+                CREATE, command.idempotencyKey(), hash);
         if (previous.isPresent()) return previous.get();
 
         persistence.lockProject(command.workspaceUuid(), command.groupWorkspaceKey(), command.projectRef());
@@ -81,11 +83,12 @@ public class TerminalUpdateRuleOwnerService implements TerminalUpdateRuleOwnerAp
                     || memberships.values().stream().anyMatch(project -> !project.equals(command.projectRef())))
                 throw new TerminalUpdateRuleScopeMismatchException();
         }
-        validateArtifacts(command);
+        RuleArtifactIdentities artifactIdentities = validateArtifacts(command);
 
         long now = time.currentEpochMillis();
         RuleReadback rule = new RuleReadback(UUID.randomUUID(), command.projectRef(), command.targetMode(),
-                command.storeRefs(), command.fullArtifactRef(), command.hotArtifactRef(), command.status(),
+                command.storeRefs(), command.fullArtifactRef(), command.hotArtifactRef(),
+                artifactIdentities.full(), artifactIdentities.hot(), command.status(),
                 command.nSeconds(), command.hotStrategy(), command.mSeconds(), command.description(), now, now, 1);
         if (persistence.insert(rule, command.workspaceUuid(), command.groupWorkspaceKey()) != 1)
             throw new TerminalUpdateRuleInvariantException();
@@ -102,7 +105,8 @@ public class TerminalUpdateRuleOwnerService implements TerminalUpdateRuleOwnerAp
         Objects.requireNonNull(command, "command");
         String hash = statusHash(command);
         persistence.lockCommand(command.groupWorkspaceKey(), STATUS, command.idempotencyKey());
-        Optional<RuleReadback> previous = receipt(command.groupWorkspaceKey(), STATUS, command.idempotencyKey(), hash);
+        Optional<RuleReadback> previous = receipt(command.workspaceUuid(), command.groupWorkspaceKey(),
+                STATUS, command.idempotencyKey(), hash);
         if (previous.isPresent()) return previous.get();
 
         persistence.lockProject(command.workspaceUuid(), command.groupWorkspaceKey(), command.projectRef());
@@ -227,7 +231,8 @@ public class TerminalUpdateRuleOwnerService implements TerminalUpdateRuleOwnerAp
     private static SnapshotArtifact snapshotArtifact(TerminalUpdateRuleSnapshotPersistence.Artifact artifact) {
         return new SnapshotArtifact(artifact.artifactRef(), artifact.kind(), artifact.applicationId(),
                 artifact.runtimeVersion(), artifact.nativeBuildNumber(), artifact.apkVersion(), artifact.jsVersion(),
-                artifact.publicationId(), artifact.zipSha256(), artifact.byteSize(), artifact.createdAtEpochMillis());
+                artifact.publicationId(), artifact.apkSha256(), artifact.zipSha256(), artifact.byteSize(),
+                artifact.createdAtEpochMillis());
     }
 
     private static void validatePageQuery(RulePageQuery query) {
@@ -246,13 +251,13 @@ public class TerminalUpdateRuleOwnerService implements TerminalUpdateRuleOwnerAp
         return ref.toString().replace("-", "").toLowerCase(java.util.Locale.ROOT);
     }
 
-    private Optional<RuleReadback> receipt(String key, String name, String idempotencyKey, String hash) {
+    private Optional<RuleReadback> receipt(UUID workspaceUuid, String key, String name, String idempotencyKey, String hash) {
         Optional<String> storedHash = persistence.receiptHash(key, name, idempotencyKey);
         Optional<RuleReadback> stored = persistence.findReceipt(key, name, idempotencyKey);
         if (storedHash.isPresent() != stored.isPresent()) throw new TerminalUpdateRuleInvariantException();
         if (storedHash.isPresent() && !storedHash.get().equals(hash))
             throw new TerminalUpdateRuleIdempotencyConflictException();
-        return stored;
+        return stored.map(rule -> withArtifactIdentities(workspaceUuid, key, rule));
     }
 
     private void validateRule(CreateRule command) {
@@ -268,22 +273,24 @@ public class TerminalUpdateRuleOwnerService implements TerminalUpdateRuleOwnerAp
                 throw new TerminalUpdateRuleInvalidException();
         } else throw new TerminalUpdateRuleInvalidException();
         if (command.fullArtifactRef() == null || command.nSeconds() < 60 || command.nSeconds() > 86_400
-                || command.nSeconds() % 60 != 0 || !List.of("IMMEDIATE", "IDLE").contains(command.hotStrategy())
+                || command.nSeconds() % 60 != 0
                 || !List.of("ENABLED", "DISABLED").contains(command.status())
                 || (command.description() != null && command.description().length() > 500))
             throw new TerminalUpdateRuleInvalidException();
         if (command.hotArtifactRef() == null) {
-            if (command.mSeconds() != null) throw new TerminalUpdateRuleInvalidException();
+            if (command.hotStrategy() != null || command.mSeconds() != null)
+                throw new TerminalUpdateRuleInvalidException();
         } else if ("IMMEDIATE".equals(command.hotStrategy())) {
             if (command.mSeconds() != null) throw new TerminalUpdateRuleInvalidException();
-        } else if (command.mSeconds() == null || command.mSeconds() < 60 || command.mSeconds() > 86_400
+        } else if (!"IDLE".equals(command.hotStrategy()) || command.mSeconds() == null
+                || command.mSeconds() < 60 || command.mSeconds() > 86_400
                 || command.mSeconds() % 60 != 0) throw new TerminalUpdateRuleInvalidException();
     }
 
-    private void validateArtifacts(CreateRule command) {
+    private RuleArtifactIdentities validateArtifacts(CreateRule command) {
         ArtifactReadback full = artifacts.read(command.workspaceUuid(), command.groupWorkspaceKey(), command.fullArtifactRef());
         if (!"FULL".equals(full.kind())) throw new TerminalUpdateRuleTargetInvalidException();
-        if (command.hotArtifactRef() == null) return;
+        if (command.hotArtifactRef() == null) return new RuleArtifactIdentities(identity(full), null);
         ArtifactReadback hot = artifacts.read(command.workspaceUuid(), command.groupWorkspaceKey(), command.hotArtifactRef());
         if (!"HOT".equals(hot.kind()) || !command.fullArtifactRef().equals(hot.minimumFullArtifactRef())
                 || hot.minimumFull() == null
@@ -293,7 +300,27 @@ public class TerminalUpdateRuleOwnerService implements TerminalUpdateRuleOwnerAp
                 || !full.publicationId().equals(hot.minimumFull().publicationId())
                 || !full.apkSha256().equals(hot.minimumFull().apkSha256()))
             throw new TerminalUpdateRuleTargetInvalidException();
+        return new RuleArtifactIdentities(identity(full), identity(hot));
     }
+
+    private RuleReadback withArtifactIdentities(UUID workspaceUuid, String groupWorkspaceKey, RuleReadback rule) {
+        if (rule.fullArtifactIdentity() != null
+                && (rule.hotArtifactRef() == null || rule.hotArtifactIdentity() != null)) return rule;
+        ArtifactReadback full = artifacts.read(workspaceUuid, groupWorkspaceKey, rule.fullArtifactRef());
+        ArtifactReadback hot = rule.hotArtifactRef() == null ? null
+                : artifacts.read(workspaceUuid, groupWorkspaceKey, rule.hotArtifactRef());
+        return new RuleReadback(rule.ruleRef(), rule.projectRef(), rule.targetMode(), rule.storeRefs(),
+                rule.fullArtifactRef(), rule.hotArtifactRef(), identity(full), hot == null ? null : identity(hot),
+                rule.status(), rule.nSeconds(), rule.hotStrategy(), rule.mSeconds(), rule.description(),
+                rule.createdAtEpochMillis(), rule.updatedAtEpochMillis(), rule.revision());
+    }
+
+    private static RuleArtifactIdentity identity(ArtifactReadback artifact) {
+        return new RuleArtifactIdentity(artifact.applicationId(), artifact.kind(),
+                "FULL".equals(artifact.kind()) ? artifact.nativeVersion() : artifact.bundleVersion());
+    }
+
+    private record RuleArtifactIdentities(RuleArtifactIdentity full, RuleArtifactIdentity hot) {}
 
     private static void requireStatus(String status) {
         if (!List.of("ENABLED", "DISABLED").contains(status)) throw new TerminalUpdateRuleInvalidException();

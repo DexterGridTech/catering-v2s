@@ -167,14 +167,23 @@ public class TerminalUpdateArtifactPersistence {
             for (int index = 0; index < 5; index++) values.add(query);
         }
         if (filter.minimumFullNativeBuildNumber() != null) {
-            sql.append("AND minimum_full->>'nativeBuildNumber'=? ");
-            values.add(filter.minimumFullNativeBuildNumber().toString());
+            if ("FULL".equals(filter.kind())) {
+                sql.append("AND native_build_number=? ");
+                values.add(filter.minimumFullNativeBuildNumber());
+            } else {
+                sql.append("AND minimum_full->>'nativeBuildNumber'=? ");
+                values.add(filter.minimumFullNativeBuildNumber().toString());
+            }
         }
         if (filter.minimumFullPublicationId() != null) {
-            sql.append("AND minimum_full->>'publicationId'=? "); values.add(filter.minimumFullPublicationId());
+            sql.append("AND ").append("FULL".equals(filter.kind()) ? "publication_id" : "minimum_full->>'publicationId'")
+                    .append("=? ");
+            values.add(filter.minimumFullPublicationId());
         }
         if (filter.minimumFullApkSha256() != null) {
-            sql.append("AND minimum_full->>'apkSha256'=? "); values.add(filter.minimumFullApkSha256());
+            sql.append("AND ").append("FULL".equals(filter.kind()) ? "apk_sha256" : "minimum_full->>'apkSha256'")
+                    .append("=? ");
+            values.add(filter.minimumFullApkSha256());
         }
         sql.append("AND (?::uuid IS NULL OR (created_at_epoch_millis,artifact_ref) < "
                 + "(SELECT created_at_epoch_millis,artifact_ref FROM terminal_update.artifact "
@@ -245,6 +254,13 @@ public class TerminalUpdateArtifactPersistence {
             if (minimumFullNativeBuildNumber != null && minimumFullNativeBuildNumber < 0) throw new IllegalArgumentException("minimumFullNativeBuildNumber is invalid");
             if (minimumFullPublicationId != null && !minimumFullPublicationId.matches("[a-f0-9]{64}")) throw new IllegalArgumentException("minimumFullPublicationId is invalid");
             if (minimumFullApkSha256 != null && !minimumFullApkSha256.matches("[a-f0-9]{64}")) throw new IllegalArgumentException("minimumFullApkSha256 is invalid");
+            boolean hasMinimumFullFilter = minimumFullNativeBuildNumber != null
+                    || minimumFullPublicationId != null || minimumFullApkSha256 != null;
+            boolean hasCompleteMinimumFullFilter = minimumFullNativeBuildNumber != null
+                    && minimumFullPublicationId != null && minimumFullApkSha256 != null;
+            if (hasMinimumFullFilter && (!hasCompleteMinimumFullFilter || kind == null
+                    || applicationId == null || runtimeVersion == null))
+                throw new IllegalArgumentException("minimum FULL filter requires all five identity facts");
         }
     }
 

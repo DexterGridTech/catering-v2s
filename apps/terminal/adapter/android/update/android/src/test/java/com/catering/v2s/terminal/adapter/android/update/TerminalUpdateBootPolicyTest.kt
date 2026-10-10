@@ -8,6 +8,14 @@ import org.junit.Test
 
 class TerminalUpdateBootPolicyTest {
   @Test
+  fun `action reason treats JSON null and blank as absent and preserves concrete reason`() {
+    assertNull(readActionReason(isJsonNull = true, stored = "null"))
+    assertNull(readActionReason(isJsonNull = false, stored = ""))
+    assertEquals("INSTALL_FAILED", readActionReason(isJsonNull = true, stored = "null", fallback = "INSTALL_FAILED"))
+    assertEquals("APK_DIGEST_MISMATCH", readActionReason(isJsonNull = false, stored = "APK_DIGEST_MISMATCH"))
+  }
+
+  @Test
   fun `recovery never selects a package without an authorized previous target`() {
     assertEquals(
       Triple("failed", "candidate-publication", null),
@@ -38,7 +46,7 @@ class TerminalUpdateBootPolicyTest {
 
   @Test
   fun `old context and token cannot confirm a reservation for a replaced APK`() {
-    val identity = TerminalUpdateInstalledIdentity("sample", 2, "new-publication", "1.0.4")
+    val identity = TerminalUpdateInstalledIdentity("sample", 2, "new-publication", "1.0.4", "a".repeat(64))
     val current = TerminalUpdateBootReservation(
       "new-boot-token", identity, "embedded", "new-publication", null, "assets/index.android.bundle",
     )
@@ -52,6 +60,18 @@ class TerminalUpdateBootPolicyTest {
     assertFalse(bootConfirmationMatches(
       "new-boot-token", current, "new-boot-token", "new-publication", "new-boot-token", "old-installed-identity",
     ))
+    assertFalse(bootConfirmationMatches(
+      "new-boot-token", current, "new-boot-token", "new-publication", "new-boot-token",
+      identity.copy(apkSha256 = "b".repeat(64)).key(),
+    ))
+  }
+
+  @Test
+  fun `installed APK digest is part of the boot identity`() {
+    val installed = TerminalUpdateInstalledIdentity("sample", 2, "publication", "1.0.4", "a".repeat(64))
+    val replaced = installed.copy(apkSha256 = "b".repeat(64))
+
+    assertFalse(installed.key() == replaced.key())
   }
 
   @Test

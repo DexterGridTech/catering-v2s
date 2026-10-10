@@ -7,6 +7,8 @@ BUSINESS_SOURCE=正式需求 R-11/12/15、§20.5；JOURNEY_REFS=同日期 automa
 UI_INTERACTION_REF=同日期 UI 工件；IMPLEMENTATION_DESIGN_REF=同日期 stage-c implementation-design。
 DEXTER_IA_REVIEW=ACCEPTED@2026-10-09；DEXTER_WIREFRAME_REVIEW=ACCEPTED_IA_CONTENT@2026-10-09；IMPLEMENTATION_AUTHORITY=false；STATUS=IA_CONTENT_ACCEPTED_PENDING_DESIGN_REVIEW。
 
+2026-10-10 职责追加：project-basic拥有项目/大区/商业集团及项目规则；store-basic保留门店业务；terminal-update actor接收feature公开local command后办理本机更新。此搬移不增加页面/控件，已确认邀请保持原样，当前源码尚未搬移。
+
 ## 2. 逐面维度
 
 ### 2.1 可见维度
@@ -30,7 +32,7 @@ DEXTER_IA_REVIEW=ACCEPTED@2026-10-09；DEXTER_WIREFRAME_REVIEW=ACCEPTED_IA_CONTE
 | stateAndPermission | [owner focused] 伪造 taskId/actionId/boot 点击零 native；副机调用 report 被拒，下载只对当前 paired MAIN 发 command |
 | navigationAndRefresh | [组件] “稍后”只关闭本次邀请并记录下次 N，不换业务页面；回前台先 actual/action readback 再提醒；旧邀请不能覆盖新任务 |
 | collectionShapeAndScale | [focused] 每机器最多一个邀请；单机两屏组件同时挂载也只物理 PRIMARY 可呈现；规则完整集合保留 B 字节预算，邀请不抽干规则列表 |
-| dataSourceAndCascade | [focused] 本机 selector 提供 task/actual/presentation；规则投影应用后 task/点击/actual 不变；失联未固定资格失效但固定目标不换 |
+| dataSourceAndCascade | [focused] store具体门店flush→自身storeBasicInformationLoadedCommand→两个owner listener：store加载合同/服务点，project加载组织再规则；两下游互不等待→feature候选command→update actor。晚装由store重发当前成功command；副机用project-basic两个record投影及当前connection/entry身份资格，失败entry为tombstone，零业务资料HTTP/TDP。本机update selector提供task/actual/presentation，投影不改task/点击/actual；失联未固定资格失效但固定目标不换 |
 | forbiddenUI | [静态/组件] 无手工重试、坏包清标记、规则选择、停止固定任务、凭证/grant/本地路径或副机报告入口 |
 
 ## 3. 权限、来源与资源模型

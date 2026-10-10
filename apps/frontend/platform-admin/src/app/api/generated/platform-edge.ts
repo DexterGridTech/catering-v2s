@@ -1339,7 +1339,16 @@ export type StoreContractSortKey = "CONTRACT_NO" | "EFFECTIVE_FROM" | "UPDATED_A
 
 export type StoreContractStatus = "VALID" | "INVALID";
 
-export type TerminalUpdateArtifactDetail = (TerminalUpdateArtifactSummary);
+export type TerminalUpdateArtifactDetail = ((TerminalUpdateArtifactSummary)) & ({
+  minimumFullArtifactRef: string & { readonly __uuid: "Uuid" } | null;
+  minimumFullFacts: {
+  applicationId: string;
+  runtimeVersion: string;
+  nativeBuildNumber: number;
+  publicationId: string;
+  apkSha256: string;
+} | null;
+});
 
 export type TerminalUpdateArtifactPage = {
   items: Array<TerminalUpdateArtifactSummary>;
@@ -1368,6 +1377,7 @@ export type TerminalUpdateArtifactSummary = {
   apkVersion: string;
   jsVersion: string;
   publicationId: string;
+  apkSha256: string | null;
   zipSha256: string;
   byteSize: number;
   createdAtEpochMillis: number;
@@ -1380,6 +1390,22 @@ export type TerminalUpdateStageResult = {
   fileName: string;
   sha256: string;
   byteSize: number;
+  candidateKind: "FULL" | "HOT";
+  applicationId: string;
+  platform: "android";
+  nativeVersion: string;
+  nativeBuildNumber: number;
+  bundleVersion: string;
+  runtimeVersion: string;
+  publicationId: string;
+  apkSha256: (string) | null;
+  minimumFull: (({
+  applicationId: string;
+  nativeBuildNumber: number;
+  runtimeVersion: string;
+  publicationId: string;
+  apkSha256: string;
+})) | null;
 };
 
 export type WorkspaceAccount = {

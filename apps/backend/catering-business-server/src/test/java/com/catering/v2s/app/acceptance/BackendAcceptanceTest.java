@@ -658,6 +658,21 @@ class BackendAcceptanceTest {
     static final RouteIdentity OPERATIONS_TERMINAL_UPDATE_RULE_STORES = new RouteIdentity(
             "getOperationsProjectTerminalUpdateRuleStorePage",
             "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-update-rules/{ruleRef}/stores");
+    static final RouteIdentity OPERATIONS_TERMINAL_UPDATE_CANDIDATES = new RouteIdentity(
+            "getOperationsTerminalUpdateArtifactCandidatePage",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/terminal-update-artifact-candidates");
+    static final RouteIdentity OPERATIONS_TERMINAL_VERSION_PAGE = new RouteIdentity(
+            "getOperationsProjectTerminalVersionPage",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-versions");
+    static final RouteIdentity OPERATIONS_TERMINAL_VERSION_DETAIL = new RouteIdentity(
+            "getOperationsProjectTerminalVersionDetail",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-versions/{terminalRef}");
+    static final RouteIdentity TERMINAL_UPDATE_REPORT_SUBMIT = new RouteIdentity(
+            "submitTerminalUpdateReport",
+            "/api/terminal/group-workspaces/{groupWorkspaceKey}/update-reports");
+    static final RouteIdentity OPERATIONS_TERMINAL_UPDATE_REPORT_HISTORY = new RouteIdentity(
+            "getOperationsProjectTerminalUpdateReportHistoryPage",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-versions/{terminalRef}/update-reports");
     static final RouteIdentity TERMINAL_UPDATE_RULE_SNAPSHOT = new RouteIdentity(
             "terminalReadProjectUpdateRuleSnapshotPage",
             "/api/terminal/group-workspaces/{groupWorkspaceKey}/update-rules/projects/{projectRef}", true);
@@ -1742,6 +1757,10 @@ class BackendAcceptanceTest {
      * Creates a second user on the existing project so project-owned templates and store-owned channels stay distinct.
      */
     Fixture projectUserFixture(Fixture existing, Set<String> capabilities) {
+        return projectUserFixture(existing, Set.of(), capabilities);
+    }
+
+    Fixture projectUserFixture(Fixture existing, Set<String> pageAccessKeys, Set<String> capabilities) {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         long now = Instant.now().toEpochMilli();
         UUID roleId = roles.create(
@@ -1750,7 +1769,7 @@ class BackendAcceptanceTest {
                         "Acceptance Project Operator " + suffix,
                         "PROJECT",
                         null,
-                        Set.of(),
+                        pageAccessKeys,
                         capabilities)
                 .id();
         String mobile =
@@ -2807,7 +2826,7 @@ class BackendAcceptanceTest {
                 throws Exception {
             String boundary = "----backend-acceptance-" + UUID.randomUUID();
             ByteArrayOutputStream content = new ByteArrayOutputStream();
-            writeTextPart(content, boundary, "usage", "TERMINAL_UPDATE_PACKAGE");
+            writeTextPart(content, boundary, "usage", "TERMINAL_UPDATE_ARTIFACT");
             writeTextPart(content, boundary, "sha256", sha256);
             writePart(content, boundary, "file", "terminal-update.zip", "application/zip", bytes);
             content.write(("--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8));

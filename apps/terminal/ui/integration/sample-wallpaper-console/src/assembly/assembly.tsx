@@ -28,13 +28,14 @@ import {
 import {sampleStaffAuthAssembly} from '@catering-v2s/ui-feature-sample-staff-auth';
 import {sampleWallpaperPickerAssembly, WallpaperBackground} from '@catering-v2s/ui-feature-sample-wallpaper-picker';
 import {createSampleStaffSessionModule} from '@catering-v2s/kernel-feature-sample-staff-session';
-import {createStoreBasicModule, selectStoreBasicLoadReadiness, selectStoreOrganizationPath} from '@catering-v2s/kernel-feature-store-basic';
+import {
+  createStoreBasicModule,
+  selectStoreBasicLoadReadiness,
+  selectStoreOrganizationPath,
+} from '@catering-v2s/kernel-feature-store-basic';
 import {createSampleWallpaperModule} from '@catering-v2s/kernel-feature-sample-wallpaper';
 import {createServerConfigModule} from '@catering-v2s/kernel-base-server-config';
-import {
-  createTerminalUpdateModule,
-  type UpdateTargetSourceProvider,
-} from '@catering-v2s/kernel-base-terminal-update';
+import {createTerminalUpdateModule, type UpdateTargetSourceProvider} from '@catering-v2s/kernel-base-terminal-update';
 import {resolveServerNetworkSnapshot} from '@catering-v2s/kernel-base-server-config';
 import type {TransportServerConfig} from '@catering-v2s/kernel-base-contracts';
 import {
@@ -177,25 +178,39 @@ export async function createSampleWallpaperConsoleAssembly(
         transportModule,
         createTerminalUpdateModule({
           port: input.platformPorts.update,
+          createProtocolUuid: () => Crypto.randomUUID(),
           sourceProvider: input.terminalUpdateSourceProvider,
           readNetworkSnapshot: (state, serverName) => resolveServerNetworkSnapshot(state, serverSpaces, serverName),
           readRuleSnapshotContext: state => {
             const activation = selectActivationState(state);
             const readiness = selectStoreBasicLoadReadiness(state);
             const path = selectStoreOrganizationPath(state);
-            if (activation.status !== 'active' || activation.terminalRef === null ||
-                activation.bindingGeneration === null || activation.storeRef === null ||
-                activation.groupWorkspaceKey === null || readiness.runtimeId === null || readiness.binding === null ||
-                readiness.binding.terminalRef !== activation.terminalRef ||
-                readiness.binding.bindingGeneration !== activation.bindingGeneration ||
-                readiness.binding.storeRef !== activation.storeRef ||
-                readiness.binding.groupWorkspaceKey !== activation.groupWorkspaceKey ||
-                readiness.storeStatus !== 'flushed' || readiness.projectStatus !== 'flushed' || path === null ||
-                readiness.projectRef !== path.projectRef)
+            if (
+              activation.status !== 'active' ||
+              activation.terminalRef === null ||
+              activation.bindingGeneration === null ||
+              activation.storeRef === null ||
+              activation.groupWorkspaceKey === null ||
+              readiness.runtimeId === null ||
+              readiness.binding === null ||
+              readiness.binding.terminalRef !== activation.terminalRef ||
+              readiness.binding.bindingGeneration !== activation.bindingGeneration ||
+              readiness.binding.storeRef !== activation.storeRef ||
+              readiness.binding.groupWorkspaceKey !== activation.groupWorkspaceKey ||
+              readiness.storeStatus !== 'flushed' ||
+              readiness.projectStatus !== 'flushed' ||
+              path === null ||
+              readiness.projectRef !== path.projectRef
+            )
               return null;
-            return Object.freeze({terminalRef: activation.terminalRef, bindingGeneration: activation.bindingGeneration,
-              selectedSpace: activation.groupWorkspaceKey, storeRef: activation.storeRef,
-              projectRef: path.projectRef, projectUpdatedAtEpochMillis: path.projectUpdatedAtEpochMillis});
+            return Object.freeze({
+              terminalRef: activation.terminalRef,
+              bindingGeneration: activation.bindingGeneration,
+              selectedSpace: activation.groupWorkspaceKey,
+              storeRef: activation.storeRef,
+              projectRef: path.projectRef,
+              projectUpdatedAtEpochMillis: path.projectUpdatedAtEpochMillis,
+            });
           },
         }),
         createTopologyModule({

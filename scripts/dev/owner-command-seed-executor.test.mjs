@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {FormalSeedFailure, assertStoreOperatingRuleReadback, createDataNodeScopeSelector, createProjectScopeSelector, readSeedAssetFixtureBytes, resolveExtensionValues, resolveInvitationCreationPlan, validateCatalogInventorySeedPrerequisite, validateExtensionDefinitionRevisionChangeCoverage, validateExtensionDefinitionSeedCoverage, validateFormalSeedStaticInputs, validateStoreOperatingRuleSeedCoverage, validateStoreServicePointSeedCoverage, validateThreeStateSeedCoverage, invocationKeyForTest} from './owner-command-seed-executor.mjs';
+import {FormalSeedFailure, assertStoreOperatingRuleReadback, createDataNodeScopeSelector, createProjectScopeSelector, readSeedAssetFixtureBytes, resolveExtensionValues, resolveInvitationCreationPlan, validateCatalogInventorySeedPrerequisite, validateExtensionDefinitionRevisionChangeCoverage, validateExtensionDefinitionSeedCoverage, validateFormalSeedStaticInputs, validateStoreOperatingRuleSeedCoverage, validateStoreServicePointSeedCoverage, validateThreeStateSeedCoverage, invocationKeyForTest, managedSeedProcessValidationTargets} from './owner-command-seed-executor.mjs';
 import {loadGeneratedOperationRegistry, materializeGeneratedOperationPath, resolveGeneratedOperationById} from '../test/seed-report.mjs';
 
 const generatedRegistry = loadGeneratedOperationRegistry(new URL('../../apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json', import.meta.url));
@@ -105,6 +105,18 @@ const fixture = {
   ]},
 };
 const code = (expected) => (error) => error instanceof FormalSeedFailure && error.code === expected;
+
+
+test('formal seed process validation requires only the seed transport process', () => {
+  assert.deepEqual(
+    managedSeedProcessValidationTargets([
+      {name: 'remote-dev-tunnels', pid: 1},
+      {name: 'platform-admin', pid: 2},
+      {name: 'operations-admin', pid: 3},
+    ]).map((entry) => entry.name),
+    ['remote-dev-tunnels'],
+  );
+});
 
 test('formal seed refuses a fixture that does not explicitly map every invitation state', () => {
   assert.throws(() => resolveInvitationCreationPlan({...fixture, executionPlan: {}}), code('SEED_INVITATION_PLAN_REQUIRED'));

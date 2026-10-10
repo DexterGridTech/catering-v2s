@@ -13,6 +13,7 @@ type RuntimeFailureDiagnostic = Readonly<{
   readonly moduleName?: string;
   readonly phase?: string;
   readonly commandName?: string;
+  readonly operationId?: string;
   readonly actorKey?: string;
   readonly actorFailureKey?: string;
   readonly actorFailureCode?: string;
@@ -53,6 +54,48 @@ type RuntimeFailureDiagnostic = Readonly<{
   readonly pendingMessageType?: string;
   readonly messageIdFamily?: string;
   readonly pendingMessageIdFamily?: string;
+  readonly topicKey?: string;
+  readonly existingSubscription?: boolean;
+  readonly connectionReady?: boolean;
+  readonly connectionPresent?: boolean;
+  readonly matchingSubscriptionPresent?: boolean;
+  readonly pendingNotificationPresent?: boolean;
+  readonly persistedSubscriptionCount?: number;
+  readonly subscriptionCount?: number;
+  readonly dispatchStatus?: string;
+  readonly actorStatus?: string;
+  readonly resultStatus?: string;
+  readonly resultReason?: string;
+  readonly reportState?: string;
+  readonly reportReason?: string;
+  readonly cursorPresent?: boolean;
+  readonly collectionHashPresent?: boolean;
+  readonly pageLimit?: number;
+  readonly actorCount?: number;
+  readonly pathParameterCount?: number;
+  readonly queryParameterCount?: number;
+  readonly resultKind?: string;
+  readonly failureCategory?: string;
+  readonly resultCode?: string;
+  readonly contextReady?: boolean;
+  readonly connectionStatus?: string;
+  readonly snapshotStatus?: string;
+  readonly errorCode?: string;
+  readonly itemCount?: number;
+  readonly contextPresent?: boolean;
+  readonly selectedSpacePresent?: boolean;
+  readonly activationActive?: boolean;
+  readonly activationIdentityPresent?: boolean;
+  readonly activationWorkspacePresent?: boolean;
+  readonly runtimeIdPresent?: boolean;
+  readonly readinessBindingPresent?: boolean;
+  readonly readinessBindingMatchesActivation?: boolean;
+  readonly storeFlushed?: boolean;
+  readonly projectFlushed?: boolean;
+  readonly organizationPathPresent?: boolean;
+  readonly projectRefMatchesPath?: boolean;
+  readonly storeStatus?: string;
+  readonly projectStatus?: string;
 }>;
 
 const safeToken = (value: unknown): string | undefined =>
@@ -138,6 +181,282 @@ const safeNumber = (value: unknown): number | undefined =>
   typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : undefined;
 
 const safeBoolean = (value: unknown): boolean | undefined => (typeof value === 'boolean' ? value : undefined);
+
+/** Project only non-sensitive rule-refresh and page-read progress emitted by the update owner. */
+export const projectAndroidTerminalUpdateRuleLog = (line: string): RuntimeFailureDiagnostic | null => {
+  const match = line.match(/^[VDIWEF]\/ReactNativeJS\s*\(\s*\d+\):\s*(\{.*\})\s*$/u);
+  if (!match) return null;
+  let value: unknown;
+  try {
+    value = JSON.parse(match[1]!);
+  } catch {
+    return null;
+  }
+  const event = record(value);
+  const data = record(event?.data);
+  const name = safeToken(event?.event);
+  const acceptedEvents = new Set([
+    'terminal-update.rules.context-gates',
+    'terminal-update.rules.refresh-evaluated',
+    'terminal-update.rules.refresh-readback',
+    'terminal-update.rules.topic-subscribe.begin',
+    'terminal-update.rules.topic-subscribe.readback',
+    'terminal-update.rules.page-read.begin',
+    'terminal-update.rules.page-read.readback',
+    'terminal-update.rules.refresh-failed',
+  ]);
+  if (event?.category !== 'terminal-update.rules' || !acceptedEvents.has(name ?? '') || !data) return null;
+  return Object.freeze({
+    category: 'terminal-update.rules',
+    event: name!,
+    ...(safeToken(event.level) === undefined ? {} : {level: safeToken(event.level)}),
+    ...(safeToken(data.topicKey) === undefined ? {} : {topicKey: safeToken(data.topicKey)}),
+    ...(safeBoolean(data.existingSubscription) === undefined
+      ? {}
+      : {existingSubscription: safeBoolean(data.existingSubscription)}),
+    ...(safeBoolean(data.matchingSubscriptionPresent) === undefined
+      ? {}
+      : {matchingSubscriptionPresent: safeBoolean(data.matchingSubscriptionPresent)}),
+    ...(safeBoolean(data.pendingNotificationPresent) === undefined
+      ? {}
+      : {pendingNotificationPresent: safeBoolean(data.pendingNotificationPresent)}),
+    ...(safeNumber(data.subscriptionCount) === undefined
+      ? {}
+      : {subscriptionCount: safeNumber(data.subscriptionCount)}),
+    ...(safeToken(data.dispatchStatus) === undefined ? {} : {dispatchStatus: safeToken(data.dispatchStatus)}),
+    ...(safeToken(data.actorStatus) === undefined ? {} : {actorStatus: safeToken(data.actorStatus)}),
+    ...(safeToken(data.resultStatus) === undefined ? {} : {resultStatus: safeToken(data.resultStatus)}),
+    ...(safeToken(data.resultReason) === undefined ? {} : {resultReason: safeToken(data.resultReason)}),
+    ...(safeBoolean(data.cursorPresent) === undefined ? {} : {cursorPresent: safeBoolean(data.cursorPresent)}),
+    ...(safeBoolean(data.collectionHashPresent) === undefined
+      ? {}
+      : {collectionHashPresent: safeBoolean(data.collectionHashPresent)}),
+    ...(safeNumber(data.pageLimit) === undefined ? {} : {pageLimit: safeNumber(data.pageLimit)}),
+    ...(safeNumber(data.actorCount) === undefined ? {} : {actorCount: safeNumber(data.actorCount)}),
+    ...(safeToken(data.resultKind) === undefined ? {} : {resultKind: safeToken(data.resultKind)}),
+    ...(safeToken(data.resultCode) === undefined ? {} : {resultCode: safeToken(data.resultCode)}),
+    ...(safeBoolean(data.contextReady) === undefined ? {} : {contextReady: safeBoolean(data.contextReady)}),
+    ...(safeToken(data.connectionStatus) === undefined ? {} : {connectionStatus: safeToken(data.connectionStatus)}),
+    ...(safeToken(data.snapshotStatus) === undefined ? {} : {snapshotStatus: safeToken(data.snapshotStatus)}),
+    ...(safeToken(data.errorCode) === undefined ? {} : {errorCode: safeToken(data.errorCode)}),
+    ...(safeNumber(data.itemCount) === undefined ? {} : {itemCount: safeNumber(data.itemCount)}),
+    ...(safeBoolean(data.contextPresent) === undefined ? {} : {contextPresent: safeBoolean(data.contextPresent)}),
+    ...(safeBoolean(data.selectedSpacePresent) === undefined
+      ? {}
+      : {selectedSpacePresent: safeBoolean(data.selectedSpacePresent)}),
+    ...(safeBoolean(data.activationActive) === undefined ? {} : {activationActive: safeBoolean(data.activationActive)}),
+    ...(safeBoolean(data.activationIdentityPresent) === undefined
+      ? {}
+      : {activationIdentityPresent: safeBoolean(data.activationIdentityPresent)}),
+    ...(safeBoolean(data.activationWorkspacePresent) === undefined
+      ? {}
+      : {activationWorkspacePresent: safeBoolean(data.activationWorkspacePresent)}),
+    ...(safeBoolean(data.runtimeIdPresent) === undefined ? {} : {runtimeIdPresent: safeBoolean(data.runtimeIdPresent)}),
+    ...(safeBoolean(data.readinessBindingPresent) === undefined
+      ? {}
+      : {readinessBindingPresent: safeBoolean(data.readinessBindingPresent)}),
+    ...(safeBoolean(data.readinessBindingMatchesActivation) === undefined
+      ? {}
+      : {readinessBindingMatchesActivation: safeBoolean(data.readinessBindingMatchesActivation)}),
+    ...(safeBoolean(data.storeFlushed) === undefined ? {} : {storeFlushed: safeBoolean(data.storeFlushed)}),
+    ...(safeBoolean(data.projectFlushed) === undefined ? {} : {projectFlushed: safeBoolean(data.projectFlushed)}),
+    ...(safeBoolean(data.organizationPathPresent) === undefined
+      ? {}
+      : {organizationPathPresent: safeBoolean(data.organizationPathPresent)}),
+    ...(safeBoolean(data.projectRefMatchesPath) === undefined
+      ? {}
+      : {projectRefMatchesPath: safeBoolean(data.projectRefMatchesPath)}),
+    ...(safeToken(data.storeStatus) === undefined ? {} : {storeStatus: safeToken(data.storeStatus)}),
+    ...(safeToken(data.projectStatus) === undefined ? {} : {projectStatus: safeToken(data.projectStatus)}),
+    ...(safeToken(data.failureName) === undefined ? {} : {failureName: safeToken(data.failureName)}),
+  });
+};
+
+/** Project only non-sensitive terminal-data topic-subscription progress for Android failure summaries. */
+export const projectAndroidTerminalTopicSubscriptionLog = (line: string): RuntimeFailureDiagnostic | null => {
+  const match = line.match(/^[VDIWEF]\/ReactNativeJS\s*\(\s*\d+\):\s*(\{.*\})\s*$/u);
+  if (!match) return null;
+  let value: unknown;
+  try {
+    value = JSON.parse(match[1]!);
+  } catch {
+    return null;
+  }
+  const event = record(value);
+  const data = record(event?.data);
+  const name = safeToken(event?.event);
+  const acceptedEvents = new Set([
+    'terminal-topic-subscribe.begin',
+    'terminal-topic-subscribe.rejected',
+    'terminal-topic-subscribe.persist.begin',
+    'terminal-topic-subscribe.persist.readback',
+    'terminal-topic-subscribe.frame-send.begin',
+    'terminal-topic-subscribe.frame-send.completed',
+    'terminal-topic-subscribe.frame-send.failed',
+    'terminal-topic-subscribe.completed',
+    'terminal-topic-subscribe.failed',
+  ]);
+  if (event?.category !== 'terminal.data.topic-subscription' || !acceptedEvents.has(name ?? '') || !data) return null;
+  return Object.freeze({
+    category: 'terminal.data.topic-subscription',
+    event: name!,
+    ...(safeToken(event.level) === undefined ? {} : {level: safeToken(event.level)}),
+    ...(safeToken(data.topicKey) === undefined ? {} : {topicKey: safeToken(data.topicKey)}),
+    ...(safeToken(data.reason) === undefined ? {} : {reasonCode: safeToken(data.reason)}),
+    ...(safeToken(data.resultStatus) === undefined ? {} : {resultStatus: safeToken(data.resultStatus)}),
+    ...(safeBoolean(data.activationActive) === undefined ? {} : {activationActive: safeBoolean(data.activationActive)}),
+    ...(safeBoolean(data.connectionReady) === undefined ? {} : {connectionReady: safeBoolean(data.connectionReady)}),
+    ...(safeBoolean(data.connectionPresent) === undefined
+      ? {}
+      : {connectionPresent: safeBoolean(data.connectionPresent)}),
+    ...(safeBoolean(data.existingSubscription) === undefined
+      ? {}
+      : {existingSubscription: safeBoolean(data.existingSubscription)}),
+    ...(safeBoolean(data.matchingSubscriptionPresent) === undefined
+      ? {}
+      : {matchingSubscriptionPresent: safeBoolean(data.matchingSubscriptionPresent)}),
+    ...(safeNumber(data.persistedSubscriptionCount) === undefined
+      ? {}
+      : {persistedSubscriptionCount: safeNumber(data.persistedSubscriptionCount)}),
+  });
+};
+
+/** Project only operation names and classified outcomes for terminal HTTP reads. */
+export const projectAndroidTerminalDataReadLog = (line: string): RuntimeFailureDiagnostic | null => {
+  const match = line.match(/^[VDIWEF]\/ReactNativeJS\s*\(\s*\d+\):\s*(\{.*\})\s*$/u);
+  if (!match) return null;
+  let value: unknown;
+  try {
+    value = JSON.parse(match[1]!);
+  } catch {
+    return null;
+  }
+  const event = record(value);
+  const data = record(event?.data);
+  const name = safeToken(event?.event);
+  const acceptedEvents = new Set([
+    'terminal-read-rejected',
+    'terminal-read-http.begin',
+    'terminal-read-http.response',
+    'terminal-read-response-accept.begin',
+    'terminal-read-response-accept.completed',
+    'terminal-read-completed',
+    'terminal-read-threw',
+  ]);
+  if (event?.category !== 'terminal.data.read' || !acceptedEvents.has(name ?? '') || !data) return null;
+  return Object.freeze({
+    category: 'terminal.data.read',
+    event: name!,
+    ...(safeToken(event.level) === undefined ? {} : {level: safeToken(event.level)}),
+    ...(safeToken(data.operationId) === undefined ? {} : {operationId: safeToken(data.operationId)}),
+    ...(safeToken(data.code) === undefined ? {} : {failureCode: safeToken(data.code)}),
+    ...(safeToken(data.resultKind) === undefined ? {} : {resultKind: safeToken(data.resultKind)}),
+    ...(safeToken(data.failureCategory) === undefined ? {} : {failureCategory: safeToken(data.failureCategory)}),
+    ...(safeToken(data.errorCode) === undefined ? {} : {failureCode: safeToken(data.errorCode)}),
+    ...(safeNumber(data.status) === undefined ? {} : {status: safeNumber(data.status)}),
+    ...(safeNumber(data.elapsedMs) === undefined ? {} : {elapsedMs: safeNumber(data.elapsedMs)}),
+    ...(safeNumber(data.pathParameterCount) === undefined
+      ? {}
+      : {pathParameterCount: safeNumber(data.pathParameterCount)}),
+    ...(safeNumber(data.queryParameterCount) === undefined
+      ? {}
+      : {queryParameterCount: safeNumber(data.queryParameterCount)}),
+  });
+};
+
+/** Project only classified terminal update-report outcomes; omit report identity and request data. */
+export const projectAndroidTerminalUpdateReportLog = (line: string): RuntimeFailureDiagnostic | null => {
+  const match = line.match(/^[VDIWEF]\/ReactNativeJS\s*\(\s*\d+\s*\):\s*(\{.*\})\s*$/u);
+  if (!match) return null;
+  let value: unknown;
+  try {
+    value = JSON.parse(match[1]!);
+  } catch {
+    return null;
+  }
+  const event = record(value);
+  const data = record(event?.data);
+  const name = safeToken(event?.event);
+  if (
+    event?.category !== 'terminal.update.report' ||
+    !['report-submit-rejected', 'report-submit-completed'].includes(name ?? '') ||
+    !data
+  )
+    return null;
+  return Object.freeze({
+    category: 'terminal.update.report',
+    event: name!,
+    ...(safeToken(event.level) === undefined ? {} : {level: safeToken(event.level)}),
+    ...(typeof data.reportState === 'string' &&
+    [
+      'WAITING_USER',
+      'DOWNLOADING',
+      'VERIFYING',
+      'INSTALLING',
+      'APPLYING_HOT',
+      'SUCCEEDED',
+      'FAILED',
+      'CANCELLED',
+      'UNKNOWN',
+    ].includes(data.reportState)
+      ? {reportState: data.reportState}
+      : {}),
+    ...(typeof data.reportReason === 'string' &&
+    [
+      'NONE',
+      'NETWORK',
+      'HTTP_REJECTED',
+      'HASH_MISMATCH',
+      'PREPARE_FAILED',
+      'INSTALLER_CANCELLED',
+      'INSTALL_FAILED',
+      'HOT_APPLY_FAILED',
+      'UNKNOWN',
+    ].includes(data.reportReason)
+      ? {reportReason: data.reportReason}
+      : {}),
+    ...(safeToken(data.resultKind) === undefined ? {} : {resultKind: safeToken(data.resultKind)}),
+    ...(safeToken(data.failureCategory) === undefined ? {} : {failureCategory: safeToken(data.failureCategory)}),
+    ...(safeToken(data.code) === undefined ? {} : {failureCode: safeToken(data.code)}),
+    ...(safeToken(data.errorCode) === undefined ? {} : {failureCode: safeToken(data.errorCode)}),
+    ...(safeNumber(data.status) === undefined ? {} : {status: safeNumber(data.status)}),
+    ...(safeNumber(data.reportSequence) === undefined ? {} : {attemptNumber: safeNumber(data.reportSequence)}),
+    ...(safeNumber(data.elapsedMs) === undefined ? {} : {elapsedMs: safeNumber(data.elapsedMs)}),
+  });
+};
+
+/** Project only connection-health and local heartbeat-consumer outcomes. */
+export const projectAndroidTerminalHeartbeatLog = (line: string): RuntimeFailureDiagnostic | null => {
+  const match = line.match(/^[VDIWEF]\/ReactNativeJS\s*\(\s*\d+\s*\):\s*(\{.*\})\s*$/u);
+  if (!match) return null;
+  let value: unknown;
+  try {
+    value = JSON.parse(match[1]!);
+  } catch {
+    return null;
+  }
+  const event = record(value);
+  const data = record(event?.data);
+  const name = safeToken(event?.event);
+  const acceptedEvents = new Set([
+    'heartbeat-pong-matched',
+    'heartbeat-consumer-completed',
+    'heartbeat-consumer-not-completed',
+    'heartbeat-consumer-rejected',
+  ]);
+  if (event?.category !== 'terminal.connection.heartbeat' || !acceptedEvents.has(name ?? '') || !data) return null;
+  return Object.freeze({
+    category: 'terminal.connection.heartbeat',
+    event: name!,
+    ...(safeToken(event.level) === undefined ? {} : {level: safeToken(event.level)}),
+    ...(safeNumber(data.rttMs) === undefined ? {} : {rttMs: safeNumber(data.rttMs)}),
+    ...(safeToken(data.dispatchStatus) === undefined ? {} : {dispatchStatus: safeToken(data.dispatchStatus)}),
+    ...(safeNumber(data.consumerCount) === undefined ? {} : {consumerCount: safeNumber(data.consumerCount)}),
+    ...(safeToken(data.actorStatus) === undefined ? {} : {actorStatus: safeToken(data.actorStatus)}),
+    ...(safeToken(data.resultStatus) === undefined ? {} : {resultStatus: safeToken(data.resultStatus)}),
+    ...(safeToken(data.code) === undefined ? {} : {failureCode: safeToken(data.code)}),
+  });
+};
 
 /** Project only transport failure metadata needed to diagnose a request; omit URLs, headers and payloads. */
 export const projectAndroidTransportFailureLog = (line: string): RuntimeFailureDiagnostic | null => {
@@ -316,7 +635,12 @@ export const collectAndroidRuntimeFailureDiagnostics = (logcat: string): string 
         projectAndroidRuntimeFailureLog(line) ??
         projectAndroidTransportFailureLog(line) ??
         projectAndroidAutomationConnectionLog(line) ??
-        projectAndroidAutomationSelectorFailureLog(line),
+        projectAndroidAutomationSelectorFailureLog(line) ??
+        projectAndroidTerminalUpdateRuleLog(line) ??
+        projectAndroidTerminalTopicSubscriptionLog(line) ??
+        projectAndroidTerminalHeartbeatLog(line) ??
+        projectAndroidTerminalUpdateReportLog(line) ??
+        projectAndroidTerminalDataReadLog(line),
     )
     .filter((value): value is RuntimeFailureDiagnostic => value !== null)
     .map(value => JSON.stringify(value))

@@ -17,12 +17,13 @@ import {sampleMemberDeskAssembly} from '@catering-v2s/ui-feature-sample-member-d
 import {sampleStaffAuthAssembly} from '@catering-v2s/ui-feature-sample-staff-auth';
 import {createSampleMemberRegistryModule} from '@catering-v2s/kernel-feature-sample-member-registry';
 import {createSampleStaffSessionModule} from '@catering-v2s/kernel-feature-sample-staff-session';
-import {createStoreBasicModule, selectStoreBasicLoadReadiness, selectStoreOrganizationPath} from '@catering-v2s/kernel-feature-store-basic';
-import {createServerConfigModule} from '@catering-v2s/kernel-base-server-config';
 import {
-  createTerminalUpdateModule,
-  type UpdateTargetSourceProvider,
-} from '@catering-v2s/kernel-base-terminal-update';
+  createStoreBasicModule,
+  selectStoreBasicLoadReadiness,
+  selectStoreOrganizationPath,
+} from '@catering-v2s/kernel-feature-store-basic';
+import {createServerConfigModule} from '@catering-v2s/kernel-base-server-config';
+import {createTerminalUpdateModule, type UpdateTargetSourceProvider} from '@catering-v2s/kernel-base-terminal-update';
 import {resolveServerNetworkSnapshot} from '@catering-v2s/kernel-base-server-config';
 import type {TransportServerConfig} from '@catering-v2s/kernel-base-contracts';
 import {
@@ -184,31 +185,74 @@ export async function createSampleAssembly(input: SampleAssemblyInput): Promise<
         canActivate: state => !selectTopologyState(state).repairPending,
       });
       const storeBasicModule = createStoreBasicModule();
+      let lastRuleSnapshotGateSignature = '';
+      const readRuleSnapshotContext = (state: Parameters<typeof selectActivationState>[0]) => {
+        const activation = selectActivationState(state);
+        const readiness = selectStoreBasicLoadReadiness(state);
+        const path = selectStoreOrganizationPath(state);
+        const gates = Object.freeze({
+          activationActive: activation.status === 'active',
+          activationIdentityPresent:
+            activation.terminalRef !== null && activation.bindingGeneration !== null && activation.storeRef !== null,
+          activationWorkspacePresent: activation.groupWorkspaceKey !== null,
+          runtimeIdPresent: readiness.runtimeId !== null,
+          readinessBindingPresent: readiness.binding !== null,
+          readinessBindingMatchesActivation:
+            readiness.binding !== null &&
+            readiness.binding.terminalRef === activation.terminalRef &&
+            readiness.binding.bindingGeneration === activation.bindingGeneration &&
+            readiness.binding.storeRef === activation.storeRef &&
+            readiness.binding.groupWorkspaceKey === activation.groupWorkspaceKey,
+          storeFlushed: readiness.storeStatus === 'flushed',
+          projectFlushed: readiness.projectStatus === 'flushed',
+          organizationPathPresent: path !== null,
+          projectRefMatchesPath: path !== null && readiness.projectRef === path.projectRef,
+        });
+        const signature = JSON.stringify({
+          gates,
+          storeStatus: readiness.storeStatus,
+          projectStatus: readiness.projectStatus,
+        });
+        if (signature !== lastRuleSnapshotGateSignature) {
+          lastRuleSnapshotGateSignature = signature;
+          input.platformPorts.logger.info({
+            category: 'terminal-update.rules',
+            event: 'terminal-update.rules.context-gates',
+            message: 'Evaluated the readiness gates for the terminal rule snapshot context',
+            data: {
+              ...gates,
+              storeStatus: readiness.storeStatus,
+              projectStatus: readiness.projectStatus,
+            },
+          });
+        }
+        if (Object.values(gates).some(ready => !ready)) return null;
+        if (
+          path === null ||
+          activation.terminalRef === null ||
+          activation.bindingGeneration === null ||
+          activation.storeRef === null ||
+          activation.groupWorkspaceKey === null
+        )
+          return null;
+        return Object.freeze({
+          terminalRef: activation.terminalRef,
+          bindingGeneration: activation.bindingGeneration,
+          selectedSpace: activation.groupWorkspaceKey,
+          storeRef: activation.storeRef,
+          projectRef: path.projectRef,
+          projectUpdatedAtEpochMillis: path.projectUpdatedAtEpochMillis,
+        });
+      };
       return [
         serverConfigModule,
         transportModule,
         createTerminalUpdateModule({
           port: input.platformPorts.update,
+          createProtocolUuid: () => Crypto.randomUUID(),
           sourceProvider: input.terminalUpdateSourceProvider,
           readNetworkSnapshot: (state, serverName) => resolveServerNetworkSnapshot(state, serverSpaces, serverName),
-          readRuleSnapshotContext: state => {
-            const activation = selectActivationState(state);
-            const readiness = selectStoreBasicLoadReadiness(state);
-            const path = selectStoreOrganizationPath(state);
-            if (activation.status !== 'active' || activation.terminalRef === null ||
-                activation.bindingGeneration === null || activation.storeRef === null ||
-                activation.groupWorkspaceKey === null || readiness.runtimeId === null || readiness.binding === null ||
-                readiness.binding.terminalRef !== activation.terminalRef ||
-                readiness.binding.bindingGeneration !== activation.bindingGeneration ||
-                readiness.binding.storeRef !== activation.storeRef ||
-                readiness.binding.groupWorkspaceKey !== activation.groupWorkspaceKey ||
-                readiness.storeStatus !== 'flushed' || readiness.projectStatus !== 'flushed' || path === null ||
-                readiness.projectRef !== path.projectRef)
-              return null;
-            return Object.freeze({terminalRef: activation.terminalRef, bindingGeneration: activation.bindingGeneration,
-              selectedSpace: activation.groupWorkspaceKey, storeRef: activation.storeRef,
-              projectRef: path.projectRef, projectUpdatedAtEpochMillis: path.projectUpdatedAtEpochMillis});
-          },
+          readRuleSnapshotContext,
         }),
         createTopologyModule({
           displayName: 'sample-console',

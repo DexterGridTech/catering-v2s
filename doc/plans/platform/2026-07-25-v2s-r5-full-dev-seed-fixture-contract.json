@@ -8,10 +8,7 @@
   "profile": {
     "id": "r5-full",
     "version": 1,
-    "completeSeedComponents": [
-      "owner-command",
-      "catalog-inventory"
-    ],
+    "completeSeedComponents": ["owner-command", "catalog-inventory"],
     "catalogInventoryExtension": {
       "fixtureCatalog": "contracts/policy/catalog-inventory-fixture-catalog.json",
       "planProfile": "scripts/dev/profiles/catalog-inventory.json",
@@ -66,7 +63,15 @@
         "databaseNameDerivation": "'catering_v2s_dev_' + replace('-', '_', V2S_DEV_NAMESPACE without leading 'v2s-dev-')",
         "databaseNamePattern": "^catering_v2s_dev_[a-z0-9_]{3,32}$",
         "namespaceIsolation": "ONE_DATABASE_PER_NAMESPACE",
-        "fixedOwnerSchemas": ["platform_iam", "platform_workspace", "platform_asset", "organization", "extension", "workspace_iam", "contract"],
+        "fixedOwnerSchemas": [
+          "platform_iam",
+          "platform_workspace",
+          "platform_asset",
+          "organization",
+          "extension",
+          "workspace_iam",
+          "contract"
+        ],
         "flywayHistorySchema": "public",
         "resetTarget": "the exact derived database, including public Flyway history and all seven fixed owner schemas",
         "forbiddenSchemas": ["information_schema", "pg_catalog"],
@@ -124,26 +129,80 @@
       ],
       "forbidden": [
         "any non-allowlisted fixture key",
-        "new HTTP operation", "capability", "frontend control", "default profile", "production marker", "ordinary DEV namespace", "generic direct seed write"
+        "new HTTP operation",
+        "capability",
+        "frontend control",
+        "default profile",
+        "production marker",
+        "ordinary DEV namespace",
+        "generic direct seed write"
       ],
       "readback": "existing invitation management read API must return the exact EXPIRED state and its role/node intent"
     }
   },
   "secretBindings": [
-    {"fixtureRef": "pa-bootstrap", "secretRef": "V2S_SEED_PLATFORM_ROOT_PASSWORD", "purpose": "DEV_PLATFORM_ROOT_LOGIN"},
-    {"fixtureRef": "pa-support", "secretRef": "V2S_SEED_PLATFORM_SUPPORT_PASSWORD", "purpose": "DEV_PLATFORM_SUPPORT_LOGIN"},
-    {"fixtureRef": "pa-disabled", "secretRef": "V2S_SEED_PLATFORM_DISABLED_PASSWORD", "purpose": "DEV_PLATFORM_DISABLED_LOGIN_NEGATIVE"},
-    {"fixtureRef": "account-single-role", "secretRef": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD", "purpose": "DEV_OPERATIONS_SINGLE_ROLE_LOGIN"},
-    {"fixtureRef": "account-multi-role", "secretRef": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD", "purpose": "DEV_OPERATIONS_MULTI_ROLE_LOGIN"},
-    {"fixtureRef": "account-no-role", "secretRef": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD", "purpose": "DEV_OPERATIONS_NO_ROLE_NEGATIVE"},
-    {"fixtureRef": "account-disabled", "secretRef": "V2S_SEED_OPERATIONS_DISABLED_PASSWORD", "purpose": "DEV_OPERATIONS_DISABLED_ACCOUNT_NEGATIVE"},
-    {"fixtureRef": "account-reset", "secretRef": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD", "purpose": "DEV_OPERATIONS_PASSWORD_RESET"},
-    {"fixtureRef": "account-invite-existing", "secretRef": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD", "purpose": "DEV_INVITATION_EXISTING_ACCOUNT"},
-    {"fixtureRef": "inv-pending-store", "secretRef": "V2S_SEED_OTP_FIXED_VALUE", "purpose": "INVITATION_ACCEPTANCE_OTP"},
-    {"fixtureRef": "inv-pending-project", "secretRef": "V2S_SEED_OTP_FIXED_VALUE", "purpose": "INVITATION_ACCEPTANCE_OTP"},
+    {
+      "fixtureRef": "pa-bootstrap",
+      "secretRef": "V2S_SEED_PLATFORM_ROOT_PASSWORD",
+      "purpose": "DEV_PLATFORM_ROOT_LOGIN"
+    },
+    {
+      "fixtureRef": "pa-support",
+      "secretRef": "V2S_SEED_PLATFORM_SUPPORT_PASSWORD",
+      "purpose": "DEV_PLATFORM_SUPPORT_LOGIN"
+    },
+    {
+      "fixtureRef": "pa-disabled",
+      "secretRef": "V2S_SEED_PLATFORM_DISABLED_PASSWORD",
+      "purpose": "DEV_PLATFORM_DISABLED_LOGIN_NEGATIVE"
+    },
+    {
+      "fixtureRef": "account-single-role",
+      "secretRef": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD",
+      "purpose": "DEV_OPERATIONS_SINGLE_ROLE_LOGIN"
+    },
+    {
+      "fixtureRef": "account-multi-role",
+      "secretRef": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD",
+      "purpose": "DEV_OPERATIONS_MULTI_ROLE_LOGIN"
+    },
+    {
+      "fixtureRef": "account-no-role",
+      "secretRef": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD",
+      "purpose": "DEV_OPERATIONS_NO_ROLE_NEGATIVE"
+    },
+    {
+      "fixtureRef": "account-disabled",
+      "secretRef": "V2S_SEED_OPERATIONS_DISABLED_PASSWORD",
+      "purpose": "DEV_OPERATIONS_DISABLED_ACCOUNT_NEGATIVE"
+    },
+    {
+      "fixtureRef": "account-reset",
+      "secretRef": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD",
+      "purpose": "DEV_OPERATIONS_PASSWORD_RESET"
+    },
+    {
+      "fixtureRef": "account-invite-existing",
+      "secretRef": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD",
+      "purpose": "DEV_INVITATION_EXISTING_ACCOUNT"
+    },
+    {
+      "fixtureRef": "inv-pending-store",
+      "secretRef": "V2S_SEED_OTP_FIXED_VALUE",
+      "purpose": "INVITATION_ACCEPTANCE_OTP"
+    },
+    {
+      "fixtureRef": "inv-pending-project",
+      "secretRef": "V2S_SEED_OTP_FIXED_VALUE",
+      "purpose": "INVITATION_ACCEPTANCE_OTP"
+    },
     {"fixtureRef": "inv-accepted", "secretRef": "V2S_SEED_OTP_FIXED_VALUE", "purpose": "INVITATION_ACCEPTANCE_OTP"},
     {"fixtureRef": "inv-verified", "secretRef": "V2S_SEED_OTP_FIXED_VALUE", "purpose": "INVITATION_ACCEPTANCE_OTP"},
-    {"fixtureRef": "inv-ready", "secretRef": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD", "purpose": "INVITATION_CREDENTIAL_COMPLETION"},
+    {
+      "fixtureRef": "inv-ready",
+      "secretRef": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD",
+      "purpose": "INVITATION_CREDENTIAL_COMPLETION"
+    },
     {"fixtureRef": "inv-reissued", "secretRef": "V2S_SEED_OTP_FIXED_VALUE", "purpose": "INVITATION_REISSUE_OTP"},
     {"fixtureRef": "account-reset-otp", "secretRef": "V2S_SEED_OTP_FIXED_VALUE", "purpose": "PASSWORD_RESET_OTP"}
   ],
@@ -183,17 +242,64 @@
       }
     ],
     "platformAdmins": [
-      {"key": "pa-bootstrap", "login": "root", "displayName": "平台超级管理员", "builtIn": true, "status": "ENABLED", "channel": "DEV_BOOTSTRAP_SQL"},
-      {"key": "pa-support", "login": "r5-support", "displayName": "平台支持管理员", "status": "ENABLED", "channel": "createPlatformAdmin"},
-      {"key": "pa-disabled", "login": "r5-disabled", "displayName": "停用平台管理员", "status": "DISABLED", "channel": "createPlatformAdmin+transitionPlatformAdminStatus"}
+      {
+        "key": "pa-bootstrap",
+        "login": "root",
+        "displayName": "平台超级管理员",
+        "builtIn": true,
+        "status": "ENABLED",
+        "channel": "DEV_BOOTSTRAP_SQL"
+      },
+      {
+        "key": "pa-support",
+        "login": "r5-support",
+        "displayName": "平台支持管理员",
+        "status": "ENABLED",
+        "channel": "createPlatformAdmin"
+      },
+      {
+        "key": "pa-disabled",
+        "login": "r5-disabled",
+        "displayName": "停用平台管理员",
+        "status": "DISABLED",
+        "channel": "createPlatformAdmin+transitionPlatformAdminStatus"
+      }
     ],
     "groupWorkspaces": [
-      {"key": "gw-aurora", "groupWorkspaceKey": "aurora", "name": "润欣商业", "operationsTitle": "华润万象生活餐饮运营平台", "status": "ENABLED", "commercialGroup": "cg-aurora", "logo": "asset-aurora"},
-      {"key": "gw-boreal", "groupWorkspaceKey": "boreal", "name": "北境商业集团空间", "status": "DISABLED", "commercialGroup": "cg-boreal", "logo": "asset-boreal"},
-      {"key": "gw-cinder", "groupWorkspaceKey": "cinder", "name": "星火待初始化空间", "status": "ENABLED", "commercialGroup": null, "logo": null}
+      {
+        "key": "gw-aurora",
+        "groupWorkspaceKey": "aurora",
+        "name": "润欣商业",
+        "operationsTitle": "华润万象生活餐饮运营平台",
+        "status": "ENABLED",
+        "commercialGroup": "cg-aurora",
+        "logo": "asset-aurora"
+      },
+      {
+        "key": "gw-boreal",
+        "groupWorkspaceKey": "boreal",
+        "name": "北境商业集团空间",
+        "status": "DISABLED",
+        "commercialGroup": "cg-boreal",
+        "logo": "asset-boreal"
+      },
+      {
+        "key": "gw-cinder",
+        "groupWorkspaceKey": "cinder",
+        "name": "星火待初始化空间",
+        "status": "ENABLED",
+        "commercialGroup": null,
+        "logo": null
+      }
     ],
     "assets": [
-      {"key": "asset-aurora", "usage": "GROUP_WORKSPACE_LOGO", "workspace": "gw-aurora", "status": "ACTIVE", "contentFixture": "fixtures/assets/runxin-commercial-logo.png"},
+      {
+        "key": "asset-aurora",
+        "usage": "GROUP_WORKSPACE_LOGO",
+        "workspace": "gw-aurora",
+        "status": "ACTIVE",
+        "contentFixture": "fixtures/assets/runxin-commercial-logo.png"
+      },
       {"key": "asset-boreal", "usage": "GROUP_WORKSPACE_LOGO", "workspace": "gw-boreal", "status": "ACTIVE"},
       {"key": "asset-staged", "usage": "GROUP_WORKSPACE_LOGO", "workspace": null, "status": "STAGED"},
       {"key": "asset-expired", "usage": "GROUP_WORKSPACE_LOGO", "workspace": null, "status": "CLEANUP_PENDING"}
@@ -203,89 +309,584 @@
         {"key": "update-console-full", "app": "sample-terminal", "kind": "FULL"},
         {"key": "update-console-hot", "app": "sample-terminal", "kind": "HOT", "minimumFullKey": "update-console-full"},
         {"key": "update-wallpaper-full", "app": "sample-wallpaper-terminal", "kind": "FULL"},
-        {"key": "update-wallpaper-hot", "app": "sample-wallpaper-terminal", "kind": "HOT", "minimumFullKey": "update-wallpaper-full"}
+        {
+          "key": "update-wallpaper-hot",
+          "app": "sample-wallpaper-terminal",
+          "kind": "HOT",
+          "minimumFullKey": "update-wallpaper-full"
+        }
       ],
       "rules": [
-        {"key": "update-console-full-all", "app": "sample-terminal", "targetMode": "ALL", "storeKeys": [], "fullArtifactKey": "update-console-full", "status": "ENABLED", "nSeconds": 300, "hotStrategy": "IMMEDIATE", "mSeconds": null},
-        {"key": "update-console-hot-all", "app": "sample-terminal", "targetMode": "ALL", "storeKeys": [], "fullArtifactKey": "update-console-full", "hotArtifactKey": "update-console-hot", "status": "ENABLED", "nSeconds": 300, "hotStrategy": "IMMEDIATE", "mSeconds": null},
-        {"key": "update-console-hot-operating", "app": "sample-terminal", "targetMode": "STORE_REFS", "storeKeys": ["store-operating"], "fullArtifactKey": "update-console-full", "hotArtifactKey": "update-console-hot", "status": "DISABLED", "nSeconds": 300, "hotStrategy": "IDLE", "mSeconds": 600},
-        {"key": "update-console-hot-preparing", "app": "sample-terminal", "targetMode": "STORE_REFS", "storeKeys": ["store-preparing"], "fullArtifactKey": "update-console-full", "hotArtifactKey": "update-console-hot", "status": "ENABLED", "nSeconds": 300, "hotStrategy": "IDLE", "mSeconds": 600},
-        {"key": "update-wallpaper-full-all", "app": "sample-wallpaper-terminal", "targetMode": "ALL", "storeKeys": [], "fullArtifactKey": "update-wallpaper-full", "status": "DISABLED", "nSeconds": 300, "hotStrategy": "IMMEDIATE", "mSeconds": null},
-        {"key": "update-wallpaper-hot-all", "app": "sample-wallpaper-terminal", "targetMode": "ALL", "storeKeys": [], "fullArtifactKey": "update-wallpaper-full", "hotArtifactKey": "update-wallpaper-hot", "status": "ENABLED", "nSeconds": 300, "hotStrategy": "IMMEDIATE", "mSeconds": null},
-        {"key": "update-wallpaper-hot-operating", "app": "sample-wallpaper-terminal", "targetMode": "STORE_REFS", "storeKeys": ["store-operating"], "fullArtifactKey": "update-wallpaper-full", "hotArtifactKey": "update-wallpaper-hot", "status": "ENABLED", "nSeconds": 300, "hotStrategy": "IDLE", "mSeconds": 600},
-        {"key": "update-wallpaper-hot-preparing", "app": "sample-wallpaper-terminal", "targetMode": "STORE_REFS", "storeKeys": ["store-preparing"], "fullArtifactKey": "update-wallpaper-full", "hotArtifactKey": "update-wallpaper-hot", "status": "DISABLED", "nSeconds": 300, "hotStrategy": "IDLE", "mSeconds": 600}
+        {
+          "key": "update-console-full-all",
+          "app": "sample-terminal",
+          "targetMode": "ALL",
+          "storeKeys": [],
+          "fullArtifactKey": "update-console-full",
+          "status": "ENABLED",
+          "nSeconds": 300,
+          "mSeconds": null
+        },
+        {
+          "key": "update-console-hot-all",
+          "app": "sample-terminal",
+          "targetMode": "ALL",
+          "storeKeys": [],
+          "fullArtifactKey": "update-console-full",
+          "hotArtifactKey": "update-console-hot",
+          "status": "ENABLED",
+          "nSeconds": 300,
+          "hotStrategy": "IMMEDIATE",
+          "mSeconds": null
+        },
+        {
+          "key": "update-console-hot-operating",
+          "app": "sample-terminal",
+          "targetMode": "STORE_REFS",
+          "storeKeys": ["store-operating"],
+          "fullArtifactKey": "update-console-full",
+          "hotArtifactKey": "update-console-hot",
+          "status": "DISABLED",
+          "nSeconds": 300,
+          "hotStrategy": "IDLE",
+          "mSeconds": 600
+        },
+        {
+          "key": "update-console-hot-preparing",
+          "app": "sample-terminal",
+          "targetMode": "STORE_REFS",
+          "storeKeys": ["store-preparing"],
+          "fullArtifactKey": "update-console-full",
+          "hotArtifactKey": "update-console-hot",
+          "status": "ENABLED",
+          "nSeconds": 300,
+          "hotStrategy": "IDLE",
+          "mSeconds": 600
+        },
+        {
+          "key": "update-wallpaper-full-all",
+          "app": "sample-wallpaper-terminal",
+          "targetMode": "ALL",
+          "storeKeys": [],
+          "fullArtifactKey": "update-wallpaper-full",
+          "status": "DISABLED",
+          "nSeconds": 300,
+          "mSeconds": null
+        },
+        {
+          "key": "update-wallpaper-hot-all",
+          "app": "sample-wallpaper-terminal",
+          "targetMode": "ALL",
+          "storeKeys": [],
+          "fullArtifactKey": "update-wallpaper-full",
+          "hotArtifactKey": "update-wallpaper-hot",
+          "status": "ENABLED",
+          "nSeconds": 300,
+          "hotStrategy": "IMMEDIATE",
+          "mSeconds": null
+        },
+        {
+          "key": "update-wallpaper-hot-operating",
+          "app": "sample-wallpaper-terminal",
+          "targetMode": "STORE_REFS",
+          "storeKeys": ["store-operating"],
+          "fullArtifactKey": "update-wallpaper-full",
+          "hotArtifactKey": "update-wallpaper-hot",
+          "status": "ENABLED",
+          "nSeconds": 300,
+          "hotStrategy": "IDLE",
+          "mSeconds": 600
+        },
+        {
+          "key": "update-wallpaper-hot-preparing",
+          "app": "sample-wallpaper-terminal",
+          "targetMode": "STORE_REFS",
+          "storeKeys": ["store-preparing"],
+          "fullArtifactKey": "update-wallpaper-full",
+          "hotArtifactKey": "update-wallpaper-hot",
+          "status": "DISABLED",
+          "nSeconds": 300,
+          "hotStrategy": "IDLE",
+          "mSeconds": 600
+        }
       ]
     },
     "extensionDefinitions": [
-      {"key": "ext-brand", "workspace": "gw-aurora", "hostType": "BRAND", "fields": [
-        {"key": "brandLevel", "label": "品牌等级", "type": "TEXT", "listDisplay": true, "searchable": true, "required": false, "options": [], "status": "ENABLED"},
-        {"key": "brandOrigin", "label": "品牌来源", "type": "SELECT", "listDisplay": true, "searchable": false, "required": false, "options": ["直营", "联营"], "status": "ENABLED"},
-        {"key": "legacyTag", "label": "历史标记", "type": "TEXT", "listDisplay": false, "searchable": false, "required": false, "options": [], "status": "DISABLED"}
-      ]},
-      {"key": "ext-tenant", "workspace": "gw-aurora", "hostType": "TENANT", "fields": [
-        {"key": "industryCode", "label": "行业编码", "type": "SELECT", "listDisplay": false, "searchable": true, "required": false, "options": ["餐饮服务", "烘焙零售", "历史经营"], "status": "ENABLED"},
-        {"key": "tenantPriority", "label": "经营优先级", "type": "NUMBER", "listDisplay": true, "searchable": true, "required": false, "options": [], "status": "ENABLED"}
-      ]},
-      {"key": "ext-head-company", "workspace": "gw-aurora", "hostType": "HEAD_COMPANY", "fields": [
-        {"key": "registrationRegion", "label": "注册地区", "type": "TEXT", "listDisplay": true, "searchable": false, "required": false, "options": [], "status": "ENABLED"},
-        {"key": "establishedDate", "label": "成立日期", "type": "DATE", "listDisplay": false, "searchable": true, "required": false, "options": [], "status": "ENABLED"}
-      ]},
-      {"key": "ext-store", "workspace": "gw-aurora", "hostType": "STORE", "fields": [
-        {"key": "floorLabel", "label": "所在楼层", "type": "TEXT", "listDisplay": true, "searchable": true, "required": false, "options": [], "status": "ENABLED"},
-        {"key": "openingHours", "label": "营业时段", "type": "TEXT", "listDisplay": false, "searchable": false, "required": false, "options": [], "status": "ENABLED"},
-        {"key": "is24Hour", "label": "是否全天营业", "type": "BOOLEAN", "listDisplay": true, "searchable": true, "required": false, "options": [], "status": "ENABLED"},
-        {"key": "storeArea", "label": "门店面积", "type": "NUMBER", "listDisplay": false, "searchable": true, "required": false, "options": [], "status": "ENABLED"}
-      ]},
-      {"key": "ext-contract", "workspace": "gw-aurora", "hostType": "CONTRACT", "fields": [
-        {"key": "settlementMode", "label": "结算方式", "type": "SELECT", "listDisplay": true, "searchable": true, "required": false, "options": ["月结", "预付", "历史结算", "到期结算"], "status": "ENABLED"},
-        {"key": "signedDate", "label": "签署日期", "type": "DATE", "listDisplay": true, "searchable": false, "required": false, "options": [], "status": "ENABLED"},
-        {"key": "depositRate", "label": "保证金比例", "type": "NUMBER", "listDisplay": false, "searchable": true, "required": false, "options": [], "status": "ENABLED"},
-        {"key": "renewal", "label": "是否续签", "type": "BOOLEAN", "listDisplay": false, "searchable": false, "required": false, "options": [], "status": "ENABLED"}
-      ]},
-      {"key": "ext-commercial-group", "workspace": "gw-aurora", "hostType": "COMMERCIAL_GROUP", "fields": [{"key": "groupTier", "label": "集团层级", "type": "TEXT", "listDisplay": null, "searchable": null, "required": false, "options": [], "status": "ENABLED"}]},
-      {"key": "ext-region", "workspace": "gw-aurora", "hostType": "REGION", "fields": [{"key": "regionGrade", "label": "大区等级", "type": "TEXT", "listDisplay": null, "searchable": null, "required": false, "options": [], "status": "ENABLED"}]},
-      {"key": "ext-project", "workspace": "gw-aurora", "hostType": "PROJECT", "fields": [{"key": "projectCategory", "label": "项目分类", "type": "TEXT", "listDisplay": null, "searchable": null, "required": false, "options": [], "status": "ENABLED"}]}
-      ,{"key": "ext-service-point", "workspace": "gw-aurora", "hostType": "SERVICE_POINT", "fields": [{"key": "servicePointLabel", "label": "服务点标签", "type": "TEXT", "listDisplay": null, "searchable": null, "required": false, "options": [], "status": "ENABLED"}]}
+      {
+        "key": "ext-brand",
+        "workspace": "gw-aurora",
+        "hostType": "BRAND",
+        "fields": [
+          {
+            "key": "brandLevel",
+            "label": "品牌等级",
+            "type": "TEXT",
+            "listDisplay": true,
+            "searchable": true,
+            "required": false,
+            "options": [],
+            "status": "ENABLED"
+          },
+          {
+            "key": "brandOrigin",
+            "label": "品牌来源",
+            "type": "SELECT",
+            "listDisplay": true,
+            "searchable": false,
+            "required": false,
+            "options": ["直营", "联营"],
+            "status": "ENABLED"
+          },
+          {
+            "key": "legacyTag",
+            "label": "历史标记",
+            "type": "TEXT",
+            "listDisplay": false,
+            "searchable": false,
+            "required": false,
+            "options": [],
+            "status": "DISABLED"
+          }
+        ]
+      },
+      {
+        "key": "ext-tenant",
+        "workspace": "gw-aurora",
+        "hostType": "TENANT",
+        "fields": [
+          {
+            "key": "industryCode",
+            "label": "行业编码",
+            "type": "SELECT",
+            "listDisplay": false,
+            "searchable": true,
+            "required": false,
+            "options": ["餐饮服务", "烘焙零售", "历史经营"],
+            "status": "ENABLED"
+          },
+          {
+            "key": "tenantPriority",
+            "label": "经营优先级",
+            "type": "NUMBER",
+            "listDisplay": true,
+            "searchable": true,
+            "required": false,
+            "options": [],
+            "status": "ENABLED"
+          }
+        ]
+      },
+      {
+        "key": "ext-head-company",
+        "workspace": "gw-aurora",
+        "hostType": "HEAD_COMPANY",
+        "fields": [
+          {
+            "key": "registrationRegion",
+            "label": "注册地区",
+            "type": "TEXT",
+            "listDisplay": true,
+            "searchable": false,
+            "required": false,
+            "options": [],
+            "status": "ENABLED"
+          },
+          {
+            "key": "establishedDate",
+            "label": "成立日期",
+            "type": "DATE",
+            "listDisplay": false,
+            "searchable": true,
+            "required": false,
+            "options": [],
+            "status": "ENABLED"
+          }
+        ]
+      },
+      {
+        "key": "ext-store",
+        "workspace": "gw-aurora",
+        "hostType": "STORE",
+        "fields": [
+          {
+            "key": "floorLabel",
+            "label": "所在楼层",
+            "type": "TEXT",
+            "listDisplay": true,
+            "searchable": true,
+            "required": false,
+            "options": [],
+            "status": "ENABLED"
+          },
+          {
+            "key": "openingHours",
+            "label": "营业时段",
+            "type": "TEXT",
+            "listDisplay": false,
+            "searchable": false,
+            "required": false,
+            "options": [],
+            "status": "ENABLED"
+          },
+          {
+            "key": "is24Hour",
+            "label": "是否全天营业",
+            "type": "BOOLEAN",
+            "listDisplay": true,
+            "searchable": true,
+            "required": false,
+            "options": [],
+            "status": "ENABLED"
+          },
+          {
+            "key": "storeArea",
+            "label": "门店面积",
+            "type": "NUMBER",
+            "listDisplay": false,
+            "searchable": true,
+            "required": false,
+            "options": [],
+            "status": "ENABLED"
+          }
+        ]
+      },
+      {
+        "key": "ext-contract",
+        "workspace": "gw-aurora",
+        "hostType": "CONTRACT",
+        "fields": [
+          {
+            "key": "settlementMode",
+            "label": "结算方式",
+            "type": "SELECT",
+            "listDisplay": true,
+            "searchable": true,
+            "required": false,
+            "options": ["月结", "预付", "历史结算", "到期结算"],
+            "status": "ENABLED"
+          },
+          {
+            "key": "signedDate",
+            "label": "签署日期",
+            "type": "DATE",
+            "listDisplay": true,
+            "searchable": false,
+            "required": false,
+            "options": [],
+            "status": "ENABLED"
+          },
+          {
+            "key": "depositRate",
+            "label": "保证金比例",
+            "type": "NUMBER",
+            "listDisplay": false,
+            "searchable": true,
+            "required": false,
+            "options": [],
+            "status": "ENABLED"
+          },
+          {
+            "key": "renewal",
+            "label": "是否续签",
+            "type": "BOOLEAN",
+            "listDisplay": false,
+            "searchable": false,
+            "required": false,
+            "options": [],
+            "status": "ENABLED"
+          }
+        ]
+      },
+      {
+        "key": "ext-commercial-group",
+        "workspace": "gw-aurora",
+        "hostType": "COMMERCIAL_GROUP",
+        "fields": [
+          {
+            "key": "groupTier",
+            "label": "集团层级",
+            "type": "TEXT",
+            "listDisplay": null,
+            "searchable": null,
+            "required": false,
+            "options": [],
+            "status": "ENABLED"
+          }
+        ]
+      },
+      {
+        "key": "ext-region",
+        "workspace": "gw-aurora",
+        "hostType": "REGION",
+        "fields": [
+          {
+            "key": "regionGrade",
+            "label": "大区等级",
+            "type": "TEXT",
+            "listDisplay": null,
+            "searchable": null,
+            "required": false,
+            "options": [],
+            "status": "ENABLED"
+          }
+        ]
+      },
+      {
+        "key": "ext-project",
+        "workspace": "gw-aurora",
+        "hostType": "PROJECT",
+        "fields": [
+          {
+            "key": "projectCategory",
+            "label": "项目分类",
+            "type": "TEXT",
+            "listDisplay": null,
+            "searchable": null,
+            "required": false,
+            "options": [],
+            "status": "ENABLED"
+          }
+        ]
+      },
+      {
+        "key": "ext-service-point",
+        "workspace": "gw-aurora",
+        "hostType": "SERVICE_POINT",
+        "fields": [
+          {
+            "key": "servicePointLabel",
+            "label": "服务点标签",
+            "type": "TEXT",
+            "listDisplay": null,
+            "searchable": null,
+            "required": false,
+            "options": [],
+            "status": "ENABLED"
+          }
+        ]
+      }
     ],
     "organization": {
       "commercialGroups": [
-        {"key": "cg-aurora", "workspace": "gw-aurora", "code": "0", "name": "华润万象生活", "extensionValues": {"groupTier": "全国集团"}},
+        {
+          "key": "cg-aurora",
+          "workspace": "gw-aurora",
+          "code": "0",
+          "name": "华润万象生活",
+          "extensionValues": {"groupTier": "全国集团"}
+        },
         {"key": "cg-boreal", "workspace": "gw-boreal", "code": "BOREAL-GROUP", "name": "北境商业集团"}
       ],
       "regions": [
-        {"key": "region-northeast", "workspace": "gw-aurora", "parent": "cg-aurora", "code": "001", "name": "东北大区", "status": "ENABLED", "extensionValues": {"regionGrade": "一级大区"}},
-        {"key": "region-east", "workspace": "gw-aurora", "parent": "cg-aurora", "code": "002", "name": "华北大区", "status": "ENABLED", "extensionValues": {"regionGrade": "一级大区"}},
-        {"key": "region-northwest", "workspace": "gw-aurora", "parent": "cg-aurora", "code": "003", "name": "西北大区", "status": "ENABLED", "extensionValues": {"regionGrade": "一级大区"}},
-        {"key": "region-southwest", "workspace": "gw-aurora", "parent": "cg-aurora", "code": "004", "name": "西南大区", "status": "ENABLED", "extensionValues": {"regionGrade": "一级大区"}},
-        {"key": "region-west", "workspace": "gw-aurora", "parent": "cg-aurora", "code": "005", "name": "华中大区", "status": "ENABLED", "extensionValues": {"regionGrade": "一级大区"}},
-        {"key": "region-southeast", "workspace": "gw-aurora", "parent": "cg-aurora", "code": "006", "name": "华东大区", "status": "ENABLED", "extensionValues": {"regionGrade": "一级大区"}},
-        {"key": "region-south", "workspace": "gw-aurora", "parent": "cg-aurora", "code": "007", "name": "华南大区", "status": "ENABLED", "extensionValues": {"regionGrade": "一级大区"}},
-        {"key": "region-head-office", "workspace": "gw-aurora", "parent": "cg-aurora", "code": "008", "name": "总部直管", "status": "DISABLED", "extensionValues": {"regionGrade": "历史大区"}},
-        {"key": "region-voided", "workspace": "gw-aurora", "parent": "cg-aurora", "code": "009", "name": "作废大区", "status": "VOIDED", "extensionValues": {"regionGrade": "历史大区"}}
+        {
+          "key": "region-northeast",
+          "workspace": "gw-aurora",
+          "parent": "cg-aurora",
+          "code": "001",
+          "name": "东北大区",
+          "status": "ENABLED",
+          "extensionValues": {"regionGrade": "一级大区"}
+        },
+        {
+          "key": "region-east",
+          "workspace": "gw-aurora",
+          "parent": "cg-aurora",
+          "code": "002",
+          "name": "华北大区",
+          "status": "ENABLED",
+          "extensionValues": {"regionGrade": "一级大区"}
+        },
+        {
+          "key": "region-northwest",
+          "workspace": "gw-aurora",
+          "parent": "cg-aurora",
+          "code": "003",
+          "name": "西北大区",
+          "status": "ENABLED",
+          "extensionValues": {"regionGrade": "一级大区"}
+        },
+        {
+          "key": "region-southwest",
+          "workspace": "gw-aurora",
+          "parent": "cg-aurora",
+          "code": "004",
+          "name": "西南大区",
+          "status": "ENABLED",
+          "extensionValues": {"regionGrade": "一级大区"}
+        },
+        {
+          "key": "region-west",
+          "workspace": "gw-aurora",
+          "parent": "cg-aurora",
+          "code": "005",
+          "name": "华中大区",
+          "status": "ENABLED",
+          "extensionValues": {"regionGrade": "一级大区"}
+        },
+        {
+          "key": "region-southeast",
+          "workspace": "gw-aurora",
+          "parent": "cg-aurora",
+          "code": "006",
+          "name": "华东大区",
+          "status": "ENABLED",
+          "extensionValues": {"regionGrade": "一级大区"}
+        },
+        {
+          "key": "region-south",
+          "workspace": "gw-aurora",
+          "parent": "cg-aurora",
+          "code": "007",
+          "name": "华南大区",
+          "status": "ENABLED",
+          "extensionValues": {"regionGrade": "一级大区"}
+        },
+        {
+          "key": "region-head-office",
+          "workspace": "gw-aurora",
+          "parent": "cg-aurora",
+          "code": "008",
+          "name": "总部直管",
+          "status": "DISABLED",
+          "extensionValues": {"regionGrade": "历史大区"}
+        },
+        {
+          "key": "region-voided",
+          "workspace": "gw-aurora",
+          "parent": "cg-aurora",
+          "code": "009",
+          "name": "作废大区",
+          "status": "VOIDED",
+          "extensionValues": {"regionGrade": "历史大区"}
+        }
       ],
       "projects": [
-        {"key": "project-river", "parent": "region-east", "code": "00201", "name": "太原万象城", "status": "ENABLED", "phases": ["一期", "二期"], "extensionValues": {"projectCategory": "滨水商业"}},
-        {"key": "project-hill", "parent": "region-east", "code": "00202", "name": "北京清河万象汇", "status": "ENABLED", "phases": ["首开区"], "extensionValues": {"projectCategory": "社区商业"}},
-        {"key": "project-lake", "parent": "region-west", "code": "00501", "name": "长沙万象城", "status": "DISABLED", "phases": ["滨水游憩区", "湖畔餐饮区"], "extensionValues": {"projectCategory": "文旅商业"}},
-        {"key": "project-voided", "parent": "region-east", "code": "00203", "name": "作废示范项目", "status": "VOIDED", "phases": ["历史项目"], "extensionValues": {"projectCategory": "历史项目"}}
+        {
+          "key": "project-river",
+          "parent": "region-east",
+          "code": "00201",
+          "name": "太原万象城",
+          "status": "ENABLED",
+          "phases": ["一期", "二期"],
+          "extensionValues": {"projectCategory": "滨水商业"}
+        },
+        {
+          "key": "project-hill",
+          "parent": "region-east",
+          "code": "00202",
+          "name": "北京清河万象汇",
+          "status": "ENABLED",
+          "phases": ["首开区"],
+          "extensionValues": {"projectCategory": "社区商业"}
+        },
+        {
+          "key": "project-lake",
+          "parent": "region-west",
+          "code": "00501",
+          "name": "长沙万象城",
+          "status": "DISABLED",
+          "phases": ["滨水游憩区", "湖畔餐饮区"],
+          "extensionValues": {"projectCategory": "文旅商业"}
+        },
+        {
+          "key": "project-voided",
+          "parent": "region-east",
+          "code": "00203",
+          "name": "作废示范项目",
+          "status": "VOIDED",
+          "phases": ["历史项目"],
+          "extensionValues": {"projectCategory": "历史项目"}
+        }
       ],
       "brands": [
-        {"key": "brand-tea", "code": "TEA", "name": "茶里", "status": "ENABLED", "extensionValues": {"brandLevel": "核心品牌", "brandOrigin": "直营"}},
-        {"key": "brand-bake", "code": "BAKE", "name": "麦香", "status": "ENABLED", "extensionValues": {"brandLevel": "成长品牌", "brandOrigin": "联营"}},
-        {"key": "brand-disabled", "code": "OLD", "name": "旧品牌", "status": "DISABLED", "extensionValues": {"brandLevel": "历史品牌", "brandOrigin": "直营", "legacyTag": null}},
-        {"key": "brand-voided", "code": "VOID", "name": "作废品牌", "status": "VOIDED", "extensionValues": {"brandLevel": "历史品牌", "brandOrigin": "直营"}}
+        {
+          "key": "brand-tea",
+          "code": "TEA",
+          "name": "茶里",
+          "status": "ENABLED",
+          "extensionValues": {"brandLevel": "核心品牌", "brandOrigin": "直营"}
+        },
+        {
+          "key": "brand-bake",
+          "code": "BAKE",
+          "name": "麦香",
+          "status": "ENABLED",
+          "extensionValues": {"brandLevel": "成长品牌", "brandOrigin": "联营"}
+        },
+        {
+          "key": "brand-disabled",
+          "code": "OLD",
+          "name": "旧品牌",
+          "status": "DISABLED",
+          "extensionValues": {"brandLevel": "历史品牌", "brandOrigin": "直营", "legacyTag": null}
+        },
+        {
+          "key": "brand-voided",
+          "code": "VOID",
+          "name": "作废品牌",
+          "status": "VOIDED",
+          "extensionValues": {"brandLevel": "历史品牌", "brandOrigin": "直营"}
+        }
       ],
       "tenants": [
-        {"key": "tenant-a", "code": "TEN-A", "name": "极光餐饮一号", "status": "ENABLED", "extensionValues": {"industryCode": "餐饮服务", "tenantPriority": 1}},
-        {"key": "tenant-b", "code": "TEN-B", "name": "极光餐饮二号", "status": "ENABLED", "extensionValues": {"industryCode": "烘焙零售", "tenantPriority": 2}},
-        {"key": "tenant-disabled", "code": "TEN-X", "name": "停用经营主体", "status": "DISABLED", "extensionValues": {"industryCode": "历史经营", "tenantPriority": 9}},
-        {"key": "tenant-voided", "code": "TEN-V", "name": "作废经营主体", "status": "VOIDED", "extensionValues": {"industryCode": "历史经营"}}
+        {
+          "key": "tenant-a",
+          "code": "TEN-A",
+          "name": "极光餐饮一号",
+          "status": "ENABLED",
+          "extensionValues": {"industryCode": "餐饮服务", "tenantPriority": 1}
+        },
+        {
+          "key": "tenant-b",
+          "code": "TEN-B",
+          "name": "极光餐饮二号",
+          "status": "ENABLED",
+          "extensionValues": {"industryCode": "烘焙零售", "tenantPriority": 2}
+        },
+        {
+          "key": "tenant-disabled",
+          "code": "TEN-X",
+          "name": "停用经营主体",
+          "status": "DISABLED",
+          "extensionValues": {"industryCode": "历史经营", "tenantPriority": 9}
+        },
+        {
+          "key": "tenant-voided",
+          "code": "TEN-V",
+          "name": "作废经营主体",
+          "status": "VOIDED",
+          "extensionValues": {"industryCode": "历史经营"}
+        }
       ],
       "headCompanies": [
-        {"key": "hc-a", "code": "HC-A", "name": "极光餐饮总公司", "status": "ENABLED", "extensionValues": {"registrationRegion": "上海", "establishedDate": "2020-01-15"}},
-        {"key": "hc-b", "code": "HC-B", "name": "北辰餐饮总公司", "status": "ENABLED", "extensionValues": {"registrationRegion": "北京", "establishedDate": "2021-03-20"}},
-        {"key": "hc-disabled", "code": "HC-X", "name": "停用总公司", "status": "DISABLED", "extensionValues": {"registrationRegion": "杭州"}},
-        {"key": "hc-voided", "code": "HC-V", "name": "作废总公司", "status": "VOIDED", "extensionValues": {"registrationRegion": "历史"}}
+        {
+          "key": "hc-a",
+          "code": "HC-A",
+          "name": "极光餐饮总公司",
+          "status": "ENABLED",
+          "extensionValues": {"registrationRegion": "上海", "establishedDate": "2020-01-15"}
+        },
+        {
+          "key": "hc-b",
+          "code": "HC-B",
+          "name": "北辰餐饮总公司",
+          "status": "ENABLED",
+          "extensionValues": {"registrationRegion": "北京", "establishedDate": "2021-03-20"}
+        },
+        {
+          "key": "hc-disabled",
+          "code": "HC-X",
+          "name": "停用总公司",
+          "status": "DISABLED",
+          "extensionValues": {"registrationRegion": "杭州"}
+        },
+        {
+          "key": "hc-voided",
+          "code": "HC-V",
+          "name": "作废总公司",
+          "status": "VOIDED",
+          "extensionValues": {"registrationRegion": "历史"}
+        }
       ],
       "brandAuthorizations": [
         {"headCompany": "hc-a", "brand": "brand-tea"},
@@ -294,27 +895,244 @@
         {"headCompany": "hc-disabled", "brand": "brand-tea"}
       ],
       "stores": [
-        {"key": "store-operating", "code": "S-OP", "name": "河畔茶里店", "project": "project-river", "tenant": "tenant-a", "brand": "brand-tea", "headCompany": "hc-a", "status": "ENABLED", "extensionValues": {"floorLabel": "一层", "openingHours": "08:00-22:00", "is24Hour": false, "storeArea": 120}, "operatingRuleSwitches": {"catalogManagementEnabled": true, "externalCatalogSyncEnabled": false, "openPlatformDeveloperCode": "", "reservationEnabled": false, "reservationDepositEnabled": false, "queueCallEnabled": false, "tableManagementEnabled": true, "tableStatusEnabled": false, "tableWaitCallEnabled": false, "banquetOrderEnabled": false, "pickupCallEnabled": false, "receivableEnabled": false}},
-        {"key": "store-preparing", "code": "S-PRE", "name": "河畔麦香筹备店", "project": "project-river", "tenant": "tenant-b", "brand": "brand-bake", "headCompany": "hc-a", "status": "ENABLED", "extensionValues": {"floorLabel": "二层", "openingHours": "09:00-21:00", "is24Hour": false, "storeArea": 86}, "operatingRuleSwitches": {"catalogManagementEnabled": true, "externalCatalogSyncEnabled": false, "openPlatformDeveloperCode": "", "reservationEnabled": false, "reservationDepositEnabled": false, "queueCallEnabled": false, "tableManagementEnabled": false, "tableStatusEnabled": false, "tableWaitCallEnabled": false, "banquetOrderEnabled": false, "pickupCallEnabled": false, "receivableEnabled": false}},
-        {"key": "store-not-operating", "code": "S-NO", "name": "山景无合同店", "project": "project-hill", "tenant": "tenant-a", "brand": "brand-tea", "headCompany": "hc-a", "status": "ENABLED", "extensionValues": {"floorLabel": "地下一层", "openingHours": "10:00-20:00", "is24Hour": true, "storeArea": 52}, "operatingRuleSwitches": {"catalogManagementEnabled": true, "externalCatalogSyncEnabled": false, "openPlatformDeveloperCode": "", "reservationEnabled": false, "reservationDepositEnabled": false, "queueCallEnabled": false, "tableManagementEnabled": false, "tableStatusEnabled": false, "tableWaitCallEnabled": false, "banquetOrderEnabled": false, "pickupCallEnabled": false, "receivableEnabled": false}},
-        {"key": "store-disabled", "code": "S-DIS", "name": "山景停用店", "project": "project-hill", "tenant": "tenant-b", "brand": "brand-bake", "headCompany": "hc-a", "status": "DISABLED", "extensionValues": {"floorLabel": "三层", "openingHours": "10:00-20:00", "is24Hour": false}, "operatingRuleSwitches": {"catalogManagementEnabled": true, "externalCatalogSyncEnabled": false, "openPlatformDeveloperCode": "", "reservationEnabled": false, "reservationDepositEnabled": false, "queueCallEnabled": false, "tableManagementEnabled": false, "tableStatusEnabled": false, "tableWaitCallEnabled": false, "banquetOrderEnabled": false, "pickupCallEnabled": false, "receivableEnabled": false}},
-        {"key": "store-history", "code": "S-HIS", "name": "河畔历史合同店", "project": "project-river", "tenant": "tenant-b", "brand": "brand-bake", "headCompany": "hc-b", "status": "ENABLED", "extensionValues": {"floorLabel": "一层", "openingHours": "07:30-21:30", "is24Hour": false, "storeArea": 110}, "operatingRuleSwitches": {"catalogManagementEnabled": true, "externalCatalogSyncEnabled": false, "openPlatformDeveloperCode": "", "reservationEnabled": false, "reservationDepositEnabled": false, "queueCallEnabled": false, "tableManagementEnabled": false, "tableStatusEnabled": false, "tableWaitCallEnabled": false, "banquetOrderEnabled": false, "pickupCallEnabled": false, "receivableEnabled": false}},
-        {"key": "store-voided", "code": "S-VOID", "name": "作废示范店", "project": "project-hill", "tenant": "tenant-a", "brand": "brand-tea", "headCompany": "hc-a", "status": "VOIDED", "extensionValues": {"floorLabel": "历史楼层", "openingHours": "不营业"}, "operatingRuleSwitches": {"catalogManagementEnabled": true, "externalCatalogSyncEnabled": false, "openPlatformDeveloperCode": "", "reservationEnabled": false, "reservationDepositEnabled": false, "queueCallEnabled": false, "tableManagementEnabled": false, "tableStatusEnabled": false, "tableWaitCallEnabled": false, "banquetOrderEnabled": false, "pickupCallEnabled": false, "receivableEnabled": false}}
+        {
+          "key": "store-operating",
+          "code": "S-OP",
+          "name": "河畔茶里店",
+          "project": "project-river",
+          "tenant": "tenant-a",
+          "brand": "brand-tea",
+          "headCompany": "hc-a",
+          "status": "ENABLED",
+          "extensionValues": {"floorLabel": "一层", "openingHours": "08:00-22:00", "is24Hour": false, "storeArea": 120},
+          "operatingRuleSwitches": {
+            "catalogManagementEnabled": true,
+            "externalCatalogSyncEnabled": false,
+            "openPlatformDeveloperCode": "",
+            "reservationEnabled": false,
+            "reservationDepositEnabled": false,
+            "queueCallEnabled": false,
+            "tableManagementEnabled": true,
+            "tableStatusEnabled": false,
+            "tableWaitCallEnabled": false,
+            "banquetOrderEnabled": false,
+            "pickupCallEnabled": false,
+            "receivableEnabled": false
+          }
+        },
+        {
+          "key": "store-preparing",
+          "code": "S-PRE",
+          "name": "河畔麦香筹备店",
+          "project": "project-river",
+          "tenant": "tenant-b",
+          "brand": "brand-bake",
+          "headCompany": "hc-a",
+          "status": "ENABLED",
+          "extensionValues": {"floorLabel": "二层", "openingHours": "09:00-21:00", "is24Hour": false, "storeArea": 86},
+          "operatingRuleSwitches": {
+            "catalogManagementEnabled": true,
+            "externalCatalogSyncEnabled": false,
+            "openPlatformDeveloperCode": "",
+            "reservationEnabled": false,
+            "reservationDepositEnabled": false,
+            "queueCallEnabled": false,
+            "tableManagementEnabled": false,
+            "tableStatusEnabled": false,
+            "tableWaitCallEnabled": false,
+            "banquetOrderEnabled": false,
+            "pickupCallEnabled": false,
+            "receivableEnabled": false
+          }
+        },
+        {
+          "key": "store-not-operating",
+          "code": "S-NO",
+          "name": "山景无合同店",
+          "project": "project-hill",
+          "tenant": "tenant-a",
+          "brand": "brand-tea",
+          "headCompany": "hc-a",
+          "status": "ENABLED",
+          "extensionValues": {
+            "floorLabel": "地下一层",
+            "openingHours": "10:00-20:00",
+            "is24Hour": true,
+            "storeArea": 52
+          },
+          "operatingRuleSwitches": {
+            "catalogManagementEnabled": true,
+            "externalCatalogSyncEnabled": false,
+            "openPlatformDeveloperCode": "",
+            "reservationEnabled": false,
+            "reservationDepositEnabled": false,
+            "queueCallEnabled": false,
+            "tableManagementEnabled": false,
+            "tableStatusEnabled": false,
+            "tableWaitCallEnabled": false,
+            "banquetOrderEnabled": false,
+            "pickupCallEnabled": false,
+            "receivableEnabled": false
+          }
+        },
+        {
+          "key": "store-disabled",
+          "code": "S-DIS",
+          "name": "山景停用店",
+          "project": "project-hill",
+          "tenant": "tenant-b",
+          "brand": "brand-bake",
+          "headCompany": "hc-a",
+          "status": "DISABLED",
+          "extensionValues": {"floorLabel": "三层", "openingHours": "10:00-20:00", "is24Hour": false},
+          "operatingRuleSwitches": {
+            "catalogManagementEnabled": true,
+            "externalCatalogSyncEnabled": false,
+            "openPlatformDeveloperCode": "",
+            "reservationEnabled": false,
+            "reservationDepositEnabled": false,
+            "queueCallEnabled": false,
+            "tableManagementEnabled": false,
+            "tableStatusEnabled": false,
+            "tableWaitCallEnabled": false,
+            "banquetOrderEnabled": false,
+            "pickupCallEnabled": false,
+            "receivableEnabled": false
+          }
+        },
+        {
+          "key": "store-history",
+          "code": "S-HIS",
+          "name": "河畔历史合同店",
+          "project": "project-river",
+          "tenant": "tenant-b",
+          "brand": "brand-bake",
+          "headCompany": "hc-b",
+          "status": "ENABLED",
+          "extensionValues": {"floorLabel": "一层", "openingHours": "07:30-21:30", "is24Hour": false, "storeArea": 110},
+          "operatingRuleSwitches": {
+            "catalogManagementEnabled": true,
+            "externalCatalogSyncEnabled": false,
+            "openPlatformDeveloperCode": "",
+            "reservationEnabled": false,
+            "reservationDepositEnabled": false,
+            "queueCallEnabled": false,
+            "tableManagementEnabled": false,
+            "tableStatusEnabled": false,
+            "tableWaitCallEnabled": false,
+            "banquetOrderEnabled": false,
+            "pickupCallEnabled": false,
+            "receivableEnabled": false
+          }
+        },
+        {
+          "key": "store-voided",
+          "code": "S-VOID",
+          "name": "作废示范店",
+          "project": "project-hill",
+          "tenant": "tenant-a",
+          "brand": "brand-tea",
+          "headCompany": "hc-a",
+          "status": "VOIDED",
+          "extensionValues": {"floorLabel": "历史楼层", "openingHours": "不营业"},
+          "operatingRuleSwitches": {
+            "catalogManagementEnabled": true,
+            "externalCatalogSyncEnabled": false,
+            "openPlatformDeveloperCode": "",
+            "reservationEnabled": false,
+            "reservationDepositEnabled": false,
+            "queueCallEnabled": false,
+            "tableManagementEnabled": false,
+            "tableStatusEnabled": false,
+            "tableWaitCallEnabled": false,
+            "banquetOrderEnabled": false,
+            "pickupCallEnabled": false,
+            "receivableEnabled": false
+          }
+        }
       ],
       "storeServicePoints": {
         "store": "store-operating",
         "areas": [
-          {"key": "area-table-main", "code": "TABLE-MAIN", "name": "大厅桌台区", "areaType": "TABLE_AREA", "status": "ENABLED"},
-          {"key": "area-scan-main", "code": "SCAN-MAIN", "name": "入口扫码区", "areaType": "SCAN_AREA", "status": "ENABLED"},
-          {"key": "area-table-legacy", "code": "TABLE-LEGACY", "name": "历史桌台区", "areaType": "TABLE_AREA", "status": "DISABLED"},
-          {"key": "area-scan-history", "code": "SCAN-HISTORY", "name": "历史扫码区", "areaType": "SCAN_AREA", "status": "VOIDED"}
+          {
+            "key": "area-table-main",
+            "code": "TABLE-MAIN",
+            "name": "大厅桌台区",
+            "areaType": "TABLE_AREA",
+            "status": "ENABLED"
+          },
+          {
+            "key": "area-scan-main",
+            "code": "SCAN-MAIN",
+            "name": "入口扫码区",
+            "areaType": "SCAN_AREA",
+            "status": "ENABLED"
+          },
+          {
+            "key": "area-table-legacy",
+            "code": "TABLE-LEGACY",
+            "name": "历史桌台区",
+            "areaType": "TABLE_AREA",
+            "status": "DISABLED"
+          },
+          {
+            "key": "area-scan-history",
+            "code": "SCAN-HISTORY",
+            "name": "历史扫码区",
+            "areaType": "SCAN_AREA",
+            "status": "VOIDED"
+          }
         ],
         "points": [
-          {"key": "point-table-window", "area": "area-table-main", "code": "T-001", "name": "靠窗一号桌", "pointType": "TABLE", "status": "ENABLED", "seatCapacity": 4, "tableShape": "HALL", "reservable": true, "image": {"fileName": "table-window.png", "mediaType": "image/png"}, "extensionValues": {"servicePointLabel": "靠窗"}},
-          {"key": "point-scan-entry", "area": "area-scan-main", "code": "QR-001", "name": "入口扫码点", "pointType": "SCAN", "status": "ENABLED", "extensionValues": {"servicePointLabel": "入口"}},
-          {"key": "point-scan-side", "area": "area-scan-main", "code": "QR-002", "name": "侧门扫码点", "pointType": "SCAN", "status": "DISABLED", "extensionValues": {"servicePointLabel": "侧门"}},
-          {"key": "point-table-legacy", "area": "area-table-legacy", "code": "T-OLD", "name": "历史桌台", "pointType": "TABLE", "status": "DISABLED", "extensionValues": {"servicePointLabel": "历史"}},
-          {"key": "point-scan-history", "area": "area-scan-history", "code": "QR-OLD", "name": "历史扫码点", "pointType": "SCAN", "status": "VOIDED", "extensionValues": {"servicePointLabel": "历史"}}
+          {
+            "key": "point-table-window",
+            "area": "area-table-main",
+            "code": "T-001",
+            "name": "靠窗一号桌",
+            "pointType": "TABLE",
+            "status": "ENABLED",
+            "seatCapacity": 4,
+            "tableShape": "HALL",
+            "reservable": true,
+            "image": {"fileName": "table-window.png", "mediaType": "image/png"},
+            "extensionValues": {"servicePointLabel": "靠窗"}
+          },
+          {
+            "key": "point-scan-entry",
+            "area": "area-scan-main",
+            "code": "QR-001",
+            "name": "入口扫码点",
+            "pointType": "SCAN",
+            "status": "ENABLED",
+            "extensionValues": {"servicePointLabel": "入口"}
+          },
+          {
+            "key": "point-scan-side",
+            "area": "area-scan-main",
+            "code": "QR-002",
+            "name": "侧门扫码点",
+            "pointType": "SCAN",
+            "status": "DISABLED",
+            "extensionValues": {"servicePointLabel": "侧门"}
+          },
+          {
+            "key": "point-table-legacy",
+            "area": "area-table-legacy",
+            "code": "T-OLD",
+            "name": "历史桌台",
+            "pointType": "TABLE",
+            "status": "DISABLED",
+            "extensionValues": {"servicePointLabel": "历史"}
+          },
+          {
+            "key": "point-scan-history",
+            "area": "area-scan-history",
+            "code": "QR-OLD",
+            "name": "历史扫码点",
+            "pointType": "SCAN",
+            "status": "VOIDED",
+            "extensionValues": {"servicePointLabel": "历史"}
+          }
         ],
         "qr": {"enabled": true, "channelCode": "CHANNEL-STORE-INTERNAL-DINE-IN-QR"}
       },
@@ -326,7 +1144,35 @@
           "deviceType": "laptop",
           "status": "ENABLED",
           "activationCode": "62000001",
-          "configuration": {"printers": [{"clientKey": "front-builtin", "name": "前台内置打印机", "brandKey": "GENERIC", "modelKey": "BUILTIN_THERMAL_58", "paperSpecKey": "THERMAL_58", "connectionMethodKey": "BUILT_IN"}], "functions": [{"clientKey": "front-cashier", "functionKey": "ORDERING_CASHIER", "ranges": [{"key": "TABLE_AREA", "all": false, "referenceKeys": ["area-table-main"]}, {"key": "NO_TABLE", "all": false, "referenceKeys": []}], "scenes": [{"sceneKey": "CHECKOUT_TICKET", "orderTypes": ["DINE_IN"], "printers": [{"printerClientKey": "front-builtin"}]}]}]}
+          "configuration": {
+            "printers": [
+              {
+                "clientKey": "front-builtin",
+                "name": "前台内置打印机",
+                "brandKey": "GENERIC",
+                "modelKey": "BUILTIN_THERMAL_58",
+                "paperSpecKey": "THERMAL_58",
+                "connectionMethodKey": "BUILT_IN"
+              }
+            ],
+            "functions": [
+              {
+                "clientKey": "front-cashier",
+                "functionKey": "ORDERING_CASHIER",
+                "ranges": [
+                  {"key": "TABLE_AREA", "all": false, "referenceKeys": ["area-table-main"]},
+                  {"key": "NO_TABLE", "all": false, "referenceKeys": []}
+                ],
+                "scenes": [
+                  {
+                    "sceneKey": "CHECKOUT_TICKET",
+                    "orderTypes": ["DINE_IN"],
+                    "printers": [{"printerClientKey": "front-builtin"}]
+                  }
+                ]
+              }
+            ]
+          }
         },
         {
           "key": "term-kitchen-multi",
@@ -335,7 +1181,63 @@
           "deviceType": "laptop",
           "status": "ENABLED",
           "activationCode": "62000002",
-          "configuration": {"printers": [{"clientKey": "kitchen-network", "name": "后厨网口热敏", "brandKey": "EPSON", "modelKey": "EPSON_TM_T88VII", "paperSpecKey": "THERMAL_80", "connectionMethodKey": "NETWORK", "connectionParameter": "10.20.0.21"}, {"clientKey": "kitchen-usb", "name": "后厨USB热敏", "brandKey": "GENERIC", "modelKey": "GENERIC_THERMAL_80", "paperSpecKey": "THERMAL_80", "connectionMethodKey": "USB", "connectionParameter": "USB-KITCHEN-THERMAL-02"}, {"clientKey": "kitchen-label", "name": "后厨USB标签", "brandKey": "GENERIC", "modelKey": "GENERIC_LABEL_40_30", "paperSpecKey": "LABEL_40_30", "connectionMethodKey": "USB", "connectionParameter": "USB-KITCHEN-LABEL-01"}], "functions": [{"clientKey": "kitchen-print-main", "functionKey": "KITCHEN_PRINT", "ranges": [{"key": "PRODUCTION_TAG", "all": false, "referenceKeys": ["HOT_KITCHEN"]}], "scenes": [{"sceneKey": "PREPARATION_TICKET", "orderTypes": ["DINE_IN", "TAKEAWAY"], "printers": [{"printerClientKey": "kitchen-network"}, {"printerClientKey": "kitchen-usb"}]}]}, {"clientKey": "kitchen-print-label", "functionKey": "KITCHEN_PRINT", "ranges": [{"key": "PRODUCTION_TAG", "all": false, "referenceKeys": ["PACKING"]}], "scenes": [{"sceneKey": "LABEL_PREPARATION_TICKET", "orderTypes": ["DINE_IN"], "printers": [{"printerClientKey": "kitchen-label"}]}]}]}
+          "configuration": {
+            "printers": [
+              {
+                "clientKey": "kitchen-network",
+                "name": "后厨网口热敏",
+                "brandKey": "EPSON",
+                "modelKey": "EPSON_TM_T88VII",
+                "paperSpecKey": "THERMAL_80",
+                "connectionMethodKey": "NETWORK",
+                "connectionParameter": "10.20.0.21"
+              },
+              {
+                "clientKey": "kitchen-usb",
+                "name": "后厨USB热敏",
+                "brandKey": "GENERIC",
+                "modelKey": "GENERIC_THERMAL_80",
+                "paperSpecKey": "THERMAL_80",
+                "connectionMethodKey": "USB",
+                "connectionParameter": "USB-KITCHEN-THERMAL-02"
+              },
+              {
+                "clientKey": "kitchen-label",
+                "name": "后厨USB标签",
+                "brandKey": "GENERIC",
+                "modelKey": "GENERIC_LABEL_40_30",
+                "paperSpecKey": "LABEL_40_30",
+                "connectionMethodKey": "USB",
+                "connectionParameter": "USB-KITCHEN-LABEL-01"
+              }
+            ],
+            "functions": [
+              {
+                "clientKey": "kitchen-print-main",
+                "functionKey": "KITCHEN_PRINT",
+                "ranges": [{"key": "PRODUCTION_TAG", "all": false, "referenceKeys": ["HOT_KITCHEN"]}],
+                "scenes": [
+                  {
+                    "sceneKey": "PREPARATION_TICKET",
+                    "orderTypes": ["DINE_IN", "TAKEAWAY"],
+                    "printers": [{"printerClientKey": "kitchen-network"}, {"printerClientKey": "kitchen-usb"}]
+                  }
+                ]
+              },
+              {
+                "clientKey": "kitchen-print-label",
+                "functionKey": "KITCHEN_PRINT",
+                "ranges": [{"key": "PRODUCTION_TAG", "all": false, "referenceKeys": ["PACKING"]}],
+                "scenes": [
+                  {
+                    "sceneKey": "LABEL_PREPARATION_TICKET",
+                    "orderTypes": ["DINE_IN"],
+                    "printers": [{"printerClientKey": "kitchen-label"}]
+                  }
+                ]
+              }
+            ]
+          }
         },
         {
           "key": "term-kds",
@@ -344,7 +1246,17 @@
           "deviceType": "laptop",
           "status": "ENABLED",
           "activationCode": "62000003",
-          "configuration": {"printers": [], "functions": [{"clientKey": "kds-main", "functionKey": "KDS", "ranges": [{"key": "PRODUCTION_TAG", "all": true, "referenceKeys": []}], "scenes": []}]}
+          "configuration": {
+            "printers": [],
+            "functions": [
+              {
+                "clientKey": "kds-main",
+                "functionKey": "KDS",
+                "ranges": [{"key": "PRODUCTION_TAG", "all": true, "referenceKeys": []}],
+                "scenes": []
+              }
+            ]
+          }
         },
         {
           "key": "term-handheld",
@@ -353,7 +1265,39 @@
           "deviceType": "mobile",
           "status": "ENABLED",
           "activationCode": "62000004",
-          "configuration": {"printers": [{"clientKey": "handheld-bt", "name": "移动蓝牙热敏", "brandKey": "GENERIC", "modelKey": "GENERIC_THERMAL_58", "paperSpecKey": "THERMAL_58", "connectionMethodKey": "BLUETOOTH", "connectionParameter": "BT-HANDHELD-QUEUE-01"}], "functions": [{"clientKey": "handheld-confirm", "functionKey": "ORDER_CONFIRMATION", "ranges": [{"key": "NO_TABLE", "all": false, "referenceKeys": []}], "scenes": []}, {"clientKey": "handheld-queue", "functionKey": "QUEUE_CALL", "ranges": [], "scenes": [{"sceneKey": "QUEUE_NUMBER_TICKET", "orderTypes": ["DINE_IN"], "printers": [{"printerClientKey": "handheld-bt"}]}]}]}
+          "configuration": {
+            "printers": [
+              {
+                "clientKey": "handheld-bt",
+                "name": "移动蓝牙热敏",
+                "brandKey": "GENERIC",
+                "modelKey": "GENERIC_THERMAL_58",
+                "paperSpecKey": "THERMAL_58",
+                "connectionMethodKey": "BLUETOOTH",
+                "connectionParameter": "BT-HANDHELD-QUEUE-01"
+              }
+            ],
+            "functions": [
+              {
+                "clientKey": "handheld-confirm",
+                "functionKey": "ORDER_CONFIRMATION",
+                "ranges": [{"key": "NO_TABLE", "all": false, "referenceKeys": []}],
+                "scenes": []
+              },
+              {
+                "clientKey": "handheld-queue",
+                "functionKey": "QUEUE_CALL",
+                "ranges": [],
+                "scenes": [
+                  {
+                    "sceneKey": "QUEUE_NUMBER_TICKET",
+                    "orderTypes": ["DINE_IN"],
+                    "printers": [{"printerClientKey": "handheld-bt"}]
+                  }
+                ]
+              }
+            ]
+          }
         },
         {
           "key": "term-label",
@@ -362,7 +1306,33 @@
           "deviceType": "laptop",
           "status": "ENABLED",
           "activationCode": "62000005",
-          "configuration": {"printers": [{"clientKey": "label-cloud", "name": "云端标签打印机", "brandKey": "GENERIC", "modelKey": "GENERIC_LABEL_40_60", "paperSpecKey": "LABEL_40_60", "connectionMethodKey": "CLOUD", "connectionParameter": "CLOUD-LABEL-STORE-01"}], "functions": [{"clientKey": "label-kitchen", "functionKey": "KITCHEN_PRINT", "ranges": [{"key": "PRODUCTION_TAG", "all": false, "referenceKeys": ["BEVERAGE"]}], "scenes": [{"sceneKey": "LABEL_PREPARATION_TICKET", "orderTypes": ["DINE_IN", "TAKEAWAY"], "printers": [{"printerClientKey": "label-cloud"}]}]}]}
+          "configuration": {
+            "printers": [
+              {
+                "clientKey": "label-cloud",
+                "name": "云端标签打印机",
+                "brandKey": "GENERIC",
+                "modelKey": "GENERIC_LABEL_40_60",
+                "paperSpecKey": "LABEL_40_60",
+                "connectionMethodKey": "CLOUD",
+                "connectionParameter": "CLOUD-LABEL-STORE-01"
+              }
+            ],
+            "functions": [
+              {
+                "clientKey": "label-kitchen",
+                "functionKey": "KITCHEN_PRINT",
+                "ranges": [{"key": "PRODUCTION_TAG", "all": false, "referenceKeys": ["BEVERAGE"]}],
+                "scenes": [
+                  {
+                    "sceneKey": "LABEL_PREPARATION_TICKET",
+                    "orderTypes": ["DINE_IN", "TAKEAWAY"],
+                    "printers": [{"printerClientKey": "label-cloud"}]
+                  }
+                ]
+              }
+            ]
+          }
         },
         {
           "key": "term-preparing",
@@ -371,7 +1341,17 @@
           "deviceType": "mobile",
           "status": "ENABLED",
           "activationCode": "62000006",
-          "configuration": {"printers": [], "functions": [{"clientKey": "preparing-kitchen", "functionKey": "KITCHEN_PRINT", "ranges": [{"key": "PRODUCTION_TAG", "all": true, "referenceKeys": []}], "scenes": []}]}
+          "configuration": {
+            "printers": [],
+            "functions": [
+              {
+                "clientKey": "preparing-kitchen",
+                "functionKey": "KITCHEN_PRINT",
+                "ranges": [{"key": "PRODUCTION_TAG", "all": true, "referenceKeys": []}],
+                "scenes": []
+              }
+            ]
+          }
         },
         {
           "key": "term-disabled",
@@ -380,7 +1360,36 @@
           "deviceType": "laptop",
           "status": "DISABLED",
           "activationCode": "62000007",
-          "configuration": {"printers": [{"clientKey": "disabled-thermal", "name": "备用网口热敏", "brandKey": "GENERIC", "modelKey": "GENERIC_THERMAL_80", "paperSpecKey": "THERMAL_80", "connectionMethodKey": "NETWORK", "connectionParameter": "10.20.0.27"}], "functions": [{"clientKey": "disabled-dispatch", "functionKey": "DISPATCH", "ranges": [{"key": "TABLE_AREA", "all": true, "referenceKeys": []}, {"key": "DELIVERY", "all": false, "referenceKeys": []}], "scenes": [{"sceneKey": "DISH_CHECK_SUMMARY", "orderTypes": ["DINE_IN"], "printers": [{"printerClientKey": "disabled-thermal"}]}]}]}
+          "configuration": {
+            "printers": [
+              {
+                "clientKey": "disabled-thermal",
+                "name": "备用网口热敏",
+                "brandKey": "GENERIC",
+                "modelKey": "GENERIC_THERMAL_80",
+                "paperSpecKey": "THERMAL_80",
+                "connectionMethodKey": "NETWORK",
+                "connectionParameter": "10.20.0.27"
+              }
+            ],
+            "functions": [
+              {
+                "clientKey": "disabled-dispatch",
+                "functionKey": "DISPATCH",
+                "ranges": [
+                  {"key": "TABLE_AREA", "all": true, "referenceKeys": []},
+                  {"key": "DELIVERY", "all": false, "referenceKeys": []}
+                ],
+                "scenes": [
+                  {
+                    "sceneKey": "DISH_CHECK_SUMMARY",
+                    "orderTypes": ["DINE_IN"],
+                    "printers": [{"printerClientKey": "disabled-thermal"}]
+                  }
+                ]
+              }
+            ]
+          }
         },
         {
           "key": "term-history",
@@ -389,41 +1398,306 @@
           "deviceType": "laptop",
           "status": "VOIDED",
           "activationCode": "62000008",
-          "configuration": {"printers": [{"clientKey": "history-builtin", "name": "历史内置打印机", "brandKey": "GENERIC", "modelKey": "BUILTIN_THERMAL_80", "paperSpecKey": "THERMAL_80", "connectionMethodKey": "BUILT_IN"}], "functions": [{"clientKey": "history-ordering", "functionKey": "ORDERING_CASHIER", "ranges": [{"key": "TABLE_AREA", "all": false, "referenceKeys": ["area-table-main"]}], "scenes": [{"sceneKey": "CHECKOUT_TICKET", "orderTypes": ["DINE_IN"], "printers": [{"printerClientKey": "history-builtin"}]}]}]}
+          "configuration": {
+            "printers": [
+              {
+                "clientKey": "history-builtin",
+                "name": "历史内置打印机",
+                "brandKey": "GENERIC",
+                "modelKey": "BUILTIN_THERMAL_80",
+                "paperSpecKey": "THERMAL_80",
+                "connectionMethodKey": "BUILT_IN"
+              }
+            ],
+            "functions": [
+              {
+                "clientKey": "history-ordering",
+                "functionKey": "ORDERING_CASHIER",
+                "ranges": [{"key": "TABLE_AREA", "all": false, "referenceKeys": ["area-table-main"]}],
+                "scenes": [
+                  {
+                    "sceneKey": "CHECKOUT_TICKET",
+                    "orderTypes": ["DINE_IN"],
+                    "printers": [{"printerClientKey": "history-builtin"}]
+                  }
+                ]
+              }
+            ]
+          }
         }
       ]
     },
     "workspaceIam": {
       "roles": [
-        {"key": "role-group", "name": "集团运营管理员", "status": "ENABLED", "serviceNodeType": "GROUP", "pageAccessKeys": ["PG-IAM-GROUP-USERS", "PG-STORE-SERVICE-POINT-QR", "PG-STORE-TERMINALS", "PG-PROJECT-TERMINAL-VERSION-RULES"], "actionCapabilityKeys": ["BC-CONTRACT-CREATE", "BC-CONTRACT-INVALIDATE", "BC-IAM-GROUP-ROLE-REVOKE", "BC-IAM-GROUP-INVITE", "BC-ORG-BRAND-CREATE", "BC-ORG-BRAND-STATUS", "BC-ORG-HEAD-COMPANY-BRAND", "BC-ORG-HEAD-COMPANY-CREATE", "BC-ORG-HEAD-COMPANY-STATUS", "BC-ORG-PROJECT-CREATE", "BC-ORG-PROJECT-STATUS", "BC-ORG-REGION-CREATE", "BC-ORG-REGION-STATUS", "BC-ORG-STORE-CREATE", "BC-ORG-STORE-STATUS", "BC-ORG-TENANT-CREATE", "BC-ORG-TENANT-STATUS", "EDIT_STORE_SERVICE_POINT_QR", "EDIT_STORE_TERMINAL", "MANAGE_PROJECT_TERMINAL_VERSION"], "visibleDataNodePolicy": "GROUP_SUBTREE"},
-        {"key": "role-region", "name": "大区运营负责人", "status": "DISABLED", "serviceNodeType": "REGION", "pageAccessKeys": ["PG-IAM-REGION-USERS", "PG-STORE-SERVICE-POINT-QR"], "actionCapabilityKeys": ["BC-IAM-REGION-ROLE-REVOKE", "BC-IAM-REGION-INVITE", "EDIT_STORE_SERVICE_POINT_QR"], "visibleDataNodePolicy": "REGION_SUBTREE"},
-        {"key": "role-project", "name": "项目运营负责人", "status": "ENABLED", "serviceNodeType": "PROJECT", "pageAccessKeys": ["PG-IAM-PROJECT-USERS", "PG-BUSINESS-CHANNEL-PROJECT", "PG-ORG-STORE-MANAGE", "PG-STORE-SERVICE-POINT-QR", "PG-STORE-TERMINALS", "PG-PROJECT-TERMINAL-VERSION-RULES"], "actionCapabilityKeys": ["BC-IAM-PROJECT-ROLE-REVOKE", "BC-IAM-PROJECT-INVITE", "BC-BUSINESS-CHANNEL-PROJECT-EDIT", "BC-ORG-STORE-EDIT", "EDIT_STORE_SERVICE_POINT_QR", "EDIT_STORE_TERMINAL"], "visibleDataNodePolicy": "PROJECT"},
-        {"key": "role-head-company", "name": "总公司商品管理员", "status": "ENABLED", "serviceNodeType": "HEAD_COMPANY", "pageAccessKeys": ["PG-IAM-HEAD-COMPANY-USERS", "PG-CATALOG-BRAND-ITEMS"], "actionCapabilityKeys": ["BC-IAM-HEAD-COMPANY-ROLE-REVOKE", "BC-IAM-HEAD-COMPANY-INVITE", "EDIT_HEAD_COMPANY_CATALOG"], "visibleDataNodePolicy": "HEAD_COMPANY"},
-        {"key": "role-store", "name": "门店商品管理员", "status": "ENABLED", "serviceNodeType": "STORE", "pageAccessKeys": ["PG-IAM-STORE-USERS", "PG-CATALOG-STORE-ITEMS", "PG-BUSINESS-CHANNEL-STORE", "PG-SALES-MENU-STORE", "PG-STORE-SERVICE-POINT-QR", "PG-STORE-TERMINALS"], "actionCapabilityKeys": ["BC-IAM-STORE-ROLE-REVOKE", "BC-IAM-STORE-INVITE", "EDIT_STORE_CATALOG", "BC-BUSINESS-CHANNEL-STORE-EDIT", "EDIT_STORE_SALES_MENU", "EDIT_STORE_SERVICE_POINT_QR"], "visibleDataNodePolicy": "STORE"},
-        {"key": "role-store-inventory", "name": "门店库存管理员", "status": "ENABLED", "serviceNodeType": "STORE", "pageAccessKeys": ["PG-INVENTORY-STORE-STATUS"], "actionCapabilityKeys": ["EDIT_STORE_INVENTORY"], "visibleDataNodePolicy": "STORE"},
-        {"key": "role-store-manager", "name": "门店经营主管", "status": "ENABLED", "serviceNodeType": "STORE", "pageAccessKeys": ["PG-IAM-STORE-USERS", "PG-CATALOG-STORE-ITEMS", "PG-INVENTORY-STORE-STATUS"], "actionCapabilityKeys": ["BC-IAM-STORE-ROLE-REVOKE", "BC-IAM-STORE-INVITE", "EDIT_STORE_CATALOG", "EDIT_STORE_INVENTORY"], "visibleDataNodePolicy": "STORE"},
-        {"key": "role-voided", "name": "作废门店库存管理员", "status": "VOIDED", "serviceNodeType": "STORE", "pageAccessKeys": ["PG-INVENTORY-STORE-STATUS"], "actionCapabilityKeys": ["EDIT_STORE_INVENTORY"], "visibleDataNodePolicy": "STORE"}
+        {
+          "key": "role-group",
+          "name": "集团运营管理员",
+          "status": "ENABLED",
+          "serviceNodeType": "GROUP",
+          "pageAccessKeys": [
+            "PG-IAM-GROUP-USERS",
+            "PG-STORE-SERVICE-POINT-QR",
+            "PG-STORE-TERMINALS",
+            "PG-PROJECT-TERMINAL-VERSION-RULES"
+          ],
+          "actionCapabilityKeys": [
+            "BC-CONTRACT-CREATE",
+            "BC-CONTRACT-INVALIDATE",
+            "BC-IAM-GROUP-ROLE-REVOKE",
+            "BC-IAM-GROUP-INVITE",
+            "BC-ORG-BRAND-CREATE",
+            "BC-ORG-BRAND-STATUS",
+            "BC-ORG-HEAD-COMPANY-BRAND",
+            "BC-ORG-HEAD-COMPANY-CREATE",
+            "BC-ORG-HEAD-COMPANY-STATUS",
+            "BC-ORG-PROJECT-CREATE",
+            "BC-ORG-PROJECT-STATUS",
+            "BC-ORG-REGION-CREATE",
+            "BC-ORG-REGION-STATUS",
+            "BC-ORG-STORE-CREATE",
+            "BC-ORG-STORE-STATUS",
+            "BC-ORG-TENANT-CREATE",
+            "BC-ORG-TENANT-STATUS",
+            "EDIT_STORE_SERVICE_POINT_QR",
+            "EDIT_STORE_TERMINAL",
+            "MANAGE_PROJECT_TERMINAL_VERSION"
+          ],
+          "visibleDataNodePolicy": "GROUP_SUBTREE"
+        },
+        {
+          "key": "role-region",
+          "name": "大区运营负责人",
+          "status": "DISABLED",
+          "serviceNodeType": "REGION",
+          "pageAccessKeys": ["PG-IAM-REGION-USERS", "PG-STORE-SERVICE-POINT-QR"],
+          "actionCapabilityKeys": ["BC-IAM-REGION-ROLE-REVOKE", "BC-IAM-REGION-INVITE", "EDIT_STORE_SERVICE_POINT_QR"],
+          "visibleDataNodePolicy": "REGION_SUBTREE"
+        },
+        {
+          "key": "role-project",
+          "name": "项目运营负责人",
+          "status": "ENABLED",
+          "serviceNodeType": "PROJECT",
+          "pageAccessKeys": [
+            "PG-IAM-PROJECT-USERS",
+            "PG-BUSINESS-CHANNEL-PROJECT",
+            "PG-ORG-STORE-MANAGE",
+            "PG-STORE-SERVICE-POINT-QR",
+            "PG-STORE-TERMINALS",
+            "PG-PROJECT-TERMINAL-VERSION-RULES"
+          ],
+          "actionCapabilityKeys": [
+            "BC-IAM-PROJECT-ROLE-REVOKE",
+            "BC-IAM-PROJECT-INVITE",
+            "BC-BUSINESS-CHANNEL-PROJECT-EDIT",
+            "BC-ORG-STORE-EDIT",
+            "EDIT_STORE_SERVICE_POINT_QR",
+            "EDIT_STORE_TERMINAL"
+          ],
+          "visibleDataNodePolicy": "PROJECT"
+        },
+        {
+          "key": "role-head-company",
+          "name": "总公司商品管理员",
+          "status": "ENABLED",
+          "serviceNodeType": "HEAD_COMPANY",
+          "pageAccessKeys": ["PG-IAM-HEAD-COMPANY-USERS", "PG-CATALOG-BRAND-ITEMS"],
+          "actionCapabilityKeys": [
+            "BC-IAM-HEAD-COMPANY-ROLE-REVOKE",
+            "BC-IAM-HEAD-COMPANY-INVITE",
+            "EDIT_HEAD_COMPANY_CATALOG"
+          ],
+          "visibleDataNodePolicy": "HEAD_COMPANY"
+        },
+        {
+          "key": "role-store",
+          "name": "门店商品管理员",
+          "status": "ENABLED",
+          "serviceNodeType": "STORE",
+          "pageAccessKeys": [
+            "PG-IAM-STORE-USERS",
+            "PG-CATALOG-STORE-ITEMS",
+            "PG-BUSINESS-CHANNEL-STORE",
+            "PG-SALES-MENU-STORE",
+            "PG-STORE-SERVICE-POINT-QR",
+            "PG-STORE-TERMINALS"
+          ],
+          "actionCapabilityKeys": [
+            "BC-IAM-STORE-ROLE-REVOKE",
+            "BC-IAM-STORE-INVITE",
+            "EDIT_STORE_CATALOG",
+            "BC-BUSINESS-CHANNEL-STORE-EDIT",
+            "EDIT_STORE_SALES_MENU",
+            "EDIT_STORE_SERVICE_POINT_QR"
+          ],
+          "visibleDataNodePolicy": "STORE"
+        },
+        {
+          "key": "role-store-inventory",
+          "name": "门店库存管理员",
+          "status": "ENABLED",
+          "serviceNodeType": "STORE",
+          "pageAccessKeys": ["PG-INVENTORY-STORE-STATUS"],
+          "actionCapabilityKeys": ["EDIT_STORE_INVENTORY"],
+          "visibleDataNodePolicy": "STORE"
+        },
+        {
+          "key": "role-store-manager",
+          "name": "门店经营主管",
+          "status": "ENABLED",
+          "serviceNodeType": "STORE",
+          "pageAccessKeys": ["PG-IAM-STORE-USERS", "PG-CATALOG-STORE-ITEMS", "PG-INVENTORY-STORE-STATUS"],
+          "actionCapabilityKeys": [
+            "BC-IAM-STORE-ROLE-REVOKE",
+            "BC-IAM-STORE-INVITE",
+            "EDIT_STORE_CATALOG",
+            "EDIT_STORE_INVENTORY"
+          ],
+          "visibleDataNodePolicy": "STORE"
+        },
+        {
+          "key": "role-voided",
+          "name": "作废门店库存管理员",
+          "status": "VOIDED",
+          "serviceNodeType": "STORE",
+          "pageAccessKeys": ["PG-INVENTORY-STORE-STATUS"],
+          "actionCapabilityKeys": ["EDIT_STORE_INVENTORY"],
+          "visibleDataNodePolicy": "STORE"
+        }
       ],
       "accounts": [
-        {"key": "account-single-role", "displayName": "门店商品专员", "mobile": "13800000001", "status": "ENABLED", "credentialSource": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD"},
-        {"key": "account-multi-role", "displayName": "多岗位体验用户", "mobile": "13800000002", "status": "ENABLED", "credentialSource": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD"},
-        {"key": "account-no-role", "displayName": "无角色体验用户", "mobile": "13800000003", "status": "ENABLED", "credentialSource": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD"},
-        {"key": "account-disabled", "displayName": "停用体验用户", "mobile": "13800000004", "status": "DISABLED", "credentialSource": "V2S_SEED_OPERATIONS_DISABLED_PASSWORD"},
-        {"key": "account-reset", "displayName": "密码重置体验用户", "mobile": "13800000005", "status": "ENABLED", "credentialSource": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD"},
-        {"key": "account-invite-existing", "displayName": "总公司商品专员", "mobile": "13800000006", "status": "ENABLED", "credentialSource": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD"},
-        {"key": "account-voided", "displayName": "作废身份体验用户", "mobile": "13800000014", "status": "VOIDED", "credentialSource": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD"}
+        {
+          "key": "account-single-role",
+          "displayName": "门店商品专员",
+          "mobile": "13800000001",
+          "status": "ENABLED",
+          "credentialSource": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD"
+        },
+        {
+          "key": "account-multi-role",
+          "displayName": "多岗位体验用户",
+          "mobile": "13800000002",
+          "status": "ENABLED",
+          "credentialSource": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD"
+        },
+        {
+          "key": "account-no-role",
+          "displayName": "无角色体验用户",
+          "mobile": "13800000003",
+          "status": "ENABLED",
+          "credentialSource": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD"
+        },
+        {
+          "key": "account-disabled",
+          "displayName": "停用体验用户",
+          "mobile": "13800000004",
+          "status": "DISABLED",
+          "credentialSource": "V2S_SEED_OPERATIONS_DISABLED_PASSWORD"
+        },
+        {
+          "key": "account-reset",
+          "displayName": "密码重置体验用户",
+          "mobile": "13800000005",
+          "status": "ENABLED",
+          "credentialSource": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD"
+        },
+        {
+          "key": "account-invite-existing",
+          "displayName": "总公司商品专员",
+          "mobile": "13800000006",
+          "status": "ENABLED",
+          "credentialSource": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD"
+        },
+        {
+          "key": "account-voided",
+          "displayName": "作废身份体验用户",
+          "mobile": "13800000014",
+          "status": "VOIDED",
+          "credentialSource": "V2S_SEED_OPERATIONS_DEFAULT_PASSWORD"
+        }
       ],
       "assignments": [
-        {"key": "asg-single-store", "account": "account-single-role", "role": "role-store", "node": "store-operating", "visibleDataNode": "store-operating", "sourceInvitation": "inv-completed-single"},
-        {"key": "asg-multi-group", "account": "account-multi-role", "role": "role-group", "node": "cg-aurora", "visibleDataNode": "cg-aurora", "sourceInvitation": "inv-completed-multi-a"},
-        {"key": "asg-multi-project", "account": "account-multi-role", "role": "role-project", "node": "project-river", "visibleDataNode": "project-river", "sourceInvitation": "inv-completed-multi-b"},
-        {"key": "asg-multi-store", "account": "account-multi-role", "role": "role-store", "node": "store-preparing", "visibleDataNode": "store-preparing", "sourceInvitation": "inv-completed-multi-c"},
-        {"key": "asg-multi-inventory", "account": "account-multi-role", "role": "role-store-inventory", "node": "store-operating", "visibleDataNode": "store-operating", "sourceInvitation": "inv-completed-multi-d"},
-        {"key": "asg-multi-manager", "account": "account-multi-role", "role": "role-store-manager", "node": "store-preparing", "visibleDataNode": "store-preparing", "sourceInvitation": "inv-completed-multi-e"},
-        {"key": "asg-disabled-store", "account": "account-reset", "role": "role-store", "node": "store-disabled", "visibleDataNode": "store-disabled", "sourceInvitation": "inv-completed-disabled-store"},
-        {"key": "asg-head-company", "account": "account-invite-existing", "role": "role-head-company", "node": "hc-a", "visibleDataNode": "hc-a", "sourceInvitation": "inv-completed-existing"},
-        {"key": "asg-revoked", "account": "account-invite-existing", "role": "role-region", "node": "region-west", "visibleDataNode": "region-west", "sourceInvitation": "inv-completed-revoked", "status": "REVOKED"},
-        {"key": "asg-voided-account", "account": "account-voided", "role": "role-group", "node": "cg-aurora", "visibleDataNode": "cg-aurora", "sourceInvitation": "inv-completed-voided-account"}
+        {
+          "key": "asg-single-store",
+          "account": "account-single-role",
+          "role": "role-store",
+          "node": "store-operating",
+          "visibleDataNode": "store-operating",
+          "sourceInvitation": "inv-completed-single"
+        },
+        {
+          "key": "asg-multi-group",
+          "account": "account-multi-role",
+          "role": "role-group",
+          "node": "cg-aurora",
+          "visibleDataNode": "cg-aurora",
+          "sourceInvitation": "inv-completed-multi-a"
+        },
+        {
+          "key": "asg-multi-project",
+          "account": "account-multi-role",
+          "role": "role-project",
+          "node": "project-river",
+          "visibleDataNode": "project-river",
+          "sourceInvitation": "inv-completed-multi-b"
+        },
+        {
+          "key": "asg-multi-store",
+          "account": "account-multi-role",
+          "role": "role-store",
+          "node": "store-preparing",
+          "visibleDataNode": "store-preparing",
+          "sourceInvitation": "inv-completed-multi-c"
+        },
+        {
+          "key": "asg-multi-inventory",
+          "account": "account-multi-role",
+          "role": "role-store-inventory",
+          "node": "store-operating",
+          "visibleDataNode": "store-operating",
+          "sourceInvitation": "inv-completed-multi-d"
+        },
+        {
+          "key": "asg-multi-manager",
+          "account": "account-multi-role",
+          "role": "role-store-manager",
+          "node": "store-preparing",
+          "visibleDataNode": "store-preparing",
+          "sourceInvitation": "inv-completed-multi-e"
+        },
+        {
+          "key": "asg-disabled-store",
+          "account": "account-reset",
+          "role": "role-store",
+          "node": "store-disabled",
+          "visibleDataNode": "store-disabled",
+          "sourceInvitation": "inv-completed-disabled-store"
+        },
+        {
+          "key": "asg-head-company",
+          "account": "account-invite-existing",
+          "role": "role-head-company",
+          "node": "hc-a",
+          "visibleDataNode": "hc-a",
+          "sourceInvitation": "inv-completed-existing"
+        },
+        {
+          "key": "asg-revoked",
+          "account": "account-invite-existing",
+          "role": "role-region",
+          "node": "region-west",
+          "visibleDataNode": "region-west",
+          "sourceInvitation": "inv-completed-revoked",
+          "status": "REVOKED"
+        },
+        {
+          "key": "asg-voided-account",
+          "account": "account-voided",
+          "role": "role-group",
+          "node": "cg-aurora",
+          "visibleDataNode": "cg-aurora",
+          "sourceInvitation": "inv-completed-voided-account"
+        }
       ],
       "invitationStates": [
         {"key": "inv-pending-store", "status": "PENDING", "fixturePurpose": "STORE_INVITATION_LIST_PREREQUISITE"},
@@ -437,26 +1711,97 @@
         {"key": "inv-completed-multi-c", "status": "COMPLETED"},
         {"key": "inv-completed-multi-d", "status": "COMPLETED"},
         {"key": "inv-completed-multi-e", "status": "COMPLETED"},
-        {"key": "inv-completed-disabled-store", "status": "COMPLETED", "fixturePurpose": "EXISTING_ASSIGNMENT_THAT_BECOMES_NON_ENTERABLE"},
+        {
+          "key": "inv-completed-disabled-store",
+          "status": "COMPLETED",
+          "fixturePurpose": "EXISTING_ASSIGNMENT_THAT_BECOMES_NON_ENTERABLE"
+        },
         {"key": "inv-completed-existing", "status": "COMPLETED"},
         {"key": "inv-completed-revoked", "status": "COMPLETED"},
-        {"key": "inv-completed-no-role", "status": "COMPLETED", "fixturePurpose": "ACCOUNT_RETAINED_AFTER_ASSIGNMENT_REVOCATION"},
-        {"key": "inv-completed-disabled-account", "status": "COMPLETED", "fixturePurpose": "ACCOUNT_THAT_IS_SUBSEQUENTLY_DISABLED"},
-        {"key": "inv-completed-voided-account", "status": "COMPLETED", "fixturePurpose": "ACCOUNT_THAT_IS_SUBSEQUENTLY_VOIDED"},
+        {
+          "key": "inv-completed-no-role",
+          "status": "COMPLETED",
+          "fixturePurpose": "ACCOUNT_RETAINED_AFTER_ASSIGNMENT_REVOCATION"
+        },
+        {
+          "key": "inv-completed-disabled-account",
+          "status": "COMPLETED",
+          "fixturePurpose": "ACCOUNT_THAT_IS_SUBSEQUENTLY_DISABLED"
+        },
+        {
+          "key": "inv-completed-voided-account",
+          "status": "COMPLETED",
+          "fixturePurpose": "ACCOUNT_THAT_IS_SUBSEQUENTLY_VOIDED"
+        },
         {"key": "inv-cancelled", "status": "CANCELLED"},
         {"key": "inv-expired", "status": "EXPIRED"},
         {"key": "inv-reissued", "status": "PENDING", "supersedes": "inv-cancelled"}
       ],
       "passwordResetStates": [
-        {"key": "account-reset-otp", "account": "account-reset", "status": "OTP_ISSUED", "purpose": "PASSWORD_RESET_OTP"}
+        {
+          "key": "account-reset-otp",
+          "account": "account-reset",
+          "status": "OTP_ISSUED",
+          "purpose": "PASSWORD_RESET_OTP"
+        }
       ]
     },
     "contracts": [
-      {"key": "contract-current-a", "contractNo": "R5-CUR-001", "store": "store-operating", "status": "ACTIVE", "effectiveFrom": "2026-07-01", "effectiveTo": "2026-08-31", "phaseNameSnapshot": "一期", "extensionValues": {"settlementMode": "月结", "signedDate": "2026-06-15", "depositRate": 0.2, "renewal": true}, "items": [{"code": "SKU-TEA-01", "name": "招牌茶饮"}]},
-      {"key": "contract-current-b", "contractNo": "R5-CUR-002", "store": "store-operating", "status": "ACTIVE", "effectiveFrom": "2026-07-25", "effectiveTo": null, "phaseNameSnapshot": "二期", "extensionValues": {"settlementMode": "预付", "signedDate": "2026-07-01", "depositRate": 0.1, "renewal": false}, "items": [{"code": "SKU-TEA-02", "name": "季节茶饮"}]},
-      {"key": "contract-future", "contractNo": "R5-FUT-001", "store": "store-preparing", "status": "ACTIVE", "effectiveFrom": "2026-08-01", "effectiveTo": "2026-12-31", "phaseNameSnapshot": "二期", "extensionValues": {"settlementMode": "月结", "signedDate": "2026-07-20", "depositRate": 0.15}, "items": [{"code": "SKU-BAKE-01", "name": "招牌面包"}]},
-      {"key": "contract-invalid", "contractNo": "R5-INV-001", "store": "store-history", "status": "INVALID", "effectiveFrom": "2026-05-01", "effectiveTo": "2026-06-30", "phaseNameSnapshot": "一期", "extensionValues": {"settlementMode": "历史结算", "signedDate": "2026-04-10", "renewal": false}, "items": [{"code": "SKU-HIS-01", "name": "历史商品"}]},
-      {"key": "contract-ended", "contractNo": "R5-END-001", "store": "store-history", "status": "ACTIVE", "effectiveFrom": "2026-01-01", "effectiveTo": "2026-07-24", "phaseNameSnapshot": "一期", "extensionValues": {"settlementMode": "到期结算", "depositRate": 0.05}, "items": [{"code": "SKU-HIS-02", "name": "到期商品"}]}
+      {
+        "key": "contract-current-a",
+        "contractNo": "R5-CUR-001",
+        "store": "store-operating",
+        "status": "ACTIVE",
+        "effectiveFrom": "2026-07-01",
+        "effectiveTo": "2026-08-31",
+        "phaseNameSnapshot": "一期",
+        "extensionValues": {"settlementMode": "月结", "signedDate": "2026-06-15", "depositRate": 0.2, "renewal": true},
+        "items": [{"code": "SKU-TEA-01", "name": "招牌茶饮"}]
+      },
+      {
+        "key": "contract-current-b",
+        "contractNo": "R5-CUR-002",
+        "store": "store-operating",
+        "status": "ACTIVE",
+        "effectiveFrom": "2026-07-25",
+        "effectiveTo": null,
+        "phaseNameSnapshot": "二期",
+        "extensionValues": {"settlementMode": "预付", "signedDate": "2026-07-01", "depositRate": 0.1, "renewal": false},
+        "items": [{"code": "SKU-TEA-02", "name": "季节茶饮"}]
+      },
+      {
+        "key": "contract-future",
+        "contractNo": "R5-FUT-001",
+        "store": "store-preparing",
+        "status": "ACTIVE",
+        "effectiveFrom": "2026-08-01",
+        "effectiveTo": "2026-12-31",
+        "phaseNameSnapshot": "二期",
+        "extensionValues": {"settlementMode": "月结", "signedDate": "2026-07-20", "depositRate": 0.15},
+        "items": [{"code": "SKU-BAKE-01", "name": "招牌面包"}]
+      },
+      {
+        "key": "contract-invalid",
+        "contractNo": "R5-INV-001",
+        "store": "store-history",
+        "status": "INVALID",
+        "effectiveFrom": "2026-05-01",
+        "effectiveTo": "2026-06-30",
+        "phaseNameSnapshot": "一期",
+        "extensionValues": {"settlementMode": "历史结算", "signedDate": "2026-04-10", "renewal": false},
+        "items": [{"code": "SKU-HIS-01", "name": "历史商品"}]
+      },
+      {
+        "key": "contract-ended",
+        "contractNo": "R5-END-001",
+        "store": "store-history",
+        "status": "ACTIVE",
+        "effectiveFrom": "2026-01-01",
+        "effectiveTo": "2026-07-24",
+        "phaseNameSnapshot": "一期",
+        "extensionValues": {"settlementMode": "到期结算", "depositRate": 0.05},
+        "items": [{"code": "SKU-HIS-02", "name": "到期商品"}]
+      }
     ]
   },
   "expectedCounts": {
@@ -487,13 +1832,54 @@
     "terminalUpdateRules": 8
   },
   "seedStages": [
-    {"id": "bootstrap", "channel": "DEV_BOOTSTRAP_SQL", "idempotencyKeyPrefix": "r5-v1-bootstrap", "readback": ["pa-bootstrap", "bootstrap audit receipt"]},
-    {"id": "platform", "channel": "REAL_PLATFORM_COMMANDS", "idempotencyKeyPrefix": "r5-v1-platform", "readback": ["platformAdmins", "groupWorkspaces", "assets"]},
-    {"id": "extension", "channel": "REAL_PLATFORM_COMMANDS", "idempotencyKeyPrefix": "r5-v1-extension", "readback": ["nine definitions", "administrator-defined stable field keys", "display labels"]},
-    {"id": "organization", "channel": "REAL_OPERATIONS_COMMANDS", "idempotencyKeyPrefix": "r5-v1-organization", "readback": ["hierarchy", "entities", "stores", "service-point areas and points", "all declared extension values"]},
-    {"id": "access", "channel": "REAL_INVITATION_PUBLIC_CHAIN_PLUS_DEV_FIXED_OTP_ISSUER", "idempotencyKeyPrefix": "r5-v1-access", "readback": ["roles with independent page/action/data dimensions", "accounts", "20 invitations", "10 assignments", "ENABLED/DISABLED/VOIDED status coverage"]},
-    {"id": "contract", "channel": "REAL_OPERATIONS_COMMANDS", "idempotencyKeyPrefix": "r5-v1-contract", "readback": ["five contracts", "all declared extension values", "OPERATING", "PREPARING", "NOT_OPERATING"]},
-    {"id": "negatives", "channel": "REAL_COMMANDS_OR_TERMINAL_FIXTURE", "idempotencyKeyPrefix": "r5-v1-negative", "readback": ["disabled", "stale", "denied", "cancelled", "expired", "revoked"]}
+    {
+      "id": "bootstrap",
+      "channel": "DEV_BOOTSTRAP_SQL",
+      "idempotencyKeyPrefix": "r5-v1-bootstrap",
+      "readback": ["pa-bootstrap", "bootstrap audit receipt"]
+    },
+    {
+      "id": "platform",
+      "channel": "REAL_PLATFORM_COMMANDS",
+      "idempotencyKeyPrefix": "r5-v1-platform",
+      "readback": ["platformAdmins", "groupWorkspaces", "assets"]
+    },
+    {
+      "id": "extension",
+      "channel": "REAL_PLATFORM_COMMANDS",
+      "idempotencyKeyPrefix": "r5-v1-extension",
+      "readback": ["nine definitions", "administrator-defined stable field keys", "display labels"]
+    },
+    {
+      "id": "organization",
+      "channel": "REAL_OPERATIONS_COMMANDS",
+      "idempotencyKeyPrefix": "r5-v1-organization",
+      "readback": ["hierarchy", "entities", "stores", "service-point areas and points", "all declared extension values"]
+    },
+    {
+      "id": "access",
+      "channel": "REAL_INVITATION_PUBLIC_CHAIN_PLUS_DEV_FIXED_OTP_ISSUER",
+      "idempotencyKeyPrefix": "r5-v1-access",
+      "readback": [
+        "roles with independent page/action/data dimensions",
+        "accounts",
+        "20 invitations",
+        "10 assignments",
+        "ENABLED/DISABLED/VOIDED status coverage"
+      ]
+    },
+    {
+      "id": "contract",
+      "channel": "REAL_OPERATIONS_COMMANDS",
+      "idempotencyKeyPrefix": "r5-v1-contract",
+      "readback": ["five contracts", "all declared extension values", "OPERATING", "PREPARING", "NOT_OPERATING"]
+    },
+    {
+      "id": "negatives",
+      "channel": "REAL_COMMANDS_OR_TERMINAL_FIXTURE",
+      "idempotencyKeyPrefix": "r5-v1-negative",
+      "readback": ["disabled", "stale", "denied", "cancelled", "expired", "revoked"]
+    }
   ],
   "scenarioPrerequisitePolicy": {
     "denominator": 32,
@@ -506,57 +1892,262 @@
   },
   "scenarioPrerequisites": [
     {"scenarioId": "D01-S01", "positiveFixtureRefs": ["pa-bootstrap"], "negativeFixtureRefs": ["pa-disabled"]},
-    {"scenarioId": "D01-S02", "positiveFixtureRefs": ["gw-cinder", "asset-staged"], "negativeFixtureRefs": ["asset-expired"]},
-    {"scenarioId": "D01-S03", "positiveFixtureRefs": ["gw-aurora", "asset-staged"], "negativeFixtureRefs": ["gw-boreal"]},
+    {
+      "scenarioId": "D01-S02",
+      "positiveFixtureRefs": ["gw-cinder", "asset-staged"],
+      "negativeFixtureRefs": ["asset-expired"]
+    },
+    {
+      "scenarioId": "D01-S03",
+      "positiveFixtureRefs": ["gw-aurora", "asset-staged"],
+      "negativeFixtureRefs": ["gw-boreal"]
+    },
     {"scenarioId": "D01-S04", "positiveFixtureRefs": ["gw-aurora"], "negativeFixtureRefs": ["gw-boreal"]},
     {"scenarioId": "D01-S05", "positiveFixtureRefs": ["gw-cinder", "cg-aurora"], "negativeFixtureRefs": ["gw-aurora"]},
     {"scenarioId": "D01-S06", "positiveFixtureRefs": ["gw-aurora"], "negativeFixtureRefs": ["gw-boreal"]},
-    {"scenarioId": "D01-S07O", "positiveFixtureRefs": ["ext-brand", "ext-tenant", "ext-head-company", "ext-store", "ext-contract", "ext-commercial-group", "ext-region", "ext-project"], "negativeFixtureRefs": ["gw-boreal"]},
-    {"scenarioId": "D01-S07P", "positiveFixtureRefs": ["ext-brand", "ext-tenant", "ext-head-company", "ext-store", "ext-contract", "ext-commercial-group", "ext-region", "ext-project"], "negativeFixtureRefs": ["gw-boreal"]},
-    {"scenarioId": "D02-S01", "positiveFixtureRefs": ["gw-aurora", "cg-aurora", "ext-commercial-group"], "negativeFixtureRefs": ["gw-cinder"]},
-    {"scenarioId": "D02-S02", "positiveFixtureRefs": ["region-east", "region-west", "project-river", "project-hill", "ext-region", "ext-project"], "negativeFixtureRefs": ["project-lake"]},
-    {"scenarioId": "D02-S03", "positiveFixtureRefs": ["brand-tea", "tenant-a", "hc-a"], "negativeFixtureRefs": ["brand-disabled", "tenant-disabled", "hc-disabled"]},
-    {"scenarioId": "D02-S04", "positiveFixtureRefs": ["store-operating", "store-preparing"], "negativeFixtureRefs": ["store-disabled", "project-lake"]},
-    {"scenarioId": "D02-S06", "positiveFixtureRefs": ["cg-aurora", "region-east", "project-river", "store-operating"], "negativeFixtureRefs": ["gw-cinder"]},
-    {"scenarioId": "D02-S07", "positiveFixtureRefs": ["store-operating", "contract-current-a"], "negativeFixtureRefs": ["store-disabled"]},
-    {"scenarioId": "D03-S01", "positiveFixtureRefs": ["store-operating", "contract-current-a"], "negativeFixtureRefs": ["store-disabled"]},
-    {"scenarioId": "D03-S02", "positiveFixtureRefs": ["store-operating", "ext-contract"], "negativeFixtureRefs": ["store-disabled"]},
-    {"scenarioId": "D03-S03", "positiveFixtureRefs": ["contract-current-a", "contract-current-b"], "negativeFixtureRefs": ["contract-invalid"]},
-    {"scenarioId": "D03-S04", "positiveFixtureRefs": ["contract-current-a", "contract-future", "contract-ended"], "negativeFixtureRefs": ["contract-invalid"]},
-    {"scenarioId": "D03-S06", "positiveFixtureRefs": ["contract-current-a", "contract-future", "contract-ended"], "negativeFixtureRefs": ["gw-cinder"]},
-    {"scenarioId": "D04-S01", "positiveFixtureRefs": ["role-group", "role-region", "role-project", "role-head-company", "role-store"], "negativeFixtureRefs": ["project-lake"]},
+    {
+      "scenarioId": "D01-S07O",
+      "positiveFixtureRefs": [
+        "ext-brand",
+        "ext-tenant",
+        "ext-head-company",
+        "ext-store",
+        "ext-contract",
+        "ext-commercial-group",
+        "ext-region",
+        "ext-project"
+      ],
+      "negativeFixtureRefs": ["gw-boreal"]
+    },
+    {
+      "scenarioId": "D01-S07P",
+      "positiveFixtureRefs": [
+        "ext-brand",
+        "ext-tenant",
+        "ext-head-company",
+        "ext-store",
+        "ext-contract",
+        "ext-commercial-group",
+        "ext-region",
+        "ext-project"
+      ],
+      "negativeFixtureRefs": ["gw-boreal"]
+    },
+    {
+      "scenarioId": "D02-S01",
+      "positiveFixtureRefs": ["gw-aurora", "cg-aurora", "ext-commercial-group"],
+      "negativeFixtureRefs": ["gw-cinder"]
+    },
+    {
+      "scenarioId": "D02-S02",
+      "positiveFixtureRefs": [
+        "region-east",
+        "region-west",
+        "project-river",
+        "project-hill",
+        "ext-region",
+        "ext-project"
+      ],
+      "negativeFixtureRefs": ["project-lake"]
+    },
+    {
+      "scenarioId": "D02-S03",
+      "positiveFixtureRefs": ["brand-tea", "tenant-a", "hc-a"],
+      "negativeFixtureRefs": ["brand-disabled", "tenant-disabled", "hc-disabled"]
+    },
+    {
+      "scenarioId": "D02-S04",
+      "positiveFixtureRefs": ["store-operating", "store-preparing"],
+      "negativeFixtureRefs": ["store-disabled", "project-lake"]
+    },
+    {
+      "scenarioId": "D02-S06",
+      "positiveFixtureRefs": ["cg-aurora", "region-east", "project-river", "store-operating"],
+      "negativeFixtureRefs": ["gw-cinder"]
+    },
+    {
+      "scenarioId": "D02-S07",
+      "positiveFixtureRefs": ["store-operating", "contract-current-a"],
+      "negativeFixtureRefs": ["store-disabled"]
+    },
+    {
+      "scenarioId": "D03-S01",
+      "positiveFixtureRefs": ["store-operating", "contract-current-a"],
+      "negativeFixtureRefs": ["store-disabled"]
+    },
+    {
+      "scenarioId": "D03-S02",
+      "positiveFixtureRefs": ["store-operating", "ext-contract"],
+      "negativeFixtureRefs": ["store-disabled"]
+    },
+    {
+      "scenarioId": "D03-S03",
+      "positiveFixtureRefs": ["contract-current-a", "contract-current-b"],
+      "negativeFixtureRefs": ["contract-invalid"]
+    },
+    {
+      "scenarioId": "D03-S04",
+      "positiveFixtureRefs": ["contract-current-a", "contract-future", "contract-ended"],
+      "negativeFixtureRefs": ["contract-invalid"]
+    },
+    {
+      "scenarioId": "D03-S06",
+      "positiveFixtureRefs": ["contract-current-a", "contract-future", "contract-ended"],
+      "negativeFixtureRefs": ["gw-cinder"]
+    },
+    {
+      "scenarioId": "D04-S01",
+      "positiveFixtureRefs": ["role-group", "role-region", "role-project", "role-head-company", "role-store"],
+      "negativeFixtureRefs": ["project-lake"]
+    },
     {"scenarioId": "D04-S02", "positiveFixtureRefs": ["role-project"], "negativeFixtureRefs": ["project-lake"]},
-    {"scenarioId": "D04-S03", "positiveFixtureRefs": ["account-single-role", "asg-single-store"], "negativeFixtureRefs": ["account-disabled", "asg-revoked"]},
-    {"scenarioId": "D04-S04", "positiveFixtureRefs": ["account-multi-role", "asg-multi-group", "asg-multi-project"], "negativeFixtureRefs": ["asg-revoked"]},
-    {"scenarioId": "D04-S05O", "positiveFixtureRefs": ["inv-pending-store", "role-store", "store-operating"], "negativeFixtureRefs": ["inv-cancelled", "store-disabled"]},
-    {"scenarioId": "D04-S05P", "positiveFixtureRefs": ["inv-pending-project", "role-project", "project-river"], "negativeFixtureRefs": ["inv-expired", "project-lake"]},
-    {"scenarioId": "D04-S06", "positiveFixtureRefs": ["inv-accepted", "inv-verified", "inv-ready"], "negativeFixtureRefs": ["inv-cancelled", "inv-expired"]},
-    {"scenarioId": "D04-S08", "positiveFixtureRefs": ["account-single-role", "account-multi-role"], "negativeFixtureRefs": ["account-no-role", "account-disabled"]},
-    {"scenarioId": "D04-S09", "positiveFixtureRefs": ["account-multi-role", "asg-multi-project", "asg-multi-store"], "negativeFixtureRefs": ["asg-disabled-store", "asg-revoked"]},
-    {"scenarioId": "D04-S10", "positiveFixtureRefs": ["account-reset", "account-reset-otp"], "negativeFixtureRefs": ["account-disabled", "inv-expired"]},
+    {
+      "scenarioId": "D04-S03",
+      "positiveFixtureRefs": ["account-single-role", "asg-single-store"],
+      "negativeFixtureRefs": ["account-disabled", "asg-revoked"]
+    },
+    {
+      "scenarioId": "D04-S04",
+      "positiveFixtureRefs": ["account-multi-role", "asg-multi-group", "asg-multi-project"],
+      "negativeFixtureRefs": ["asg-revoked"]
+    },
+    {
+      "scenarioId": "D04-S05O",
+      "positiveFixtureRefs": ["inv-pending-store", "role-store", "store-operating"],
+      "negativeFixtureRefs": ["inv-cancelled", "store-disabled"]
+    },
+    {
+      "scenarioId": "D04-S05P",
+      "positiveFixtureRefs": ["inv-pending-project", "role-project", "project-river"],
+      "negativeFixtureRefs": ["inv-expired", "project-lake"]
+    },
+    {
+      "scenarioId": "D04-S06",
+      "positiveFixtureRefs": ["inv-accepted", "inv-verified", "inv-ready"],
+      "negativeFixtureRefs": ["inv-cancelled", "inv-expired"]
+    },
+    {
+      "scenarioId": "D04-S08",
+      "positiveFixtureRefs": ["account-single-role", "account-multi-role"],
+      "negativeFixtureRefs": ["account-no-role", "account-disabled"]
+    },
+    {
+      "scenarioId": "D04-S09",
+      "positiveFixtureRefs": ["account-multi-role", "asg-multi-project", "asg-multi-store"],
+      "negativeFixtureRefs": ["asg-disabled-store", "asg-revoked"]
+    },
+    {
+      "scenarioId": "D04-S10",
+      "positiveFixtureRefs": ["account-reset", "account-reset-otp"],
+      "negativeFixtureRefs": ["account-disabled", "inv-expired"]
+    },
     {"scenarioId": "D04-S11", "positiveFixtureRefs": ["pa-support"], "negativeFixtureRefs": ["pa-disabled"]},
-    {"scenarioId": "D04-S12O", "positiveFixtureRefs": ["account-single-role", "asg-single-store"], "negativeFixtureRefs": ["account-disabled", "asg-revoked"]},
-    {"scenarioId": "D04-S12P", "positiveFixtureRefs": ["pa-bootstrap", "pa-support"], "negativeFixtureRefs": ["pa-disabled"]}
+    {
+      "scenarioId": "D04-S12O",
+      "positiveFixtureRefs": ["account-single-role", "asg-single-store"],
+      "negativeFixtureRefs": ["account-disabled", "asg-revoked"]
+    },
+    {
+      "scenarioId": "D04-S12P",
+      "positiveFixtureRefs": ["pa-bootstrap", "pa-support"],
+      "negativeFixtureRefs": ["pa-disabled"]
+    }
   ],
   "executionPlan": {
     "invitationPlans": [
-      {"invitationKey": "inv-pending-store", "roleKey": "role-store", "nodeKey": "store-operating", "mobile": "13800000007"},
-      {"invitationKey": "inv-pending-project", "roleKey": "role-project", "nodeKey": "project-river", "mobile": "13800000008"},
+      {
+        "invitationKey": "inv-pending-store",
+        "roleKey": "role-store",
+        "nodeKey": "store-operating",
+        "mobile": "13800000007"
+      },
+      {
+        "invitationKey": "inv-pending-project",
+        "roleKey": "role-project",
+        "nodeKey": "project-river",
+        "mobile": "13800000008"
+      },
       {"invitationKey": "inv-accepted", "roleKey": "role-group", "nodeKey": "cg-aurora", "mobile": "13800000009"},
       {"invitationKey": "inv-verified", "roleKey": "role-group", "nodeKey": "cg-aurora", "mobile": "13800000010"},
-      {"invitationKey": "inv-ready", "displayName": "待设密码集团运营专员", "roleKey": "role-group", "nodeKey": "cg-aurora", "mobile": "13800000011"},
-      {"invitationKey": "inv-completed-single", "accountKey": "account-single-role", "roleKey": "role-store", "nodeKey": "store-operating"},
-      {"invitationKey": "inv-completed-multi-a", "accountKey": "account-multi-role", "roleKey": "role-group", "nodeKey": "cg-aurora"},
-      {"invitationKey": "inv-completed-multi-b", "accountKey": "account-multi-role", "roleKey": "role-project", "nodeKey": "project-river"},
-      {"invitationKey": "inv-completed-multi-c", "accountKey": "account-multi-role", "roleKey": "role-store", "nodeKey": "store-preparing"},
-      {"invitationKey": "inv-completed-multi-d", "accountKey": "account-multi-role", "roleKey": "role-store-inventory", "nodeKey": "store-operating"},
-      {"invitationKey": "inv-completed-multi-e", "accountKey": "account-multi-role", "roleKey": "role-store-manager", "nodeKey": "store-preparing"},
-      {"invitationKey": "inv-completed-disabled-store", "accountKey": "account-reset", "roleKey": "role-store", "nodeKey": "store-disabled"},
-      {"invitationKey": "inv-completed-existing", "accountKey": "account-invite-existing", "roleKey": "role-head-company", "nodeKey": "hc-a"},
-      {"invitationKey": "inv-completed-revoked", "accountKey": "account-invite-existing", "roleKey": "role-region", "nodeKey": "region-west"},
-      {"invitationKey": "inv-completed-no-role", "accountKey": "account-no-role", "roleKey": "role-group", "nodeKey": "cg-aurora"},
-      {"invitationKey": "inv-completed-disabled-account", "accountKey": "account-disabled", "roleKey": "role-group", "nodeKey": "cg-aurora"},
-      {"invitationKey": "inv-completed-voided-account", "accountKey": "account-voided", "roleKey": "role-group", "nodeKey": "cg-aurora"},
+      {
+        "invitationKey": "inv-ready",
+        "displayName": "待设密码集团运营专员",
+        "roleKey": "role-group",
+        "nodeKey": "cg-aurora",
+        "mobile": "13800000011"
+      },
+      {
+        "invitationKey": "inv-completed-single",
+        "accountKey": "account-single-role",
+        "roleKey": "role-store",
+        "nodeKey": "store-operating"
+      },
+      {
+        "invitationKey": "inv-completed-multi-a",
+        "accountKey": "account-multi-role",
+        "roleKey": "role-group",
+        "nodeKey": "cg-aurora"
+      },
+      {
+        "invitationKey": "inv-completed-multi-b",
+        "accountKey": "account-multi-role",
+        "roleKey": "role-project",
+        "nodeKey": "project-river"
+      },
+      {
+        "invitationKey": "inv-completed-multi-c",
+        "accountKey": "account-multi-role",
+        "roleKey": "role-store",
+        "nodeKey": "store-preparing"
+      },
+      {
+        "invitationKey": "inv-completed-multi-d",
+        "accountKey": "account-multi-role",
+        "roleKey": "role-store-inventory",
+        "nodeKey": "store-operating"
+      },
+      {
+        "invitationKey": "inv-completed-multi-e",
+        "accountKey": "account-multi-role",
+        "roleKey": "role-store-manager",
+        "nodeKey": "store-preparing"
+      },
+      {
+        "invitationKey": "inv-completed-disabled-store",
+        "accountKey": "account-reset",
+        "roleKey": "role-store",
+        "nodeKey": "store-disabled"
+      },
+      {
+        "invitationKey": "inv-completed-existing",
+        "accountKey": "account-invite-existing",
+        "roleKey": "role-head-company",
+        "nodeKey": "hc-a"
+      },
+      {
+        "invitationKey": "inv-completed-revoked",
+        "accountKey": "account-invite-existing",
+        "roleKey": "role-region",
+        "nodeKey": "region-west"
+      },
+      {
+        "invitationKey": "inv-completed-no-role",
+        "accountKey": "account-no-role",
+        "roleKey": "role-group",
+        "nodeKey": "cg-aurora"
+      },
+      {
+        "invitationKey": "inv-completed-disabled-account",
+        "accountKey": "account-disabled",
+        "roleKey": "role-group",
+        "nodeKey": "cg-aurora"
+      },
+      {
+        "invitationKey": "inv-completed-voided-account",
+        "accountKey": "account-voided",
+        "roleKey": "role-group",
+        "nodeKey": "cg-aurora"
+      },
       {"invitationKey": "inv-cancelled", "roleKey": "role-group", "nodeKey": "cg-aurora", "mobile": "13800000012"},
       {"invitationKey": "inv-expired", "roleKey": "role-group", "nodeKey": "cg-aurora", "mobile": "13800000013"},
       {"invitationKey": "inv-reissued", "roleKey": "role-group", "nodeKey": "cg-aurora", "mobile": "13800000012"}

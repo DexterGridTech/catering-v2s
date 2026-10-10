@@ -29,7 +29,10 @@ public interface TerminalUpdateRuleOwnerApi {
 
     record RuleSummary(UUID ruleRef, UUID projectRef, String status, String targetMode,
             UUID fullArtifactRef, UUID hotArtifactRef, long nSeconds, String hotStrategy,
+            RuleArtifactIdentity fullArtifactIdentity, RuleArtifactIdentity hotArtifactIdentity,
             Long mSeconds, String description, long createdAtEpochMillis, long revision) {}
+
+    record RuleArtifactIdentity(String applicationId, String kind, String version) {}
 
     record RuleStorePage(List<RuleStore> items, String nextCursor) {
         public RuleStorePage { items = List.copyOf(items); }
@@ -49,7 +52,7 @@ public interface TerminalUpdateRuleOwnerApi {
 
     record SnapshotArtifact(UUID artifactRef, String kind, String applicationId, String runtimeVersion,
             long nativeBuildNumber, String apkVersion, String jsVersion, String publicationId,
-            String zipSha256, long byteSize, long createdAtEpochMillis) {}
+            String apkSha256, String zipSha256, long byteSize, long createdAtEpochMillis) {}
 
     record CreateRule(
             UUID workspaceUuid,
@@ -91,6 +94,8 @@ public interface TerminalUpdateRuleOwnerApi {
             List<UUID> storeRefs,
             UUID fullArtifactRef,
             UUID hotArtifactRef,
+            RuleArtifactIdentity fullArtifactIdentity,
+            RuleArtifactIdentity hotArtifactIdentity,
             String status,
             long nSeconds,
             String hotStrategy,
@@ -101,6 +106,15 @@ public interface TerminalUpdateRuleOwnerApi {
             long revision) {
         public RuleReadback {
             storeRefs = List.copyOf(storeRefs);
+        }
+
+        public RuleReadback(UUID ruleRef, UUID projectRef, String targetMode, List<UUID> storeRefs,
+                UUID fullArtifactRef, UUID hotArtifactRef, String status, long nSeconds, String hotStrategy,
+                Long mSeconds, String description, long createdAtEpochMillis, long updatedAtEpochMillis,
+                long revision) {
+            this(ruleRef, projectRef, targetMode, storeRefs, fullArtifactRef, hotArtifactRef,
+                    null, null, status, nSeconds, hotStrategy, mSeconds, description,
+                    createdAtEpochMillis, updatedAtEpochMillis, revision);
         }
     }
 }

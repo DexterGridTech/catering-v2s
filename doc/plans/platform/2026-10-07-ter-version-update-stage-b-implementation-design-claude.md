@@ -161,15 +161,15 @@ case名称只在doc/policy元数据；两个spec文件仍能力命名。fixture 
 | update-packages-list-detail | FIXTURE-UPDATE-PACKAGES | P登录/选W1→kind/app/runtime查询→重置→标题详情→关闭/刷新；实际结构化版本/摘要，W2不得带入 |
 | update-package-create-full | FIXTURE-UPDATE-PACKAGES | 真实FULL ZIP fileinput→解析事实→提交→标题详情核对；清理仅本stage/assetnamespace |
 | update-package-create-hot | FIXTURE-UPDATE-PACKAGES | 真实HOT ZIP→防抖五事实FULL候选→加载更多/选择→提交→核对固定配对 |
-| update-package-reject-and-exit | FIXTURE-UPDATE-PACKAGES | 坏ZIP拒绝→换合法file→dirty关闭取消/放弃→回读ownedstage释放；首败停止，不用raw异常当UI文案 |
+| update-package-reject-and-exit | FIXTURE-UPDATE-PACKAGES | 坏ZIP拒绝→换合法file→解析/保存请求在途时关闭、换文件、移除均不生效→完成后dirty关闭取消/放弃→回读ownedstage释放；首败停止，不用raw异常当UI文案 |
 | update-rules-list-detail | FIXTURE-UPDATE-RULES | O选PROJECT A→三个filters/query/reset→标题详情/fixedrefs pager→刷新；createdAt/status/目标事实 |
 | update-rule-create-full | FIXTURE-UPDATE-RULES | 选择FULL→ALL→正常N→初始停用→保存→详情；无HOT/M字段 |
 | update-rule-create-pair | FIXTURE-UPDATE-RULES | HOT防抖选择→只读FULL→STORE_REFS两页选→N/IDLE/M→保存→固定refs读回；模式/范围切换清失效值 |
 | update-rule-enable-disable | FIXTURE-UPDATE-RULES | 详情操作→带对象名确认启用/取消/启用→读回→停用→读回；只改变供给，createdAt不变 |
 | update-project-readonly | FIXTURE-UPDATE-READONLY | 通过真实邀请接受链登入只读角色→两Tab及三详情/关联候选可读→无新建/启停；服务端写拒绝另HTTP验 |
 | update-project-scope-and-tabs | FIXTURE-UPDATE-PROJECT-SCOPES | 左/右Tab→各自筛选→PROJECT A/B切换→旧Drawer/旧回包失效；dirty阻断按lifecycle |
-| update-report-no-report | FIXTURE-UPDATE-REPORT-NONE | 右Tab门店防抖/加载更多→query/reset→未上报终端仍在→标题详情/关闭；NO_REPORT不当空集合 |
-| update-report-current-detail | FIXTURE-UPDATE-REPORT-CURRENT | 本 run 激活→HTTP report commit→按门店/实际 APK/JS/runtime 查询→终端 Drawer 最新＋两个任务历史→同 task 更新不增行；停用门店/终端排除；标准历史分页/读回 |
+| update-report-no-report | FIXTURE-UPDATE-REPORT-NONE | 右Tab门店防抖/加载更多→query/reset→未上报终端仍在→标题详情/关闭；NO_REPORT且oldBinding=false不当空集合 |
+| update-report-current-detail | FIXTURE-UPDATE-REPORT-CURRENT | 本 run 激活→HTTP report commit→按门店/实际 APK/JS/runtime 查询→终端 Drawer 最新＋两个任务历史→同 task 更新不增行；ACTIVE本代报告oldBinding=false，结束绑定后同一报告oldBinding=true；停用门店/终端排除；标准历史分页/读回 |
 
 FIXTURE-UPDATE-PACKAGES 为本 run 真实 A 四工件/坏 ZIP；RULES 为实际 PROJECT/门店及两页固定 refs；READONLY 为真实无写cap角色；REPORT-NONE 为启用未报告终端；REPORT-CURRENT 经真实激活＋CBS HTTP 提交两任务与同任务两个阶段，无直接 SQL/旧 DEV 报告。大量分页反例由 HTTP acceptance 覆盖，不为 L2 重建百个发行包。
 
@@ -282,7 +282,7 @@ FULL检查APK digest、真实applicationId/versionName/versionCode、signed meta
 
 ### 8.2 · 项目规则
 
-owner数据：ruleRef/projectRef、scope `{ALL_PROJECT_STORES}|{STORE_REFS,refs}`、fullArtifactRef、hotArtifactRef可空、hotStrategy `IMMEDIATE|IDLE`或null、fullReminderIntervalSeconds N、idleSeconds M可空、说明（≤500字符，与canonical schema一致）、status ENABLED/DISABLED、createdAtEpochMillis、updatedAtEpochMillis、CAS revision（仅状态写保护，非TDP版本）。N/M持久/API值为60～86400秒的整数且必须为60的倍数，界面以1～1440整分钟输入及回显；FULL-only没有hotStrategy/M。maxNetworkAttempts/bootTimeout消费A已批准默认技术策略，不由运营管理员任意填。
+ owner数据：ruleRef/projectRef、scope `{ALL_PROJECT_STORES}|{STORE_REFS,refs}`、fullArtifactRef、hotArtifactRef可空、hotStrategy `IMMEDIATE|IDLE`或null、fullReminderIntervalSeconds N、idleSeconds M可空、说明（≤500字符，与canonical schema一致）、status ENABLED/DISABLED、createdAtEpochMillis、updatedAtEpochMillis、CAS revision（仅状态写保护，非TDP版本）。N/M持久/API值为60～86400秒的整数且必须为60的倍数，界面以1～1440整分钟输入及回显；FULL-only没有hotStrategy/M。maxNetworkAttempts/bootTimeout消费A已批准默认技术策略，不由运营管理员任意填。
 
 N/M界面整数分钟1～1440，API秒60～86400且60倍数；上界一天是候审有限参数，非官方值。DEV N=5/M=10分钟。取消旧报告5秒ACK/3次/重连预算；HTTP使用既有transport期限，未来CP-01核实实际配置与timeout/迟到，业务失败等有效PONG重试。grant5分钟是请求发起窗口、32项是临时技术预算，仍按实际测量/红例调整，不限制业务包/规则/历史条数。
 
@@ -303,9 +303,11 @@ TER source actor位于现有 `kernel/base/terminal-update`，以内部 refresh c
 
 ### 8.4 · 授权下载，不复制凭证
 
-**快照到固定目标的生产接缝（CP-04）。** B 扩现有 `FixedUpdateTarget.selectionContext` 与 `acceptTerminalUpdateTargetCommand` 的同一 typed 输入为 `{selectedSpace, contextIdentity, ruleRef}`；不是新增 accept command 或测试专用 API。公开 `selectTerminalUpdateRuleSnapshot` 一并给出当前已完整刷新/flush 的非秘密selectedSpace/contextIdentity/project身份；contextIdentity由更新owner随绑定/项目周期生成并校验，不让调用者拼凭证、从taskId猜身份，旧周期立即失效。验收driver只读取此selector和运营UI返回的ruleRef，向既有accept command发送该selectionContext。
+**快照到固定目标的生产接缝（CP-04）。** B 扩现有 `FixedUpdateTarget.selectionContext` 与 `acceptTerminalUpdateTargetCommand` 的同一 typed 输入为 `{selectedSpace, contextIdentity, ruleRef}`；不是新增 accept command 或测试专用 API。公开 `selectTerminalUpdateRuleSnapshot` 一并给出当前已完整刷新/flush 的非秘密selectedSpace/contextIdentity/project身份；contextIdentity由更新owner随绑定/项目周期生成并校验，不让调用者拼凭证、从taskId猜身份，旧周期立即失效。该selector可选接收一个`ruleRef`，验收driver按运营UI当前目标查询单条规则摘要；这只裁剪对外selector投影，owner仍持有并消费完整快照，避免一次序列化整个规则集。规则快照中的 FULL 摘要必须携带数据库权威 `apkSha256`，HOT 摘要该字段为 `null`；该值与 ZIP 摘要独立，供后台 HOT 候选五事实核对和终端固定目标读取。Android adapter 从已安装 `ApplicationInfo.sourceDir` 流式计算 base APK 摘要并随实际身份 readback 返回；当本机 native build 与固定 FULL 相同，APK 摘要也必须相同，否则拒绝该 HOT 目标且不得请求 grant/准备工件。native build 高于固定 FULL 时仍按现有更高 APK 兼容判据处理，不要求摘要相同。固定 FULL 的一次性 grant manifest 还必须匹配目标 `apkSha256`；HOT grant 的 `minimumFull` 五项（applicationId、nativeBuildNumber、runtimeVersion、publicationId、apkSha256）必须与同一固定目标的 FULL 完全一致，缺失或不一致时在 prepare 前拒绝。FULL 安装成功读回以及 installer busy 收敛都必须同时匹配已安装 applicationId、nativeBuildNumber、publicationId 与本次 action 持久保存的 `apkSha256`；摘要缺失或不一致不得报告成功。driver核对`applicationId`、工件与门店scope后，向既有accept command发送该selectionContext；accept handler仍须与本机实际applicationId复核，不因selector过滤而省略业务准入。
 
-terminal-update actor直接消费当前持久化完整snapshot，逐项要求contextIdentity/selectedSpace当前有效、ruleRef存在且启用、同项目、当前门店在ALL或指定refs范围内、applicationId与本机实际身份一致、FULL/HOT固定配对成立，随后物化既有FixedUpdateTarget。缺项/旧上下文/不匹配返回拒绝，不选其他规则、不回落本地fixture、不自行选最新；既有未完成task的单任务准入不变。固定目标仅持久保存CBS ruleRef/artifactRef/sourceRef、ZIP摘要与版本/发布身份摘要，不保存完整manifest。FULL/HOT完整manifest由一次性CBS下载授权响应随grant返回；actor在prepare前核对manifest与固定摘要相符后交给既有UpdatePort。临时grant不进入task/state。保留A有限网络与boot技术策略；N/M执行策略仍属C，完整链选IMMEDIATE。目标持久化后沿A固定执行规则运行，后续规则停用不改写该task。继续执行时仅按固定artifactRef申请CBS grant，不重新选择目标；正常FULL/HOT重启不重新运行目标转换，不因新boot的selector订阅身份改写已固定任务。contextIdentity仅作新目标接受准入，不建立第二任务恢复状态。
+terminal-update actor直接消费当前持久化完整snapshot，逐项要求contextIdentity/selectedSpace当前有效、ruleRef存在且启用、同项目、当前门店在ALL或指定refs范围内、applicationId与本机实际身份一致、FULL/HOT固定配对成立，随后物化既有FixedUpdateTarget。缺项/旧上下文/不匹配返回拒绝，不选其他规则、不回落本地fixture、不自行选最新；既有未完成task的单任务准入不变。固定目标仅持久保存CBS ruleRef/artifactRef/sourceRef、ZIP摘要与版本/发布身份摘要，不保存完整manifest。FULL/HOT完整manifest由一次性CBS下载授权响应随grant返回；actor在prepare前核对manifest与固定摘要相符后交给既有UpdatePort。临时grant不进入task/state。accept-target 的单命令期限为300秒，覆盖已有 UpdatePort `prepareArtifact` 与 `applyPrepared` 各自最多120秒及状态持久化开销；Runtime request residence 为10,000,000毫秒，必须严格大于32层最大命令链期限。Driver 命令结果观察期限为360秒。保留A有限网络与boot技术策略；N/M执行策略仍属C，完整链选IMMEDIATE。目标持久化后沿A固定执行规则运行，后续规则停用不改写该task。继续执行时仅按固定artifactRef申请CBS grant，不重新选择目标；正常FULL/HOT重启不重新运行目标转换，不因新boot的selector订阅身份改写已固定任务。contextIdentity仅作新目标接受准入，不建立第二任务恢复状态。
+
+CBS 的 `content` 是唯一 `StreamingResponseBody` 下载端点。生产配置 `spring.mvc.async.request-timeout=130s` 必须高于 Android UpdatePort 的 120s 单次下载 `callTimeout`；客户端 120s 仍是有效请求的实际 deadline，服务端仅避免默认异步请求超时先截断合法流。验收必须同时核对完整响应字节数与授权 ZIP SHA-256，并以 `TERMINAL_UPDATE_DOWNLOAD_STREAMED` 或 `...STREAM_FAILED` 作为服务端流完成事实；runner proxy 记录 `BODY_END`/`BODY_FAILED` 并在上游失败时关闭下游响应。此配置只解决单次受保护工件流的超时先后，不延长客户端等待，也不把响应头 200 当作下载成功。
 
 同族 focused：旧context/rule不存在/停用/其他门店/其他App拒绝且不触发port；真实启用rule转换后固定目标字段等于snapshot摘要；grant返回的manifest与摘要不一致时prepare零调用；固定task之后停用仍取原工件；两套integration/Application都装配composition readiness reader。A 的 development/runId/`automation-${runId}` 本地目标provider只留在A focused/native核场景，**不得装配到B完整链**。既有fixture provider只供明确测试输入，不作为生产规则来源。
 
@@ -349,9 +351,9 @@ app `TerminalUpdateReportHandler` 在短 REQUIRED 内解析三头、复用 crede
 
 未来实施 CP-01 必须把“心跳广播为触发，失败正文/持久化/并发/身份/回执消费归各业务 owner”写入 `doc/platform/terminal-coding-standard.md` §4-F 唯一正本，同步其适用项目记忆/索引；本轮不改这些路径。标准不迫使没有 pending 的 actor 发请求，不用心跳成功宣称业务成功。本批只接升级 owner，后续 owner 按同规则接入。
 
-**查询。** 报告 tab 以当前项目启用门店＋启用终端为主集合，LEFT JOIN owner 报告，不能仅查报告表。page/detail 返回门店名、终端名、actual、最新任务报告及状态/时间、旧绑定标志；actual 无值仍有 NO_REPORT 行。可选 storeRef、queryText（终端名）、currentApkVersion/currentJsVersion/runtimeVersion，均在 SQL 侧按实际报告值精确筛选，不筛目标版本、不过滤当前页、不比较非排序版本字符串。可见版本列完整包含这三项。详情用同 PROJECT 授权，另具名历史 GET，cursor≤100；无历史显示“还没有收到升级任务报告；终端可能尚未上报”，不将尚无报告与未知/未发生任务混为一谈。已开 Drawer 的门店/终端停用或 scope 改变后读回拒绝/清旧数据；保留数据库历史不等于继续提供停用对象本期页面入口。
+**查询。** 报告 tab 以当前项目启用门店＋启用终端为主集合，LEFT JOIN owner 报告，不能仅查报告表；该资格不要求终端已有 `latest_binding`。page/detail 返回门店名、终端名、actual、最新任务报告及状态/时间、旧绑定标志。`oldBinding` 仅在存在报告且当前绑定非 ACTIVE、绑定行不存在或报告代次与当前代次不一致时为 true；无报告始终为 false。actual 无值仍有 NO_REPORT 行。page/detail/history 使用同一启用门店、启用终端、当前项目资格，history 对不合格目标返回与 detail 相同的 typed not-found，不伪装成合法空历史。可选 storeRef、queryText（终端名）、currentApkVersion/currentJsVersion/runtimeVersion，均在 SQL 侧按实际报告值精确筛选，不筛目标版本、不过滤当前页、不比较非排序版本字符串。可见版本列完整包含这三项。详情用同 PROJECT 授权，另具名历史 GET，cursor≤100；合格终端无历史显示“还没有收到升级任务报告；终端可能尚未上报”，不将尚无报告与未知/未发生任务混为一谈。已开 Drawer 的门店/终端停用或 scope 改变后读回拒绝/清旧数据；保留数据库历史不等于继续提供停用对象本期页面入口。
 
-**启用范围反例。** fixtures至少区分启用门店＋启用终端（显示）、启用门店＋停用终端（不显示）、停用门店＋启用终端（不显示）、双方停用或任一作废（不显示）；其中启用且未上报终端必须保留NO_REPORT行。无storeRef时覆盖项目全部符合资格的门店，指定storeRef仍不放宽资格。page、detail与history须用同一资格判断；已打开后停用再读取，拒绝当前目标并清旧内容，原数据库历史保留。验收源码须逐一断言返回身份集合与详情/历史拒绝，不只断言行数。
+**启用范围反例。** fixtures至少区分启用门店＋启用终端（含从未激活且无 `latest_binding`、无报告的终端，显示为 NO_REPORT 且 `oldBinding=false`）、当前绑定 ACTIVE 的本代报告（`oldBinding=false`）、当前绑定 ENDED 仍保留最后报告或重新激活后仅有前代报告（`oldBinding=true`）、启用门店＋停用终端（不显示/拒绝）、停用门店＋启用终端（不显示/拒绝）、双方停用或任一作废（不显示/拒绝）；其中启用且未上报终端必须保留NO_REPORT行。无storeRef时覆盖项目全部符合资格的门店，指定storeRef仍不放宽资格。page、detail与history须用同一资格判断；已打开后停用再读取，拒绝当前目标并清旧内容，原数据库历史保留。验收源码须逐一断言返回身份集合与详情/历史拒绝，不只断言行数。
 
 ## 9 · owner API 与消费者
 
@@ -454,7 +456,7 @@ CBS `TerminalUpdateCommandApi`：register/createRule/changeRuleStatus；`Termina
 
 ## 14.1 · 最新裁定的报告任务读取
 
-getOperationsProjectTerminalVersionPage：expectedContextVersion/cursor/limit≤100、storeRef/queryText/currentApkVersion/currentJsVersion/runtimeVersion。SQL主集合为当前PROJECT启用门店＋启用终端，LEFT JOIN当前最新报告，含NO_REPORT；actual字段精确筛选，非target。Page/detail一次任务join返回门店/终端名、actual、最新任务及规则/工件结构化事实、unknown/旧绑定/changedAt/receivedAt，前端组装标题。UUID ASC cursor绑定scope/filter，非当前页过滤；detail同真实PROJECT准入，历史按§8.5单独cursor GET。历史保留不意味着停用对象仍可从本页读取。
+getOperationsProjectTerminalVersionPage：expectedContextVersion/cursor/limit≤100、storeRef/queryText/currentApkVersion/currentJsVersion/runtimeVersion。SQL主集合为当前PROJECT启用门店＋启用终端，LEFT JOIN当前最新报告，含NO_REPORT；actual字段精确筛选，非target。Page/detail一次任务join返回门店/终端名、actual、最新任务及规则/工件结构化事实、unknown/旧绑定/changedAt/receivedAt，前端组装标题。UUID DESC cursor绑定scope/filter，非当前页过滤；detail同真实PROJECT准入，历史按§8.5单独cursor GET。历史保留不意味着停用对象仍可从本页读取。
 
 不新增getPlatformStoreTerminalVersionPage，不扩运维组织总览Drawer。V-29本期验收改为运维只包库、运营左规则/右当前项目启用门店下启用终端报告与标准详情Drawer；跨项目拒绝、无写cap可读、多门店含无报告终端、分页及切project旧结果隔离须分别证伪。
 
@@ -527,8 +529,8 @@ FULL-only规则的HTTP详情/读回保留`hotArtifactRef`字段并允许`null`�
 | 顺序 | 真正执行者、路径与动作 | 必须读回的业务事实／关联 |
 | --- | --- | --- |
 | 1 打包 | 现有受管 artifact build 能力，两个 application 的 INSTALL APK、FULL ZIP、配对 HOT ZIP；通过 package.json 的正式脚本链，run-owned release输入/产物 | 签名、packageId、native/runtime/bundle/publication、ZIP/内层APK摘要与真实before/after差异；无不匹配工件继续 |
-| 2 上传 FULL | root→运维 `/platform/terminal-update-packages`→上传Drawer→真实file input；等解析成功后“保存”，点击列表标题读详情 | 保存之前按钮不可用，保存后真实artifactRef、类型FULL及版本/摘要正确；真实HTTP/owner读回与显示同一ref |
-| 3 上传 HOT | 同页上传HOT→解析→选择步骤2 FULL作为最小完整包→“保存”→详情 | HOT固定配对FULL ref及五身份一致；不靠seed候选或直接HTTP代替保存 |
+| 2 上传 FULL | root→运维 `/platform/terminal-update-packages`→上传Drawer→真实file input；解析后先展示服务端校验的候选类型、applicationId、platform、原生版本/构建、JS版本、runtime、publicationId、ZIP摘要及APK摘要，再“保存”；点击列表标题读详情 | 保存之前按钮不可用；候选类型不匹配时不能提交；保存后真实artifactRef、类型FULL及版本/摘要正确；解析预览来自同次stage响应，真实HTTP/owner读回与显示同一ref |
+| 3 上传 HOT | 同页上传HOT→解析并展示同一组候选身份及声明的minimumFull五事实→选择步骤2 FULL作为最小完整包→“保存”→详情 | HOT固定配对FULL ref及五身份一致；所选FULL与解析声明可核对；不靠seed候选或直接HTTP代替保存 |
 | 4 建规则 | 运营 `/operations/:groupWorkspaceKey/terminal-update-rules`，选上述GROUP/PROJECT，左“更新规则”Tab→新建Drawer→配对HOT→STORE_REFS含store-operating、N=5分钟，HOT=立即→保存DISABLED→详情“启用”确认 | 实际ruleRef、project/store范围、目标两artifactRef、N=300秒、启用状态和标准操作历史；确认启用前TER不会得到本规则 |
 | 5 准备 TER | 同 App真实INSTALL基线装入当前run设备，经既有共享fixture激活启用终端，等当前boot STORE/PROJECT HTTP及flush成功/TDC ready，规则snapshot完整提交 | 真实before actual版本、binding周期与project/store/terminalRef；snapshot恰含步骤4 ruleRef及同工件，不接受旧hydrated或另一个项目的规则 |
 | 6 固定目标 | driver先订阅request，再从snapshot selector取selectionContext＋该ruleRef，经agent发送唯一A accept command；§8.4生产provider逐项核验并物化 | commandId/requestId、taskId、fixed ruleRef及artifactRef匹配；运行不装A本地/update-target或/full.zip fixture server，无第二业务入口 |
@@ -557,6 +559,6 @@ CP-05必须把该case场景选择、账号/菜单/TestId、上述关联读回、
 
 规则详情header菜单“操作历史”无需写cap，只需O-P真实PROJECT主对象读；启停菜单仍W-P。复用OperationsAuditHistoryModal与既有getOperationsEntityAuditHistory，新增TERMINAL_UPDATE_RULE closed type、封闭query路由、terminal-update owner审计TaskRead API、canonical/generated消费者和focused/red。CREATE/ENABLE/DISABLE在同REQUIRED写一次audit；同key回放不重复，授权/CAS拒绝不写。历史Modal的page/pageSize/total沿现有标准，操作人快照和字段前后值由标准审计返回，不重建审计model或日志。当页project/context变化关闭Modal、拒绝旧回包。
 
-包保存资格精确绑定(file selection attempt,workspace/session,stageRef,parsed validated result,minFull selection)。上传或解析未成功、替换文件、过期、上下文变更以及HOT候选五事实不符时PKG_SAVE禁用；upload/parse不自动保存。后台仍重验stage/ownership/签名/配对，不能以按钮资格作为业务防线。附件9.1唯一TestId、UI可见文案与L2源码同步，不复用旧file解析结果。
+包保存资格精确绑定(file selection attempt,workspace/session,stageRef,parsed validated result,minFull selection)。`TerminalUpdateStageResult` 在同次解析成功响应中返回候选类型、应用/平台、原生/JS/runtime、publicationId、ZIP/APK摘要及 nullable minimumFull；UI展示这些只读事实供保存前核对，stageBindGrant不显示。上传或解析未成功、替换文件、过期、上下文变更、候选类型不匹配以及HOT候选五事实不符时PKG_SAVE禁用或提交被拦；upload/parse不自动保存。后台仍重验stage/ownership/签名/配对，不能以按钮资格作为业务防线。附件9.1唯一TestId、UI可见文案与L2源码同步，不复用旧file解析结果。
 
 最新裁决会改变正式R-15及终端§4-F标准，本轮不写其正本。未来实施授权单列这两项来源同步，CP-01在生产消费前完成；A只对B影响的公开签名/报告投影做差量，不重做已MATCHED未受影响内容。所有新测试和cleanup均NOT_RUN。

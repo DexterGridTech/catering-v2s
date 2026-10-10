@@ -68,6 +68,7 @@ export type AndroidDeviceSession = Readonly<{
   readonly launch: (component: string) => Promise<void>;
   readonly isInstalled: (packageName: string) => Promise<boolean>;
   readonly readApiLevel: () => Promise<number>;
+  readonly readPrimaryAbi: () => Promise<string>;
   readonly readTerminalUpdateLogs: (packageName: string) => Promise<string>;
   readonly readRuntimeFailureDiagnostics: (packageName: string) => Promise<string>;
   readonly forceStop: (packageName: string) => Promise<void>;
@@ -300,6 +301,14 @@ export const createAndroidDeviceSession = async (
       if (!Number.isSafeInteger(apiLevel) || apiLevel < 1)
         fail('TERMINAL_AUTOMATION_ANDROID_API_LEVEL_READBACK_INVALID');
       return apiLevel;
+    },
+    readPrimaryAbi: async () => {
+      const abi = (
+        await runTextCommand(input.adbPath, ['-s', input.serial, 'shell', 'getprop', 'ro.product.cpu.abi'])
+      ).trim();
+      if (!['armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'].includes(abi))
+        fail('TERMINAL_AUTOMATION_ANDROID_PRIMARY_ABI_READBACK_INVALID');
+      return abi;
     },
     readTerminalUpdateLogs: async packageName => {
       validatePackageName(packageName);

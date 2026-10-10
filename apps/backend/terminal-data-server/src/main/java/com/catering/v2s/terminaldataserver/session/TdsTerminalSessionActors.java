@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -575,16 +576,41 @@ public final class TdsTerminalSessionActors {
         }
 
         private boolean subscribeTopic(TdsWebSocketConnection connection, TopicSubscribe request) {
+            long startedAtNanos = System.nanoTime();
             ActiveSession session;
             TopicSubscription subscription;
             synchronized (monitor) {
                 session = active;
-                if (session == null || session.connection() != connection) return false;
-                if (!validBoundTopic(session, request.topicKey(), request.ownerRef())) return false;
+                if (session == null || session.connection() != connection) {
+                    TdsAsyncLog.enqueue(
+                            logScheduler,
+                            () -> LOGGER.warn(
+                                    "event=tds_topic_subscribe_rejected connectionId={} topicKey={} reason=NO_ACTIVE_SESSION",
+                                    connection.connectionId(),
+                                    request.topicKey()));
+                    return false;
+                }
+                if (!validBoundTopic(session, request.topicKey(), request.ownerRef())) {
+                    TdsAsyncLog.enqueue(
+                            logScheduler,
+                            () -> LOGGER.warn(
+                                    "event=tds_topic_subscribe_rejected connectionId={} topicKey={} reason=TOPIC_OUTSIDE_BINDING",
+                                    connection.connectionId(),
+                                    request.topicKey()));
+                    return false;
+                }
                 TopicSubscription existing =
                         session.subscriptions().get(request.subscriptionId().toString());
                 if (existing != null) {
-                    return existing.matches(request.topicKey(), request.ownerRef());
+                    boolean matches = existing.matches(request.topicKey(), request.ownerRef());
+                    TdsAsyncLog.enqueue(
+                            logScheduler,
+                            () -> LOGGER.info(
+                                    "event=tds_topic_subscribe_duplicate connectionId={} topicKey={} matches={}",
+                                    connection.connectionId(),
+                                    request.topicKey(),
+                                    matches));
+                    return matches;
                 }
                 subscription = new TopicSubscription(
                         request.subscriptionId().toString(),
@@ -594,12 +620,26 @@ public final class TdsTerminalSessionActors {
                 session.subscriptions().put(subscription.subscriptionId, subscription);
             }
             try {
+                TdsAsyncLog.enqueue(
+                        logScheduler,
+                        () -> LOGGER.info(
+                                "event=tds_topic_subscribe_time_read_begin connectionId={} topicKey={}",
+                                connection.connectionId(),
+                                request.topicKey()));
                 OptionalLong current = topicRepository.readTime(
                         session.identity().workspaceUuid(),
                         session.identity().groupWorkspaceKey(),
                         session.storeRef(),
                         request.topicKey(),
                         request.ownerRef());
+                TdsAsyncLog.enqueue(
+                        logScheduler,
+                        () -> LOGGER.info(
+                                "event=tds_topic_subscribe_time_readback connectionId={} topicKey={} present={} elapsedMs={}",
+                                connection.connectionId(),
+                                request.topicKey(),
+                                current.isPresent(),
+                                TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAtNanos)));
                 if (current.isEmpty()) {
                     TdsAsyncLog.enqueue(
                             logScheduler,
@@ -614,9 +654,26 @@ public final class TdsTerminalSessionActors {
                                     request.ownerRef()));
                     return rejectMissingTopic(session, subscription);
                 }
-                return sendTopicChange(session, subscription, current.getAsLong(), false);
+                boolean notificationSent = sendTopicChange(session, subscription, current.getAsLong(), false);
+                TdsAsyncLog.enqueue(
+                        logScheduler,
+                        () -> LOGGER.info(
+                                "event=tds_topic_subscribe_completed connectionId={} topicKey={} notificationSent={} elapsedMs={}",
+                                connection.connectionId(),
+                                request.topicKey(),
+                                notificationSent,
+                                TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAtNanos)));
+                return notificationSent;
             } catch (RuntimeException failure) {
                 removeSubscription(session, subscription);
+                TdsAsyncLog.enqueue(
+                        logScheduler,
+                        () -> LOGGER.error(
+                                "event=tds_topic_subscribe_failed connectionId={} topicKey={} failureName={} elapsedMs={}",
+                                connection.connectionId(),
+                                request.topicKey(),
+                                failure.getClass().getSimpleName(),
+                                TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAtNanos)));
                 connection.close("SERVER_ERROR");
                 throw failure;
             }

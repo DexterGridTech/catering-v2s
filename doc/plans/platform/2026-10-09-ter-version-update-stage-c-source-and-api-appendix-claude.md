@@ -2,16 +2,17 @@
 
 ## 1. 来源与截面
 
-2026-10-09纯读取。B正并行写入，所有行号仅导航；不复制或修改B报告/接口。本附件不是A/B交付review、独立verdict或运行结果。正式需求、同日期C详设/Journey/IA/UI、A/B批准工件为输入。
+2026-10-10 当前源码纯读取，未读运行产物；B 未由本次静态评审宣告验收，所有行号仅导航；不复制或修改B报告/接口。本附件不是A/B交付review、独立verdict或运行结果。正式需求、同日期C详设/Journey/IA/UI、A/B批准工件为输入。
 
 ## 2. 实际复用与尚缺接缝
 
 | 真实文件/锚点（仓根） | 静态事实 | C处理 |
 | --- | --- | --- |
-| apps/terminal/kernel/base/terminal-update/src/features/actors/terminalUpdateActor.ts#refreshRuleSnapshot/targetFromRuleSnapshot/executeNextArtifact/reconcile | B完整snapshot与指定rule、A同执行核/HTTPgrant/报告 | 自动择新/N-M尚缺；不新建任务核 |
+| apps/terminal/kernel/base/terminal-update/src/features/actors/terminalUpdateActor.ts#refreshRuleSnapshot/targetFromRuleSnapshot/executeNextArtifact/reconcile | B完整snapshot与指定rule、A同执行核/HTTPgrant/报告 | 规则HTTP/topic/数据搬至project-basic；update公开local command及actor接候选、比较/固定/执行；不新建任务核 |
 | 同包src/types/terminalUpdate.ts#FixedUpdateTarget/StoredTerminalUpdateRule | policy仅attempts/T；stored有N/M | port前固定N/M；不猜旧task参数 |
-| 同包src/features/slices/terminalUpdate.ts#terminalUpdateRegistration | 全state isolated；task/recent/failed/report持久 | record sync只规则，local事实仍isolated |
-| 同包src/application/createTerminalUpdateModule.ts#install | 当前先await reconcile/refresh再subscribe | 改先订阅后初始化检查；resource释放 |
+| 同包src/features/slices/terminalUpdate.ts#terminalUpdateRegistration | 全state isolated；task/recent/failed/report及规则字段按当前源码核 | 移出规则descriptor与旧读面；整个update slice仍isolated，fixed task.target保留已接受执行事实 |
+| 同包src/application/createTerminalUpdateModule.ts#install | 当前先await reconcile/refresh再subscribe | 规则启动/刷新搬project-basic；update仅执行初始化/reconcile及技术观察，先订阅后检查、resource释放 |
+| apps/terminal/kernel/feature/store-basic/src/features/actors/actors.ts#loadOrganizationAndContracts、src/features/slices/slice.ts、selectors/selectors.ts | 当前organizationPath/三个组织topic/项目加载门在store，组织失败会阻断同函数后续合同 | 拆成project-basic组织链和store合同链；门店成功广播仍在store，服务点前提不变，不留旧组织selector兼容转发 |
 | apps/terminal/kernel/base/platform-ports/src/types/update.ts#UpdatePort | 六方法，无presentation技术观察 | 技术read/subscribe/present接口，命令定义在update非端口 |
 | apps/terminal/kernel/base/runtime/src/types/module.ts#RuntimeModuleContext | subscribeState/registerResource/AsyncResource/flush/command | 单份本机点击ephemeral；技术桥不获跨owner写权 |
 | apps/terminal/ui/base/render/src/components/SurfaceRoot.tsx#SurfaceRoot | 根View目前onLayout；覆盖sharedRuntime承载 | capture起点，不吞responder；portal另枚举 |
@@ -22,14 +23,32 @@
 | apps/terminal/kernel/base/topology/src/application/createTopologyPeerCommandController.ts#projectActorResults | result原样JSON、帧64KiB | compactgrant，不传完整manifest |
 | apps/terminal/kernel/base/transport/src/foundations/createTopologySession.ts#sendStateFull | 分片只statefull，不是command | 不新增peer result分片 |
 | apps/terminal/kernel/base/terminal-data-client/src/features/actors/terminalDataClientActor.ts#requestTerminalUpdateDownloadGrantCommand/submitTerminalUpdateReportCommand | MASTER/active/credential，仅TDC注入认证 | 副机先经MAINupdate命令grant；report永远local |
-| apps/terminal/ui/integration/sample-console/src/assembly/assembly.tsx、sample-wallpaper-console同路径#createTerminalUpdateModule | reader本机activation＋store/projectflushed；sync无update | BRANCH独立投影reader，不能copyactive |
+| apps/terminal/ui/integration/sample-console/src/assembly/assembly.tsx、sample-wallpaper-console同路径#createTerminalUpdateModule | reader本机activation＋store/projectflushed；sync无update | 装配project-basic模块及两个record entry，更新纯selector身份接缝/当前周期gate；不复制feature业务逻辑，不copyactive |
 | apps/terminal/adapter/android/update/android/src/main/java/com/catering/v2s/terminal/adapter/android/update/TerminalUpdateRuntime.kt#resumePendingInstallerConfirmation | foreground旧exactIntent恢复；session持久事实 | N由owner，native只present当前系统确认 |
 | 同目录TerminalUpdateArtifactPreparer.kt#prepare/extractFull/extractHot | JDKZipFile、流式摘要、既有清单/file校验 | summaryexpectation加入同path；不新解析库 |
 | tools/terminal-automation/src/runner.ts#updateCases/phaseSuite/parseArgs | Aupdatecases；peer-device仅capabilitiesdual当前允许 | C显式扩policy/pair，未知未实现reject |
 | tools/terminal-automation/src/androidDevice.ts#attachDriver/attachManagedServicePorts、androidAutomationConnection.ts、androidCleanupRecovery.ts及对应tests | 当前只管理 reverse；pair forward、两 session 与精确映射清理尚缺 | 沿现有 driver 增加 run-owned forward/reverse；详设 §10b.6.1，零旧 runner复活 |
 | tools/terminal-automation/src/managedRun.ts#TerminalAutomationManifest | 已有peerDeviceSerial类型但非C双device生命周期 | exact两serial/两package/清理identity，不假称已实现 |
 
-B当前前置OPEN精确入口：RuleOwnerApi.java#RuleSnapshotItem、TerminalUpdateRuleOwnerService.java#readSnapshot、TerminalUpdateRuleReadController.java#mapItem与generatedwire required createdAt；报告schemaUUID与TERtaskId语义；CBSreportPOST/persistence及無任务actual producer。模块根均 apps/backend/catering-business-server/modules/terminal-update 或 src/main/java/com/catering/v2s/app/edge/terminal。这些列为B待最终读回，不转成C新增业务。
+B 当前已存在的精确入口：`TerminalUpdateRuleOwnerApi.java#RuleSnapshotItem`（规则自身 createdAt）、`TerminalUpdateRuleOwnerService.java#terminalSnapshot`、`TerminalUpdateRuleReadController.java#wire`；`TerminalUpdateReportController.java#submit`、`TerminalUpdateReportOwnerService.java#record`、`TerminalUpdateReportPersistence.java` 和 `V20261014_000000_000__terminal_update_report_history.sql`。TER taskId 用 createProtocolUuid。未闭合行为见本轮 B 源码评审：自然无任务 observation、同 binding 序号、HTTP 处置/状态映射、候选 await 重核及 owner 当前绑定复核；有限整快照重读随最终规则链搬移。静态接口存在不等于这些行为正确或运行通过，不转成 C 第二报告能力。
+
+### 2.1 2026-10-10 project-basic搬移与依赖核对
+
+当前源码仍是旧owner：store-basic的types/types.ts、features/actors/actors.ts、features/slices/slice.ts和selectors/selectors.ts拥有organizationPath、PROJECT/REGION/COMMERCIAL_GROUP及projectStatus/projectRef；terminal-update的actors/module/slice/selectors拥有规则分页、topic及ruleSnapshot。以下是C计划，不是已实现。
+
+| 创建/修改/删除范围 | 唯一落点与验收 |
+| --- | --- |
+| 创建kernel/feature/project-basic标准包，src/{moduleName,dependencies,index}.ts、types、application/module、features/{actors,commands,slices}、selectors、test/projectBasic.test.ts、package/README/invariants | 组织资料/完整规则HTTP、topic、保存flush/接受、当前周期状态、两个record entry；feature选业务候选并发送update公开local command |
+| 修改store-basic对应源与test/storeBasic.test.ts | 保留store及经营规则/合同/服务点；组织函数搬出，拆开合同加载；loaded no-op handler改为本包合同/服务点入口，删除广播返回后的重复初始化及门店失败旧helper；已成功initialize只重发同command。删除旧组织字段/descriptor、项目前提、三个topic及四个组织selector，不做兼容转发 |
+| 修改terminal-update对应源与test/terminalUpdate.test.ts | 删除规则HTTP/topic/快照descriptor及selectTerminalUpdateRuleSnapshot、refreshTerminalUpdateRuleSnapshotCommand；规则用例搬projectBasic.test.ts；公开requestTerminalUpdateCommand与actor保留实际比较、固定、执行、报告 |
+| 两integration的src/assembly/assembly.tsx、dependencies/package/invariants、直接测试 | 安装project-basic，登记两record投影；用新公开组织/规则selector绑定身份复核。assembly零业务HTTP/effect选规则；feature→base单向，store不反向import project，update不import feature |
+| publicExports/README/selector注册、验收与automation中的实际引用 | 删除selectStoreOrganizationPath/selectStoreProject/selectStoreRegion/selectStoreCommercialGroup旧导出，改selectProjectOrganizationPath/selectProject/selectRegion/selectCommercialGroup及新readiness/rules selector；不重造生成HTTP |
+
+主机具体门店HTTP/flush成功后发既有storeBasicInformationLoadedCommand；同command的store listener启动合同/服务点，project listener核具体store.id/space/project.id、当前runtime/binding/flushed后才启动组织→规则；Runtime fan-out可等待两listener，但两个下游互不等待。project先注册再initialize，晚装经initializeStoreBasicCommand请当前成功store重发同command，零重复门店首查；两listener各自in-flight/完成身份去重，loaded handler不能initialize循环。失败门店不发成功command、零下游首查。组织路径仍用terminalReadStoreOrganizationPath；副机只读当前connection应用成功且值身份匹配的投影，MAIN失败对应entry导出tombstone，不以旧正文择新，零组织/规则HTTP/TDP；升级请求也是本机local command。已有store DTO的project关联标签保留，不冒充权威项目详情。
+
+移除descriptor后旧键不再hydrate，不能声称会自动物理删除；只能由之后获授权的既有root reset清orphan。首次project数据通过真实HTTP重建，不reset搬移、不增回填层。update已固定task.target是已接受执行事实，task/recent/failed/report按A/B retain保持；project-basic不retain。TDC订阅本身不持久，新Runtime按新subscriberKey重建，接受时间不迁移成第二订阅账本。
+
+有限同根核对：组织字段/三个topic/四个旧selector及项目门、update规则加载/旧读面、两assembly装配与测试；未来focused覆盖组织失败不挡合同、当前周期/late install、通知保存再接受、候选command身份、投影apply与本机任务隔离。详设§8.0/§9a.7为实施落点。
 
 ## 3. 第三方实际版本与官方行为
 
@@ -57,15 +76,15 @@ B当前前置OPEN精确入口：RuleOwnerApi.java#RuleSnapshotItem、TerminalUpd
 
 1. TDP与topologypeer command单帧65,536字节不变。grant完整manifest可能任意多file，command下行只摘要、相对path、43字符grant、expiry、artifactRef，不含files/完整JSON或ZIP。完整信封按现有codec字符串/depth/frame规则检查，真实大清单仍compact；path沿Bschema，不截断。超限可见failure，不增加result分片。
 2. 当前 topology reassemblyMaxBytes=8,388,608、maxInflight=2、chunkTarget=49,152、maxChunkCount=512 沿用，**不为假设最大项目规则扩预算或新增分片机制**。B HTTP 集合上界不能直接当作含 context 的 projection 一定可传；按现有完整序列化/帧门判定，超过原技术边界明确 projection-failed、未固定资格不 ready，不静默截断。主流程 focused 使用正常少量规则及现有边界拒绝；不新增项目规则条数上限，不建设最大规模专项或内存峰值探针。若真实业务规模触及限制，再以具体输入回评，不提前改协议。
-3. snapshot逐slice传输：不累计所有owner状态变成一个巨大scope包。generation/readiness沿现有controller，chunks完成并apply成功才ready，失效/failed不能择新；无“部分规则也可执行”。
+3. project-basic organization/rules两个entry沿既有record snapshot逐slice传输；update不提供规则entry。不累计所有owner状态变成一个巨大scope包。generation/readiness沿现有controller，chunks完成并apply成功才ready，失效/failed不能择新；无“部分规则也可执行”。
 4. native summary 判别：固定 artifactRef/ZIP SHA → MAIN grant 授权 → BRANCH 验 ZIP。HOT 从 ZIP 的 terminal-update-publication.json 核固定 identity/entry/files；FULL ZIP 只有 APK，summary.apk 取现有 grant.manifest.apk 的 path/sha256/certificateSha256 → 同 extractFull/validateFull ，summary 只重建既有 platform/applicationId/nativeVersion/nativeBuildNumber/apk，不解析未安装 APK metadata。已安装 boot 的 metadata 身份读取仍保留。摘要来自 CBS，不相信任意自描述。ZIP SHA、APK SHA、publicationId 不混用；沿现有 JDK ZipFile，不改容器格式/HTTP operation/loader。
 5. 任务/报告容量及历史由B最终accepteddesign处理，C不新增总字节quota/第二失败存储。onebootone规则/oneactive timer/onegrant attempt来自实际业务不变量，不限制项目规则数量。
 
 ## 4.1 执行 boot 与报告持久化
 
-复用 types/terminalUpdate.ts:51 的 task.bootId，不新增 executionBootId。actor 当前 L673/677 执行前准入改为本 boot 首次 prepare/apply 前一致更新＋flush；L710/L1006 结果确认不覆写；L969 FULL→HOT 只恢复 fixed，HOT 真正执行前再写；L1194 初始 null；L900–905 终态跨 boot释放沿用。全部写/读点表见详设 §8.2，包括 prepared 直接 apply 路径。
+复用 types/terminalUpdate.ts 的 task.bootId，不新增 executionBootId。当前 actor 锚点：executeNextArtifact L998–1017 为执行前准入；其 selected=null 成功 L1045–1052 不覆写；reconcile FULL→HOT fixed L1308–1316 只恢复 fixed，HOT 真执行前再写；action updated L1347–1352 不覆写；accept next task L1560–1579 初始 null；终态跨 boot释放 L1246–1255 沿用。全部写/读点表见详设 §8.2，包括 prepared 直接 apply 路径。
 
-报告新枚举/原因优先消费 B 最终 canonical/Flyway；CP-01 重开其 terminal_report state/reason 类型/约束及 taskId=null、recent 非空合法性。若需 SQL，唯一具名差量为 apps/backend/catering-business-server/src/main/resources/db/migration/V<实际下一版本>__terminal_update_report_policy_states.sql，按详设 §10 只改既有表约束；无约束则零迁移，不能凭旧“无新 Flyway”跳过检查。
+当前 report history migration 的 actual/recent 是 JSONB object，未按状态/原因枚举设 SQL CHECK，taskId=null observation 合法且 recent 为对象；C 新有限码默认零 Flyway，只原子同步 canonical/generated、CBS controller/owner 校验、TER 与运营 formatter。CP-01 重开最终形状，真有 SQL 约束差异才列具体迁移，不预建假设 migration。descriptor/counter/pending/pause 留 base/update，同 binding context 变化保留 counter；project-basic 不复制报告职责。
 
 ## 5. TestId唯一表（计划新增，非当前存在）
 
@@ -82,7 +101,7 @@ UI/IA/driver只引用上述同名常量，不散写字符串；display/surface�
 
 ## 6. 验证/fixture API接缝
 
-唯一受管入口scripts/test/terminal-automation.mjs。拟扩--phase update --case update.auto-selection/update.idle/update.install-reminder/update.pair/update.supply-chain；具体已有phase闭集由CP-05统一扩，不能在文档假称今日可运行。两个样本取--sample console/wallpaper；Web/Android同共享businessJourney；Android serial/peer-device-serial 唯一匹配 assigned identity；交叉矩阵：console 真机双屏、wallpaper mobile 虚拟机、console 双虚拟机配对、wallpaper 双虚拟机配对，共 4 个设备 run，Web 两 integration 在前、13c 在后。pair 不跑 Web topology、不跑未改的不同 App 拒绝设备用例。pair 是 laptop 单屏：display 映射复用现有 mobile 单屏能力，case 明确注入 application surfaceForm=laptop；不能由 shape 推成 mobile 业务机型。
+唯一受管入口scripts/test/terminal-automation.mjs。拟扩--phase update --case update.project-data/update.auto-selection/update.idle/update.install-reminder/update.pair/update.supply-chain；具体已有phase闭集由CP-05统一扩，不能在文档假称今日可运行。两个样本取--sample console/wallpaper；Web/Android同共享businessJourney；Android serial/peer-device-serial 唯一匹配 assigned identity；交叉矩阵：console 真机双屏、wallpaper mobile 虚拟机、console 双虚拟机配对、wallpaper 双虚拟机配对，共 4 个设备 run，Web 两 integration 在前、13c 在后。pair 不跑 Web topology、不跑未改的不同 App 拒绝设备用例。pair 是 laptop 单屏：display 映射复用现有 mobile 单屏能力，case 明确注入 application surfaceForm=laptop；不能由 shape 推成 mobile 业务机型。
 
 真实data来源Bcanonical generatedHTTP和r5-fullseedkey；主机激活与fixturecleanup复用driveroperationshelper，不复制devScenarios逻辑。副机从已paired非秘密state开始，不激活term-handheld；该key仅是assignedfixture/形态导航，不将其独立绑定然后再称副机。
 

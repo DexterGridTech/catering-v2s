@@ -229,6 +229,13 @@ public interface TerminalUpdateArtifactOwnerApi {
             if (minimumFullNativeBuildNumber != null && minimumFullNativeBuildNumber < 0) throw new IllegalArgumentException("minimumFullNativeBuildNumber is invalid");
             if (minimumFullPublicationId != null && !minimumFullPublicationId.matches("[a-f0-9]{64}")) throw new IllegalArgumentException("minimumFullPublicationId is invalid");
             if (minimumFullApkSha256 != null && !minimumFullApkSha256.matches("[a-f0-9]{64}")) throw new IllegalArgumentException("minimumFullApkSha256 is invalid");
+            boolean hasMinimumFullFilter = minimumFullNativeBuildNumber != null
+                    || minimumFullPublicationId != null || minimumFullApkSha256 != null;
+            boolean hasCompleteMinimumFullFilter = minimumFullNativeBuildNumber != null
+                    && minimumFullPublicationId != null && minimumFullApkSha256 != null;
+            if (hasMinimumFullFilter && (!hasCompleteMinimumFullFilter || kind == null
+                    || applicationId == null || runtimeVersion == null))
+                throw new IllegalArgumentException("minimum FULL filter requires all five identity facts");
         }
     }
 

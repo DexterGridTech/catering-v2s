@@ -67,7 +67,8 @@ public final class TerminalUpdateRuleReadController {
     private static TerminalUpdateArtifactSummary artifact(TerminalUpdateRuleOwnerApi.SnapshotArtifact artifact) {
         return new TerminalUpdateArtifactSummary(artifact.artifactRef(), artifact.kind(), artifact.applicationId(),
                 artifact.runtimeVersion(), artifact.nativeBuildNumber(), artifact.apkVersion(), artifact.jsVersion(),
-                artifact.publicationId(), artifact.zipSha256(), artifact.byteSize(), artifact.createdAtEpochMillis());
+                artifact.publicationId(), nullable(artifact.apkSha256()), artifact.zipSha256(), artifact.byteSize(),
+                artifact.createdAtEpochMillis());
     }
 
     private static tools.jackson.databind.JsonNode nullable(String value) {

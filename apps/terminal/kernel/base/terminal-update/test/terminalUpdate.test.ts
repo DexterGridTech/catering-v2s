@@ -12,6 +12,8 @@ import {
   type PortResult,
 } from '@catering-v2s/kernel-base-platform-ports';
 import {
+  defaultMaxCommandDepth,
+  defaultRequestMaxResidenceMs,
   createRuntime,
   primarySurfaceReadyCommand,
   type Runtime,
@@ -33,6 +35,7 @@ import {
   createTerminalUpdateModule,
   refreshTerminalUpdateRuleSnapshotCommand,
   reconcileTerminalUpdateCommand,
+  selectTerminalUpdateRuleSnapshot,
   selectTerminalUpdateRecentStatus,
   selectTerminalUpdateTask,
   type FixedUpdateTarget,
@@ -57,9 +60,13 @@ import {
   terminalDataClientSliceName,
   terminalDataClientStateSlice,
 } from '../../terminal-data-client/src/features/slices/terminalDataClient';
-import {terminalUpdateActions, terminalUpdateRegistration, terminalUpdateSliceName} from '../src/features/slices/terminalUpdate';
+import {
+  terminalUpdateActions,
+  terminalUpdateRegistration,
+  terminalUpdateSliceName,
+} from '../src/features/slices/terminalUpdate';
 import {createTerminalUpdateActor} from '../src/features/actors/terminalUpdateActor';
-import type {TerminalUpdateState} from '../src/types/terminalUpdate';
+import type {TerminalUpdateState, UpdateRuleSnapshotContext} from '../src/types/terminalUpdate';
 import {createPersistenceFieldKey, createPersistenceNamespacePrefix} from '../../state/src/foundations/keyspace';
 
 const ok = <TValue>(value: TValue): PortResult<TValue> => ({status: 'succeeded', value, completedAt: 1 as TimestampMs});
@@ -82,7 +89,11 @@ const target: FixedUpdateTarget = Object.freeze({
   full: Object.freeze({sourceRef: 'artifact:full', expectedSha256: artifact.publicationId, artifact}),
   hot: Object.freeze({sourceRef: 'artifact:hot', expectedSha256: artifact.publicationId, artifact}),
   strategy: Object.freeze({maxNetworkAttempts: 2, bootTimeoutMs: 60_000}),
-  selectionContext: Object.freeze({selectedSpace: 'development', contextIdentity: 'fixture-context', ruleRef: 'fixture-rule'}),
+  selectionContext: Object.freeze({
+    selectedSpace: 'development',
+    contextIdentity: 'fixture-context',
+    ruleRef: 'fixture-rule',
+  }),
 });
 const newerHotArtifact = Object.freeze({...artifact, bundleVersion: '1.0.1', publicationId: 'c'.repeat(64)});
 const fixedResumeTarget: FixedUpdateTarget = Object.freeze({
@@ -93,6 +104,16 @@ const fixedResumeTarget: FixedUpdateTarget = Object.freeze({
     artifact: newerHotArtifact,
   }),
 });
+
+describe('terminal-update command deadline', () => {
+  it('keeps the full-update command and runtime residence limits consistent', () => {
+    expect(acceptTerminalUpdateTargetCommand.timeoutMs).toBe(300_000);
+    expect(defaultRequestMaxResidenceMs).toBeGreaterThan(
+      defaultMaxCommandDepth * acceptTerminalUpdateTargetCommand.timeoutMs,
+    );
+  });
+});
+
 const facts: UpdateFacts = Object.freeze({
   actual: Object.freeze({
     applicationId: artifact.applicationId,
@@ -120,6 +141,16 @@ const noAction: UpdateAction = Object.freeze({
   publicationId: artifact.publicationId,
   bootId: null,
 });
+
+let testProtocolUuidSequence = 0;
+const createTestProtocolUuid = (): string =>
+  `40000000-0000-4000-8000-${String(++testProtocolUuidSequence).padStart(12, '0')}`;
+const createTestTerminalUpdateModule = (
+  input: Omit<Parameters<typeof createTerminalUpdateModule>[0], 'createProtocolUuid'>,
+) => createTerminalUpdateModule({...input, createProtocolUuid: createTestProtocolUuid});
+const createTestTerminalUpdateActor = (
+  input: Omit<Parameters<typeof createTerminalUpdateActor>[0], 'createProtocolUuid'>,
+) => createTerminalUpdateActor({...input, createProtocolUuid: createTestProtocolUuid});
 
 const createFixture = (
   input: Readonly<{
@@ -175,7 +206,7 @@ const createFixture = (
     },
     transportModule,
     terminalDataClientModule,
-    createTerminalUpdateModule({
+    createTestTerminalUpdateModule({
       port,
       sourceProvider: {
         readTarget: input.readTarget ?? (async () => (input.targetAvailable === false ? null : target)),
@@ -268,6 +299,80 @@ const createStorage = (input: Readonly<{failWrite?: (key: string) => boolean; fa
 };
 
 describe('terminal-update project rule snapshot', () => {
+  it('gives state-triggered rule refresh a request identity for its public child commands', async () => {
+    const clientState = terminalDataClientReducer(undefined, {type: 'test/init'});
+    const updateState = {
+      ruleSnapshot: Object.freeze({
+        contextIdentity: null,
+        selectedSpace: null,
+        projectRef: null,
+        collectionHash: null,
+        items: Object.freeze([]),
+      }),
+      ruleSnapshotStatus: Object.freeze({status: 'empty', errorCode: null}),
+      reportDescriptor: Object.freeze({
+        bindingIdentity: null,
+        contextIdentity: null,
+        nextReportSequence: 1,
+        pendingReports: Object.freeze({}),
+        sendPaused: false,
+        latestDeliveryFailure: null,
+      }),
+    };
+    const state = {[terminalDataClientSliceName]: clientState, [terminalUpdateSliceName]: updateState};
+    const dispatchCalls: Array<
+      Readonly<{
+        commandName: string;
+        options?: Readonly<{requestId?: string}>;
+      }>
+    > = [];
+    const dispatchCommand = async (
+      command: Readonly<{commandName: string}>,
+      _payload: unknown,
+      options?: Readonly<{requestId?: string}>,
+    ) => {
+      dispatchCalls.push(Object.freeze({commandName: command.commandName, options}));
+      return Object.freeze({status: 'completed' as const, actorResults: Object.freeze([])});
+    };
+    const stateListener: {current?: () => void} = {};
+    let ruleContext: UpdateRuleSnapshotContext | null = null;
+    const runtimeModule = createTestTerminalUpdateModule({
+      port: {} as UpdatePort,
+      readRuleSnapshotContext: () => ruleContext as never,
+    });
+    await runtimeModule.install?.({
+      dispatchCommand,
+      getState: () => state,
+      subscribeState: (next: () => void) => {
+        stateListener.current = next;
+        return () => undefined;
+      },
+      registerResource: () => () => undefined,
+      platformPorts: {logger: {info: () => undefined, warn: () => undefined, error: () => undefined}},
+    } as never);
+
+    ruleContext = {
+      terminalRef: '00000000-0000-4000-8000-000000000010',
+      bindingGeneration: 4,
+      selectedSpace: 'development',
+      storeRef: '00000000-0000-4000-8000-000000000011',
+      projectRef: '00000000-0000-4000-8000-000000000012',
+      projectUpdatedAtEpochMillis: 17,
+    };
+    if (stateListener.current === undefined) throw new Error('terminal update state listener was not installed');
+    stateListener.current();
+
+    await vi.waitFor(() => {
+      const refreshCalls = dispatchCalls.filter(
+        call => call.commandName === refreshTerminalUpdateRuleSnapshotCommand.commandName,
+      );
+      expect(refreshCalls).toHaveLength(2);
+      expect(
+        refreshCalls.every(call => typeof call.options?.requestId === 'string' && call.options.requestId.length > 0),
+      ).toBe(true);
+    });
+  });
+
   it('uses the persisted CBS snapshot when the module has no local source provider', async () => {
     const projectRef = '00000000-0000-4000-8000-000000000010';
     const terminalRef = '00000000-0000-4000-8000-000000000011';
@@ -277,54 +382,101 @@ describe('terminal-update project rule snapshot', () => {
     const contextIdentity = `${terminalRef}:${bindingGeneration}:development:${storeRef}:${projectRef}:${projectUpdatedAtEpochMillis}`;
     const selectionContext = Object.freeze({selectedSpace: 'development', contextIdentity, ruleRef: 'cbs-rule-1'});
     let clientState = terminalDataClientReducer(undefined, {type: 'test/init'});
-    clientState = terminalDataClientReducer(clientState, terminalDataClientActions.replaceCredential({
-      groupWorkspaceKey: 'development', terminalRef, storeRef, deviceId: 'fixture-device',
-      bindingGeneration, credentialSecret: 'S'.repeat(43),
-    }));
+    clientState = terminalDataClientReducer(
+      clientState,
+      terminalDataClientActions.replaceCredential({
+        groupWorkspaceKey: 'development',
+        terminalRef,
+        storeRef,
+        deviceId: 'fixture-device',
+        bindingGeneration,
+        credentialSecret: 'S'.repeat(43),
+      }),
+    );
     let updateState: TerminalUpdateState = {
       ruleSnapshot: Object.freeze({
         contextIdentity,
         selectedSpace: 'development',
         projectRef,
         collectionHash: 'a'.repeat(64),
-        items: Object.freeze([Object.freeze({
-          ruleRef: selectionContext.ruleRef,
-          targetMode: 'ALL' as const,
-          storeRefs: Object.freeze([]),
-          applicationId: 'com.example.terminal',
-          createdAtEpochMillis: 21,
-          full: Object.freeze({
-            artifactRef: 'full-artifact', kind: 'FULL' as const, applicationId: 'com.example.terminal',
-            runtimeVersion: '1', nativeBuildNumber: 20, apkVersion: '1.0.0', jsVersion: '1.0.0',
-            publicationId: 'full-publication', zipSha256: 'b'.repeat(64), byteSize: 100, createdAtEpochMillis: 20,
+        items: Object.freeze([
+          Object.freeze({
+            ruleRef: selectionContext.ruleRef,
+            targetMode: 'ALL' as const,
+            storeRefs: Object.freeze([]),
+            applicationId: 'com.example.terminal',
+            createdAtEpochMillis: 21,
+            full: Object.freeze({
+              artifactRef: 'full-artifact',
+              kind: 'FULL' as const,
+              applicationId: 'com.example.terminal',
+              runtimeVersion: '1',
+              nativeBuildNumber: 20,
+              apkVersion: '1.0.0',
+              jsVersion: '1.0.0',
+              publicationId: 'full-publication',
+              apkSha256: 'c'.repeat(64),
+              zipSha256: 'b'.repeat(64),
+              byteSize: 100,
+              createdAtEpochMillis: 20,
+            }),
+            hot: null,
+            nSeconds: 300,
+            hotStrategy: null,
+            mSeconds: null,
+            description: null,
           }),
-          hot: null,
-          nSeconds: 300,
-          hotStrategy: 'IMMEDIATE' as const,
-          mSeconds: null,
-          description: null,
-        })]),
+        ]),
       }),
       ruleSnapshotStatus: Object.freeze({status: 'ready', errorCode: null}),
       currentTask: null,
       recentStatus: {taskId: null, state: 'idle', reason: null, changedAt: 0 as TimestampMs},
       failedArtifactIds: [],
       actualVersions: null,
-      reportDescriptor: {bindingIdentity: null, contextIdentity: null, nextReportSequence: 1, pendingReports: {}, sendPaused: false, latestDeliveryFailure: null},
+      reportDescriptor: {
+        bindingIdentity: null,
+        contextIdentity: null,
+        nextReportSequence: 1,
+        pendingReports: {},
+        sendPaused: false,
+        latestDeliveryFailure: null,
+      },
     };
-    const port = {readFacts: async () => ({status: 'failed', error: {code: 'FIXTURE_STOP'}})} as unknown as UpdatePort;
-    const module = createTerminalUpdateModule({
+    let readFactsCount = 0;
+    const port = {
+      readFacts: async () => {
+        readFactsCount += 1;
+        return readFactsCount === 1
+          ? {
+              status: 'succeeded',
+              value: Object.freeze({...facts, actual: Object.freeze({...facts.actual!, apkSha256: 'd'.repeat(64)})}),
+            }
+          : {status: 'failed', error: {code: 'FIXTURE_STOP'}};
+      },
+    } as unknown as UpdatePort;
+    const module = createTestTerminalUpdateModule({
       port,
-      readRuleSnapshotContext: () => Object.freeze({
-        terminalRef, bindingGeneration, selectedSpace: 'development', storeRef, projectRef, projectUpdatedAtEpochMillis,
-      }),
+      readRuleSnapshotContext: () =>
+        Object.freeze({
+          terminalRef,
+          bindingGeneration,
+          selectedSpace: 'development',
+          storeRef,
+          projectRef,
+          projectUpdatedAtEpochMillis,
+        }),
     });
     const actor = module.actorDefinitions?.[0];
     const handler = actor?.handlers.find(item => item.commandName === acceptTerminalUpdateTargetCommand.commandName);
     if (handler === undefined) throw new Error('module target acceptance handler missing');
     const context = {
       runtimeId: 'module-snapshot-test-runtime',
-      command: {commandName: acceptTerminalUpdateTargetCommand.commandName, commandId: 'accept', requestId: null, payload: {selectionContext}},
+      command: {
+        commandName: acceptTerminalUpdateTargetCommand.commandName,
+        commandId: 'accept',
+        requestId: null,
+        payload: {selectionContext},
+      },
       actor: {actorKey: 'update-owner', moduleName: 'kernel.base.terminal-update', actorName: 'update-owner'},
       platformPorts: {logger: {info: () => undefined, warn: () => undefined, error: () => undefined}},
       getState: () => ({
@@ -352,6 +504,11 @@ describe('terminal-update project rule snapshot', () => {
       full: {artifactRef: 'full-artifact'},
       selectionContext,
     });
+    const pendingReport = Object.values(updateState.reportDescriptor.pendingReports)[0];
+    expect(pendingReport?.idempotencyKey).toMatch(/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/u);
+    expect(pendingReport?.body.reportId).toBe(pendingReport?.idempotencyKey);
+    expect(pendingReport?.body.actual.apkSha256).toBe('d'.repeat(64));
+    expect(pendingReport?.body.recent.state).toBe('UNKNOWN');
   });
 
   it('reuses the accepted topic time when an existing project subscription is refreshed', async () => {
@@ -362,18 +519,41 @@ describe('terminal-update project rule snapshot', () => {
     const subscriptionId = '00000000-0000-4000-8000-000000000013';
     const acceptedTimeEpochMillis = 42_000;
     let clientState = terminalDataClientReducer(undefined, {type: 'test/init'});
-    clientState = terminalDataClientReducer(clientState, terminalDataClientActions.replaceCredential({
-      groupWorkspaceKey: 'development', terminalRef, storeRef, deviceId: 'fixture-device',
-      bindingGeneration: 4, credentialSecret: 'S'.repeat(43),
-    }));
+    clientState = terminalDataClientReducer(
+      clientState,
+      terminalDataClientActions.replaceCredential({
+        groupWorkspaceKey: 'development',
+        terminalRef,
+        storeRef,
+        deviceId: 'fixture-device',
+        bindingGeneration: 4,
+        credentialSecret: 'S'.repeat(43),
+      }),
+    );
     const identityKey = JSON.stringify([
-      'development', terminalRef, storeRef, 4, subscriberKey, 'TERMINAL_UPDATE_RULES', projectRef,
+      'development',
+      terminalRef,
+      storeRef,
+      4,
+      subscriberKey,
+      'TERMINAL_UPDATE_RULES',
+      projectRef,
     ]);
-    clientState = terminalDataClientReducer(clientState, terminalDataClientActions.putTopicSubscription({
-      identityKey,
-      subscription: Object.freeze({subscriptionId, identityKey, subscriberKey,
-        topicKey: 'TERMINAL_UPDATE_RULES', ownerRef: projectRef, acceptedTimeEpochMillis, pendingNotification: null}),
-    }));
+    clientState = terminalDataClientReducer(
+      clientState,
+      terminalDataClientActions.putTopicSubscription({
+        identityKey,
+        subscription: Object.freeze({
+          subscriptionId,
+          identityKey,
+          subscriberKey,
+          topicKey: 'TERMINAL_UPDATE_RULES',
+          ownerRef: projectRef,
+          acceptedTimeEpochMillis,
+          pendingNotification: null,
+        }),
+      }),
+    );
     let updateState: TerminalUpdateState = {
       ruleSnapshot: {contextIdentity: null, selectedSpace: null, projectRef: null, collectionHash: null, items: []},
       ruleSnapshotStatus: {status: 'empty', errorCode: null},
@@ -382,16 +562,56 @@ describe('terminal-update project rule snapshot', () => {
       failedArtifactIds: [],
       actualVersions: null,
       reportDescriptor: {
-        bindingIdentity: `${terminalRef}:4`, contextIdentity: 'old-rule-context', nextReportSequence: 2,
+        bindingIdentity: `${terminalRef}:4`,
+        contextIdentity: 'old-rule-context',
+        nextReportSequence: 2,
         pendingReports: {stale: {idempotencyKey: 'stale', body: {} as never}},
-        sendPaused: true, latestDeliveryFailure: {reportId: 'stale', code: 'OLD_CONTEXT', changedAt: 1},
+        sendPaused: true,
+        latestDeliveryFailure: {
+          taskId: 'stale-task',
+          reportId: 'stale',
+          reportSequence: 1,
+          reasonCode: 'OLD_CONTEXT',
+          observedAt: 1 as TimestampMs,
+        },
       },
     };
     const currentState = () => ({
       [terminalDataClientSliceName]: clientState,
       [terminalUpdateSliceName]: updateState,
     });
-    const page = Object.freeze({items: Object.freeze([]), collectionHash: 'a'.repeat(64), nextCursor: null});
+    const page = Object.freeze({
+      items: Object.freeze([
+        Object.freeze({
+          ruleRef: 'full-only-rule',
+          targetMode: 'ALL' as const,
+          storeRefs: Object.freeze([]),
+          applicationId: 'com.example.terminal',
+          createdAtEpochMillis: 21,
+          full: Object.freeze({
+            artifactRef: 'full-artifact',
+            kind: 'FULL' as const,
+            applicationId: 'com.example.terminal',
+            runtimeVersion: '1',
+            nativeBuildNumber: 20,
+            apkVersion: '1.0.0',
+            jsVersion: '1.0.0',
+            publicationId: 'full-publication',
+            apkSha256: 'c'.repeat(64),
+            zipSha256: 'b'.repeat(64),
+            byteSize: 100,
+            createdAtEpochMillis: 20,
+          }),
+          hot: null,
+          nSeconds: 300,
+          hotStrategy: null,
+          mSeconds: null,
+          description: null,
+        }),
+      ]),
+      collectionHash: 'a'.repeat(64),
+      nextCursor: null,
+    });
     const dispatchCommand = vi.fn(async (definition: {commandName: string}, payload: unknown) => {
       if (definition.commandName === 'kernel.base.terminal-data-client.subscribe-topic')
         return {status: 'completed', actorResults: [{status: 'completed', result: {status: 'already-subscribed'}}]};
@@ -399,18 +619,30 @@ describe('terminal-update project rule snapshot', () => {
         return {status: 'completed', actorResults: [{status: 'completed', result: {kind: 'success', body: page}}]};
       throw new Error(`Unexpected command: ${definition.commandName} ${String(payload)}`);
     });
-    const actor = createTerminalUpdateActor({
+    const actor = createTestTerminalUpdateActor({
       port: {} as UpdatePort,
-      readRuleSnapshotContext: () => Object.freeze({
-        terminalRef, bindingGeneration: 4, selectedSpace: 'development', storeRef, projectRef,
-        projectUpdatedAtEpochMillis: 17,
-      }),
+      readRuleSnapshotContext: () =>
+        Object.freeze({
+          terminalRef,
+          bindingGeneration: 4,
+          selectedSpace: 'development',
+          storeRef,
+          projectRef,
+          projectUpdatedAtEpochMillis: 17,
+        }),
     });
-    const handler = actor.handlers.find(item => item.commandName === refreshTerminalUpdateRuleSnapshotCommand.commandName);
+    const handler = actor.handlers.find(
+      item => item.commandName === refreshTerminalUpdateRuleSnapshotCommand.commandName,
+    );
     if (handler === undefined) throw new Error('rule snapshot refresh handler missing');
     const context = {
       runtimeId: 'snapshot-test-runtime',
-      command: {commandName: refreshTerminalUpdateRuleSnapshotCommand.commandName, commandId: 'refresh', requestId: null, payload: {}},
+      command: {
+        commandName: refreshTerminalUpdateRuleSnapshotCommand.commandName,
+        commandId: 'refresh',
+        requestId: null,
+        payload: {},
+      },
       actor: {actorKey: actor.actorKey, moduleName: actor.moduleName, actorName: actor.actorName},
       platformPorts: {logger: {info: () => undefined, warn: () => undefined, error: () => undefined}},
       getState: currentState,
@@ -419,7 +651,10 @@ describe('terminal-update project rule snapshot', () => {
         if (value.type === terminalUpdateActions.replaceRuleSnapshot.type)
           updateState = {...updateState, ruleSnapshot: value.payload as TerminalUpdateState['ruleSnapshot']};
         if (value.type === terminalUpdateActions.replaceRuleSnapshotStatus.type)
-          updateState = {...updateState, ruleSnapshotStatus: value.payload as TerminalUpdateState['ruleSnapshotStatus']};
+          updateState = {
+            ...updateState,
+            ruleSnapshotStatus: value.payload as TerminalUpdateState['ruleSnapshotStatus'],
+          };
         if (value.type === terminalUpdateActions.replaceReportDescriptor.type)
           updateState = {...updateState, reportDescriptor: value.payload as TerminalUpdateState['reportDescriptor']};
       },
@@ -431,10 +666,27 @@ describe('terminal-update project rule snapshot', () => {
     const subscriptionCall = dispatchCommand.mock.calls.find(call => call[0].commandName.endsWith('.subscribe-topic'));
     expect(subscriptionCall?.[1]).toMatchObject({initialTimeEpochMillis: acceptedTimeEpochMillis});
     expect(updateState.ruleSnapshotStatus).toEqual({status: 'ready', errorCode: null});
-    expect(updateState.ruleSnapshot).toMatchObject({contextIdentity: expect.any(String), projectRef, collectionHash: page.collectionHash});
+    expect(updateState.ruleSnapshot).toMatchObject({
+      contextIdentity: expect.any(String),
+      projectRef,
+      collectionHash: page.collectionHash,
+    });
+    expect(updateState.ruleSnapshot.items).toMatchObject([
+      {ruleRef: 'full-only-rule', hot: null, hotStrategy: null, mSeconds: null},
+    ]);
+    expect(selectTerminalUpdateRuleSnapshot(currentState(), 'full-only-rule').items).toMatchObject([
+      {
+        ruleRef: 'full-only-rule',
+        applicationId: 'com.example.terminal',
+        full: {kind: 'FULL', apkSha256: 'c'.repeat(64)},
+      },
+    ]);
     expect(updateState.reportDescriptor).toMatchObject({
-      bindingIdentity: `${terminalRef}:4`, contextIdentity: expect.any(String), pendingReports: {},
-      sendPaused: false, latestDeliveryFailure: null,
+      bindingIdentity: `${terminalRef}:4`,
+      contextIdentity: expect.any(String),
+      pendingReports: {},
+      sendPaused: false,
+      latestDeliveryFailure: null,
     });
   });
 
@@ -451,22 +703,53 @@ describe('terminal-update project rule snapshot', () => {
         reportId,
         reportSequence: 7,
         taskId,
-        actual: Object.freeze({apkVersion: null, nativeBuildNumber: null, applicationId: 'com.example.terminal',
-          runtimeVersion: 'unknown', jsVersion: null, publicationId: null, apkSha256: null, bundleSha256: null,
-          entryKind: 'UNKNOWN' as const, unknownReason: 'READBACK_UNAVAILABLE' as const}),
-        recent: Object.freeze({state: 'SUCCEEDED' as const, reason: 'NONE' as const, changedAtEpochMillis: 1,
-          ruleRef: 'rule-1', fullArtifactRef: 'full-artifact', hotArtifactRef: null}),
+        actual: Object.freeze({
+          apkVersion: null,
+          nativeBuildNumber: null,
+          applicationId: 'com.example.terminal',
+          runtimeVersion: 'unknown',
+          jsVersion: null,
+          publicationId: null,
+          apkSha256: null,
+          bundleSha256: null,
+          entryKind: 'UNKNOWN' as const,
+          unknownReason: 'READBACK_UNAVAILABLE' as const,
+        }),
+        recent: Object.freeze({
+          state: 'SUCCEEDED' as const,
+          reason: 'NONE' as const,
+          changedAtEpochMillis: 1,
+          ruleRef: 'rule-1',
+          fullArtifactRef: 'full-artifact',
+          hotArtifactRef: null,
+        }),
       }),
     });
     let clientState = terminalDataClientReducer(undefined, {type: 'test/init'});
-    clientState = terminalDataClientReducer(clientState, terminalDataClientActions.replaceCredential({
-      groupWorkspaceKey: 'development', terminalRef, storeRef, deviceId: 'fixture-device',
-      bindingGeneration, credentialSecret: 'S'.repeat(43),
-    }));
+    clientState = terminalDataClientReducer(
+      clientState,
+      terminalDataClientActions.replaceCredential({
+        groupWorkspaceKey: 'development',
+        terminalRef,
+        storeRef,
+        deviceId: 'fixture-device',
+        bindingGeneration,
+        credentialSecret: 'S'.repeat(43),
+      }),
+    );
     const sessionId = 'session-report-flush';
-    clientState = terminalDataClientReducer(clientState, terminalDataClientActions.setConnection(Object.freeze({
-      status: 'connected', addressName: 'dev', nodeId: 'tds-1', sessionId, lastCloseReason: null,
-    })));
+    clientState = terminalDataClientReducer(
+      clientState,
+      terminalDataClientActions.setConnection(
+        Object.freeze({
+          status: 'connected',
+          addressName: 'dev',
+          nodeId: 'tds-1',
+          sessionId,
+          lastCloseReason: null,
+        }),
+      ),
+    );
     let updateState: TerminalUpdateState = {
       ruleSnapshot: {contextIdentity: null, selectedSpace: null, projectRef: null, collectionHash: null, items: []},
       ruleSnapshotStatus: {status: 'empty', errorCode: null},
@@ -483,14 +766,18 @@ describe('terminal-update project rule snapshot', () => {
         latestDeliveryFailure: null,
       },
     };
-    const module = createTerminalUpdateModule({port: {} as UpdatePort});
+    const module = createTestTerminalUpdateModule({port: {} as UpdatePort});
     const actor = module.actorDefinitions?.[0];
     const handler = actor?.handlers.find(item => item.commandName === terminalDataHeartbeatCommand.commandName);
     if (handler === undefined) throw new Error('heartbeat report handler missing');
     const context = {
       runtimeId: 'report-flush-test-runtime',
-      command: {commandName: terminalDataHeartbeatCommand.commandName, commandId: 'heartbeat', requestId: null,
-        payload: {bindingGeneration, sessionId, sequence: 1, observedAt: 2, rttMs: 1}},
+      command: {
+        commandName: terminalDataHeartbeatCommand.commandName,
+        commandId: 'heartbeat',
+        requestId: null,
+        payload: {bindingGeneration, sessionId, sequence: 1, observedAt: 2, rttMs: 1},
+      },
       actor: {actorKey: 'update-owner', moduleName: 'kernel.base.terminal-update', actorName: 'update-owner'},
       platformPorts: {logger: {info: () => undefined, warn: () => undefined, error: () => undefined}},
       getState: () => ({
@@ -506,15 +793,165 @@ describe('terminal-update project rule snapshot', () => {
       dispatchCommand: async (definition: {commandName: string}, payload: unknown) => {
         expect(definition.commandName).toBe(submitTerminalUpdateReportCommand.commandName);
         expect(payload).toBe(pendingReport);
-        return {status: 'completed', actorResults: [{status: 'completed', result: {
-          kind: 'success',
-          body: {reportId, taskId, acceptedSequence: 7, outcome: 'ACCEPTED'},
-        }}]};
+        return {
+          status: 'completed',
+          actorResults: [
+            {
+              status: 'completed',
+              result: {
+                kind: 'success',
+                body: {reportId, taskId, acceptedSequence: 7, outcome: 'ACCEPTED'},
+              },
+            },
+          ],
+        };
       },
     } as never;
 
     await expect(handler.handle(context)).resolves.toEqual({status: 'receipt-flush-failed'});
     expect(updateState.reportDescriptor.pendingReports).toEqual({[taskId]: pendingReport});
+  });
+
+  it('releases an expired report wait and ignores an older late outcome after a retry starts', async () => {
+    const terminalRef = '00000000-0000-4000-8000-000000000051';
+    const storeRef = '00000000-0000-4000-8000-000000000052';
+    const bindingGeneration = 7;
+    const bindingIdentity = `${terminalRef}:${bindingGeneration}`;
+    const sessionId = 'session-report-late';
+    const report = Object.freeze({
+      idempotencyKey: 'late-report',
+      body: Object.freeze({
+        reportId: 'late-report',
+        reportSequence: 3,
+        taskId: 'task-late',
+        actual: Object.freeze({
+          apkVersion: null,
+          nativeBuildNumber: null,
+          applicationId: 'com.example.terminal',
+          runtimeVersion: 'unknown',
+          jsVersion: null,
+          publicationId: null,
+          apkSha256: null,
+          bundleSha256: null,
+          entryKind: 'UNKNOWN' as const,
+          unknownReason: 'READBACK_UNAVAILABLE' as const,
+        }),
+        recent: Object.freeze({
+          state: 'SUCCEEDED' as const,
+          reason: 'NONE' as const,
+          changedAtEpochMillis: 3,
+          ruleRef: 'rule-late',
+          fullArtifactRef: 'full-late',
+          hotArtifactRef: null,
+        }),
+      }),
+    });
+    let clientState = terminalDataClientReducer(undefined, {type: 'test/init'});
+    clientState = terminalDataClientReducer(
+      clientState,
+      terminalDataClientActions.replaceCredential({
+        groupWorkspaceKey: 'development',
+        terminalRef,
+        storeRef,
+        deviceId: 'fixture-device',
+        bindingGeneration,
+        credentialSecret: 'S'.repeat(43),
+      }),
+    );
+    clientState = terminalDataClientReducer(
+      clientState,
+      terminalDataClientActions.setConnection(
+        Object.freeze({
+          status: 'connected',
+          addressName: 'dev',
+          nodeId: 'tds-1',
+          sessionId,
+          lastCloseReason: null,
+        }),
+      ),
+    );
+    let updateState: TerminalUpdateState = {
+      ruleSnapshot: {contextIdentity: null, selectedSpace: null, projectRef: null, collectionHash: null, items: []},
+      ruleSnapshotStatus: {status: 'empty', errorCode: null},
+      currentTask: null,
+      recentStatus: {taskId: 'task-late', state: 'succeeded', reason: null, changedAt: 3 as TimestampMs},
+      failedArtifactIds: [],
+      actualVersions: null,
+      reportDescriptor: {
+        bindingIdentity,
+        contextIdentity: null,
+        nextReportSequence: 4,
+        pendingReports: {'task-late': report},
+        sendPaused: false,
+        latestDeliveryFailure: null,
+      },
+    };
+    let sendCount = 0;
+    const lateOutcomes: Array<((record: unknown) => void) | undefined> = [];
+    const actor = createTestTerminalUpdateModule({port: {} as UpdatePort}).actorDefinitions?.[0];
+    const handler = actor?.handlers.find(item => item.commandName === terminalDataHeartbeatCommand.commandName);
+    if (handler === undefined) throw new Error('heartbeat report handler missing');
+    const context = {
+      runtimeId: 'report-late-single-flight-test-runtime',
+      command: {
+        commandName: terminalDataHeartbeatCommand.commandName,
+        commandId: 'heartbeat',
+        requestId: null,
+        payload: {bindingGeneration, sessionId, sequence: 1, observedAt: 3, rttMs: 1},
+      },
+      actor: {actorKey: 'update-owner', moduleName: 'kernel.base.terminal-update', actorName: 'update-owner'},
+      platformPorts: {logger: {info: () => undefined, warn: () => undefined, error: () => undefined}},
+      getState: () => ({[terminalDataClientSliceName]: clientState, [terminalUpdateSliceName]: updateState}),
+      dispatchAction: (action: unknown) => {
+        const value = action as {type: string; payload: unknown};
+        if (value.type === terminalUpdateActions.replaceReportDescriptor.type)
+          updateState = {...updateState, reportDescriptor: value.payload as TerminalUpdateState['reportDescriptor']};
+      },
+      flushPersistence: async () => ({status: 'succeeded'}),
+      dispatchCommand: async (_definition: unknown, _payload: unknown, options?: unknown) => {
+        sendCount += 1;
+        if (sendCount <= 2) {
+          lateOutcomes[sendCount - 1] = (options as {lateOutcome?: (record: unknown) => void} | undefined)?.lateOutcome;
+          expect((options as {lateResultTtlMs?: number} | undefined)?.lateResultTtlMs).toBeGreaterThan(60_000);
+          return {status: 'timed-out', actorResults: [{status: 'timed-out', result: null}]};
+        }
+        return {
+          status: 'completed',
+          actorResults: [
+            {
+              status: 'completed',
+              result: {
+                kind: 'success',
+                body: {reportId: 'late-report', taskId: 'task-late', acceptedSequence: 3, outcome: 'ACCEPTED'},
+              },
+            },
+          ],
+        };
+      },
+    } as never;
+
+    vi.useFakeTimers();
+    try {
+      await expect(handler.handle(context)).resolves.toEqual({status: 'retry-retained'});
+      expect(sendCount).toBe(1);
+      await expect(handler.handle(context)).resolves.toEqual({status: 'in-flight'});
+      expect(sendCount).toBe(1);
+
+      await vi.advanceTimersByTimeAsync(7_200_001);
+      await expect(handler.handle(context)).resolves.toEqual({status: 'retry-retained'});
+      expect(sendCount).toBe(2);
+
+      lateOutcomes[0]?.({actorKey: 'terminal-data-client', status: 'completed', result: null} as never);
+      await expect(handler.handle(context)).resolves.toEqual({status: 'in-flight'});
+      expect(sendCount).toBe(2);
+
+      lateOutcomes[1]?.({actorKey: 'terminal-data-client', status: 'completed', result: null} as never);
+      await expect(handler.handle(context)).resolves.toEqual({status: 'accepted'});
+      expect(sendCount).toBe(3);
+      expect(updateState.reportDescriptor.pendingReports).toEqual({});
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('drops pending reports from a changed rule context before any network send', async () => {
@@ -526,46 +963,100 @@ describe('terminal-update project rule snapshot', () => {
     const staleReport = Object.freeze({
       idempotencyKey: 'stale-report',
       body: Object.freeze({
-        reportId: 'stale-report', reportSequence: 4, taskId: 'old-task',
-        actual: Object.freeze({apkVersion: null, nativeBuildNumber: null, applicationId: 'com.example.terminal',
-          runtimeVersion: 'unknown', jsVersion: null, publicationId: null, apkSha256: null, bundleSha256: null,
-          entryKind: 'UNKNOWN' as const, unknownReason: 'READBACK_UNAVAILABLE' as const}),
-        recent: Object.freeze({state: 'UNKNOWN' as const, reason: 'UNKNOWN' as const, changedAtEpochMillis: 4,
-          ruleRef: 'old-rule', fullArtifactRef: 'old-full', hotArtifactRef: null}),
+        reportId: 'stale-report',
+        reportSequence: 4,
+        taskId: 'old-task',
+        actual: Object.freeze({
+          apkVersion: null,
+          nativeBuildNumber: null,
+          applicationId: 'com.example.terminal',
+          runtimeVersion: 'unknown',
+          jsVersion: null,
+          publicationId: null,
+          apkSha256: null,
+          bundleSha256: null,
+          entryKind: 'UNKNOWN' as const,
+          unknownReason: 'READBACK_UNAVAILABLE' as const,
+        }),
+        recent: Object.freeze({
+          state: 'UNKNOWN' as const,
+          reason: 'UNKNOWN' as const,
+          changedAtEpochMillis: 4,
+          ruleRef: 'old-rule',
+          fullArtifactRef: 'old-full',
+          hotArtifactRef: null,
+        }),
       }),
     });
     let clientState = terminalDataClientReducer(undefined, {type: 'test/init'});
-    clientState = terminalDataClientReducer(clientState, terminalDataClientActions.replaceCredential({
-      groupWorkspaceKey: 'development', terminalRef, storeRef, deviceId: 'fixture-device',
-      bindingGeneration, credentialSecret: 'S'.repeat(43),
-    }));
-    clientState = terminalDataClientReducer(clientState, terminalDataClientActions.setConnection(Object.freeze({
-      status: 'connected', addressName: 'dev', nodeId: 'tds-1', sessionId, lastCloseReason: null,
-    })));
+    clientState = terminalDataClientReducer(
+      clientState,
+      terminalDataClientActions.replaceCredential({
+        groupWorkspaceKey: 'development',
+        terminalRef,
+        storeRef,
+        deviceId: 'fixture-device',
+        bindingGeneration,
+        credentialSecret: 'S'.repeat(43),
+      }),
+    );
+    clientState = terminalDataClientReducer(
+      clientState,
+      terminalDataClientActions.setConnection(
+        Object.freeze({
+          status: 'connected',
+          addressName: 'dev',
+          nodeId: 'tds-1',
+          sessionId,
+          lastCloseReason: null,
+        }),
+      ),
+    );
     let updateState: TerminalUpdateState = {
       ruleSnapshot: {contextIdentity: null, selectedSpace: null, projectRef: null, collectionHash: null, items: []},
       ruleSnapshotStatus: {status: 'empty', errorCode: null},
       currentTask: null,
       recentStatus: {taskId: 'old-task', state: 'unknown', reason: null, changedAt: 4 as TimestampMs},
-      failedArtifactIds: [], actualVersions: null,
-      reportDescriptor: {bindingIdentity, contextIdentity: 'old-rule-context', nextReportSequence: 5,
-        pendingReports: {'old-task': staleReport}, sendPaused: true,
-        latestDeliveryFailure: {reportId: 'previous-failure', code: 'TEMPORARY', changedAt: 3}},
+      failedArtifactIds: [],
+      actualVersions: null,
+      reportDescriptor: {
+        bindingIdentity,
+        contextIdentity: 'old-rule-context',
+        nextReportSequence: 5,
+        pendingReports: {'old-task': staleReport},
+        sendPaused: true,
+        latestDeliveryFailure: {
+          taskId: 'old-task',
+          reportId: 'previous-failure',
+          reportSequence: 4,
+          reasonCode: 'TEMPORARY',
+          observedAt: 3 as TimestampMs,
+        },
+      },
     };
     const sent: unknown[] = [];
-    const actor = createTerminalUpdateActor({
+    const actor = createTestTerminalUpdateActor({
       port: {} as UpdatePort,
-      readRuleSnapshotContext: () => Object.freeze({
-        terminalRef, bindingGeneration, selectedSpace: 'development', storeRef,
-        projectRef: '00000000-0000-4000-8000-000000000033', projectUpdatedAtEpochMillis: 19,
-      }),
+      readRuleSnapshotContext: () =>
+        Object.freeze({
+          terminalRef,
+          bindingGeneration,
+          selectedSpace: 'development',
+          storeRef,
+          projectRef: '00000000-0000-4000-8000-000000000033',
+          projectUpdatedAtEpochMillis: 19,
+        }),
     });
     const handler = actor.handlers.find(item => item.commandName === terminalDataHeartbeatCommand.commandName);
     if (handler === undefined) throw new Error('heartbeat report handler missing');
     const context = {
       runtimeId: 'report-context-change-test-runtime',
-      command: {commandName: terminalDataHeartbeatCommand.commandName, commandId: 'heartbeat', requestId: null,
-        payload: {bindingGeneration, sessionId, sequence: 1, observedAt: 5, rttMs: 1}},
+      command: {
+        commandName: terminalDataHeartbeatCommand.commandName,
+        commandId: 'heartbeat',
+        requestId: null,
+        payload: {bindingGeneration, sessionId, sequence: 1, observedAt: 5, rttMs: 1},
+      },
       actor: {actorKey: actor.actorKey, moduleName: actor.moduleName, actorName: actor.actorName},
       platformPorts: {logger: {info: () => undefined, warn: () => undefined, error: () => undefined}},
       getState: () => ({[terminalDataClientSliceName]: clientState, [terminalUpdateSliceName]: updateState}),
@@ -575,103 +1066,192 @@ describe('terminal-update project rule snapshot', () => {
           updateState = {...updateState, reportDescriptor: value.payload as TerminalUpdateState['reportDescriptor']};
       },
       flushPersistence: async () => ({status: 'succeeded'}),
-      dispatchCommand: async (_definition: unknown, payload: unknown) => { sent.push(payload); return {status: 'rejected'}; },
+      dispatchCommand: async (_definition: unknown, payload: unknown) => {
+        sent.push(payload);
+        return {status: 'rejected'};
+      },
     } as never;
 
     await expect(handler.handle(context)).resolves.toEqual({status: 'context-reset'});
     expect(sent).toEqual([]);
     expect(updateState.reportDescriptor).toMatchObject({
-      bindingIdentity, contextIdentity: `${terminalRef}:${bindingGeneration}:development:${storeRef}:00000000-0000-4000-8000-000000000033:19`,
-      nextReportSequence: 1, pendingReports: {}, sendPaused: false, latestDeliveryFailure: null,
+      bindingIdentity,
+      contextIdentity: `${terminalRef}:${bindingGeneration}:development:${storeRef}:00000000-0000-4000-8000-000000000033:19`,
+      nextReportSequence: 1,
+      pendingReports: {},
+      sendPaused: false,
+      latestDeliveryFailure: null,
     });
   });
 
   it.each([
     {status: 409, errorCode: 'TERMINAL_UPDATE_REPORT_IDENTITY_CONFLICT', nextKey: 'task-2', nextTaskId: 'task-2'},
     {status: 422, errorCode: 'PLATFORM_COMMON_VALIDATION_FAILED', nextKey: 'observation', nextTaskId: null},
-  ] as const)('removes a terminal $status report rejection and continues with the next pending record', async scenario => {
-    const terminalRef = '00000000-0000-4000-8000-000000000021';
-    const storeRef = '00000000-0000-4000-8000-000000000022';
-    const bindingGeneration = 5;
-    const bindingIdentity = `${terminalRef}:${bindingGeneration}`;
-    const makeReport = (reportId: string, reportSequence: number, taskId: string | null) => Object.freeze({
-      idempotencyKey: reportId,
-      body: Object.freeze({
-        reportId,
-        reportSequence,
-        taskId,
-        actual: Object.freeze({apkVersion: null, nativeBuildNumber: null, applicationId: 'com.example.terminal',
-          runtimeVersion: 'unknown', jsVersion: null, publicationId: null, apkSha256: null, bundleSha256: null,
-          entryKind: 'UNKNOWN' as const, unknownReason: 'READBACK_UNAVAILABLE' as const}),
-        recent: Object.freeze({state: 'SUCCEEDED' as const, reason: 'NONE' as const, changedAtEpochMillis: reportSequence,
-          ruleRef: 'rule-1', fullArtifactRef: 'full-artifact', hotArtifactRef: null}),
-      }),
-    });
-    const first = makeReport('report-1', 1, 'task-1');
-    const second = makeReport('report-2', 2, scenario.nextTaskId);
-    let clientState = terminalDataClientReducer(undefined, {type: 'test/init'});
-    clientState = terminalDataClientReducer(clientState, terminalDataClientActions.replaceCredential({
-      groupWorkspaceKey: 'development', terminalRef, storeRef, deviceId: 'fixture-device',
-      bindingGeneration, credentialSecret: 'S'.repeat(43),
-    }));
-    const sessionId = 'session-report-conflict';
-    clientState = terminalDataClientReducer(clientState, terminalDataClientActions.setConnection(Object.freeze({
-      status: 'connected', addressName: 'dev', nodeId: 'tds-1', sessionId, lastCloseReason: null,
-    })));
-    let updateState: TerminalUpdateState = {
-      ruleSnapshot: {contextIdentity: null, selectedSpace: null, projectRef: null, collectionHash: null, items: []},
-      ruleSnapshotStatus: {status: 'empty', errorCode: null},
-      currentTask: null,
-      recentStatus: {taskId: null, state: 'idle', reason: null, changedAt: 0 as TimestampMs},
-      failedArtifactIds: [],
-      actualVersions: null,
-      reportDescriptor: {bindingIdentity, contextIdentity: null, nextReportSequence: 3, pendingReports: {'task-1': first, [scenario.nextKey]: second},
-        sendPaused: false, latestDeliveryFailure: null},
-    };
-    const sent: string[] = [];
-    const actor = createTerminalUpdateModule({port: {} as UpdatePort}).actorDefinitions?.[0];
-    const handler = actor?.handlers.find(item => item.commandName === terminalDataHeartbeatCommand.commandName);
-    if (handler === undefined) throw new Error('heartbeat report handler missing');
-    const contextValue = {
-      runtimeId: 'report-conflict-test-runtime',
-      command: {commandName: terminalDataHeartbeatCommand.commandName, commandId: 'heartbeat', requestId: null,
-        payload: {bindingGeneration, sessionId, sequence: 1, observedAt: 2, rttMs: 1}},
-      actor: {actorKey: 'update-owner', moduleName: 'kernel.base.terminal-update', actorName: 'update-owner'},
-      platformPorts: {logger: {info: () => undefined, warn: () => undefined, error: () => undefined}},
-      getState: () => ({[terminalDataClientSliceName]: clientState, [terminalUpdateSliceName]: updateState}),
-      dispatchAction: (action: unknown) => {
-        const value = action as {type: string; payload: unknown};
-        if (value.type === terminalUpdateActions.replaceReportDescriptor.type)
-          updateState = {...updateState, reportDescriptor: value.payload as TerminalUpdateState['reportDescriptor']};
-      },
-      flushPersistence: async () => ({status: 'succeeded'}),
-      dispatchCommand: async (_definition: unknown, payload: unknown) => {
-        const report = payload as typeof first;
-        sent.push(report.body.reportId);
-        if (report.body.reportId === first.body.reportId) return {status: 'completed', actorResults: [{status: 'completed', result: {
-          kind: 'business-rejection', status: scenario.status, errorCode: scenario.errorCode,
-        }}]};
-        return {status: 'completed', actorResults: [{status: 'completed', result: {
-          kind: 'success', body: {reportId: second.body.reportId, taskId: second.body.taskId,
-            acceptedSequence: second.body.reportSequence, outcome: 'ACCEPTED'},
-        }}]};
-      },
-    };
-    const context = contextValue as never;
+  ] as const)(
+    'removes a terminal $status report rejection and continues with the next pending record',
+    async scenario => {
+      const terminalRef = '00000000-0000-4000-8000-000000000021';
+      const storeRef = '00000000-0000-4000-8000-000000000022';
+      const bindingGeneration = 5;
+      const bindingIdentity = `${terminalRef}:${bindingGeneration}`;
+      const makeReport = (reportId: string, reportSequence: number, taskId: string | null) =>
+        Object.freeze({
+          idempotencyKey: reportId,
+          body: Object.freeze({
+            reportId,
+            reportSequence,
+            taskId,
+            actual: Object.freeze({
+              apkVersion: null,
+              nativeBuildNumber: null,
+              applicationId: 'com.example.terminal',
+              runtimeVersion: 'unknown',
+              jsVersion: null,
+              publicationId: null,
+              apkSha256: null,
+              bundleSha256: null,
+              entryKind: 'UNKNOWN' as const,
+              unknownReason: 'READBACK_UNAVAILABLE' as const,
+            }),
+            recent: Object.freeze({
+              state: 'SUCCEEDED' as const,
+              reason: 'NONE' as const,
+              changedAtEpochMillis: reportSequence,
+              ruleRef: 'rule-1',
+              fullArtifactRef: 'full-artifact',
+              hotArtifactRef: null,
+            }),
+          }),
+        });
+      const first = makeReport('report-1', 1, 'task-1');
+      const second = makeReport('report-2', 2, scenario.nextTaskId);
+      let clientState = terminalDataClientReducer(undefined, {type: 'test/init'});
+      clientState = terminalDataClientReducer(
+        clientState,
+        terminalDataClientActions.replaceCredential({
+          groupWorkspaceKey: 'development',
+          terminalRef,
+          storeRef,
+          deviceId: 'fixture-device',
+          bindingGeneration,
+          credentialSecret: 'S'.repeat(43),
+        }),
+      );
+      const sessionId = 'session-report-conflict';
+      clientState = terminalDataClientReducer(
+        clientState,
+        terminalDataClientActions.setConnection(
+          Object.freeze({
+            status: 'connected',
+            addressName: 'dev',
+            nodeId: 'tds-1',
+            sessionId,
+            lastCloseReason: null,
+          }),
+        ),
+      );
+      let updateState: TerminalUpdateState = {
+        ruleSnapshot: {contextIdentity: null, selectedSpace: null, projectRef: null, collectionHash: null, items: []},
+        ruleSnapshotStatus: {status: 'empty', errorCode: null},
+        currentTask: null,
+        recentStatus: {taskId: null, state: 'idle', reason: null, changedAt: 0 as TimestampMs},
+        failedArtifactIds: [],
+        actualVersions: null,
+        reportDescriptor: {
+          bindingIdentity,
+          contextIdentity: null,
+          nextReportSequence: 3,
+          pendingReports: {'task-1': first, [scenario.nextKey]: second},
+          sendPaused: false,
+          latestDeliveryFailure: null,
+        },
+      };
+      const sent: string[] = [];
+      const actor = createTestTerminalUpdateModule({port: {} as UpdatePort}).actorDefinitions?.[0];
+      const handler = actor?.handlers.find(item => item.commandName === terminalDataHeartbeatCommand.commandName);
+      if (handler === undefined) throw new Error('heartbeat report handler missing');
+      const contextValue = {
+        runtimeId: 'report-conflict-test-runtime',
+        command: {
+          commandName: terminalDataHeartbeatCommand.commandName,
+          commandId: 'heartbeat',
+          requestId: null,
+          payload: {bindingGeneration, sessionId, sequence: 1, observedAt: 2, rttMs: 1},
+        },
+        actor: {actorKey: 'update-owner', moduleName: 'kernel.base.terminal-update', actorName: 'update-owner'},
+        platformPorts: {logger: {info: () => undefined, warn: () => undefined, error: () => undefined}},
+        getState: () => ({[terminalDataClientSliceName]: clientState, [terminalUpdateSliceName]: updateState}),
+        dispatchAction: (action: unknown) => {
+          const value = action as {type: string; payload: unknown};
+          if (value.type === terminalUpdateActions.replaceReportDescriptor.type)
+            updateState = {...updateState, reportDescriptor: value.payload as TerminalUpdateState['reportDescriptor']};
+        },
+        flushPersistence: async () => ({status: 'succeeded'}),
+        dispatchCommand: async (_definition: unknown, payload: unknown) => {
+          const report = payload as typeof first;
+          sent.push(report.body.reportId);
+          if (report.body.reportId === first.body.reportId)
+            return {
+              status: 'completed',
+              actorResults: [
+                {
+                  status: 'completed',
+                  result: {
+                    kind: 'business-rejection',
+                    status: scenario.status,
+                    errorCode: scenario.errorCode,
+                  },
+                },
+              ],
+            };
+          return {
+            status: 'completed',
+            actorResults: [
+              {
+                status: 'completed',
+                result: {
+                  kind: 'success',
+                  body: {
+                    reportId: second.body.reportId,
+                    taskId: second.body.taskId,
+                    acceptedSequence: second.body.reportSequence,
+                    outcome: 'ACCEPTED',
+                  },
+                },
+              },
+            ],
+          };
+        },
+      };
+      const context = contextValue as never;
 
-    const staleContext = {
-      ...contextValue,
-      command: {...contextValue.command, payload: {bindingGeneration, sessionId: 'old-session', sequence: 1, observedAt: 2, rttMs: 1}},
-    } as never;
-    await expect(handler.handle(staleContext)).resolves.toEqual({status: 'stale-connection'});
-    expect(sent).toEqual([]);
+      const staleContext = {
+        ...contextValue,
+        command: {
+          ...contextValue.command,
+          payload: {bindingGeneration, sessionId: 'old-session', sequence: 1, observedAt: 2, rttMs: 1},
+        },
+      } as never;
+      await expect(handler.handle(staleContext)).resolves.toEqual({status: 'stale-connection'});
+      expect(sent).toEqual([]);
 
-    await expect(handler.handle(context)).resolves.toEqual({status: 'terminal-rejection'});
-    expect(updateState.reportDescriptor).toMatchObject({sendPaused: false, pendingReports: {[scenario.nextKey]: second}});
-    await expect(handler.handle(context)).resolves.toEqual({status: 'accepted'});
-    expect(sent).toEqual(['report-1', 'report-2']);
-    expect(updateState.reportDescriptor.pendingReports).toEqual({});
-  });
+      await expect(handler.handle(context)).resolves.toEqual({status: 'terminal-rejection'});
+      expect(updateState.reportDescriptor).toMatchObject({
+        sendPaused: false,
+        pendingReports: {[scenario.nextKey]: second},
+        latestDeliveryFailure: {
+          taskId: first.body.taskId,
+          reportId: first.body.reportId,
+          reportSequence: first.body.reportSequence,
+          reasonCode: scenario.errorCode,
+          observedAt: expect.any(Number),
+        },
+      });
+      await expect(handler.handle(context)).resolves.toEqual({status: 'accepted'});
+      expect(sent).toEqual(['report-1', 'report-2']);
+      expect(updateState.reportDescriptor.pendingReports).toEqual({});
+    },
+  );
 });
 
 describe('terminal-update local owner', () => {
@@ -703,6 +1283,14 @@ describe('terminal-update local owner', () => {
       },
       {requestId: createRequestId()},
     );
+    const firstTaskId = selectTerminalUpdateTask(firstRuntime.getState())?.taskId;
+    expect(firstTaskId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+    const persistedTaskKey = createPersistenceFieldKey({
+      persistenceKey,
+      sliceName: terminalUpdateRegistration.name,
+      storageKey: 'currentTask',
+    });
+    expect(JSON.parse(persistence.values.get(persistedTaskKey) ?? 'null')?.taskId).toBe(firstTaskId);
     expect(selectTerminalUpdateTask(firstRuntime.getState())).toMatchObject({
       phase: 'succeeded',
       bootId: facts.actual!.bootId,
@@ -741,7 +1329,10 @@ describe('terminal-update local owner', () => {
     await secondRuntime.start();
 
     expect(selectTerminalUpdateTask(secondRuntime.getState())).toBeNull();
-    expect(selectTerminalUpdateRecentStatus(secondRuntime.getState())).toMatchObject({state: 'succeeded'});
+    expect(selectTerminalUpdateRecentStatus(secondRuntime.getState())).toMatchObject({
+      taskId: firstTaskId,
+      state: 'succeeded',
+    });
     const next = await secondRuntime.dispatchCommand(
       acceptTerminalUpdateTargetCommand,
       {
@@ -751,7 +1342,10 @@ describe('terminal-update local owner', () => {
     );
 
     expect(next.actorResults[0]?.result).toMatchObject({status: 'succeeded'});
-    expect(selectTerminalUpdateTask(secondRuntime.getState())).toMatchObject({target: nextTarget, phase: 'succeeded'});
+    const nextTask = selectTerminalUpdateTask(secondRuntime.getState());
+    expect(nextTask).toMatchObject({target: nextTarget, phase: 'succeeded'});
+    expect(nextTask?.taskId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+    expect(nextTask?.taskId).not.toBe(firstTaskId);
   });
 
   it('uses the observed boot for FULL-only success and releases it on the next boot', async () => {
@@ -898,7 +1492,11 @@ describe('terminal-update local owner', () => {
         expectedSha256: newerHotArtifact.publicationId,
         artifact: newerHotArtifact,
       }),
-      selectionContext: Object.freeze({selectedSpace: 'development', contextIdentity: 'next-repair-context', ruleRef: 'next-repair-rule'}),
+      selectionContext: Object.freeze({
+        selectedSpace: 'development',
+        contextIdentity: 'next-repair-context',
+        ruleRef: 'next-repair-rule',
+      }),
     });
     const firstRuntime = createFixture({
       persistKv: persistence,
@@ -1025,7 +1623,51 @@ describe('terminal-update local owner', () => {
     expect(selectTerminalUpdateRecentStatus(runtime.getState()).state).toBe('succeeded');
   });
 
-  it('does not expose a target or call the update port when persistence fails, and allows retry', async () => {
+  it('rejects a rule for another application before fixing or preparing its target', async () => {
+    const wallpaperArtifact = Object.freeze({
+      ...artifact,
+      applicationId: 'com.example.wallpaper',
+      publicationId: 'd'.repeat(64),
+    });
+    const wallpaperTarget: FixedUpdateTarget = Object.freeze({
+      ...target,
+      applicationId: wallpaperArtifact.applicationId,
+      full: Object.freeze({
+        sourceRef: 'artifact:wallpaper-full',
+        expectedSha256: wallpaperArtifact.publicationId,
+        artifact: wallpaperArtifact,
+      }),
+      hot: null,
+    });
+    const prepareArtifact = vi.fn(async () => ok({preparedId: 'prepared', artifact: wallpaperArtifact}));
+    const port: UpdatePort = {
+      readFacts: async () => ok(facts),
+      prepareArtifact,
+      applyPrepared: async () => ok(noAction),
+      readAction: async () => ok(noAction),
+      confirmBoot: async () => ok({confirmed: true}),
+      releasePrepared: async () => ok({released: true}),
+    };
+    const runtime = createFixture({readTarget: async () => wallpaperTarget, port});
+    runtimes.push(runtime);
+    await runtime.start();
+
+    const result = await runtime.dispatchCommand(
+      acceptTerminalUpdateTargetCommand,
+      {selectionContext: wallpaperTarget.selectionContext},
+      {requestId: createRequestId()},
+    );
+
+    expect(result.status).toBe('completed');
+    expect(result.actorResults.find(actor => actor.status === 'completed')?.result).toMatchObject({
+      status: 'rejected',
+      reason: 'APPLICATION_ID_MISMATCH',
+    });
+    expect(selectTerminalUpdateTask(runtime.getState())).toBeNull();
+    expect(prepareArtifact).not.toHaveBeenCalled();
+  });
+
+  it('does not expose a target when persistence fails after identity preflight, and allows retry', async () => {
     const persistence = createStorage({failWrite: key => key.endsWith('/field/recentStatus'), failWriteCount: 3});
     let readFactsCount = 0;
     const port: UpdatePort = {
@@ -1058,7 +1700,7 @@ describe('terminal-update local owner', () => {
     expect(failed.actorResults[0]?.result).toMatchObject({status: 'persistence-failed'});
     expect(selectTerminalUpdateTask(runtime.getState())).toBeNull();
     expect(selectTerminalUpdateRecentStatus(runtime.getState()).state).toBe('idle');
-    expect(readFactsCount).toBe(startupReadFactsCount);
+    expect(readFactsCount).toBe(startupReadFactsCount + 1);
     const taskKey = [...persistence.values.keys()].find(key => key.endsWith('/field/currentTask'));
     const statusKey = [...persistence.values.keys()].find(key => key.endsWith('/field/recentStatus'));
     expect(taskKey).toBeDefined();
@@ -1076,7 +1718,7 @@ describe('terminal-update local owner', () => {
     expect(retried.status).toBe('completed');
     expect(selectTerminalUpdateTask(runtime.getState())).toMatchObject({target, phase: 'succeeded'});
     expect(selectTerminalUpdateRecentStatus(runtime.getState()).state).toBe('succeeded');
-    expect(readFactsCount).toBe(startupReadFactsCount + 1);
+    expect(readFactsCount).toBe(startupReadFactsCount + 3);
   });
 
   it('defers a persisted fixed task until the Runtime is ready to resume its artifact work', async () => {
@@ -1677,7 +2319,9 @@ describe('terminal-update local owner', () => {
       readFacts: async () => {
         factsRead += 1;
         return ok(
-          factsRead <= 2
+          // Startup read, pre-commit application identity read, then the
+          // initial artifact-selection read all observe the installed baseline.
+          factsRead <= 3
             ? Object.freeze({...facts, actual: Object.freeze({...facts.actual!, nativeBuildNumber: 1})})
             : Object.freeze({
                 ...facts,
@@ -2186,6 +2830,193 @@ describe('terminal-update local owner', () => {
     });
   });
 
+  it('rejects HOT when the installed same-build APK does not match the fixed FULL digest', async () => {
+    const fullApkSha256 = '1'.repeat(64);
+    const fixedTarget: FixedUpdateTarget = Object.freeze({
+      ...target,
+      full: Object.freeze({...target.full!, apkSha256: fullApkSha256}),
+      hot: Object.freeze({
+        ...target.hot!,
+        artifact: Object.freeze({...artifact, bundleVersion: '1.0.1', publicationId: '2'.repeat(64)}),
+      }),
+    });
+    const prepareArtifact = vi.fn(async () => ok({preparedId: 'unexpected', artifact}));
+    const runtime = createFixture({
+      readTarget: async () => fixedTarget,
+      port: {
+        readFacts: async () =>
+          ok(Object.freeze({...facts, actual: Object.freeze({...facts.actual!, apkSha256: '3'.repeat(64)})})),
+        prepareArtifact,
+        applyPrepared: async () => ok(noAction),
+        readAction: async () => ok(noAction),
+        confirmBoot: async () => ok({confirmed: true}),
+        releasePrepared: async () => ok({released: true}),
+      },
+    });
+    runtimes.push(runtime);
+    await runtime.start();
+
+    const result = await runtime.dispatchCommand(
+      acceptTerminalUpdateTargetCommand,
+      {selectionContext: target.selectionContext},
+      {requestId: createRequestId()},
+    );
+
+    expect(result.actorResults[0]?.result).toMatchObject({status: 'failed', reason: 'FULL_IDENTITY_CONFLICT'});
+    expect(prepareArtifact).not.toHaveBeenCalled();
+    expect(selectTerminalUpdateTask(runtime.getState())).toMatchObject({
+      phase: 'failed',
+      failureCode: 'FULL_IDENTITY_CONFLICT',
+    });
+  });
+
+  it('rejects a HOT grant whose minimum FULL identity differs from the fixed target', async () => {
+    const fullApkSha256 = 'a'.repeat(64);
+    const fullPublicationId = 'b'.repeat(64);
+    const hotPublicationId = 'c'.repeat(64);
+    const selectionContext = Object.freeze({selectedSpace: 'development', contextIdentity: 'context', ruleRef: 'rule'});
+    const fixedTarget: FixedUpdateTarget = Object.freeze({
+      ...target,
+      full: Object.freeze({
+        sourceRef: 'full',
+        expectedSha256: 'd'.repeat(64),
+        apkSha256: fullApkSha256,
+        artifact: Object.freeze({...artifact, publicationId: fullPublicationId}),
+        artifactRef: 'full-ref',
+      }),
+      hot: Object.freeze({
+        sourceRef: 'hot',
+        expectedSha256: 'e'.repeat(64),
+        artifact: Object.freeze({...artifact, bundleVersion: '1.0.1', publicationId: hotPublicationId}),
+        artifactRef: 'hot-ref',
+      }),
+      selectionContext,
+    });
+    const prepareArtifact = vi.fn(async () => ok({preparedId: 'unexpected', artifact}));
+    let updateState = {
+      ruleSnapshot: Object.freeze({
+        contextIdentity: null,
+        selectedSpace: null,
+        projectRef: null,
+        collectionHash: null,
+        items: Object.freeze([]),
+      }),
+      ruleSnapshotStatus: Object.freeze({status: 'empty' as const, errorCode: null}),
+      currentTask: null,
+      recentStatus: Object.freeze({taskId: null, state: 'idle' as const, reason: null, changedAt: 0 as TimestampMs}),
+      failedArtifactIds: Object.freeze([] as readonly string[]),
+      actualVersions: null,
+      reportDescriptor: Object.freeze({
+        bindingIdentity: null,
+        contextIdentity: null,
+        nextReportSequence: 1,
+        pendingReports: Object.freeze({}),
+        sendPaused: false,
+        latestDeliveryFailure: null,
+      }),
+    } as TerminalUpdateState;
+    const clientState = terminalDataClientReducer(undefined, {type: 'test/init'});
+    const actor = createTestTerminalUpdateActor({
+      port: {
+        readFacts: async () =>
+          ok(
+            Object.freeze({
+              ...facts,
+              actual: Object.freeze({
+                ...facts.actual!,
+                apkSha256: fullApkSha256,
+                nativeBuildNumber: 1,
+                runtimeVersion: '1',
+                bundleVersion: '1.0.0',
+                publicationId: fullPublicationId,
+              }),
+              embedded: Object.freeze({...artifact, publicationId: fullPublicationId}),
+            }),
+          ),
+        prepareArtifact,
+        applyPrepared: async () => ok(noAction),
+        readAction: async () => ok(noAction),
+        confirmBoot: async () => ok({confirmed: true}),
+        releasePrepared: async () => ok({released: true}),
+      },
+      sourceProvider: {readTarget: async () => fixedTarget, resolveSourcePath: () => '/unused'},
+      readNetworkSnapshot: () => Object.freeze({addresses: Object.freeze([])}),
+    });
+    const handler = actor.handlers.find(item => item.commandName === acceptTerminalUpdateTargetCommand.commandName);
+    if (handler === undefined) throw new Error('accept target handler missing');
+    const context = {
+      runtimeId: 'grant-minimum-full-test',
+      command: {
+        commandName: acceptTerminalUpdateTargetCommand.commandName,
+        commandId: 'accept',
+        requestId: null,
+        payload: {selectionContext},
+      },
+      actor: {actorKey: actor.actorKey, moduleName: actor.moduleName, actorName: actor.actorName},
+      platformPorts: {logger: {info: () => undefined, warn: () => undefined, error: () => undefined}},
+      getState: () => ({
+        [terminalDataClientSliceName]: clientState,
+        [terminalUpdateSliceName]: updateState,
+      }),
+      dispatchAction: (action: unknown) => {
+        const value = action as {type: string; payload: unknown};
+        if (value.type === terminalUpdateActions.replaceTask.type)
+          updateState = {...updateState, currentTask: value.payload as TerminalUpdateState['currentTask']};
+        if (value.type === terminalUpdateActions.replaceRecentStatus.type)
+          updateState = {...updateState, recentStatus: value.payload as TerminalUpdateState['recentStatus']};
+        if (value.type === terminalUpdateActions.replaceReportDescriptor.type)
+          updateState = {...updateState, reportDescriptor: value.payload as TerminalUpdateState['reportDescriptor']};
+        if (value.type === terminalUpdateActions.replaceActualVersions.type)
+          updateState = {...updateState, actualVersions: value.payload as TerminalUpdateState['actualVersions']};
+      },
+      flushPersistence: async () => ({status: 'succeeded'}),
+      dispatchCommand: async (command: {commandName: string}) =>
+        command.commandName === requestTerminalUpdateDownloadGrantCommand.commandName
+          ? ({
+              status: 'completed',
+              actorResults: [
+                {
+                  status: 'completed',
+                  result: {
+                    kind: 'success',
+                    body: {
+                      relativeContentPath: 'grant-content',
+                      grant: 'g'.repeat(43),
+                      expiresAtEpochMillis: Date.now() + 60_000,
+                      artifactRef: 'hot-ref',
+                      zipSha256: 'e'.repeat(64),
+                      byteSize: 100,
+                      artifact: Object.freeze({
+                        ...artifact,
+                        bundleVersion: '1.0.1',
+                        publicationId: hotPublicationId,
+                        minimumFull: Object.freeze({
+                          applicationId: artifact.applicationId,
+                          nativeBuildNumber: 1,
+                          runtimeVersion: '1',
+                          publicationId: fullPublicationId,
+                          apkSha256: 'f'.repeat(64),
+                        }),
+                      }),
+                    },
+                  },
+                },
+              ],
+            } as never)
+          : ({status: 'rejected', actorResults: []} as never),
+    } as never;
+
+    await expect(handler.handle(context)).resolves.toMatchObject({
+      status: 'failed',
+      reason: 'DOWNLOAD_ARTIFACT_IDENTITY_MISMATCH',
+    });
+    expect(prepareArtifact).not.toHaveBeenCalled();
+    expect(updateState.currentTask).toMatchObject({
+      phase: 'failed',
+      failureCode: 'DOWNLOAD_ARTIFACT_IDENTITY_MISMATCH',
+    });
+  });
+
   it('rejects a FULL-only JS downgrade against the version observed before update work', async () => {
     const fullArtifact = Object.freeze({
       ...artifact,
@@ -2421,7 +3252,12 @@ describe('terminal-update local owner', () => {
       confirmBoot: async () => ok({confirmed: true}),
       releasePrepared,
     };
-    const runtime = createFixture({persistKv: persistence, persistenceKey, readTarget: async () => offeredTarget, port});
+    const runtime = createFixture({
+      persistKv: persistence,
+      persistenceKey,
+      readTarget: async () => offeredTarget,
+      port,
+    });
     runtimes.push(runtime);
     await runtime.start();
 
@@ -2783,8 +3619,9 @@ describe('terminal-update local owner', () => {
     stateRuntime.getStore().dispatch({type: 'test-other/enable'});
     expect((await stateRuntime.flushPersistence()).status).toBe('succeeded');
 
-    const retainedKeys = ['ruleSnapshot', 'currentTask', 'recentStatus', 'failedArtifactIds', 'reportDescriptor'].map(storageKey =>
-      createPersistenceFieldKey({persistenceKey: namespace, sliceName: terminalUpdateRegistration.name, storageKey}),
+    const retainedKeys = ['ruleSnapshot', 'currentTask', 'recentStatus', 'failedArtifactIds', 'reportDescriptor'].map(
+      storageKey =>
+        createPersistenceFieldKey({persistenceKey: namespace, sliceName: terminalUpdateRegistration.name, storageKey}),
     );
     const protectedCredentialKey = createPersistenceFieldKey({
       persistenceKey: namespace,

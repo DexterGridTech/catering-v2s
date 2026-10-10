@@ -22,6 +22,9 @@ export const mainSampleAppName = (sample: MainSample): string =>
 export const mainSampleSeedKey = (shape: MainSampleShape): 'term-front' | 'term-handheld' =>
   shape === 'dual' ? 'term-front' : 'term-handheld';
 
+export const mainSampleTerminalName = (shape: MainSampleShape): '前台收银终端' | '移动点餐终端' =>
+  shape === 'dual' ? '前台收银终端' : '移动点餐终端';
+
 type MainSampleJourneyBase = Readonly<{
   readonly shape: MainSampleShape;
   readonly runId: string;

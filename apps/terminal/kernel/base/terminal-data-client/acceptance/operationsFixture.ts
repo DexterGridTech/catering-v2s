@@ -50,6 +50,28 @@ export type OperationsFixtureHttpJson = (
   init?: OperationsFixtureRequestOptions,
 ) => Promise<OperationsFixtureHttpResponse>;
 
+const operationsFixtureOperation = (method: string, pathname: string): string => {
+  if (pathname.endsWith('/password-login')) return 'workspace-password-login';
+  if (pathname.endsWith('/session/entry')) return 'workspace-session-entry';
+  if (pathname.endsWith('/session/context')) return 'workspace-session-context';
+  if (pathname.endsWith('/session/data-node')) return 'workspace-session-data-node';
+  if (pathname.includes('/terminals')) {
+    if (pathname.endsWith('/activation/cancel')) return 'terminal-cancel';
+    return method === 'GET' && /\/terminals\/?$/u.test(pathname) ? 'terminal-list' : 'terminal-detail';
+  }
+  if (pathname.includes('/organization/stores/')) {
+    return method === 'PATCH' ? 'organization-store-update' : 'organization-store-read';
+  }
+  return 'other';
+};
+
+const logOperationsFixtureHttp = (event: Readonly<Record<string, string | number>>): void => {
+  process.stdout.write(`TERMINAL_DEV_OPERATIONS_FIXTURE ${JSON.stringify(event)}\n`);
+};
+
+const safeDiagnosticToken = (value: unknown): string =>
+  typeof value === 'string' && /^[A-Za-z0-9_-]{1,80}$/u.test(value) ? value : 'UNCLASSIFIED';
+
 export const createAcceptanceDispatcher = (
   proxy: OperationsFixtureRequestOptions['proxy'],
   timeoutMs: number,
@@ -79,17 +101,45 @@ export const createAcceptanceDispatcher = (
 export const httpJson: OperationsFixtureHttpJson = async (base, pathAndQuery, init = {}) => {
   const timeoutMs = init.timeoutMs ?? 5_000;
   const dispatcher = createAcceptanceDispatcher(init.proxy, timeoutMs);
+  const method = init.method ?? 'GET';
+  const operation = operationsFixtureOperation(method, new URL(pathAndQuery, `${base.replace(/\/$/u, '')}/`).pathname);
+  const startedAt = Date.now();
+  logOperationsFixtureHttp({event: 'request.started', operation, method, timeoutMs});
   try {
     const result = await request(new URL(pathAndQuery, `${base.replace(/\/$/u, '')}/`), {
-      method: init.method ?? 'GET',
+      method,
       headers: {...(init.headers ?? {}), ...(init.body === undefined ? {} : {'content-type': 'application/json'})},
       ...(init.body === undefined ? {} : {body: JSON.stringify(init.body)}),
       dispatcher,
       headersTimeout: timeoutMs,
       bodyTimeout: timeoutMs,
     });
+    logOperationsFixtureHttp({
+      event: 'response.headers',
+      operation,
+      status: result.statusCode,
+      elapsedMs: Date.now() - startedAt,
+    });
     const body = result.statusCode === 204 ? null : await result.body.json();
+    logOperationsFixtureHttp({
+      event: 'request.completed',
+      operation,
+      status: result.statusCode,
+      elapsedMs: Date.now() - startedAt,
+    });
     return {status: result.statusCode, headers: result.headers, body};
+  } catch (error) {
+    const name = error instanceof Error ? error.name : 'UnknownError';
+    const code = typeof error === 'object' && error !== null && 'code' in error ? error.code : undefined;
+    logOperationsFixtureHttp({
+      event: 'request.failed',
+      operation,
+      method,
+      elapsedMs: Date.now() - startedAt,
+      name: safeDiagnosticToken(name),
+      code: safeDiagnosticToken(code),
+    });
+    throw error;
   } finally {
     await dispatcher.close();
   }

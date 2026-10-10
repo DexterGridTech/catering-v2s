@@ -80,6 +80,10 @@ public final class TerminalUpdateDownloadController {
         if (!groupWorkspaceKey.equals(authorized.groupWorkspaceKey()) || !artifactRef.equals(authorized.artifactRef()))
             throw new TerminalUpdateArtifactOwnerService.TerminalUpdateArtifactNotAuthorizedException();
         StreamingResponseBody body = output -> {
+            long startedAtNanos = System.nanoTime();
+            log.atInfo().addKeyValue("event", "TERMINAL_UPDATE_DOWNLOAD_STREAM_STARTED")
+                    .addKeyValue("artifactRef", artifactRef).addKeyValue("byteSize", authorized.byteSize())
+                    .log("Terminal update package stream started");
             try (var content = storage.openTerminalUpdatePackage(authorized.workspaceUuid(),
                     authorized.groupWorkspaceKey(), authorized.assetRef(), false)) {
                 if (content.sizeBytes() != authorized.byteSize() || !content.sha256().equals(authorized.zipSha256()))
@@ -88,7 +92,15 @@ public final class TerminalUpdateDownloadController {
                 output.flush();
                 log.atInfo().addKeyValue("event", "TERMINAL_UPDATE_DOWNLOAD_STREAMED")
                         .addKeyValue("artifactRef", artifactRef).addKeyValue("byteSize", authorized.byteSize())
+                        .addKeyValue("elapsedMs", (System.nanoTime() - startedAtNanos) / 1_000_000L)
                         .log("Terminal update package streamed");
+            } catch (IOException | RuntimeException failure) {
+                log.atError().addKeyValue("event", "TERMINAL_UPDATE_DOWNLOAD_STREAM_FAILED")
+                        .addKeyValue("artifactRef", artifactRef).addKeyValue("byteSize", authorized.byteSize())
+                        .addKeyValue("elapsedMs", (System.nanoTime() - startedAtNanos) / 1_000_000L)
+                        .addKeyValue("errorType", failure.getClass().getSimpleName())
+                        .log("Terminal update package stream failed");
+                throw failure;
             }
         };
         return ResponseEntity.ok().contentType(MediaType.parseMediaType("application/zip"))

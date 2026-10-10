@@ -4,6 +4,7 @@ import com.catering.v2s.platform.foundation.persistence.AdvisoryLock;
 import com.catering.v2s.platform.foundation.collection.OpaqueCollectionCursor;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.terminalupdate.api.TerminalUpdateRuleOwnerApi.RulePageQuery;
+import com.catering.v2s.terminalupdate.api.TerminalUpdateRuleOwnerApi.RuleArtifactIdentity;
 import com.catering.v2s.terminalupdate.api.TerminalUpdateRuleOwnerApi.RuleReadback;
 import com.catering.v2s.terminalupdate.api.TerminalUpdateRuleOwnerApi.RuleSummary;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -12,6 +13,8 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Optional;
 import java.util.UUID;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCreator;
 import org.springframework.stereotype.Repository;
@@ -66,11 +69,18 @@ public class TerminalUpdateRulePersistence {
     }
 
     public Optional<RuleReadback> read(UUID workspaceUuid, String groupWorkspaceKey, UUID projectRef, UUID ruleRef, boolean forUpdate) {
-        String sql = "SELECT rule_ref,project_ref,target_mode,store_refs::text,full_artifact_ref,hot_artifact_ref,status,n_seconds,hot_strategy,m_seconds,description,created_at_epoch_millis,updated_at_epoch_millis,revision FROM terminal_update.project_rule WHERE workspace_uuid=? AND group_workspace_key=? AND project_ref=? AND rule_ref=?" + (forUpdate ? " FOR UPDATE" : "");
+        String sql = "SELECT r.rule_ref,r.project_ref,r.target_mode,r.store_refs::text,r.full_artifact_ref,r.hot_artifact_ref,r.status,r.n_seconds,r.hot_strategy,r.m_seconds,r.description,r.created_at_epoch_millis,r.updated_at_epoch_millis,r.revision,"
+                + "f.application_id,f.kind,CASE WHEN f.kind='FULL' THEN f.native_version ELSE f.bundle_version END AS full_version,"
+                + "h.application_id,h.kind,CASE WHEN h.kind='FULL' THEN h.native_version ELSE h.bundle_version END AS hot_version "
+                + "FROM terminal_update.project_rule r "
+                + "JOIN terminal_update.artifact f ON f.artifact_ref=r.full_artifact_ref "
+                + "LEFT JOIN terminal_update.artifact h ON h.artifact_ref=r.hot_artifact_ref "
+                + "WHERE r.workspace_uuid=? AND r.group_workspace_key=? AND r.project_ref=? AND r.rule_ref=?"
+                + (forUpdate ? " FOR UPDATE OF r" : "");
         List<RuleReadback> rows = jdbc.query(sql, (result, row) -> new RuleReadback(
                 result.getObject(1, UUID.class), result.getObject(2, UUID.class), result.getString(3),
                 readUuids(result.getString(4)), result.getObject(5, UUID.class), result.getObject(6, UUID.class),
-                result.getString(7), result.getLong(8), result.getString(9),
+                title(result, 15), title(result, 18), result.getString(7), result.getLong(8), result.getString(9),
                 (Long) result.getObject(10), result.getString(11), result.getLong(12), result.getLong(13), result.getLong(14)),
                 workspaceUuid, groupWorkspaceKey, projectRef, ruleRef);
         return rows.stream().findFirst();
@@ -87,8 +97,14 @@ public class TerminalUpdateRulePersistence {
         }
         StringBuilder filtered = new StringBuilder("SELECT r.rule_ref,r.project_ref,r.status,r.target_mode,"
                 + "r.full_artifact_ref,r.hot_artifact_ref,r.n_seconds,r.hot_strategy,r.m_seconds,r.description,"
-                + "r.created_at_epoch_millis,r.revision FROM terminal_update.project_rule r "
+                + "r.created_at_epoch_millis,r.revision,"
+                + "a.application_id AS full_application_id,a.kind AS full_kind,"
+                + "CASE WHEN a.kind='FULL' THEN a.native_version ELSE a.bundle_version END AS full_version,"
+                + "h.application_id AS hot_application_id,h.kind AS hot_kind,"
+                + "CASE WHEN h.kind='FULL' THEN h.native_version ELSE h.bundle_version END AS hot_version "
+                + "FROM terminal_update.project_rule r "
                 + "JOIN terminal_update.artifact a ON a.artifact_ref=r.full_artifact_ref "
+                + "LEFT JOIN terminal_update.artifact h ON h.artifact_ref=r.hot_artifact_ref "
                 + "WHERE r.workspace_uuid=? AND r.group_workspace_key=? AND r.project_ref=?");
         List<Object> filterArgs = new ArrayList<>(List.of(workspaceUuid, groupWorkspaceKey, projectRef));
         if (query.status() != null) { filtered.append(" AND r.status=?"); filterArgs.add(query.status()); }
@@ -122,7 +138,9 @@ public class TerminalUpdateRulePersistence {
                 .append(" SELECT snapshot.collection_hash,page_rows.rule_ref,page_rows.project_ref,page_rows.status,"
                         + "page_rows.target_mode,page_rows.full_artifact_ref,page_rows.hot_artifact_ref,page_rows.n_seconds,"
                         + "page_rows.hot_strategy,page_rows.m_seconds,page_rows.description,page_rows.created_at_epoch_millis,"
-                        + "page_rows.revision FROM snapshot LEFT JOIN page_rows ON TRUE "
+                        + "page_rows.revision,page_rows.full_application_id,page_rows.full_kind,page_rows.full_version,"
+                        + "page_rows.hot_application_id,page_rows.hot_kind,page_rows.hot_version "
+                        + "FROM snapshot LEFT JOIN page_rows ON TRUE "
                         + "ORDER BY page_rows.created_at_epoch_millis DESC,page_rows.rule_ref DESC");
         args.add(query.limit() + 1);
         List<PageRow> rows = jdbc.query(sql.toString(), (result, row) -> {
@@ -130,7 +148,8 @@ public class TerminalUpdateRulePersistence {
             RuleSummary item = ruleRef == null ? null : new RuleSummary(ruleRef,
                     result.getObject(3, UUID.class), result.getString(4), result.getString(5),
                     result.getObject(6, UUID.class), result.getObject(7, UUID.class), result.getLong(8),
-                    result.getString(9), (Long) result.getObject(10), result.getString(11),
+                    result.getString(9), title(result, 14), title(result, 17),
+                    (Long) result.getObject(10), result.getString(11),
                     result.getLong(12), result.getLong(13));
             return new PageRow(result.getString(1), item);
         }, args.toArray());
@@ -148,6 +167,12 @@ public class TerminalUpdateRulePersistence {
     }
 
     private record PageRow(String collectionHash, RuleSummary item) {}
+
+    private static RuleArtifactIdentity title(ResultSet result, int applicationIdColumn) throws SQLException {
+        String applicationId = result.getString(applicationIdColumn);
+        return applicationId == null ? null : new RuleArtifactIdentity(applicationId,
+                result.getString(applicationIdColumn + 1), result.getString(applicationIdColumn + 2));
+    }
 
     public record RulePageRows(List<RuleSummary> items, String nextCursor) {
         public RulePageRows { items = List.copyOf(items); }

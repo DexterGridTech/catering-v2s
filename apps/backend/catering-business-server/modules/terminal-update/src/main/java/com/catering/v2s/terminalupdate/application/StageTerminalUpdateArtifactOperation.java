@@ -70,7 +70,10 @@ public final class StageTerminalUpdateArtifactOperation {
             throw failure;
         }
         return new StagedArtifact(staged.assetRef(), staged.bindGrant(), staged.expiresAtEpochMillis(),
-                staged.fileName(), staged.sha256(), staged.sizeBytes());
+                staged.fileName(), staged.sha256(), staged.sizeBytes(), validated.apkPath() == null ? "HOT" : "FULL",
+                validated.applicationId(), validated.platform(), validated.nativeVersion(), validated.nativeBuildNumber(),
+                validated.bundleVersion(), validated.runtimeVersion(), validated.publicationId(), validated.apkSha256(),
+                validated.minimumFull());
     }
 
     static String actorScopedIdempotencyKey(
@@ -103,7 +106,17 @@ public final class StageTerminalUpdateArtifactOperation {
             long expiresAtEpochMillis,
             String fileName,
             String sha256,
-            long byteSize) {}
+            long byteSize,
+            String candidateKind,
+            String applicationId,
+            String platform,
+            String nativeVersion,
+            long nativeBuildNumber,
+            String bundleVersion,
+            String runtimeVersion,
+            String publicationId,
+            String apkSha256,
+            MinimumFull minimumFull) {}
 
     public static final class InvalidStagedArtifactException extends RuntimeException {
         public InvalidStagedArtifactException(Throwable cause) { super(cause); }

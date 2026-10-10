@@ -77,6 +77,16 @@ final class StoreTerminalAcceptanceScenarios {
         return createConnectionContractFixture(context, store, "TDS connection contract");
     }
 
+    UUID createUnboundEnabledTerminal(BackendAcceptanceTest.ScenarioContext context,
+            BackendAcceptanceTest.Fixture fixture, BackendAcceptanceTest.Session session, String name) throws Exception {
+        return create(context, new StoreContext(fixture, session), name, null);
+    }
+
+    void disableTerminal(BackendAcceptanceTest.ScenarioContext context, BackendAcceptanceTest.Fixture fixture,
+            BackendAcceptanceTest.Session session, UUID terminalRef) throws Exception {
+        transitionTerminalStatus(context, new StoreContext(fixture, session), terminalRef, "DISABLED");
+    }
+
     ConnectionFixture createConnectionContractFixture(
             BackendAcceptanceTest.ScenarioContext context, ConnectionFixture existing) throws Exception {
         return createConnectionContractFixture(

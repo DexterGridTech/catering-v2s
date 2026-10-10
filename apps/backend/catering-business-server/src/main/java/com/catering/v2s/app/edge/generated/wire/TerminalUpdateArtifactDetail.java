@@ -10,6 +10,7 @@ public record TerminalUpdateArtifactDetail(
     @com.fasterxml.jackson.annotation.JsonProperty(value = "apkVersion", required = true) String apkVersion,
     @com.fasterxml.jackson.annotation.JsonProperty(value = "jsVersion", required = true) String jsVersion,
     @com.fasterxml.jackson.annotation.JsonProperty(value = "publicationId", required = true) String publicationId,
+    @com.fasterxml.jackson.annotation.JsonProperty(value = "apkSha256", required = true) tools.jackson.databind.JsonNode apkSha256,
     @com.fasterxml.jackson.annotation.JsonProperty(value = "zipSha256", required = true) String zipSha256,
     @com.fasterxml.jackson.annotation.JsonProperty(value = "byteSize", required = true) Long byteSize,
     @com.fasterxml.jackson.annotation.JsonProperty(value = "createdAtEpochMillis", required = true) Long createdAtEpochMillis,

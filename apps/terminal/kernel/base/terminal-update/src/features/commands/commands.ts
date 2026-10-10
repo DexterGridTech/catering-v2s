@@ -4,7 +4,7 @@ import type {FixedUpdateTarget} from '../../types/terminalUpdate';
 
 export const acceptTerminalUpdateTargetCommand = defineCommand<
   Readonly<{selectionContext: FixedUpdateTarget['selectionContext']}>
->(moduleName, {name: 'accept-target', visibility: 'public'});
+>(moduleName, {name: 'accept-target', visibility: 'public', timeoutMs: 300_000});
 
 export const confirmTerminalUpdateBootCommand = defineCommand<Readonly<{bootToken: string; publicationId: string}>>(
   moduleName,

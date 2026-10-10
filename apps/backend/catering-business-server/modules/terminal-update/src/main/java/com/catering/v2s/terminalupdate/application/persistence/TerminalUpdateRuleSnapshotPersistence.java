@@ -24,12 +24,14 @@ public class TerminalUpdateRuleSnapshotPersistence {
                     r.full_artifact_ref,fa.kind AS full_kind,fa.application_id AS full_application_id,
                     fa.runtime_version AS full_runtime_version,fa.native_build_number AS full_native_build_number,
                     fa.native_version AS full_apk_version,fa.bundle_version AS full_js_version,
-                    fa.publication_id AS full_publication_id,fa.zip_sha256 AS full_zip_sha256,
+                    fa.publication_id AS full_publication_id,fa.apk_sha256 AS full_apk_sha256,
+                    fa.zip_sha256 AS full_zip_sha256,
                     fa.byte_size AS full_byte_size,fa.created_at_epoch_millis AS full_created_at,
                     r.hot_artifact_ref,ha.kind AS hot_kind,ha.application_id AS hot_application_id,
                     ha.runtime_version AS hot_runtime_version,ha.native_build_number AS hot_native_build_number,
                     ha.native_version AS hot_apk_version,ha.bundle_version AS hot_js_version,
-                    ha.publication_id AS hot_publication_id,ha.zip_sha256 AS hot_zip_sha256,
+                    ha.publication_id AS hot_publication_id,ha.apk_sha256 AS hot_apk_sha256,
+                    ha.zip_sha256 AS hot_zip_sha256,
                     ha.byte_size AS hot_byte_size,ha.created_at_epoch_millis AS hot_created_at,
                     r.n_seconds,r.hot_strategy,r.m_seconds,r.description,r.created_at_epoch_millis
                   FROM terminal_update.project_rule r
@@ -66,7 +68,8 @@ public class TerminalUpdateRuleSnapshotPersistence {
         return new Artifact(ref, result.getString(prefix + "_kind"), result.getString(prefix + "_application_id"),
                 result.getString(prefix + "_runtime_version"), result.getLong(prefix + "_native_build_number"),
                 result.getString(prefix + "_apk_version"), result.getString(prefix + "_js_version"),
-                result.getString(prefix + "_publication_id"), result.getString(prefix + "_zip_sha256"),
+                result.getString(prefix + "_publication_id"), result.getString(prefix + "_apk_sha256"),
+                result.getString(prefix + "_zip_sha256"),
                 result.getLong(prefix + "_byte_size"), result.getLong(prefix + "_created_at"));
     }
 
@@ -77,7 +80,7 @@ public class TerminalUpdateRuleSnapshotPersistence {
 
     public record Artifact(UUID artifactRef, String kind, String applicationId, String runtimeVersion,
             long nativeBuildNumber, String apkVersion, String jsVersion, String publicationId,
-            String zipSha256, long byteSize, long createdAtEpochMillis) {}
+            String apkSha256, String zipSha256, long byteSize, long createdAtEpochMillis) {}
 
     public record Row(String memberText, UUID ruleRef, String targetMode, List<UUID> storeRefs,
             String applicationId, Artifact full, Artifact hot, Long nSeconds, String hotStrategy, Long mSeconds,

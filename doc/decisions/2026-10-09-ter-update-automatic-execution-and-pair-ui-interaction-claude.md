@@ -118,6 +118,10 @@ laptop / mobile 均采用同一邀请内容：
 
 ## 7. owner / face / 成功链
 
+Dexter 2026-10-10 追加的数据归属不改变已确认可见交互：project-basic保存项目/大区/商业集团和规则，选候选后发送terminal-update公开local command；后者actor最终比较、固定和执行。store-basic只保门店业务；integration仅装配，ui/base只呈现。副机使用project-basic投影后走同一本机command，不发送peer升级命令。
+
+不可见前提同IA/详设：store具体门店保存flush后发送自身成功command；store自己的listener加载其余门店资料，project listener才加载组织→规则，互不等待。UI不从selector自行发组织HTTP。副机按当前connection和有效entry读投影；MAIN失败导出tombstone后不沿旧规则择新，已固定任务仍保持。本次不增加页面、控件或确认动作。
+
 confirm/defer 的输入均为 taskId＋当前 actionId|null＋bootId；owner 原子核对本机当前 task 与邀请资格，旧点击零 native。
 
 owner 决定是否 due 与 stage；ui/base/terminal-update-presentation 仅 selector→呈现/command，无规则排序、HTTP、timer、native 调用或另一个 task state。render 只承载 local layer。应用成功仍由 A 实际安装/boot/publication 确认，B 主机 HTTP 报告。

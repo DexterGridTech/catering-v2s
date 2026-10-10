@@ -32,7 +32,7 @@ DEXTER_WIREFRAME_REVIEW=ACCEPTED@2026-10-07；接受范围仅大致IA，不等�
 | 交互ID（非页面数） | CONSUMER_FACE/UI_SURFACE | HOST_AND_ENTRY | ACTOR/BUSINESS_SCENARIO/BUSINESS_GOAL | USER_VISIBLE_COPY | TECHNICAL_BOUNDARY | FOUNDATION_PRIMITIVE | CONTAINER_LAYOUT |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | PKG-LIST | platform-admin/内容页 | /platform/terminal-update-packages菜单 | 运维管理员找已保存更新包 | 更新包；上传更新包；类型/应用/版本/保存时间；还没有更新包；终端暂时没有可用更新目标；通过包新建入口添加校验合规的ZIP。读取失败则重试，不当空集合 | 已验证space，cursor非业务页码 | useCursorStack,CursorPagination,adminListState,contextScopedQueryArgs | shell剩余宽高；表格正文唯一滚动，header/分页固定；标题截断可展开，列齐表头 |
-| PKG-UPLOAD | platform-admin/Drawer | list“上传更新包” | 运维管理员验证并保存一个ZIP | 上传更新包；选择ZIP；解析结果；最小完整更新；保存/取消；校验未通过 | stageRef、digest、签名/包身份后台验证，非自由输入 | adminDrawerSurfaceProps,useDrawerFormLifecycle,createContentIdempotencyKey,useCursorCandidates | 标准Drawer宽度；正文唯一滚动/footer固定；长文件名换行；标签列与规范对齐 |
+| PKG-UPLOAD | platform-admin/Drawer | list“上传更新包” | 运维管理员验证并保存一个ZIP | 上传更新包；选择ZIP；解析结果包含候选类型、applicationId/platform、原生版本/构建、JS/runtime、publicationId、ZIP/APK摘要及HOT声明的最小FULL五事实；最小完整更新；保存/取消；校验未通过 | stageRef、digest、签名/包身份由同次stage响应后台验证并只读显示；grant不显示；候选类型与提交类型不一致时不能保存 | adminDrawerSurfaceProps,useDrawerFormLifecycle,createContentIdempotencyKey,useCursorCandidates | 标准Drawer宽度；正文唯一滚动/footer固定；长文件名和摘要换行；标签列与规范对齐 |
 | PKG-DETAIL | platform-admin/Drawer | 包标题 | 运维管理员核对发布事实 | 〈应用 · 类型 · 版本〉 · 更新包详情；完整/热更新；APK版本/构建号/JS版本/runtime/applicationId/publicationId/摘要/保存时间；关闭 | readonly owner事实，无grant | adminWideDrawerSurfaceProps,adminWideDetailDescriptionsProps,useDetailDrawer | 标准wideDrawer；正文唯一滚动，摘要换行，footer固定；列名对齐 |
 | RULE-LIST | operations-admin/内容页左Tab | 稳定terminal-update-rules路由；project取scope | 业务管理员读当前项目规则 | 项目终端版本管理；更新规则/终端更新状态；新建规则；状态/目标/门店范围/创建时间；先选择项目；还没有更新规则；本项目终端暂时没有项目更新供给；有权限者新建规则，无写权限者联系拥有项目终端版本管理权限的业务管理员 | PROJECT读范围；cap只限制写 | useCursorStack,CursorPagination,adminListState,contextScopedQueryArgs | shell剩余宽高；表格正文滚动，header/pager不越视口；列齐表头 |
 | RULE-CREATE | operations-admin/Drawer | list新建 | 有项目权限管理员表达新规则 | 新建规则；目标/门店范围/指定门店/初始状态/完整更新提醒间隔（分钟）/热更新策略/闲时等待（分钟）/说明；保存/取消 | app/runtime/pub来自工件；N/M界面1..1440分钟、API60..86400秒；refs真实project | adminWideDrawerSurfaceProps,useDrawerFormLifecycle,createContentIdempotencyKey,useCursorCandidates | wideDrawer；正文唯一滚动/footer固定，候选popup限制视口；标签列规范对齐 |
@@ -208,22 +208,19 @@ RULE-LIST无写cap只隐藏新建/写操作，保留列表/详情；空态明确
 
 ### 4.2 报告唯一业务文案与呈现字典
 
-有限值来源仅附件§11.4；本表是frontend字典，不新增后台displayName或执行状态机。列表/详情同字典，任务状态用普通中文Text＋图标：等待=时钟、执行=进度、完成=勾、失败=提示、未知=问号；颜色不承担语义，不挪用草稿/启用/停用/归档/作废五色Tag。规则自身启停仍严格绿/橙。代码/rawreason不直接展示。
+有限值来源为附件§11.4及 canonical `TerminalUpdateReportRecent` 闭集；本表是frontend字典，不新增后台displayName或执行状态机。项目列表、最新报告详情与历史使用同一报告状态/原因映射，状态用普通中文Text＋图标：等待=时钟、执行=进度、完成=勾、失败=提示、未知=问号；颜色不承担语义，不挪用草稿/启用/停用/归档/作废五色Tag。规则自身启停仍严格绿/橙。代码/rawreason不直接展示。
 
 | 字段/值 | 唯一可见中文 |
 | --- | --- |
-| recentState.IDLE | 无最近更新任务信息 |
-| recentState.FIXED | 更新任务已确定 |
-| recentState.PREPARING | 正在准备更新 |
-| recentState.APPLYING | 正在应用更新 |
-| recentState.WAITING_USER | 等待用户安装 |
-| recentState.WAITING_IDLE | 等待空闲更新 |
-| recentState.REJECTED | 更新准入被拒绝 |
-| recentState.PARTIALLY_SUCCEEDED | 完整更新已完成，热更新尚未完成 |
-| recentState.SUCCEEDED | 更新已完成 |
-| recentState.FAILED | 更新失败 |
-| recentState.ROLLED_BACK | 更新失败，已恢复上次成功发布 |
-| recentState.UNKNOWN | 更新结果待确认 |
+| reportState.WAITING_USER | 等待安装确认 |
+| reportState.DOWNLOADING | 正在下载更新内容 |
+| reportState.VERIFYING | 正在校验更新内容 |
+| reportState.INSTALLING | 正在安装完整更新 |
+| reportState.APPLYING_HOT | 正在应用热更新 |
+| reportState.SUCCEEDED | 更新已完成 |
+| reportState.FAILED | 更新失败 |
+| reportState.CANCELLED | 更新已取消 |
+| reportState.UNKNOWN | 更新结果待确认 |
 | phase.null | — |
 | phase.fixed | 目标已固定 |
 | phase.preparing-full | 准备完整更新 |
@@ -235,24 +232,15 @@ RULE-LIST无写cap只隐藏新建/写操作，保留列表/详情；空态明确
 | phase.unknown | 阶段待确认 |
 | phase.succeeded | 执行完成 |
 | phase.failed | 执行失败 |
-| reasonCode.null | 无 |
-| reasonCode.TARGET_REJECTED | 当前更新目标不满足准入条件 |
-| reasonCode.IDENTITY_CONFLICT | 更新身份已变化 |
-| reasonCode.SOURCE_UNAVAILABLE | 更新内容暂不可获取 |
-| reasonCode.RESOURCE_BUSY | 更新资源正在使用 |
-| reasonCode.PERSISTENCE_FAILED | 更新状态保存失败 |
-| reasonCode.PREPARE_FAILED | 更新内容准备失败 |
-| reasonCode.APPLY_FAILED | 更新应用失败 |
-| reasonCode.OPERATION_TIMED_OUT | 更新操作超时，需确认实际结果 |
-| reasonCode.PORT_UNAVAILABLE | 本机更新能力暂不可用 |
-| reasonCode.OPERATION_CANCELLED | 本次更新操作已取消 |
-| reasonCode.ACTION_UNKNOWN | 本机安装或加载结果待确认 |
-| reasonCode.ACTION_IDENTITY_MISMATCH | 本机执行身份不匹配 |
-| reasonCode.USER_CANCELLED | 安装尚未完成，继续等待用户确认 |
-| reasonCode.INSTALLATION_FAILED | 系统安装未完成或失败 |
-| reasonCode.BOOT_UNCONFIRMED | 更新发布启动未确认 |
-| reasonCode.RECOVERY_FAILED | 上次成功发布恢复未完成 |
-| reasonCode.UNCLASSIFIED_REASON | 更新原因暂未分类 |
+| reportReason.NONE | 无 |
+| reportReason.NETWORK | 网络连接失败 |
+| reportReason.HTTP_REJECTED | 更新请求被拒绝 |
+| reportReason.HASH_MISMATCH | 更新内容校验失败 |
+| reportReason.PREPARE_FAILED | 更新内容准备失败 |
+| reportReason.INSTALLER_CANCELLED | 已取消系统安装 |
+| reportReason.INSTALL_FAILED | 完整更新安装失败 |
+| reportReason.HOT_APPLY_FAILED | 热更新应用失败 |
+| reportReason.UNKNOWN | 更新原因待确认 |
 | unknownReason.null | 无 |
 | unknownReason.ACTUAL_READ_UNAVAILABLE | 实际版本暂不可读取 |
 | unknownReason.ACTUAL_IDENTITY_INCOMPLETE | 实际发布身份不完整 |

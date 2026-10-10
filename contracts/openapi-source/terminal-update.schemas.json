@@ -4,11 +4,7 @@
       "TerminalUpdateArtifactStageRequest": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "file",
-          "sha256",
-          "usage"
-        ],
+        "required": ["file", "sha256", "usage"],
         "properties": {
           "file": {
             "type": "string",
@@ -20,23 +16,16 @@
           },
           "usage": {
             "type": "string",
-            "enum": [
-              "TERMINAL_UPDATE_ARTIFACT"
-            ]
+            "enum": ["TERMINAL_UPDATE_ARTIFACT"]
           }
         }
       },
       "TerminalUpdateStageResult": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "stageRef",
-          "stageBindGrant",
-          "expiresAtEpochMillis",
-          "fileName",
-          "sha256",
-          "byteSize"
-        ],
+        "required": ["stageRef", "stageBindGrant", "expiresAtEpochMillis", "fileName", "sha256", "byteSize",
+          "candidateKind", "applicationId", "platform", "nativeVersion", "nativeBuildNumber", "bundleVersion",
+          "runtimeVersion", "publicationId", "apkSha256", "minimumFull"],
         "properties": {
           "stageRef": {
             "type": "string",
@@ -65,17 +54,23 @@
             "type": "integer",
             "format": "int64",
             "minimum": 1
-          }
+          },
+          "candidateKind": {"type": "string", "enum": ["FULL", "HOT"]},
+          "applicationId": {"type": "string", "minLength": 1},
+          "platform": {"type": "string", "enum": ["android"]},
+          "nativeVersion": {"type": "string", "minLength": 1},
+          "nativeBuildNumber": {"type": "integer", "minimum": 1},
+          "bundleVersion": {"type": "string", "minLength": 1},
+          "runtimeVersion": {"type": "string", "minLength": 1},
+          "publicationId": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+          "apkSha256": {"type": "string", "pattern": "^[a-f0-9]{64}$", "nullable": true},
+          "minimumFull": {"allOf": [{"ref": "TerminalUpdateMinimumFull"}], "nullable": true}
         }
       },
       "TerminalUpdateArtifactRegisterRequest": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "stageRef",
-          "stageBindGrant",
-          "kind"
-        ],
+        "required": ["stageRef", "stageBindGrant", "kind"],
         "properties": {
           "stageRef": {
             "type": "string",
@@ -88,10 +83,7 @@
           },
           "kind": {
             "type": "string",
-            "enum": [
-              "FULL",
-              "HOT"
-            ]
+            "enum": ["FULL", "HOT"]
           },
           "minimumFullArtifactRef": {
             "type": "string",
@@ -105,10 +97,7 @@
         "properties": {
           "kind": {
             "type": "string",
-            "enum": [
-              "FULL",
-              "HOT"
-            ]
+            "enum": ["FULL", "HOT"]
           },
           "appId": {
             "type": "string",
@@ -159,6 +148,7 @@
           "apkVersion",
           "jsVersion",
           "publicationId",
+          "apkSha256",
           "zipSha256",
           "byteSize",
           "createdAtEpochMillis"
@@ -170,10 +160,7 @@
           },
           "kind": {
             "type": "string",
-            "enum": [
-              "FULL",
-              "HOT"
-            ]
+            "enum": ["FULL", "HOT"]
           },
           "applicationId": {
             "type": "string"
@@ -194,6 +181,10 @@
           "publicationId": {
             "type": "string"
           },
+          "apkSha256": {
+            "type": ["string", "null"],
+            "pattern": "^[a-f0-9]{64}$"
+          },
           "zipSha256": {
             "type": "string",
             "pattern": "^[a-f0-9]{64}$"
@@ -213,10 +204,7 @@
       "TerminalUpdateArtifactPage": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "items",
-          "nextCursor"
-        ],
+        "required": ["items", "nextCursor"],
         "properties": {
           "items": {
             "type": "array",
@@ -225,10 +213,7 @@
             }
           },
           "nextCursor": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           }
         }
       },
@@ -240,24 +225,16 @@
         ],
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "minimumFullArtifactRef",
-          "minimumFullFacts"
-        ],
+        "required": ["minimumFullArtifactRef", "minimumFullFacts"],
         "properties": {
           "minimumFullArtifactRef": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "format": "uuid"
           },
           "minimumFullFacts": {
-            "type": [
-              "object",
-              "null"
-            ],
+            "type": ["object", "null"],
             "additionalProperties": false,
+            "required": ["applicationId", "nativeBuildNumber", "runtimeVersion", "publicationId", "apkSha256"],
             "properties": {
               "applicationId": {
                 "type": "string"
@@ -269,8 +246,9 @@
                 "type": "integer",
                 "minimum": 0
               },
-              "apkVersion": {
-                "type": "string"
+              "publicationId": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
               },
               "apkSha256": {
                 "type": "string",
@@ -283,10 +261,7 @@
       "TerminalUpdateVersionPageQuery": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "expectedContextVersion",
-          "limit"
-        ],
+        "required": ["expectedContextVersion", "limit"],
         "properties": {
           "expectedContextVersion": {
             "type": "integer",
@@ -333,8 +308,10 @@
           "storeRef",
           "storeName",
           "hasReport",
+          "oldBinding",
           "actual",
-          "recent"
+          "recent",
+          "receivedAtEpochMillis"
         ],
         "properties": {
           "terminalRef": {
@@ -354,29 +331,28 @@
           "hasReport": {
             "type": "boolean"
           },
+          "oldBinding": {
+            "type": "boolean"
+          },
           "actual": {
-            "type": [
-              "object",
-              "null"
-            ],
+            "type": ["object", "null"],
             "additionalProperties": true
           },
           "recent": {
-            "type": [
-              "object",
-              "null"
-            ],
+            "type": ["object", "null"],
             "additionalProperties": true
+          },
+          "receivedAtEpochMillis": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "minimum": 0
           }
         }
       },
       "TerminalUpdateVersionPage": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "items",
-          "nextCursor"
-        ],
+        "required": ["items", "nextCursor"],
         "properties": {
           "items": {
             "type": "array",
@@ -385,20 +361,14 @@
             }
           },
           "nextCursor": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           }
         }
       },
       "TerminalUpdateRulePageQuery": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "expectedContextVersion",
-          "limit"
-        ],
+        "required": ["expectedContextVersion", "limit"],
         "properties": {
           "expectedContextVersion": {
             "type": "integer",
@@ -407,10 +377,7 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "ENABLED",
-              "DISABLED"
-            ]
+            "enum": ["ENABLED", "DISABLED"]
           },
           "applicationId": {
             "type": "string",
@@ -447,6 +414,8 @@
           "targetMode",
           "fullArtifactRef",
           "hotArtifactRef",
+          "fullArtifactIdentity",
+          "hotArtifactIdentity",
           "nSeconds",
           "hotStrategy",
           "mSeconds",
@@ -464,17 +433,11 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "ENABLED",
-              "DISABLED"
-            ]
+            "enum": ["ENABLED", "DISABLED"]
           },
           "targetMode": {
             "type": "string",
-            "enum": [
-              "ALL",
-              "STORE_REFS"
-            ]
+            "enum": ["ALL", "STORE_REFS"]
           },
           "fullArtifactRef": {
             "type": "string",
@@ -484,6 +447,26 @@
             "type": ["string", "null"],
             "format": "uuid"
           },
+          "fullArtifactIdentity": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["applicationId", "kind", "version"],
+            "properties": {
+              "applicationId": {"type": "string", "minLength": 1, "maxLength": 255},
+              "kind": {"type": "string", "enum": ["FULL", "HOT"]},
+              "version": {"type": "string", "minLength": 1, "maxLength": 64}
+            }
+          },
+          "hotArtifactIdentity": {
+            "type": ["object", "null"],
+            "additionalProperties": false,
+            "required": ["applicationId", "kind", "version"],
+            "properties": {
+              "applicationId": {"type": "string", "minLength": 1, "maxLength": 255},
+              "kind": {"type": "string", "enum": ["FULL", "HOT"]},
+              "version": {"type": "string", "minLength": 1, "maxLength": 64}
+            }
+          },
           "nSeconds": {
             "type": "integer",
             "minimum": 60,
@@ -491,24 +474,16 @@
           },
           "hotStrategy": {
             "type": "string",
-            "enum": [
-              "IMMEDIATE",
-              "IDLE"
-            ]
+            "enum": ["IMMEDIATE", "IDLE"],
+            "nullable": true
           },
           "mSeconds": {
-            "type": [
-              "integer",
-              "null"
-            ],
+            "type": ["integer", "null"],
             "minimum": 60,
             "maximum": 86400
           },
           "description": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "maxLength": 500
           },
           "createdAtEpochMillis": {
@@ -526,10 +501,7 @@
       "TerminalUpdateRulePage": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "items",
-          "nextCursor"
-        ],
+        "required": ["items", "nextCursor"],
         "properties": {
           "items": {
             "type": "array",
@@ -538,30 +510,18 @@
             }
           },
           "nextCursor": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           }
         }
       },
       "TerminalUpdateRuleCreateRequest": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "targetMode",
-          "fullArtifactRef",
-          "status",
-          "nSeconds",
-          "hotStrategy"
-        ],
+        "required": ["targetMode", "fullArtifactRef", "status", "nSeconds"],
         "properties": {
           "targetMode": {
             "type": "string",
-            "enum": [
-              "ALL",
-              "STORE_REFS"
-            ]
+            "enum": ["ALL", "STORE_REFS"]
           },
           "storeRefs": {
             "type": "array",
@@ -581,10 +541,7 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "ENABLED",
-              "DISABLED"
-            ]
+            "enum": ["ENABLED", "DISABLED"]
           },
           "nSeconds": {
             "type": "integer",
@@ -593,10 +550,7 @@
           },
           "hotStrategy": {
             "type": "string",
-            "enum": [
-              "IMMEDIATE",
-              "IDLE"
-            ]
+            "enum": ["IMMEDIATE", "IDLE"]
           },
           "mSeconds": {
             "type": "integer",
@@ -612,10 +566,7 @@
       "TerminalUpdateRuleStatusRequest": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "revision",
-          "status"
-        ],
+        "required": ["revision", "status"],
         "properties": {
           "revision": {
             "type": "integer",
@@ -624,10 +575,7 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "ENABLED",
-              "DISABLED"
-            ]
+            "enum": ["ENABLED", "DISABLED"]
           },
           "reason": {
             "type": "string",
@@ -644,9 +592,7 @@
         ],
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "storeRefs"
-        ],
+        "required": ["storeRefs"],
         "properties": {
           "storeRefs": {
             "type": "array",
@@ -661,11 +607,7 @@
       "TerminalUpdateArtifactCandidateQuery": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "expectedContextVersion",
-          "projectRef",
-          "limit"
-        ],
+        "required": ["expectedContextVersion", "projectRef", "limit"],
         "properties": {
           "expectedContextVersion": {
             "type": "integer",
@@ -682,10 +624,7 @@
           },
           "kind": {
             "type": "string",
-            "enum": [
-              "FULL",
-              "HOT"
-            ]
+            "enum": ["FULL", "HOT"]
           },
           "applicationId": {
             "type": "string",
@@ -713,10 +652,7 @@
       "TerminalUpdateArtifactCandidatePage": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "items",
-          "nextCursor"
-        ],
+        "required": ["items", "nextCursor"],
         "properties": {
           "items": {
             "type": "array",
@@ -725,27 +661,17 @@
             }
           },
           "nextCursor": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           }
         }
       },
       "TerminalUpdateRuleSnapshotQuery": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "cursor",
-          "limit",
-          "collectionHash"
-        ],
+        "required": ["cursor", "limit", "collectionHash"],
         "properties": {
           "cursor": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "limit": {
             "type": "integer",
@@ -753,10 +679,7 @@
             "maximum": 100
           },
           "collectionHash": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "pattern": "^[a-f0-9]{64}$"
           }
         }
@@ -784,10 +707,7 @@
           },
           "targetMode": {
             "type": "string",
-            "enum": [
-              "ALL",
-              "STORE_REFS"
-            ]
+            "enum": ["ALL", "STORE_REFS"]
           },
           "storeRefs": {
             "type": "array",
@@ -808,9 +728,7 @@
             "ref": "TerminalUpdateArtifactSummary"
           },
           "hot": {
-            "allOf": [
-              {"ref": "TerminalUpdateArtifactSummary"}
-            ],
+            "allOf": [{"ref": "TerminalUpdateArtifactSummary"}],
             "nullable": true
           },
           "nSeconds": {
@@ -820,16 +738,11 @@
           },
           "hotStrategy": {
             "type": "string",
-            "enum": [
-              "IMMEDIATE",
-              "IDLE"
-            ]
+            "enum": ["IMMEDIATE", "IDLE"],
+            "nullable": true
           },
           "mSeconds": {
-            "type": [
-              "integer",
-              "null"
-            ],
+            "type": ["integer", "null"],
             "minimum": 60,
             "maximum": 86400
           },
@@ -842,11 +755,7 @@
       "TerminalUpdateRuleSnapshotPage": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "items",
-          "collectionHash",
-          "nextCursor"
-        ],
+        "required": ["items", "collectionHash", "nextCursor"],
         "properties": {
           "items": {
             "type": "array",
@@ -859,10 +768,7 @@
             "pattern": "^[a-f0-9]{64}$"
           },
           "nextCursor": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           }
         }
       },
@@ -915,7 +821,20 @@
       "TerminalUpdateArtifactManifest": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["schemaVersion", "platform", "applicationId", "nativeVersion", "nativeBuildNumber", "bundleVersion", "runtimeVersion", "entry", "files", "publicationId", "minimumFull", "apk"],
+        "required": [
+          "schemaVersion",
+          "platform",
+          "applicationId",
+          "nativeVersion",
+          "nativeBuildNumber",
+          "bundleVersion",
+          "runtimeVersion",
+          "entry",
+          "files",
+          "publicationId",
+          "minimumFull",
+          "apk"
+        ],
         "properties": {
           "schemaVersion": {"type": "integer", "enum": [1]},
           "platform": {"type": "string", "enum": ["android"]},
@@ -984,16 +903,10 @@
         ],
         "properties": {
           "apkVersion": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "nativeBuildNumber": {
-            "type": [
-              "integer",
-              "null"
-            ],
+            "type": ["integer", "null"],
             "minimum": 0
           },
           "applicationId": {
@@ -1003,66 +916,33 @@
             "type": "string"
           },
           "jsVersion": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "publicationId": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "apkSha256": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "pattern": "^[a-f0-9]{64}$"
           },
           "bundleSha256": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "pattern": "^[a-f0-9]{64}$"
           },
           "entryKind": {
             "type": "string",
-            "enum": [
-              "INSTALLED_APK",
-              "EMBEDDED_BUNDLE",
-              "HOT_BUNDLE",
-              "UNKNOWN"
-            ]
+            "enum": ["INSTALLED_APK", "EMBEDDED_BUNDLE", "HOT_BUNDLE", "UNKNOWN"]
           },
           "unknownReason": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "enum": [
-              "READBACK_UNAVAILABLE",
-              "NOT_INSTALLED",
-              "MISMATCH",
-              "OTHER",
-              null
-            ]
+            "type": ["string", "null"],
+            "enum": ["READBACK_UNAVAILABLE", "NOT_INSTALLED", "MISMATCH", "OTHER", null]
           }
         }
       },
       "TerminalUpdateReportRecent": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "state",
-          "reason",
-          "changedAtEpochMillis",
-          "ruleRef",
-          "fullArtifactRef",
-          "hotArtifactRef"
-        ],
+        "required": ["state", "reason", "changedAtEpochMillis", "ruleRef", "fullArtifactRef", "hotArtifactRef"],
         "properties": {
           "state": {
             "type": "string",
@@ -1098,24 +978,15 @@
             "minimum": 0
           },
           "ruleRef": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "format": "uuid"
           },
           "fullArtifactRef": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "format": "uuid"
           },
           "hotArtifactRef": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "format": "uuid"
           }
         }
@@ -1123,13 +994,7 @@
       "TerminalUpdateReportRequest": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "reportId",
-          "reportSequence",
-          "taskId",
-          "actual",
-          "recent"
-        ],
+        "required": ["reportId", "reportSequence", "taskId", "actual", "recent"],
         "properties": {
           "reportId": {
             "type": "string",
@@ -1141,10 +1006,7 @@
             "maximum": 9007199254740991
           },
           "taskId": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "format": "uuid"
           },
           "actual": {
@@ -1158,22 +1020,14 @@
       "TerminalUpdateReportReceipt": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "reportId",
-          "taskId",
-          "acceptedSequence",
-          "outcome"
-        ],
+        "required": ["reportId", "taskId", "acceptedSequence", "outcome"],
         "properties": {
           "reportId": {
             "type": "string",
             "format": "uuid"
           },
           "taskId": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "format": "uuid"
           },
           "acceptedSequence": {
@@ -1183,10 +1037,45 @@
           },
           "outcome": {
             "type": "string",
-            "enum": [
-              "ACCEPTED",
-              "SUPERSEDED"
-            ]
+            "enum": ["ACCEPTED", "SUPERSEDED"]
+          }
+        }
+      },
+      "TerminalUpdateReportArtifactIdentity": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["applicationId", "kind", "version"],
+        "properties": {
+          "applicationId": {"type": "string", "minLength": 1, "maxLength": 255},
+          "kind": {"type": "string", "enum": ["FULL", "HOT"]},
+          "version": {"type": "string", "minLength": 1, "maxLength": 64}
+        }
+      },
+      "TerminalUpdateReportRuleTarget": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["fullArtifactIdentity", "hotArtifactIdentity"],
+        "properties": {
+          "fullArtifactIdentity": {"ref": "TerminalUpdateReportArtifactIdentity"},
+          "hotArtifactIdentity": {
+            "allOf": [{"ref": "TerminalUpdateReportArtifactIdentity"}],
+            "nullable": true
+          }
+        }
+      },
+      "TerminalUpdateReportReferences": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["ruleTarget", "fullArtifactIdentity", "hotArtifactIdentity"],
+        "properties": {
+          "ruleTarget": {"allOf": [{"ref": "TerminalUpdateReportRuleTarget"}], "nullable": true},
+          "fullArtifactIdentity": {
+            "allOf": [{"ref": "TerminalUpdateReportArtifactIdentity"}],
+            "nullable": true
+          },
+          "hotArtifactIdentity": {
+            "allOf": [{"ref": "TerminalUpdateReportArtifactIdentity"}],
+            "nullable": true
           }
         }
       },
@@ -1200,7 +1089,9 @@
           "storeName",
           "hasReport",
           "latest",
-          "historyCursor"
+          "latestReferences",
+          "historyCursor",
+          "receivedAtEpochMillis"
         ],
         "properties": {
           "terminalRef": {
@@ -1221,27 +1112,27 @@
             "type": "boolean"
           },
           "latest": {
-            "type": [
-              "object",
-              "null"
-            ],
+            "type": ["object", "null"],
             "additionalProperties": true
           },
+          "latestReferences": {
+            "allOf": [{"ref": "TerminalUpdateReportReferences"}],
+            "nullable": true
+          },
           "historyCursor": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
+          },
+          "receivedAtEpochMillis": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "minimum": 0
           }
         }
       },
       "TerminalUpdateReportHistoryQuery": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "expectedContextVersion",
-          "limit"
-        ],
+        "required": ["expectedContextVersion", "limit"],
         "properties": {
           "expectedContextVersion": {
             "type": "integer",
@@ -1262,34 +1153,21 @@
       "TerminalUpdateReportHistoryPage": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "items",
-          "nextCursor"
-        ],
+        "required": ["items", "nextCursor"],
         "properties": {
           "items": {
             "type": "array",
             "items": {
               "type": "object",
               "additionalProperties": false,
-              "required": [
-                "reportId",
-                "taskId",
-                "reportSequence",
-                "actual",
-                "recent",
-                "receivedAtEpochMillis"
-              ],
+              "required": ["reportId", "taskId", "reportSequence", "actual", "recent", "references", "receivedAtEpochMillis"],
               "properties": {
                 "reportId": {
                   "type": "string",
                   "format": "uuid"
                 },
                 "taskId": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": ["string", "null"],
                   "format": "uuid"
                 },
                 "reportSequence": {
@@ -1302,6 +1180,9 @@
                 "recent": {
                   "ref": "TerminalUpdateReportRecent"
                 },
+                "references": {
+                  "ref": "TerminalUpdateReportReferences"
+                },
                 "receivedAtEpochMillis": {
                   "type": "integer",
                   "format": "int64",
@@ -1311,33 +1192,21 @@
             }
           },
           "nextCursor": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           }
         }
       },
       "TerminalUpdateRuleStorePage": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "items",
-          "nextCursor"
-        ],
+        "required": ["items", "nextCursor"],
         "properties": {
           "items": {
             "type": "array",
             "items": {
               "type": "object",
               "additionalProperties": false,
-              "required": [
-                "storeRef",
-                "name",
-                "code",
-                "status",
-                "unknownReason"
-              ],
+              "required": ["storeRef", "name", "code", "status", "unknownReason"],
               "properties": {
                 "storeRef": {
                   "type": "string",
@@ -1351,12 +1220,7 @@
                 },
                 "status": {
                   "type": "string",
-                  "enum": [
-                    "ENABLED",
-                    "DISABLED",
-                    "VOIDED",
-                    "UNKNOWN"
-                  ]
+                  "enum": ["ENABLED", "DISABLED", "VOIDED", "UNKNOWN"]
                 },
                 "unknownReason": {
                   "type": ["string", "null"],
@@ -1366,10 +1230,7 @@
             }
           },
           "nextCursor": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           }
         }
       }

@@ -440,6 +440,10 @@ export function loadFormalSeedStaticInputs() {
 }
 
 function requireValue(value, code) { if (value === undefined || value === null || value === '') throw new FormalSeedFailure(code); return value; }
+const SEED_REQUIRED_MANAGED_PROCESS_NAMES = new Set(['remote-dev-tunnels']);
+export function managedSeedProcessValidationTargets(processes = []) {
+  return (Array.isArray(processes) ? processes : []).filter((process) => SEED_REQUIRED_MANAGED_PROCESS_NAMES.has(process?.name));
+}
 function readEnv(file) {
   if (!existsSync(file) || (statSync(file).mode & 0o777) !== 0o600) throw new FormalSeedFailure('SEED_MANAGED_CREDENTIALS_INVALID');
   return Object.fromEntries(readFileSync(file, 'utf8').split('\n').filter(Boolean).map((line) => line.split('=', 2)));
@@ -455,7 +459,7 @@ export function managedRuntime() {
   } catch {
     throw new FormalSeedFailure('SEED_MANAGED_REMOTE_JAVA_BINDING_INVALID');
   }
-  for (const process of manifest.processes ?? []) {
+  for (const process of managedSeedProcessValidationTargets(manifest.processes ?? [])) {
     const probe = spawnSync('ps', ['-o', 'lstart=', '-p', String(process.pid)], {encoding: 'utf8'});
     if (probe.status !== 0 || canonicalStartToken(probe.stdout) !== canonicalStartToken(process.startToken)) throw new FormalSeedFailure(`SEED_MANAGED_PROCESS_INVALID:${process.name}`);
   }

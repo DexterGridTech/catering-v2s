@@ -1979,10 +1979,12 @@ export type OrganizationPathNode = {
   nodeType: ServiceNodeType;
 };
 
-export type OrganizationProjectCreateRequest = (OrganizationNodeCreateRequest) & ({
+export type OrganizationProjectCreateRequest = ((OrganizationNodeCreateRequest) & ({
   phases?: Array<{
   name: string;
 }>;
+})) & ({
+  extensionValues?: (Record<string, JsonValue>) | null;
 });
 
 export type OrganizationStore = {
@@ -3071,6 +3073,7 @@ export type TerminalUpdateArtifactSummary = {
   apkVersion: string;
   jsVersion: string;
   publicationId: string;
+  apkSha256: string | null;
   zipSha256: string;
   byteSize: number;
   createdAtEpochMillis: number;
@@ -3096,6 +3099,30 @@ export type TerminalUpdateReportHistoryPage = {
   reportSequence: number;
   actual: TerminalUpdateReportActual;
   recent: TerminalUpdateReportRecent;
+  references: {
+  ruleTarget: (({
+  fullArtifactIdentity: {
+  applicationId: string;
+  kind: "FULL" | "HOT";
+  version: string;
+};
+  hotArtifactIdentity: (({
+  applicationId: string;
+  kind: "FULL" | "HOT";
+  version: string;
+})) | null;
+})) | null;
+  fullArtifactIdentity: (({
+  applicationId: string;
+  kind: "FULL" | "HOT";
+  version: string;
+})) | null;
+  hotArtifactIdentity: (({
+  applicationId: string;
+  kind: "FULL" | "HOT";
+  version: string;
+})) | null;
+};
   receivedAtEpochMillis: number;
 }>;
   nextCursor: string | null;
@@ -3117,12 +3144,14 @@ export type TerminalUpdateRuleCreateRequest = {
   hotArtifactRef?: string & { readonly __uuid: "Uuid" };
   status: "ENABLED" | "DISABLED";
   nSeconds: number;
-  hotStrategy: "IMMEDIATE" | "IDLE";
+  hotStrategy?: "IMMEDIATE" | "IDLE";
   mSeconds?: number;
   description?: string;
 };
 
-export type TerminalUpdateRuleDetail = (TerminalUpdateRuleSummary);
+export type TerminalUpdateRuleDetail = ((TerminalUpdateRuleSummary)) & ({
+  storeRefs: Array<string & { readonly __uuid: "Uuid" }>;
+});
 
 export type TerminalUpdateRulePage = {
   items: Array<TerminalUpdateRuleSummary>;
@@ -3153,8 +3182,18 @@ export type TerminalUpdateRuleSummary = {
   targetMode: "ALL" | "STORE_REFS";
   fullArtifactRef: string & { readonly __uuid: "Uuid" };
   hotArtifactRef: string & { readonly __uuid: "Uuid" } | null;
+  fullArtifactIdentity: {
+  applicationId: string;
+  kind: "FULL" | "HOT";
+  version: string;
+};
+  hotArtifactIdentity: {
+  applicationId: string;
+  kind: "FULL" | "HOT";
+  version: string;
+} | null;
   nSeconds: number;
-  hotStrategy: "IMMEDIATE" | "IDLE";
+  hotStrategy: ("IMMEDIATE" | "IDLE") | null;
   mSeconds: number | null;
   description?: string | null;
   createdAtEpochMillis: number;
@@ -3168,7 +3207,32 @@ export type TerminalUpdateVersionDetail = {
   storeName: string;
   hasReport: boolean;
   latest: Record<string, JsonValue> | null;
+  latestReferences: (({
+  ruleTarget: (({
+  fullArtifactIdentity: {
+  applicationId: string;
+  kind: "FULL" | "HOT";
+  version: string;
+};
+  hotArtifactIdentity: (({
+  applicationId: string;
+  kind: "FULL" | "HOT";
+  version: string;
+})) | null;
+})) | null;
+  fullArtifactIdentity: (({
+  applicationId: string;
+  kind: "FULL" | "HOT";
+  version: string;
+})) | null;
+  hotArtifactIdentity: (({
+  applicationId: string;
+  kind: "FULL" | "HOT";
+  version: string;
+})) | null;
+})) | null;
   historyCursor: string | null;
+  receivedAtEpochMillis: number | null;
 };
 
 export type TerminalUpdateVersionPage = {
@@ -3182,8 +3246,10 @@ export type TerminalUpdateVersionReportItem = {
   storeRef: string & { readonly __uuid: "Uuid" };
   storeName: string;
   hasReport: boolean;
+  oldBinding: boolean;
   actual: Record<string, JsonValue> | null;
   recent: Record<string, JsonValue> | null;
+  receivedAtEpochMillis: number | null;
 };
 
 export type WorkspaceAccountStatus = "ENABLED" | "DISABLED" | "VOIDED";

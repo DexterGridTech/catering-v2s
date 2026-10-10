@@ -25,6 +25,7 @@ export type AndroidAutomationConnection = Readonly<{
   readonly launch: (component: string) => Promise<void>;
   readonly isInstalled: (packageName: string) => Promise<boolean>;
   readonly readApiLevel: () => Promise<number>;
+  readonly readPrimaryAbi: () => Promise<string>;
   readonly readTerminalUpdateLogs: (packageName: string) => Promise<string>;
   readonly readRuntimeFailureDiagnostics: (packageName: string) => Promise<string>;
   readonly forceStop: (packageName: string) => Promise<void>;
@@ -180,6 +181,7 @@ export const createAndroidAutomationConnection = async (
       launch: device.launch,
       isInstalled: device.isInstalled,
       readApiLevel: device.readApiLevel,
+      readPrimaryAbi: device.readPrimaryAbi,
       readTerminalUpdateLogs: device.readTerminalUpdateLogs,
       readRuntimeFailureDiagnostics: device.readRuntimeFailureDiagnostics,
       forceStop: device.forceStop,

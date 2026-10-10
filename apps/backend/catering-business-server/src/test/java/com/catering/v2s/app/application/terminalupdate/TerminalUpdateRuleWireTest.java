@@ -3,6 +3,7 @@ package com.catering.v2s.app.application.terminalupdate;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.catering.v2s.terminalupdate.api.TerminalUpdateRuleOwnerApi.RuleArtifactIdentity;
 import com.catering.v2s.terminalupdate.api.TerminalUpdateRuleOwnerApi.RuleReadback;
 import java.util.List;
 import java.util.UUID;
@@ -15,12 +16,18 @@ final class TerminalUpdateRuleWireTest {
     void ruleDetailIncludesStoresAndKeepsOptionalHotArtifactAsJsonNull() throws Exception {
         var storeRef = UUID.randomUUID();
         var rule = new RuleReadback(UUID.randomUUID(), UUID.randomUUID(), "STORE_REFS", List.of(storeRef),
-                UUID.randomUUID(), null, "ENABLED", 300, null, null, "full only", 1, 1, 1);
+                UUID.randomUUID(), null, new RuleArtifactIdentity("console", "FULL", "2.1.0"), null,
+                "ENABLED", 300, null, null, "full only", 1, 1, 1);
 
         var json = JSON.readTree(JSON.writeValueAsString(TerminalUpdateRuleWire.from(rule)));
 
         assertTrue(json.has("hotArtifactRef"));
         assertTrue(json.path("hotArtifactRef").isNull());
+        assertEquals("console", json.path("fullArtifactIdentity").path("applicationId").asText());
+        assertEquals("FULL", json.path("fullArtifactIdentity").path("kind").asText());
+        assertEquals("2.1.0", json.path("fullArtifactIdentity").path("version").asText());
+        assertTrue(json.has("hotArtifactIdentity"));
+        assertTrue(json.path("hotArtifactIdentity").isNull());
         assertEquals(1, json.path("storeRefs").size());
         assertEquals(storeRef.toString(), json.path("storeRefs").get(0).asText());
     }

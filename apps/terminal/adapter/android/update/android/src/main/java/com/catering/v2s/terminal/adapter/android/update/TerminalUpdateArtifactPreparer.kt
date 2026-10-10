@@ -102,6 +102,8 @@ internal object TerminalUpdateArtifactPreparer {
   }
 
   private suspend fun download(context: Context, url: String, expectedSha: String, timeoutMs: Long, downloadGrant: String?, proxy: ReadableMap?, target: File) {
+    val downloadStartedAt = System.nanoTime()
+    Log.i(TAG, "event=artifact-download-start timeoutMs=$timeoutMs")
     val builder = OkHttpClient.Builder()
       .connectTimeout(10, TimeUnit.SECONDS)
       .readTimeout(timeoutMs, TimeUnit.MILLISECONDS)
@@ -130,6 +132,7 @@ internal object TerminalUpdateArtifactPreparer {
       continuation.invokeOnCancellation { call.cancel() }
       call.enqueue(object : Callback {
         override fun onFailure(call: Call, error: java.io.IOException) {
+          Log.w(TAG, "event=artifact-download-failed elapsedMs=${(System.nanoTime() - downloadStartedAt) / 1_000_000} errorType=${error.javaClass.simpleName}")
           if (continuation.isActive) continuation.resumeWithException(error)
         }
 
@@ -139,6 +142,7 @@ internal object TerminalUpdateArtifactPreparer {
       require(response.code == 200) { "TERMINAL_UPDATE_DOWNLOAD_HTTP_${response.code}" }
       val body = response.body ?: error("TERMINAL_UPDATE_DOWNLOAD_BODY_MISSING")
       val declared = body.contentLength()
+      Log.i(TAG, "event=artifact-download-response declaredBytes=$declared")
       require(declared < 0 || declared <= MAX_ARCHIVE_BYTES) { "TERMINAL_UPDATE_ARCHIVE_TOO_LARGE" }
       val expansionReserve = if (target.name.endsWith(".zip")) MAX_EXPANDED_BYTES else 0L
       val required = (if (declared < 0) MAX_ARCHIVE_BYTES else declared) + expansionReserve + RESERVED_BYTES
@@ -147,6 +151,7 @@ internal object TerminalUpdateArtifactPreparer {
       }
       val digest = MessageDigest.getInstance("SHA-256")
       var count = 0L
+      var nextProgressLog = 16L * 1024 * 1024
       body.byteStream().use { input -> target.outputStream().buffered(64 * 1024).use { output ->
         val buffer = ByteArray(64 * 1024)
         while (true) {
@@ -156,9 +161,14 @@ internal object TerminalUpdateArtifactPreparer {
           require(count <= MAX_ARCHIVE_BYTES) { "TERMINAL_UPDATE_ARCHIVE_TOO_LARGE" }
           digest.update(buffer, 0, read)
           output.write(buffer, 0, read)
+          if (count >= nextProgressLog) {
+            Log.i(TAG, "event=artifact-download-progress bytes=$count declaredBytes=$declared elapsedMs=${(System.nanoTime() - downloadStartedAt) / 1_000_000}")
+            nextProgressLog += 16L * 1024 * 1024
+          }
         }
       } }
       require(count > 0 && digest.digest().hex() == expectedSha) { "TERMINAL_UPDATE_ARCHIVE_DIGEST_MISMATCH" }
+      Log.i(TAG, "event=artifact-download-complete bytes=$count elapsedMs=${(System.nanoTime() - downloadStartedAt) / 1_000_000}")
             }
             if (continuation.isActive) continuation.resume(Unit)
           } catch (error: Throwable) {

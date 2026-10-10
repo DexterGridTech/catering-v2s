@@ -39,9 +39,13 @@ export const selectTerminalUpdateReportDelivery = defineStateSelector(moduleName
   },
 });
 export const selectTerminalUpdateRuleSnapshot = defineStateSelector(moduleName, 'selectTerminalUpdateRuleSnapshot', {
-  parameters: [],
-  selector: (root: StateRoot) => Object.freeze({
-    ...readState(root).ruleSnapshot,
-    ...readState(root).ruleSnapshotStatus,
-  }),
+  parameters: [{kind: 'string', optional: true}],
+  selector: (root: StateRoot, ruleRef?: string) => {
+    const state = readState(root);
+    const snapshot = state.ruleSnapshot;
+    return ruleRef === undefined
+      ? Object.freeze({...snapshot, ...state.ruleSnapshotStatus})
+      : Object.freeze({...snapshot, items: Object.freeze(snapshot.items.filter(item => item.ruleRef === ruleRef)),
+          filterRuleRef: ruleRef, ...state.ruleSnapshotStatus});
+  },
 });

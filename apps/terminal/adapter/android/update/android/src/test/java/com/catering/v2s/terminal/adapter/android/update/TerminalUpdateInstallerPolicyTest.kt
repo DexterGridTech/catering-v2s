@@ -8,6 +8,19 @@ import org.junit.Test
 
 class TerminalUpdateInstallerPolicyTest {
   @Test
+  fun `FULL success readback requires the installed APK digest`() {
+    val installed = TerminalUpdateInstalledIdentity("com.example.app", 42, "publication-1", "1.0.0", "a".repeat(64))
+
+    assertTrue(matchesInstalledFullAction(installed, "com.example.app", 42, "publication-1", "a".repeat(64)))
+    assertFalse(matchesInstalledFullAction(installed, "com.example.app", 42, "publication-1", "b".repeat(64)))
+    assertFalse(matchesInstalledFullAction(installed, "com.example.app", 42, "publication-1", null))
+    assertNull(busyInstallerExit(
+      matchesInstalledFullAction(installed, "com.example.app", 42, "publication-1", "b".repeat(64)),
+      previousIdentityUnchanged = false,
+    ))
+  }
+
+  @Test
   fun `busy installer remains unknown until all sessions end and installed identity is readable`() {
     assertNull(busyInstallerExit(null, null))
 

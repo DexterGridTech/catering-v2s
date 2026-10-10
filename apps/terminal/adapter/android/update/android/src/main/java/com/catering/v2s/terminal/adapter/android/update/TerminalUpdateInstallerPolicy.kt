@@ -6,6 +6,18 @@ internal data class BusyInstallerExit(
   val installerState: String,
 )
 
+internal fun matchesInstalledFullAction(
+  actual: TerminalUpdateInstalledIdentity,
+  actionApplicationId: String,
+  actionNativeBuildNumber: Long,
+  actionPublicationId: String,
+  actionApkSha256: String?,
+): Boolean = actionApkSha256 != null &&
+  actual.applicationId == actionApplicationId &&
+  actual.nativeBuildNumber == actionNativeBuildNumber &&
+  actual.publicationId == actionPublicationId &&
+  actual.apkSha256.equals(actionApkSha256, ignoreCase = true)
+
 internal fun busyInstallerExit(targetInstalled: Boolean?, previousIdentityUnchanged: Boolean?): BusyInstallerExit? = when {
   targetInstalled == true -> BusyInstallerExit("succeeded", null, "none")
   targetInstalled == false && previousIdentityUnchanged == true ->

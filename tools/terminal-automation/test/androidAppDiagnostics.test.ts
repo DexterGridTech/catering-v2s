@@ -3,8 +3,74 @@ import {
   collectAndroidRuntimeFailureDiagnostics,
   projectAndroidAutomationConnectionLog,
   projectAndroidAutomationSelectorFailureLog,
+  projectAndroidTerminalDataReadLog,
+  projectAndroidTerminalHeartbeatLog,
+  projectAndroidTerminalTopicSubscriptionLog,
   projectAndroidTransportFailureLog,
+  projectAndroidTerminalUpdateReportLog,
 } from '../src/androidAppDiagnostics.js';
+
+describe('Android terminal rule chain diagnostics', () => {
+  it('projects topic subscription outcomes without owner or credential identity', () => {
+    const line = `I/ReactNativeJS (123): ${JSON.stringify({
+      category: 'terminal.data.topic-subscription',
+      event: 'terminal-topic-subscribe.persist.readback',
+      level: 'info',
+      data: {
+        topicKey: 'TERMINAL_UPDATE_RULES',
+        resultStatus: 'persisted',
+        matchingSubscriptionPresent: true,
+        persistedSubscriptionCount: 3,
+        ownerRef: 'private-owner-ref',
+        terminalRef: 'private-terminal-ref',
+        credentialSecret: 'private-secret',
+      },
+    })}`;
+
+    const projected = projectAndroidTerminalTopicSubscriptionLog(line);
+    expect(projected).toMatchObject({
+      category: 'terminal.data.topic-subscription',
+      event: 'terminal-topic-subscribe.persist.readback',
+      topicKey: 'TERMINAL_UPDATE_RULES',
+      resultStatus: 'persisted',
+      matchingSubscriptionPresent: true,
+      persistedSubscriptionCount: 3,
+    });
+    expect(JSON.stringify(projected)).not.toContain('private-owner-ref');
+    expect(JSON.stringify(projected)).not.toContain('private-terminal-ref');
+    expect(JSON.stringify(projected)).not.toContain('private-secret');
+  });
+
+  it('projects generated HTTP read stage and classified response without request data', () => {
+    const line = `I/ReactNativeJS (123): ${JSON.stringify({
+      category: 'terminal.data.read',
+      event: 'terminal-read-http.response',
+      level: 'info',
+      data: {
+        operationId: 'terminalReadProjectUpdateRuleSnapshotPage',
+        elapsedMs: 42,
+        resultKind: 'success',
+        status: 200,
+        pathParameters: {projectRef: 'private-project-ref'},
+        query: {collectionHash: 'private-hash'},
+        Authorization: 'Terminal private-secret',
+      },
+    })}`;
+
+    const projected = projectAndroidTerminalDataReadLog(line);
+    expect(projected).toMatchObject({
+      category: 'terminal.data.read',
+      event: 'terminal-read-http.response',
+      operationId: 'terminalReadProjectUpdateRuleSnapshotPage',
+      elapsedMs: 42,
+      resultKind: 'success',
+      status: 200,
+    });
+    expect(JSON.stringify(projected)).not.toContain('private-project-ref');
+    expect(JSON.stringify(projected)).not.toContain('private-hash');
+    expect(JSON.stringify(projected)).not.toContain('private-secret');
+  });
+});
 
 describe('Android transport failure diagnostics', () => {
   it('retains safe error and cause codes while omitting arbitrary message and URL data', () => {
@@ -38,6 +104,70 @@ describe('Android transport failure diagnostics', () => {
     });
     expect(JSON.stringify(projected)).not.toContain('secret');
     expect(JSON.stringify(projected)).not.toContain('example.invalid');
+  });
+});
+
+describe('Android terminal heartbeat diagnostics', () => {
+  it('keeps PONG and local consumer outcomes while omitting arbitrary payload fields', () => {
+    const line = `I/ReactNativeJS (123): ${JSON.stringify({
+      category: 'terminal.connection.heartbeat',
+      event: 'heartbeat-consumer-completed',
+      level: 'info',
+      data: {
+        dispatchStatus: 'completed',
+        consumerCount: 1,
+        actorStatus: 'completed',
+        resultStatus: 'context-not-ready',
+        terminalRef: 'private-terminal-ref',
+        credentialSecret: 'private-secret',
+      },
+    })}`;
+
+    const projected = projectAndroidTerminalHeartbeatLog(line);
+    expect(projected).toMatchObject({
+      category: 'terminal.connection.heartbeat',
+      event: 'heartbeat-consumer-completed',
+      dispatchStatus: 'completed',
+      consumerCount: 1,
+      actorStatus: 'completed',
+      resultStatus: 'context-not-ready',
+    });
+    expect(JSON.stringify(projected)).not.toContain('private-terminal-ref');
+    expect(JSON.stringify(projected)).not.toContain('private-secret');
+  });
+});
+
+describe('Android terminal update report diagnostics', () => {
+  it('retains report state and reason enums without report identity or secrets', () => {
+    const line = `I/ReactNativeJS (123): ${JSON.stringify({
+      category: 'terminal.update.report',
+      event: 'report-submit-completed',
+      level: 'info',
+      data: {
+        resultKind: 'success',
+        status: 200,
+        reportSequence: 3,
+        reportState: 'SUCCEEDED',
+        reportReason: 'NONE',
+        reportId: 'private-report-id',
+        credentialSecret: 'private-secret',
+      },
+    })}`;
+
+    const projected = projectAndroidTerminalUpdateReportLog(line);
+    expect(projected).toMatchObject({
+      category: 'terminal.update.report',
+      event: 'report-submit-completed',
+      level: 'info',
+      attemptNumber: 3,
+      reportState: 'SUCCEEDED',
+      reportReason: 'NONE',
+    });
+    expect(JSON.stringify(projected)).not.toContain('private-report-id');
+    expect(JSON.stringify(projected)).not.toContain('private-secret');
+    expect(
+      projectAndroidTerminalUpdateReportLog(line.replace('"reportReason":"NONE"', '"reportReason":"PRIVATE_REASON"')),
+    ).not.toHaveProperty('reportReason');
   });
 });
 

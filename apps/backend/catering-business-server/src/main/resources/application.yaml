@@ -1,4 +1,8 @@
 spring:
+  mvc:
+    async:
+      # Keep the response lifetime above the TER download client's 120s deadline.
+      request-timeout: 130s
   datasource:
     url: ${CATERING_BUSINESS_DB_URL}
     username: ${CATERING_BUSINESS_DB_USERNAME:}

@@ -64,7 +64,6 @@ public record TerminalUpdateRuleCreateRequest(
       if (fullArtifactRef == null) return context.reportInputMismatch(TerminalUpdateRuleCreateRequest.class, "missing required property fullArtifactRef");
       if (status == null) return context.reportInputMismatch(TerminalUpdateRuleCreateRequest.class, "missing required property status");
       if (nSeconds == null) return context.reportInputMismatch(TerminalUpdateRuleCreateRequest.class, "missing required property nSeconds");
-      if (hotStrategy == null) return context.reportInputMismatch(TerminalUpdateRuleCreateRequest.class, "missing required property hotStrategy");
       return new TerminalUpdateRuleCreateRequest(targetMode, storeRefs, fullArtifactRef, hotArtifactRef, status, nSeconds, hotStrategy, mSeconds, description);
     }
   }

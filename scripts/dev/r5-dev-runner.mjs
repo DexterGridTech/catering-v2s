@@ -25,6 +25,8 @@ import {
 } from './managed-process-tree.mjs';
 import {refreshManagedDiagnosticFiles} from './managed-diagnostic-protocol.mjs';
 import {assertNoActiveTerminalClientAcceptance} from './terminal-client-dev-acceptance-lock.mjs';
+
+export const STOP_REMOTE_DIAGNOSTIC_REFRESH_KEYS = Object.freeze(['seedEventsPath', 'statementDictionaryPath']);
 import {
   createHaproxyConfiguration,
   HAPROXY_IMAGE_TAG,
@@ -1237,21 +1239,43 @@ export function collectRemoteHaproxyLog(host, control, targetPath) {
   writeFileSync(targetPath, output, {mode: 0o600});
   return targetPath;
 }
-export async function stopRemoteHaproxy(host, control) {
-  const {running} = verifyRemoteHaproxyContainer(host, control);
-  const result = remoteExec(host, [
+export function remoteHaproxyStopScript(control) {
+  validateRemoteHaproxyControl(control);
+  return [
     'set -euo pipefail',
+    `expected_boot_id=${quote(control.hostBootId)}`,
     `container_id=${quote(control.containerId)}`,
     `run_id=${quote(control.runId)}`,
-    `control_path=${quote(control.controlPath)}`,
-    'state=$(docker inspect -f \'{{.State.Running}}\' "$container_id")',
-    'if test "$state" = true; then docker stop --time 10 "$container_id" >/dev/null; else test "$state" = false; fi',
-    'docker rm "$container_id" >/dev/null',
+    `remote_root=${quote(control.remoteRoot)}`,
+    `container_image_id=${quote(control.containerImageId)}`,
+    `image_ref=${quote(control.imageRef)}`,
+    `config_sha256=${quote(control.configSha256)}`,
+    'case "$remote_root" in /tmp/r5-dev-[0-9]*-[0-9]*-[0-9a-f-]*) ;; *) exit 64 ;; esac',
+    'actual_boot_id=$(cat /proc/sys/kernel/random/boot_id)',
+    'test "$actual_boot_id" = "$expected_boot_id"',
+    'docker info >/dev/null',
+    'inspect=$(docker inspect -f \'{{.Id}}|{{.Image}}|{{.Config.Image}}|{{index .Config.Labels "com.catering-v2s.run-id"}}|{{index .Config.Labels "com.catering-v2s.remote-root"}}|{{index .Config.Labels "com.catering-v2s.host-boot-id"}}|{{index .Config.Labels "com.catering-v2s.image-ref"}}|{{index .Config.Labels "com.catering-v2s.config-sha256"}}|{{.State.Running}}\' "$container_id" 2>/dev/null) || inspect=""',
+    'status=ALREADY_STOPPED',
+    'if test -n "$inspect"; then',
+    '  expected="$container_id|$container_image_id|$image_ref|$run_id|$remote_root|$expected_boot_id|$image_ref|$config_sha256|"',
+    '  case "$inspect" in "$expected"true|"$expected"false) ;; *) printf "%s\\n" REMOTE_HAPROXY_IDENTITY_MISMATCH >&2; exit 65 ;; esac',
+    '  state=${inspect##*|}',
+    '  if test "$state" = true; then docker stop --time 10 "$container_id" >/dev/null; status=STOPPED; fi',
+    '  docker rm "$container_id" >/dev/null',
+    'else',
+    '  exact_ids=$(docker ps -aq --no-trunc --filter "id=$container_id")',
+    '  if test -n "$exact_ids"; then printf "%s\\n" REMOTE_HAPROXY_IDENTITY_UNREADABLE >&2; exit 66; fi',
+    'fi',
+    'if docker ps -aq --no-trunc --filter "id=$container_id" | grep -q .; then printf "%s\\n" REMOTE_HAPROXY_CONTAINER_REMAINS >&2; exit 67; fi',
     'if docker ps -aq --filter "label=com.catering-v2s.run-id=$run_id" | grep -q .; then printf "%s\\n" REMOTE_HAPROXY_RUN_RESOURCE_REMAINS >&2; exit 66; fi',
-    'printf "%s\\n" R5_REMOTE_HAPROXY_STOP=PASS',
-  ].join('\n')).trim();
-  if (result !== 'R5_REMOTE_HAPROXY_STOP=PASS') fail('REMOTE_HAPROXY_STOP_FAILED');
-  return running ? 'STOPPED' : 'ALREADY_STOPPED';
+    'printf "R5_REMOTE_HAPROXY_STOP=PASS STATUS=%s\\n" "$status"',
+  ].join('\n');
+}
+export async function stopRemoteHaproxy(host, control) {
+  const output = remoteExec(host, remoteHaproxyStopScript(control)).trim();
+  if (output === 'R5_REMOTE_HAPROXY_STOP=PASS STATUS=STOPPED') return 'STOPPED';
+  if (output === 'R5_REMOTE_HAPROXY_STOP=PASS STATUS=ALREADY_STOPPED') return 'ALREADY_STOPPED';
+  fail('REMOTE_HAPROXY_STOP_PROTOCOL_INVALID');
 }
 function readRemoteJavaControl(host, remoteRoot) {
   remoteRootGuard(remoteRoot);
@@ -2840,7 +2864,7 @@ async function stop() {
           managedRemoteJavaControl,
           managedRemoteJavaControl.localLogPath ?? path.join(runtime, 'dev', manifest.runId, 'business-server.log'),
         ),
-      refreshDiagnostics: () => refreshManagedDiagnosticFiles(manifest),
+      refreshDiagnostics: () => refreshManagedDiagnosticFiles(manifest, STOP_REMOTE_DIAGNOSTIC_REFRESH_KEYS),
     });
     for (const error of diagnosticResult.failures) recordFailure(diagnosticFailures, error);
   } else {

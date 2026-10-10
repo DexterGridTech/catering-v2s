@@ -124,6 +124,51 @@ final class TerminalUpdateRuleOwnerServiceTest {
     }
 
     @Test
+    void fullOnlyRuleHasNoHotStrategyOrIdleThreshold() {
+        stubScope();
+        when(artifacts.read(WORKSPACE, GROUP, FULL)).thenReturn(artifact(FULL, "FULL", DIGEST, null));
+        var fullOnly = new TerminalUpdateRuleOwnerApi.CreateRule(WORKSPACE, GROUP, PROJECT, "ALL", List.of(),
+                FULL, null, "ENABLED", 300, null, null, "full only", 8,
+                "idempotency-key-full-only", actor());
+
+        var created = owner.create(fullOnly);
+
+        assertEquals(null, created.hotStrategy());
+        assertEquals(null, created.mSeconds());
+        verify(persistence).insert(any(), eq(WORKSPACE), eq(GROUP));
+    }
+
+    @Test
+    void fullOnlyRuleRejectsHotPolicyFields() {
+        stubScope();
+        var fullOnlyWithStrategy = new TerminalUpdateRuleOwnerApi.CreateRule(WORKSPACE, GROUP, PROJECT, "ALL", List.of(),
+                FULL, null, "ENABLED", 300, "IMMEDIATE", null, "invalid full only", 8,
+                "idempotency-key-full-only-invalid", actor());
+
+        assertThrows(TerminalUpdateRuleOwnerService.TerminalUpdateRuleInvalidException.class,
+                () -> owner.create(fullOnlyWithStrategy));
+
+        verify(persistence, never()).insert(any(), any(), any());
+        verifyNoInteractions(audit);
+    }
+
+    @Test
+    void idleHotRulePersistsTheApiDurationInSeconds() {
+        stubScope();
+        stubArtifactPair();
+        var idle = new TerminalUpdateRuleOwnerApi.CreateRule(WORKSPACE, GROUP, PROJECT, "STORE_REFS", List.of(STORE),
+                FULL, HOT, "ENABLED", 300, "IDLE", 600L, "ten minutes", 8,
+                "idempotency-key-idle", actor());
+        ArgumentCaptor<TerminalUpdateRuleOwnerApi.RuleReadback> row =
+                ArgumentCaptor.forClass(TerminalUpdateRuleOwnerApi.RuleReadback.class);
+
+        owner.create(idle);
+
+        verify(persistence).insert(row.capture(), eq(WORKSPACE), eq(GROUP));
+        assertEquals(600L, row.getValue().mSeconds());
+    }
+
+    @Test
     void staleRevisionCannotChangeRuleOrEmitAuditAndTopic() {
         var command = new TerminalUpdateRuleOwnerApi.ChangeRuleStatus(
                 WORKSPACE, GROUP, PROJECT, UUID.randomUUID(), 3, "DISABLED", "operator request", 8,
@@ -179,7 +224,7 @@ final class TerminalUpdateRuleOwnerServiceTest {
     @Test
     void terminalSnapshotCarriesAuthoritativeRuleCreationTime() {
         var full = new TerminalUpdateRuleSnapshotPersistence.Artifact(FULL, "FULL", "com.example.terminal",
-                "terminal-main-v1", 9, "1.0", "1.0", DIGEST, DIGEST, 128, 900L);
+                "terminal-main-v1", 9, "1.0", "1.0", DIGEST, DIGEST, DIGEST, 128, 900L);
         var row = new TerminalUpdateRuleSnapshotPersistence.Row("member", UUID.randomUUID(), "ALL", List.of(),
                 "com.example.terminal", full, null, 300L, null, null, null, 700L);
         when(snapshots.page(WORKSPACE, GROUP, PROJECT, null, null, 11)).thenReturn(List.of(row));
@@ -187,6 +232,7 @@ final class TerminalUpdateRuleOwnerServiceTest {
         var page = owner.terminalSnapshot(WORKSPACE, GROUP, PROJECT, null, 10, null);
 
         assertEquals(700L, page.items().getFirst().createdAtEpochMillis());
+        assertEquals(DIGEST, page.items().getFirst().full().apkSha256());
     }
 
     private void stubScope() {

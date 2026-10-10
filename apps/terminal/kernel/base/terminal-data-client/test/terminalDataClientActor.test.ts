@@ -16,6 +16,7 @@ import {
   terminalTransportEventCommand,
   terminalDataHeartbeatCommand,
   readTerminalDataCommand,
+  submitTerminalUpdateReportCommand,
 } from '../src/features/commands/terminalDataClientCommands';
 import {
   terminalDataClientActions,
@@ -228,9 +229,42 @@ const createRemoteOperationHarness = (options?: {
     runEvent,
     command,
     connectReady,
+    diagnostics: diagnostics.events,
     dispose: () => actor.dispose(),
   };
 };
+
+describe('terminal-data-client update report command', () => {
+  it('rejects non-UUID report identities before HTTP and records a safe diagnostic', async () => {
+    const harness = createRemoteOperationHarness();
+    const handler = harness.actor.actor.handlers.find(
+      item => item.commandName === submitTerminalUpdateReportCommand.commandName,
+    );
+    if (handler === undefined) throw new Error('terminal update report handler missing');
+
+    await expect(
+      handler.handle(
+        harness.makeContext(submitTerminalUpdateReportCommand.commandName, {
+          idempotencyKey: 'req_01test',
+          body: {reportId: 'req_01test', reportSequence: 1},
+        }),
+      ),
+    ).resolves.toEqual({
+      kind: 'failure',
+      category: 'not-delivered',
+      code: 'INVALID_TERMINAL_UPDATE_REPORT',
+    });
+    expect(harness.transport.executeHttp).not.toHaveBeenCalled();
+    expect(harness.diagnostics).toContainEqual(
+      expect.objectContaining({
+        category: 'terminal.update.report',
+        event: 'report-submit-rejected',
+        data: {code: 'INVALID_TERMINAL_UPDATE_REPORT'},
+      }),
+    );
+    harness.dispose();
+  });
+});
 
 describe('terminal-data-client activation command actor', () => {
   it('injects the active credential into generated read operations and replaces caller store identity', async () => {
@@ -549,7 +583,7 @@ describe('terminal-data-client activation command actor', () => {
       const context = {
         runtimeId: 'test-runtime',
         localNodeId: 'test-node',
-        platformPorts: {},
+        platformPorts: {logger: createActivationTestLogger().logger},
         command: {
           commandName: terminalTransportEventCommand.commandName,
           payload: {event: testCase},
@@ -1329,7 +1363,8 @@ describe('terminal-data-client activation command actor', () => {
     };
     const diagnostics = createActivationTestLogger();
     const dispatchCommand = vi.fn(async (definition: CommandDefinition) => {
-      if (definition.commandName === terminalDataHeartbeatCommand.commandName) throw new Error('consumer-fixture-rejection');
+      if (definition.commandName === terminalDataHeartbeatCommand.commandName)
+        throw Object.assign(new Error('consumer-fixture-rejection'), {code: 'ERR_TER_RUNTIME_REQUEST_ID_REQUIRED'});
       return {status: 'completed' as const};
     });
     const actor = createTerminalDataClientActor({
@@ -1420,24 +1455,57 @@ describe('terminal-data-client activation command actor', () => {
       lastRttMs: 1_237,
       samples: [{rttMs: 1_237, observedAt: now}],
     });
-    expect(dispatchCommand).toHaveBeenCalledWith(terminalDataHeartbeatCommand, expect.objectContaining({
-      bindingGeneration: 8,
-      sessionId: 'session-1',
-      sequence: 1,
-      observedAt: now,
-      rttMs: 1_237,
-    }));
+    expect(dispatchCommand).toHaveBeenCalledWith(
+      terminalDataHeartbeatCommand,
+      expect.objectContaining({
+        bindingGeneration: 8,
+        sessionId: 'session-1',
+        sequence: 1,
+        observedAt: now,
+        rttMs: 1_237,
+      }),
+      {requestId: expect.any(String)},
+    );
     await Promise.resolve();
     expect(transport.invalid).not.toHaveBeenCalled();
-    expect(diagnostics.events).toContainEqual(expect.objectContaining({
-      event: 'heartbeat-consumer-rejected',
-      data: {code: 'LOCAL_CONSUMER_REJECTED'},
-    }));
+    expect(diagnostics.events).toContainEqual(
+      expect.objectContaining({
+        event: 'heartbeat-consumer-rejected',
+        data: {code: 'ERR_TER_RUNTIME_REQUEST_ID_REQUIRED'},
+      }),
+    );
     expect(diagnostics.events).toContainEqual(
       expect.objectContaining({
         category: 'terminal.connection.heartbeat',
         event: 'heartbeat-pong-matched',
         data: {profileId: 'terminal-data-client', sequence: 1, rttMs: 1_237},
+      }),
+    );
+    dispatchCommand.mockImplementationOnce(
+      async () =>
+        ({
+          status: 'completed',
+          actorResults: [{status: 'completed', result: {status: 'empty'}}],
+        }) as never,
+    );
+    await findHandler(terminalHeartbeatTickCommand.commandName).handle(
+      makeContext(terminalHeartbeatTickCommand.commandName, {}),
+    );
+    now += 250;
+    await findHandler(terminalTransportEventCommand.commandName).handle(
+      makeContext(terminalTransportEventCommand.commandName, {
+        event: {
+          type: 'message',
+          raw: JSON.stringify({type: 'PONG', seq: 2, serverTs: '2026-10-01T00:00:02Z'}),
+        },
+      }),
+    );
+    await Promise.resolve();
+    expect(diagnostics.events).toContainEqual(
+      expect.objectContaining({
+        category: 'terminal.connection.heartbeat',
+        event: 'heartbeat-consumer-completed',
+        data: {dispatchStatus: 'completed', consumerCount: 1, actorStatus: 'completed', resultStatus: 'empty'},
       }),
     );
     expect(transport.invalid).not.toHaveBeenCalled();
@@ -1509,7 +1577,7 @@ describe('terminal-data-client activation command actor', () => {
       ({
         runtimeId: 'test-runtime',
         localNodeId: 'test-node',
-        platformPorts: {},
+        platformPorts: {logger: createActivationTestLogger().logger},
         command: {commandName, payload, requestId: 'request-id', commandId: 'command-id'} as never,
         actor: {actorKey: actor.actor.actorKey, moduleName: actor.actor.moduleName, actorName: actor.actor.actorName},
         getState: () => actorState(state),
@@ -1846,7 +1914,7 @@ describe('terminal-data-client activation command actor', () => {
       ({
         runtimeId: 'test-runtime',
         localNodeId: 'test-node',
-        platformPorts: {},
+        platformPorts: {logger: createActivationTestLogger().logger},
         command: {commandName, payload, requestId: 'request-id', commandId: 'command-id'} as never,
         actor: {actorKey: actor.actor.actorKey, moduleName: actor.actor.moduleName, actorName: actor.actor.actorName},
         getState: () => actorState(state),
@@ -2006,7 +2074,7 @@ describe('terminal-data-client activation command actor', () => {
       ({
         runtimeId: 'test-runtime',
         localNodeId: 'test-node',
-        platformPorts: {},
+        platformPorts: {logger: createActivationTestLogger().logger},
         command: {commandName, payload, requestId: null, commandId: 'connect-idempotency-test'} as never,
         actor: {actorKey: actor.actorKey, moduleName: actor.moduleName, actorName: actor.actorName},
         getState: () => actorState(state),
@@ -2254,7 +2322,7 @@ describe('terminal-data-client activation command actor', () => {
         ({
           runtimeId: 'test-runtime',
           localNodeId: 'test-node',
-          platformPorts: {},
+          platformPorts: {logger: createActivationTestLogger().logger},
           command: {commandName, payload, requestId: `request-${trigger}`, commandId: `cancel-${trigger}`} as never,
           actor: {
             actorKey: actorRuntime.actor.actorKey,
@@ -2711,7 +2779,7 @@ describe('terminal-data-client activation command actor', () => {
       ({
         runtimeId: 'test-runtime',
         localNodeId: 'test-node',
-        platformPorts: {},
+        platformPorts: {logger: createActivationTestLogger().logger},
         command: {commandName, payload, requestId: 'root-request', commandId: 'root-command'} as never,
         actor: {actorKey: actor.actor.actorKey, moduleName: actor.actor.moduleName, actorName: actor.actor.actorName},
         getState: () => actorState(state),

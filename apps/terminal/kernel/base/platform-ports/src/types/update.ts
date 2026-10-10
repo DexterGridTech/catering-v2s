@@ -27,6 +27,8 @@ export interface UpdateActualVersions {
   readonly applicationId: string;
   readonly nativeVersion: string;
   readonly nativeBuildNumber: number;
+  /** SHA-256 of the installed base APK when the adapter can read it; unavailable on non-Android ports. */
+  readonly apkSha256?: string | null;
   readonly runtimeVersion: string;
   readonly bundleVersion: string;
   readonly publicationId: string;

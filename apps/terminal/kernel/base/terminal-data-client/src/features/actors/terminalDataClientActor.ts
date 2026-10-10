@@ -930,6 +930,15 @@ export const createTerminalDataClientActor = (
       const credential = state.credential;
       const payload = context.command.payload as TerminalDataReadPayload;
       if (!isHostRuntime(context.getState()) || state.activationStatus !== 'active' || credential === null) {
+        context.platformPorts.logger.info({
+          category: 'terminal.data.read',
+          event: 'terminal-read-rejected',
+          message: 'Terminal data read was rejected before HTTP delivery',
+          data: {
+            code: 'TERMINAL_NOT_ACTIVE',
+            operationId: typeof payload?.operationId === 'string' ? payload.operationId : 'invalid',
+          },
+        });
         return Object.freeze({kind: 'failure', category: 'not-delivered', code: 'TERMINAL_NOT_ACTIVE'});
       }
       if (
@@ -939,6 +948,15 @@ export const createTerminalDataClientActor = (
         !payload.operationId.startsWith('terminalRead') ||
         terminalOperationContracts[payload.operationId as TerminalOperationId] === undefined
       ) {
+        context.platformPorts.logger.info({
+          category: 'terminal.data.read',
+          event: 'terminal-read-rejected',
+          message: 'Terminal data read operation was rejected before HTTP delivery',
+          data: {
+            code: 'INVALID_TERMINAL_READ',
+            operationId: typeof payload?.operationId === 'string' ? payload.operationId : 'invalid',
+          },
+        });
         return Object.freeze({kind: 'failure', category: 'not-delivered', code: 'INVALID_TERMINAL_READ'});
       }
       const pathParameters = {...payload.pathParameters};
@@ -948,6 +966,12 @@ export const createTerminalDataClientActor = (
       for (const [key, value] of Object.entries(pathParameters)) {
         if (key === 'storeRef') continue;
         if (typeof value !== 'string' || value.trim().length === 0) {
+          context.platformPorts.logger.info({
+            category: 'terminal.data.read',
+            event: 'terminal-read-rejected',
+            message: 'Terminal data read path parameters were rejected before HTTP delivery',
+            data: {code: 'INVALID_TERMINAL_READ', operationId: payload.operationId},
+          });
           return Object.freeze({kind: 'failure', category: 'not-delivered', code: 'INVALID_TERMINAL_READ'});
         }
       }
@@ -958,33 +982,83 @@ export const createTerminalDataClientActor = (
       });
       const operation = terminalClient.client[payload.operationId as keyof typeof terminalClient.client];
       const queryParameters = payload.queryParameters ?? {};
-      const allowedQueryKeys = payload.operationId === 'terminalReadProjectUpdateRuleSnapshotPage'
-        ? new Set(['collectionHash', 'cursor', 'limit'])
-        : new Set<string>();
+      const allowedQueryKeys =
+        payload.operationId === 'terminalReadProjectUpdateRuleSnapshotPage'
+          ? new Set(['collectionHash', 'cursor', 'limit'])
+          : new Set<string>();
       if (
         queryParameters === null ||
         typeof queryParameters !== 'object' ||
         Object.keys(queryParameters).some(key => !allowedQueryKeys.has(key)) ||
         (payload.operationId === 'terminalReadProjectUpdateRuleSnapshotPage' &&
           (!Number.isSafeInteger((queryParameters as {limit?: unknown}).limit) ||
-            !((queryParameters as {collectionHash?: unknown}).collectionHash === null ||
-              typeof (queryParameters as {collectionHash?: unknown}).collectionHash === 'string') ||
-            !((queryParameters as {cursor?: unknown}).cursor === undefined ||
+            !(
+              (queryParameters as {collectionHash?: unknown}).collectionHash === null ||
+              typeof (queryParameters as {collectionHash?: unknown}).collectionHash === 'string'
+            ) ||
+            !(
+              (queryParameters as {cursor?: unknown}).cursor === undefined ||
               (queryParameters as {cursor?: unknown}).cursor === null ||
-              typeof (queryParameters as {cursor?: unknown}).cursor === 'string')))
-      ) return Object.freeze({kind: 'failure', category: 'not-delivered', code: 'INVALID_TERMINAL_READ'});
+              typeof (queryParameters as {cursor?: unknown}).cursor === 'string'
+            )))
+      ) {
+        context.platformPorts.logger.info({
+          category: 'terminal.data.read',
+          event: 'terminal-read-rejected',
+          message: 'Terminal data read query parameters were rejected before HTTP delivery',
+          data: {code: 'INVALID_TERMINAL_READ', operationId: payload.operationId},
+        });
+        return Object.freeze({kind: 'failure', category: 'not-delivered', code: 'INVALID_TERMINAL_READ'});
+      }
       const startedAt = dependencies.now();
+      context.platformPorts.logger.info({
+        category: 'terminal.data.read',
+        event: 'terminal-read-http.begin',
+        message: 'Calling the generated terminal data HTTP operation',
+        data: {
+          operationId: payload.operationId,
+          pathParameterCount: Object.keys(pathParameters).length,
+          queryParameterCount: Object.keys(queryParameters).length,
+        },
+      });
       try {
         const result = await operation({
           pathParameters,
           queryParameters,
           headers,
         } as never);
+        context.platformPorts.logger.info({
+          category: 'terminal.data.read',
+          event: 'terminal-read-http.response',
+          message: 'Generated terminal data HTTP operation returned a classified response',
+          data: {
+            operationId: payload.operationId,
+            elapsedMs: Math.max(0, dependencies.now() - startedAt),
+            resultKind: result.kind,
+            ...(result.kind === 'success'
+              ? {status: result.status}
+              : result.kind === 'business-rejection'
+                ? {status: result.status, errorCode: result.errorCode}
+                : {failureCategory: result.category, code: activationLogCode(result.code)}),
+          },
+        });
+        context.platformPorts.logger.info({
+          category: 'terminal.data.read',
+          event: 'terminal-read-response-accept.begin',
+          message: 'Applying the classified business response to topic state',
+          data: {operationId: payload.operationId, resultKind: result.kind},
+        });
         await terminalClient.acceptBusinessResponse(
           profileId,
           dependencies.businessServerName,
           result as TerminalOperationResult<TerminalOperationId>,
         );
+        context.platformPorts.logger.info({
+          category: 'terminal.data.read',
+          event: 'terminal-read-response-accept.completed',
+          message: 'Applied the classified business response to topic state',
+          data: {operationId: payload.operationId},
+        });
         context.platformPorts.logger
           .scope({moduleName, layer: 'kernel', subsystem: 'terminal-data-client', component: 'http-read'})
           .info({
@@ -1030,7 +1104,11 @@ export const createTerminalDataClientActor = (
       if (!isHostRuntime(context.getState()) || state.activationStatus !== 'active' || credential === null)
         return Object.freeze({kind: 'failure', category: 'not-delivered', code: 'TERMINAL_NOT_ACTIVE'});
       if (!isCanonicalUuid(payload?.artifactRef))
-        return Object.freeze({kind: 'failure', category: 'not-delivered', code: 'INVALID_TERMINAL_UPDATE_ARTIFACT_REF'});
+        return Object.freeze({
+          kind: 'failure',
+          category: 'not-delivered',
+          code: 'INVALID_TERMINAL_UPDATE_ARTIFACT_REF',
+        });
       const startedAt = dependencies.now();
       const result = await terminalClient.client.issueTerminalUpdateArtifactDownloadGrant({
         pathParameters: {artifactRef: payload.artifactRef},
@@ -1043,28 +1121,64 @@ export const createTerminalDataClientActor = (
         body: {},
       });
       await terminalClient.acceptBusinessResponse(profileId, dependencies.businessServerName, result);
-      context.platformPorts.logger.scope({moduleName, layer: 'kernel', subsystem: 'terminal-data-client', component: 'http-update'}).info({
-        category: 'terminal.update.download-grant', event: 'download-grant-completed',
-        message: 'Generated terminal download-grant request returned a classified result',
-        context: {commandId: context.command.commandId},
-        data: {elapsedMs: Math.max(0, dependencies.now() - startedAt), resultKind: result.kind,
-          ...(result.kind === 'success' ? {status: result.status} : result.kind === 'business-rejection'
-            ? {status: result.status, errorCode: result.errorCode} : {failureCategory: result.category, code: activationLogCode(result.code)})},
-      });
+      context.platformPorts.logger
+        .scope({moduleName, layer: 'kernel', subsystem: 'terminal-data-client', component: 'http-update'})
+        .info({
+          category: 'terminal.update.download-grant',
+          event: 'download-grant-completed',
+          message: 'Generated terminal download-grant request returned a classified result',
+          context: {commandId: context.command.commandId},
+          data: {
+            elapsedMs: Math.max(0, dependencies.now() - startedAt),
+            resultKind: result.kind,
+            ...(result.kind === 'success'
+              ? {status: result.status}
+              : result.kind === 'business-rejection'
+                ? {status: result.status, errorCode: result.errorCode}
+                : {failureCategory: result.category, code: activationLogCode(result.code)}),
+          },
+        });
       return result as TerminalOperationResult<'issueTerminalUpdateArtifactDownloadGrant'>;
     }),
     onCommand(submitTerminalUpdateReportCommand, async context => {
       const state = readState(context.getState());
       const credential = state.credential;
       const payload = context.command.payload as TerminalUpdateReportPayload;
-      if (!isHostRuntime(context.getState()) || state.activationStatus !== 'active' || credential === null)
+      if (!isHostRuntime(context.getState()) || state.activationStatus !== 'active' || credential === null) {
+        context.platformPorts.logger
+          .scope({moduleName, layer: 'kernel', subsystem: 'terminal-data-client', component: 'http-update'})
+          .warn({
+            category: 'terminal.update.report',
+            event: 'report-submit-rejected',
+            message: 'Skipped a report because the terminal binding is not active on this host',
+            context: {commandId: context.command.commandId},
+            data: {code: 'TERMINAL_NOT_ACTIVE'},
+          });
         return Object.freeze({kind: 'failure', category: 'not-delivered', code: 'TERMINAL_NOT_ACTIVE'});
-      if (!isCanonicalUuid(payload?.idempotencyKey) || !isRecord(payload.body) || !isCanonicalUuid(payload.body.reportId) ||
-        !Number.isSafeInteger(payload.body.reportSequence) || payload.body.reportSequence < 1)
+      }
+      if (
+        !isCanonicalUuid(payload?.idempotencyKey) ||
+        !isRecord(payload.body) ||
+        !isCanonicalUuid(payload.body.reportId) ||
+        !Number.isSafeInteger(payload.body.reportSequence) ||
+        payload.body.reportSequence < 1
+      ) {
+        context.platformPorts.logger
+          .scope({moduleName, layer: 'kernel', subsystem: 'terminal-data-client', component: 'http-update'})
+          .warn({
+            category: 'terminal.update.report',
+            event: 'report-submit-rejected',
+            message: 'Skipped a report whose identity or sequence does not match the generated HTTP contract',
+            context: {commandId: context.command.commandId},
+            data: {code: 'INVALID_TERMINAL_UPDATE_REPORT'},
+          });
         return Object.freeze({kind: 'failure', category: 'not-delivered', code: 'INVALID_TERMINAL_UPDATE_REPORT'});
+      }
       const startedAt = dependencies.now();
       const result = await terminalClient.client.submitTerminalUpdateReport({
-        pathParameters: {}, queryParameters: {}, body: payload.body,
+        pathParameters: {},
+        queryParameters: {},
+        body: payload.body,
         headers: {
           Authorization: `Terminal ${credential.bindingGeneration}.${credential.credentialSecret}`,
           'X-Terminal-Device-Id': credential.deviceId,
@@ -1073,14 +1187,26 @@ export const createTerminalDataClientActor = (
         },
       });
       await terminalClient.acceptBusinessResponse(profileId, dependencies.businessServerName, result);
-      context.platformPorts.logger.scope({moduleName, layer: 'kernel', subsystem: 'terminal-data-client', component: 'http-update'}).info({
-        category: 'terminal.update.report', event: 'report-submit-completed',
-        message: 'Generated terminal update-report request returned a classified result',
-        context: {commandId: context.command.commandId},
-        data: {reportSequence: payload.body.reportSequence, elapsedMs: Math.max(0, dependencies.now() - startedAt),
-          resultKind: result.kind, ...(result.kind === 'success' ? {status: result.status} : result.kind === 'business-rejection'
-            ? {status: result.status, errorCode: result.errorCode} : {failureCategory: result.category, code: activationLogCode(result.code)})},
-      });
+      context.platformPorts.logger
+        .scope({moduleName, layer: 'kernel', subsystem: 'terminal-data-client', component: 'http-update'})
+        .info({
+          category: 'terminal.update.report',
+          event: 'report-submit-completed',
+          message: 'Generated terminal update-report request returned a classified result',
+          context: {commandId: context.command.commandId},
+          data: {
+            reportSequence: payload.body.reportSequence,
+            reportState: payload.body.recent.state,
+            reportReason: payload.body.recent.reason,
+            elapsedMs: Math.max(0, dependencies.now() - startedAt),
+            resultKind: result.kind,
+            ...(result.kind === 'success'
+              ? {status: result.status}
+              : result.kind === 'business-rejection'
+                ? {status: result.status, errorCode: result.errorCode}
+                : {failureCategory: result.category, code: activationLogCode(result.code)}),
+          },
+        });
       return result as TerminalOperationResult<'submitTerminalUpdateReport'>;
     }),
     onCommand(activateTerminalCommand, async context => {
@@ -1436,7 +1562,13 @@ export const createTerminalDataClientActor = (
       if (clientState.connection.status === 'backoff') clearLocalConnection();
       context.dispatchAction(
         terminalDataClientActions.setConnection(
-          Object.freeze({status: 'connecting', addressName: null, nodeId: null, sessionId: null, lastCloseReason: null}),
+          Object.freeze({
+            status: 'connecting',
+            addressName: null,
+            nodeId: null,
+            sessionId: null,
+            lastCloseReason: null,
+          }),
         ),
       );
       try {
@@ -1459,7 +1591,13 @@ export const createTerminalDataClientActor = (
         sessionReady = false;
         context.dispatchAction(
           terminalDataClientActions.setConnection(
-            Object.freeze({status: 'awaiting-ready', addressName: null, nodeId: null, sessionId: null, lastCloseReason: null}),
+            Object.freeze({
+              status: 'awaiting-ready',
+              addressName: null,
+              nodeId: null,
+              sessionId: null,
+              lastCloseReason: null,
+            }),
           ),
         );
         unsubscribeConnection = opened.subscribe(event =>
@@ -1475,7 +1613,13 @@ export const createTerminalDataClientActor = (
       } catch {
         context.dispatchAction(
           terminalDataClientActions.setConnection(
-            Object.freeze({status: 'backoff', addressName: null, nodeId: null, sessionId: null, lastCloseReason: 'NETWORK_ERROR'}),
+            Object.freeze({
+              status: 'backoff',
+              addressName: null,
+              nodeId: null,
+              sessionId: null,
+              lastCloseReason: 'NETWORK_ERROR',
+            }),
           ),
         );
         await dependencies.transport.invalid({profileId, cause: 'NETWORK_ERROR'});
@@ -1489,12 +1633,40 @@ export const createTerminalDataClientActor = (
       return Object.freeze({status: 'disconnected'});
     }),
     onCommand(subscribeTerminalTopicCommand, async context => {
-      if (!isHostRuntime(context.getState())) return Object.freeze({status: 'not-host'});
+      const hostRuntime = isHostRuntime(context.getState());
+      if (!hostRuntime) {
+        context.platformPorts.logger.info({
+          category: 'terminal.data.topic-subscription',
+          event: 'terminal-topic-subscribe.rejected',
+          message: 'Topic subscription requires the host runtime',
+          data: {reason: 'NOT_HOST'},
+        });
+        return Object.freeze({status: 'not-host'});
+      }
       const state = readState(context.getState());
       const credential = state.credential;
       const operationConnection = connection;
       const operationGeneration = connectionGeneration;
       const payload = context.command.payload;
+      const existing = Object.values(state.topicSubscriptions).find(
+        subscription =>
+          subscription.subscriberKey === payload.subscriberKey &&
+          subscription.topicKey === payload.topicKey &&
+          subscription.ownerRef === payload.ownerRef,
+      );
+      context.platformPorts.logger.info({
+        category: 'terminal.data.topic-subscription',
+        event: 'terminal-topic-subscribe.begin',
+        message: 'Started registering a terminal topic subscription',
+        data: {
+          topicKey: isTerminalTopicKey(payload.topicKey) ? payload.topicKey : 'invalid',
+          activationActive: state.activationStatus === 'active',
+          connectionReady: sessionReady,
+          connectionPresent: operationConnection !== undefined,
+          existingSubscription: existing !== undefined,
+          persistedSubscriptionCount: Object.keys(state.topicSubscriptions).length,
+        },
+      });
       if (
         state.activationStatus !== 'active' ||
         credential === null ||
@@ -1505,16 +1677,28 @@ export const createTerminalDataClientActor = (
         !isCanonicalUuid(payload.ownerRef) ||
         !Number.isSafeInteger(payload.initialTimeEpochMillis) ||
         payload.initialTimeEpochMillis < 0
-      )
+      ) {
+        context.platformPorts.logger.info({
+          category: 'terminal.data.topic-subscription',
+          event: 'terminal-topic-subscribe.rejected',
+          message: 'Topic subscription payload or activation was rejected',
+          data: {
+            topicKey: isTerminalTopicKey(payload.topicKey) ? payload.topicKey : 'invalid',
+            reason: 'INVALID_SUBSCRIPTION',
+            activationActive: state.activationStatus === 'active',
+          },
+        });
         return Object.freeze({status: 'rejected', reason: 'INVALID_SUBSCRIPTION'});
-      const existing = Object.values(state.topicSubscriptions).find(
-        subscription =>
-          subscription.subscriberKey === payload.subscriberKey &&
-          subscription.topicKey === payload.topicKey &&
-          subscription.ownerRef === payload.ownerRef,
-      );
-      if (existing !== undefined)
+      }
+      if (existing !== undefined) {
+        context.platformPorts.logger.info({
+          category: 'terminal.data.topic-subscription',
+          event: 'terminal-topic-subscribe.completed',
+          message: 'Topic subscription already existed',
+          data: {topicKey: payload.topicKey, resultStatus: 'already-subscribed'},
+        });
         return Object.freeze({status: 'already-subscribed', subscriptionId: existing.subscriptionId});
+      }
 
       const identityKey = topicIdentityKey({
         credential,
@@ -1524,7 +1708,15 @@ export const createTerminalDataClientActor = (
       });
       const acceptedTimeEpochMillis = state.acceptedTopicTimes[identityKey] ?? payload.initialTimeEpochMillis;
       const subscriptionId = createProtocolUuid(dependencies);
-      if (subscriptionId === null) return Object.freeze({status: 'failed', reason: 'UUID_GENERATION_UNAVAILABLE'});
+      if (subscriptionId === null) {
+        context.platformPorts.logger.warn({
+          category: 'terminal.data.topic-subscription',
+          event: 'terminal-topic-subscribe.failed',
+          message: 'Subscription identity could not be generated',
+          data: {topicKey: payload.topicKey, reason: 'UUID_GENERATION_UNAVAILABLE'},
+        });
+        return Object.freeze({status: 'failed', reason: 'UUID_GENERATION_UNAVAILABLE'});
+      }
       const subscription: TerminalTopicSubscription = Object.freeze({
         subscriptionId,
         identityKey,
@@ -1535,15 +1727,42 @@ export const createTerminalDataClientActor = (
         pendingNotification: null,
       });
       context.dispatchAction(terminalDataClientActions.putTopicSubscription({subscription, identityKey}));
+      context.platformPorts.logger.info({
+        category: 'terminal.data.topic-subscription',
+        event: 'terminal-topic-subscribe.persist.begin',
+        message: 'Persisted the local topic subscription registration',
+        data: {
+          topicKey: payload.topicKey,
+          persistedSubscriptionCount: Object.keys(readState(context.getState()).topicSubscriptions).length,
+        },
+      });
       try {
         await flush(context);
       } catch {
         context.dispatchAction(
           terminalDataClientActions.removeTopicSubscription({subscriptionId: subscription.subscriptionId, identityKey}),
         );
+        context.platformPorts.logger.warn({
+          category: 'terminal.data.topic-subscription',
+          event: 'terminal-topic-subscribe.persist.readback',
+          message: 'Local topic subscription persistence failed',
+          data: {topicKey: payload.topicKey, resultStatus: 'failed', reason: 'PERSISTENCE_FAILED'},
+        });
         return Object.freeze({status: 'failed', reason: 'PERSISTENCE_FAILED'});
       }
       const afterFlush = readState(context.getState());
+      const persistedSubscription = afterFlush.topicSubscriptions[subscription.subscriptionId];
+      context.platformPorts.logger.info({
+        category: 'terminal.data.topic-subscription',
+        event: 'terminal-topic-subscribe.persist.readback',
+        message: 'Read the persisted local topic subscription registration',
+        data: {
+          topicKey: payload.topicKey,
+          resultStatus: 'persisted',
+          matchingSubscriptionPresent: persistedSubscription?.identityKey === identityKey,
+          persistedSubscriptionCount: Object.keys(afterFlush.topicSubscriptions).length,
+        },
+      });
       if (
         !isHostRuntime(context.getState()) ||
         afterFlush.activationStatus !== 'active' ||
@@ -1554,18 +1773,61 @@ export const createTerminalDataClientActor = (
         afterFlush.credential?.deviceId !== credential.deviceId ||
         afterFlush.credential?.credentialSecret !== credential.credentialSecret ||
         afterFlush.topicSubscriptions[subscription.subscriptionId]?.identityKey !== identityKey
-      )
+      ) {
+        context.platformPorts.logger.info({
+          category: 'terminal.data.topic-subscription',
+          event: 'terminal-topic-subscribe.failed',
+          message: 'Topic subscription became stale after persistence',
+          data: {
+            topicKey: payload.topicKey,
+            reason: 'STALE_OPERATION',
+            connectionReady: sessionReady,
+            matchingSubscriptionPresent: persistedSubscription?.identityKey === identityKey,
+          },
+        });
         return Object.freeze({status: 'stale-operation'});
-      if (connectionGeneration !== operationGeneration || connection !== operationConnection)
+      }
+      if (connectionGeneration !== operationGeneration || connection !== operationConnection) {
+        context.platformPorts.logger.info({
+          category: 'terminal.data.topic-subscription',
+          event: 'terminal-topic-subscribe.failed',
+          message: 'Topic subscription connection changed after persistence',
+          data: {topicKey: payload.topicKey, reason: 'STALE_CONNECTION', connectionReady: sessionReady},
+        });
         return Object.freeze({status: 'stale-connection'});
+      }
       if (sessionReady && connection !== undefined) {
+        context.platformPorts.logger.info({
+          category: 'terminal.data.topic-subscription',
+          event: 'terminal-topic-subscribe.frame-send.begin',
+          message: 'Sending the topic subscription over the ready connection',
+          data: {topicKey: payload.topicKey},
+        });
         try {
           await connection.send(topicSubscribeFrame(subscription));
         } catch {
+          context.platformPorts.logger.warn({
+            category: 'terminal.data.topic-subscription',
+            event: 'terminal-topic-subscribe.frame-send.failed',
+            message: 'Topic subscription frame send failed',
+            data: {topicKey: payload.topicKey, reason: 'SUBSCRIBE_SEND_FAILED'},
+          });
           await dependencies.transport.invalid({profileId, cause: 'NETWORK_ERROR'});
           return Object.freeze({status: 'failed', reason: 'SUBSCRIBE_SEND_FAILED'});
         }
+        context.platformPorts.logger.info({
+          category: 'terminal.data.topic-subscription',
+          event: 'terminal-topic-subscribe.frame-send.completed',
+          message: 'Topic subscription frame was sent',
+          data: {topicKey: payload.topicKey},
+        });
       }
+      context.platformPorts.logger.info({
+        category: 'terminal.data.topic-subscription',
+        event: 'terminal-topic-subscribe.completed',
+        message: 'Topic subscription command completed',
+        data: {topicKey: payload.topicKey, resultStatus: sessionReady ? 'subscribed' : 'persisted-until-ready'},
+      });
       return Object.freeze({status: 'subscribed', subscriptionId: subscription.subscriptionId});
     }),
     onCommand(unsubscribeTerminalTopicCommand, async context => {
@@ -1866,27 +2128,69 @@ export const createTerminalDataClientActor = (
             });
           const credential = readState(context.getState()).credential;
           if (credential !== null && activeSessionId !== null) {
-            void context.dispatchCommand(
-              terminalDataHeartbeatCommand,
-              Object.freeze({
-                bindingGeneration: credential.bindingGeneration,
-                sessionId: activeSessionId,
-                sequence: Number(parsed.seq),
-                observedAt,
-                rttMs,
-              }),
-            ).then(result => {
-              if (result.status === 'completed') return;
-              context.platformPorts.logger.scope({moduleName, layer: 'kernel', subsystem: 'terminal-data-client', component: 'connection'})
-                .warn({category: 'terminal.connection.heartbeat', event: 'heartbeat-consumer-not-completed',
-                  message: 'A local heartbeat consumer did not complete; connection health remains unchanged',
-                  context: {commandId: context.command.commandId}, data: {dispatchStatus: result.status}});
-            }).catch(() => {
-              context.platformPorts.logger.scope({moduleName, layer: 'kernel', subsystem: 'terminal-data-client', component: 'connection'})
-                .warn({category: 'terminal.connection.heartbeat', event: 'heartbeat-consumer-rejected',
-                  message: 'A local heartbeat consumer rejected; connection health remains unchanged',
-                  context: {commandId: context.command.commandId}, data: {code: 'LOCAL_CONSUMER_REJECTED'}});
-            });
+            void context
+              .dispatchCommand(
+                terminalDataHeartbeatCommand,
+                Object.freeze({
+                  bindingGeneration: credential.bindingGeneration,
+                  sessionId: activeSessionId,
+                  sequence: Number(parsed.seq),
+                  observedAt,
+                  rttMs,
+                }),
+                {requestId: context.command.requestId ?? createRequestId()},
+              )
+              .then(result => {
+                const completedConsumer = result.actorResults.find(item => item.status === 'completed');
+                const consumerResult = completedConsumer?.result;
+                const resultStatus =
+                  typeof consumerResult === 'object' &&
+                  consumerResult !== null &&
+                  'status' in consumerResult &&
+                  typeof consumerResult.status === 'string'
+                    ? consumerResult.status
+                    : 'UNKNOWN';
+                context.platformPorts.logger
+                  .scope({moduleName, layer: 'kernel', subsystem: 'terminal-data-client', component: 'connection'})
+                  .info({
+                    category: 'terminal.connection.heartbeat',
+                    event: 'heartbeat-consumer-completed',
+                    message: 'Observed local consumers after a valid PONG; no business payload is logged',
+                    context: {commandId: context.command.commandId},
+                    data: {
+                      dispatchStatus: result.status,
+                      consumerCount: result.actorResults.length,
+                      actorStatus: completedConsumer?.status ?? result.actorResults[0]?.status ?? 'NONE',
+                      resultStatus,
+                    },
+                  });
+                if (result.status === 'completed') return;
+                context.platformPorts.logger
+                  .scope({moduleName, layer: 'kernel', subsystem: 'terminal-data-client', component: 'connection'})
+                  .warn({
+                    category: 'terminal.connection.heartbeat',
+                    event: 'heartbeat-consumer-not-completed',
+                    message: 'A local heartbeat consumer did not complete; connection health remains unchanged',
+                    context: {commandId: context.command.commandId},
+                    data: {dispatchStatus: result.status},
+                  });
+              })
+              .catch(error => {
+                const rawCode = isRecord(error) ? error.code : undefined;
+                const failureCode =
+                  typeof rawCode === 'string' && /^[A-Z][A-Z0-9_]{1,95}$/u.test(rawCode)
+                    ? rawCode
+                    : 'LOCAL_CONSUMER_REJECTED';
+                context.platformPorts.logger
+                  .scope({moduleName, layer: 'kernel', subsystem: 'terminal-data-client', component: 'connection'})
+                  .warn({
+                    category: 'terminal.connection.heartbeat',
+                    event: 'heartbeat-consumer-rejected',
+                    message: 'A local heartbeat consumer rejected; connection health remains unchanged',
+                    context: {commandId: context.command.commandId},
+                    data: {code: failureCode},
+                  });
+              });
           }
         }
         if (parsed.type === 'TOPIC_CHANGED') {

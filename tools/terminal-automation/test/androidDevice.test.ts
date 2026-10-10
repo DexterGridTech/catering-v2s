@@ -465,6 +465,31 @@ describe('createAndroidDeviceSession', () => {
     await expect(invalid.readApiLevel()).rejects.toThrow('TERMINAL_AUTOMATION_ANDROID_API_LEVEL_READBACK_INVALID');
   });
 
+  it('reads the primary ABI from the explicitly selected serial and rejects unsupported readback', async () => {
+    const adb = createClient({});
+    const runTextCommand = vi.fn(async (_adbPath: string, args: readonly string[]) => {
+      expect(args).toEqual(['-s', 'emulator-5554', 'shell', 'getprop', 'ro.product.cpu.abi']);
+      return 'arm64-v8a\n';
+    });
+    const session = await createAndroidDeviceSession({
+      client: adb.client,
+      serial: 'emulator-5554',
+      repositoryRoot: tmpdir(),
+      adbPath: '/usr/bin/adb',
+      runTextCommand,
+    });
+    await expect(session.readPrimaryAbi()).resolves.toBe('arm64-v8a');
+
+    const invalid = await createAndroidDeviceSession({
+      client: adb.client,
+      serial: 'emulator-5554',
+      repositoryRoot: tmpdir(),
+      adbPath: '/usr/bin/adb',
+      runTextCommand: async () => 'unknown',
+    });
+    await expect(invalid.readPrimaryAbi()).rejects.toThrow('TERMINAL_AUTOMATION_ANDROID_PRIMARY_ABI_READBACK_INVALID');
+  });
+
   it('reads only structured TerminalUpdate records from the exact run package process', async () => {
     const context = createClient({});
     const runTextCommand = vi.fn(async (_adbPath: string, args: readonly string[]) => {
@@ -473,6 +498,9 @@ describe('createAndroidDeviceSession', () => {
         return 'W ActivityTaskManager: Background activity launch blocked! package=com.example.terauto12345678';
       }
       return [
+        'I/TerminalUpdate( 1234): event=artifact-download-response declaredBytes=90000000',
+        'I/TerminalUpdate( 1234): event=artifact-download-progress bytes=16777216 declaredBytes=90000000 elapsedMs=42000',
+        'I/TerminalUpdate( 1234): event=artifact-download-complete bytes=90000000 elapsedMs=71000',
         'I/TerminalUpdate( 1234): event=artifact-prepared kind=full bytes=120 files=4',
         'I/TerminalUpdate( 1234): event=apply-prepared-start kind=full',
         'I/TerminalUpdate( 1234): event=apply-full-stage stage=archive-signers-ready',
@@ -492,6 +520,9 @@ describe('createAndroidDeviceSession', () => {
 
     await expect(session.readTerminalUpdateLogs('com.example.terauto12345678')).resolves.toBe(
       [
+        'I/TerminalUpdate( 1234): event=artifact-download-response declaredBytes=90000000',
+        'I/TerminalUpdate( 1234): event=artifact-download-progress bytes=16777216 declaredBytes=90000000 elapsedMs=42000',
+        'I/TerminalUpdate( 1234): event=artifact-download-complete bytes=90000000 elapsedMs=71000',
         'I/TerminalUpdate( 1234): event=artifact-prepared kind=full bytes=120 files=4',
         'I/TerminalUpdate( 1234): event=apply-prepared-start kind=full',
         'I/TerminalUpdate( 1234): event=apply-full-stage stage=archive-signers-ready',

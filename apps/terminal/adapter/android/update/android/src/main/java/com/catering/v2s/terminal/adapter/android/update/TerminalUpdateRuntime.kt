@@ -35,8 +35,9 @@ internal data class TerminalUpdateInstalledIdentity(
   val nativeBuildNumber: Long,
   val publicationId: String,
   val embeddedBundleVersion: String,
+  val apkSha256: String,
 ) {
-  fun key(): String = "$applicationId:$nativeBuildNumber:$publicationId"
+  fun key(): String = "$applicationId:$nativeBuildNumber:$publicationId:$apkSha256"
 }
 
 internal data class TerminalUpdateBootReservation(
@@ -75,6 +76,9 @@ internal fun selectedBundleVersionForFacts(
   }
   else -> null
 }
+
+internal fun readActionReason(isJsonNull: Boolean, stored: String?, fallback: String? = null): String? =
+  if (isJsonNull) fallback else stored?.takeIf(String::isNotBlank) ?: fallback
 
 /** Process boot/entry facts. Business task state remains owned by terminal-update in JS. */
 internal object TerminalUpdateRuntime {
@@ -275,6 +279,7 @@ internal object TerminalUpdateRuntime {
         "applicationId" to actual.applicationId,
         "nativeVersion" to embedded.getString("nativeVersion"),
         "nativeBuildNumber" to actual.nativeBuildNumber,
+        "apkSha256" to actual.apkSha256,
         "runtimeVersion" to embedded.getString("runtimeVersion"),
         "bundleVersion" to bundleVersion,
         "publicationId" to (record?.optString("selectedPublicationId")?.takeIf { it.isNotBlank() } ?: actual.publicationId),
@@ -360,7 +365,8 @@ internal object TerminalUpdateRuntime {
         bootPublicationId = value.optString("bootPublicationId"),
       )
       return@synchronized actionResult(taskId, actionId, state,
-        value.optString("actionReason").ifBlank { null }, publicationId, value.optString("actionBootId").ifBlank { null })
+        readActionReason(value.isNull("actionReason"), value.optString("actionReason")),
+        publicationId, value.optString("actionBootId").ifBlank { null })
     }
     if (value.optString("actionKind") != "full") {
       return@synchronized actionResult(taskId, actionId, "unknown", "ACTION_KIND_UNKNOWN", publicationId, null)
@@ -368,8 +374,13 @@ internal object TerminalUpdateRuntime {
     val targetBuild = value.optLong("actionNativeBuildNumber", -1)
     val actual = runCatching { readInstalledIdentity(app) }.getOrNull()
       ?: return@synchronized actionResult(taskId, actionId, "unknown", "INSTALLED_IDENTITY_UNAVAILABLE", publicationId, null)
-    val targetInstalled = actual.applicationId == value.optString("actionApplicationId") &&
-      actual.nativeBuildNumber == targetBuild && actual.publicationId == publicationId
+    val targetInstalled = matchesInstalledFullAction(
+      actual,
+      value.optString("actionApplicationId"),
+      targetBuild,
+      publicationId,
+      value.optString("actionApkSha256").ifBlank { null },
+    )
     if (targetInstalled) {
       value.put("actionState", "succeeded")
       value.put("installerState", "none")
@@ -406,9 +417,9 @@ internal object TerminalUpdateRuntime {
       else -> "unknown"
     }
     val reason = when (state) {
-      "failed" -> value.optString("actionReason").ifBlank { "INSTALL_FAILED" }
+      "failed" -> readActionReason(value.isNull("actionReason"), value.optString("actionReason"), "INSTALL_FAILED")
       "user-cancelled" -> "ENDED_NOT_INSTALLED"
-      "unknown" -> value.optString("actionReason").ifBlank { "INSTALLER_STATE_UNKNOWN" }
+      "unknown" -> readActionReason(value.isNull("actionReason"), value.optString("actionReason"), "INSTALLER_STATE_UNKNOWN")
       else -> null
     }
     actionResult(taskId, actionId, state, reason, publicationId, value.optString("actionBootId").ifBlank { null })
@@ -518,9 +529,13 @@ internal object TerminalUpdateRuntime {
         Log.i(LOG_TAG, "event=installer-busy-reconcile outcome=installed-identity-unknown")
         return@synchronized
       }
-      val targetInstalled = actual.applicationId == value.optString("actionApplicationId") &&
-        actual.nativeBuildNumber == value.optLong("actionNativeBuildNumber", -1) &&
-        actual.publicationId == value.optString("actionPublicationId")
+      val targetInstalled = matchesInstalledFullAction(
+        actual,
+        value.optString("actionApplicationId"),
+        value.optLong("actionNativeBuildNumber", -1),
+        value.optString("actionPublicationId"),
+        value.optString("actionApkSha256").ifBlank { null },
+      )
       val exit = busyInstallerExit(targetInstalled,
         value.optString("actionPreviousInstalledIdentity") == actual.key()) ?: return@synchronized
       value.put("actionState", exit.state)
@@ -1065,11 +1080,17 @@ internal object TerminalUpdateRuntime {
     require(bundleDigest != null && bundleSize in 0..MAX_EMBEDDED_BYTES) { "TERMINAL_UPDATE_EMBEDDED_BUNDLE_METADATA_INVALID" }
     val actualDigest = context.assets.open(bundleAssetName).use { input -> input.sha256(MAX_EMBEDDED_BYTES) }
     require(actualDigest == bundleDigest) { "TERMINAL_UPDATE_EMBEDDED_BUNDLE_DIGEST_MISMATCH" }
+    val baseApk = File(applicationInfo.sourceDir)
+    require(baseApk.isFile && baseApk.length() > 0) { "TERMINAL_UPDATE_INSTALLED_APK_UNAVAILABLE" }
+    val apkSha256 = FileInputStream(baseApk).use { input ->
+      input.sha256(baseApk.length(), "TERMINAL_UPDATE_INSTALLED_APK_TOO_LARGE")
+    }
     return TerminalUpdateInstalledIdentity(
       context.packageName,
       installedVersionCode(packageInfo),
       publicationId,
       manifest.getString("bundleVersion"),
+      apkSha256,
     )
   }
 
@@ -1162,7 +1183,10 @@ internal object TerminalUpdateRuntime {
     return output.toByteArray()
   }
 
-  private fun java.io.InputStream.sha256(maxBytes: Long): String {
+  private fun java.io.InputStream.sha256(
+    maxBytes: Long,
+    tooLargeCode: String = "TERMINAL_UPDATE_EMBEDDED_BUNDLE_TOO_LARGE",
+  ): String {
     val digest = MessageDigest.getInstance("SHA-256")
     val buffer = ByteArray(64 * 1024)
     var count = 0L
@@ -1170,7 +1194,7 @@ internal object TerminalUpdateRuntime {
       val read = read(buffer)
       if (read < 0) break
       count += read
-      require(count <= maxBytes) { "TERMINAL_UPDATE_EMBEDDED_BUNDLE_TOO_LARGE" }
+      require(count <= maxBytes) { tooLargeCode }
       digest.update(buffer, 0, read)
     }
     return digest.digest().joinToString("") { "%02x".format(it) }

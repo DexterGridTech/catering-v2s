@@ -10,6 +10,7 @@ import {
   initializeTerminalDataClientCommand,
   connectTerminalCommand,
   refreshTerminalClientStatusProjectionCommand,
+  terminalDataHeartbeatCommand,
 } from '../src/features/commands/terminalDataClientCommands';
 import {terminalDataClientStateSlice} from '../src/features/slices/terminalDataClient';
 import {
@@ -72,6 +73,10 @@ describe('terminal-data-client package identity', () => {
       `${moduleName}.heartbeat-tick`,
       `${moduleName}.mutate-remote-operation`,
     ]);
+    expect(module.commands?.find(command => command.name === terminalDataHeartbeatCommand.commandName)).toEqual({
+      name: terminalDataHeartbeatCommand.commandName,
+      visibility: 'public',
+    });
     expect(module.slices).toEqual([
       {name: `${moduleName}.client`, persistIntent: 'owner-only'},
       {name: terminalClientStatusProjectionSliceName, persistIntent: 'owner-only'},
@@ -163,7 +168,13 @@ describe('terminal-data-client package identity', () => {
         },
         pendingActivations: {},
         activationStatus: 'active',
-        connection: {status: 'connected', addressName: 'primary', nodeId: 'tds-1', sessionId: 'session-host-only', lastCloseReason: null},
+        connection: {
+          status: 'connected',
+          addressName: 'primary',
+          nodeId: 'tds-1',
+          sessionId: 'session-host-only',
+          lastCloseReason: null,
+        },
         heartbeatIntervalMs: 10_000,
         nextPingSequence: 2,
         lastRttMs: 17,

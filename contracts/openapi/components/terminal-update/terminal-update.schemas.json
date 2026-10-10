@@ -35,7 +35,17 @@
           "expiresAtEpochMillis",
           "fileName",
           "sha256",
-          "byteSize"
+          "byteSize",
+          "candidateKind",
+          "applicationId",
+          "platform",
+          "nativeVersion",
+          "nativeBuildNumber",
+          "bundleVersion",
+          "runtimeVersion",
+          "publicationId",
+          "apkSha256",
+          "minimumFull"
         ],
         "properties": {
           "stageRef": {
@@ -65,6 +75,85 @@
             "type": "integer",
             "format": "int64",
             "minimum": 1
+          },
+          "candidateKind": {
+            "type": "string",
+            "enum": [
+              "FULL",
+              "HOT"
+            ]
+          },
+          "applicationId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "android"
+            ]
+          },
+          "nativeVersion": {
+            "type": "string",
+            "minLength": 1
+          },
+          "nativeBuildNumber": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "bundleVersion": {
+            "type": "string",
+            "minLength": 1
+          },
+          "runtimeVersion": {
+            "type": "string",
+            "minLength": 1
+          },
+          "publicationId": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "apkSha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "nullable": true
+          },
+          "minimumFull": {
+            "allOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "applicationId",
+                  "nativeBuildNumber",
+                  "runtimeVersion",
+                  "publicationId",
+                  "apkSha256"
+                ],
+                "properties": {
+                  "applicationId": {
+                    "type": "string"
+                  },
+                  "nativeBuildNumber": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "runtimeVersion": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "publicationId": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "apkSha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                }
+              }
+            ],
+            "nullable": true
           }
         }
       },
@@ -159,6 +248,7 @@
           "apkVersion",
           "jsVersion",
           "publicationId",
+          "apkSha256",
           "zipSha256",
           "byteSize",
           "createdAtEpochMillis"
@@ -193,6 +283,13 @@
           },
           "publicationId": {
             "type": "string"
+          },
+          "apkSha256": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[a-f0-9]{64}$"
           },
           "zipSha256": {
             "type": "string",
@@ -258,6 +355,13 @@
               "null"
             ],
             "additionalProperties": false,
+            "required": [
+              "applicationId",
+              "nativeBuildNumber",
+              "runtimeVersion",
+              "publicationId",
+              "apkSha256"
+            ],
             "properties": {
               "applicationId": {
                 "type": "string"
@@ -269,8 +373,9 @@
                 "type": "integer",
                 "minimum": 0
               },
-              "apkVersion": {
-                "type": "string"
+              "publicationId": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
               },
               "apkSha256": {
                 "type": "string",
@@ -327,8 +432,10 @@
           "storeRef",
           "storeName",
           "hasReport",
+          "oldBinding",
           "actual",
-          "recent"
+          "recent",
+          "receivedAtEpochMillis"
         ],
         "properties": {
           "terminalRef": {
@@ -348,6 +455,9 @@
           "hasReport": {
             "type": "boolean"
           },
+          "oldBinding": {
+            "type": "boolean"
+          },
           "actual": {
             "type": [
               "object",
@@ -361,6 +471,14 @@
               "null"
             ],
             "additionalProperties": true
+          },
+          "receivedAtEpochMillis": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
           }
         }
       },
@@ -435,6 +553,8 @@
           "targetMode",
           "fullArtifactRef",
           "hotArtifactRef",
+          "fullArtifactIdentity",
+          "hotArtifactIdentity",
           "nSeconds",
           "hotStrategy",
           "mSeconds",
@@ -475,6 +595,65 @@
             ],
             "format": "uuid"
           },
+          "fullArtifactIdentity": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "applicationId",
+              "kind",
+              "version"
+            ],
+            "properties": {
+              "applicationId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 255
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "FULL",
+                  "HOT"
+                ]
+              },
+              "version": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              }
+            }
+          },
+          "hotArtifactIdentity": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "applicationId",
+              "kind",
+              "version"
+            ],
+            "properties": {
+              "applicationId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 255
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "FULL",
+                  "HOT"
+                ]
+              },
+              "version": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              }
+            }
+          },
           "nSeconds": {
             "type": "integer",
             "minimum": 60,
@@ -485,7 +664,8 @@
             "enum": [
               "IMMEDIATE",
               "IDLE"
-            ]
+            ],
+            "nullable": true
           },
           "mSeconds": {
             "type": [
@@ -543,8 +723,7 @@
           "targetMode",
           "fullArtifactRef",
           "status",
-          "nSeconds",
-          "hotStrategy"
+          "nSeconds"
         ],
         "properties": {
           "targetMode": {
@@ -810,7 +989,8 @@
             "enum": [
               "IMMEDIATE",
               "IDLE"
-            ]
+            ],
+            "nullable": true
           },
           "mSeconds": {
             "type": [
@@ -1287,7 +1467,9 @@
           "storeName",
           "hasReport",
           "latest",
-          "historyCursor"
+          "latestReferences",
+          "historyCursor",
+          "receivedAtEpochMillis"
         ],
         "properties": {
           "terminalRef": {
@@ -1314,11 +1496,177 @@
             ],
             "additionalProperties": true
           },
+          "latestReferences": {
+            "allOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "ruleTarget",
+                  "fullArtifactIdentity",
+                  "hotArtifactIdentity"
+                ],
+                "properties": {
+                  "ruleTarget": {
+                    "allOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "fullArtifactIdentity",
+                          "hotArtifactIdentity"
+                        ],
+                        "properties": {
+                          "fullArtifactIdentity": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "applicationId",
+                              "kind",
+                              "version"
+                            ],
+                            "properties": {
+                              "applicationId": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 255
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "FULL",
+                                  "HOT"
+                                ]
+                              },
+                              "version": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 64
+                              }
+                            }
+                          },
+                          "hotArtifactIdentity": {
+                            "allOf": [
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "applicationId",
+                                  "kind",
+                                  "version"
+                                ],
+                                "properties": {
+                                  "applicationId": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 255
+                                  },
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "FULL",
+                                      "HOT"
+                                    ]
+                                  },
+                                  "version": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 64
+                                  }
+                                }
+                              }
+                            ],
+                            "nullable": true
+                          }
+                        }
+                      }
+                    ],
+                    "nullable": true
+                  },
+                  "fullArtifactIdentity": {
+                    "allOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "applicationId",
+                          "kind",
+                          "version"
+                        ],
+                        "properties": {
+                          "applicationId": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 255
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "FULL",
+                              "HOT"
+                            ]
+                          },
+                          "version": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 64
+                          }
+                        }
+                      }
+                    ],
+                    "nullable": true
+                  },
+                  "hotArtifactIdentity": {
+                    "allOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "applicationId",
+                          "kind",
+                          "version"
+                        ],
+                        "properties": {
+                          "applicationId": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 255
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "FULL",
+                              "HOT"
+                            ]
+                          },
+                          "version": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 64
+                          }
+                        }
+                      }
+                    ],
+                    "nullable": true
+                  }
+                }
+              }
+            ],
+            "nullable": true
+          },
           "historyCursor": {
             "type": [
               "string",
               "null"
             ]
+          },
+          "receivedAtEpochMillis": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
           }
         }
       },
@@ -1359,6 +1707,7 @@
                 "reportSequence",
                 "actual",
                 "recent",
+                "references",
                 "receivedAtEpochMillis"
               ],
               "properties": {
@@ -1382,6 +1731,159 @@
                 },
                 "recent": {
                   "$ref": "#/components/schemas/TerminalUpdateReportRecent"
+                },
+                "references": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "ruleTarget",
+                    "fullArtifactIdentity",
+                    "hotArtifactIdentity"
+                  ],
+                  "properties": {
+                    "ruleTarget": {
+                      "allOf": [
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "fullArtifactIdentity",
+                            "hotArtifactIdentity"
+                          ],
+                          "properties": {
+                            "fullArtifactIdentity": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "applicationId",
+                                "kind",
+                                "version"
+                              ],
+                              "properties": {
+                                "applicationId": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 255
+                                },
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "FULL",
+                                    "HOT"
+                                  ]
+                                },
+                                "version": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 64
+                                }
+                              }
+                            },
+                            "hotArtifactIdentity": {
+                              "allOf": [
+                                {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "applicationId",
+                                    "kind",
+                                    "version"
+                                  ],
+                                  "properties": {
+                                    "applicationId": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 255
+                                    },
+                                    "kind": {
+                                      "type": "string",
+                                      "enum": [
+                                        "FULL",
+                                        "HOT"
+                                      ]
+                                    },
+                                    "version": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 64
+                                    }
+                                  }
+                                }
+                              ],
+                              "nullable": true
+                            }
+                          }
+                        }
+                      ],
+                      "nullable": true
+                    },
+                    "fullArtifactIdentity": {
+                      "allOf": [
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "applicationId",
+                            "kind",
+                            "version"
+                          ],
+                          "properties": {
+                            "applicationId": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 255
+                            },
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "FULL",
+                                "HOT"
+                              ]
+                            },
+                            "version": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 64
+                            }
+                          }
+                        }
+                      ],
+                      "nullable": true
+                    },
+                    "hotArtifactIdentity": {
+                      "allOf": [
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "applicationId",
+                            "kind",
+                            "version"
+                          ],
+                          "properties": {
+                            "applicationId": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 255
+                            },
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "FULL",
+                                "HOT"
+                              ]
+                            },
+                            "version": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 64
+                            }
+                          }
+                        }
+                      ],
+                      "nullable": true
+                    }
+                  }
                 },
                 "receivedAtEpochMillis": {
                   "type": "integer",
