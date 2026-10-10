@@ -40,7 +40,6 @@ public final class TerminalUpdateReportController {
     ResponseEntity<TerminalUpdateReportReceipt> submit(@PathVariable String groupWorkspaceKey,
             @RequestHeader(value = "Authorization", required = false) String authorization,
             @RequestHeader(value = "X-Terminal-Ref", required = false) String terminalRef,
-            @RequestHeader(value = "X-Terminal-Device-Id", required = false) String deviceId,
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
             @RequestBody TerminalUpdateReportRequest request) {
         if (request == null || request.reportId() == null || request.reportSequence() == null
@@ -48,13 +47,13 @@ public final class TerminalUpdateReportController {
                 || idempotencyKey == null || idempotencyKey.length() < 16 || idempotencyKey.length() > 128
                 || !idempotencyKey.equals(request.reportId().toString())) throw new InvalidReportException();
         Verification binding = TerminalCredentialEdgeVerifier.verify(credentials, groupWorkspaceKey,
-                authorization, terminalRef, deviceId);
+                authorization, terminalRef);
         validate(request);
         String actualJson = json(request.actual());
         String recentJson = json(request.recent());
         String bodyHash = Sha256Hex.digest(json(request));
         ReportInput input = new ReportInput(request.reportId(), request.reportSequence(), request.taskId(),
-                deviceId, actualJson, recentJson, request.recent().changedAtEpochMillis(), bodyHash);
+                binding.bindingDeviceId(), actualJson, recentJson, request.recent().changedAtEpochMillis(), bodyHash);
         var receipt = reports.record(binding, input);
         log.atInfo().addKeyValue("event", "TERMINAL_UPDATE_REPORT_ACCEPTED")
                 .addKeyValue("terminalRef", binding.terminalRef())
@@ -79,6 +78,14 @@ public final class TerminalUpdateReportController {
             jakarta.servlet.http.HttpServletRequest request) {
         return ContractProblemAdvice.problem(HttpStatus.CONFLICT,
                 "TERMINAL_UPDATE_REPORT_IDENTITY_CONFLICT", "终端更新报告身份冲突", request);
+    }
+
+    @ExceptionHandler(TerminalUpdateReportOwnerApi.BindingNoLongerActiveException.class)
+    ResponseEntity<ContractProblemAdvice.Problem> inactiveBinding(
+            TerminalUpdateReportOwnerApi.BindingNoLongerActiveException failure,
+            jakarta.servlet.http.HttpServletRequest request) {
+        return ContractProblemAdvice.problem(HttpStatus.FORBIDDEN,
+                "TERMINAL_BINDING_CREDENTIAL_INVALID", "终端凭证无效", request);
     }
 
     private static String json(Object value) {

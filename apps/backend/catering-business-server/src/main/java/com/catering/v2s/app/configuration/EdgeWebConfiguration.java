@@ -71,9 +71,16 @@ public class EdgeWebConfiguration implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         List<String> origins = terminalBrowserOrigins();
         if (origins.isEmpty()) return;
-        configureTerminalBrowserCors(registry.addMapping("/api/terminal/group-workspaces/*/activation"), origins);
+        List<String> postHeaders = List.of(
+                "Authorization", "Content-Type", "X-Correlation-Id", "X-Request-Id", "X-Terminal-Ref");
+        List<String> readHeaders = List.of("Authorization", "X-Correlation-Id", "X-Request-Id", "X-Terminal-Ref");
         configureTerminalBrowserCors(
-                registry.addMapping("/api/terminal/group-workspaces/*/terminals/*/activation/cancel"), origins);
+                registry.addMapping("/api/terminal/group-workspaces/*/activation"), origins, "POST", postHeaders);
+        configureTerminalBrowserCors(
+                registry.addMapping("/api/terminal/group-workspaces/*/terminals/*/activation/cancel"),
+                origins,
+                "POST",
+                postHeaders);
         List.of(
                         "/api/terminal/group-workspaces/*/contracts/*",
                         "/api/terminal/group-workspaces/*/service-points/*",
@@ -82,8 +89,24 @@ public class EdgeWebConfiguration implements WebMvcConfigurer {
                         "/api/terminal/group-workspaces/*/stores/*/basic",
                         "/api/terminal/group-workspaces/*/stores/*/organization-path",
                         "/api/terminal/group-workspaces/*/stores/*/service-point-areas",
-                        "/api/terminal/group-workspaces/*/stores/*/service-points")
-                .forEach(path -> configureTerminalBrowserReadCors(registry.addMapping(path), origins));
+                        "/api/terminal/group-workspaces/*/stores/*/service-points",
+                        "/api/terminal/group-workspaces/*/update-rules/projects/*")
+                .forEach(path -> configureTerminalBrowserCors(registry.addMapping(path), origins, "GET", readHeaders));
+        configureTerminalBrowserCors(
+                registry.addMapping("/api/terminal/group-workspaces/*/update-artifacts/*/download-grant"),
+                origins,
+                "POST",
+                postHeaders);
+        configureTerminalBrowserCors(
+                registry.addMapping("/api/terminal/group-workspaces/*/update-artifacts/*/content"),
+                origins,
+                "GET",
+                List.of("X-Terminal-Update-Grant"));
+        configureTerminalBrowserCors(
+                registry.addMapping("/api/terminal/group-workspaces/*/update-reports"),
+                origins,
+                "POST",
+                List.of("Authorization", "Content-Type", "Idempotency-Key", "X-Correlation-Id", "X-Request-Id", "X-Terminal-Ref"));
     }
 
     private List<String> terminalBrowserOrigins() {
@@ -120,27 +143,14 @@ public class EdgeWebConfiguration implements WebMvcConfigurer {
     }
 
     private static void configureTerminalBrowserCors(
-            org.springframework.web.servlet.config.annotation.CorsRegistration registration, List<String> origins) {
+            org.springframework.web.servlet.config.annotation.CorsRegistration registration,
+            List<String> origins,
+            String method,
+            List<String> headers) {
         registration
                 .allowedOrigins(origins.toArray(String[]::new))
-                .allowedMethods("POST")
-                .allowedHeaders(
-                        "Authorization",
-                        "Content-Type",
-                        "X-Correlation-Id",
-                        "X-Request-Id",
-                        "X-Terminal-Device-Id",
-                        "X-Terminal-Ref")
-                .maxAge(300);
-    }
-
-    private static void configureTerminalBrowserReadCors(
-            org.springframework.web.servlet.config.annotation.CorsRegistration registration, List<String> origins) {
-        registration
-                .allowedOrigins(origins.toArray(String[]::new))
-                .allowedMethods("GET")
-                .allowedHeaders(
-                        "Authorization", "X-Correlation-Id", "X-Request-Id", "X-Terminal-Device-Id", "X-Terminal-Ref")
+                .allowedMethods(method)
+                .allowedHeaders(headers.toArray(String[]::new))
                 .maxAge(300);
     }
 

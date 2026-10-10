@@ -50,7 +50,8 @@ public class ChangeOperationsProjectTerminalUpdateRuleStatusOperation {
         return TerminalUpdateRuleWire.from(rules.changeStatus(new TerminalUpdateRuleOwnerApi.ChangeRuleStatus(
                 session.workspaceUuid(), invocation.groupWorkspaceKey(), invocation.projectRef(), invocation.ruleRef(),
                 request.revision(), request.status(), request.reason(), session.contextVersion(), invocation.idempotencyKey(),
-                new AuditActor("WORKSPACE_ACCOUNT", session.accountId(), session.accountDisplayName()))));
+                new AuditActor("WORKSPACE_ACCOUNT", session.accountId(), session.accountDisplayName()),
+                authorization.ownerScopeGrant(REQUIREMENT))));
     }
 
     public record Invocation(

@@ -5,7 +5,7 @@ import com.catering.v2s.app.edge.problem.InvalidEdgeRequestException;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialContext;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialParser;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi;
-import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.Credential;
+import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.BusinessCredential;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.Outcome;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.Verification;
 import java.util.Arrays;
@@ -18,17 +18,16 @@ final class TerminalCredentialEdgeVerifier {
     private TerminalCredentialEdgeVerifier() {}
 
     static Verification verify(TerminalCredentialVerificationApi credentials, String groupKey,
-            String authorization, String terminalRef, String deviceId) {
-        if (!GroupWorkspaceKey.isValid(groupKey) || terminalRef == null || deviceId == null
-                || deviceId.isBlank() || deviceId.length() > 128 || authorization == null
+            String authorization, String terminalRef) {
+        if (!GroupWorkspaceKey.isValid(groupKey) || terminalRef == null || authorization == null
                 || !authorization.startsWith(AUTHORIZATION_PREFIX)) throw invalid();
         UUID terminal = uuid(terminalRef);
         try (TerminalCredentialContext context = TerminalCredentialParser.parseCredential(
                 authorization.substring(AUTHORIZATION_PREFIX.length()))) {
             byte[] digest = context.secretDigest();
             try {
-                Verification verification = credentials.verify(
-                        new Credential(groupKey, terminal, context.generation(), digest, deviceId));
+                Verification verification = credentials.verifyBusinessCredential(
+                        new BusinessCredential(groupKey, terminal, context.generation(), digest));
                 if (verification.outcome() != Outcome.VERIFIED) throw problem(verification.outcome());
                 if (!groupKey.equals(verification.groupWorkspaceKey())
                         || !terminal.equals(verification.terminalRef())) throw TerminalDataReadProblem.denied();

@@ -4,61 +4,117 @@
       "TerminalActivationRequest": {
         "type": "object",
         "additionalProperties": true,
-        "required": ["activationCode", "deviceId", "surfaceForm", "appVersion", "credentialSecret"],
+        "required": [
+          "activationCode",
+          "deviceId",
+          "surfaceForm",
+          "appVersion",
+          "credentialSecret"
+        ],
         "properties": {
-          "activationCode": {"type": "string", "minLength": 8, "maxLength": 8, "pattern": "^[0-9]{8}$"},
-          "deviceId": {"type": "string", "minLength": 1, "maxLength": 128},
-          "surfaceForm": {"type": "string", "enum": ["laptop", "mobile"]},
-          "appVersion": {"type": "string", "minLength": 1, "maxLength": 64},
-          "credentialSecret": {"type": "string", "minLength": 43, "maxLength": 43, "pattern": "^[A-Za-z0-9_-]{43}$"}
+          "activationCode": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 8,
+            "pattern": "^[0-9]{8}$"
+          },
+          "deviceId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "surfaceForm": {
+            "type": "string",
+            "enum": [
+              "laptop",
+              "mobile"
+            ]
+          },
+          "appVersion": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "credentialSecret": {
+            "type": "string",
+            "minLength": 43,
+            "maxLength": 43,
+            "pattern": "^[A-Za-z0-9_-]{43}$"
+          }
         }
       },
       "TerminalActivationResult": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["terminalRef", "storeRef", "groupWorkspaceKey", "bindingGeneration"],
+        "required": [
+          "terminalRef",
+          "storeRef",
+          "groupWorkspaceKey",
+          "bindingGeneration"
+        ],
         "properties": {
-          "terminalRef": {"type": "string", "format": "uuid"},
-          "storeRef": {"type": "string", "format": "uuid"},
+          "terminalRef": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "storeRef": {
+            "type": "string",
+            "format": "uuid"
+          },
           "groupWorkspaceKey": {
             "type": "string",
             "minLength": 1,
             "maxLength": 64,
             "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
           },
-          "bindingGeneration": {"type": "integer", "format": "int64", "minimum": 1}
-        }
-      },
-      "TerminalActivationCancellationRequest": {
-        "type": "object",
-        "additionalProperties": true,
-        "required": ["deviceId"],
-        "properties": {
-          "deviceId": {"type": "string", "minLength": 1, "maxLength": 128}
+          "bindingGeneration": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          }
         }
       },
       "TerminalActivationCancellationResult": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["outcome"],
+        "required": [
+          "outcome"
+        ],
         "properties": {
-          "outcome": {"type": "string", "enum": ["CANCELLED", "ALREADY_CANCELLED"]}
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "CANCELLED",
+              "ALREADY_CANCELLED"
+            ]
+          }
         }
       },
       "OperationsTerminalActivationCancellationRequest": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["expectedBindingGeneration"],
+        "required": [
+          "expectedBindingGeneration"
+        ],
         "properties": {
-          "expectedBindingGeneration": {"type": "integer", "format": "int64", "minimum": 1}
+          "expectedBindingGeneration": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          }
         }
       },
       "OperationsTerminalActivationCancellationResult": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["outcome"],
+        "required": [
+          "outcome"
+        ],
         "properties": {
-          "outcome": {"type": "string", "const": "CANCELLED"}
+          "outcome": {
+            "type": "string",
+            "const": "CANCELLED"
+          }
         }
       }
     }

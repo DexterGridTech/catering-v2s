@@ -950,6 +950,7 @@
               "WAITING_USER",
               "DOWNLOADING",
               "VERIFYING",
+              "WAITING_IDLE",
               "INSTALLING",
               "APPLYING_HOT",
               "SUCCEEDED",

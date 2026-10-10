@@ -1,30 +1,32 @@
-import type {RuntimeModule, RuntimeModuleContext} from '@catering-v2s/kernel-base-runtime';
+import {selectLastLocalInteraction, type RuntimeModule, type RuntimeModuleContext} from '@catering-v2s/kernel-base-runtime';
 import type {UpdatePort} from '@catering-v2s/kernel-base-platform-ports';
-import {createRequestId} from '@catering-v2s/kernel-base-contracts';
 import {runtimeModuleDependencyNames} from '../dependencies';
 import {moduleKind, moduleName} from '../moduleName';
 import {createTerminalUpdateActor} from '../features/actors/terminalUpdateActor';
 import {
-  acceptTerminalUpdateTargetCommand,
+  requestTerminalUpdateCommand,
   clearTerminalUpdateReportContextCommand,
   confirmTerminalUpdateBootCommand,
-  refreshTerminalUpdateRuleSnapshotCommand,
+  confirmTerminalUpdateInstallCommand,
+  deferTerminalUpdateInstallCommand,
   reconcileTerminalUpdateCommand,
+  terminalUpdateDeadlineCommand,
+  updatePresentationChangedCommand,
 } from '../features/commands/commands';
 import {terminalUpdateRegistration} from '../features/slices/terminalUpdate';
 import {
   selectTerminalUpdateActualVersions,
+  selectTerminalUpdateInvitation,
   selectTerminalUpdateRecentStatus,
-  selectTerminalUpdateReportDelivery,
-  selectTerminalUpdateRuleSnapshot,
   selectTerminalUpdateTask,
 } from '../selectors/selectors';
-import {selectConnectionState} from '@catering-v2s/kernel-base-terminal-data-client';
 import type {
   UpdateNetworkSnapshotReader,
-  UpdateRuleSnapshotContext,
+  TerminalUpdateContextFacts,
+  CurrentUpdateTargetReader,
   UpdateTargetSourceProvider,
 } from '../types/terminalUpdate';
+import type {UpdatePresentation} from '@catering-v2s/kernel-base-platform-ports';
 
 export const unavailableUpdateTargetSourceProvider: UpdateTargetSourceProvider = Object.freeze({
   readTarget: async () => null,
@@ -37,22 +39,27 @@ export const createTerminalUpdateModule = (
     createProtocolUuid: () => string;
     sourceProvider?: UpdateTargetSourceProvider;
     readNetworkSnapshot?: UpdateNetworkSnapshotReader;
-    readRuleSnapshotContext?: (state: ReturnType<RuntimeModuleContext['getState']>) => UpdateRuleSnapshotContext | null;
+    readTerminalUpdateContextFacts?: (state: ReturnType<RuntimeModuleContext['getState']>) => TerminalUpdateContextFacts | null;
+    readCurrentTarget?: CurrentUpdateTargetReader;
   }>,
 ): RuntimeModule => {
   const actor = createTerminalUpdateActor({
     port: input.port,
     createProtocolUuid: input.createProtocolUuid,
     sourceProvider: input.sourceProvider,
-    readRuleSnapshotContext: input.readRuleSnapshotContext,
+    readTerminalUpdateContextFacts: input.readTerminalUpdateContextFacts,
+    readCurrentTarget: input.readCurrentTarget,
     readNetworkSnapshot: input.readNetworkSnapshot,
   });
   const commandDefinitions = [
-    acceptTerminalUpdateTargetCommand,
+    requestTerminalUpdateCommand,
     clearTerminalUpdateReportContextCommand,
     confirmTerminalUpdateBootCommand,
-    refreshTerminalUpdateRuleSnapshotCommand,
+    terminalUpdateDeadlineCommand,
+    confirmTerminalUpdateInstallCommand,
+    deferTerminalUpdateInstallCommand,
     reconcileTerminalUpdateCommand,
+    updatePresentationChangedCommand,
   ] as const;
   return Object.freeze({
     moduleName,
@@ -62,10 +69,9 @@ export const createTerminalUpdateModule = (
     commandDefinitions,
     selectorDefinitions: [
       selectTerminalUpdateActualVersions,
+      selectTerminalUpdateInvitation,
       selectTerminalUpdateTask,
       selectTerminalUpdateRecentStatus,
-      selectTerminalUpdateReportDelivery,
-      selectTerminalUpdateRuleSnapshot,
     ],
     actors: [{name: actor.actorName}],
     actorDefinitions: [actor],
@@ -74,75 +80,152 @@ export const createTerminalUpdateModule = (
     ],
     stateSlices: [terminalUpdateRegistration],
     install: async (context: RuntimeModuleContext) => {
+      let disposed = false;
+      let initializedPresentation = false;
+      let currentPresentation: UpdatePresentation = 'unknown';
+      let presentationDispatch = Promise.resolve();
+      let deadlineTimer: ReturnType<typeof setTimeout> | null = null;
+      let deadlineGeneration = 0;
+      const scheduleDeadline = () => {
+        if (deadlineTimer !== null) clearTimeout(deadlineTimer);
+        deadlineTimer = null;
+        const generation = ++deadlineGeneration;
+        if (disposed || currentPresentation !== 'foreground') return;
+        const state = context.getState();
+        const task = selectTerminalUpdateTask(state);
+        const actual = selectTerminalUpdateActualVersions(state);
+        if (task === null || actual === null || (task.phase === 'waiting-user' && task.bootId !== actual.bootId)) return;
+        const interaction = selectLastLocalInteraction(state);
+        let kind: 'hot-idle' | 'full-reminder' | null = null;
+        let deadlineAt: number | null = null;
+        if (
+          task.phase === 'waiting-idle' &&
+          task.actionKind === 'hot' &&
+          task.actionId !== null &&
+          task.preparedId !== null &&
+          task.target.policy.hotStrategy === 'IDLE' &&
+          task.target.policy.mSeconds !== null
+        ) {
+          kind = 'hot-idle';
+          deadlineAt = interaction.lastClickAt + task.target.policy.mSeconds * 1000;
+        } else if (
+          task.phase === 'waiting-user' &&
+          task.actionKind === 'full' &&
+          task.actionId !== null &&
+          task.preparedId !== null &&
+          task.target.full !== null
+        ) {
+          const recent = selectTerminalUpdateRecentStatus(state);
+          const lastInviteAt = task.lastInviteAt ??
+            (recent.taskId === task.taskId && recent.state === 'waiting-user' ? recent.changedAt : null);
+          if (lastInviteAt !== null) {
+            kind = 'full-reminder';
+            deadlineAt = lastInviteAt + task.target.policy.nSeconds * 1000;
+          }
+        }
+        if (kind === null || deadlineAt === null) return;
+        const payload = Object.freeze({
+          taskId: task.taskId,
+          bootId: actual.bootId,
+          kind,
+          interactionRevision: interaction.revision,
+          deadlineAt,
+          scheduleGeneration: generation,
+        });
+        deadlineTimer = setTimeout(() => {
+          deadlineTimer = null;
+          if (disposed || generation !== deadlineGeneration) return;
+          void context.dispatchCommand(terminalUpdateDeadlineCommand, payload)
+            .then(result => {
+              if (result.status !== 'completed') {
+                context.platformPorts.logger.warn({
+                  category: 'terminal-update.deadline',
+                  event: 'terminal-update.deadline.dispatch-incomplete',
+                  message: 'The scheduled terminal update deadline did not complete',
+                  data: {kind, status: result.status},
+                });
+              }
+            })
+            .catch(error => {
+              context.platformPorts.logger.error({
+                category: 'terminal-update.deadline',
+                event: 'terminal-update.deadline.dispatch-failed',
+                message: 'The scheduled terminal update deadline failed',
+                data: {kind, errorName: error instanceof Error ? error.name : 'UnknownError'},
+              });
+            })
+            .finally(scheduleDeadline);
+        }, Math.max(0, deadlineAt - Date.now()));
+      };
+      const publishPresentation = (presentation: UpdatePresentation): Promise<void> => {
+        if (disposed) return Promise.resolve();
+        if (initializedPresentation && currentPresentation === presentation) return presentationDispatch;
+        initializedPresentation = true;
+        currentPresentation = presentation;
+        presentationDispatch = presentationDispatch
+          .then(async () => {
+            if (disposed) return;
+            const result = await context.dispatchCommand(
+              updatePresentationChangedCommand,
+              Object.freeze({runtimeIdentity: context.runtimeId, presentation}),
+            );
+            if (result.status !== 'completed') {
+              context.platformPorts.logger.warn({
+                category: 'terminal-update.presentation',
+                event: 'terminal-update.presentation.dispatch-incomplete',
+                message: 'Presentation observation command did not complete',
+                data: {status: result.status},
+              });
+            }
+            scheduleDeadline();
+          })
+          .catch(error => {
+            context.platformPorts.logger.error({
+              category: 'terminal-update.presentation',
+              event: 'terminal-update.presentation.dispatch-failed',
+              message: 'Presentation observation command failed',
+              data: {errorName: error instanceof Error ? error.name : 'UnknownError'},
+            });
+          });
+        return presentationDispatch;
+      };
+      const unsubscribePresentation = input.port.subscribePresentation(presentation => {
+        void publishPresentation(presentation);
+      });
+      context.registerResource(() => {
+        disposed = true;
+        deadlineGeneration += 1;
+        if (deadlineTimer !== null) clearTimeout(deadlineTimer);
+        deadlineTimer = null;
+        unsubscribePresentation();
+      });
+      const unsubscribeState = context.subscribeState(scheduleDeadline);
+      context.registerResource(unsubscribeState);
+      const presentation = await input.port.readPresentation({timeoutMs: 10_000});
+      if (presentation.status === 'succeeded') {
+        await publishPresentation(presentation.value);
+      } else if (presentation.status !== 'unavailable') {
+        context.platformPorts.logger.warn({
+          category: 'terminal-update.presentation',
+          event: 'terminal-update.presentation.read-failed',
+          message: 'Could not read the initial application presentation state',
+          data: {
+            status: presentation.status,
+            code: presentation.status === 'failed' ? presentation.error.code : null,
+          },
+        });
+      }
       const result = await context.dispatchCommand(
         reconcileTerminalUpdateCommand,
         Object.freeze({resumeFixedTask: false}),
       );
       if (result.status !== 'completed')
         throw new Error(`Terminal update startup reconciliation failed: ${result.status}`);
-      const refresh = async () => {
-        const currentContext = input.readRuleSnapshotContext?.(context.getState()) ?? null;
-        const connection = selectConnectionState(context.getState());
-        const key =
-          currentContext === null
-            ? 'not-ready'
-            : `${currentContext.terminalRef}:${currentContext.bindingGeneration}:${currentContext.storeRef}:${currentContext.projectRef}:${currentContext.projectUpdatedAtEpochMillis}:${connection.status}`;
-        if (key === lastRefreshKey && currentContext !== null && connection.status !== 'connected') return;
-        if (key === lastRefreshKey) return;
-        context.platformPorts.logger.info({
-          category: 'terminal-update.rules',
-          event: 'terminal-update.rules.refresh-evaluated',
-          message: 'Evaluated the current owner context for the terminal rule snapshot',
-          data: {contextReady: currentContext !== null, connectionStatus: connection.status},
-        });
-        lastRefreshKey = key;
-        const refreshed = await context.dispatchCommand(refreshTerminalUpdateRuleSnapshotCommand, Object.freeze({}), {
-          requestId: createRequestId(),
-        });
-        const snapshot = selectTerminalUpdateRuleSnapshot(context.getState());
-        context.platformPorts.logger.info({
-          category: 'terminal-update.rules',
-          event: 'terminal-update.rules.refresh-readback',
-          message: 'Read the terminal rule snapshot state after refresh',
-          data: {
-            dispatchStatus: refreshed.status,
-            snapshotStatus: snapshot.status,
-            errorCode: snapshot.errorCode,
-            itemCount: snapshot.items.length,
-            contextPresent: snapshot.contextIdentity !== null,
-            selectedSpacePresent: snapshot.selectedSpace !== null,
-          },
-        });
-        if (refreshed.status !== 'completed')
-          context.platformPorts.logger.warn({
-            category: 'terminal-update.rules',
-            event: 'terminal-update.rules.refresh-dispatch-failed',
-            message: 'Rule snapshot refresh command did not complete',
-            data: {dispatchStatus: refreshed.status},
-          });
-      };
-      let lastRefreshKey = '';
-      await refresh();
-      const unsubscribe = context.subscribeState(() => {
-        void refresh().catch(error => {
-          context.platformPorts.logger.error({
-            category: 'terminal-update.rules',
-            event: 'terminal-update.rules.refresh-failed',
-            message: 'Rule snapshot refresh failed while observing Runtime state',
-            data: {errorName: error instanceof Error ? error.name : 'UnknownError'},
-          });
-        });
-      });
-      context.registerResource(unsubscribe);
+      scheduleDeadline();
     },
     onApplicationReset: async (context: RuntimeModuleContext) => {
       const result = await context.dispatchCommand(clearTerminalUpdateReportContextCommand, Object.freeze({}));
       if (result.status !== 'completed') throw new Error(`Terminal update report reset failed: ${result.status}`);
-      const refreshed = await context.dispatchCommand(refreshTerminalUpdateRuleSnapshotCommand, Object.freeze({}), {
-        requestId: createRequestId(),
-      });
-      if (refreshed.status !== 'completed')
-        throw new Error(`Terminal update snapshot reset failed: ${refreshed.status}`);
     },
   });
 };

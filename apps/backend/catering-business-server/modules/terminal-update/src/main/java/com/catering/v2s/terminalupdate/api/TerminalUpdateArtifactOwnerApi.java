@@ -9,6 +9,8 @@ import java.util.List;
 
 /** Public owner commands and reads for immutable terminal update artifacts. */
 public interface TerminalUpdateArtifactOwnerApi {
+    int MAX_MANIFEST_FILE_COUNT = 8_192;
+
     StageAcceptance acceptValidatedStage(ValidatedStage stage, AuditActor actor);
 
     ArtifactReadback register(RegisterArtifact command);
@@ -53,7 +55,8 @@ public interface TerminalUpdateArtifactOwnerApi {
             runtimeVersion = required(runtimeVersion, "runtimeVersion", 128);
             entry = required(entry, "entry", 1024);
             files = List.copyOf(Objects.requireNonNull(files, "files"));
-            if (files.isEmpty() || files.size() > 128) throw new IllegalArgumentException("files are invalid");
+            if (files.isEmpty() || files.size() > MAX_MANIFEST_FILE_COUNT)
+                throw new IllegalArgumentException("files are invalid");
             publicationId = digest(publicationId, "publicationId");
         }
     }

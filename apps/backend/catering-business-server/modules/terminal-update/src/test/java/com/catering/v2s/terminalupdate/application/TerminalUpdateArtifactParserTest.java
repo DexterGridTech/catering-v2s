@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.catering.v2s.terminalupdate.api.TerminalUpdateArtifactOwnerApi;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
@@ -11,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.junit.jupiter.api.Test;
@@ -82,12 +84,37 @@ class TerminalUpdateArtifactParserTest {
     }
 
     @Test
+    void rejectsHotEntryNotIncludedInThePublishedFileSet() throws Exception {
+        byte[] zip = hotPackage("assets/unlisted.bundle", "assets/index.android.bundle", "assets/index.android.bundle");
+
+        var failure = assertThrows(TerminalUpdateArtifactParser.InvalidArtifactException.class,
+                () -> new TerminalUpdateArtifactParser("").parse(new ByteArrayInputStream(zip), zip.length, sha256(zip)));
+
+        assertEquals("APK_BUNDLE_METADATA_MISSING", failure.getMessage());
+    }
+
+    @Test
     void rejectsDeclaredPackageSizeAboveThePublishedLimitBeforeReadingIt() {
         var failure = assertThrows(TerminalUpdateArtifactParser.InvalidArtifactException.class,
                 () -> new TerminalUpdateArtifactParser("").parse(new ByteArrayInputStream(new byte[0]),
                         TerminalUpdateArtifactParser.MAX_PACKAGE_BYTES + 1, "a".repeat(64)));
 
         assertEquals("PACKAGE_BOUNDS_INVALID", failure.getMessage());
+    }
+
+    @Test
+    void artifactManifestAcceptsTheSameFileCountAsTheParser() {
+        List<TerminalUpdateArtifactOwnerApi.ArtifactFile> files = java.util.stream.IntStream.range(0, 129)
+                .mapToObj(index -> new TerminalUpdateArtifactOwnerApi.ArtifactFile(
+                        "assets/file-" + index, 1, CERTIFICATE))
+                .toList();
+
+        var manifest = new TerminalUpdateArtifactOwnerApi.ArtifactManifest(1, "android", "com.example.terminal",
+                "2.1.4", 9, "3.2.1", "terminal-main-v1", "assets/file-0", files,
+                CERTIFICATE, null, null);
+
+        assertEquals(129, manifest.files().size());
+        assertEquals(TerminalUpdateArtifactOwnerApi.MAX_MANIFEST_FILE_COUNT, 8_192);
     }
 
     @Test
@@ -151,14 +178,36 @@ class TerminalUpdateArtifactParserTest {
         }
     }
 
+    @Test
+    void rejectsFullApkWhenDeclaredEntryIsAbsentFromTheArchive() throws Exception {
+        Path tools = Files.createTempDirectory("terminal-update-parser-tools-");
+        try {
+            executable(tools.resolve("apksigner"), "#!/bin/sh\nprintf '%s\\n' 'Signer #1 certificate SHA-256 digest: " + CERTIFICATE + "'\n");
+            executable(tools.resolve("aapt2"), aaptScript(true));
+            byte[] outer = zipBytes("terminal.apk", fullApk("assets/missing.bundle"));
+
+            var failure = assertThrows(TerminalUpdateArtifactParser.InvalidArtifactException.class,
+                    () -> new TerminalUpdateArtifactParser(tools.toString())
+                            .parse(new ByteArrayInputStream(outer), outer.length, sha256(outer)));
+
+            assertEquals("PACKAGE_FILE_MISSING", failure.getMessage());
+        } finally {
+            deleteTree(tools);
+        }
+    }
+
     private static byte[] fullPackage() throws Exception {
         return zipBytes("terminal.apk", fullApk());
     }
 
     private static byte[] hotPackage(String path) throws Exception {
+        return hotPackage(path, path, "assets/index.android.bundle");
+    }
+
+    private static byte[] hotPackage(String entryPath, String filePath, String actualPath) throws Exception {
         byte[] bundle = "bundle-bytes".getBytes(StandardCharsets.UTF_8);
         String bundleSha = sha256(bundle);
-        String publicationId = sha256((path + "\0" + bundle.length + "\0" + bundleSha + "\n")
+        String publicationId = sha256((filePath + "\0" + bundle.length + "\0" + bundleSha + "\n")
                 .getBytes(StandardCharsets.UTF_8));
         String manifest = """
                 {"schemaVersion":1,"platform":"android","applicationId":"com.example.terminal",
@@ -168,26 +217,30 @@ class TerminalUpdateArtifactParserTest {
                 "publicationId":"%s","minimumFull":{"applicationId":"com.example.terminal",
                 "nativeBuildNumber":9,"runtimeVersion":"terminal-main-v1","publicationId":"%s",
                 "apkSha256":"%s"}}
-                """.formatted(path, path, bundle.length, bundleSha, publicationId, CERTIFICATE, CERTIFICATE);
-        return zipTextAndBytes("terminal-update-publication.json", manifest, "assets/index.android.bundle", bundle);
+                """.formatted(entryPath, filePath, bundle.length, bundleSha, publicationId, CERTIFICATE, CERTIFICATE);
+        return zipTextAndBytes("terminal-update-publication.json", manifest, actualPath, bundle);
     }
 
     private static byte[] fullApk() throws Exception {
+        return fullApk("assets/index.android.bundle");
+    }
+
+    private static byte[] fullApk(String entryPath) throws Exception {
         byte[] bundle = "bundle-bytes".getBytes(StandardCharsets.UTF_8);
         byte[] image = "image-bytes".getBytes(StandardCharsets.UTF_8);
         String bundleSha = sha256(bundle);
         String imageSha = sha256(image);
-        String publicationId = sha256(("assets/index.android.bundle\0" + bundle.length + "\0" + bundleSha + "\n"
+        String publicationId = sha256((entryPath + "\0" + bundle.length + "\0" + bundleSha + "\n"
                 + "res/drawable-mdpi/logo.png\0" + image.length + "\0" + imageSha + "\n")
                 .getBytes(StandardCharsets.UTF_8));
         String manifest = """
                 {"schemaVersion":1,"platform":"android","applicationId":"com.example.terminal",
                 "nativeVersion":"2.1.4","nativeBuildNumber":9,"bundleVersion":"3.2.1",
-                "runtimeVersion":"terminal-main-v1","entry":"assets/index.android.bundle",
-                "files":[{"path":"assets/index.android.bundle","sizeBytes":%d,"sha256":"%s"},
+                "runtimeVersion":"terminal-main-v1","entry":"%s",
+                "files":[{"path":"%s","sizeBytes":%d,"sha256":"%s"},
                 {"path":"res/drawable-mdpi/logo.png","sizeBytes":%d,"sha256":"%s"}],
                 "publicationId":"%s"}
-                """.formatted(bundle.length, bundleSha, image.length, imageSha, publicationId);
+                """.formatted(entryPath, entryPath, bundle.length, bundleSha, image.length, imageSha, publicationId);
         byte[] apk = zip("assets/terminal-update-publication.json", manifest,
                 "assets/index.android.bundle", new String(bundle, StandardCharsets.UTF_8),
                 "res/drawable-mdpi/logo.png", new String(image, StandardCharsets.UTF_8));

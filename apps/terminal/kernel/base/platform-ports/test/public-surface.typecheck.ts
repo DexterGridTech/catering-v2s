@@ -293,10 +293,13 @@ const completeConnector: ConnectorPort = {
   ): Promise<PortResult<ConnectorSubscription>> => unavailableResultFor('connector', 'on'),
 };
 const completeUpdate: UpdatePort = {
+  readPresentation: async () => unavailableResultFor('update', 'readPresentation'),
+  subscribePresentation: () => () => undefined,
   readFacts: async () => unavailableResultFor('update', 'readFacts'),
   prepareArtifact: async () => unavailableResultFor('update', 'prepareArtifact'),
   applyPrepared: async () => unavailableResultFor('update', 'applyPrepared'),
   readAction: async () => unavailableResultFor('update', 'readAction'),
+  presentInstallerConfirmation: async () => unavailableResultFor('update', 'presentInstallerConfirmation'),
   confirmBoot: async () => unavailableResultFor('update', 'confirmBoot'),
   releasePrepared: async () => unavailableResultFor('update', 'releasePrepared'),
 };

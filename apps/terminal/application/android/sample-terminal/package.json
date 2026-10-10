@@ -75,12 +75,11 @@
   },
   "dependencies": {
     "@catering-v2s/application-base-android": "workspace:*",
+    "@catering-v2s/kernel-base-terminal-update": "workspace:*",
     "@catering-v2s/ui-base-input": "workspace:*",
     "@catering-v2s/ui-base-primitives": "workspace:*",
     "@catering-v2s/ui-base-render": "workspace:*",
     "@catering-v2s/ui-integration-sample-console": "workspace:*",
-    "@catering-v2s/kernel-base-terminal-update": "workspace:*",
-    "@catering-v2s/adapter-android-update": "workspace:*",
     "expo": "~57.0.18",
     "expo-modules-core": "~57.0.14",
     "react": "19.2.3",

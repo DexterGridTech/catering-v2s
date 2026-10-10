@@ -1,6 +1,6 @@
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import type {FixedUpdateTarget} from '@catering-v2s/kernel-base-terminal-update';
-import {createAndroidAutomationUpdateTargetSourceProvider} from '../src/automationUpdateTargetSourceProvider';
+import {createAndroidAutomationUpdateTargetSourceProvider} from '../src/foundations/androidAutomationUpdateTargetSourceProvider';
 
 const createTarget = (runId: string, applicationId: string): FixedUpdateTarget => {
   const publicationId = 'a'.repeat(64);

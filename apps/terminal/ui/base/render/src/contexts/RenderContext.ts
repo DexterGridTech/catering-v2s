@@ -12,6 +12,7 @@ export type RenderContextValue = Readonly<{
   readonly logger: LoggerPort;
   readonly nativeLoadingCapability: NativeLoadingCapability;
   readonly onPrimarySurfaceReady?: RenderProviderProps['onPrimarySurfaceReady'];
+  readonly onLocalInteraction?: RenderProviderProps['onLocalInteraction'];
   readonly hasPrimarySurfaceReady: boolean;
   readonly runtimeFacts: RenderProviderProps['runtimeFacts'];
   readonly onRuntimeRetry?: RenderProviderProps['onRuntimeRetry'];

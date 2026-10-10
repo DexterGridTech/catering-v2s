@@ -133,7 +133,10 @@ describe('shared terminal surface declarations', () => {
       platformPorts,
       nativeLoadingCapability,
       surfaceForm: 'laptop',
-      surfaceDeclarations: {PRIMARY: {width: 1280, height: 800}},
+      surfaceDeclarations: {
+        PRIMARY: {width: 1280, height: 800},
+        SECONDARY: {width: 1280, height: 800},
+      },
       parts: [],
       layerDismissals: {},
       variables: [],
@@ -157,6 +160,7 @@ describe('shared terminal surface declarations', () => {
     expect(renderProviderElement.type).toBe(RenderProvider);
     const renderProviderProps = renderProviderElement.props as Readonly<{
       readonly children: ReactElement<Record<string, unknown>>;
+      readonly onLocalInteraction: () => Promise<void>;
       readonly runtimeFacts: Readonly<{
         readonly automation: Readonly<{readonly enabled: boolean; readonly address: string}>;
       }>;
@@ -180,5 +184,23 @@ describe('shared terminal surface declarations', () => {
     expect(launcherElement.type).toBe(AdminLauncher);
     const launcherProps = launcherElement.props as Readonly<{readonly children: ReactElement}>;
     expect(launcherProps.children).toBe(contentMarker);
+
+    const secondaryElement = assembly.createSurface({
+      displayIndex: 1,
+      displayMode: 'SECONDARY',
+      surfaceForm: 'laptop',
+    });
+    const secondaryElementProps = secondaryElement.props as Readonly<{
+      readonly children: ReactElement<Record<string, unknown>>;
+    }>;
+    const secondaryProvider = secondaryElementProps.children;
+    const secondaryInteraction = (secondaryProvider.props as Readonly<{
+      readonly onLocalInteraction: () => Promise<void>;
+    }>).onLocalInteraction;
+    await renderProviderProps.onLocalInteraction();
+    await secondaryInteraction();
+    expect(assembly.runtime.evaluateSelector('kernel.base.runtime.selectLastLocalInteraction', [])).toMatchObject({
+      revision: 2,
+    });
   });
 });

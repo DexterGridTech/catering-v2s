@@ -16,11 +16,7 @@ export {
   selectStoreBasicState,
   selectStoreBasicLoadReadiness,
   selectStoreBasicTopicState,
-  selectStoreCommercialGroup,
   selectStoreOperatingRules,
-  selectStoreOrganizationPath,
-  selectStoreProject,
-  selectStoreRegion,
 } from './selectors/selectors';
 export {storeBasicSliceName} from './features/slices/slice';
 export type {StoreBasicBinding, StoreBasicState, StoreFact, StoreReadState} from './types/types';

@@ -7,6 +7,7 @@ import com.catering.v2s.audit.contract.AuditEvent;
 import com.catering.v2s.audit.contract.AuditEventWriter;
 import com.catering.v2s.audit.contract.AuditTarget;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
+import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup.PersistedStoreFact;
 import com.catering.v2s.platform.foundation.collection.OpaqueCollectionCursor;
 import com.catering.v2s.platform.foundation.persistence.CommandReceiptSupport;
@@ -67,14 +68,16 @@ public class TerminalUpdateRuleOwnerService implements TerminalUpdateRuleOwnerAp
     @Transactional
     public RuleReadback create(CreateRule command) {
         Objects.requireNonNull(command, "command");
+        requireGrant(command.ownerScopeGrant(), command.workspaceUuid(), command.groupWorkspaceKey(), command.projectRef(),
+                "REQ_CREATE_OPERATIONS_PROJECT_TERMINAL_UPDATE_RULE", command.expectedContextVersion());
         String hash = createHash(command);
         persistence.lockCommand(command.groupWorkspaceKey(), CREATE, command.idempotencyKey());
+        persistence.lockProject(command.workspaceUuid(), command.groupWorkspaceKey(), command.projectRef());
+        organization.requireTaskPath(command.workspaceUuid(), command.groupWorkspaceKey(), "PROJECT", command.projectRef());
         Optional<RuleReadback> previous = receipt(command.workspaceUuid(), command.groupWorkspaceKey(),
                 CREATE, command.idempotencyKey(), hash);
         if (previous.isPresent()) return previous.get();
 
-        persistence.lockProject(command.workspaceUuid(), command.groupWorkspaceKey(), command.projectRef());
-        organization.requireTaskPath(command.workspaceUuid(), command.groupWorkspaceKey(), "PROJECT", command.projectRef());
         validateRule(command);
         if (!command.storeRefs().isEmpty()) {
             var memberships = organization.requireStoreProjectMemberships(
@@ -103,14 +106,16 @@ public class TerminalUpdateRuleOwnerService implements TerminalUpdateRuleOwnerAp
     @Transactional
     public RuleReadback changeStatus(ChangeRuleStatus command) {
         Objects.requireNonNull(command, "command");
+        requireGrant(command.ownerScopeGrant(), command.workspaceUuid(), command.groupWorkspaceKey(), command.projectRef(),
+                "REQ_CHANGE_OPERATIONS_PROJECT_TERMINAL_UPDATE_RULE_STATUS", command.expectedContextVersion());
         String hash = statusHash(command);
         persistence.lockCommand(command.groupWorkspaceKey(), STATUS, command.idempotencyKey());
+        persistence.lockProject(command.workspaceUuid(), command.groupWorkspaceKey(), command.projectRef());
+        organization.requireTaskPath(command.workspaceUuid(), command.groupWorkspaceKey(), "PROJECT", command.projectRef());
         Optional<RuleReadback> previous = receipt(command.workspaceUuid(), command.groupWorkspaceKey(),
                 STATUS, command.idempotencyKey(), hash);
         if (previous.isPresent()) return previous.get();
 
-        persistence.lockProject(command.workspaceUuid(), command.groupWorkspaceKey(), command.projectRef());
-        organization.requireTaskPath(command.workspaceUuid(), command.groupWorkspaceKey(), "PROJECT", command.projectRef());
         RuleReadback current = persistence.read(command.workspaceUuid(), command.groupWorkspaceKey(),
                         command.projectRef(), command.ruleRef(), true)
                 .orElseThrow(TerminalUpdateRuleNotFoundException::new);
@@ -211,7 +216,7 @@ public class TerminalUpdateRuleOwnerService implements TerminalUpdateRuleOwnerAp
         String members = rows.getFirst().memberText();
         String currentHash = Sha256Hex.digest(members);
         if (collectionHash != null && !collectionHash.equals(currentHash))
-            throw new TerminalUpdateRuleStaleStateException();
+            throw new TerminalUpdateRuleSnapshotChangedException();
         List<TerminalUpdateRuleSnapshotPersistence.Row> visible = rows.stream()
                 .filter(row -> row.ruleRef() != null).limit(limit + 1).toList();
         boolean hasMore = visible.size() > limit;
@@ -249,6 +254,26 @@ public class TerminalUpdateRuleOwnerService implements TerminalUpdateRuleOwnerAp
 
     private static String uuidHex(UUID ref) {
         return ref.toString().replace("-", "").toLowerCase(java.util.Locale.ROOT);
+    }
+
+    private static void requireGrant(
+            OperationsOwnerScopeGrant grant,
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            UUID projectRef,
+            String requirementId,
+            long contextVersion) {
+        if (grant == null
+                || !grant.matchesRequirementAndCapability(
+                        workspaceUuid,
+                        groupWorkspaceKey,
+                        "PROJECT",
+                        projectRef,
+                        requirementId,
+                        "MANAGE_PROJECT_TERMINAL_VERSION")
+                || !grant.matchesExpectedContextVersion(contextVersion)) {
+            throw new TerminalUpdateRuleAuthorizationException();
+        }
     }
 
     private Optional<RuleReadback> receipt(UUID workspaceUuid, String key, String name, String idempotencyKey, String hash) {
@@ -357,8 +382,10 @@ public class TerminalUpdateRuleOwnerService implements TerminalUpdateRuleOwnerAp
     public static class TerminalUpdateRuleInvalidException extends RuntimeException {}
     public static class TerminalUpdateRuleTargetInvalidException extends RuntimeException {}
     public static class TerminalUpdateRuleScopeMismatchException extends RuntimeException {}
+    public static class TerminalUpdateRuleAuthorizationException extends RuntimeException {}
     public static class TerminalUpdateRuleNotFoundException extends RuntimeException {}
     public static class TerminalUpdateRuleStaleStateException extends RuntimeException {}
+    public static class TerminalUpdateRuleSnapshotChangedException extends RuntimeException {}
     public static class TerminalUpdateRuleIdempotencyConflictException extends RuntimeException {}
     public static class TerminalUpdateRuleInvariantException extends RuntimeException {}
 }

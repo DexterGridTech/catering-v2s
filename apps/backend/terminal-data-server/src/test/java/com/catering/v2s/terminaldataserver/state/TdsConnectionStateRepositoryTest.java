@@ -39,7 +39,8 @@ class TdsConnectionStateRepositoryTest {
                 UUID.fromString("66abf394-3b77-487a-a344-5a8209dfd573"),
                 UUID.fromString("95e948ef-2fe6-4b18-b6d5-509d023ea249"),
                 3,
-                1_798_387_200_000L);
+                1_798_387_200_000L,
+                "device-a");
 
         assertThat(repository.open(verification, "node-a", "session-a")).isEmpty();
 

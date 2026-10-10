@@ -8,7 +8,6 @@
   },
   "publicExports": [
     "JsonValue",
-    "TerminalActivationCancellationRequest",
     "TerminalActivationCancellationResult",
     "TerminalActivationRequest",
     "TerminalActivationResult",

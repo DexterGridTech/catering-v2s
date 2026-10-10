@@ -222,6 +222,37 @@ const createHostSource = (initial: SurfaceHostSnapshot | null) => {
 };
 
 describe('render surface hosts', () => {
+  it('observes a touch start without claiming the responder', async () => {
+    const source = createSource();
+    source.setRoot(rootWithContent(emptyContent()));
+    source.setStatus('started');
+    const {logger} = createLogger();
+    const onLocalInteraction = vi.fn();
+    const renderer = await mount(
+      createElement(
+        RenderProvider,
+        {
+          stateSource: source.stateSource,
+          uiCatalog: createUiCatalog([]),
+          rendererCatalog: createRendererCatalog([]),
+          logger,
+          ...unusedRenderProviderBindings,
+          onLocalInteraction,
+        },
+        createElement(SurfaceRoot, {displayMode: 'PRIMARY', containerKey: 'root'}),
+      ),
+    );
+
+    const root = findByTestID(renderer, renderTestIds.surfaceRoot);
+    let claimedResponder: unknown;
+    await act(async () => {
+      claimedResponder = root.props.onStartShouldSetResponderCapture({nativeEvent: {}});
+    });
+    expect(claimedResponder).toBe(false);
+    expect(onLocalInteraction).toHaveBeenCalledTimes(1);
+    await act(async () => renderer.unmount());
+  });
+
   it('keeps the admin layer mounted when surface-owned content fails', async () => {
     const source = createSource();
     const {logger} = createLogger();

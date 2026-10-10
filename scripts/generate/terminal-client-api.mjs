@@ -444,7 +444,9 @@ function render(model) {
           (queryParameters ? '{ ' + queryParameters + ' }' : 'Readonly<Record<string, never>>'),
         'readonly headers: ' +
           (authorizationHeader ? '{ ' + authorizationHeader + ' }' : 'Readonly<Record<string, never>>'),
-        'readonly body: ' + operation.requestSchema,
+        operation.requestSchema === 'NoBody'
+          ? 'readonly body?: never'
+          : 'readonly body: ' + operation.requestSchema,
       ];
       return '  ' + operation.operationId + ': { ' + requestParts.join('; ') + ' };';
     })
@@ -597,7 +599,7 @@ export type TerminalRequestExecutor = <I extends TerminalOperationId>(descriptor
 export type TerminalOperationResult<I extends TerminalOperationId> =
   | {readonly kind: "success"; readonly status: number; readonly body: TerminalResponseMap[I]}
   | {readonly kind: "business-rejection"; readonly status: number; readonly errorCode: TerminalBusinessErrorCode<I>; readonly problem: TerminalBusinessProblem}
-  | {readonly kind: "failure"; readonly category: "not-delivered" | "delivered-failure" | "unknown-business-rejection"; readonly code: string};
+  | {readonly kind: "failure"; readonly category: "not-delivered" | "delivered-failure" | "unknown-business-rejection"; readonly code: string; readonly status?: number};
 export const terminalOperationContracts = {
 ${operationRows}
 } as const;
@@ -611,7 +613,7 @@ export function createTerminalApiClient(executeRequest: TerminalRequestExecutor)
     if (result.kind === "failure") return result;
     if (result.status >= 200 && result.status < 300) {
       if (result.status !== descriptor.successStatus || !validateTerminalResponse(descriptor.responseSchema, result.body)) {
-        return {kind: "failure", category: "delivered-failure", code: "TERMINAL_RESPONSE_SCHEMA_INVALID"};
+        return {kind: "failure", category: "delivered-failure", code: "TERMINAL_RESPONSE_SCHEMA_INVALID", status: result.status};
       }
       return {kind: "success", status: result.status, body: result.body as TerminalResponseMap[I]};
     }
@@ -619,9 +621,9 @@ export function createTerminalApiClient(executeRequest: TerminalRequestExecutor)
       if (descriptor.errorCodes.includes(result.body.errorCode as never)) {
         return {kind: "business-rejection", status: result.status, errorCode: result.body.errorCode as TerminalBusinessErrorCode<I>, problem: result.body};
       }
-      return {kind: "failure", category: "unknown-business-rejection", code: result.body.errorCode};
+      return {kind: "failure", category: "unknown-business-rejection", code: result.body.errorCode, status: result.status};
     }
-    return {kind: "failure", category: "delivered-failure", code: "HTTP_DELIVERED_FAILURE"};
+    return {kind: "failure", category: "delivered-failure", code: "HTTP_DELIVERED_FAILURE", status: result.status};
   };
   return {
 ${methods}

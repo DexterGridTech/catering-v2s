@@ -1,6 +1,7 @@
 package com.catering.v2s.terminalbinding.application;
 
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi;
+import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.BusinessCredential;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.Credential;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.Outcome;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.Verification;
@@ -25,6 +26,23 @@ public class TerminalCredentialVerificationService implements TerminalCredential
         var facts = persistence.readAuthenticationFacts(credential.groupWorkspaceKey(), credential.terminalRef());
         TerminalCredentialDecision.Disposition disposition = TerminalCredentialDecision.classify(
                 credential.generation(), credential.secretDigest(), credential.deviceId(), facts);
+        return verification(credential.groupWorkspaceKey(), credential.terminalRef(), facts, disposition);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Verification verifyBusinessCredential(BusinessCredential credential) {
+        Objects.requireNonNull(credential, "credential");
+        var facts = persistence.readAuthenticationFacts(credential.groupWorkspaceKey(), credential.terminalRef());
+        TerminalCredentialDecision.Disposition disposition = TerminalCredentialDecision.classifyBusinessCredential(
+                credential.generation(), credential.secretDigest(), facts);
+        return verification(credential.groupWorkspaceKey(), credential.terminalRef(), facts, disposition);
+    }
+
+    private static Verification verification(
+            String groupWorkspaceKey, java.util.UUID terminalRef,
+            com.catering.v2s.terminalbinding.persistence.TerminalBindingOwnerPersistence.AuthenticationFacts facts,
+            TerminalCredentialDecision.Disposition disposition) {
         if (disposition == TerminalCredentialDecision.Disposition.INVALID) {
             return Verification.rejected(Outcome.CREDENTIAL_INVALID);
         }
@@ -40,11 +58,12 @@ public class TerminalCredentialVerificationService implements TerminalCredential
         return new Verification(
                 Outcome.VERIFIED,
                 facts.workspaceUuid(),
-                credential.groupWorkspaceKey(),
+                groupWorkspaceKey,
                 facts.storeRef(),
-                credential.terminalRef(),
+                terminalRef,
                 facts.generation(),
-                facts.activatedAtEpochMillis());
+                facts.activatedAtEpochMillis(),
+                facts.boundDeviceId());
     }
 
     @Override
@@ -55,6 +74,27 @@ public class TerminalCredentialVerificationService implements TerminalCredential
         return facts != null && workspaceUuid.equals(facts.workspaceUuid()) && facts.generation() != null
                 && facts.generation() == generation && "ACTIVE".equals(facts.bindingStatus())
                 && "ENABLED".equals(facts.groupStatus()) && "ENABLED".equals(facts.terminalStatus())
+                && "ENABLED".equals(facts.storeStatus());
+    }
+
+    @Override
+    @Transactional
+    public boolean lockCurrentActiveBinding(Verification verification) {
+        if (verification == null || verification.outcome() != Outcome.VERIFIED) return false;
+        var locked = persistence.lockLatest(
+                verification.workspaceUuid(), verification.groupWorkspaceKey(), verification.terminalRef());
+        if (locked == null || !"ACTIVE".equals(locked.status())
+                || locked.generation() != verification.generation()
+                || locked.activatedAtEpochMillis() != verification.activatedAtEpochMillis()) return false;
+        var facts = persistence.readAuthenticationFacts(verification.groupWorkspaceKey(), verification.terminalRef());
+        return facts != null
+                && verification.workspaceUuid().equals(facts.workspaceUuid())
+                && verification.storeRef().equals(facts.storeRef())
+                && verification.generation() == facts.generation()
+                && verification.activatedAtEpochMillis() == facts.activatedAtEpochMillis()
+                && "ACTIVE".equals(facts.bindingStatus())
+                && "ENABLED".equals(facts.groupStatus())
+                && "ENABLED".equals(facts.terminalStatus())
                 && "ENABLED".equals(facts.storeStatus());
     }
 }

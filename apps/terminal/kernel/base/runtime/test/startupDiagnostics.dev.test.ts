@@ -69,27 +69,29 @@ describe('runtime startup diagnostics', () => {
       );
       expect(slices).toEqual(
         expect.objectContaining({
-          count: 4,
+          count: 5,
           slices: expect.arrayContaining([{moduleName: fixtureModuleName, sliceName: fixtureSliceName}]),
         }),
       );
       expect(commands).toEqual(
         expect.objectContaining({
-          count: 8,
+          count: 9,
           commands: expect.arrayContaining([
             {moduleName: runtimeModuleName, commandName: `${runtimeModuleName}.primary-surface-ready`},
             {moduleName: runtimeModuleName, commandName: `${runtimeModuleName}.reset-runtime-after-system-failure`},
             {moduleName: runtimeModuleName, commandName: `${runtimeModuleName}.hello-world`},
+            {moduleName: runtimeModuleName, commandName: `${runtimeModuleName}.record-local-interaction`},
             {moduleName: fixtureModuleName, commandName: `${fixtureModuleName}.known`},
           ]),
         }),
       );
       expect(actors).toEqual(
         expect.objectContaining({
-          count: 6,
+          count: 7,
           actorKeys: expect.arrayContaining([
             `${runtimeModuleName}.reset-runtime-after-system-failure`,
             `${runtimeModuleName}.hello-world`,
+            `${runtimeModuleName}.local-interaction`,
             `${fixtureModuleName}.handler`,
           ]),
         }),

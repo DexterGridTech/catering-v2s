@@ -18,6 +18,7 @@ import {
 import {
   createRuntime,
   selectRuntimeInstanceMode,
+  recordLocalInteractionCommand,
   type CommandDefinition,
   type CommandTargetResolver,
   type Runtime,
@@ -761,6 +762,7 @@ export const createIntegrationAssembly = async <TReadyPayload extends StateJsonV
 
   const reportedSurfaceModes = new Set<DisplayMode>();
   const createSurface = (surface: IntegrationSurfaceCreationInput): ReactElement => {
+    const interactionRuntimeIdentity = runtimeRequired().runtimeId;
     const declaredSize =
       surface.displayMode === 'PRIMARY' ? input.surfaceDeclarations.PRIMARY : input.surfaceDeclarations.SECONDARY;
     if (declaredSize === undefined) {
@@ -786,6 +788,19 @@ export const createIntegrationAssembly = async <TReadyPayload extends StateJsonV
         },
       });
     }
+    const onLocalInteraction: NonNullable<RenderProviderProps['onLocalInteraction']> = async () => {
+      const result = await runtimeRequired().dispatchCommand(recordLocalInteractionCommand, {
+        runtimeIdentity: interactionRuntimeIdentity,
+      }, {requestId: createRequestId()});
+      if (result.status !== 'completed') {
+        input.platformPorts.logger.warn({
+          category: 'runtime.local-interaction',
+          event: 'runtime.local-interaction.record-dispatch-incomplete',
+          message: 'Local surface interaction command did not complete',
+          data: {appName: input.appName, status: result.status},
+        });
+      }
+    };
     return (
       <AutomationNodeProvider sink={automationNodeSink}>
         <RenderProvider
@@ -795,6 +810,7 @@ export const createIntegrationAssembly = async <TReadyPayload extends StateJsonV
           logger={input.platformPorts.logger}
           nativeLoadingCapability={input.nativeLoadingCapability}
           onPrimarySurfaceReady={onPrimarySurfaceReady}
+          onLocalInteraction={onLocalInteraction}
           getPrimarySurfaceReady={() => primarySurfaceReady}
           runtimeFacts={runtimeFacts}
           onRuntimeRetry={onRuntimeRetry}

@@ -87,6 +87,7 @@
     "@catering-v2s/kernel-base-topology": "workspace:*",
     "@catering-v2s/kernel-base-transport": "workspace:*",
     "@catering-v2s/kernel-base-ui-state": "workspace:*",
+    "@catering-v2s/kernel-feature-project-basic": "workspace:*",
     "@catering-v2s/kernel-feature-sample-member-registry": "workspace:*",
     "@catering-v2s/kernel-feature-sample-staff-session": "workspace:*",
     "@catering-v2s/kernel-feature-store-basic": "workspace:*",

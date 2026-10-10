@@ -1,8 +1,9 @@
 import {act, fireEvent, render, waitFor} from '@testing-library/react-native';
 import {afterEach, describe, expect, it, vi} from 'vitest';
-import {createRequestId, type TimestampMs} from '@catering-v2s/kernel-base-contracts';
+import {createRequestId, type TimestampMs, type TransportServerConfig} from '@catering-v2s/kernel-base-contracts';
 import {
   createProcessMemoryStateStoragePort,
+  unavailableUpdatePort,
   type PortResult,
   type UpdateFacts,
   type UpdatePort,
@@ -12,7 +13,10 @@ import {releaseRuntimeForTestAsync} from '@catering-v2s/kernel-base-runtime/test
 import {selectSessionState, loginCommand, sessionSliceName} from '@catering-v2s/kernel-feature-sample-staff-session';
 import {sampleStaffAuthTestIds} from '@catering-v2s/ui-feature-sample-staff-auth';
 import {activateTerminalCommand} from '@catering-v2s/kernel-base-terminal-data-client';
-import {acceptTerminalUpdateTargetCommand, type FixedUpdateTarget} from '@catering-v2s/kernel-base-terminal-update';
+import {
+  selectProjectBasicLoadReadiness,
+  selectProjectTerminalUpdateRules,
+} from '@catering-v2s/kernel-feature-project-basic';
 import {terminalDataClientActions} from '../../../../../terminal/kernel/base/terminal-data-client/src/features/slices/terminalDataClient';
 import {createSurfaceForDisplayIndex, createSampleWallpaperConsoleAssembly} from '../src';
 import {startupReadyCommand} from '../src/application/module';
@@ -46,6 +50,33 @@ const DEVICE_INFO = Object.freeze({
   systemName: 'TEST',
   systemVersion: '1',
   logicalProcessorCount: 8,
+});
+
+const wallpaperStageServerSpaces: TransportServerConfig = Object.freeze({
+  selectedSpace: 'workspace-wallpaper-stage-test',
+  spaces: Object.freeze([
+    Object.freeze({
+      name: 'workspace-wallpaper-stage-test',
+      servers: Object.freeze([
+        Object.freeze({
+          serverName: 'business',
+          addresses: Object.freeze([
+            Object.freeze({
+              addressName: 'primary',
+              baseUrl: 'https://wallpaper-stage-test.invalid/api/terminal/group-workspaces/workspace-wallpaper-stage-test',
+              timeoutMs: 10_000,
+            }),
+          ]),
+        }),
+        Object.freeze({
+          serverName: 'terminal-data-server',
+          addresses: Object.freeze([
+            Object.freeze({addressName: 'primary', baseUrl: 'ws://127.0.0.1:28180', timeoutMs: 10_000}),
+          ]),
+        }),
+      ]),
+    }),
+  ]),
 });
 
 type TestAssemblyInput = Omit<
@@ -136,12 +167,21 @@ describe('sample-wallpaper-console integration owner-stage regressions', () => {
       entry: 'index.android.bundle',
       files: Object.freeze([{path: 'index.android.bundle', sizeBytes: 10, sha256: 'a'.repeat(64)}]),
       publicationId: 'b'.repeat(64),
+      apk: Object.freeze({path: 'wallpaper.apk', sha256: 'd'.repeat(64), certificateSha256: 'e'.repeat(64)}),
     });
+    const {apk: embeddedApk, ...embeddedHotBase} = embedded;
     const hot = Object.freeze({
-      ...embedded,
+      ...embeddedHotBase,
       bundleVersion: '1.0.1',
       files: Object.freeze([{...embedded.files[0], sha256: 'c'.repeat(64)}]),
       publicationId: 'c'.repeat(64),
+      minimumFull: Object.freeze({
+        applicationId: embedded.applicationId,
+        nativeBuildNumber: embedded.nativeBuildNumber,
+        runtimeVersion: embedded.runtimeVersion,
+        publicationId: embedded.publicationId,
+        apkSha256: embeddedApk.sha256,
+      }),
     });
     const facts: UpdateFacts = Object.freeze({
       actual: Object.freeze({
@@ -151,6 +191,7 @@ describe('sample-wallpaper-console integration owner-stage regressions', () => {
         runtimeVersion: embedded.runtimeVersion,
         bundleVersion: embedded.bundleVersion,
         publicationId: embedded.publicationId,
+        apkSha256: embeddedApk.sha256,
         bootId: 'wallpaper-native-boot-token',
         entryKind: 'embedded' as const,
       }),
@@ -162,23 +203,66 @@ describe('sample-wallpaper-console integration owner-stage regressions', () => {
       installerState: 'none',
       selectionResetReason: null,
     });
-    const target: FixedUpdateTarget = Object.freeze({
-      ruleRef: 'wallpaper-startup-confirm-rule',
-      createdAt: 1 as TimestampMs,
+    const terminalRef = '00000000-0000-4000-8000-000000000011';
+    const storeRef = '00000000-0000-4000-8000-000000000012';
+    const projectRef = '00000000-0000-4000-8000-000000000013';
+    const ruleRef = '00000000-0000-4000-8000-000000000014';
+    const fullSummary = Object.freeze({
+      artifactRef: '00000000-0000-4000-8000-000000000015',
+      kind: 'FULL',
       applicationId: embedded.applicationId,
-      full: null,
-      hot: Object.freeze({sourceRef: 'fixture:hot', expectedSha256: hot.publicationId, artifact: hot}),
-      strategy: Object.freeze({maxNetworkAttempts: 1, bootTimeoutMs: 30_000}),
-      selectionContext: Object.freeze({
-        selectedSpace: 'development',
-        contextIdentity: 'wallpaper-startup-confirm-test',
-        ruleRef: 'wallpaper-startup-confirm-rule',
-      }),
+      runtimeVersion: embedded.runtimeVersion,
+      nativeBuildNumber: embedded.nativeBuildNumber,
+      apkVersion: embedded.nativeVersion,
+      jsVersion: embedded.bundleVersion,
+      publicationId: embedded.publicationId,
+      apkSha256: embeddedApk.sha256,
+      zipSha256: 'f'.repeat(64),
+      byteSize: 128,
+      createdAtEpochMillis: 1,
+    });
+    const hotSummary = Object.freeze({
+      artifactRef: '00000000-0000-4000-8000-000000000016',
+      kind: 'HOT',
+      applicationId: embedded.applicationId,
+      runtimeVersion: embedded.runtimeVersion,
+      nativeBuildNumber: embedded.nativeBuildNumber,
+      apkVersion: embedded.nativeVersion,
+      jsVersion: hot.bundleVersion,
+      publicationId: hot.publicationId,
+      apkSha256: null,
+      zipSha256: 'a'.repeat(64),
+      byteSize: 128,
+      createdAtEpochMillis: 2,
+    });
+    const rule = Object.freeze({
+      ruleRef,
+      targetMode: 'STORE_REFS',
+      storeRefs: Object.freeze([storeRef]),
+      applicationId: embedded.applicationId,
+      createdAtEpochMillis: 2,
+      full: fullSummary,
+      hot: hotSummary,
+      nSeconds: 300,
+      hotStrategy: 'IMMEDIATE',
+      mSeconds: null,
+      description: null,
+    });
+    const hotGrant = Object.freeze({
+      relativeContentPath: 'artifacts/wallpaper-hot.zip',
+      grant: 'g'.repeat(40),
+      expiresAtEpochMillis: Date.now() + 60_000,
+      artifactRef: hotSummary.artifactRef,
+      zipSha256: hotSummary.zipSha256,
+      byteSize: hotSummary.byteSize,
+      artifact: Object.freeze({...hot, apk: null}),
     });
     const confirmations: Array<Readonly<{timeoutMs: number; bootToken: string; publicationId: string}>> = [];
     let appliedActionId: string | null = null;
+    const requestedPaths: string[] = [];
     const success = <T,>(value: T): PortResult<T> => ({status: 'succeeded', value, completedAt: 1 as TimestampMs});
     const updatePort: UpdatePort = {
+      ...unavailableUpdatePort,
       readFacts: async () => success(facts),
       prepareArtifact: async () => success({preparedId: 'prepared-hot', artifact: hot}),
       applyPrepared: async input => {
@@ -203,19 +287,75 @@ describe('sample-wallpaper-console integration owner-stage regressions', () => {
       platformPorts: createTestPlatformPorts({deviceInfo: DEVICE_INFO, updatePort}),
       persistenceKey: `sample-wallpaper-boot-confirm-${Date.now()}`,
       surfaceForm: 'mobile',
-      terminalUpdateSourceProvider: {
-        readTarget: async () => target,
-        resolveSourcePath: () => '/run-owned/hot.zip',
-      },
+      serverSpaces: wallpaperStageServerSpaces,
+      transportNetworkAdapterFactory: readSnapshot => createReadyTerminalNetworkAdapter(readSnapshot, async request => {
+        const path = request.pathAndQuery.split('?')[0];
+        requestedPaths.push(path);
+        let body: unknown;
+        if (path === '/activation') {
+          body = {terminalRef, storeRef, groupWorkspaceKey: 'workspace-wallpaper-stage-test', bindingGeneration: 1};
+        } else if (path === `/stores/${storeRef}/basic`) {
+          const operatingRules = {
+            catalogManagementEnabled: false,
+            externalCatalogSyncEnabled: false,
+            openPlatformDeveloperCode: '',
+            reservationEnabled: false,
+            reservationDepositEnabled: false,
+            queueCallEnabled: false,
+            tableManagementEnabled: false,
+            tableStatusEnabled: false,
+            tableWaitCallEnabled: false,
+            banquetOrderEnabled: false,
+            pickupCallEnabled: false,
+            receivableEnabled: false,
+          };
+          body = {
+            store: {
+              id: storeRef,
+              groupWorkspaceKey: 'workspace-wallpaper-stage-test',
+              code: 'WALLPAPER-TEST',
+              name: 'Wallpaper Test Store',
+              project: {id: projectRef, code: 'WALLPAPER', name: 'Wallpaper Project'},
+              brand: {id: '00000000-0000-4000-8000-000000000017', code: 'BRAND', name: 'Brand'},
+              tenant: {id: '00000000-0000-4000-8000-000000000018', code: 'TENANT', name: 'Tenant'},
+              status: 'ENABLED', extensionValues: {}, extensionRuleRevision: 0, revision: 1,
+              createdAt: 1, updatedAt: 2, contractDerivedStatus: 'OPERATING', operatingRuleSwitches: operatingRules,
+            },
+            operatingRules,
+            storeUpdatedAtEpochMillis: 2,
+            operatingRulesUpdatedAtEpochMillis: 2,
+          };
+        } else if (path === `/stores/${storeRef}/organization-path`) {
+          body = {
+            projectRef, projectName: 'Wallpaper Project', regionRef: '00000000-0000-4000-8000-000000000019',
+            regionName: 'Region', commercialGroupRef: '00000000-0000-4000-8000-000000000020',
+            commercialGroupName: 'Group', projectUpdatedAtEpochMillis: 3, regionUpdatedAtEpochMillis: 3,
+            commercialGroupUpdatedAtEpochMillis: 3,
+          };
+        } else if (path === `/update-rules/projects/${projectRef}`) {
+          body = {items: [rule], collectionHash: 'b'.repeat(64), nextCursor: null};
+        } else if (path === `/update-artifacts/${hotSummary.artifactRef}/download-grant`) {
+          body = hotGrant;
+        } else if (path === `/stores/${storeRef}/contracts` || path === `/stores/${storeRef}/service-point-areas` || path === `/stores/${storeRef}/service-points`) {
+          body = {items: [], collectionUpdatedAtEpochMillis: 2};
+        } else {
+          return {kind: 'response' as const, status: 404, body: {}};
+        }
+        return {kind: 'response' as const, status: 200, body};
+      }),
     });
     try {
-      const accepted = await assembly.runtime.dispatchCommand(
-        acceptTerminalUpdateTargetCommand,
-        {selectionContext: target.selectionContext},
-        dispatchOptions(),
-      );
-      expect(accepted.status).toBe('completed');
-      expect(appliedActionId).not.toBeNull();
+      await activate(assembly);
+      await waitFor(() => expect(selectProjectBasicLoadReadiness(assembly.runtime.getState()).status).toBe('flushed'));
+      await waitFor(() => expect(selectProjectTerminalUpdateRules(assembly.runtime.getState()).status).toBe('ready'));
+      await waitFor(() => expect(appliedActionId).not.toBeNull());
+      expect(requestedPaths).toEqual(expect.arrayContaining([
+        '/activation',
+        `/stores/${storeRef}/basic`,
+        `/stores/${storeRef}/organization-path`,
+        `/update-rules/projects/${projectRef}`,
+        `/update-artifacts/${hotSummary.artifactRef}/download-grant`,
+      ]));
       const ready = await assembly.runtime.dispatchCommand(
         startupReadyCommand,
         {
@@ -227,13 +367,13 @@ describe('sample-wallpaper-console integration owner-stage regressions', () => {
         dispatchOptions(),
       );
       expect(ready.status).toBe('completed');
-      expect(confirmations).toEqual([
+      await waitFor(() => expect(confirmations).toEqual([
         {
-          timeoutMs: 30_000,
+          timeoutMs: 60_000,
           bootToken: 'wallpaper-native-boot-token',
           publicationId: embedded.publicationId,
         },
-      ]);
+      ]));
     } finally {
       await releaseRuntimeForTestAsync(assembly.runtime);
     }

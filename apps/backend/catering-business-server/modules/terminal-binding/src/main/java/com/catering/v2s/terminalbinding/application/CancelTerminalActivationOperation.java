@@ -22,12 +22,12 @@ public class CancelTerminalActivationOperation {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public DeviceCancelOutcome execute(
-            String groupWorkspaceKey, UUID terminalRef, String deviceId, TerminalCredentialContext credential) {
+            String groupWorkspaceKey, UUID terminalRef, TerminalCredentialContext credential) {
         if (credential == null) return DeviceCancelOutcome.CREDENTIAL_INVALID;
         byte[] digest = credential.secretDigest();
         try {
             return terminalBindings.cancelByDevice(
-                    new DeviceCancelCommand(groupWorkspaceKey, terminalRef, credential.generation(), digest, deviceId));
+                    new DeviceCancelCommand(groupWorkspaceKey, terminalRef, credential.generation(), digest));
         } finally {
             Arrays.fill(digest, (byte) 0);
         }

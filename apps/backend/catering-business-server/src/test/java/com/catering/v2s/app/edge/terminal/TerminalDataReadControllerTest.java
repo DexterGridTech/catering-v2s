@@ -14,7 +14,7 @@ import com.catering.v2s.organization.api.StoreServicePointOwnerApi;
 import com.catering.v2s.organization.application.BusinessEntityService;
 import com.catering.v2s.organization.application.OperationsOrganizationTaskReadService;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi;
-import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.Credential;
+import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.BusinessCredential;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.Outcome;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.Verification;
 import java.util.Base64;
@@ -38,8 +38,9 @@ class TerminalDataReadControllerTest {
         OperationsOrganizationTaskReadService organizationReads = mock(OperationsOrganizationTaskReadService.class);
         StoreServicePointOwnerApi servicePoints = mock(StoreServicePointOwnerApi.class);
         ContractTaskReadService contracts = mock(ContractTaskReadService.class);
-        when(credentials.verify(any(Credential.class)))
-                .thenReturn(new Verification(Outcome.VERIFIED, WORKSPACE, GROUP_KEY, STORE, TERMINAL, 1, 0));
+        when(credentials.verifyBusinessCredential(any(BusinessCredential.class)))
+                .thenReturn(new Verification(Outcome.VERIFIED, WORKSPACE, GROUP_KEY, STORE, TERMINAL, 1, 0,
+                        "tdp-test-device"));
         when(organizationReads.store(WORKSPACE, GROUP_KEY, STORE))
                 .thenThrow(new DataAccessResourceFailureException("fixture database unavailable"));
 
@@ -51,12 +52,11 @@ class TerminalDataReadControllerTest {
 
         mvc.perform(get("/api/terminal/group-workspaces/{group}/stores/{store}/basic", GROUP_KEY, STORE)
                         .header("Authorization", "Terminal 1." + SECRET)
-                        .header("X-Terminal-Ref", TERMINAL)
-                        .header("X-Terminal-Device-Id", "tdp-test-device"))
+                        .header("X-Terminal-Ref", TERMINAL))
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(jsonPath("$.errorCode").value("PLATFORM_DEPENDENCY_UNAVAILABLE"));
 
-        verify(credentials).verify(any(Credential.class));
+        verify(credentials).verifyBusinessCredential(any(BusinessCredential.class));
         verify(organizationReads).store(WORKSPACE, GROUP_KEY, STORE);
     }
 }

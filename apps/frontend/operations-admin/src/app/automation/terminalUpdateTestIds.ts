@@ -44,6 +44,8 @@ export const terminalUpdateTestIds = {
   reportList: 'operations-terminal-update-report-list',
   reportDetail: 'operations-terminal-update-report-detail',
   reportHistory: 'operations-terminal-update-report-history',
+  ruleStoresPagination: 'operations-terminal-update-rule-stores-pagination',
+  reportHistoryPagination: 'operations-terminal-update-report-history-pagination',
   reportRow: (terminalRef: string) => `operations-terminal-update-report-${terminalRef}`,
   reportOpen: (terminalRef: string) => `operations-terminal-update-report-open-${terminalRef}`,
 } as const;

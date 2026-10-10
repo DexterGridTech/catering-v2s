@@ -58,6 +58,7 @@ class TdsTerminalSessionActorsTest {
     private static final UUID WORKSPACE = UUID.fromString("667d0c56-90a4-4bf4-b0fa-08d7f3b653ba");
     private static final UUID STORE = UUID.fromString("66abf394-3b77-487a-a344-5a8209dfd573");
     private static final UUID TERMINAL = UUID.fromString("95e948ef-2fe6-4b18-b6d5-509d023ea249");
+    private static final String DEVICE_ID = "tds-test-device";
 
     private final RecordingRepository repository = new RecordingRepository();
     private final TdsConnectionStateWriter stateWriter = mock(TdsConnectionStateWriter.class);
@@ -862,7 +863,7 @@ class TdsTerminalSessionActorsTest {
 
     private static Verification verification(long generation) {
         return new Verification(
-                Outcome.VERIFIED, WORKSPACE, "GROUP-1", STORE, TERMINAL, generation, 1_798_387_200_000L);
+                Outcome.VERIFIED, WORKSPACE, "GROUP-1", STORE, TERMINAL, generation, 1_798_387_200_000L, DEVICE_ID);
     }
 
     private void begin(String attemptId, long generation, TdsWebSocketConnection connection) {

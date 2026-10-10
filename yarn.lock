@@ -1241,6 +1241,7 @@ __metadata:
   resolution: "@catering-v2s/adapter-android-update@workspace:apps/terminal/adapter/android/update"
   dependencies:
     "@catering-v2s/kernel-base-platform-ports": "workspace:*"
+    "@catering-v2s/kernel-base-terminal-update": "workspace:*"
     "@types/react": "npm:~19.2.2"
     expo: "npm:~57.0.18"
     react: "npm:19.2.3"
@@ -1281,7 +1282,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@catering-v2s/application-android-sample-terminal@workspace:apps/terminal/application/android/sample-terminal"
   dependencies:
+    "@catering-v2s/adapter-android-update": "workspace:*"
     "@catering-v2s/application-base-android": "workspace:*"
+    "@catering-v2s/kernel-base-terminal-update": "workspace:*"
     "@catering-v2s/ui-base-input": "workspace:*"
     "@catering-v2s/ui-base-primitives": "workspace:*"
     "@catering-v2s/ui-base-render": "workspace:*"
@@ -1305,7 +1308,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@catering-v2s/application-android-sample-wallpaper-terminal@workspace:apps/terminal/application/android/sample-wallpaper-terminal"
   dependencies:
+    "@catering-v2s/adapter-android-update": "workspace:*"
     "@catering-v2s/application-base-android": "workspace:*"
+    "@catering-v2s/kernel-base-terminal-update": "workspace:*"
     "@catering-v2s/ui-base-input": "workspace:*"
     "@catering-v2s/ui-base-primitives": "workspace:*"
     "@catering-v2s/ui-base-render": "workspace:*"
@@ -1448,6 +1453,7 @@ __metadata:
     "@catering-v2s/kernel-base-platform-ports": "workspace:*"
     "@catering-v2s/kernel-base-runtime": "workspace:*"
     "@catering-v2s/kernel-base-state": "workspace:*"
+    "@catering-v2s/kernel-base-terminal-data-client": "workspace:*"
     "@reduxjs/toolkit": "npm:2.12.0"
     typescript: "npm:~6.0.3"
     vitest: "npm:4.1.10"
@@ -1496,6 +1502,21 @@ __metadata:
     "@reduxjs/toolkit": "npm:2.12.0"
     typescript: "npm:~6.0.3"
     vitest: "npm:^4.1.10"
+  languageName: unknown
+  linkType: soft
+
+"@catering-v2s/kernel-feature-project-basic@workspace:*, @catering-v2s/kernel-feature-project-basic@workspace:apps/terminal/kernel/feature/project-basic":
+  version: 0.0.0-use.local
+  resolution: "@catering-v2s/kernel-feature-project-basic@workspace:apps/terminal/kernel/feature/project-basic"
+  dependencies:
+    "@catering-v2s/kernel-base-contracts": "workspace:*"
+    "@catering-v2s/kernel-base-runtime": "workspace:*"
+    "@catering-v2s/kernel-base-state": "workspace:*"
+    "@catering-v2s/kernel-base-terminal-data-client": "workspace:*"
+    "@catering-v2s/kernel-feature-store-basic": "workspace:*"
+    "@reduxjs/toolkit": "npm:2.12.0"
+    typescript: "npm:~6.0.3"
+    vitest: "npm:4.1.10"
   languageName: unknown
   linkType: soft
 
@@ -1969,6 +1990,7 @@ __metadata:
     "@catering-v2s/kernel-base-topology": "workspace:*"
     "@catering-v2s/kernel-base-transport": "workspace:*"
     "@catering-v2s/kernel-base-ui-state": "workspace:*"
+    "@catering-v2s/kernel-feature-project-basic": "workspace:*"
     "@catering-v2s/kernel-feature-sample-member-registry": "workspace:*"
     "@catering-v2s/kernel-feature-sample-staff-session": "workspace:*"
     "@catering-v2s/kernel-feature-store-basic": "workspace:*"
@@ -2020,6 +2042,7 @@ __metadata:
     "@catering-v2s/kernel-base-topology": "workspace:*"
     "@catering-v2s/kernel-base-transport": "workspace:*"
     "@catering-v2s/kernel-base-ui-state": "workspace:*"
+    "@catering-v2s/kernel-feature-project-basic": "workspace:*"
     "@catering-v2s/kernel-feature-sample-staff-session": "workspace:*"
     "@catering-v2s/kernel-feature-sample-wallpaper": "workspace:*"
     "@catering-v2s/kernel-feature-store-basic": "workspace:*"

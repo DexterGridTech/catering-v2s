@@ -11,11 +11,7 @@ import {
   selectStoreBasicLoadReadiness,
   selectStoreBasicState,
   selectStoreBasicTopicState,
-  selectStoreCommercialGroup,
   selectStoreOperatingRules,
-  selectStoreOrganizationPath,
-  selectStoreProject,
-  selectStoreRegion,
 } from '../selectors/selectors';
 import {createStoreBasicActors} from '../features/actors/actors';
 import {
@@ -58,11 +54,7 @@ export const createStoreBasicModule = (): RuntimeModule => {
       selectStoreBasicState,
       selectStoreBasicLoadReadiness,
       selectStoreBasicTopicState,
-      selectStoreCommercialGroup,
       selectStoreOperatingRules,
-      selectStoreOrganizationPath,
-      selectStoreProject,
-      selectStoreRegion,
     ],
     actors: actors.map(actor => ({name: actor.actorName})),
     actorDefinitions: actors,

@@ -16,6 +16,7 @@
     "NativeLoadingTarget",
     "createAndroidNativeLoadingCapability",
     "createAndroidAppControlPort",
+    "createAndroidAutomationUpdateTargetSourceProvider",
     "createAndroidPlatformBinding",
     "createAndroidTopologyHostPort",
     "createAndroidTopologyPeerChannel",

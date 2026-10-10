@@ -47,10 +47,9 @@ public final class TerminalUpdateDownloadController {
     public TerminalUpdateDownloadGrantResult issue(@PathVariable String groupWorkspaceKey,
             @PathVariable UUID artifactRef,
             @RequestHeader(value = "Authorization", required = false) String authorization,
-            @RequestHeader(value = "X-Terminal-Ref", required = false) String terminalRef,
-            @RequestHeader(value = "X-Terminal-Device-Id", required = false) String deviceId) {
+            @RequestHeader(value = "X-Terminal-Ref", required = false) String terminalRef) {
         Verification binding = TerminalCredentialEdgeVerifier.verify(credentials, groupWorkspaceKey,
-                authorization, terminalRef, deviceId);
+                authorization, terminalRef);
         var grant = artifacts.issueDownloadGrant(binding, artifactRef);
         log.atInfo().addKeyValue("event", "TERMINAL_UPDATE_DOWNLOAD_GRANT_ISSUED")
                 .addKeyValue("terminalRef", binding.terminalRef()).addKeyValue("artifactRef", artifactRef)

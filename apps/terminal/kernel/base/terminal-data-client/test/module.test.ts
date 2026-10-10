@@ -20,6 +20,8 @@ import {
 import type {ActorExecutionContext} from '@catering-v2s/kernel-base-runtime';
 import type {StateRoot} from '@catering-v2s/kernel-base-state';
 
+const runtimeInstanceModeSliceName = 'kernel.base.runtime.instance-mode' as const;
+
 const createDependencies = () => ({
   businessServerName: 'terminal-business-api',
   transport: {
@@ -68,6 +70,8 @@ describe('terminal-data-client package identity', () => {
       `${moduleName}.terminal-data-heartbeat`,
       `${moduleName}.topic-changed`,
       `${moduleName}.initialize-terminal-data-client`,
+      `${moduleName}.reconcile-credential-readiness`,
+      `${moduleName}.clear-shared-terminal-credential`,
       `${moduleName}.refresh-status-projection`,
       `${moduleName}.transport-event`,
       `${moduleName}.heartbeat-tick`,
@@ -138,6 +142,10 @@ describe('terminal-data-client package identity', () => {
       registerResource: vi.fn(),
       dispatchCommand: moduleDispatch,
       subscribeState: vi.fn(() => () => undefined),
+      getState: () => ({
+        [runtimeInstanceModeSliceName]: {instanceMode: 'MASTER'},
+        [terminalDataClientStateSlice.name]: {credential: null},
+      }),
       platformPorts: {logger: {scope: () => ({error: vi.fn()})}},
     } as never);
     expect(moduleDispatch).toHaveBeenNthCalledWith(1, refreshTerminalClientStatusProjectionCommand, {});

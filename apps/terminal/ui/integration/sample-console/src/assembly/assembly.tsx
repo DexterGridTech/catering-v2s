@@ -19,9 +19,14 @@ import {createSampleMemberRegistryModule} from '@catering-v2s/kernel-feature-sam
 import {createSampleStaffSessionModule} from '@catering-v2s/kernel-feature-sample-staff-session';
 import {
   createStoreBasicModule,
-  selectStoreBasicLoadReadiness,
-  selectStoreOrganizationPath,
+  selectStoreBasicBinding,
 } from '@catering-v2s/kernel-feature-store-basic';
+import {
+  createProjectBasicModule,
+  fixedTargetFromProjectCandidate,
+  selectProjectTerminalUpdateCandidate,
+  selectProjectTerminalUpdateContextFacts,
+} from '@catering-v2s/kernel-feature-project-basic';
 import {createServerConfigModule} from '@catering-v2s/kernel-base-server-config';
 import {createTerminalUpdateModule, type UpdateTargetSourceProvider} from '@catering-v2s/kernel-base-terminal-update';
 import {resolveServerNetworkSnapshot} from '@catering-v2s/kernel-base-server-config';
@@ -47,6 +52,7 @@ import {
 } from '@catering-v2s/ui-base-terminal-activation';
 import {createServerConfigPanelParts} from '@catering-v2s/ui-base-server-config-panel';
 import {
+  clearSharedTerminalCredentialCommand,
   createTerminalDataClientModule,
   selectActivationState,
   selectConnectionState,
@@ -185,65 +191,7 @@ export async function createSampleAssembly(input: SampleAssemblyInput): Promise<
         canActivate: state => !selectTopologyState(state).repairPending,
       });
       const storeBasicModule = createStoreBasicModule();
-      let lastRuleSnapshotGateSignature = '';
-      const readRuleSnapshotContext = (state: Parameters<typeof selectActivationState>[0]) => {
-        const activation = selectActivationState(state);
-        const readiness = selectStoreBasicLoadReadiness(state);
-        const path = selectStoreOrganizationPath(state);
-        const gates = Object.freeze({
-          activationActive: activation.status === 'active',
-          activationIdentityPresent:
-            activation.terminalRef !== null && activation.bindingGeneration !== null && activation.storeRef !== null,
-          activationWorkspacePresent: activation.groupWorkspaceKey !== null,
-          runtimeIdPresent: readiness.runtimeId !== null,
-          readinessBindingPresent: readiness.binding !== null,
-          readinessBindingMatchesActivation:
-            readiness.binding !== null &&
-            readiness.binding.terminalRef === activation.terminalRef &&
-            readiness.binding.bindingGeneration === activation.bindingGeneration &&
-            readiness.binding.storeRef === activation.storeRef &&
-            readiness.binding.groupWorkspaceKey === activation.groupWorkspaceKey,
-          storeFlushed: readiness.storeStatus === 'flushed',
-          projectFlushed: readiness.projectStatus === 'flushed',
-          organizationPathPresent: path !== null,
-          projectRefMatchesPath: path !== null && readiness.projectRef === path.projectRef,
-        });
-        const signature = JSON.stringify({
-          gates,
-          storeStatus: readiness.storeStatus,
-          projectStatus: readiness.projectStatus,
-        });
-        if (signature !== lastRuleSnapshotGateSignature) {
-          lastRuleSnapshotGateSignature = signature;
-          input.platformPorts.logger.info({
-            category: 'terminal-update.rules',
-            event: 'terminal-update.rules.context-gates',
-            message: 'Evaluated the readiness gates for the terminal rule snapshot context',
-            data: {
-              ...gates,
-              storeStatus: readiness.storeStatus,
-              projectStatus: readiness.projectStatus,
-            },
-          });
-        }
-        if (Object.values(gates).some(ready => !ready)) return null;
-        if (
-          path === null ||
-          activation.terminalRef === null ||
-          activation.bindingGeneration === null ||
-          activation.storeRef === null ||
-          activation.groupWorkspaceKey === null
-        )
-          return null;
-        return Object.freeze({
-          terminalRef: activation.terminalRef,
-          bindingGeneration: activation.bindingGeneration,
-          selectedSpace: activation.groupWorkspaceKey,
-          storeRef: activation.storeRef,
-          projectRef: path.projectRef,
-          projectUpdatedAtEpochMillis: path.projectUpdatedAtEpochMillis,
-        });
-      };
+      const projectBasicModule = createProjectBasicModule();
       return [
         serverConfigModule,
         transportModule,
@@ -251,8 +199,16 @@ export async function createSampleAssembly(input: SampleAssemblyInput): Promise<
           port: input.platformPorts.update,
           createProtocolUuid: () => Crypto.randomUUID(),
           sourceProvider: input.terminalUpdateSourceProvider,
+          readTerminalUpdateContextFacts: selectProjectTerminalUpdateContextFacts,
+          readCurrentTarget: (state, requested) => {
+            const binding = selectStoreBasicBinding(state);
+            if (binding === null) return null;
+            const candidate = selectProjectTerminalUpdateCandidate(state, requested.applicationId, binding.storeRef);
+            if (candidate === null) return null;
+            const target = fixedTargetFromProjectCandidate(candidate);
+            return JSON.stringify(target) === JSON.stringify(requested) ? target : null;
+          },
           readNetworkSnapshot: (state, serverName) => resolveServerNetworkSnapshot(state, serverSpaces, serverName),
-          readRuleSnapshotContext,
         }),
         createTopologyModule({
           displayName: 'sample-console',
@@ -268,6 +224,31 @@ export async function createSampleAssembly(input: SampleAssemblyInput): Promise<
               (connection.status === 'stopped' || connection.status === 'disconnected')
             );
           },
+          beforeSlaveCredentialTransition: async (context, transition) => {
+            const activation = selectActivationState(context.getState());
+            const dispatched = await context.dispatchCommand(clearSharedTerminalCredentialCommand, {
+              groupWorkspaceKey: activation.groupWorkspaceKey,
+              terminalRef: activation.terminalRef,
+              storeRef: activation.storeRef,
+              bindingGeneration: activation.bindingGeneration,
+            });
+            const actorResult = dispatched.status === 'completed' ? dispatched.actorResults[0] : undefined;
+            const outcome = actorResult?.result as Readonly<{status?: string}> | undefined;
+            if (
+              dispatched.status !== 'completed' ||
+              actorResult?.status !== 'completed' ||
+              (outcome?.status !== 'cleared' && outcome?.status !== 'already-clear')
+            ) {
+              context.platformPorts.logger.error({
+                category: 'terminal.topology.credential',
+                event: 'slave-credential-transition-blocked',
+                message: 'Topology transition was blocked because the shared credential was not durably cleared',
+                context: {commandId: context.command.commandId},
+                data: {transition, dispatchStatus: dispatched.status, outcome: outcome?.status ?? 'unavailable'},
+              });
+              throw new Error(`Shared terminal credential clear failed before ${transition}`);
+            }
+          },
           stateSyncSlices: selectStateSyncSlices([
             ...(uiStateModule.stateSlices ?? []),
             ...(staffSessionModule.stateSlices ?? []),
@@ -275,12 +256,14 @@ export async function createSampleAssembly(input: SampleAssemblyInput): Promise<
             ...(serverConfigModule.stateSlices ?? []),
             ...(terminalDataClientModule.stateSlices ?? []),
             ...(storeBasicModule.stateSlices ?? []),
+            ...(projectBasicModule.stateSlices ?? []),
           ]),
         }),
         createSampleConsoleModule(surfaceForm),
         createTerminalActivationModule(),
         terminalDataClientModule,
         storeBasicModule,
+        projectBasicModule,
         staffSessionModule,
         memberRegistryModule,
         sampleStaffAuthAssembly.createModule(),

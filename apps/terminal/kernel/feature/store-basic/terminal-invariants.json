@@ -23,11 +23,7 @@
     "selectStoreBasicBinding",
     "selectStoreBasicState",
     "selectStoreBasicTopicState",
-    "selectStoreCommercialGroup",
     "selectStoreOperatingRules",
-    "selectStoreOrganizationPath",
-    "selectStoreProject",
-    "selectStoreRegion",
     "storeBasicInformationLoadedCommand",
     "storeBasicSliceName"
   ],
@@ -52,6 +48,12 @@
     },
     {
       "sourceFile": "src/features/actors/actors.ts",
+      "declarationId": "updateLoadReadiness",
+      "dispatchExpression": "context.dispatchAction",
+      "reasonCategory": "store-basic-load-readiness-write"
+    },
+    {
+      "sourceFile": "src/features/actors/actors.ts",
       "declarationId": "loadStore",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "store-basic-initial-load-status"
@@ -70,13 +72,7 @@
     },
     {
       "sourceFile": "src/features/actors/actors.ts",
-      "declarationId": "loadOrganizationAndContracts",
-      "dispatchExpression": "context.dispatchAction",
-      "reasonCategory": "store-basic-initial-organization-path"
-    },
-    {
-      "sourceFile": "src/features/actors/actors.ts",
-      "declarationId": "loadOrganizationAndContracts",
+      "declarationId": "loadActiveContracts",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "store-basic-initial-active-contracts"
     },
@@ -103,12 +99,6 @@
       "declarationId": "onTopicChanged",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "store-basic-refresh-operating-rules"
-    },
-    {
-      "sourceFile": "src/features/actors/actors.ts",
-      "declarationId": "onTopicChanged",
-      "dispatchExpression": "context.dispatchAction",
-      "reasonCategory": "store-basic-refresh-organization-path"
     },
     {
       "sourceFile": "src/features/actors/actors.ts",

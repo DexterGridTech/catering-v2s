@@ -15,6 +15,7 @@ import {moduleName as terminalActivation} from '@catering-v2s/ui-base-terminal-a
 import {moduleName as terminalDataClient} from '@catering-v2s/kernel-base-terminal-data-client';
 import {moduleName as terminalUpdate} from '@catering-v2s/kernel-base-terminal-update';
 import {moduleName as storeBasic} from '@catering-v2s/kernel-feature-store-basic';
+import {moduleName as projectBasic} from '@catering-v2s/kernel-feature-project-basic';
 import {moduleName as render} from '@catering-v2s/ui-base-render';
 import {moduleName as input} from '@catering-v2s/ui-base-input';
 import {moduleName as primitives} from '@catering-v2s/ui-base-primitives';
@@ -41,6 +42,7 @@ export const dependencyModuleNames = [
   terminalDataClient,
   terminalUpdate,
   storeBasic,
+  projectBasic,
   render,
   input,
   primitives,
@@ -65,4 +67,5 @@ export const runtimeModuleDependencyNames = [
   terminalDataClient,
   terminalUpdate,
   storeBasic,
+  projectBasic,
 ] as const;

@@ -1,5 +1,6 @@
 import {createSlice, type PayloadAction} from '@reduxjs/toolkit';
 import {defineStateRuntimeSlice, type StateRuntimeSliceRegistration} from '@catering-v2s/kernel-base-state';
+import type {RuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
 import {moduleName} from '../../moduleName';
 import type {
   PendingTerminalActivation,
@@ -16,6 +17,9 @@ export const terminalDataClientSliceName = `${moduleName}.client` as const;
 
 const initialState: TerminalClientState = Object.freeze({
   credential: null,
+  credentialRevision: 0,
+  credentialReadyRevision: null,
+  credentialReadyInstanceMode: null,
   pendingActivations: Object.freeze({}),
   activationStatus: 'inactive',
   connection: Object.freeze({status: 'stopped', addressName: null, nodeId: null, sessionId: null, lastCloseReason: null}),
@@ -28,6 +32,80 @@ const initialState: TerminalClientState = Object.freeze({
   remoteOperations: Object.freeze({}),
 });
 
+const credentialEntryKey = 'credential';
+const credentialFields = ['bindingGeneration', 'credentialSecret', 'deviceId', 'groupWorkspaceKey', 'storeRef', 'terminalRef'] as const;
+const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+const hasExactKeys = (value: Readonly<Record<string, unknown>>, expected: readonly string[]): boolean => {
+  const keys = Object.keys(value).sort();
+  const sorted = [...expected].sort();
+  return keys.length === sorted.length && keys.every((key, index) => key === sorted[index]);
+};
+const isCanonicalUuid = (value: unknown): value is string =>
+  typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+const isTerminalCredential = (value: unknown): value is TerminalCredential => {
+  if (!isRecord(value) || !hasExactKeys(value, credentialFields)) return false;
+  return (
+    typeof value.groupWorkspaceKey === 'string' &&
+    /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/.test(value.groupWorkspaceKey) &&
+    isCanonicalUuid(value.terminalRef) &&
+    isCanonicalUuid(value.storeRef) &&
+    typeof value.deviceId === 'string' && value.deviceId.length > 0 && value.deviceId.length <= 128 &&
+    Number.isSafeInteger(value.bindingGeneration) && Number(value.bindingGeneration) >= 1 &&
+    typeof value.credentialSecret === 'string' && /^[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$/.test(value.credentialSecret)
+  );
+};
+const sameCredential = (left: TerminalCredential | null, right: TerminalCredential | null): boolean =>
+  left === right || (left !== null && right !== null && credentialFields.every(field => left[field] === right[field]));
+
+export const getTerminalDataClientSyncEntries = (
+  state: Readonly<TerminalClientState>,
+): Readonly<Record<string, Readonly<{readonly value: TerminalCredential | null; readonly updatedAt: 0}>>> => ({
+  [credentialEntryKey]: Object.freeze({
+    value:
+      state.credential !== null &&
+      state.credentialReadyRevision === state.credentialRevision &&
+      state.credentialReadyInstanceMode === 'MASTER'
+        ? state.credential
+        : null,
+    updatedAt: 0,
+  }),
+});
+
+export const applyTerminalDataClientSyncEntries = (
+  state: Readonly<TerminalClientState>,
+  entries: Readonly<Record<string, unknown>>,
+): TerminalClientState => {
+  if (!hasExactKeys(entries, [credentialEntryKey])) throw new Error('TDC_SYNC_CREDENTIAL_ENTRY_SET_INVALID');
+  const envelope = entries[credentialEntryKey];
+  if (
+    !isRecord(envelope) ||
+    envelope.updatedAt !== 0 ||
+    Object.prototype.hasOwnProperty.call(envelope, 'tombstone') ||
+    !Object.prototype.hasOwnProperty.call(envelope, 'value')
+  ) {
+    throw new Error('TDC_SYNC_CREDENTIAL_ENVELOPE_INVALID');
+  }
+  const value = envelope.value;
+  if (value !== null && !isTerminalCredential(value)) throw new Error('TDC_SYNC_CREDENTIAL_INVALID');
+  const credential = value === null ? null : Object.freeze({...value});
+  const credentialChanged = !sameCredential(state.credential, credential);
+  const bindingChanged =
+    state.credential?.terminalRef !== credential?.terminalRef ||
+    state.credential?.storeRef !== credential?.storeRef ||
+    state.credential?.bindingGeneration !== credential?.bindingGeneration ||
+    state.credential?.groupWorkspaceKey !== credential?.groupWorkspaceKey;
+  return Object.freeze({
+    ...state,
+    credential,
+    credentialRevision: credentialChanged ? state.credentialRevision + 1 : state.credentialRevision,
+    credentialReadyRevision: credentialChanged ? null : state.credentialReadyRevision,
+    credentialReadyInstanceMode: credentialChanged ? null : state.credentialReadyInstanceMode,
+    activationStatus: 'inactive',
+    ...(bindingChanged ? {topicSubscriptions: Object.freeze({}), acceptedTopicTimes: Object.freeze({})} : {}),
+  });
+};
+
 const definition = createSlice({
   name: terminalDataClientSliceName,
   initialState,
@@ -35,6 +113,7 @@ const definition = createSlice({
     replaceCredential: (state, action: PayloadAction<TerminalCredential | null>) => {
       const previous = state.credential;
       const next = action.payload;
+      const credentialChanged = !sameCredential(previous, next);
       if (
         previous?.terminalRef !== next?.terminalRef ||
         previous?.bindingGeneration !== next?.bindingGeneration ||
@@ -44,7 +123,21 @@ const definition = createSlice({
         state.acceptedTopicTimes = {};
       }
       state.credential = action.payload;
+      if (credentialChanged) {
+        state.credentialRevision += 1;
+        state.credentialReadyRevision = null;
+        state.credentialReadyInstanceMode = null;
+      }
       state.activationStatus = action.payload === null ? 'inactive' : 'active';
+    },
+    markCredentialReady: (
+      state,
+      action: PayloadAction<Readonly<{credentialRevision: number; instanceMode: RuntimeInstanceMode}>>,
+    ) => {
+      if (state.credential !== null && state.credentialRevision === action.payload.credentialRevision) {
+        state.credentialReadyRevision = action.payload.credentialRevision;
+        state.credentialReadyInstanceMode = action.payload.instanceMode;
+      }
     },
     setPendingActivation: (state, action: PayloadAction<PendingTerminalActivation>) => {
       state.pendingActivations[action.payload.operationId] = action.payload;
@@ -214,10 +307,15 @@ export const terminalDataClientStateSlice: StateRuntimeSliceRegistration = defin
     reducer: definition.reducer,
     persistIntent: 'owner-only',
     persistence: [
-      {kind: 'field', stateKey: 'credential', protection: 'protected', flushMode: 'immediate'},
+      {kind: 'field', stateKey: 'credential', protection: 'plain', flushMode: 'immediate'},
       {kind: 'field', stateKey: 'acceptedTopicTimes', protection: 'plain', flushMode: 'immediate'},
       {kind: 'field', stateKey: 'remoteOperations', protection: 'plain', flushMode: 'immediate'},
     ],
-    syncIntent: 'isolated',
+    syncIntent: 'master-to-slave',
+    sync: {
+      kind: 'record',
+      getEntries: getTerminalDataClientSyncEntries,
+      applyEntries: applyTerminalDataClientSyncEntries,
+    },
   },
 );

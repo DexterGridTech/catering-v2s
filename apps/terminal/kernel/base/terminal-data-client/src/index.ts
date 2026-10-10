@@ -28,6 +28,7 @@ export type {
   TerminalDataHeartbeatPayload,
   TerminalUpdateDownloadGrantPayload,
   TerminalUpdateReportPayload,
+  ClearSharedTerminalCredentialPayload,
   TerminalActivationSucceededPayload,
   TerminalReadOperationId,
   TerminalTopicChangedPayload,
@@ -47,6 +48,7 @@ export {
   readTerminalDataCommand,
   requestTerminalUpdateDownloadGrantCommand,
   submitTerminalUpdateReportCommand,
+  clearSharedTerminalCredentialCommand,
   terminalDataHeartbeatCommand,
   terminalTopicChangedCommand,
 } from './features/commands/terminalDataClientCommands';

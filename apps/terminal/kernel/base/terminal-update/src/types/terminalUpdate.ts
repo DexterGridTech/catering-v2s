@@ -4,9 +4,8 @@ import type {
   UpdateActualVersions,
   UpdateNetworkSnapshot,
 } from '@catering-v2s/kernel-base-platform-ports';
-import type {StateRoot} from '@catering-v2s/kernel-base-state';
+import type {StateJsonObject, StateRoot} from '@catering-v2s/kernel-base-state';
 import type {TerminalUpdateReportPayload} from '@catering-v2s/kernel-base-terminal-data-client';
-import type {TerminalUpdateRuleSnapshotItem} from '@catering-v2s/kernel-base-terminal-data-client';
 
 export interface UpdateArtifactSource {
   readonly sourceRef: string;
@@ -23,13 +22,19 @@ export interface UpdateArtifactSource {
 
 export interface FixedUpdateTarget {
   readonly ruleRef: string;
+  /** Hash of the complete project rule collection from which this target was selected. */
+  readonly collectionHash: string;
   readonly createdAt: TimestampMs;
   readonly applicationId: string;
   readonly full: UpdateArtifactSource | null;
   readonly hot: UpdateArtifactSource | null;
+  /** Business timing is fixed with the task; it is not re-read from later project rules. */
+  readonly policy: Readonly<{nSeconds: number; hotStrategy: 'IMMEDIATE' | 'IDLE' | null; mSeconds: number | null}>;
   readonly strategy: Readonly<{maxNetworkAttempts: number; bootTimeoutMs: number}>;
   readonly selectionContext: Readonly<{selectedSpace: string; contextIdentity: string; ruleRef: string}>;
 }
+
+export type RequestTerminalUpdatePayload = StateJsonObject;
 
 export interface TerminalUpdateTask {
   readonly taskId: string;
@@ -42,6 +47,7 @@ export interface TerminalUpdateTask {
     | 'preparing-hot'
     | 'applying-full'
     | 'applying-hot'
+    | 'waiting-idle'
     | 'waiting-user'
     | 'unknown'
     | 'succeeded'
@@ -51,12 +57,14 @@ export interface TerminalUpdateTask {
   readonly actionKind: 'full' | 'hot' | null;
   readonly preparedId: string | null;
   readonly bootId: string | null;
+  /** Last user-facing FULL installation invitation time, used only for the fixed task's N reminder. */
+  readonly lastInviteAt?: TimestampMs | null;
   readonly failureCode: string | null;
 }
 
 export interface TerminalUpdateRecentStatus {
   readonly taskId: string | null;
-  readonly state: 'idle' | 'fixed' | 'preparing' | 'applying' | 'waiting-user' | 'unknown' | 'succeeded' | 'failed';
+  readonly state: 'idle' | 'fixed' | 'preparing' | 'applying' | 'waiting-idle' | 'waiting-user' | 'unknown' | 'succeeded' | 'failed';
   readonly reason: string | null;
   readonly changedAt: TimestampMs;
   readonly applicationId?: string | null;
@@ -66,22 +74,18 @@ export interface TerminalUpdateRecentStatus {
 }
 
 export interface TerminalUpdateState {
-  readonly ruleSnapshot: Readonly<{
-    readonly contextIdentity: string | null;
-    readonly selectedSpace: string | null;
-    readonly projectRef: string | null;
-    readonly collectionHash: string | null;
-    readonly items: readonly StoredTerminalUpdateRule[];
-  }>;
-  readonly ruleSnapshotStatus: Readonly<{status: 'empty' | 'ready' | 'failed'; errorCode: string | null}>;
   readonly currentTask: TerminalUpdateTask | null;
   readonly recentStatus: TerminalUpdateRecentStatus;
   readonly failedArtifactIds: readonly string[];
   readonly actualVersions: UpdateActualVersions | null;
+  /** One ephemeral, local invitation. It is neither persisted nor projected to a paired Runtime. */
+  readonly invitation?: Readonly<{taskId: string; actionId: string | null; bootId: string}> | null;
   readonly reportDescriptor: Readonly<{
     readonly bindingIdentity: string | null;
     readonly contextIdentity: string | null;
     readonly nextReportSequence: number;
+    /** Last taskless actual-version fact reported for this binding/context; bootId is intentionally excluded. */
+    readonly lastObservationFactsKey?: string | null;
     readonly pendingReports: Readonly<Record<string, TerminalUpdateReportPayload>>;
     readonly sendPaused: boolean;
     readonly latestDeliveryFailure: Readonly<{
@@ -94,36 +98,7 @@ export interface TerminalUpdateState {
   }>;
 }
 
-export type StoredTerminalUpdateArtifactSummary = Readonly<{
-  artifactRef: string;
-  kind: 'FULL' | 'HOT';
-  applicationId: string;
-  runtimeVersion: string;
-  nativeBuildNumber: number;
-  apkVersion: string;
-  jsVersion: string;
-  publicationId: string;
-  apkSha256: string | null;
-  zipSha256: string;
-  byteSize: number;
-  createdAtEpochMillis: number;
-}>;
-
-export type StoredTerminalUpdateRule = Readonly<{
-  ruleRef: string;
-  targetMode: 'ALL' | 'STORE_REFS';
-  storeRefs: readonly string[];
-  applicationId: string;
-  createdAtEpochMillis: number;
-  full: StoredTerminalUpdateArtifactSummary;
-  hot: StoredTerminalUpdateArtifactSummary | null;
-  nSeconds: number;
-  hotStrategy: 'IMMEDIATE' | 'IDLE' | null;
-  mSeconds: number | null;
-  description: string | null;
-}>;
-
-export type UpdateRuleSnapshotContext = Readonly<{
+export type TerminalUpdateContextFacts = Readonly<{
   readonly terminalRef: string;
   readonly bindingGeneration: number;
   readonly selectedSpace: string;
@@ -137,5 +112,7 @@ export interface UpdateTargetSourceProvider {
   /** Resolve a persisted opaque ref after process recreation; never persist the path in currentTask. */
   resolveSourcePath?(sourceRef: string): string | null | Promise<string | null>;
 }
+
+export type CurrentUpdateTargetReader = (state: StateRoot, requested: FixedUpdateTarget) => FixedUpdateTarget | null;
 
 export type UpdateNetworkSnapshotReader = (state: StateRoot, serverName: string) => UpdateNetworkSnapshot;

@@ -65,9 +65,11 @@ export {
   setRuntimeInstanceModeCommand,
   resetRuntimeAfterSystemFailureCommand,
   primarySurfaceReadyCommand,
+  recordLocalInteractionCommand,
 } from './features/commands';
 export type {PrimarySurfaceReadyPayload} from './features/commands/primarySurfaceReady';
 export {selectRuntimeInstanceMode} from './selectors/selectRuntimeInstanceMode';
+export {selectLastLocalInteraction} from './selectors/selectLastLocalInteraction';
 
 export type {RuntimeLimits} from './types/limits';
 export {

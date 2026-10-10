@@ -5,23 +5,31 @@ export {
   unavailableUpdateTargetSourceProvider,
 } from './application/createTerminalUpdateModule';
 export {
-  acceptTerminalUpdateTargetCommand,
+  createRequestTerminalUpdatePayload,
+  requestTerminalUpdateCommand,
   confirmTerminalUpdateBootCommand,
-  refreshTerminalUpdateRuleSnapshotCommand,
+  confirmTerminalUpdateInstallCommand,
+  deferTerminalUpdateInstallCommand,
   reconcileTerminalUpdateCommand,
+  terminalUpdateDeadlineCommand,
 } from './features/commands/commands';
 export {
   selectTerminalUpdateActualVersions,
   selectTerminalUpdateRecentStatus,
   selectTerminalUpdateTask,
-  selectTerminalUpdateRuleSnapshot,
+  selectTerminalUpdateInvitation,
 } from './selectors/selectors';
 export type {
+  TerminalUpdateInstallDecision,
+} from './features/commands/commands';
+export type {
   FixedUpdateTarget,
+  RequestTerminalUpdatePayload,
+  CurrentUpdateTargetReader,
   TerminalUpdateRecentStatus,
   TerminalUpdateTask,
   TerminalUpdateState,
   UpdateTargetSourceProvider,
   UpdateNetworkSnapshotReader,
-  UpdateRuleSnapshotContext,
+  TerminalUpdateContextFacts,
 } from './types/terminalUpdate';

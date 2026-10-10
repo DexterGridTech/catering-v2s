@@ -5,21 +5,15 @@ import {
   type ActorExecutionContext,
   type ActorDefinition,
   primarySurfaceReadyCommand,
+  selectLastLocalInteraction,
 } from '@catering-v2s/kernel-base-runtime';
 import {
   requestTerminalUpdateDownloadGrantCommand,
-  readTerminalDataCommand,
-  subscribeTerminalTopicCommand,
-  acceptTerminalTopicNotificationCommand,
-  terminalTopicChangedCommand,
   terminalDataHeartbeatCommand,
   type TerminalDataHeartbeatPayload,
-  type TerminalUpdateRuleSnapshotItem,
-  type TerminalUpdateRuleSnapshotPage,
   selectActivationState,
   submitTerminalUpdateReportCommand,
   selectConnectionState,
-  selectTerminalTopicSubscriptions,
   type TerminalUpdateDownloadGrantResult,
   type TerminalUpdateReportPayload,
 } from '@catering-v2s/kernel-base-terminal-data-client';
@@ -30,162 +24,49 @@ import type {
   UpdatePort,
 } from '@catering-v2s/kernel-base-platform-ports';
 import {moduleName} from '../../moduleName';
+import type {UpdatePresentation} from '@catering-v2s/kernel-base-platform-ports';
 import {terminalUpdateSliceName} from '../slices/terminalUpdate';
 import {terminalUpdateActions} from '../slices/terminalUpdate';
 import {
-  acceptTerminalUpdateTargetCommand,
+  requestTerminalUpdateCommand,
   clearTerminalUpdateReportContextCommand,
   confirmTerminalUpdateBootCommand,
-  refreshTerminalUpdateRuleSnapshotCommand,
+  confirmTerminalUpdateInstallCommand,
+  deferTerminalUpdateInstallCommand,
   reconcileTerminalUpdateCommand,
+  terminalUpdateDeadlineCommand,
+  updatePresentationChangedCommand,
 } from '../commands/commands';
 import type {
   FixedUpdateTarget,
   TerminalUpdateRecentStatus,
   TerminalUpdateState,
   TerminalUpdateTask,
+  CurrentUpdateTargetReader,
   UpdateNetworkSnapshotReader,
   UpdateTargetSourceProvider,
-  UpdateRuleSnapshotContext,
-  StoredTerminalUpdateArtifactSummary,
-  StoredTerminalUpdateRule,
+  TerminalUpdateContextFacts,
 } from '../../types/terminalUpdate';
 
-const ruleTopicSubscriberKey = moduleName;
-const terminalUpdateTopicKey = 'TERMINAL_UPDATE_RULES' as const;
-const ruleSnapshotPageLimit = 100;
-const ruleSnapshotPageByteLimit = 1_048_576;
-const ruleSnapshotTotalByteLimit = 8_388_608;
+const actualVersionObservationFactsKey = (actual: UpdateActualVersions): string =>
+  JSON.stringify([
+    actual.applicationId,
+    actual.nativeVersion,
+    actual.nativeBuildNumber,
+    actual.apkSha256 ?? null,
+    actual.runtimeVersion,
+    actual.bundleVersion,
+    actual.publicationId,
+    actual.entryKind,
+  ]);
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
-
-const utf8JsonByteLength = (value: unknown): number => {
-  const json = JSON.stringify(value);
-  let bytes = 0;
-  for (let index = 0; index < json.length; index += 1) {
-    const code = json.charCodeAt(index);
-    if (code < 0x80) bytes += 1;
-    else if (code < 0x800) bytes += 2;
-    else if (
-      code >= 0xd800 &&
-      code <= 0xdbff &&
-      index + 1 < json.length &&
-      json.charCodeAt(index + 1) >= 0xdc00 &&
-      json.charCodeAt(index + 1) <= 0xdfff
-    ) {
-      bytes += 4;
-      index += 1;
-    } else bytes += 3;
-  }
-  return bytes;
-};
-
-const snapshotArtifact = (value: unknown): StoredTerminalUpdateArtifactSummary | null => {
-  if (
-    !isRecord(value) ||
-    typeof value.artifactRef !== 'string' ||
-    typeof value.kind !== 'string' ||
-    typeof value.applicationId !== 'string' ||
-    typeof value.runtimeVersion !== 'string' ||
-    !Number.isSafeInteger(value.nativeBuildNumber) ||
-    typeof value.apkVersion !== 'string' ||
-    typeof value.jsVersion !== 'string' ||
-    typeof value.publicationId !== 'string' ||
-    !(value.apkSha256 === null || (typeof value.apkSha256 === 'string' && /^[a-f0-9]{64}$/u.test(value.apkSha256))) ||
-    typeof value.zipSha256 !== 'string' ||
-    !/^[a-f0-9]{64}$/u.test(value.zipSha256) ||
-    !Number.isSafeInteger(value.byteSize) ||
-    !Number.isSafeInteger(value.createdAtEpochMillis)
-  )
-    return null;
-  if (value.kind !== 'FULL' && value.kind !== 'HOT') return null;
-  if ((value.kind === 'FULL') !== (value.apkSha256 !== null)) return null;
-  return Object.freeze({
-    artifactRef: value.artifactRef,
-    kind: value.kind,
-    applicationId: value.applicationId,
-    runtimeVersion: value.runtimeVersion,
-    nativeBuildNumber: value.nativeBuildNumber as number,
-    apkVersion: value.apkVersion,
-    jsVersion: value.jsVersion,
-    publicationId: value.publicationId,
-    apkSha256: value.apkSha256 as string | null,
-    zipSha256: value.zipSha256,
-    byteSize: value.byteSize as number,
-    createdAtEpochMillis: value.createdAtEpochMillis as number,
-  });
-};
-
-const storedSnapshotRule = (item: TerminalUpdateRuleSnapshotItem): StoredTerminalUpdateRule | null => {
-  const full = snapshotArtifact(item.full);
-  const hot = item.hot === null ? null : snapshotArtifact(item.hot);
-  if (
-    typeof item.ruleRef !== 'string' ||
-    item.ruleRef.length === 0 ||
-    (item.targetMode !== 'ALL' && item.targetMode !== 'STORE_REFS') ||
-    !Array.isArray(item.storeRefs) ||
-    item.storeRefs.some(value => typeof value !== 'string') ||
-    typeof item.applicationId !== 'string' ||
-    item.applicationId.length === 0 ||
-    !Number.isSafeInteger(item.createdAtEpochMillis) ||
-    item.createdAtEpochMillis < 0 ||
-    full === null ||
-    full.kind !== 'FULL' ||
-    (item.hot !== null && (hot === null || hot.kind !== 'HOT')) ||
-    !Number.isSafeInteger(item.nSeconds) ||
-    item.nSeconds < 60 ||
-    item.nSeconds > 86_400 ||
-    (item.hot === null
-      ? item.hotStrategy !== null || item.mSeconds !== null
-      : item.hotStrategy === 'IMMEDIATE'
-        ? item.mSeconds !== null
-        : item.hotStrategy !== 'IDLE' ||
-          item.mSeconds === null ||
-          !Number.isSafeInteger(item.mSeconds) ||
-          item.mSeconds < 60 ||
-          item.mSeconds > 86_400) ||
-    (item.description !== null && typeof item.description !== 'string')
-  )
-    return null;
-  return Object.freeze({
-    ruleRef: item.ruleRef,
-    targetMode: item.targetMode,
-    storeRefs: Object.freeze([...item.storeRefs]),
-    applicationId: item.applicationId,
-    createdAtEpochMillis: item.createdAtEpochMillis,
-    full,
-    hot,
-    nSeconds: item.nSeconds,
-    hotStrategy: item.hotStrategy,
-    mSeconds: item.mSeconds,
-    description: item.description,
-  });
-};
-
-const sourceFromSnapshotArtifact = (
-  artifact: StoredTerminalUpdateArtifactSummary,
-): NonNullable<FixedUpdateTarget['full']> =>
-  Object.freeze({
-    sourceRef: `terminal-update-artifact:${artifact.artifactRef}`,
-    expectedSha256: artifact.zipSha256,
-    apkSha256: artifact.apkSha256,
-    artifactRef: artifact.artifactRef,
-    artifact: Object.freeze({
-      applicationId: artifact.applicationId,
-      nativeVersion: artifact.apkVersion,
-      nativeBuildNumber: artifact.nativeBuildNumber,
-      bundleVersion: artifact.jsVersion,
-      runtimeVersion: artifact.runtimeVersion,
-      publicationId: artifact.publicationId,
-    }),
-  });
 
 type TerminalUpdateActorInput = Readonly<{
   port: UpdatePort;
   createProtocolUuid: () => string;
   sourceProvider?: UpdateTargetSourceProvider;
-  readRuleSnapshotContext?: (state: ReturnType<ActorExecutionContext['getState']>) => UpdateRuleSnapshotContext | null;
+  readCurrentTarget?: CurrentUpdateTargetReader;
+  readTerminalUpdateContextFacts?: (state: ReturnType<ActorExecutionContext['getState']>) => TerminalUpdateContextFacts | null;
   actions?: typeof terminalUpdateActions;
   readNetworkSnapshot?: UpdateNetworkSnapshotReader;
 }>;
@@ -200,21 +81,46 @@ const readState = (context: ActorExecutionContext): TerminalUpdateState => {
 };
 const persist = async (context: ActorExecutionContext): Promise<boolean> =>
   (await context.flushPersistence()).status === 'succeeded';
-const validTarget = (target: FixedUpdateTarget): boolean =>
-  typeof target.ruleRef === 'string' &&
-  target.ruleRef.length > 0 &&
-  typeof target.applicationId === 'string' &&
-  target.applicationId.length > 0 &&
-  (target.full !== null || target.hot !== null) &&
-  (target.full === null || target.full.artifact.applicationId === target.applicationId) &&
-  (target.hot === null || target.hot.artifact.applicationId === target.applicationId) &&
-  (target.full === null ||
-    target.hot === null ||
-    target.full.artifact.runtimeVersion === target.hot.artifact.runtimeVersion) &&
-  Number.isSafeInteger(target.strategy.maxNetworkAttempts) &&
-  target.strategy.maxNetworkAttempts >= 0 &&
-  Number.isSafeInteger(target.strategy.bootTimeoutMs) &&
-  target.strategy.bootTimeoutMs > 0;
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+const isArtifactSource = (value: unknown): value is NonNullable<FixedUpdateTarget['full']> => {
+  if (!isRecord(value) || typeof value.sourceRef !== 'string' || value.sourceRef.length === 0 ||
+      typeof value.expectedSha256 !== 'string' || !isRecord(value.artifact)) return false;
+  const artifact = value.artifact;
+  return typeof artifact.applicationId === 'string' && typeof artifact.nativeVersion === 'string' &&
+    Number.isSafeInteger(artifact.nativeBuildNumber) && typeof artifact.bundleVersion === 'string' &&
+    typeof artifact.runtimeVersion === 'string' && typeof artifact.publicationId === 'string' &&
+    (value.apkSha256 === undefined || value.apkSha256 === null || typeof value.apkSha256 === 'string') &&
+    (value.artifactRef === undefined || typeof value.artifactRef === 'string') &&
+    (value.manifest === undefined || isRecord(value.manifest));
+};
+const validTarget = (value: unknown): value is FixedUpdateTarget => {
+  if (!isRecord(value) || typeof value.ruleRef !== 'string' || value.ruleRef.length === 0 ||
+      typeof value.collectionHash !== 'string' || value.collectionHash.length === 0 ||
+      !Number.isSafeInteger(value.createdAt) || typeof value.applicationId !== 'string' || value.applicationId.length === 0 ||
+      !isRecord(value.policy) || !isRecord(value.strategy) || !isRecord(value.selectionContext)) return false;
+  const full = value.full;
+  const hot = value.hot;
+  const policy = value.policy;
+  const strategy = value.strategy;
+  const selection = value.selectionContext;
+  if (!(full === null || isArtifactSource(full)) || !(hot === null || isArtifactSource(hot)) || (full === null && hot === null) ||
+      !Number.isSafeInteger(policy.nSeconds) || Number(policy.nSeconds) < 60 || Number(policy.nSeconds) > 86_400 ||
+      !Number.isSafeInteger(strategy.maxNetworkAttempts) || Number(strategy.maxNetworkAttempts) < 0 ||
+      !Number.isSafeInteger(strategy.bootTimeoutMs) || Number(strategy.bootTimeoutMs) <= 0 ||
+      typeof selection.selectedSpace !== 'string' || typeof selection.contextIdentity !== 'string' ||
+      typeof selection.ruleRef !== 'string' || selection.ruleRef !== value.ruleRef) return false;
+  const hotStrategy = policy.hotStrategy;
+  const mSeconds = policy.mSeconds;
+  if (hot === null ? hotStrategy !== null || mSeconds !== null : hotStrategy === 'IMMEDIATE'
+    ? mSeconds !== null : hotStrategy !== 'IDLE' || !Number.isSafeInteger(mSeconds) || Number(mSeconds) < 60 || Number(mSeconds) > 86_400)
+    return false;
+  return (full === null || (full as NonNullable<FixedUpdateTarget['full']>).artifact.applicationId === value.applicationId) &&
+    (hot === null || (hot as NonNullable<FixedUpdateTarget['hot']>).artifact.applicationId === value.applicationId) &&
+    (full === null || hot === null ||
+      (full as NonNullable<FixedUpdateTarget['full']>).artifact.runtimeVersion ===
+      (hot as NonNullable<FixedUpdateTarget['hot']>).artifact.runtimeVersion);
+};
 
 const fullManifestFromGrant = (
   manifest: TerminalUpdateDownloadGrantResult['artifact'],
@@ -274,14 +180,17 @@ const toReportReason = (reason: string | null): TerminalUpdateReportPayload['bod
 
 const toReportState = (
   state: TerminalUpdateRecentStatus['state'],
+  task: TerminalUpdateTask | null,
 ): TerminalUpdateReportPayload['body']['recent']['state'] => {
   switch (state) {
+    case 'waiting-idle':
+      return 'WAITING_IDLE';
     case 'waiting-user':
       return 'WAITING_USER';
     case 'preparing':
       return 'DOWNLOADING';
     case 'applying':
-      return 'INSTALLING';
+      return task?.actionKind === 'hot' || task?.phase === 'applying-hot' ? 'APPLYING_HOT' : 'INSTALLING';
     case 'succeeded':
       return 'SUCCEEDED';
     case 'failed':
@@ -324,10 +233,15 @@ const createReportPayload = (
             : actual.entryKind === 'hot'
               ? 'HOT_BUNDLE'
               : 'UNKNOWN',
-      unknownReason: actual === null ? 'READBACK_UNAVAILABLE' : null,
+      unknownReason:
+        actual === null
+          ? 'READBACK_UNAVAILABLE'
+          : actual.entryKind === 'file-recovery' || actual.entryKind === 'unknown'
+            ? 'OTHER'
+            : null,
     }),
     recent: Object.freeze({
-      state: toReportState(status.state),
+      state: toReportState(status.state, task),
       reason: toReportReason(status.reason),
       changedAtEpochMillis: Number(status.changedAt),
       ruleRef: task?.target.ruleRef ?? status.ruleRef ?? null,
@@ -412,19 +326,42 @@ export const createTerminalUpdateActor = (input: TerminalUpdateActorInput): Acto
   let targetCommitPending: Promise<void> | null = null;
   let reportSendInFlight: Readonly<{attemptId: number; expiresAt: number}> | null = null;
   let nextReportSendAttemptId = 0;
-  let ruleSnapshotRefresh: Promise<Readonly<{status: string; reason?: string}>> | null = null;
+  let currentPresentation: UpdatePresentation = 'unknown';
   const emptyReportDescriptor = (
     bindingIdentity: string | null,
     contextIdentity: string | null = null,
+    nextReportSequence = 1,
   ): TerminalUpdateState['reportDescriptor'] =>
     Object.freeze({
       bindingIdentity,
       contextIdentity,
-      nextReportSequence: 1,
+      nextReportSequence,
+      lastObservationFactsKey: null,
       pendingReports: Object.freeze({}),
       sendPaused: false,
       latestDeliveryFailure: null,
     });
+  const reportDescriptorForContext = (
+    previous: TerminalUpdateState['reportDescriptor'],
+    bindingIdentity: string,
+    contextIdentity: string,
+  ): TerminalUpdateState['reportDescriptor'] => {
+    if (previous.bindingIdentity !== bindingIdentity) return emptyReportDescriptor(bindingIdentity, contextIdentity);
+    if (previous.contextIdentity === contextIdentity) return previous;
+    // A project/context change invalidates pending bodies, but report sequence is
+    // scoped to the binding cycle and must remain monotonic for CBS uniqueness.
+    return emptyReportDescriptor(bindingIdentity, contextIdentity, previous.nextReportSequence);
+  };
+  const writeReportDescriptor = async (
+    context: ActorExecutionContext,
+    descriptor: TerminalUpdateState['reportDescriptor'],
+  ): Promise<boolean> => {
+    const previous = readState(context).reportDescriptor;
+    context.dispatchAction(actions.replaceReportDescriptor(descriptor));
+    if (await persist(context)) return true;
+    context.dispatchAction(actions.replaceReportDescriptor(previous));
+    return false;
+  };
   const currentBindingIdentity = (
     context: ActorExecutionContext,
   ): Readonly<{identity: string; generation: number}> | null => {
@@ -444,10 +381,10 @@ export const createTerminalUpdateActor = (input: TerminalUpdateActorInput): Acto
   const currentRuleContext = (
     context: ActorExecutionContext,
   ): Readonly<{
-    readonly facts: UpdateRuleSnapshotContext;
+    readonly facts: TerminalUpdateContextFacts;
     readonly identity: string;
   }> | null => {
-    const facts = input.readRuleSnapshotContext?.(context.getState());
+    const facts = input.readTerminalUpdateContextFacts?.(context.getState());
     if (
       facts === undefined ||
       facts === null ||
@@ -460,332 +397,45 @@ export const createTerminalUpdateActor = (input: TerminalUpdateActorInput): Acto
     const identity = `${facts.terminalRef}:${facts.bindingGeneration}:${facts.selectedSpace}:${facts.storeRef}:${facts.projectRef}:${facts.projectUpdatedAtEpochMillis}`;
     return Object.freeze({facts, identity});
   };
-  const writeRuleSnapshot = async (
-    context: ActorExecutionContext,
-    snapshot: TerminalUpdateState['ruleSnapshot'],
-    status: TerminalUpdateState['ruleSnapshotStatus'],
-  ): Promise<boolean> => {
-    const before = readState(context).ruleSnapshot;
-    const beforeStatus = readState(context).ruleSnapshotStatus;
-    context.dispatchAction(actions.replaceRuleSnapshot(snapshot));
-    context.dispatchAction(actions.replaceRuleSnapshotStatus(status));
-    if (await persist(context)) return true;
-    context.dispatchAction(actions.replaceRuleSnapshot(before));
-    context.dispatchAction(actions.replaceRuleSnapshotStatus(beforeStatus));
-    return false;
-  };
-  const writeReportDescriptor = async (
-    context: ActorExecutionContext,
-    next: TerminalUpdateState['reportDescriptor'],
-  ): Promise<boolean> => {
-    const before = readState(context).reportDescriptor;
-    context.dispatchAction(actions.replaceReportDescriptor(next));
-    if (await persist(context)) return true;
-    context.dispatchAction(actions.replaceReportDescriptor(before));
-    return false;
-  };
-  const refreshRuleSnapshot = (context: ActorExecutionContext) => {
-    if (ruleSnapshotRefresh !== null) return ruleSnapshotRefresh;
-    ruleSnapshotRefresh = (async () => {
-      const current = currentRuleContext(context);
-      if (current === null) {
-        const binding = currentBindingIdentity(context);
-        if (binding === null) {
-          const descriptor = readState(context).reportDescriptor;
-          if (
-            descriptor.bindingIdentity !== null ||
-            descriptor.contextIdentity !== null ||
-            Object.keys(descriptor.pendingReports).length > 0 ||
-            descriptor.sendPaused ||
-            descriptor.latestDeliveryFailure !== null
-          ) {
-            if (!(await writeReportDescriptor(context, emptyReportDescriptor(null))))
-              return Object.freeze({status: 'persistence-failed'});
-          }
-        }
-        const before = readState(context).ruleSnapshot;
-        if (readState(context).ruleSnapshotStatus.status !== 'empty' || before.items.length > 0) {
-          const cleared = Object.freeze({
-            contextIdentity: null,
-            selectedSpace: null,
-            projectRef: null,
-            collectionHash: null,
-            items: Object.freeze([]),
-          });
-          if (!(await writeRuleSnapshot(context, cleared, Object.freeze({status: 'empty', errorCode: null}))))
-            return Object.freeze({status: 'persistence-failed'});
-        }
-        return Object.freeze({status: 'not-ready'});
-      }
-      const binding = currentBindingIdentity(context);
-      const reportDescriptor = readState(context).reportDescriptor;
-      if (binding === null || binding.identity !== `${current.facts.terminalRef}:${current.facts.bindingGeneration}`)
-        return Object.freeze({status: 'stale-context'});
-      if (
-        reportDescriptor.bindingIdentity !== binding.identity ||
-        reportDescriptor.contextIdentity !== current.identity
-      ) {
-        if (!(await writeReportDescriptor(context, emptyReportDescriptor(binding.identity, current.identity))))
-          return Object.freeze({status: 'persistence-failed'});
-      }
-      const existing = readState(context).ruleSnapshot;
-      if (
-        existing.contextIdentity !== current.identity ||
-        existing.selectedSpace !== current.facts.selectedSpace ||
-        existing.projectRef !== current.facts.projectRef
-      ) {
-        const cleared = Object.freeze({
-          contextIdentity: current.identity,
-          selectedSpace: current.facts.selectedSpace,
-          projectRef: current.facts.projectRef,
-          collectionHash: null,
-          items: Object.freeze([]),
-        });
-        if (!(await writeRuleSnapshot(context, cleared, Object.freeze({status: 'empty', errorCode: null}))))
-          return Object.freeze({status: 'persistence-failed'});
-      }
-      const credential = selectActivationState(context.getState());
-      if (
-        credential.status !== 'active' ||
-        credential.terminalRef !== current.facts.terminalRef ||
-        credential.bindingGeneration !== current.facts.bindingGeneration ||
-        credential.groupWorkspaceKey !== current.facts.selectedSpace
-      )
-        return Object.freeze({status: 'stale-context'});
-      const acceptedTopic = selectTerminalTopicSubscriptions(context.getState()).find(
-        subscription =>
-          subscription.subscriberKey === ruleTopicSubscriberKey &&
-          subscription.topicKey === terminalUpdateTopicKey &&
-          subscription.ownerRef === current.facts.projectRef,
-      );
-      context.platformPorts.logger.info({
-        category: 'terminal-update.rules',
-        event: 'terminal-update.rules.topic-subscribe.begin',
-        message: 'Starting the terminal update rule topic subscription',
-        data: {topicKey: terminalUpdateTopicKey, existingSubscription: acceptedTopic !== undefined},
-      });
-      const subscribe = await context.dispatchCommand(
-        subscribeTerminalTopicCommand,
-        Object.freeze({
-          subscriberKey: ruleTopicSubscriberKey,
-          topicKey: terminalUpdateTopicKey,
-          ownerRef: current.facts.projectRef,
-          initialTimeEpochMillis: acceptedTopic?.acceptedTimeEpochMillis ?? 0,
-        }),
-      );
-      const subscribeActor = subscribe.actorResults.find(result => result.status === 'completed');
-      const subscribeResult =
-        subscribeActor !== undefined &&
-        typeof subscribeActor.result === 'object' &&
-        subscribeActor.result !== null &&
-        !Array.isArray(subscribeActor.result)
-          ? (subscribeActor.result as Record<string, unknown>)
-          : undefined;
-      const topicSubscriptionsAfterSubscribe = selectTerminalTopicSubscriptions(context.getState());
-      const matchingTopicSubscription = topicSubscriptionsAfterSubscribe.find(
-        subscription =>
-          subscription.subscriberKey === ruleTopicSubscriberKey &&
-          subscription.topicKey === terminalUpdateTopicKey &&
-          subscription.ownerRef === current.facts.projectRef,
-      );
-      context.platformPorts.logger.info({
-        category: 'terminal-update.rules',
-        event: 'terminal-update.rules.topic-subscribe.readback',
-        message: 'Read the topic subscription command outcome',
-        data: {
-          dispatchStatus: subscribe.status,
-          actorStatus: subscribeActor?.status ?? 'none',
-          resultStatus: typeof subscribeResult?.status === 'string' ? subscribeResult.status : 'none',
-          resultReason:
-            typeof subscribeResult?.reason === 'string' && /^[A-Z0-9_]+$/u.test(subscribeResult.reason)
-              ? subscribeResult.reason
-              : 'none',
-          subscriptionCount: topicSubscriptionsAfterSubscribe.length,
-          matchingSubscriptionPresent: matchingTopicSubscription !== undefined,
-          pendingNotificationPresent:
-            matchingTopicSubscription?.pendingNotification !== null &&
-            matchingTopicSubscription?.pendingNotification !== undefined,
-        },
-      });
-      if (subscribe.status !== 'completed') return Object.freeze({status: 'subscribe-failed'});
-
-      let cursor: string | null = null;
-      let collectionHash: string | null = null;
-      const seenCursors = new Set<string>();
-      const items: StoredTerminalUpdateRule[] = [];
-      let totalBytes = 0;
-      const failSnapshot = async (reason: string) => {
-        const previous = readState(context).ruleSnapshot;
-        const retained =
-          previous.contextIdentity === current.identity &&
-          previous.selectedSpace === current.facts.selectedSpace &&
-          previous.projectRef === current.facts.projectRef
-            ? previous.items
-            : Object.freeze([]);
-        const failed = Object.freeze({
-          contextIdentity: current.identity,
-          selectedSpace: current.facts.selectedSpace,
-          projectRef: current.facts.projectRef,
-          collectionHash: previous.contextIdentity === current.identity ? previous.collectionHash : null,
-          items: retained,
-        });
-        await writeRuleSnapshot(context, failed, Object.freeze({status: 'failed', errorCode: reason}));
-        return Object.freeze({status: 'failed', reason});
-      };
-      do {
-        context.platformPorts.logger.info({
-          category: 'terminal-update.rules',
-          event: 'terminal-update.rules.page-read.begin',
-          message: 'Starting a page read for the terminal update rule snapshot',
-          data: {
-            cursorPresent: cursor !== null,
-            collectionHashPresent: collectionHash !== null,
-            pageLimit: ruleSnapshotPageLimit,
-          },
-        });
-        const pageCommand = await context.dispatchCommand(
-          readTerminalDataCommand,
-          Object.freeze({
-            operationId: 'terminalReadProjectUpdateRuleSnapshotPage',
-            pathParameters: {projectRef: current.facts.projectRef},
-            queryParameters: {collectionHash, cursor, limit: ruleSnapshotPageLimit},
-          }),
-        );
-        const result = pageCommand.actorResults.find(record => record.status === 'completed')?.result as
-          | {kind: 'success'; body: TerminalUpdateRuleSnapshotPage}
-          | {kind: 'business-rejection'; errorCode: string}
-          | {kind: 'failure'; code: string}
-          | undefined;
-        context.platformPorts.logger.info({
-          category: 'terminal-update.rules',
-          event: 'terminal-update.rules.page-read.readback',
-          message: 'Read the terminal update rule page command outcome',
-          data: {
-            dispatchStatus: pageCommand.status,
-            actorCount: pageCommand.actorResults.length,
-            actorStatus: pageCommand.actorResults.find(record => record.status === 'completed')?.status ?? 'none',
-            resultKind: result?.kind ?? 'none',
-            resultCode:
-              result?.kind === 'business-rejection' || result?.kind === 'failure'
-                ? result.kind === 'business-rejection'
-                  ? result.errorCode
-                  : result.code
-                : 'none',
-          },
-        });
-        if (pageCommand.status !== 'completed' || result?.kind !== 'success')
-          return failSnapshot(result?.kind === 'business-rejection' ? result.errorCode : 'RULE_SNAPSHOT_READ_FAILED');
-        const page = result.body;
-        const pageBytes = utf8JsonByteLength(page);
-        if (pageBytes > ruleSnapshotPageByteLimit) return failSnapshot('SNAPSHOT_PAGE_TOO_LARGE');
-        totalBytes += pageBytes;
-        if (totalBytes > ruleSnapshotTotalByteLimit) return failSnapshot('SNAPSHOT_TOO_LARGE');
-        if (collectionHash === null) collectionHash = page.collectionHash;
-        if (page.collectionHash !== collectionHash) return failSnapshot('SNAPSHOT_COLLECTION_CHANGED');
-        for (const item of page.items) {
-          const stored = storedSnapshotRule(item);
-          if (stored === null) return failSnapshot('SNAPSHOT_ITEM_INVALID');
-          items.push(stored);
-        }
-        cursor = page.nextCursor;
-        if (cursor !== null && seenCursors.has(cursor)) return failSnapshot('SNAPSHOT_CURSOR_REPEATED');
-        if (cursor !== null) seenCursors.add(cursor);
-      } while (cursor !== null);
-      if (currentRuleContext(context)?.identity !== current.identity) return Object.freeze({status: 'stale-context'});
-      const uniqueRules = new Set(items.map(item => item.ruleRef));
-      if (uniqueRules.size !== items.length) return failSnapshot('SNAPSHOT_DUPLICATE_RULE');
-      const ready = Object.freeze({
-        contextIdentity: current.identity,
-        selectedSpace: current.facts.selectedSpace,
-        projectRef: current.facts.projectRef,
-        collectionHash,
-        items: Object.freeze(items),
-      });
-      if (!(await writeRuleSnapshot(context, ready, Object.freeze({status: 'ready', errorCode: null}))))
-        return Object.freeze({status: 'persistence-failed'});
-      return Object.freeze({status: 'ready'});
-    })().finally(() => {
-      ruleSnapshotRefresh = null;
-    });
-    return ruleSnapshotRefresh;
-  };
-  const targetFromRuleSnapshot = (
-    context: ActorExecutionContext,
-    selectionContext: FixedUpdateTarget['selectionContext'],
-  ): FixedUpdateTarget | null => {
-    const current = currentRuleContext(context);
-    const snapshot = readState(context).ruleSnapshot;
-    if (
-      current === null ||
-      readState(context).ruleSnapshotStatus.status !== 'ready' ||
-      snapshot.contextIdentity !== current.identity ||
-      snapshot.selectedSpace !== selectionContext.selectedSpace ||
-      snapshot.contextIdentity !== selectionContext.contextIdentity ||
-      selectionContext.selectedSpace !== current.facts.selectedSpace
-    )
-      return null;
-    const rule = snapshot.items.find(item => item.ruleRef === selectionContext.ruleRef);
-    if (
-      rule === undefined ||
-      rule.applicationId.length === 0 ||
-      (rule.targetMode === 'STORE_REFS' && !rule.storeRefs.includes(current.facts.storeRef))
-    )
-      return null;
-    const fullArtifact = rule.full;
-    const hotArtifact = rule.hot;
-    if (
-      fullArtifact === null ||
-      fullArtifact.kind !== 'FULL' ||
-      (rule.hot !== null && (hotArtifact === null || hotArtifact.kind !== 'HOT'))
-    )
-      return null;
-    const strategy = Object.freeze({maxNetworkAttempts: 2, bootTimeoutMs: 60_000});
-    return Object.freeze({
-      ruleRef: rule.ruleRef,
-      createdAt: rule.createdAtEpochMillis as never,
-      applicationId: rule.applicationId,
-      full: sourceFromSnapshotArtifact(fullArtifact),
-      hot: hotArtifact === null ? null : sourceFromSnapshotArtifact(hotArtifact),
-      strategy,
-      selectionContext,
-    });
-  };
   const writeTask = async (
     context: ActorExecutionContext,
     task: TerminalUpdateTask | null,
     status: TerminalUpdateState['recentStatus'],
+    initialObservation = false,
   ): Promise<boolean> => {
     const before = readState(context);
     const binding = currentBindingIdentity(context);
     const identity = binding?.identity ?? null;
     const previousDescriptor = before.reportDescriptor ?? emptyReportDescriptor(null);
-    const associatedTask = task ?? (before.currentTask?.taskId === status.taskId ? before.currentTask : null);
+    const associatedTask = initialObservation
+      ? null
+      : (task ?? (before.currentTask?.taskId === status.taskId ? before.currentTask : null));
     const reportContextIdentity =
       associatedTask?.target.selectionContext.contextIdentity ??
       currentRuleContext(context)?.identity ??
-      before.ruleSnapshot.contextIdentity ??
       null;
     let descriptor =
-      previousDescriptor.bindingIdentity === identity &&
-      (reportContextIdentity === null ||
-        previousDescriptor.contextIdentity === null ||
-        previousDescriptor.contextIdentity === reportContextIdentity)
-        ? previousDescriptor
-        : emptyReportDescriptor(identity, reportContextIdentity);
+      identity === null || reportContextIdentity === null
+        ? previousDescriptor.bindingIdentity === identity
+          ? previousDescriptor
+          : emptyReportDescriptor(identity, reportContextIdentity)
+        : reportDescriptorForContext(previousDescriptor, identity, reportContextIdentity);
     if (descriptor.contextIdentity === null && reportContextIdentity !== null)
       descriptor = Object.freeze({...descriptor, contextIdentity: reportContextIdentity});
     const recent: TerminalUpdateRecentStatus = Object.freeze({
       ...status,
       applicationId:
-        associatedTask?.target.applicationId ?? status.applicationId ?? before.recentStatus.applicationId ?? null,
-      ruleRef: associatedTask?.target.ruleRef ?? status.ruleRef ?? before.recentStatus.ruleRef ?? null,
+        associatedTask?.target.applicationId ??
+        status.applicationId ??
+        (initialObservation ? null : before.recentStatus.applicationId ?? null),
+      ruleRef: associatedTask?.target.ruleRef ??
+        (initialObservation ? null : status.ruleRef ?? before.recentStatus.ruleRef ?? null),
       fullArtifactRef:
         associatedTask?.target.full?.artifactRef ??
-        status.fullArtifactRef ??
-        before.recentStatus.fullArtifactRef ??
-        null,
+        (initialObservation ? null : status.fullArtifactRef ?? before.recentStatus.fullArtifactRef ?? null),
       hotArtifactRef:
-        associatedTask?.target.hot?.artifactRef ?? status.hotArtifactRef ?? before.recentStatus.hotArtifactRef ?? null,
+        associatedTask?.target.hot?.artifactRef ??
+        (initialObservation ? null : status.hotArtifactRef ?? before.recentStatus.hotArtifactRef ?? null),
     });
     const unchangedRecent =
       before.recentStatus.taskId === recent.taskId &&
@@ -798,8 +448,16 @@ export const createTerminalUpdateActor = (input: TerminalUpdateActorInput): Acto
     const stableRecent = unchangedRecent
       ? Object.freeze({...recent, changedAt: before.recentStatus.changedAt})
       : recent;
+    const observationFactsKey =
+      initialObservation && before.actualVersions !== null
+        ? actualVersionObservationFactsKey(before.actualVersions)
+        : null;
     const report =
-      identity === null || unchangedRecent
+      identity === null ||
+      (unchangedRecent && !initialObservation) ||
+      (initialObservation &&
+        observationFactsKey !== null &&
+        descriptor.lastObservationFactsKey === observationFactsKey)
         ? null
         : createReportPayload(
             input.createProtocolUuid(),
@@ -810,33 +468,32 @@ export const createTerminalUpdateActor = (input: TerminalUpdateActorInput): Acto
           );
     if (report !== null) {
       const key = recent.taskId ?? 'observation';
-      const exists = Object.prototype.hasOwnProperty.call(descriptor.pendingReports, key);
-      if (exists || Object.keys(descriptor.pendingReports).length < 64) {
-        descriptor = Object.freeze({
-          ...descriptor,
-          nextReportSequence: descriptor.nextReportSequence + 1,
-          pendingReports: Object.freeze({...descriptor.pendingReports, [key]: report}),
-        });
-      } else {
-        descriptor = Object.freeze({
-          ...descriptor,
-          latestDeliveryFailure: Object.freeze({
-            taskId: report.body.taskId,
-            reportId: report.body.reportId,
-            reportSequence: report.body.reportSequence,
-            reasonCode: 'PENDING_REPORT_LIMIT',
-            observedAt: nowTimestampMs(),
-          }),
-        });
-      }
+      descriptor = Object.freeze({
+        ...descriptor,
+        nextReportSequence: descriptor.nextReportSequence + 1,
+        ...(initialObservation && observationFactsKey !== null
+          ? {lastObservationFactsKey: observationFactsKey}
+          : {}),
+        pendingReports: Object.freeze({...descriptor.pendingReports, [key]: report}),
+      });
     }
     context.dispatchAction(actions.replaceTask(task));
     context.dispatchAction(actions.replaceRecentStatus(stableRecent));
     context.dispatchAction(actions.replaceReportDescriptor(descriptor));
+    const invitation = before.invitation ?? null;
+    if (
+      invitation !== null &&
+      (task?.taskId !== invitation.taskId ||
+        task.actionId !== invitation.actionId ||
+        task.bootId !== invitation.bootId ||
+        status.state !== 'waiting-user')
+    )
+      context.dispatchAction(actions.replaceInvitation(null));
     if (await persist(context)) return true;
     context.dispatchAction(actions.replaceTask(before.currentTask));
     context.dispatchAction(actions.replaceRecentStatus(before.recentStatus));
     context.dispatchAction(actions.replaceReportDescriptor(previousDescriptor));
+    context.dispatchAction(actions.replaceInvitation(invitation));
     return false;
   };
 
@@ -854,12 +511,7 @@ export const createTerminalUpdateActor = (input: TerminalUpdateActorInput): Acto
     if (current === null && existingDescriptor.contextIdentity !== null)
       return Object.freeze({status: 'context-not-ready'});
     if (current !== null && existingDescriptor.contextIdentity !== current.identity) {
-      const next =
-        existingDescriptor.bindingIdentity === binding.identity &&
-        existingDescriptor.contextIdentity === null &&
-        Object.keys(existingDescriptor.pendingReports).length === 0
-          ? Object.freeze({...existingDescriptor, contextIdentity: current.identity})
-          : emptyReportDescriptor(binding.identity, current.identity);
+      const next = reportDescriptorForContext(existingDescriptor, binding.identity, current.identity);
       context.dispatchAction(actions.replaceReportDescriptor(next));
       if (!(await persist(context))) {
         context.dispatchAction(actions.replaceReportDescriptor(existingDescriptor));
@@ -913,7 +565,7 @@ export const createTerminalUpdateActor = (input: TerminalUpdateActorInput): Acto
             };
           }
         | {kind: 'business-rejection'; status: number; errorCode: string}
-        | {kind: 'failure'; category: string; code: string}
+        | {kind: 'failure'; category: string; code: string; status?: number}
         | undefined;
       if (
         dispatched.status === 'completed' &&
@@ -933,35 +585,60 @@ export const createTerminalUpdateActor = (input: TerminalUpdateActorInput): Acto
         context.dispatchAction(actions.replaceReportDescriptor(current));
         return Object.freeze({status: 'receipt-flush-failed'});
       }
-      if (result?.kind === 'business-rejection') {
+      const rejectCurrentReport = async (reasonCode: string, pause: boolean) => {
+        const pendingReports = {...current.pendingReports};
+        if (!pause) delete pendingReports[key];
+        context.dispatchAction(
+          actions.replaceReportDescriptor(
+            Object.freeze({
+              ...current,
+              pendingReports: Object.freeze(pendingReports),
+              sendPaused: current.sendPaused || pause,
+              latestDeliveryFailure: Object.freeze({
+                taskId: payload.body.taskId,
+                reportId: payload.body.reportId,
+                reportSequence: payload.body.reportSequence,
+                reasonCode,
+                observedAt: nowTimestampMs(),
+              }),
+            }),
+          ),
+        );
+        // A receipt flush failure is retryable because the server accepted the
+        // report. A terminal rejection must stay non-sendable in this Runtime.
+        return (await persist(context))
+          ? Object.freeze({status: 'terminal-rejection'})
+          : Object.freeze({status: 'rejection-flush-failed'});
+      };
+      if (dispatched.status === 'completed' && result?.kind === 'success')
+        return rejectCurrentReport('REPORT_RESPONSE_INVALID', false);
+      if (dispatched.status === 'completed' && result?.kind === 'business-rejection') {
         const identityRejected =
+          result.status === 401 ||
+          result.status === 403 ||
           result.errorCode === 'TERMINAL_BINDING_CREDENTIAL_INVALID' ||
           result.errorCode === 'STORE_TERMINAL_DISABLED' ||
           result.errorCode === 'PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED' ||
           result.errorCode === 'PLATFORM_COMMON_ACCESS_DENIED';
-        if (identityRejected || result.status === 409 || result.status === 422 || result.status === 404) {
-          const pendingReports = {...current.pendingReports};
-          delete pendingReports[key];
-          context.dispatchAction(
-            actions.replaceReportDescriptor(
-              Object.freeze({
-                ...current,
-                pendingReports: Object.freeze(pendingReports),
-                sendPaused: current.sendPaused || identityRejected,
-                latestDeliveryFailure: Object.freeze({
-                  taskId: payload.body.taskId,
-                  reportId: payload.body.reportId,
-                  reportSequence: payload.body.reportSequence,
-                  reasonCode: result.errorCode,
-                  observedAt: nowTimestampMs(),
-                }),
-              }),
-            ),
+        if (identityRejected)
+          return rejectCurrentReport(result.errorCode || 'REPORT_IDENTITY_REJECTED', true);
+        if (result.status >= 400 && result.status < 500)
+          return rejectCurrentReport(
+            result.status === 404 || result.status === 409 || result.status === 422
+              ? result.errorCode
+              : 'REPORT_SUBMISSION_INVALID',
+            false,
           );
-          if (await persist(context)) return Object.freeze({status: 'terminal-rejection'});
-          context.dispatchAction(actions.replaceReportDescriptor(current));
-          return Object.freeze({status: 'rejection-flush-failed'});
-        }
+      }
+      if (dispatched.status === 'completed' && result?.kind === 'failure') {
+        if (result.status === 401 || result.status === 403)
+          return rejectCurrentReport('REPORT_IDENTITY_REJECTED', true);
+        if (result.code === 'INVALID_TERMINAL_UPDATE_REPORT')
+          return rejectCurrentReport('REPORT_SUBMISSION_INVALID', false);
+        if (result.code === 'TERMINAL_RESPONSE_SCHEMA_INVALID')
+          return rejectCurrentReport('REPORT_RESPONSE_INVALID', false);
+        if (result.status !== undefined && result.status < 500)
+          return rejectCurrentReport('REPORT_SUBMISSION_INVALID', false);
       }
       return Object.freeze({status: 'retry-retained'});
     } finally {
@@ -986,6 +663,112 @@ export const createTerminalUpdateActor = (input: TerminalUpdateActorInput): Acto
     return released.status === 'succeeded' && released.value.released;
   };
 
+  const applyPreparedArtifact = async (
+    context: ActorExecutionContext,
+    task: TerminalUpdateTask,
+    input: Readonly<{
+      actionId: string;
+      preparedId: string;
+      kind: 'full' | 'hot';
+      interactionRevision?: number;
+      newlyPrepared?: boolean;
+    }>,
+  ) => {
+    const applyingPhase = input.kind === 'full' ? ('applying-full' as const) : ('applying-hot' as const);
+    const applying = Object.freeze({
+      ...task,
+      phase: applyingPhase,
+      actionId: input.actionId,
+      actionKind: input.kind,
+      preparedId: input.preparedId,
+    });
+    if (!(await writeTask(context, applying, createStatus(task.taskId, 'applying', null)))) {
+      if (input.newlyPrepared === true) await port.releasePrepared({timeoutMs: 10_000, preparedId: input.preparedId});
+      await writeTask(context, task, createStatus(task.taskId, task.phase === 'waiting-idle' ? 'waiting-idle' : 'fixed', 'PERSISTENCE_FAILED_BEFORE_APPLY'));
+      return Object.freeze({status: 'persistence-failed', reason: 'PERSISTENCE_FAILED_BEFORE_APPLY'});
+    }
+    if (
+      input.interactionRevision !== undefined &&
+      selectLastLocalInteraction(context.getState()).revision !== input.interactionRevision
+    ) {
+      const waiting = Object.freeze({...task, phase: 'waiting-idle' as const, actionId: input.actionId, actionKind: 'hot' as const});
+      await writeTask(context, waiting, createStatus(task.taskId, 'waiting-idle', null));
+      return Object.freeze({status: 'waiting-idle', reason: 'LOCAL_INTERACTION_CHANGED'});
+    }
+    const applied = await port.applyPrepared({
+      timeoutMs: input.kind === 'hot' ? 60_000 : 120_000,
+      taskId: task.taskId,
+      actionId: input.actionId,
+      preparedId: input.preparedId,
+      kind: input.kind,
+    });
+    if (applied.status !== 'succeeded') {
+      const reason = applied.status === 'failed' ? applied.error.code : `APPLY_${applied.status.toUpperCase()}`;
+      const state = applied.status === 'timed-out' || applied.status === 'unavailable' ? ('unknown' as const) : ('failed' as const);
+      const failedTask = Object.freeze({...applying, phase: state, failureCode: reason});
+      if (state === 'failed') recordFailedArtifact(context, task, (input.kind === 'full' ? task.target.full : task.target.hot)!.artifact.publicationId);
+      await writeTask(context, failedTask, createStatus(task.taskId, state, reason));
+      return Object.freeze({status: state, reason});
+    }
+    const action = applied.value;
+    if (action.taskId !== task.taskId || action.actionId !== input.actionId) {
+      await writeTask(context, applying, createStatus(task.taskId, 'unknown', 'ACTION_IDENTITY_MISMATCH'));
+      return Object.freeze({status: 'unknown', reason: 'ACTION_IDENTITY_MISMATCH'});
+    }
+    const artifact = input.kind === 'full' ? task.target.full : task.target.hot;
+    if (artifact === null || action.publicationId !== artifact.artifact.publicationId) {
+      await writeTask(context, applying, createStatus(task.taskId, 'unknown', 'ACTION_PUBLICATION_IDENTITY_MISMATCH'));
+      return Object.freeze({status: 'unknown', reason: 'ACTION_PUBLICATION_IDENTITY_MISMATCH'});
+    }
+    if (action.state === 'failed') recordFailedArtifact(context, task, action.publicationId);
+    const fullTerminal = input.kind === 'full' && (action.state === 'succeeded' || action.state === 'failed');
+    if (fullTerminal && !(await releaseUnreferencedFullArtifact(applying, action.publicationId))) {
+      await writeTask(context, applying, createStatus(task.taskId, 'unknown', 'PREPARED_RELEASE_FAILED'));
+      return Object.freeze({status: 'cleanup-failed', reason: 'PREPARED_RELEASE_FAILED'});
+    }
+    if (action.state === 'succeeded' && input.kind === 'full' && task.target.hot !== null) {
+      if (action.bootId === null) {
+        const unknown = Object.freeze({...applying, phase: 'unknown' as const, failureCode: 'ACTION_SUCCESS_BOOT_ID_UNAVAILABLE'});
+        await writeTask(context, unknown, createStatus(task.taskId, 'unknown', 'ACTION_SUCCESS_BOOT_ID_UNAVAILABLE'));
+        return Object.freeze({status: 'unknown', reason: 'ACTION_SUCCESS_BOOT_ID_UNAVAILABLE'});
+      }
+      const fixed = Object.freeze({...applying, phase: 'fixed' as const, actionId: null, actionKind: null, preparedId: null});
+      if (!(await writeTask(context, fixed, createStatus(task.taskId, 'fixed', null))))
+        return Object.freeze({status: 'persistence-failed', reason: 'PERSISTENCE_FAILED_AFTER_FULL'});
+      return Object.freeze({status: 'fixed', continuation: 'PRIMARY_READY'});
+    }
+    const status =
+      action.state === 'waiting-user' || action.state === 'user-cancelled'
+        ? ('waiting-user' as const)
+        : action.state === 'failed'
+          ? ('failed' as const)
+          : action.state === 'succeeded'
+            ? ('succeeded' as const)
+            : action.state === 'unknown'
+              ? ('unknown' as const)
+              : ('applying' as const);
+    const phase =
+      action.state === 'waiting-user' || action.state === 'user-cancelled'
+        ? ('waiting-user' as const)
+        : action.state === 'failed'
+          ? ('failed' as const)
+          : action.state === 'succeeded'
+            ? ('succeeded' as const)
+            : action.state === 'unknown' && action.reason !== 'INSTALLER_AWAITING_READBACK'
+              ? ('unknown' as const)
+              : applyingPhase;
+    const updated = Object.freeze({
+      ...applying,
+      phase,
+      preparedId: fullTerminal ? null : input.preparedId,
+      lastInviteAt:
+        input.kind === 'full' && (status === 'waiting-user') ? nowTimestampMs() : applying.lastInviteAt ?? null,
+      failureCode: status === 'failed' ? action.reason : null,
+    });
+    await writeTask(context, updated, createStatus(task.taskId, status, action.reason));
+    return Object.freeze({status, actionId: action.actionId, reason: action.reason});
+  };
+
   const executeNextArtifact = async (context: ActorExecutionContext, task: TerminalUpdateTask) => {
     let factsResult = await port.readFacts({timeoutMs: 10_000});
     if (factsResult.status !== 'succeeded') {
@@ -995,13 +778,12 @@ export const createTerminalUpdateActor = (input: TerminalUpdateActorInput): Acto
     }
     context.dispatchAction(actions.replaceActualVersions(factsResult.value.actual));
     let fixedTask = task;
-    if (fixedTask.originalBundleVersion == null || fixedTask.bootId === null) {
+    if (fixedTask.originalBundleVersion == null) {
       const snapshot = Object.freeze({
         ...fixedTask,
         originalBundleVersion: fixedTask.originalBundleVersion ?? factsResult.value.actual?.bundleVersion ?? null,
-        bootId: fixedTask.bootId ?? factsResult.value.actual?.bootId ?? null,
       });
-      if (snapshot.originalBundleVersion === null || snapshot.bootId === null) {
+      if (snapshot.originalBundleVersion === null) {
         if (
           !(await writeTask(
             context,
@@ -1048,7 +830,6 @@ export const createTerminalUpdateActor = (input: TerminalUpdateActorInput): Acto
         actionId: null,
         actionKind: null,
         preparedId: null,
-        bootId: factsResult.value.actual?.bootId ?? fixedTask.bootId,
       });
       await writeTask(context, complete, createStatus(task.taskId, 'succeeded', null));
       return Object.freeze({status: 'succeeded'});
@@ -1068,10 +849,18 @@ export const createTerminalUpdateActor = (input: TerminalUpdateActorInput): Acto
       await writeTask(context, failedTask, createStatus(task.taskId, 'failed', reason));
       return Object.freeze({status: 'failed', reason});
     }
+    const executionBootId = factsResult.value.actual?.bootId;
+    if (typeof executionBootId !== 'string' || executionBootId.length === 0) {
+      const reason = 'ACTUAL_BOOT_ID_UNAVAILABLE';
+      const unknown = Object.freeze({...fixedTask, phase: 'unknown' as const, failureCode: reason});
+      await writeTask(context, unknown, createStatus(task.taskId, 'unknown', reason));
+      return Object.freeze({status: 'unknown', reason});
+    }
     const actionId = createRequestId();
     const preparingPhase = selected.kind === 'full' ? ('preparing-full' as const) : ('preparing-hot' as const);
     const beforePrepare = Object.freeze({
       ...fixedTask,
+      bootId: executionBootId,
       actionId,
       actionKind: selected.kind,
       preparedId: null,
@@ -1125,7 +914,7 @@ export const createTerminalUpdateActor = (input: TerminalUpdateActorInput): Acto
       }
     } else {
       sourcePath = await sourceProvider!.resolveSourcePath!(selected.sourceRef);
-      const localArtifact = selected.manifest ?? (selected.artifact as TerminalUpdateArtifact);
+      const localArtifact = (selected.manifest ?? selected.artifact) as TerminalUpdateArtifact;
       if (
         !Array.isArray(localArtifact.files) ||
         localArtifact.files.length === 0 ||
@@ -1168,73 +957,22 @@ export const createTerminalUpdateActor = (input: TerminalUpdateActorInput): Acto
       return Object.freeze({status: state, reason});
     }
 
-    const applyingPhase = selected.kind === 'full' ? ('applying-full' as const) : ('applying-hot' as const);
-    const applying = Object.freeze({...beforePrepare, preparedId: prepared.value.preparedId, phase: applyingPhase});
-    if (!(await writeTask(context, applying, createStatus(task.taskId, 'applying', null)))) {
-      await port.releasePrepared({timeoutMs: 10_000, preparedId: prepared.value.preparedId});
-      const reason = 'PERSISTENCE_FAILED_BEFORE_APPLY';
-      await writeTask(context, task, createStatus(task.taskId, 'fixed', reason));
-      return Object.freeze({status: 'persistence-failed', reason});
+    const preparedTask = Object.freeze({...beforePrepare, preparedId: prepared.value.preparedId});
+    if (selected.kind === 'hot' && fixedTask.target.policy.hotStrategy === 'IDLE') {
+      const waiting = Object.freeze({...preparedTask, phase: 'waiting-idle' as const});
+      if (!(await writeTask(context, waiting, createStatus(task.taskId, 'waiting-idle', null)))) {
+        await port.releasePrepared({timeoutMs: 10_000, preparedId: prepared.value.preparedId});
+        await writeTask(context, fixedTask, createStatus(task.taskId, 'fixed', 'PERSISTENCE_FAILED_BEFORE_IDLE_WAIT'));
+        return Object.freeze({status: 'persistence-failed', reason: 'PERSISTENCE_FAILED_BEFORE_IDLE_WAIT'});
+      }
+      return Object.freeze({status: 'waiting-idle', taskId: task.taskId, actionId});
     }
-
-    const applied = await port.applyPrepared({
-      timeoutMs: selected.kind === 'hot' ? 60_000 : 120_000,
-      taskId: task.taskId,
+    return applyPreparedArtifact(context, preparedTask, {
       actionId,
       preparedId: prepared.value.preparedId,
       kind: selected.kind,
+      newlyPrepared: true,
     });
-    if (applied.status !== 'succeeded') {
-      const reason = applied.status === 'failed' ? applied.error.code : `APPLY_${applied.status.toUpperCase()}`;
-      const state =
-        applied.status === 'timed-out' || applied.status === 'unavailable' ? ('unknown' as const) : ('failed' as const);
-      const failedTask = Object.freeze({...applying, phase: state, failureCode: reason});
-      if (state === 'failed') recordFailedArtifact(context, fixedTask, selected.artifact.publicationId);
-      await writeTask(context, failedTask, createStatus(task.taskId, state, reason));
-      return Object.freeze({status: state, reason});
-    }
-    const action = applied.value;
-    if (action.taskId !== task.taskId || action.actionId !== applying.actionId) {
-      const reason = 'ACTION_IDENTITY_MISMATCH';
-      await writeTask(context, applying, createStatus(task.taskId, 'unknown', reason));
-      return Object.freeze({status: 'unknown', reason});
-    }
-    if (action.state === 'failed') recordFailedArtifact(context, fixedTask, action.publicationId);
-    const fullActionTerminal = selected.kind === 'full' && (action.state === 'succeeded' || action.state === 'failed');
-    const fullPreparedReleased =
-      !fullActionTerminal || (await releaseUnreferencedFullArtifact(applying, action.publicationId));
-    const status =
-      action.state === 'waiting-user' || action.state === 'user-cancelled'
-        ? ('waiting-user' as const)
-        : action.state === 'failed'
-          ? ('failed' as const)
-          : action.state === 'succeeded'
-            ? ('succeeded' as const)
-            : action.state === 'unknown'
-              ? ('unknown' as const)
-              : ('applying' as const);
-    const phase =
-      action.state === 'waiting-user' || action.state === 'user-cancelled'
-        ? ('waiting-user' as const)
-        : action.state === 'failed'
-          ? ('failed' as const)
-          : action.state === 'succeeded'
-            ? ('succeeded' as const)
-            : action.state === 'unknown' && action.reason !== 'INSTALLER_AWAITING_READBACK'
-              ? ('unknown' as const)
-              : applyingPhase;
-    if (fullActionTerminal && !fullPreparedReleased) {
-      await writeTask(context, applying, createStatus(task.taskId, 'unknown', 'PREPARED_RELEASE_FAILED'));
-      return Object.freeze({status: 'cleanup-failed', reason: 'PREPARED_RELEASE_FAILED'});
-    }
-    const next = Object.freeze({
-      ...applying,
-      phase,
-      preparedId: fullActionTerminal ? null : applying.preparedId,
-      failureCode: status === 'failed' ? action.reason : null,
-    });
-    await writeTask(context, next, createStatus(task.taskId, status, action.reason));
-    return Object.freeze({status, actionId: action.actionId, reason: action.reason});
   };
 
   const reconcile = async (context: ActorExecutionContext, resumeFixedTask: boolean) => {
@@ -1242,7 +980,39 @@ export const createTerminalUpdateActor = (input: TerminalUpdateActorInput): Acto
     if (result.status !== 'succeeded') return Object.freeze({status: 'unavailable', reason: result.status});
     context.dispatchAction(actions.replaceActualVersions(result.value.actual));
     const task = readState(context).currentTask;
-    if (task === null) return Object.freeze({status: 'read'});
+    if (task === null) {
+      const binding = currentBindingIdentity(context);
+      const ruleContext = currentRuleContext(context);
+      let descriptor = readState(context).reportDescriptor;
+      const actual = result.value.actual;
+      if (
+        binding !== null &&
+        ruleContext !== null &&
+        binding.identity === `${ruleContext.facts.terminalRef}:${ruleContext.facts.bindingGeneration}`
+      ) {
+        const currentDescriptor = reportDescriptorForContext(descriptor, binding.identity, ruleContext.identity);
+        if (currentDescriptor !== descriptor) {
+          if (!(await writeReportDescriptor(context, currentDescriptor)))
+            return Object.freeze({status: 'persistence-failed', reason: 'REPORT_CONTEXT_PERSISTENCE_FAILED'});
+          descriptor = currentDescriptor;
+        }
+      }
+      if (
+        binding !== null &&
+        ruleContext !== null &&
+        binding.identity === `${ruleContext.facts.terminalRef}:${ruleContext.facts.bindingGeneration}` &&
+        actual !== null &&
+        typeof actual.applicationId === 'string' &&
+        actual.applicationId.length > 0 &&
+        descriptor.lastObservationFactsKey !== actualVersionObservationFactsKey(actual) &&
+        !descriptor.sendPaused
+      ) {
+        if (!(await writeTask(context, null, createStatus(null, 'idle', null), true)))
+          return Object.freeze({status: 'persistence-failed', reason: 'INITIAL_VERSION_REPORT_PERSISTENCE_FAILED'});
+        return Object.freeze({status: 'read', observation: 'queued'});
+      }
+      return Object.freeze({status: 'read'});
+    }
     if (
       (task.phase === 'succeeded' || task.phase === 'failed') &&
       result.value.actual !== null &&
@@ -1257,6 +1027,7 @@ export const createTerminalUpdateActor = (input: TerminalUpdateActorInput): Acto
     if (task.phase === 'fixed' && task.actionId === null && !resumeFixedTask) {
       return Object.freeze({status: 'fixed', continuation: 'PRIMARY_READY'});
     }
+    if (task.phase === 'waiting-idle') return Object.freeze({status: 'waiting-idle', taskId: task.taskId});
     if (task.actionId === null)
       return task.phase === 'fixed' ? executeNextArtifact(context, task) : Object.freeze({status: task.phase});
     const actionResult = await port.readAction({timeoutMs: 10_000, taskId: task.taskId, actionId: task.actionId});
@@ -1311,7 +1082,6 @@ export const createTerminalUpdateActor = (input: TerminalUpdateActorInput): Acto
         actionId: null,
         actionKind: null,
         preparedId: null,
-        bootId: actualBootId,
       });
       if (!(await writeTask(context, fixed, createStatus(task.taskId, 'fixed', null))))
         return Object.freeze({status: 'persistence-failed', taskId: task.taskId});
@@ -1348,7 +1118,6 @@ export const createTerminalUpdateActor = (input: TerminalUpdateActorInput): Acto
       ...task,
       phase,
       preparedId: isCompletedFullAction ? null : task.preparedId,
-      bootId: action.state === 'succeeded' ? actualBootId : (action.bootId ?? task.bootId),
       failureCode: status === 'failed' ? action.reason : null,
     });
     await writeTask(context, updated, createStatus(task.taskId, status, action.reason));
@@ -1378,38 +1147,257 @@ export const createTerminalUpdateActor = (input: TerminalUpdateActorInput): Acto
     return reconcile(context, true);
   };
 
+  const handleDeadline = async (
+    context: ActorExecutionContext,
+    payload: Readonly<{
+      taskId: string;
+      bootId: string;
+      kind: 'hot-idle' | 'full-reminder';
+      interactionRevision: number;
+      deadlineAt: number;
+      scheduleGeneration: number;
+    }>,
+  ) => {
+    const current = readState(context);
+    const task = current.currentTask;
+    if (task === null || task.taskId !== payload.taskId || currentPresentation !== 'foreground')
+      return Object.freeze({status: 'stale-deadline'});
+    const facts = await port.readFacts({timeoutMs: 10_000});
+    if (facts.status !== 'succeeded' || facts.value.actual?.bootId !== payload.bootId)
+      return Object.freeze({status: 'stale-boot'});
+    const actual = facts.value.actual;
+    context.dispatchAction(actions.replaceActualVersions(actual));
+
+    if (payload.kind === 'hot-idle') {
+      const mSeconds = task.target.policy.mSeconds;
+      if (
+        task.phase !== 'waiting-idle' ||
+        task.actionKind !== 'hot' ||
+        task.actionId === null ||
+        task.preparedId === null ||
+        task.target.hot === null ||
+        task.target.policy.hotStrategy !== 'IDLE' ||
+        mSeconds === null
+      )
+        return Object.freeze({status: 'stale-deadline'});
+      const interaction = selectLastLocalInteraction(context.getState());
+      const dueAt = interaction.lastClickAt + mSeconds * 1000;
+      if (
+        interaction.revision !== payload.interactionRevision ||
+        dueAt !== payload.deadlineAt ||
+        nowTimestampMs() < dueAt
+      )
+        return Object.freeze({status: 'rescheduled', reason: 'LOCAL_INTERACTION_CHANGED'});
+      const ready = task.bootId === payload.bootId ? task : Object.freeze({...task, bootId: payload.bootId});
+      if (ready !== task && !(await writeTask(context, ready, createStatus(task.taskId, 'waiting-idle', null))))
+        return Object.freeze({status: 'persistence-failed', reason: 'PERSISTENCE_FAILED_BEFORE_HOT_APPLY'});
+      return applyPreparedArtifact(context, ready, {
+        actionId: ready.actionId!,
+        preparedId: ready.preparedId!,
+        kind: 'hot',
+        interactionRevision: payload.interactionRevision,
+      });
+    }
+
+    const nSeconds = task.target.policy.nSeconds;
+    if (
+      task.phase !== 'waiting-user' ||
+      task.actionKind !== 'full' ||
+      task.actionId === null ||
+      task.preparedId === null ||
+      task.bootId !== payload.bootId ||
+      task.target.full === null
+    )
+      return Object.freeze({status: 'stale-deadline'});
+    const lastInviteAt = task.lastInviteAt ??
+      (current.recentStatus.taskId === task.taskId && current.recentStatus.state === 'waiting-user'
+        ? current.recentStatus.changedAt
+        : null);
+    if (lastInviteAt === null) return Object.freeze({status: 'stale-deadline'});
+    const dueAt = lastInviteAt + nSeconds * 1000;
+    if (dueAt !== payload.deadlineAt || nowTimestampMs() < dueAt)
+      return Object.freeze({status: 'rescheduled', reason: 'INVITATION_NOT_DUE'});
+    const actionResult = await port.readAction({timeoutMs: 10_000, taskId: task.taskId, actionId: task.actionId});
+    const action = actionResult.status === 'succeeded' ? actionResult.value : null;
+    if (
+      action === null ||
+      action.taskId !== task.taskId ||
+      action.actionId !== task.actionId ||
+      action.publicationId !== task.target.full.artifact.publicationId
+    ) {
+      await writeTask(context, Object.freeze({...task, phase: 'unknown' as const}),
+        createStatus(task.taskId, 'unknown', 'INSTALLER_STATE_UNAVAILABLE'));
+      return Object.freeze({status: 'readback-unknown'});
+    }
+    if (action.state === 'accepted') {
+      await writeTask(context, Object.freeze({...task, phase: 'applying-full' as const}),
+        createStatus(task.taskId, 'applying', null));
+      return Object.freeze({status: 'installing'});
+    }
+    if (action.state === 'unknown') {
+      await writeTask(context, Object.freeze({...task, phase: 'unknown' as const}),
+        createStatus(task.taskId, 'unknown', action.reason ?? 'INSTALLER_STATE_UNKNOWN'));
+      return Object.freeze({status: 'readback-unknown'});
+    }
+    if (action.state === 'succeeded' || action.state === 'failed') return reconcile(context, true);
+    if (action.state !== 'waiting-user' && action.state !== 'user-cancelled')
+      return Object.freeze({status: 'not-invitable'});
+    const invited = Object.freeze({...task, lastInviteAt: nowTimestampMs()});
+    if (!(await writeTask(context, invited, createStatus(task.taskId, 'waiting-user', action.reason))))
+      return Object.freeze({status: 'persistence-failed', reason: 'INVITATION_TIME_PERSISTENCE_FAILED'});
+    context.dispatchAction(actions.replaceInvitation({taskId: task.taskId, actionId: task.actionId, bootId: payload.bootId}));
+    return Object.freeze({status: 'invited', taskId: task.taskId});
+  };
+
+  const installDecisionIsCurrent = (
+    context: ActorExecutionContext,
+    payload: Readonly<{taskId: string; actionId: string | null; bootId: string}>,
+  ): TerminalUpdateTask | null => {
+    const {currentTask, invitation} = readState(context);
+    const actual = readState(context).actualVersions;
+    if (
+      currentTask === null ||
+      invitation === null ||
+      invitation === undefined ||
+      actual === null ||
+      currentPresentation !== 'foreground' ||
+      invitation.taskId !== payload.taskId ||
+      invitation.actionId !== payload.actionId ||
+      invitation.bootId !== payload.bootId ||
+      actual.bootId !== payload.bootId ||
+      currentTask.taskId !== payload.taskId ||
+      currentTask.actionId !== payload.actionId ||
+      currentTask.bootId !== payload.bootId ||
+      currentTask.phase !== 'waiting-user'
+    )
+      return null;
+    return currentTask;
+  };
+
+  const confirmInstall = async (context: ActorExecutionContext, payload: Parameters<typeof installDecisionIsCurrent>[1]) => {
+    const task = installDecisionIsCurrent(context, payload);
+    if (task === null) return Object.freeze({status: 'rejected', reason: 'INSTALL_INVITATION_STALE'});
+    const actionId = task.actionId;
+    if (actionId === null || task.target.full === null || task.preparedId === null)
+      return Object.freeze({status: 'unknown', reason: 'FIXED_FULL_ACTION_UNAVAILABLE'});
+    const result = await port.readAction({timeoutMs: 10_000, taskId: task.taskId, actionId});
+    if (result.status !== 'succeeded' || result.value === null)
+      return Object.freeze({status: 'unknown', reason: 'INSTALLER_STATE_UNAVAILABLE'});
+    const action = result.value;
+    if (
+      action.taskId !== task.taskId ||
+      action.actionId !== actionId ||
+      action.publicationId !== task.target.full.artifact.publicationId
+    )
+      return Object.freeze({status: 'unknown', reason: 'INSTALLER_IDENTITY_MISMATCH'});
+    if (action.state === 'waiting-user') {
+      const invited = Object.freeze({...task, lastInviteAt: nowTimestampMs()});
+      if (!(await writeTask(context, invited, createStatus(task.taskId, 'waiting-user', null))))
+        return Object.freeze({status: 'persistence-failed', reason: 'INVITATION_TIME_PERSISTENCE_FAILED'});
+      const presented = await port.presentInstallerConfirmation({
+        timeoutMs: 10_000,
+        taskId: task.taskId,
+        actionId,
+        publicationId: task.target.full.artifact.publicationId,
+        trigger: 'user-confirm',
+      });
+      if (presented.status === 'succeeded' && presented.value.status === 'presented') {
+        context.dispatchAction(actions.replaceInvitation(null));
+        return Object.freeze({status: 'presented'});
+      }
+      return Object.freeze({
+        status: presented.status === 'failed' ? 'failed' : presented.status,
+        reason: presented.status === 'failed' ? presented.error.code : 'INSTALLER_CONFIRMATION_NOT_PRESENTED',
+      });
+    }
+    if (action.state === 'user-cancelled') {
+      const nextActionId = createRequestId();
+      const prepared = Object.freeze({...task, actionId: nextActionId, actionKind: 'full' as const});
+      const applied = await applyPreparedArtifact(context, prepared, {
+        actionId: nextActionId,
+        preparedId: task.preparedId,
+        kind: 'full',
+      });
+      return applied;
+    }
+    if (action.state === 'accepted') {
+      await writeTask(
+        context,
+        Object.freeze({...task, phase: 'applying-full' as const}),
+        createStatus(task.taskId, 'applying', null),
+      );
+      context.dispatchAction(actions.replaceInvitation(null));
+      return Object.freeze({status: 'installing'});
+    }
+    if (action.state === 'succeeded' || action.state === 'failed') {
+      context.dispatchAction(actions.replaceInvitation(null));
+      return reconcile(context, true);
+    }
+    return Object.freeze({status: 'unknown', reason: action.reason ?? 'INSTALLER_STATE_UNKNOWN'});
+  };
+
+  const deferInstall = async (context: ActorExecutionContext, payload: Parameters<typeof installDecisionIsCurrent>[1]) => {
+    const task = installDecisionIsCurrent(context, payload);
+    if (task === null) return Object.freeze({status: 'rejected', reason: 'INSTALL_INVITATION_STALE'});
+    const deferred = Object.freeze({...task, lastInviteAt: nowTimestampMs()});
+    if (!(await writeTask(context, deferred, createStatus(task.taskId, 'waiting-user', null))))
+      return Object.freeze({status: 'persistence-failed', reason: 'INVITATION_TIME_PERSISTENCE_FAILED'});
+    context.dispatchAction(actions.replaceInvitation(null));
+    return Object.freeze({status: 'deferred'});
+  };
+
   return defineActor(moduleName, 'update-owner', [
     onCommand(clearTerminalUpdateReportContextCommand, async context => {
       context.dispatchAction(actions.replaceReportDescriptor(emptyReportDescriptor(null)));
       return Object.freeze({status: (await persist(context)) ? 'cleared' : 'persistence-failed'});
     }),
-    onCommand(refreshTerminalUpdateRuleSnapshotCommand, context => refreshRuleSnapshot(context)),
-    onCommand(terminalTopicChangedCommand, async context => {
-      const payload = context.command.payload;
-      const notification = payload.notification;
-      const current = currentRuleContext(context);
-      if (
-        payload.subscriberKey !== ruleTopicSubscriberKey ||
-        current === null ||
-        notification.topicKey !== terminalUpdateTopicKey ||
-        notification.ownerRef !== current.facts.projectRef ||
-        payload.terminalRef !== current.facts.terminalRef ||
-        payload.bindingGeneration !== current.facts.bindingGeneration
-      )
-        return Object.freeze({status: 'ignored'});
-      const refreshed = await refreshRuleSnapshot(context);
-      if (refreshed.status !== 'ready') return Object.freeze({status: 'refresh-failed', reason: refreshed.status});
-      const accepted = await context.dispatchCommand(
-        acceptTerminalTopicNotificationCommand,
-        Object.freeze({
-          subscriberKey: ruleTopicSubscriberKey,
-          subscriptionId: notification.subscriptionId,
-          notificationId: notification.notificationId,
-        }),
-      );
-      return Object.freeze({status: accepted.status === 'completed' ? 'accepted' : 'accept-failed'});
-    }),
     onCommand(terminalDataHeartbeatCommand, context => sendPendingReport(context, context.command.payload)),
+    onCommand(updatePresentationChangedCommand, async context => {
+      const {runtimeIdentity, presentation} = context.command.payload;
+      if (runtimeIdentity !== context.runtimeId) {
+        context.platformPorts.logger.warn({
+          category: 'terminal-update.presentation',
+          event: 'terminal-update.presentation.stale-runtime-ignored',
+          message: 'Ignored a presentation observation from another Runtime instance',
+          data: {status: 'ignored'},
+        });
+        return Object.freeze({status: 'ignored', reason: 'runtime-identity-mismatch'});
+      }
+      if (presentation === currentPresentation) return Object.freeze({status: 'unchanged', presentation});
+      currentPresentation = presentation;
+      if (presentation === 'foreground') {
+        const task = readState(context).currentTask;
+        if (
+          task !== null &&
+          task.actionKind === 'full' &&
+          task.actionId !== null &&
+          task.target.full !== null &&
+          (task.phase === 'applying-full' || task.phase === 'waiting-user' || task.phase === 'unknown')
+        ) {
+          const resumed = await port.presentInstallerConfirmation({
+            timeoutMs: 10_000,
+            taskId: task.taskId,
+            actionId: task.actionId,
+            publicationId: task.target.full.artifact.publicationId,
+            trigger: 'source-permission-return',
+          });
+          if (resumed.status !== 'succeeded' && resumed.status !== 'unavailable') {
+            context.platformPorts.logger.warn({
+              category: 'terminal-update.installer-confirmation',
+              event: 'terminal-update.installer-confirmation.source-permission-return-incomplete',
+              message: 'Source-permission return did not restore the exact pending installer confirmation',
+              data: {
+                taskId: task.taskId,
+                actionIdPresent: true,
+                status: resumed.status,
+                code: resumed.status === 'failed' ? resumed.error.code : null,
+              },
+            });
+          }
+        }
+      }
+      return Object.freeze({status: 'updated', presentation});
+    }),
     onCommand(primarySurfaceReadyCommand, context => {
       const current = readState(context);
       const task = current.currentTask;
@@ -1457,7 +1445,10 @@ export const createTerminalUpdateActor = (input: TerminalUpdateActorInput): Acto
       return Object.freeze({status: 'scheduled', taskId: task?.taskId ?? null});
     }),
     onCommand(reconcileTerminalUpdateCommand, context => reconcile(context, context.command.payload.resumeFixedTask)),
-    onCommand(acceptTerminalUpdateTargetCommand, async context => {
+    onCommand(terminalUpdateDeadlineCommand, context => handleDeadline(context, context.command.payload)),
+    onCommand(confirmTerminalUpdateInstallCommand, context => confirmInstall(context, context.command.payload)),
+    onCommand(deferTerminalUpdateInstallCommand, context => deferInstall(context, context.command.payload)),
+    onCommand(requestTerminalUpdateCommand, async context => {
       const resumeAfterCancelledInstall = async (task: TerminalUpdateTask, publicationId: string) => {
         // A later explicit acceptance may recreate a session for the same fixed
         // target. Pending or unknown installer sessions stay untouched.
@@ -1482,7 +1473,16 @@ export const createTerminalUpdateActor = (input: TerminalUpdateActorInput): Acto
           return Object.freeze({status: 'persistence-failed', taskId: task.taskId});
         return executeNextArtifact(context, ready);
       };
-      const selectionContext = context.command.payload.selectionContext;
+      const rawTarget = context.command.payload.target;
+      if (rawTarget !== null && !validTarget(rawTarget))
+        return Object.freeze({status: 'rejected', reason: 'TARGET_INVALID'});
+      const target = rawTarget === null ? null : rawTarget;
+      if (target === null) {
+        if (readState(context).currentTask !== null) return Object.freeze({status: 'already-fixed'});
+        const observed = await reconcile(context, false);
+        return Object.freeze({status: 'no-candidate', observation: observed.status});
+      }
+      const selectionContext = target.selectionContext;
       if (targetCommitPending !== null) await targetCommitPending;
       const current = readState(context);
       if (current.currentTask !== null) {
@@ -1506,13 +1506,13 @@ export const createTerminalUpdateActor = (input: TerminalUpdateActorInput): Acto
         return Object.freeze({status: 'already-fixed', reason: null});
       }
 
-      const target =
-        sourceProvider === undefined
-          ? targetFromRuleSnapshot(context, selectionContext)
-          : await sourceProvider.readTarget(selectionContext);
-      if (target === null) return Object.freeze({status: 'rejected', reason: 'SOURCE_UNAVAILABLE'});
-      if (!validTarget(target) || JSON.stringify(target.selectionContext) !== JSON.stringify(selectionContext))
-        return Object.freeze({status: 'rejected', reason: 'TARGET_INVALID'});
+      const readCurrentCandidate = async (): Promise<FixedUpdateTarget | null> => {
+        if (input.readCurrentTarget !== undefined) return input.readCurrentTarget(context.getState(), target);
+        return sourceProvider === undefined ? null : sourceProvider.readTarget(selectionContext);
+      };
+      const initialTarget = await readCurrentCandidate();
+      if (initialTarget === null || !validTarget(initialTarget) || JSON.stringify(initialTarget) !== JSON.stringify(target))
+        return Object.freeze({status: 'rejected', reason: 'TARGET_CHANGED'});
 
       const actualIdentity = await port.readFacts({timeoutMs: 10_000});
       if (
@@ -1543,6 +1543,20 @@ export const createTerminalUpdateActor = (input: TerminalUpdateActorInput): Acto
         data: {applicationMatches},
       });
       if (!applicationMatches) return Object.freeze({status: 'rejected', reason: 'APPLICATION_ID_MISMATCH'});
+      let candidate: ReturnType<typeof nextArtifact>;
+      try {
+        const actual = actualIdentity.value.actual!;
+        candidate = nextArtifact(
+          target,
+          actual,
+          actualIdentity.value.embedded,
+          actual.bundleVersion,
+        );
+        if (candidate === null) return Object.freeze({status: 'no-update', reason: 'ALREADY_AT_TARGET'});
+      } catch (error) {
+        const reason = error instanceof Error ? error.message.replace(/^TERMINAL_UPDATE_/u, '') : 'TARGET_INVALID';
+        return Object.freeze({status: 'rejected', reason});
+      }
 
       // Another root command may have fixed a target while the provider was awaited.
       // Serialize only this persistence commit, then re-read its authoritative result.
@@ -1555,6 +1569,47 @@ export const createTerminalUpdateActor = (input: TerminalUpdateActorInput): Acto
           reason: sameTarget ? null : 'IDENTITY_CONFLICT',
         });
       }
+
+      // Reserve the existing narrow target-commit slot before the final async
+      // eligibility read. A newer rule/context cannot be fixed while this
+      // candidate is being revalidated.
+      let finishTargetCommit!: () => void;
+      const targetCommit = new Promise<void>(resolve => {
+        finishTargetCommit = resolve;
+      });
+      targetCommitPending = targetCommit;
+      try {
+        const latestTarget = await readCurrentCandidate();
+        if (latestTarget === null)
+          return Object.freeze({status: 'rejected', reason: 'TARGET_CHANGED'});
+        if (!validTarget(latestTarget) || JSON.stringify(latestTarget) !== JSON.stringify(target))
+          return Object.freeze({status: 'rejected', reason: 'TARGET_CHANGED'});
+        const currentContext = currentRuleContext(context);
+        if (currentContext !== null) {
+          const currentBinding = currentBindingIdentity(context);
+          if (
+            currentContext.identity !== selectionContext.contextIdentity ||
+            currentBinding === null ||
+            currentBinding.identity !== `${currentContext.facts.terminalRef}:${currentContext.facts.bindingGeneration}`
+          )
+            return Object.freeze({status: 'rejected', reason: 'TARGET_CHANGED'});
+        } else if (input.readCurrentTarget === undefined && sourceProvider === undefined) {
+          return Object.freeze({status: 'rejected', reason: 'TARGET_CHANGED'});
+        }
+
+        // Do not persist a new fixed task when the actual next artifact is
+        // already known to have failed. The execution-side check remains as a
+        // guard for a recovered fixed task whose facts changed after commit.
+        if (candidate !== null && readState(context).failedArtifactIds.includes(candidate.artifact.publicationId)) {
+          context.platformPorts.logger.warn({
+            category: 'terminal-update.rules',
+            event: 'terminal-update.rules.failed-artifact-reentry-blocked',
+            message: 'Rejected an update candidate whose publication already failed on this installation',
+            data: {publicationId: candidate.artifact.publicationId},
+          });
+          return Object.freeze({status: 'rejected', reason: 'FAILED_ARTIFACT_REENTRY_FORBIDDEN'});
+        }
+
       const taskId = input.createProtocolUuid();
       const task: TerminalUpdateTask = Object.freeze({
         taskId,
@@ -1567,26 +1622,20 @@ export const createTerminalUpdateActor = (input: TerminalUpdateActorInput): Acto
         failureCode: null,
         originalBundleVersion: null,
       });
-      let finishTargetCommit!: () => void;
-      const targetCommit = new Promise<void>(resolve => {
-        finishTargetCommit = resolve;
-      });
-      targetCommitPending = targetCommit;
       const beforeCommit = readState(context);
-      try {
-        context.dispatchAction(actions.replaceTask(task));
-        context.dispatchAction(actions.replaceRecentStatus(createStatus(taskId, 'fixed', null)));
-        if (!(await persist(context))) {
-          context.dispatchAction(actions.replaceTask(beforeCommit.currentTask));
-          context.dispatchAction(actions.replaceRecentStatus(beforeCommit.recentStatus));
-          await persist(context);
-          return Object.freeze({status: 'persistence-failed', taskId});
-        }
+      context.dispatchAction(actions.replaceTask(task));
+      context.dispatchAction(actions.replaceRecentStatus(createStatus(taskId, 'fixed', null)));
+      if (!(await persist(context))) {
+        context.dispatchAction(actions.replaceTask(beforeCommit.currentTask));
+        context.dispatchAction(actions.replaceRecentStatus(beforeCommit.recentStatus));
+        await persist(context);
+        return Object.freeze({status: 'persistence-failed', taskId});
+      }
+      return executeNextArtifact(context, task);
       } finally {
         if (targetCommitPending === targetCommit) targetCommitPending = null;
         finishTargetCommit();
       }
-      return executeNextArtifact(context, task);
     }),
     onCommand(confirmTerminalUpdateBootCommand, context => confirmBoot(context, context.command.payload)),
   ]);

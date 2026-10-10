@@ -1,4 +1,4 @@
-import {defineStateSelector} from '@catering-v2s/kernel-base-runtime';
+import {defineStateSelector, selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
 import {moduleName} from '../moduleName';
 import type {StateRoot} from '@catering-v2s/kernel-base-state';
 import {terminalDataClientSliceName} from '../features/slices/terminalDataClient';
@@ -19,8 +19,9 @@ const readState = (state: StateRoot): TerminalClientState => {
 const selectActivationStateImplementation = (state: StateRoot): TerminalActivationView => {
   const current = readState(state);
   const credential = current.credential;
-  const status =
-    current.activationStatus === 'cancelling'
+  const status = selectRuntimeInstanceMode(state) === 'SLAVE'
+    ? 'inactive'
+    : current.activationStatus === 'cancelling'
       ? 'cancelling'
       : current.activationStatus === 'activating'
         ? 'activating'

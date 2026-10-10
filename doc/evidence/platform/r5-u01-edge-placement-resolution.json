@@ -15,7 +15,7 @@
       "public": 12,
       "terminal": 14
     },
-    "componentBaseline": 351,
+    "componentBaseline": 350,
     "componentFiles": 25,
     "unreachable": [
       {
@@ -165,7 +165,7 @@
       "path": "/api/terminal/group-workspaces/{groupWorkspaceKey}/terminals/{terminalRef}/activation/cancel",
       "capability": "activation",
       "pathFile": "paths/terminal/activation.paths.json",
-      "requestComponentFile": "components/terminal-binding/terminal-binding.schemas.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
       "responseComponentFile": "components/terminal-binding/terminal-binding.schemas.json",
       "errorSetRef": "TERMINAL_DEVICE_CANCEL_COMMAND"
     },

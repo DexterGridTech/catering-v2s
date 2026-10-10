@@ -2320,6 +2320,7 @@ describe('sample-console real assembly', () => {
           'kernel.base.server-config',
           'kernel.feature.sample-staff-session',
           'kernel.feature.sample-member-registry',
+          'kernel.feature.project-basic',
           'ui.feature.sample-staff-auth',
           'ui.feature.sample-member-desk',
           'ui.base.terminal-activation',
@@ -2328,7 +2329,7 @@ describe('sample-console real assembly', () => {
           'ui.integration.sample-console',
         ]),
       );
-      expect(assembly.runtime.descriptors).toHaveLength(16);
+      expect(assembly.runtime.descriptors).toHaveLength(17);
     } finally {
       await releaseRuntimeForTestAsync(assembly.runtime);
     }

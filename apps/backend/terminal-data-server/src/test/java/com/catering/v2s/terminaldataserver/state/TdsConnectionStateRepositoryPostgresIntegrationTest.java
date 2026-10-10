@@ -163,6 +163,7 @@ class TdsConnectionStateRepositoryPostgresIntegrationTest {
     private Verification verification() {
         UUID storeRef = UUID.randomUUID();
         return new Verification(
-                Outcome.VERIFIED, workspaceUuid, "GROUP-A", storeRef, terminalRef, 1, System.currentTimeMillis());
+                Outcome.VERIFIED, workspaceUuid, "GROUP-A", storeRef, terminalRef, 1, System.currentTimeMillis(),
+                "device-postgres-test");
     }
 }

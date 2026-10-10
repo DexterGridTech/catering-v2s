@@ -21,6 +21,8 @@ import {
   AdminDetailActionMenu,
   CursorPagination,
   StatusChangeConfirm,
+  adminDetailDescriptionsProps,
+  adminDrawerSurfaceProps,
   adminListState,
   createContentIdempotencyKey,
   formatCanonicalDateTime,
@@ -29,10 +31,17 @@ import {
   useCursorCandidates,
   useDrawerFormLifecycle,
   useOverlayLock,
+  useRefreshVersion,
+  useSubmissionLifecycle,
 } from '@catering-v2s/admin-ui-foundation';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import type {HTMLAttributes} from 'react';
-import {operationsClient, operationsProblemOf, operationsRtk} from '../../../app/api/OperationsTransport';
+import {
+  operationsClient,
+  operationsContentTabRefreshSignal,
+  operationsProblemOf,
+  operationsRtk,
+} from '../../../app/api/OperationsTransport';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
 import {
   OPERATIONS_ADMIN_OPERATION_IDS,
@@ -51,6 +60,12 @@ import {OperationsAuditHistoryModal} from '../../audit-history';
 import {idleMinutesToSeconds, idleSecondsToMinutes} from '../model/terminalUpdateDuration';
 import {terminalUpdateCandidateQuery} from '../model/terminalUpdateCandidateQuery';
 import {terminalUpdateRuleFilters, type TerminalUpdateRuleFilterForm, type TerminalUpdateRuleFilters} from '../model/terminalUpdateRuleFilters';
+import {
+  isTerminalUpdateVersionConflict,
+  terminalUpdateStatusActionLabel,
+  terminalUpdateStatusAlreadyApplied,
+  terminalUpdateStatusConfirmTitle,
+} from '../model/terminalUpdateRuleStatus';
 
 type RuleForm = {
   targetMode: 'ALL' | 'STORE_REFS';
@@ -84,7 +99,10 @@ function ProjectTerminalUpdateContent({
   const reportsRequestId = useRef(0);
   const ruleDetailRequestId = useRef(0);
   const ruleStorePageRequestId = useRef(0);
+  const ruleStorePageLoadingRef = useRef(false);
   const versionRequestId = useRef(0);
+  const historyPageRequestId = useRef(0);
+  const historyPageLoadingRef = useRef(false);
   const [tab, setTab] = useState('rules');
   const [rules, setRules] = useState<readonly TerminalUpdateRuleSummary[]>([]);
   const [ruleFilters, setRuleFilters] = useState<TerminalUpdateRuleFilters>({});
@@ -103,24 +121,35 @@ function ProjectTerminalUpdateContent({
   const [createOpen, setCreateOpen] = useState(false);
   const [detail, setDetail] = useState<TerminalUpdateRuleDetail>();
   const latestRuleRef = useRef<string | undefined>(undefined);
+  const latestVersionTerminalRef = useRef<string | undefined>(undefined);
   const [versionDetail, setVersionDetail] = useState<TerminalUpdateVersionDetail>();
   const [history, setHistory] = useState<
     import('../../../app/api/generated/operations-edge').TerminalUpdateReportHistoryPage['items']
   >([]);
   const [historyCursor, setHistoryCursor] = useState<string | null>(null);
+  const [historyPageLoading, setHistoryPageLoading] = useState(false);
   const [ruleStores, setRuleStores] = useState<
     import('../../../app/api/generated/operations-edge').TerminalUpdateRuleStorePage['items']
   >([]);
   const [ruleStoresCursor, setRuleStoresCursor] = useState<string | null>(null);
+  const [ruleStorePageLoading, setRuleStorePageLoading] = useState(false);
   const [auditOpen, setAuditOpen] = useState(false);
   const [problem, setProblem] = useState<string>();
   const [statusTarget, setStatusTarget] = useState<TerminalUpdateRuleSummary>();
+  const [statusIntent, setStatusIntent] = useState<'ENABLED' | 'DISABLED'>();
+  const [statusProblem, setStatusProblem] = useState<string>();
+  const [statusSubmitting, setStatusSubmitting] = useState(false);
+  const statusSubmittingRef = useRef(false);
+  const statusSubmission = useSubmissionLifecycle();
+  const contentTabRefreshVersion = useRefreshVersion(operationsContentTabRefreshSignal);
   const latestRuleFilters = useRef(ruleFilters);
   const latestReportFilters = useRef(appliedReportFilters);
   latestRuleFilters.current = ruleFilters;
   latestReportFilters.current = appliedReportFilters;
   const rulePager = useCursorStack({resetKey: `${contextKey}:${JSON.stringify(ruleFilters)}`});
   const reportPager = useCursorStack({resetKey: `${contextKey}:${JSON.stringify(appliedReportFilters)}`});
+  const ruleStoresPager = useCursorStack({resetKey: `${contextKey}:${detail?.ruleRef ?? ''}`});
+  const historyPager = useCursorStack({resetKey: `${contextKey}:${versionDetail?.terminalRef ?? ''}`});
   const latestRuleCursor = useRef(rulePager.cursor);
   const latestReportCursor = useRef(reportPager.cursor);
   latestRuleCursor.current = rulePager.cursor;
@@ -242,15 +271,23 @@ function ProjectTerminalUpdateContent({
   );
   useEffect(() => {
     versionRequestId.current += 1;
+    historyPageRequestId.current += 1;
+    historyPageLoadingRef.current = false;
+    ruleStorePageRequestId.current += 1;
+    ruleStorePageLoadingRef.current = false;
     setRules([]);
     setRuleNext(null);
     setReportRows([]);
     setReportNext(null);
     setDetail(undefined);
     setVersionDetail(undefined);
+    latestVersionTerminalRef.current = undefined;
     setHistory([]);
+    setHistoryCursor(null);
+    setHistoryPageLoading(false);
     setRuleStores([]);
     setRuleStoresCursor(null);
+    setRuleStorePageLoading(false);
     setAuditOpen(false);
     setProblem(undefined);
   }, [contextKey]);
@@ -261,9 +298,15 @@ function ProjectTerminalUpdateContent({
     void loadReports(reportPager.cursor);
   }, [loadReports, reportPager.cursor, reportPager.page]);
 
-  const openRule = async (row: TerminalUpdateRuleSummary) => {
+  const openRule = async (row: Pick<TerminalUpdateRuleSummary, 'ruleRef'>) => {
     const requestContextKey = contextKey;
     const requestId = ++ruleDetailRequestId.current;
+    ruleStorePageRequestId.current += 1;
+    ruleStorePageLoadingRef.current = false;
+    setRuleStorePageLoading(false);
+    ruleStoresPager.reset();
+    setRuleStores([]);
+    setRuleStoresCursor(null);
     setProblem(undefined);
     try {
       const loaded = await operationsClient.getOperationsProjectTerminalUpdateRuleDetail(
@@ -272,6 +315,7 @@ function ProjectTerminalUpdateContent({
       );
       if (latestContextKey.current !== requestContextKey || ruleDetailRequestId.current !== requestId) return;
       setDetail(loaded);
+      latestRuleRef.current = loaded.ruleRef;
       if (loaded.targetMode === 'STORE_REFS') {
         const stores = await operationsClient.getOperationsProjectTerminalUpdateRuleStorePage(
           {...path, ruleRef: wireUuid(row.ruleRef)},
@@ -280,6 +324,7 @@ function ProjectTerminalUpdateContent({
         if (latestContextKey.current !== requestContextKey || ruleDetailRequestId.current !== requestId) return;
         setRuleStores(stores.items);
         setRuleStoresCursor(stores.nextCursor);
+        ruleStoresPager.reset();
       } else {
         setRuleStores([]);
         setRuleStoresCursor(null);
@@ -290,6 +335,10 @@ function ProjectTerminalUpdateContent({
     }
   };
   const changeStatus = async (target: TerminalUpdateRuleSummary, status: 'ENABLED' | 'DISABLED') => {
+    if (statusSubmittingRef.current) return;
+    statusSubmittingRef.current = true;
+    setStatusSubmitting(true);
+    setStatusProblem(undefined);
     const requestContextKey = contextKey;
     try {
       const body = {revision: target.revision, status};
@@ -298,33 +347,69 @@ function ProjectTerminalUpdateContent({
         projectRef: wireUuid(projectRef),
         ruleRef: wireUuid(target.ruleRef),
       };
-      const idempotencyKey = await createContentIdempotencyKey(
-        OPERATIONS_ADMIN_OPERATION_IDS.changeOperationsProjectTerminalUpdateRuleStatus,
-        {path, body},
-      );
       await operationsClient.changeOperationsProjectTerminalUpdateRuleStatus(
         path,
         {
           query: {expectedContextVersion: queryContext.expectedContextVersion},
           body,
-          headers: {'Idempotency-Key': idempotencyKey},
+          headers: {'Idempotency-Key': statusSubmission.getIdempotencyKey()},
         },
       );
       if (latestContextKey.current !== requestContextKey) return;
       setStatusTarget(undefined);
+      setStatusIntent(undefined);
+      statusSubmission.reset();
       await loadRules(rulePager.cursor);
       if (latestContextKey.current === requestContextKey && latestRuleRef.current === target.ruleRef)
         await openRule(target);
       if (latestContextKey.current === requestContextKey)
         message.success(status === 'ENABLED' ? '规则已启用' : '规则已停用');
     } catch (error) {
-      if (latestContextKey.current === requestContextKey)
-        setProblem(operationsProblemOf(error).detail || '规则状态更新失败');
+      if (latestContextKey.current === requestContextKey) {
+        const failure = operationsProblemOf(error);
+        if (isTerminalUpdateVersionConflict(failure) && statusIntent !== undefined) {
+          try {
+            const latest = await operationsClient.getOperationsProjectTerminalUpdateRuleDetail(
+              {...path, ruleRef: wireUuid(target.ruleRef)},
+              {query: {expectedContextVersion: queryContext.expectedContextVersion}},
+            );
+            if (latestContextKey.current === requestContextKey) {
+              setDetail(latest);
+              setRules(current => current.map(item => item.ruleRef === latest.ruleRef
+                ? {...item, status: latest.status, revision: latest.revision}
+                : item));
+              statusSubmission.reset();
+              if (terminalUpdateStatusAlreadyApplied(latest.status, statusIntent)) {
+                setStatusTarget(undefined);
+                setStatusIntent(undefined);
+                setStatusProblem(undefined);
+                message.info(`规则已被其他操作${terminalUpdateStatusActionLabel(statusIntent)}。`);
+              } else {
+                setStatusTarget(latest);
+                setStatusProblem('规则已被其他操作修改。已读取当前状态，请核对后再次确认。');
+              }
+            }
+          } catch (readError) {
+            if (latestContextKey.current === requestContextKey)
+              setStatusProblem(operationsProblemOf(readError).detail || '状态冲突后读取当前规则失败，请关闭并刷新。');
+          }
+        } else {
+          setStatusProblem(failure.detail || '规则状态更新失败');
+        }
+      }
+    } finally {
+      statusSubmittingRef.current = false;
+      setStatusSubmitting(false);
     }
   };
-  const openVersion = async (row: TerminalUpdateVersionReportItem) => {
+  const openVersion = async (row: Pick<TerminalUpdateVersionReportItem, 'terminalRef'>) => {
+    latestVersionTerminalRef.current = row.terminalRef;
     const requestContextKey = contextKey;
     const requestId = ++versionRequestId.current;
+    historyPageRequestId.current += 1;
+    historyPageLoadingRef.current = false;
+    setHistoryPageLoading(false);
+    historyPager.reset();
     setVersionDetail(undefined);
     setHistory([]);
     setHistoryCursor(null);
@@ -343,71 +428,130 @@ function ProjectTerminalUpdateContent({
       if (latestContextKey.current !== requestContextKey || versionRequestId.current !== requestId) return;
       setHistory(page.items);
       setHistoryCursor(page.nextCursor);
+      historyPager.reset();
     } catch (error) {
       if (latestContextKey.current === requestContextKey && versionRequestId.current === requestId)
         setProblem(operationsProblemOf(error).detail || '读取终端报告详情失败');
     }
   };
 
-  const loadMoreHistory = async (cursor: string) => {
-    if (!versionDetail) return;
+  const loadHistoryPage = async (
+    terminalRef: string,
+    versionRequest: number,
+    requestedPage: number,
+    suppliedCursor?: string,
+  ) => {
+    if (historyPageLoadingRef.current) return;
+    const cursor = requestedPage < historyPager.page
+      ? historyPager.cursorStack[requestedPage - 1]
+      : suppliedCursor;
+    if (requestedPage > 1 && !cursor) return;
     const requestContextKey = contextKey;
-    const requestId = versionRequestId.current;
-    const terminalRef = versionDetail.terminalRef;
+    const requestId = ++historyPageRequestId.current;
+    historyPageLoadingRef.current = true;
+    setHistoryPageLoading(true);
     try {
       const page = await operationsClient.getOperationsProjectTerminalUpdateReportHistoryPage(
         {...path, terminalRef: wireUuid(terminalRef)},
-        {query: {expectedContextVersion: queryContext.expectedContextVersion, cursor, limit: 20}},
+        {query: {expectedContextVersion: queryContext.expectedContextVersion, cursor: cursor || undefined, limit: 20}},
       );
       if (
         latestContextKey.current !== requestContextKey ||
-        versionRequestId.current !== requestId ||
-        !versionDetail ||
-        versionDetail.terminalRef !== terminalRef
+        versionRequestId.current !== versionRequest ||
+        historyPageRequestId.current !== requestId ||
+        latestVersionTerminalRef.current !== terminalRef
       )
         return;
-      setHistory(current => [...current, ...page.items]);
+      setHistory(page.items);
       setHistoryCursor(page.nextCursor);
+      historyPager.goToPage(requestedPage, cursor);
     } catch (error) {
       if (
         latestContextKey.current === requestContextKey &&
-        versionRequestId.current === requestId &&
-        versionDetail?.terminalRef === terminalRef
+        versionRequestId.current === versionRequest &&
+        historyPageRequestId.current === requestId &&
+        latestVersionTerminalRef.current === terminalRef
       )
         setProblem(operationsProblemOf(error).detail || '读取终端报告历史失败');
+    } finally {
+      if (historyPageRequestId.current === requestId) {
+        historyPageLoadingRef.current = false;
+        setHistoryPageLoading(false);
+      }
     }
   };
-  const loadMoreRuleStores = async () => {
-    if (!detail || !ruleStoresCursor) return;
+  const loadRuleStoresPage = async (
+    ruleRef: string,
+    detailRequest: number,
+    requestedPage: number,
+    suppliedCursor?: string,
+  ) => {
+    if (ruleStorePageLoadingRef.current) return;
+    const cursor = requestedPage < ruleStoresPager.page
+      ? ruleStoresPager.cursorStack[requestedPage - 1]
+      : suppliedCursor;
+    if (requestedPage > 1 && !cursor) return;
     const requestContextKey = contextKey;
-    const requestRuleRef = detail.ruleRef;
-    const detailRequestId = ruleDetailRequestId.current;
+    const requestRuleRef = ruleRef;
     const requestId = ++ruleStorePageRequestId.current;
-    const cursor = ruleStoresCursor;
+    ruleStorePageLoadingRef.current = true;
+    setRuleStorePageLoading(true);
     try {
       const page = await operationsClient.getOperationsProjectTerminalUpdateRuleStorePage(
         {...path, ruleRef: wireUuid(requestRuleRef)},
-        {query: {expectedContextVersion: queryContext.expectedContextVersion, cursor, limit: 50}},
+        {query: {expectedContextVersion: queryContext.expectedContextVersion, cursor: cursor || undefined, limit: 50}},
       );
       if (
         latestContextKey.current !== requestContextKey ||
         latestRuleRef.current !== requestRuleRef ||
-        ruleDetailRequestId.current !== detailRequestId ||
+        ruleDetailRequestId.current !== detailRequest ||
         ruleStorePageRequestId.current !== requestId
       )
         return;
-      setRuleStores(current => [...current, ...page.items]);
+      setRuleStores(page.items);
       setRuleStoresCursor(page.nextCursor);
+      ruleStoresPager.goToPage(requestedPage, cursor);
     } catch (error) {
       if (
         latestContextKey.current === requestContextKey &&
         latestRuleRef.current === requestRuleRef &&
-        ruleDetailRequestId.current === detailRequestId &&
+        ruleDetailRequestId.current === detailRequest &&
         ruleStorePageRequestId.current === requestId
       )
         setProblem(operationsProblemOf(error).detail || '读取规则门店失败');
+    } finally {
+      if (ruleStorePageRequestId.current === requestId) {
+        ruleStorePageLoadingRef.current = false;
+        setRuleStorePageLoading(false);
+      }
     }
   };
+  const historyPaginationState = {
+    page: historyPager.page,
+    canPrevious: historyPager.canPrevious && !historyPageLoading,
+    goToPage: (page: number, nextCursor?: string) => {
+      const terminalRef = latestVersionTerminalRef.current;
+      if (terminalRef) void loadHistoryPage(terminalRef, versionRequestId.current, page, nextCursor);
+    },
+  };
+  const ruleStoresPaginationState = {
+    page: ruleStoresPager.page,
+    canPrevious: ruleStoresPager.canPrevious && !ruleStorePageLoading,
+    goToPage: (page: number, nextCursor?: string) => {
+      const ruleRef = latestRuleRef.current;
+      if (ruleRef) void loadRuleStoresPage(ruleRef, ruleDetailRequestId.current, page, nextCursor);
+    },
+  };
+  const refreshCallbacks = useRef({loadRules, loadReports, openRule, openVersion});
+  refreshCallbacks.current = {loadRules, loadReports, openRule, openVersion};
+  useEffect(() => {
+    if (contentTabRefreshVersion === 0) return;
+    void refreshCallbacks.current.loadRules(latestRuleCursor.current);
+    void refreshCallbacks.current.loadReports(latestReportCursor.current);
+    if (latestRuleRef.current) void refreshCallbacks.current.openRule({ruleRef: wireUuid(latestRuleRef.current)});
+    if (latestVersionTerminalRef.current)
+      void refreshCallbacks.current.openVersion({terminalRef: wireUuid(latestVersionTerminalRef.current)});
+  }, [contentTabRefreshVersion]);
 
   const ruleColumns: ProColumns<TerminalUpdateRuleSummary>[] = [
     {
@@ -415,9 +559,9 @@ function ProjectTerminalUpdateContent({
       dataIndex: 'targetMode',
       search: false,
       render: (_, row) => (
-        <a onClick={() => void openRule(row)} {...testId(terminalUpdateTestIds.ruleOpen(row.ruleRef))}>
+        <Button type="link" onClick={() => void openRule(row)} {...testId(terminalUpdateTestIds.ruleOpen(row.ruleRef))}>
           {ruleTargetTitle(row)}
-        </a>
+        </Button>
       ),
     },
     {
@@ -440,7 +584,7 @@ function ProjectTerminalUpdateContent({
       render: (_, row) => (row.targetMode === 'ALL' ? '项目全部门店' : '指定门店'),
     },
     {
-      title: '检查间隔',
+      title: '安装提醒间隔',
       dataIndex: 'nSeconds',
       search: false,
       render: (_, row) => `${Math.floor(row.nSeconds / 60)} 分钟`,
@@ -468,9 +612,9 @@ function ProjectTerminalUpdateContent({
       dataIndex: 'queryText',
       fieldProps: testId(terminalUpdateTestIds.reportQuery),
       render: (_, row) => (
-        <a onClick={() => void openVersion(row)} {...testId(terminalUpdateTestIds.reportOpen(row.terminalRef))}>
+        <Button type="link" onClick={() => void openVersion(row)} {...testId(terminalUpdateTestIds.reportOpen(row.terminalRef))}>
           {row.terminalName}
-        </a>
+        </Button>
       ),
     },
     {
@@ -493,7 +637,11 @@ function ProjectTerminalUpdateContent({
       search: false,
       render: (_, row) => (
         <Space>
-          {row.recent ? reportStateLabel(jsonString(row.recent, 'state')) : '尚无报告'}
+          {!row.hasReport
+            ? '尚无报告'
+            : row.recent
+              ? reportStateLabel(jsonString(row.recent, 'state'))
+              : '已上报，暂无任务报告'}
           {row.oldBinding && <Tag>上次绑定报告</Tag>}
         </Space>
       ),
@@ -558,7 +706,7 @@ function ProjectTerminalUpdateContent({
             children: (
               <>
                 <Space style={{marginBottom: 16}}>
-                  <Button onClick={() => void loadRules()} loading={ruleLoading}>
+                  <Button onClick={() => void loadRules(rulePager.cursor)} loading={ruleLoading}>
                     刷新
                   </Button>
                   {writable && (
@@ -573,6 +721,7 @@ function ProjectTerminalUpdateContent({
                 </Space>
                 <ProTable<TerminalUpdateRuleSummary>
                   rowKey="ruleRef"
+                  dateFormatter={false}
                   {...adminListState({
                     loading: ruleLoading,
                     failed: Boolean(problem),
@@ -712,11 +861,15 @@ function ProjectTerminalUpdateContent({
         onClose={() => {
           ruleDetailRequestId.current += 1;
           ruleStorePageRequestId.current += 1;
+          ruleStorePageLoadingRef.current = false;
+          setRuleStorePageLoading(false);
+          ruleStoresPager.reset();
           setDetail(undefined);
           setRuleStores([]);
           setRuleStoresCursor(null);
         }}
-        width={620}
+        width={720}
+        {...adminDrawerSurfaceProps}
         extra={
           detail && (
             <AdminDetailActionMenu
@@ -740,7 +893,12 @@ function ProjectTerminalUpdateContent({
                             {detail.status === 'ENABLED' ? '停用规则' : '启用规则'}
                           </AdminDetailActionLabel>
                         ),
-                        onClick: () => setStatusTarget(detail),
+                        onClick: () => {
+                          statusSubmission.reset();
+                          setStatusProblem(undefined);
+                          setStatusIntent(detail.status === 'ENABLED' ? 'DISABLED' : 'ENABLED');
+                          setStatusTarget(detail);
+                        },
                       },
                     ]
                   : []),
@@ -752,7 +910,7 @@ function ProjectTerminalUpdateContent({
       >
         {detail && (
           <>
-            <Descriptions column={1} bordered size="small">
+            <Descriptions {...adminDetailDescriptionsProps}>
               <Descriptions.Item label="状态">{ruleStatusLabel(detail.status)}</Descriptions.Item>
               <Descriptions.Item label="范围">
                 {detail.targetMode === 'ALL' ? '项目全部门店' : '指定门店'}
@@ -763,7 +921,7 @@ function ProjectTerminalUpdateContent({
               <Descriptions.Item label="热更新">
                 {detail.hotArtifactIdentity ? artifactIdentityLabel(detail.hotArtifactIdentity) : '无'}
               </Descriptions.Item>
-              <Descriptions.Item label="检查间隔">{detail.nSeconds / 60} 分钟</Descriptions.Item>
+              <Descriptions.Item label="安装提醒间隔">{detail.nSeconds / 60} 分钟</Descriptions.Item>
               <Descriptions.Item label="HOT策略">{hotStrategyLabel(detail.hotStrategy)}</Descriptions.Item>
               <Descriptions.Item label="空闲时长">
                 {detail.mSeconds == null ? '—' : `${idleSecondsToMinutes(detail.mSeconds)} 分钟`}
@@ -780,6 +938,7 @@ function ProjectTerminalUpdateContent({
                   size="small"
                   rowKey="storeRef"
                   dataSource={ruleStores}
+                  loading={ruleStorePageLoading}
                   pagination={false}
                   columns={[
                     {
@@ -802,7 +961,11 @@ function ProjectTerminalUpdateContent({
                     },
                   ]}
                 />
-                {ruleStoresCursor && <Button onClick={() => void loadMoreRuleStores()}>下一页</Button>}
+                <CursorPagination
+                  state={ruleStoresPaginationState}
+                  nextCursor={ruleStorePageLoading ? undefined : ruleStoresCursor ?? undefined}
+                  testIdPrefix={terminalUpdateTestIds.ruleStoresPagination}
+                />
               </>
             )}
           </>
@@ -813,16 +976,22 @@ function ProjectTerminalUpdateContent({
         open={Boolean(versionDetail)}
         onClose={() => {
           versionRequestId.current += 1;
+          historyPageRequestId.current += 1;
+          historyPageLoadingRef.current = false;
+          setHistoryPageLoading(false);
+          historyPager.reset();
+          latestVersionTerminalRef.current = undefined;
           setVersionDetail(undefined);
           setHistory([]);
           setHistoryCursor(null);
         }}
-        width={760}
+        width={720}
+        {...adminDrawerSurfaceProps}
         {...testId(terminalUpdateTestIds.reportDetail)}
       >
         {versionDetail && (
           <>
-            <Descriptions column={1} bordered size="small">
+            <Descriptions {...adminDetailDescriptionsProps}>
               <Descriptions.Item label="终端">{versionDetail.terminalName}</Descriptions.Item>
               <Descriptions.Item label="门店">{versionDetail.storeName}</Descriptions.Item>
               <Descriptions.Item label="报告状态">{versionDetail.hasReport ? '已上报' : '尚无报告'}</Descriptions.Item>
@@ -846,28 +1015,35 @@ function ProjectTerminalUpdateContent({
                   : formatCanonicalDateTime(versionDetail.receivedAtEpochMillis)}
               </Descriptions.Item>
             </Descriptions>
-            <Table
-              rowKey={row => row.reportId}
-              dataSource={history}
-              columns={[
-                {title: '规则', render: (_, row) => reportRuleTargetLabel(row.recent.ruleRef, row.references.ruleTarget)},
-                {title: 'FULL 工件', render: (_, row) => reportArtifactReferenceLabel(
-                  row.recent.fullArtifactRef, row.references.fullArtifactIdentity, '—',
-                )},
-                {title: 'HOT 工件', render: (_, row) => reportArtifactReferenceLabel(
-                  row.recent.hotArtifactRef, row.references.hotArtifactIdentity, '无',
-                )},
-                {title: '报告状态', render: (_, row) => reportStateLabel(row.recent.state)},
-                {title: '原因', render: (_, row) => reportReasonLabel(row.recent.reason)},
-                {title: '实际 APK', render: (_, row) => row.actual.apkVersion ?? '未知'},
-                {title: '实际 JS', render: (_, row) => row.actual.jsVersion ?? '未知'},
-                {title: 'Runtime', render: (_, row) => row.actual.runtimeVersion},
-                {title: '接收时间', render: (_, row) => formatCanonicalDateTime(row.receivedAtEpochMillis)},
-              ]}
-              pagination={false}
-              {...testId(terminalUpdateTestIds.reportHistory)}
-            />
-            {historyCursor && <Button onClick={() => void loadMoreHistory(historyCursor)}>加载更多历史</Button>}
+            <Space direction="vertical" size={8} style={{display: 'flex'}}>
+              <Table
+                rowKey={row => row.reportId}
+                dataSource={history}
+                loading={historyPageLoading}
+                columns={[
+                  {title: '规则', render: (_, row) => reportRuleTargetLabel(row.recent.ruleRef, row.references.ruleTarget)},
+                  {title: 'FULL 工件', render: (_, row) => reportArtifactReferenceLabel(
+                    row.recent.fullArtifactRef, row.references.fullArtifactIdentity, '—',
+                  )},
+                  {title: 'HOT 工件', render: (_, row) => reportArtifactReferenceLabel(
+                    row.recent.hotArtifactRef, row.references.hotArtifactIdentity, '无',
+                  )},
+                  {title: '报告状态', render: (_, row) => reportStateLabel(row.recent.state)},
+                  {title: '原因', render: (_, row) => reportReasonLabel(row.recent.reason)},
+                  {title: '实际 APK', render: (_, row) => row.actual.apkVersion ?? '未知'},
+                  {title: '实际 JS', render: (_, row) => row.actual.jsVersion ?? '未知'},
+                  {title: 'Runtime', render: (_, row) => row.actual.runtimeVersion},
+                  {title: '接收时间', render: (_, row) => formatCanonicalDateTime(row.receivedAtEpochMillis)},
+                ]}
+                pagination={false}
+                {...testId(terminalUpdateTestIds.reportHistory)}
+              />
+              <CursorPagination
+                state={historyPaginationState}
+                nextCursor={historyPageLoading ? undefined : historyCursor ?? undefined}
+                testIdPrefix={terminalUpdateTestIds.reportHistoryPagination}
+              />
+            </Space>
           </>
         )}
       </Drawer>
@@ -875,13 +1051,21 @@ function ProjectTerminalUpdateContent({
         open={Boolean(statusTarget)}
         title={
           statusTarget
-            ? `${statusTarget.status === 'ENABLED' ? '停用' : '启用'}“${ruleTargetTitle(statusTarget)}”？`
+            ? terminalUpdateStatusConfirmTitle(statusIntent ?? 'ENABLED', ruleTargetTitle(statusTarget))
             : '更新规则状态'
         }
-        actionLabel={statusTarget?.status === 'ENABLED' ? '停用' : '启用'}
-        onCancel={() => setStatusTarget(undefined)}
+        actionLabel={terminalUpdateStatusActionLabel(statusIntent ?? 'ENABLED')}
+        submitting={statusSubmitting}
+        problem={statusProblem}
+        onCancel={() => {
+          if (statusSubmittingRef.current) return;
+          setStatusTarget(undefined);
+          setStatusIntent(undefined);
+          setStatusProblem(undefined);
+          statusSubmission.reset();
+        }}
         onConfirm={() =>
-          statusTarget && void changeStatus(statusTarget, statusTarget.status === 'ENABLED' ? 'DISABLED' : 'ENABLED')
+          statusTarget && statusIntent && void changeStatus(statusTarget, statusIntent)
         }
         confirmTestId={terminalUpdateTestIds.ruleStatusConfirm}
         cancelTestId="terminal-update-rule-status-cancel"
@@ -1149,6 +1333,7 @@ function RuleCreateDrawer({
     queryContext.groupWorkspaceKey,
   ]);
   const submit = async (values: RuleForm) => {
+    if (lifecycle.submitting) return;
     setProblem(undefined);
     lifecycle.setSubmitting(true);
     try {
@@ -1182,6 +1367,7 @@ function RuleCreateDrawer({
         },
       );
       lifecycle.setDirty(false);
+      lifecycle.closeAfterSuccess();
       await onCreated();
       message.success(`更新规则已创建，当前为${values.status === 'ENABLED' ? '启用' : '停用'}状态`);
     } catch (error) {
@@ -1237,9 +1423,41 @@ function RuleCreateDrawer({
     queryContext.groupWorkspaceKey,
   ]);
   return (
-    <Drawer title="新建终端更新规则" open={open} onClose={() => lifecycle.requestClose()} width={680} destroyOnClose>
+    <Drawer
+      title="新建终端更新规则"
+      open={open}
+      onClose={lifecycle.requestClose}
+      afterOpenChange={lifecycle.afterOpenChange}
+      maskClosable={!lifecycle.submitting}
+      keyboard={!lifecycle.submitting}
+      width={720}
+      destroyOnHidden
+      {...adminDrawerSurfaceProps}
+      footer={(
+        <Space>
+          <Button onClick={lifecycle.requestClose} disabled={lifecycle.submitting}>取消</Button>
+          <Button
+            type="primary"
+            htmlType="submit"
+            form="terminal-update-rule-create-form"
+            loading={lifecycle.submitting}
+            disabled={lifecycle.submitting}
+            {...testId(terminalUpdateTestIds.createRuleSubmit)}
+          >
+            保存并创建
+          </Button>
+        </Space>
+      )}
+    >
       {problem && <Alert type="error" showIcon message={problem} />}
-      <Form form={form} layout="vertical" onFinish={submit} onValuesChange={() => lifecycle.setDirty(true)}>
+      <Form
+        id="terminal-update-rule-create-form"
+        form={form}
+        layout="vertical"
+        onFinish={submit}
+        onValuesChange={() => lifecycle.setDirty(true)}
+        disabled={lifecycle.submitting}
+      >
         <Form.Item name="targetMode" label="应用范围" rules={[{required: true}]}>
           <Select
             options={[
@@ -1357,7 +1575,7 @@ function RuleCreateDrawer({
             {...testId(terminalUpdateTestIds.hotArtifact)}
           />
         </Form.Item>
-        <Form.Item name="nMinutes" label="检查间隔（分钟）" rules={[{required: true}]}>
+        <Form.Item name="nMinutes" label="安装提醒间隔（分钟）" rules={[{required: true}]}>
           <InputNumber
             min={1}
             max={1440}
@@ -1396,17 +1614,6 @@ function RuleCreateDrawer({
         <Form.Item name="description" label="说明">
           <Input.TextArea maxLength={500} {...testId(terminalUpdateTestIds.description)} />
         </Form.Item>
-        <Space>
-          <Button onClick={() => lifecycle.requestClose()}>取消</Button>
-          <Button
-            type="primary"
-            htmlType="submit"
-            loading={lifecycle.submitting}
-            {...testId(terminalUpdateTestIds.createRuleSubmit)}
-          >
-            保存并创建
-          </Button>
-        </Space>
       </Form>
     </Drawer>
   );

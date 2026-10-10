@@ -355,8 +355,7 @@ final class TerminalUpdateAcceptanceScenarios {
 
         Map<String, String> credentialHeaders = Map.of(
                 "Authorization", "Terminal " + terminal.generation() + "." + terminal.credentialSecret(),
-                "X-Terminal-Ref", terminal.terminalRef().toString(),
-                "X-Terminal-Device-Id", terminal.deviceId());
+                "X-Terminal-Ref", terminal.terminalRef().toString());
         String snapshotBasePath = "/api/terminal/group-workspaces/" + terminal.fixture().groupWorkspaceKey()
                 + "/update-rules/projects/" + terminal.fixture().projectId();
         String snapshotPath = snapshotBasePath + "?limit=100";
@@ -478,7 +477,7 @@ final class TerminalUpdateAcceptanceScenarios {
         BackendAcceptanceTest.Response cancelled = context.post(TERMINAL_DEVICE_ACTIVATION_CANCEL,
                 "/api/terminal/group-workspaces/" + terminal.fixture().groupWorkspaceKey() + "/terminals/"
                         + terminal.terminalRef() + "/activation/cancel",
-                null, Map.of("deviceId", terminal.deviceId()), credentialHeaders, Set.of(200));
+                null, null, credentialHeaders, Set.of(200));
         assertEquals("CANCELLED", payload(cancelled.json()).path("outcome").asText(),
                 "BUSINESS: fixture cancellation ends the current credential generation");
         BackendAcceptanceTest.Response revoked = context.get(TERMINAL_UPDATE_ARTIFACT_CONTENT,
@@ -577,8 +576,7 @@ final class TerminalUpdateAcceptanceScenarios {
         report.put("recent", recent);
         Map<String, String> credential = Map.of(
                 "Authorization", "Terminal " + terminal.generation() + "." + terminal.credentialSecret(),
-                "X-Terminal-Ref", terminal.terminalRef().toString(),
-                "X-Terminal-Device-Id", terminal.deviceId());
+                "X-Terminal-Ref", terminal.terminalRef().toString());
         Map<String, String> reportHeaders = new java.util.LinkedHashMap<>(credential);
         reportHeaders.put("Idempotency-Key", reportId.toString());
         String reportPath = "/api/terminal/group-workspaces/" + terminal.fixture().groupWorkspaceKey()
@@ -661,7 +659,7 @@ final class TerminalUpdateAcceptanceScenarios {
         String activationCancel = "/api/terminal/group-workspaces/" + terminal.fixture().groupWorkspaceKey()
                 + "/terminals/" + terminal.terminalRef() + "/activation/cancel";
         context.post(TERMINAL_DEVICE_ACTIVATION_CANCEL, activationCancel, null,
-                Map.of("deviceId", terminal.deviceId()),
+                null,
                 Map.of("Authorization", "Terminal " + terminal.generation() + "." + terminal.credentialSecret()),
                 Set.of(200));
         JsonNode afterCancellation = payload(context.get(OPERATIONS_TERMINAL_VERSION_PAGE,

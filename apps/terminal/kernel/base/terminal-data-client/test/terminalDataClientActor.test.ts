@@ -17,6 +17,8 @@ import {
   terminalDataHeartbeatCommand,
   readTerminalDataCommand,
   submitTerminalUpdateReportCommand,
+  requestTerminalUpdateDownloadGrantCommand,
+  clearSharedTerminalCredentialCommand,
 } from '../src/features/commands/terminalDataClientCommands';
 import {
   terminalDataClientActions,
@@ -290,7 +292,7 @@ describe('terminal-data-client activation command actor', () => {
       surfaceForm: 'laptop',
     });
     const state = terminalDataClientReducer(undefined, {type: 'test/init'});
-    const activeState = terminalDataClientReducer(
+    let activeState = terminalDataClientReducer(
       state,
       terminalDataClientActions.replaceCredential({
         groupWorkspaceKey: 'workspace-1',
@@ -300,6 +302,10 @@ describe('terminal-data-client activation command actor', () => {
         bindingGeneration: 9,
         credentialSecret: secret,
       }),
+    );
+    activeState = terminalDataClientReducer(
+      activeState,
+      terminalDataClientActions.markCredentialReady({credentialRevision: activeState.credentialRevision, instanceMode: 'MASTER'}),
     );
     const handler = actorRuntime.actor.handlers.find(
       candidate => candidate.commandName === readTerminalDataCommand.commandName,
@@ -346,7 +352,6 @@ describe('terminal-data-client activation command actor', () => {
         pathAndQuery: '/stores/store-authoritative/basic',
         headers: {
           Authorization: `Terminal 9.${secret}`,
-          'X-Terminal-Device-Id': 'device-1',
           'X-Terminal-Ref': 'terminal-1',
         },
       }),
@@ -413,7 +418,7 @@ describe('terminal-data-client activation command actor', () => {
     actorRuntime.dispose();
   });
 
-  it('blocks SLAVE credential actions but allows local disconnect cleanup without touching credentials', async () => {
+  it('keeps SLAVE inactive and TDS-stopped while allowing saved-credential CBS reads and download grants', async () => {
     const secret = 'A'.repeat(43);
     let state = terminalDataClientReducer(undefined, {type: 'test/init'});
     state = terminalDataClientReducer(
@@ -427,12 +432,22 @@ describe('terminal-data-client activation command actor', () => {
         credentialSecret: secret,
       }),
     );
+    state = terminalDataClientReducer(
+      state,
+      terminalDataClientActions.markCredentialReady({credentialRevision: state.credentialRevision, instanceMode: 'SLAVE'}),
+    );
+    const executeHttp = vi.fn(async (_request: unknown) => ({
+      kind: 'failure' as const,
+      category: 'not-delivered' as const,
+      code: 'BROWSER_TRANSPORT_PROXY_UNSUPPORTED',
+    }));
+    const diagnostics = createActivationTestLogger();
     const transport = {
       start: vi.fn(),
       ready: vi.fn(),
       invalid: vi.fn(),
       stop: vi.fn(),
-      executeHttp: vi.fn(),
+      executeHttp,
       reportHttpAddressAvailable: vi.fn(),
     };
     const actor = createTerminalDataClientActor({
@@ -453,7 +468,7 @@ describe('terminal-data-client activation command actor', () => {
       ({
         runtimeId: 'slave-runtime',
         localNodeId: 'slave-node',
-        platformPorts: {device: {getDeviceInfo: vi.fn()}},
+        platformPorts: {device: {getDeviceInfo: vi.fn()}, logger: diagnostics.logger},
         command: {commandName, payload, requestId: 'operation-1', commandId: 'slave-command'} as never,
         actor: {actorKey: actor.actor.actorKey, moduleName: actor.actor.moduleName, actorName: actor.actor.actorName},
         getState: () => actorState(state, 'SLAVE'),
@@ -471,7 +486,7 @@ describe('terminal-data-client activation command actor', () => {
       await findHandler(initializeTerminalDataClientCommand.commandName).handle(
         makeContext(initializeTerminalDataClientCommand.commandName, {}),
       ),
-    ).toEqual({status: 'not-host'});
+    ).toEqual({status: 'credential-ready'});
     expect(
       await findHandler(activateTerminalCommand.commandName).handle(
         makeContext(activateTerminalCommand.commandName, {activationCode: '12345678'}),
@@ -502,6 +517,11 @@ describe('terminal-data-client activation command actor', () => {
       status: 'rejected',
       reason: 'TERMINAL_CLIENT_HOST_ROLE_REQUIRED',
     });
+    expect(
+      await findHandler(submitTerminalUpdateReportCommand.commandName).handle(
+        makeContext(submitTerminalUpdateReportCommand.commandName, {}),
+      ),
+    ).toMatchObject({kind: 'failure', category: 'not-delivered'});
 
     expect(
       await findHandler(disconnectTerminalCommand.commandName).handle(
@@ -510,14 +530,149 @@ describe('terminal-data-client activation command actor', () => {
     ).toEqual({
       status: 'disconnected',
     });
+    await expect(
+      findHandler(readTerminalDataCommand.commandName).handle(
+        makeContext(readTerminalDataCommand.commandName, {
+          operationId: 'terminalReadStoreBasic',
+          pathParameters: {storeRef: 'caller-store'},
+        }),
+      ),
+    ).resolves.toMatchObject({kind: 'failure', code: 'BROWSER_TRANSPORT_PROXY_UNSUPPORTED'});
+    await expect(
+      findHandler(requestTerminalUpdateDownloadGrantCommand.commandName).handle(
+        makeContext(requestTerminalUpdateDownloadGrantCommand.commandName, {
+          artifactRef: '00000000-0000-4000-8000-000000000004',
+        }),
+      ),
+    ).resolves.toMatchObject({kind: 'failure', code: 'BROWSER_TRANSPORT_PROXY_UNSUPPORTED'});
     expect(selectActivationState(actorState(state, 'SLAVE'))).toMatchObject({
-      status: 'active',
+      status: 'inactive',
       terminalRef: 'terminal-1',
     });
     expect(state).toMatchObject({credential: {deviceId: 'device-1', credentialSecret: secret}});
     expect(transport.start).not.toHaveBeenCalled();
-    expect(transport.executeHttp).not.toHaveBeenCalled();
+    expect(executeHttp).toHaveBeenCalledTimes(2);
+    expect(executeHttp.mock.calls[0]?.[0]).toMatchObject({
+      headers: {Authorization: `Terminal 8.${secret}`, 'X-Terminal-Ref': 'terminal-1'},
+    });
+    expect(executeHttp.mock.calls[1]?.[0]).toMatchObject({
+      headers: {Authorization: `Terminal 8.${secret}`, 'X-Terminal-Ref': 'terminal-1'},
+    });
     expect(transport.stop).toHaveBeenCalledTimes(1);
+    actor.dispose();
+  });
+
+  it('requires a successful flush before an empty SLAVE credential is accepted as cleared', async () => {
+    let state = terminalDataClientReducer(undefined, {type: 'test/init'});
+    const flushPersistence = vi.fn()
+      .mockResolvedValueOnce({status: 'failed', failures: [{key: 'credential'}]})
+      .mockResolvedValueOnce({status: 'succeeded'});
+    const actor = createTerminalDataClientActor({
+      transport: {
+        start: vi.fn(), ready: vi.fn(), invalid: vi.fn(), stop: vi.fn(), executeHttp: vi.fn(),
+        reportHttpAddressAvailable: vi.fn(),
+      },
+      businessServerName: 'terminal-business-api',
+      createCredentialSecret: () => 'A'.repeat(43),
+      now: () => 1_000,
+      appVersion: '1.0.0',
+      surfaceForm: 'laptop',
+    });
+    const handler = actor.actor.handlers.find(
+      candidate => candidate.commandName === clearSharedTerminalCredentialCommand.commandName,
+    );
+    if (handler === undefined) throw new Error('terminal credential clear handler missing');
+    const diagnostics = createActivationTestLogger();
+    const context = {
+      runtimeId: 'slave-runtime',
+      localNodeId: 'slave-node',
+      platformPorts: {logger: diagnostics.logger},
+      command: {
+        commandName: clearSharedTerminalCredentialCommand.commandName,
+        commandId: 'clear-empty',
+        requestId: 'clear-empty',
+        payload: {groupWorkspaceKey: null, terminalRef: null, storeRef: null, bindingGeneration: null},
+      },
+      actor: {actorKey: actor.actor.actorKey, moduleName: actor.actor.moduleName, actorName: actor.actor.actorName},
+      getState: () => actorState(state, 'SLAVE'),
+      dispatchAction: (action: unknown) => {
+        state = terminalDataClientReducer(state, action as never);
+        return action as never;
+      },
+      flushPersistence,
+      subscribeState: () => () => undefined,
+      dispatchCommand: async () => ({status: 'completed'}),
+      requestApplicationReset: vi.fn(),
+    } as unknown as ActorExecutionContext;
+
+    await expect(handler.handle(context)).resolves.toEqual({status: 'persistence-failed'});
+    await expect(handler.handle(context)).resolves.toEqual({status: 'already-clear'});
+    expect(flushPersistence).toHaveBeenCalledTimes(2);
+    expect(state.credential).toBeNull();
+    actor.dispose();
+  });
+
+  it('clears a non-empty SLAVE credential only after the clear has been durably flushed', async () => {
+    const credential = {
+      groupWorkspaceKey: 'workspace-1',
+      terminalRef: '00000000-0000-4000-8000-000000000001',
+      storeRef: '00000000-0000-4000-8000-000000000002',
+      deviceId: 'slave-device',
+      bindingGeneration: 8,
+      credentialSecret: 'A'.repeat(43),
+    };
+    let state = terminalDataClientReducer(undefined, {type: 'test/init'});
+    state = terminalDataClientReducer(state, terminalDataClientActions.replaceCredential(credential));
+    const flushPersistence = vi.fn(async () => ({status: 'succeeded' as const}));
+    const actor = createTerminalDataClientActor({
+      transport: {
+        start: vi.fn(), ready: vi.fn(), invalid: vi.fn(), stop: vi.fn(), executeHttp: vi.fn(),
+        reportHttpAddressAvailable: vi.fn(),
+      },
+      businessServerName: 'terminal-business-api',
+      createCredentialSecret: () => credential.credentialSecret,
+      now: () => 1_000,
+      appVersion: '1.0.0',
+      surfaceForm: 'laptop',
+    });
+    const handler = actor.actor.handlers.find(
+      candidate => candidate.commandName === clearSharedTerminalCredentialCommand.commandName,
+    );
+    if (handler === undefined) throw new Error('terminal credential clear handler missing');
+    const context = {
+      runtimeId: 'slave-runtime',
+      localNodeId: 'slave-node',
+      platformPorts: {logger: createActivationTestLogger().logger},
+      command: {
+        commandName: clearSharedTerminalCredentialCommand.commandName,
+        commandId: 'clear-shared-credential',
+        requestId: 'clear-shared-credential',
+        payload: {
+          groupWorkspaceKey: credential.groupWorkspaceKey,
+          terminalRef: credential.terminalRef,
+          storeRef: credential.storeRef,
+          bindingGeneration: credential.bindingGeneration,
+        },
+      },
+      actor: {actorKey: actor.actor.actorKey, moduleName: actor.actor.moduleName, actorName: actor.actor.actorName},
+      getState: () => actorState(state, 'SLAVE'),
+      dispatchAction: (action: unknown) => {
+        state = terminalDataClientReducer(state, action as never);
+        return action as never;
+      },
+      flushPersistence: async () => {
+        expect(state.credential).toBeNull();
+        expect(actorState(state, 'SLAVE')['kernel.base.runtime.instance-mode']).toEqual({instanceMode: 'SLAVE'});
+        return flushPersistence();
+      },
+      subscribeState: () => () => undefined,
+      dispatchCommand: async () => ({status: 'completed'}),
+      requestApplicationReset: vi.fn(),
+    } as unknown as ActorExecutionContext;
+
+    await expect(handler.handle(context)).resolves.toEqual({status: 'cleared'});
+    expect(flushPersistence).toHaveBeenCalledOnce();
+    expect(state.credential).toBeNull();
     actor.dispose();
   });
 
@@ -610,7 +765,7 @@ describe('terminal-data-client activation command actor', () => {
         expect(transport.invalid).not.toHaveBeenCalled();
       } else {
         expect(
-          selectActivationState({[terminalDataClientStateSlice.name]: state} as unknown as StateRoot),
+          selectActivationState(actorState(state)),
         ).toMatchObject({
           status: 'active',
           terminalRef: '00000000-0000-4000-8000-000000000001',
@@ -696,7 +851,7 @@ describe('terminal-data-client activation command actor', () => {
     await handler.handle(context as never);
     (context.command as unknown as {requestId: string}).requestId = 'operation-2';
     const second = await handler.handle(context as never);
-    const readback = selectActivationState({[terminalDataClientStateSlice.name]: state} as unknown as StateRoot);
+    const readback = selectActivationState(actorState(state));
     expect(submitted.length).toBe(2);
     expect(submitted[0] === submitted[1]).toBe(true);
     expect(createCredentialSecret).toHaveBeenCalledTimes(1);
@@ -1168,7 +1323,7 @@ describe('terminal-data-client activation command actor', () => {
         }),
       ]),
     );
-    expect(selectActivationState({[terminalDataClientStateSlice.name]: state} as unknown as StateRoot)).toMatchObject({
+    expect(selectActivationState(actorState(state))).toMatchObject({
       status: 'active',
       terminalRef: 'terminal-1',
     });
@@ -1178,9 +1333,9 @@ describe('terminal-data-client activation command actor', () => {
       method: 'POST',
       pathAndQuery: '/terminals/terminal-1/activation/cancel',
       headers: {Authorization: `Terminal 8.${secret}`},
-      body: {deviceId: 'device-1'},
       safeRetryable: true,
     });
+    expect(requests[0]).not.toHaveProperty('body');
     expect(transport.reportHttpAddressAvailable).toHaveBeenCalledTimes(1);
 
     const reset = vi.fn();
@@ -2353,7 +2508,7 @@ describe('terminal-data-client activation command actor', () => {
         () => null,
         (error: unknown) => error,
       );
-      expect(selectActivationState({[terminalDataClientStateSlice.name]: state} as unknown as StateRoot).status).toBe(
+      expect(selectActivationState(actorState(state)).status).toBe(
         'cancelling',
       );
       expect(
@@ -2366,7 +2521,7 @@ describe('terminal-data-client activation command actor', () => {
       });
       rejectStop(new Error('stop failed'));
       expect(await settledCancel).toBeInstanceOf(Error);
-      expect(selectActivationState({[terminalDataClientStateSlice.name]: state} as unknown as StateRoot).status).toBe(
+      expect(selectActivationState(actorState(state)).status).toBe(
         'cancelling',
       );
       expect(reset).not.toHaveBeenCalled();

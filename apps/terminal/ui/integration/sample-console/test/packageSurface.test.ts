@@ -28,6 +28,7 @@ describe('sample-console package surface', () => {
       'kernel.base.topology',
       'kernel.base.transport',
       'kernel.base.ui-state',
+      'kernel.feature.project-basic',
       'kernel.feature.sample-member-registry',
       'kernel.feature.sample-staff-session',
       'kernel.feature.store-basic',

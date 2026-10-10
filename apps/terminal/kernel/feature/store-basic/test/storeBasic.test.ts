@@ -33,7 +33,7 @@ const readBody = (operationId: TerminalReadOperationId): unknown => {
   switch (operationId) {
     case 'terminalReadStoreBasic':
       return {
-        store: {id: 'store-1', name: 'Sample'},
+        store: {id: 'store-1', name: 'Sample', groupWorkspaceKey: 'workspace-1', project: {id: 'project-1', name: 'Project'}},
         operatingRules: {catalogManagementEnabled: true},
         storeUpdatedAtEpochMillis: 10,
         operatingRulesUpdatedAtEpochMillis: 11,
@@ -328,25 +328,17 @@ describe('store-basic feature owner', () => {
     expect(calls[0]?.[2]).toEqual({requestId: expect.stringMatching(/^req_/) });
   });
 
-  it('retries project readiness after an initial organization-path read failure', async () => {
-    const harness = createActorHarness({failFirstReadOperations: ['terminalReadStoreOrganizationPath']});
+  it('keeps project readiness out of store-basic readiness', async () => {
+    const harness = createActorHarness();
     const initialize = harness.actor.handlers.find(item => item.commandName === initializeStoreBasicCommand.commandName);
     if (initialize === undefined) throw new Error('store-basic initialize handler missing');
 
     await expect(initialize.handle(harness.context)).resolves.toEqual({status: 'store-loaded'});
-    expect(selectStoreBasicLoadReadiness(harness.getState()).projectStatus).toBe('failed');
-    await expect(initialize.handle(harness.context)).resolves.toEqual({status: 'already-loaded'});
-
-    const organizationReads = harness.calls.filter(call =>
+    expect(selectStoreBasicLoadReadiness(harness.getState())).toEqual(expect.objectContaining({storeStatus: 'flushed'}));
+    expect(harness.calls.some(call =>
       call.name === readTerminalDataCommand.commandName &&
       (call.payload as {operationId?: string}).operationId === 'terminalReadStoreOrganizationPath',
-    );
-    expect(organizationReads).toHaveLength(2);
-    expect(selectStoreBasicLoadReadiness(harness.getState())).toMatchObject({
-      storeStatus: 'flushed',
-      projectStatus: 'flushed',
-      projectRef: 'project-1',
-    });
+    )).toBe(false);
   });
 
   it('reloads store facts when Runtime reset rebuilt readiness but retained actor-local completion state', async () => {
@@ -365,8 +357,6 @@ describe('store-basic feature owner', () => {
     expect(storeReads).toHaveLength(2);
     expect(selectStoreBasicLoadReadiness(harness.getState())).toMatchObject({
       storeStatus: 'flushed',
-      projectStatus: 'flushed',
-      projectRef: 'project-1',
     });
   });
 
@@ -386,10 +376,7 @@ describe('store-basic feature owner', () => {
     const subscriptions = harness.calls.filter(call => call.name.endsWith('.subscribe-topic'));
     expect(harness.calls.every(call => call.options?.requestId === 'initialize')).toBe(true);
     expect(subscriptions.map(call => (call.payload as {topicKey: string}).topicKey).sort()).toEqual([
-      'COMMERCIAL_GROUP',
       'CONTRACT',
-      'PROJECT',
-      'REGION',
       'SERVICE_POINT',
       'SERVICE_POINT_AREA',
       'SERVICE_POINT_AREA_COLLECTION',
@@ -403,8 +390,6 @@ describe('store-basic feature owner', () => {
       runtimeId: 'test-runtime',
       binding,
       storeStatus: 'flushed',
-      projectStatus: 'flushed',
-      projectRef: 'project-1',
     });
     const storePersistIndex = harness.timeline.findIndex(
       event => event.kind === 'flush' && event.state?.store !== null,

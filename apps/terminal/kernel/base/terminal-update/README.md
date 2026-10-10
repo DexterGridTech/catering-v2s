@@ -10,11 +10,11 @@
 
 ## 定位
 
-本包是 Runtime 内终端更新任务的唯一业务 owner：固定一次不可变更新目标，持久化当前任务与最近状态，并以 command 编排注入的 `UpdatePort`。它不是 Android installer、下载器、React 页面或测试 runner；宿主能力由 platform port 提供，页面由 integration 装配。
+本包是 Runtime 内终端更新执行任务的唯一 owner：接收 project-basic 选中的单条候选，复核本机实际版本与当前上下文，固定不可变任务，持久化当前任务与最近状态，并以 command 编排注入的 `UpdatePort`。它不是项目规则 owner、Android installer、下载器、React 页面或测试 runner；宿主能力由 platform port 提供，业务候选由 feature owner 提供。
 
 ## 作用与边界
 
-当逻辑需要判断、固定或推进一个终端更新任务，并且结果属于更新任务状态时，放在本 owner；当逻辑负责 Android 安装、文件加载或宿主生命周期时，放在 adapter/application；当逻辑只呈现状态或发起用户动作时，放在 UI/integration。更新目标只能由 composition 注入的 `UpdateTargetSourceProvider` 提供；command 不接受任意 artifact 路径。
+当逻辑需要复核、固定或推进一个终端更新任务，并且结果属于更新任务状态时，放在本 owner；项目、大区、集团资料与项目规则由 `kernel.feature.project-basic` 选择并通过 `requestTerminalUpdateCommand` 提交；当逻辑负责 Android 安装、文件加载或宿主生命周期时，放在 adapter/application；当逻辑只呈现状态或发起用户动作时，放在 UI/integration。command 不接受任意 artifact 路径。
 
 本包持久化 `currentTask`、`recentStatus` 与 `failedArtifactIds`，使用 owner-only persistence、slice retain 与 isolated sync。它不保存第二份 APK/HOT 文件账本，也不伪造 Web 上的原生事实。
 
@@ -36,23 +36,24 @@ terminal-invariants.json                     公开面与本包验证归属
 
 ## 用法
 
-composition 创建模块时注入实际 `UpdatePort`。未传入 `sourceProvider` 时，owner 从已持久化的 CBS 规则快照选择目标；只有明确的 focused fixture 才传本地 provider。需要显式拒绝本地目标来源时可传公开的 `unavailableUpdateTargetSourceProvider`。以下 command 调用与 selector 读取形态来自本包测试：
+composition 创建模块时注入实际 `UpdatePort`，并从 project-basic 注入当前业务上下文事实与候选复核器。feature 先用 `selectProjectTerminalUpdateCandidate` 选择一条适用规则，再通过公开 command 提交固定候选；base 只复核该候选，不读取或缓存规则集合。以下 command 调用与 selector 读取形态来自本包测试：
 
 ```ts
 import {
-  acceptTerminalUpdateTargetCommand,
+  requestTerminalUpdateCommand,
+  createRequestTerminalUpdatePayload,
   selectTerminalUpdateTask,
 } from '@catering-v2s/kernel-base-terminal-update';
 
 const result = await runtime.dispatchCommand(
-  acceptTerminalUpdateTargetCommand,
-  {selectionContext: {selectedSpace, contextIdentity}},
+  requestTerminalUpdateCommand,
+  createRequestTerminalUpdatePayload(target),
   {requestId},
 );
 const task = selectTerminalUpdateTask(runtime.getState());
 ```
 
-`acceptTerminalUpdateTargetCommand` 只提交当前选择上下文；owner 从 provider 取得并固定完整 target。另有 `confirmTerminalUpdateBootCommand` 与 selectors `selectTerminalUpdateActualVersions`、`selectTerminalUpdateRecentStatus`，调用者应继续通过 Runtime 的公开 command/selector 路径访问。
+`requestTerminalUpdateCommand` 接收业务 feature 已选择的单条候选；update owner 复核当前事实并固定任务，实际版本比较与执行仍归 update。另有 `confirmTerminalUpdateBootCommand` 与 selectors `selectTerminalUpdateActualVersions`、`selectTerminalUpdateRecentStatus`，调用者应继续通过 Runtime 的公开 command/selector 路径访问。
 
 ## 在这个包上迭代时
 

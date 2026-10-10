@@ -17,6 +17,7 @@ import com.catering.v2s.platform.iam.application.PlatformAuthenticationService;
 import com.catering.v2s.platform.workspace.application.WorkspaceAdministrationService;
 import com.catering.v2s.storeterminal.application.StoreTerminalAuditHistoryService;
 import com.catering.v2s.storeterminal.application.StoreTerminalOwnerService;
+import com.catering.v2s.terminalupdate.application.TerminalUpdateRuleOwnerService;
 import com.catering.v2s.workspace.iam.application.CommandExecutionContextResolver;
 import com.catering.v2s.workspace.iam.application.WorkspaceAssignmentScopeService;
 import com.catering.v2s.workspace.iam.application.WorkspaceAuthenticationService;
@@ -111,6 +112,11 @@ class ContractProblemAdviceTypedOwnerMappingTest {
                 advice.conflict(new ExtensionCommandReceiptService.ExtensionIdempotencyConflictException(), request),
                 HttpStatus.CONFLICT,
                 "PLATFORM_COMMON_IDEMPOTENCY_CONFLICT");
+        assertProblem(
+                advice.terminalUpdateRuleSnapshotChanged(
+                        new TerminalUpdateRuleOwnerService.TerminalUpdateRuleSnapshotChangedException(), request),
+                HttpStatus.CONFLICT,
+                "TERMINAL_UPDATE_SNAPSHOT_CHANGED");
         assertProblem(
                 advice.headCompanyBrandAuthorizationInUse(
                         new BusinessEntityService.HeadCompanyBrandAuthorizationInUseException(), request),

@@ -1,4 +1,5 @@
 import type {RuntimeModule, RuntimeModuleContext, RuntimeModuleResetInput} from '@catering-v2s/kernel-base-runtime';
+import {selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
 import {runtimeModuleDependencyNames} from '../dependencies';
 import {moduleKind, moduleName} from '../moduleName';
 import type {TerminalDataClientDependencies} from '../types/client';
@@ -11,6 +12,8 @@ import {
   connectTerminalCommand,
   disconnectTerminalCommand,
   initializeTerminalDataClientCommand,
+  reconcileTerminalCredentialReadinessCommand,
+  clearSharedTerminalCredentialCommand,
   refreshTerminalClientStatusProjectionCommand,
   readTerminalDataCommand,
   requestTerminalUpdateDownloadGrantCommand,
@@ -36,6 +39,7 @@ import {
   terminalClientStatusProjectionStateSlice,
   terminalClientStatusProjectionSliceName,
 } from '../features/slices/terminalClientStatusProjection';
+import type {TerminalClientState} from '../types/client';
 
 /** Creates one isolated credential/protocol owner for one TER runtime. */
 export const createTerminalDataClientModule = (dependencies: TerminalDataClientDependencies): RuntimeModule => {
@@ -56,6 +60,8 @@ export const createTerminalDataClientModule = (dependencies: TerminalDataClientD
     terminalDataHeartbeatCommand,
     terminalTopicChangedCommand,
     initializeTerminalDataClientCommand,
+    reconcileTerminalCredentialReadinessCommand,
+    clearSharedTerminalCredentialCommand,
     refreshTerminalClientStatusProjectionCommand,
     terminalTransportEventCommand,
     terminalHeartbeatTickCommand,
@@ -86,6 +92,42 @@ export const createTerminalDataClientModule = (dependencies: TerminalDataClientD
       let disposed = false;
       let refreshAgain = false;
       let refreshInFlight: Promise<void> | undefined;
+      let readinessAgain = false;
+      let readinessInFlight: Promise<void> | undefined;
+      let previousCredential = (context.getState()[terminalDataClientSliceName] as TerminalClientState).credential;
+      let previousMode = selectRuntimeInstanceMode(context.getState());
+      const reconcileCredentialReadiness = (): Promise<void> => {
+        if (disposed) return Promise.resolve();
+        readinessAgain = true;
+        if (readinessInFlight !== undefined) return readinessInFlight;
+        readinessInFlight = (async () => {
+          while (readinessAgain && !disposed) {
+            readinessAgain = false;
+            const result = await context.dispatchCommand(
+              reconcileTerminalCredentialReadinessCommand,
+              Object.freeze({}),
+            );
+            const handlerResult = result.status === 'completed' ? result.actorResults[0]?.result : undefined;
+            const resultStatus =
+              typeof handlerResult === 'object' && handlerResult !== null
+                ? Reflect.get(handlerResult, 'status')
+                : 'unavailable';
+            if (result.status !== 'completed' || (resultStatus !== 'ready' && resultStatus !== 'inactive')) {
+              context.platformPorts.logger
+                .scope({moduleName, layer: 'kernel', subsystem: 'terminal-data-client', component: 'credential-readiness'})
+                .error({
+                  category: 'terminal.credential.readiness',
+                  event: 'credential-readiness-reconcile-failed',
+                  message: 'Local shared-credential persistence qualification did not complete',
+                  data: {dispatchStatus: result.status, resultStatus: String(resultStatus)},
+                });
+            }
+          }
+        })().finally(() => {
+          readinessInFlight = undefined;
+        });
+        return readinessInFlight;
+      };
       const refreshProjection = (): Promise<void> => {
         if (disposed) return Promise.resolve();
         refreshAgain = true;
@@ -119,6 +161,14 @@ export const createTerminalDataClientModule = (dependencies: TerminalDataClientD
         return refreshInFlight;
       };
       const unsubscribe = context.subscribeState(() => {
+        const currentState = context.getState();
+        const currentClient = currentState[terminalDataClientSliceName] as TerminalClientState;
+        const currentMode = selectRuntimeInstanceMode(currentState);
+        if (currentClient.credential !== previousCredential || currentMode !== previousMode) {
+          previousCredential = currentClient.credential;
+          previousMode = currentMode;
+          if (currentClient.credential !== null) void reconcileCredentialReadiness();
+        }
         void refreshProjection();
       });
       context.registerResource(() => {

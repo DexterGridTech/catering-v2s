@@ -19,6 +19,7 @@ import {
   type Runtime,
   type RuntimeModuleContext,
   type RuntimeModule,
+  type ActorExecutionContext,
 } from '@catering-v2s/kernel-base-runtime';
 import {releaseRuntimeForTestAsync, runtimeStateSyncForTest} from '@catering-v2s/kernel-base-runtime/testing';
 import {
@@ -365,6 +366,10 @@ const createTopologyRuntime = (
     readonly extraModules?: readonly RuntimeModule[];
     readonly persistenceKey?: string;
     readonly persistenceDebounceMs?: number;
+    readonly beforeSlaveCredentialTransition?: (
+      context: ActorExecutionContext,
+      transition: 'unpair' | 'peer-unpaired',
+    ) => Promise<void>;
   }>,
 ): Readonly<{runtime: Runtime; device: DevicePort; events: readonly LogEvent[]}> => {
   const events: LogEvent[] = [];
@@ -378,6 +383,7 @@ const createTopologyRuntime = (
     nodeId: 'node-master',
     identityClient: input.identityClient,
     peerChannel: input.peer,
+    beforeSlaveCredentialTransition: input.beforeSlaveCredentialTransition,
     stateSyncSlices: [{name: membersSyncSliceName, syncIntent: 'master-to-slave'}],
   });
   const runtime = createRuntime({
@@ -1155,6 +1161,80 @@ describe('topology pairing facts', () => {
 });
 
 describe('topology unpair peer cleanup', () => {
+  it('clears shared SLAVE credentials before unpair transitions and records peer closure before a clear failure', async () => {
+    const host = new FakeTopologyHost();
+    const peer = new FakePeerChannel();
+    const transitions: string[] = [];
+    const queriedHosts: string[] = [];
+    const {runtime} = createTopologyRuntime({
+      host,
+      peer,
+      identityClient: {
+        query: async queriedHost => {
+          queriedHosts.push(queriedHost);
+          return Object.freeze({type: 'identity' as const, ...identity});
+        },
+      },
+      beforeSlaveCredentialTransition: async (context, transition) => {
+        transitions.push(transition);
+        const current = context.getState()[topologySliceName] as import('../src/types/state').TopologyState;
+        if (transition === 'unpair') expect(current.repairPending).toBe(false);
+        if (transition === 'peer-unpaired') {
+          expect(current.peerReachable).toBe(false);
+          expect(current.peerStateSyncConnectionId).toBeNull();
+        }
+        throw new Error('test-clear-not-durable');
+      },
+    });
+    await runtime.start();
+    try {
+      const locator: TopologyLocator = Object.freeze({
+        host: '192.0.2.46',
+        port: 43172,
+        basePath: '/terminal-topology',
+        identity,
+      });
+      runtime.getStore().dispatch(setRuntimeInstanceModeAction('SLAVE'));
+      runtime.getStore().dispatch(topologyActions.setMasterLocator(locator));
+      runtime.getStore().dispatch(topologyActions.setPeerIdentity(identity));
+      runtime.getStore().dispatch(topologyActions.setPeerReachable(true));
+      runtime.getStore().dispatch(topologyActions.setPeerStateSyncConnection('peer-connection-1'));
+
+      await runtime.dispatchCommand(
+        unpairTopologyCommand,
+        {},
+        {requestId: createRequestId(), routeContext: {displayMode: 'PRIMARY', workspace: 'MAIN'}},
+      );
+      expect(runtime.getState()[topologySliceName]).toMatchObject({
+        masterLocator: locator,
+        peerIdentity: identity,
+        repairPending: false,
+      });
+      expect(selectRuntimeInstanceMode(runtime.getState())).toBe('SLAVE');
+      await expect(createTopologyAdminCapability(runtime).pairByHost({host: '192.0.2.47'})).resolves.toMatchObject({
+        status: 'error',
+        reasonCode: 'TOPOLOGY_ALREADY_PAIRED',
+      });
+      expect(queriedHosts).toEqual([]);
+
+      await runtime.dispatchCommand(
+        topologyHostEventCommand,
+        {event: 'close', reason: 'TOPOLOGY_UNPAIRED'},
+        {requestId: createRequestId()},
+      );
+      expect(transitions).toEqual(['unpair', 'peer-unpaired']);
+      expect(runtime.getState()[topologySliceName]).toMatchObject({
+        masterLocator: locator,
+        peerIdentity: identity,
+        peerReachable: false,
+        peerStateSyncConnectionId: null,
+      });
+      expect(selectRuntimeInstanceMode(runtime.getState())).toBe('SLAVE');
+    } finally {
+      await releaseRuntimeForTestAsync(runtime);
+    }
+  });
+
   it('clears the slave locator from an explicit master unpair notice', async () => {
     const host = new FakeTopologyHost();
     const peer = new FakePeerChannel();
@@ -1368,9 +1448,11 @@ describe('topology admin capability', () => {
     const host = new FakeTopologyHost();
     const peer = new FakePeerChannel();
     const queriedHosts: string[] = [];
+    let slaveCredentialCleared = false;
     const identityClient: TopologyIdentityClient = Object.freeze({
       query: async queriedHost => {
         queriedHosts.push(queriedHost);
+        if (queriedHosts.length > 1) expect(slaveCredentialCleared).toBe(true);
         return Object.freeze({type: 'identity' as const, ...identity});
       },
     });
@@ -1384,7 +1466,16 @@ describe('topology admin capability', () => {
           terminalObservation: 'SUCCESSOR_RUNTIME_STARTED' as const,
         }),
     };
-    const {runtime} = createTopologyRuntime({host, peer, appControl, identityClient});
+    const {runtime} = createTopologyRuntime({
+      host,
+      peer,
+      appControl,
+      identityClient,
+      beforeSlaveCredentialTransition: async (_context, transition) => {
+        expect(transition).toBe('unpair');
+        slaveCredentialCleared = true;
+      },
+    });
     await runtime.start();
     try {
       const capability = createTopologyAdminCapability(runtime);
@@ -1420,6 +1511,13 @@ describe('topology admin capability', () => {
         peerReachable: false,
         repairPending: false,
       });
+      expect(slaveCredentialCleared).toBe(true);
+
+      const replacement = await capability.pairByHost({host: '192.0.2.48'});
+      expect(replacement.status).toBe('completed');
+      expect(queriedHosts).toEqual(['192.0.2.40', '192.0.2.48']);
+      expect(selectRuntimeInstanceMode(runtime.getState())).toBe('SLAVE');
+      expect(selectDisplayRole(runtime.getState())).toBe('VICE');
     } finally {
       await releaseRuntimeForTestAsync(runtime);
     }

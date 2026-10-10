@@ -12,7 +12,7 @@ import {
   type TopologyStateFullMessage,
   type TopologyWireMessage,
 } from '@catering-v2s/kernel-base-contracts';
-import type {RuntimeModule, RuntimeModuleContext} from '@catering-v2s/kernel-base-runtime';
+import type {ActorExecutionContext, RuntimeModule, RuntimeModuleContext} from '@catering-v2s/kernel-base-runtime';
 import {selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
 import {selectDisplayRole} from '@catering-v2s/kernel-base-display-context';
 import type {SyncStateDiff} from '@catering-v2s/kernel-base-state';
@@ -51,6 +51,10 @@ export type CreateTopologyModuleInput = Readonly<{
   readonly identityClient?: TopologyIdentityClient;
   readonly peerChannel?: TopologyPeerChannel;
   readonly canPair?: (state: import('@catering-v2s/kernel-base-state').StateRoot) => boolean;
+  readonly beforeSlaveCredentialTransition?: (
+    context: ActorExecutionContext,
+    transition: 'unpair' | 'peer-unpaired',
+  ) => Promise<void>;
   readonly stateSyncSlices?: readonly Readonly<{
     readonly name: string;
     readonly syncIntent: 'master-to-slave' | 'slave-to-master';
@@ -172,6 +176,7 @@ export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeM
     peerChannel: input.peerChannel,
     moduleName: input.moduleName,
     canPair: input.canPair,
+    beforeSlaveCredentialTransition: input.beforeSlaveCredentialTransition,
   });
   const commands = [
     queryTopologyHostCommand,

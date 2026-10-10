@@ -52,6 +52,10 @@ type TopologyActorInput = Readonly<{
   readonly peerChannel?: TopologyPeerChannel;
   readonly moduleName?: string;
   readonly canPair?: (state: import('@catering-v2s/kernel-base-state').StateRoot) => boolean;
+  readonly beforeSlaveCredentialTransition?: (
+    context: ActorExecutionContext,
+    transition: 'unpair' | 'peer-unpaired',
+  ) => Promise<void>;
 }>;
 
 const topologyCallTimeoutMs = topologyTransportConfig.callTimeoutMs;
@@ -590,6 +594,9 @@ export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefini
         throw createTopologyFailure({context, code: 'TOPOLOGY_NOT_PAIRED', message: 'Topology is not paired'});
       }
       const initialInstanceMode = selectRuntimeInstanceMode(context.getState());
+      if (initialInstanceMode === 'SLAVE') {
+        await input.beforeSlaveCredentialTransition?.(context, 'unpair');
+      }
       context.dispatchAction(topologyActions.setRepairPending(true));
       // Both roles expose the same public unpair command. Capture the mode
       // before the slave path is normalized to MASTER so the remote peer also
@@ -692,6 +699,10 @@ export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefini
     }),
     onCommand(topologyHostEventCommand, async context => {
       const event = context.command.payload;
+      const clearSlaveCredentialBeforeUnpair =
+        (event.event === 'close' || event.event === 'error' || event.event === 'peer-unreachable') &&
+        event.reason === 'TOPOLOGY_UNPAIRED' &&
+        selectRuntimeInstanceMode(context.getState()) === 'SLAVE';
       if (event.event === 'state-transfer-failed' && event.payloadFailure !== undefined) {
         context.dispatchAction(topologyActions.setPayloadFailure(event.payloadFailure));
         return null;
@@ -744,6 +755,9 @@ export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefini
         context.dispatchAction(topologyActions.bumpPeerConnectionRevision());
         if (event.reason === 'TOPOLOGY_UNPAIRED') {
           const instanceMode = selectRuntimeInstanceMode(context.getState());
+          if (clearSlaveCredentialBeforeUnpair) {
+            await input.beforeSlaveCredentialTransition?.(context, 'peer-unpaired');
+          }
           // A transient close preserves facts; an explicit unpair notice resolves
           // the role-specific owner boundary through one typed transition.
           const peerCloseResolution = await resolvePeerClose({context, instanceMode});

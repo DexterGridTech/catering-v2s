@@ -208,7 +208,7 @@ final class StoreTerminalAcceptanceScenarios {
                     BackendAcceptanceTest.TERMINAL_DEVICE_ACTIVATION_CANCEL,
                     terminalActivationCancelPath(store.fixture(), terminalRef),
                     null,
-                    Map.of("deviceId", deviceId),
+                    null,
                     Map.of("Authorization", terminalCredential(index, secret)),
                     OK);
             maximumCancellationMillis = Math.max(
@@ -277,7 +277,7 @@ final class StoreTerminalAcceptanceScenarios {
                         BackendAcceptanceTest.TERMINAL_DEVICE_ACTIVATION_CANCEL,
                         terminalActivationCancelPath(fixture.fixture(), fixture.terminalRef()),
                         null,
-                        Map.of("deviceId", fixture.deviceId()),
+                        null,
                         Map.of("Authorization", terminalCredential(fixture.generation(), fixture.credentialSecret())),
                         OK);
                 assertEquals("CANCELLED", cancelled.json().path("outcome").asText());
@@ -550,8 +550,7 @@ final class StoreTerminalAcceptanceScenarios {
                 null,
                 Map.of(
                         "Authorization", terminalCredential(connection.generation(), wrongSecret),
-                        "X-Terminal-Ref", connection.terminalRef().toString(),
-                        "X-Terminal-Device-Id", connection.deviceId()),
+                        "X-Terminal-Ref", connection.terminalRef().toString()),
                 Set.of(403));
         assertProblem(rejected, "TERMINAL_BINDING_CREDENTIAL_INVALID");
         assertEquals(
@@ -689,7 +688,7 @@ final class StoreTerminalAcceptanceScenarios {
                 BackendAcceptanceTest.TERMINAL_DEVICE_ACTIVATION_CANCEL,
                 terminalActivationCancelPath(store.fixture(), terminalRef),
                 null,
-                Map.of("deviceId", deviceId),
+                null,
                 Map.of("Authorization", terminalCredential(1, invalidCredentialMarker)),
                 CLIENT_FAILURE);
         assertProblem(invalidCredential, "TERMINAL_BINDING_CREDENTIAL_INVALID");
@@ -705,7 +704,7 @@ final class StoreTerminalAcceptanceScenarios {
                 BackendAcceptanceTest.TERMINAL_DEVICE_ACTIVATION_CANCEL,
                 terminalActivationCancelPath(store.fixture(), terminalRef),
                 null,
-                Map.of("deviceId", deviceId),
+                null,
                 Map.of("Authorization", terminalCredential(1, firstSecret)),
                 OK);
         assertEquals("CANCELLED", deviceCancelled.json().path("outcome").asText());
@@ -713,7 +712,7 @@ final class StoreTerminalAcceptanceScenarios {
                 BackendAcceptanceTest.TERMINAL_DEVICE_ACTIVATION_CANCEL,
                 terminalActivationCancelPath(store.fixture(), terminalRef),
                 null,
-                Map.of("deviceId", deviceId),
+                null,
                 Map.of("Authorization", terminalCredential(1, firstSecret)),
                 OK);
         assertEquals(
@@ -1523,7 +1522,7 @@ final class StoreTerminalAcceptanceScenarios {
                 BackendAcceptanceTest.TERMINAL_DEVICE_ACTIVATION_CANCEL,
                 terminalActivationCancelPath(store.fixture(), endedTerminal),
                 null,
-                Map.of("deviceId", "matrix-ended-device"),
+                null,
                 Map.of(
                         "Authorization",
                         terminalCredential(
@@ -3513,14 +3512,11 @@ final class StoreTerminalAcceptanceScenarios {
                         .asText());
         assertEquals(operationsAuditBefore, terminalBindingAuditTotal(context, store, strictOperationsTerminal));
 
-        Map<String, Object> unknownDeviceCancel = new LinkedHashMap<>();
-        unknownDeviceCancel.put("deviceId", deviceId);
-        addUnknownTerminalFields(unknownDeviceCancel);
         BackendAcceptanceTest.Response deviceCancel = context.post(
                 BackendAcceptanceTest.TERMINAL_DEVICE_ACTIVATION_CANCEL,
                 terminalActivationCancelPath(store.fixture(), forwardCompatibleTerminal),
                 null,
-                unknownDeviceCancel,
+                null,
                 Map.of("Authorization", terminalCredential(1, secret)),
                 OK);
         assertEquals("CANCELLED", deviceCancel.json().path("outcome").asText());
@@ -3541,7 +3537,7 @@ final class StoreTerminalAcceptanceScenarios {
                 BackendAcceptanceTest.TERMINAL_DEVICE_ACTIVATION_CANCEL,
                 terminalActivationCancelPath(store.fixture(), strictOperationsTerminal),
                 null,
-                Map.of("deviceId", strictOperationsDevice),
+                null,
                 Map.of("Authorization", terminalCredential(1, strictOperationsSecret)),
                 OK);
         assertEquals("CANCELLED", baselineCancel.json().path("outcome").asText());
@@ -3552,7 +3548,7 @@ final class StoreTerminalAcceptanceScenarios {
                 BackendAcceptanceTest.TERMINAL_DEVICE_ACTIVATION_CANCEL,
                 terminalActivationCancelPath(store.fixture(), baselineTerminal),
                 null,
-                Map.of("deviceId", baselineDeviceId),
+                null,
                 Map.of("Authorization", terminalCredential(1, baselineSecret)),
                 OK);
         assertEquals(deviceCancel.status(), knownFieldBaselineCancel.status());
@@ -3566,7 +3562,7 @@ final class StoreTerminalAcceptanceScenarios {
                         .path("status")
                         .asText());
         System.out.printf(("BACKEND_ACCEPTANCE_TERMINAL_UNKNOWN_FIELDS status=PASS activation=IGNORED "
-                + "deviceCancel=IGNORED operationsCancel=REJECTED knownField=STRICT%n"));
+                + "deviceCancel=BODYLESS operationsCancel=REJECTED knownField=STRICT%n"));
     }
 
     private static void addUnknownTerminalFields(Map<String, Object> body) {
@@ -3644,8 +3640,7 @@ final class StoreTerminalAcceptanceScenarios {
     private static Map<String, String> terminalReadHeaders(ConnectionFixture connection) {
         return Map.of(
                 "Authorization", terminalCredential(connection.generation(), connection.credentialSecret()),
-                "X-Terminal-Ref", connection.terminalRef().toString(),
-                "X-Terminal-Device-Id", connection.deviceId());
+                "X-Terminal-Ref", connection.terminalRef().toString());
     }
 
     private static boolean hasRef(JsonNode items, String field, String expected) {

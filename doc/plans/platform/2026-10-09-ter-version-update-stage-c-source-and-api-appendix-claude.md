@@ -2,7 +2,7 @@
 
 ## 1. 来源与截面
 
-2026-10-10 当前源码纯读取，未读运行产物；B 未由本次静态评审宣告验收，所有行号仅导航；不复制或修改B报告/接口。本附件不是A/B交付review、独立verdict或运行结果。正式需求、同日期C详设/Journey/IA/UI、A/B批准工件为输入。
+2026-10-10 当前源码纯读取，未读运行产物；B 未由本次静态评审宣告验收，所有行号仅导航；不复制或修改B报告/接口。本附件不是A/B交付review、独立verdict或运行结果。本轮追加输入为共享凭证PROPOSED提案及Dexter“CBS仅凭证鉴权、所有修改纳入C”；正式正本未改，当前差量是设计计划，非实现。正式需求、同日期C详设/Journey/IA/UI、A/B批准工件为输入。
 
 ## 2. 实际复用与尚缺接缝
 
@@ -20,17 +20,33 @@
 | apps/terminal/kernel/base/topology/src/application/createTopologyModule.ts#HELLO / features/actors/actors.ts#pairByHost | 两处moduleName equality、协议1 | 保留同 App/protocol 检查，不扩矩阵；规则 projection 同组 |
 | apps/terminal/kernel/base/topology/src/selectors/selectTopologyState.ts#selectTopologyRequiredProjectionsReady | 当前connection/revision资格 | BRANCHupdategate独立必要集合 |
 | apps/terminal/kernel/base/topology/src/application/createTopologyStateSyncController.ts#sendStateSnapshots | 每slice发送record snapshot、可chunk | 规则专门entry，无跨slice总包假设 |
-| apps/terminal/kernel/base/topology/src/application/createTopologyPeerCommandController.ts#projectActorResults | result原样JSON、帧64KiB | compactgrant，不传完整manifest |
+| apps/terminal/kernel/base/topology/src/application/createTopologyPeerCommandController.ts#projectActorResults | result原样JSON、帧64KiB | 不再承载artifact grant，删中转command，不新result分片 |
 | apps/terminal/kernel/base/transport/src/foundations/createTopologySession.ts#sendStateFull | 分片只statefull，不是command | 不新增peer result分片 |
-| apps/terminal/kernel/base/terminal-data-client/src/features/actors/terminalDataClientActor.ts#requestTerminalUpdateDownloadGrantCommand/submitTerminalUpdateReportCommand | MASTER/active/credential，仅TDC注入认证 | 副机先经MAINupdate命令grant；report永远local |
+| apps/terminal/kernel/base/terminal-data-client/src/features/actors/terminalDataClientActor.ts#requestTerminalUpdateDownloadGrantCommand/submitTerminalUpdateReportCommand | 当前MASTER/active gate；仅TDC注入认证 | 十类普通HTTP允许持久credential的两端本机直调，report仍MASTER；详设§8.6.2逐operation闭集 |
 | apps/terminal/ui/integration/sample-console/src/assembly/assembly.tsx、sample-wallpaper-console同路径#createTerminalUpdateModule | reader本机activation＋store/projectflushed；sync无update | 装配project-basic模块及两个record entry，更新纯selector身份接缝/当前周期gate；不复制feature业务逻辑，不copyactive |
 | apps/terminal/adapter/android/update/android/src/main/java/com/catering/v2s/terminal/adapter/android/update/TerminalUpdateRuntime.kt#resumePendingInstallerConfirmation | foreground旧exactIntent恢复；session持久事实 | N由owner，native只present当前系统确认 |
-| 同目录TerminalUpdateArtifactPreparer.kt#prepare/extractFull/extractHot | JDKZipFile、流式摘要、既有清单/file校验 | summaryexpectation加入同path；不新解析库 |
+| 同目录TerminalUpdateArtifactPreparer.kt#prepare/extractFull/extractHot | JDKZipFile、流式摘要、既有清单/file校验 | 直接HTTP manifest沿原path，不加peer summary分支/解析库 |
 | tools/terminal-automation/src/runner.ts#updateCases/phaseSuite/parseArgs | Aupdatecases；peer-device仅capabilitiesdual当前允许 | C显式扩policy/pair，未知未实现reject |
 | tools/terminal-automation/src/androidDevice.ts#attachDriver/attachManagedServicePorts、androidAutomationConnection.ts、androidCleanupRecovery.ts及对应tests | 当前只管理 reverse；pair forward、两 session 与精确映射清理尚缺 | 沿现有 driver 增加 run-owned forward/reverse；详设 §10b.6.1，零旧 runner复活 |
 | tools/terminal-automation/src/managedRun.ts#TerminalAutomationManifest | 已有peerDeviceSerial类型但非C双device生命周期 | exact两serial/两package/清理identity，不假称已实现 |
 
 B 当前已存在的精确入口：`TerminalUpdateRuleOwnerApi.java#RuleSnapshotItem`（规则自身 createdAt）、`TerminalUpdateRuleOwnerService.java#terminalSnapshot`、`TerminalUpdateRuleReadController.java#wire`；`TerminalUpdateReportController.java#submit`、`TerminalUpdateReportOwnerService.java#record`、`TerminalUpdateReportPersistence.java` 和 `V20261014_000000_000__terminal_update_report_history.sql`。TER taskId 用 createProtocolUuid。未闭合行为见本轮 B 源码评审：自然无任务 observation、同 binding 序号、HTTP 处置/状态映射、候选 await 重核及 owner 当前绑定复核；有限整快照重读随最终规则链搬移。静态接口存在不等于这些行为正确或运行通过，不转成 C 第二报告能力。
+
+### 2.0 共享凭证与CBS认证源码事实（未修改源码）
+
+| 来源锚点 | 当前事实/最小C差量 |
+| --- | --- |
+| TDC types/client.ts:25–32，slices/terminalDataClient.ts:35–48,211–223 | 六字段credential；replaceCredential会置active，protected/isolated。只原slice改plain/单record，SLAVE不伪active；其他TDC字段不复制。 |
+| TDC actor:913–926,932,1104,1147,1213,1457；generated/terminalApi.ts:343–358 | 当前13项catalog全有MASTER gate；initialize把hydrate与connect绑一起。C十类HTTP两端，bootstrap/cancel/report/TDS仍主机；拆初始化，不全包放开。 |
+| state/foundations/persistencePrimitives.ts:129–150、persistenceEngine.ts#hydrate/#flush | 同key跨plain/protected旧存储已支持先写后删。C复用迁移/flush，不重造credential migration。 |
+| Android persist-kv/TerminalPersistKvModule.kt:159–184 | plain不crypt，protected有crypt key；本次仅credential descriptor变plain。 |
+| state/foundations/createStateRuntime.ts:137–180,233–268；TopologyStateSyncController.ts:355–404 | 同步apply/记revision不await保存；C TDC owner flush＋identity后才HTTP/publish。 |
+| topology/features/actors/actors.ts:592–671,741–751 | unpair先改角色、未清TDC；瞬断保留pair。C显式transition前TDC clear/flush，普通断链不清。 |
+| terminal-binding/api/TerminalCredentialVerificationApi.java:29–37；application/TerminalCredentialDecision.java:12–32；edge/terminal/TerminalCredentialEdgeVerifier.java:20–40 | 当前deviceId必填且与boundDeviceId比较。Dexter新裁决删除后续CBS设备认证，不能把旧字节说成已兼容；同owner新增CBS具名无设备入口、保留TDS原verify/设备匹配；共用查询/分类，不复制认证器。 |
+| edge/terminal/TerminalActivationCancellationController.java:40–49；terminal-binding/application/TerminalBindingOwnerService.java:119–160 | cancel body要求deviceId并共用Decision，成功锁绑定/审计/notify。C移除设备认证body、保留撤销闭包与副机command拒绝。 |
+| stateSlice/status projection及两assembly stateSyncSlices | 已有原slice及非秘密status投影装配。C只新增credential单entry保存接缝，status不复制credential。 |
+
+13项caller、准入与最新认证规则仅定义于详设§8.6.2；本附件不另建第二规则表。当前源码所有修改/测试/动态NOT_RUN，行号只截面导航。
 
 ### 2.1 2026-10-10 project-basic搬移与依赖核对
 
@@ -60,7 +76,7 @@ B 当前已存在的精确入口：`TerminalUpdateRuleOwnerApi.java#RuleSnapshot
 | Web View同responder | [RNW0.21.2 View](https://github.com/necolas/react-native-web/blob/0.21.2/packages/react-native-web/src/exports/View/index.js)、[useResponderEvents](https://github.com/necolas/react-native-web/blob/0.21.2/packages/react-native-web/src/modules/useResponderEvents/index.js) | 实际View拆出capture交ResponderSystem；不能假设任意DOMpointerCapture都被转发 |
 | RN前后台观察 | [RN0.86.3 AppState](https://github.com/react/react-native/blob/v0.86.3/packages/react-native/Libraries/AppState/AppState.js)；change listener返回可remove订阅，initialState可能null | 技术adapter桥read＋subscribe→本包command，null不可呈现；foreground/systemUI实际测试 |
 | Android sessioncommit | [SessionInfo.isCommitted官方API](https://developer.android.com/reference/android/content/pm/PackageInstaller.SessionInfo#isCommitted())（API29）、[Session.commit](https://developer.android.com/reference/android/content/pm/PackageInstaller.Session#commit(android.content.IntentSender)) | 未来最低API≥29已Dexter裁决；pendingIntent/state以A当前精确SDK源码和focused为准，非API存在即证明 |
-| FULL/HOT加载/资源 | A附件Expo公开Hosthandler、RN0.86.3 asset/file资源及APK metadata | C不换路线；summarysource影响清单校验做focused，未改loader不重做全部 |
+| FULL/HOT加载/资源 | A附件Expo公开Hosthandler、RN0.86.3 asset/file资源及APK metadata | C不换路线；直接HTTP工件输入影响按差量focused，未改loader不重做全部 |
 | timers | Runtime现有setTimeout/clearTimeout资源用法；N/M上界86400s | 非准实时后台能力；单deadline/resume重读，fakeclock及真实至少1分钟，不轮询 |
 | automation | tools/terminal-automation当前vitest/driver/RxJS/ws/adbkit源码、.agents skill | 不新增runner；systemUI仅现有窄例外。actual版本CP-01核对，不复制网络生命周期 |
 
@@ -74,10 +90,10 @@ B 当前已存在的精确入口：`TerminalUpdateRuleOwnerApi.java#RuleSnapshot
 
 ## 4. 有限容量、协议与摘要链
 
-1. TDP与topologypeer command单帧65,536字节不变。grant完整manifest可能任意多file，command下行只摘要、相对path、43字符grant、expiry、artifactRef，不含files/完整JSON或ZIP。完整信封按现有codec字符串/depth/frame规则检查，真实大清单仍compact；path沿Bschema，不截断。超限可见failure，不增加result分片。
+1. TDP与topology command单帧65,536字节不变。C删除artifact grant peer中转，manifest经本机TDC HTTP取得，不走peer。credential只六字段或null，经现有record/state分片；不复制connection/PING/topic/result等。原完整信封/深度/帧规则保留，无新增result分片。CBS短期download grant仍沿原HTTP/content校验。
 2. 当前 topology reassemblyMaxBytes=8,388,608、maxInflight=2、chunkTarget=49,152、maxChunkCount=512 沿用，**不为假设最大项目规则扩预算或新增分片机制**。B HTTP 集合上界不能直接当作含 context 的 projection 一定可传；按现有完整序列化/帧门判定，超过原技术边界明确 projection-failed、未固定资格不 ready，不静默截断。主流程 focused 使用正常少量规则及现有边界拒绝；不新增项目规则条数上限，不建设最大规模专项或内存峰值探针。若真实业务规模触及限制，再以具体输入回评，不提前改协议。
 3. project-basic organization/rules两个entry沿既有record snapshot逐slice传输；update不提供规则entry。不累计所有owner状态变成一个巨大scope包。generation/readiness沿现有controller，chunks完成并apply成功才ready，失效/failed不能择新；无“部分规则也可执行”。
-4. native summary 判别：固定 artifactRef/ZIP SHA → MAIN grant 授权 → BRANCH 验 ZIP。HOT 从 ZIP 的 terminal-update-publication.json 核固定 identity/entry/files；FULL ZIP 只有 APK，summary.apk 取现有 grant.manifest.apk 的 path/sha256/certificateSha256 → 同 extractFull/validateFull ，summary 只重建既有 platform/applicationId/nativeVersion/nativeBuildNumber/apk，不解析未安装 APK metadata。已安装 boot 的 metadata 身份读取仍保留。摘要来自 CBS，不相信任意自描述。ZIP SHA、APK SHA、publicationId 不混用；沿现有 JDK ZipFile，不改容器格式/HTTP operation/loader。
+4. native既有输入：固定工件→各机TDC HTTP取得CBS grant/manifest→本机ZIP验证。HOT核ZIP publication/entry/files；FULL从grant.manifest.apk取path/sha/cert，沿extractFull/validateFull及platform/applicationId/nativeVersion/nativeBuildNumber，不解析未安装metadata、不增加peer summary分支。ZIP SHA/APK SHA/publicationId独立，已安装boot metadata路径保留，沿JDK ZipFile不换格式/下载器。
 5. 任务/报告容量及历史由B最终accepteddesign处理，C不新增总字节quota/第二失败存储。onebootone规则/oneactive timer/onegrant attempt来自实际业务不变量，不限制项目规则数量。
 
 ## 4.1 执行 boot 与报告持久化
@@ -103,7 +119,7 @@ UI/IA/driver只引用上述同名常量，不散写字符串；display/surface�
 
 唯一受管入口scripts/test/terminal-automation.mjs。拟扩--phase update --case update.project-data/update.auto-selection/update.idle/update.install-reminder/update.pair/update.supply-chain；具体已有phase闭集由CP-05统一扩，不能在文档假称今日可运行。两个样本取--sample console/wallpaper；Web/Android同共享businessJourney；Android serial/peer-device-serial 唯一匹配 assigned identity；交叉矩阵：console 真机双屏、wallpaper mobile 虚拟机、console 双虚拟机配对、wallpaper 双虚拟机配对，共 4 个设备 run，Web 两 integration 在前、13c 在后。pair 不跑 Web topology、不跑未改的不同 App 拒绝设备用例。pair 是 laptop 单屏：display 映射复用现有 mobile 单屏能力，case 明确注入 application surfaceForm=laptop；不能由 shape 推成 mobile 业务机型。
 
-真实data来源Bcanonical generatedHTTP和r5-fullseedkey；主机激活与fixturecleanup复用driveroperationshelper，不复制devScenarios逻辑。副机从已paired非秘密state开始，不激活term-handheld；该key仅是assignedfixture/形态导航，不将其独立绑定然后再称副机。
+真实data来源Bcanonical generatedHTTP和r5-fullseedkey；主机激活与fixturecleanup复用driveroperationshelper，不复制devScenarios逻辑。副机从已paired业务projection及已持久化的共享TDC credential开始，不激活term-handheld；该key仅是assignedfixture/形态导航，不将其独立绑定然后再称副机。
 
 后台流程账号由managed reader读，权限PROJECTscope/capability；报告消费者是运营右Tab，生产者是主机TER update HTTP；不能用直接SQL造report、伪TDSmessage、fixturetargetaccept替换自动择新。供给链复用B §15.2a现有同父run：`terminal-automation`的`update.supply-chain`通过`terminalUpdateSupplyUi.ts`做后台DOM操作，通过agent做TER React操作；该run拥有新建browser/context/session和设备资源，DEV的Vite/tunnel仅借用。当前runner已注册Android supply-chain，C的Web/自动策略/双机场景仍须CP-05接线，不能据现有注册声称C可运行。未来运行前详设§3a控件与准入精确复核。
 
@@ -111,4 +127,4 @@ UI/IA/driver只引用上述同名常量，不散写字符串；display/surface�
 
 原子组见详设§9a；publicexports/README/terminal-invariants注册、platformports defaultUnavail、两App composition、topology existingprotocol/types、state sync/codec、nativeadapter同组。包layout按标准src/moduleName/dependencies/application/features/selectors/components建立；没有未消费公开API。
 
-OPEN包括A/B在途出口/接口、B最终报告新枚举及taskId=null recent形状、C真实UI行为、技术/权限/真实安装/双机/资源预算；Dexter已确认IA及低保真邀请内容，不代表动态通过。本次运行均NOT_RUN。恶意ZIP/symlink/bomb专项目标按A/B最新收敛保持NOT_COVERED，不因C追补极端基础设施；普通有效/摘要/path检查不能删。
+OPEN包括CBS仅凭证鉴权与canonical/generated差量、TDC plain迁移/flush/角色及A/B在途出口/接口、B最终报告新枚举及taskId=null recent形状、C真实UI行为、技术/权限/真实安装/双机/资源预算；D-52涉及的正式需求、配对需求与TER规范已按阶段C授权同步，但不代表实现或动态通过。本次运行均NOT_RUN。恶意ZIP/symlink/bomb专项目标按A/B最新收敛保持NOT_COVERED，不因C追补极端基础设施；普通有效/摘要/path检查不能删。

@@ -5,13 +5,17 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.Credential;
+import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.BusinessCredential;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.Outcome;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.Verification;
 import com.catering.v2s.terminalbinding.persistence.TerminalBindingOwnerPersistence;
 import com.catering.v2s.terminalbinding.persistence.TerminalBindingOwnerPersistence.AuthenticationFacts;
+import com.catering.v2s.terminalbinding.persistence.TerminalBindingOwnerPersistence.LockedBinding;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -33,6 +37,22 @@ class TerminalCredentialVerificationServiceTest {
         assertEquals(Outcome.VERIFIED, verified.outcome());
         assertEquals(facts.workspaceUuid(), verified.workspaceUuid());
         assertEquals(facts.storeRef(), verified.storeRef());
+        assertEquals(DEVICE_ID, verified.bindingDeviceId());
+    }
+
+    @Test
+    void businessCredentialUsesTheSameBindingFactsWithoutADeviceInput() {
+        TerminalBindingOwnerPersistence persistence = mock(TerminalBindingOwnerPersistence.class);
+        AuthenticationFacts facts = facts("ENABLED", "ENABLED", "ACTIVE");
+        when(persistence.readAuthenticationFacts(GROUP_KEY, TERMINAL_REF)).thenReturn(facts);
+        var service = new TerminalCredentialVerificationService(persistence);
+
+        Verification verified = service.verifyBusinessCredential(
+                new BusinessCredential(GROUP_KEY, TERMINAL_REF, 5, SECRET_DIGEST));
+
+        assertEquals(Outcome.VERIFIED, verified.outcome());
+        assertEquals(facts.boundDeviceId(), verified.bindingDeviceId());
+        verify(persistence).readAuthenticationFacts(GROUP_KEY, TERMINAL_REF);
     }
 
     @Test
@@ -99,6 +119,28 @@ class TerminalCredentialVerificationServiceTest {
 
         assertFalse(rendered.contains(DEVICE_ID));
         assertTrue(rendered.contains("secretDigest=redacted"));
+    }
+
+    @Test
+    void reportOwnerBindingLockRequiresTheSameEnabledActiveBinding() {
+        TerminalBindingOwnerPersistence persistence = mock(TerminalBindingOwnerPersistence.class);
+        UUID workspace = UUID.randomUUID();
+        UUID store = UUID.randomUUID();
+        Verification verification = new Verification(Outcome.VERIFIED, workspace, GROUP_KEY, store,
+                TERMINAL_REF, 5, 1, DEVICE_ID);
+        when(persistence.lockLatest(workspace, GROUP_KEY, TERMINAL_REF)).thenReturn(new LockedBinding(
+                "ACTIVE", 5, SECRET_DIGEST, DEVICE_ID, 1, null, null, null, null, null, null));
+        when(persistence.readAuthenticationFacts(GROUP_KEY, TERMINAL_REF)).thenReturn(new AuthenticationFacts(
+                workspace, "ENABLED", store, "ENABLED", "ENABLED", 5L, SECRET_DIGEST, "ACTIVE", DEVICE_ID, 1L));
+        var service = new TerminalCredentialVerificationService(persistence);
+
+        assertTrue(service.lockCurrentActiveBinding(verification));
+
+        verify(persistence).lockLatest(workspace, GROUP_KEY, TERMINAL_REF);
+        verify(persistence).readAuthenticationFacts(GROUP_KEY, TERMINAL_REF);
+        assertFalse(service.lockCurrentActiveBinding(new Verification(
+                Outcome.VERIFIED, workspace, GROUP_KEY, store, TERMINAL_REF, 4, 1, DEVICE_ID)));
+        verify(persistence, times(1)).readAuthenticationFacts(GROUP_KEY, TERMINAL_REF);
     }
 
     private static AuthenticationFacts facts(String groupStatus, String terminalStatus, String bindingStatus) {

@@ -8,7 +8,6 @@ import type {
   StoreContract,
   TerminalServicePointData,
   TerminalServicePointAreaData,
-  TerminalStoreOrganizationPathRead,
   TerminalTopicKey,
 } from '@catering-v2s/kernel-base-terminal-data-client';
 import type {
@@ -23,11 +22,10 @@ import type {
 export const storeBasicSliceName = `${moduleName}.state` as const;
 
 export const initialStoreBasicState: StoreBasicState = Object.freeze({
-  loadReadiness: Object.freeze({runtimeId: null, binding: null, storeStatus: 'idle', projectStatus: 'idle', projectRef: null}),
+  loadReadiness: Object.freeze({runtimeId: null, binding: null, storeStatus: 'idle'}),
   binding: null,
   store: null,
   operatingRules: null,
-  organizationPath: null,
   activeContracts: null,
   areas: null,
   servicePoints: null,
@@ -45,9 +43,6 @@ const setFailure = createAction<Readonly<{topicKey: TerminalTopicKey; errorCode:
 const setStore = createAction<StoreFact<OrganizationStore>>(`${storeBasicSliceName}/setStore`);
 const setOperatingRules = createAction<StoreFact<OrganizationStoreOperatingRuleValues>>(
   `${storeBasicSliceName}/setOperatingRules`,
-);
-const setOrganizationPath = createAction<TerminalStoreOrganizationPathRead>(
-  `${storeBasicSliceName}/setOrganizationPath`,
 );
 const setActiveContracts = createAction<StoreFact<readonly StoreContract[]>>(
   `${storeBasicSliceName}/setActiveContracts`,
@@ -91,7 +86,6 @@ export const storeBasicReducer = (
     return Object.freeze({...state, failures: failuresFor(state, action.payload.topicKey, action.payload.errorCode)});
   if (setStore.match(action)) return Object.freeze({...state, store: action.payload});
   if (setOperatingRules.match(action)) return Object.freeze({...state, operatingRules: action.payload});
-  if (setOrganizationPath.match(action)) return Object.freeze({...state, organizationPath: action.payload});
   if (setActiveContracts.match(action)) return Object.freeze({...state, activeContracts: action.payload});
   if (setAreas.match(action)) return Object.freeze({...state, areas: action.payload});
   if (setServicePoints.match(action)) return Object.freeze({...state, servicePoints: action.payload});
@@ -101,7 +95,7 @@ export const storeBasicReducer = (
 
 type PersistedStoreBasicValue = Pick<
   StoreBasicState,
-  'binding' | 'store' | 'operatingRules' | 'organizationPath' | 'activeContracts' | 'areas' | 'servicePoints'
+  'binding' | 'store' | 'operatingRules' | 'activeContracts' | 'areas' | 'servicePoints'
 >;
 
 export const storeBasicStateRegistration = defineStateRuntimeSlice<StoreBasicState>({
@@ -112,7 +106,6 @@ export const storeBasicStateRegistration = defineStateRuntimeSlice<StoreBasicSta
     {kind: 'field', stateKey: 'binding'},
     {kind: 'field', stateKey: 'store'},
     {kind: 'field', stateKey: 'operatingRules'},
-    {kind: 'field', stateKey: 'organizationPath'},
     {kind: 'field', stateKey: 'activeContracts'},
     {kind: 'field', stateKey: 'areas'},
     {kind: 'field', stateKey: 'servicePoints'},
@@ -125,7 +118,6 @@ export const storeBasicStateRegistration = defineStateRuntimeSlice<StoreBasicSta
         binding: state.binding,
         store: state.store,
         operatingRules: state.operatingRules,
-        organizationPath: state.organizationPath,
         activeContracts: state.activeContracts,
         areas: state.areas,
         servicePoints: state.servicePoints,
@@ -158,7 +150,6 @@ export const storeBasicActions = Object.freeze({
   setFailure,
   setStore,
   setOperatingRules,
-  setOrganizationPath,
   setActiveContracts,
   setAreas,
   setServicePoints,

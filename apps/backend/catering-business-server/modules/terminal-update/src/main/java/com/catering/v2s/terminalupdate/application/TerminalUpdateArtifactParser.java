@@ -3,6 +3,7 @@ package com.catering.v2s.terminalupdate.application;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.catering.v2s.terminalupdate.api.TerminalUpdateArtifactOwnerApi;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -30,7 +31,7 @@ import org.springframework.stereotype.Component;
 public final class TerminalUpdateArtifactParser {
     public static final long MAX_PACKAGE_BYTES = 256L * 1024 * 1024;
     private static final long MAX_UNPACKED_BYTES = 512L * 1024 * 1024;
-    private static final int MAX_FILES = 8_192;
+    private static final int MAX_FILES = TerminalUpdateArtifactOwnerApi.MAX_MANIFEST_FILE_COUNT;
     private static final int MAX_MANIFEST_BYTES = 256 * 1024;
     private static final String MANIFEST = "terminal-update-publication.json";
     private static final ObjectMapper JSON = new ObjectMapper()
@@ -122,6 +123,9 @@ public final class TerminalUpdateArtifactParser {
         if (!manifest.hasNonNull("minimumFull") || manifest.has("apk"))
             throw new InvalidArtifactException("HOT_METADATA_INVALID");
         List<FileFact> files = fileFacts(manifest.get("files"));
+        String declaredEntry = text(manifest, "entry");
+        if (files.stream().noneMatch(fact -> fact.path().equals(declaredEntry)))
+            throw new InvalidArtifactException("APK_BUNDLE_METADATA_MISSING");
         if (entries.size() != files.size() + 1) throw new InvalidArtifactException("PACKAGE_FILE_SET_MISMATCH");
         long unpacked = 0;
         for (FileFact fact : files) {
@@ -161,9 +165,12 @@ public final class TerminalUpdateArtifactParser {
             if (manifest.has("minimumFull") || manifest.has("apk"))
                 throw new InvalidArtifactException("FULL_METADATA_INVALID");
             List<FileFact> files = fileFacts(manifest.get("files"));
-            ZipEntry bundleEntry = apkZip.getEntry(text(manifest, "entry"));
-            FileFact bundleFact = files.stream().filter(fact -> fact.path().equals(text(manifest, "entry")))
+            String declaredEntry = text(manifest, "entry");
+            FileFact bundleFact = files.stream().filter(fact -> fact.path().equals(declaredEntry))
                     .findFirst().orElseThrow(() -> new InvalidArtifactException("APK_BUNDLE_METADATA_MISSING"));
+            ZipEntry bundleEntry = apkZip.getEntry(declaredEntry);
+            if (bundleEntry == null || bundleEntry.isDirectory())
+                throw new InvalidArtifactException("PACKAGE_FILE_MISSING");
             StreamDigest bundleDigest;
             try (InputStream input = apkZip.getInputStream(bundleEntry)) {
                 bundleDigest = digestBounded(input, MAX_UNPACKED_BYTES);

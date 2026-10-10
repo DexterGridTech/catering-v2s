@@ -1,4 +1,5 @@
 import type {SurfaceForm} from '@catering-v2s/kernel-base-contracts';
+import type {RuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
 import type {StateRoot} from '@catering-v2s/kernel-base-state';
 import type {
   TransportCommandGateway,
@@ -114,6 +115,10 @@ export type TerminalTopicNotification = Readonly<{
 
 export type TerminalClientState = Readonly<{
   readonly credential: TerminalCredential | null;
+  /** Ephemeral save qualification. These fields are never persisted or synchronized. */
+  readonly credentialRevision: number;
+  readonly credentialReadyRevision: number | null;
+  readonly credentialReadyInstanceMode: RuntimeInstanceMode | null;
   readonly pendingActivations: Readonly<Record<string, PendingTerminalActivation>>;
   readonly activationStatus: TerminalActivationView['status'];
   readonly connection: TerminalConnectionView;
@@ -159,6 +164,14 @@ export type TerminalUpdateDownloadGrantPayload = Readonly<{artifactRef: string}>
 export type TerminalUpdateReportPayload = Readonly<{
   readonly idempotencyKey: string;
   readonly body: TerminalRequestMap['submitTerminalUpdateReport']['body'];
+}>;
+
+/** Safe credential identity supplied by topology before an explicit SLAVE unpair/host replacement. */
+export type ClearSharedTerminalCredentialPayload = Readonly<{
+  readonly groupWorkspaceKey: string | null;
+  readonly terminalRef: string | null;
+  readonly storeRef: string | null;
+  readonly bindingGeneration: number | null;
 }>;
 
 /** Shared Runtime command fanned out to feature actors; each consumer matches its own subscription. */

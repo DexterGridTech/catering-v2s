@@ -99,9 +99,8 @@ public class TerminalDataReadController {
             @PathVariable String groupWorkspaceKey,
             @PathVariable String storeRef,
             @RequestHeader(value = "Authorization", required = false) String authorization,
-            @RequestHeader(value = "X-Terminal-Ref", required = false) String terminalRef,
-            @RequestHeader(value = "X-Terminal-Device-Id", required = false) String deviceId) {
-        Verification binding = verify(groupWorkspaceKey, authorization, terminalRef, deviceId);
+            @RequestHeader(value = "X-Terminal-Ref", required = false) String terminalRef) {
+        Verification binding = verify(groupWorkspaceKey, authorization, terminalRef);
         UUID requestedStore = uuid(storeRef);
         requireSameStore(binding, requestedStore);
         OrganizationOverviewTaskReadService.Item detail =
@@ -144,9 +143,8 @@ public class TerminalDataReadController {
             @PathVariable String groupWorkspaceKey,
             @PathVariable String storeRef,
             @RequestHeader(value = "Authorization", required = false) String authorization,
-            @RequestHeader(value = "X-Terminal-Ref", required = false) String terminalRef,
-            @RequestHeader(value = "X-Terminal-Device-Id", required = false) String deviceId) {
-        Verification binding = verify(groupWorkspaceKey, authorization, terminalRef, deviceId);
+            @RequestHeader(value = "X-Terminal-Ref", required = false) String terminalRef) {
+        Verification binding = verify(groupWorkspaceKey, authorization, terminalRef);
         requireSameStore(binding, uuid(storeRef));
         var snapshot = organizationReads.hierarchy(binding.workspaceUuid(), binding.groupWorkspaceKey());
         OrganizationOverviewTaskReadService.Item store =
@@ -175,9 +173,8 @@ public class TerminalDataReadController {
             @PathVariable String groupWorkspaceKey,
             @PathVariable String storeRef,
             @RequestHeader(value = "Authorization", required = false) String authorization,
-            @RequestHeader(value = "X-Terminal-Ref", required = false) String terminalRef,
-            @RequestHeader(value = "X-Terminal-Device-Id", required = false) String deviceId) {
-        Verification binding = verify(groupWorkspaceKey, authorization, terminalRef, deviceId);
+            @RequestHeader(value = "X-Terminal-Ref", required = false) String terminalRef) {
+        Verification binding = verify(groupWorkspaceKey, authorization, terminalRef);
         requireSameStore(binding, uuid(storeRef));
         List<ContractTaskReadService.StoreContractView> active = contracts.activeTerminalStoreContracts(
                 binding.workspaceUuid(), binding.groupWorkspaceKey(), binding.storeRef());
@@ -196,9 +193,8 @@ public class TerminalDataReadController {
             @PathVariable String groupWorkspaceKey,
             @PathVariable String contractRef,
             @RequestHeader(value = "Authorization", required = false) String authorization,
-            @RequestHeader(value = "X-Terminal-Ref", required = false) String terminalRef,
-            @RequestHeader(value = "X-Terminal-Device-Id", required = false) String deviceId) {
-        Verification binding = verify(groupWorkspaceKey, authorization, terminalRef, deviceId);
+            @RequestHeader(value = "X-Terminal-Ref", required = false) String terminalRef) {
+        Verification binding = verify(groupWorkspaceKey, authorization, terminalRef);
         var value = contracts.view(binding.workspaceUuid(), binding.groupWorkspaceKey(), uuid(contractRef));
         if (value == null || !binding.storeRef().equals(value.store().id())) throw TerminalDataReadProblem.notFound();
         logRead("terminalReadContract", binding);
@@ -211,9 +207,8 @@ public class TerminalDataReadController {
             @PathVariable String groupWorkspaceKey,
             @PathVariable String storeRef,
             @RequestHeader(value = "Authorization", required = false) String authorization,
-            @RequestHeader(value = "X-Terminal-Ref", required = false) String terminalRef,
-            @RequestHeader(value = "X-Terminal-Device-Id", required = false) String deviceId) {
-        Verification binding = verify(groupWorkspaceKey, authorization, terminalRef, deviceId);
+            @RequestHeader(value = "X-Terminal-Ref", required = false) String terminalRef) {
+        Verification binding = verify(groupWorkspaceKey, authorization, terminalRef);
         requireSameStore(binding, uuid(storeRef));
         List<StoreServicePointOwnerApi.TerminalArea> enabled = servicePoints.readTerminalAreas(
                 binding.workspaceUuid(), binding.groupWorkspaceKey(), binding.storeRef());
@@ -234,9 +229,8 @@ public class TerminalDataReadController {
             @PathVariable String groupWorkspaceKey,
             @PathVariable String areaRef,
             @RequestHeader(value = "Authorization", required = false) String authorization,
-            @RequestHeader(value = "X-Terminal-Ref", required = false) String terminalRef,
-            @RequestHeader(value = "X-Terminal-Device-Id", required = false) String deviceId) {
-        Verification binding = verify(groupWorkspaceKey, authorization, terminalRef, deviceId);
+            @RequestHeader(value = "X-Terminal-Ref", required = false) String terminalRef) {
+        Verification binding = verify(groupWorkspaceKey, authorization, terminalRef);
         UUID requested = uuid(areaRef);
         StoreServicePointOwnerApi.TerminalArea value = servicePoints.readTerminalArea(
                 binding.workspaceUuid(), binding.groupWorkspaceKey(), binding.storeRef(), requested);
@@ -250,9 +244,8 @@ public class TerminalDataReadController {
             @PathVariable String groupWorkspaceKey,
             @PathVariable String storeRef,
             @RequestHeader(value = "Authorization", required = false) String authorization,
-            @RequestHeader(value = "X-Terminal-Ref", required = false) String terminalRef,
-            @RequestHeader(value = "X-Terminal-Device-Id", required = false) String deviceId) {
-        Verification binding = verify(groupWorkspaceKey, authorization, terminalRef, deviceId);
+            @RequestHeader(value = "X-Terminal-Ref", required = false) String terminalRef) {
+        Verification binding = verify(groupWorkspaceKey, authorization, terminalRef);
         requireSameStore(binding, uuid(storeRef));
         List<StoreServicePointOwnerApi.TerminalPoint> enabled = servicePoints.readTerminalPoints(
                 binding.workspaceUuid(), binding.groupWorkspaceKey(), binding.storeRef());
@@ -273,17 +266,16 @@ public class TerminalDataReadController {
             @PathVariable String groupWorkspaceKey,
             @PathVariable String pointRef,
             @RequestHeader(value = "Authorization", required = false) String authorization,
-            @RequestHeader(value = "X-Terminal-Ref", required = false) String terminalRef,
-            @RequestHeader(value = "X-Terminal-Device-Id", required = false) String deviceId) {
-        Verification binding = verify(groupWorkspaceKey, authorization, terminalRef, deviceId);
+            @RequestHeader(value = "X-Terminal-Ref", required = false) String terminalRef) {
+        Verification binding = verify(groupWorkspaceKey, authorization, terminalRef);
         StoreServicePointOwnerApi.TerminalPoint value = servicePoints.readTerminalPoint(
                 binding.workspaceUuid(), binding.groupWorkspaceKey(), binding.storeRef(), uuid(pointRef));
         logRead("terminalReadServicePoint", binding);
         return new TerminalServicePointRead(terminalPoint(value), value.updatedAt());
     }
 
-    private Verification verify(String groupKey, String authorization, String terminalRef, String deviceId) {
-        return TerminalCredentialEdgeVerifier.verify(credentials, groupKey, authorization, terminalRef, deviceId);
+    private Verification verify(String groupKey, String authorization, String terminalRef) {
+        return TerminalCredentialEdgeVerifier.verify(credentials, groupKey, authorization, terminalRef);
     }
 
     private static OrganizationNodeReadback node(List<OrganizationNodeReadback> nodes, UUID ref) {

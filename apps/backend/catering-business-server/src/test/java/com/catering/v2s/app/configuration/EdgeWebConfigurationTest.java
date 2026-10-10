@@ -52,14 +52,14 @@ class EdgeWebConfigurationTest {
     }
 
     @Test
-    void enablesConfiguredLoopbackTerminalOriginsForActivationCancellationAndGeneratedReads() {
+    void enablesConfiguredLoopbackTerminalOriginsForActivationReadsAndUpdateOperations() {
         EdgeWebConfiguration configuration = configuration("non-production", "http://127.0.0.1:8093");
         CapturingCorsRegistry registry = new CapturingCorsRegistry();
 
         configuration.addCorsMappings(registry);
 
         Map<String, CorsConfiguration> mappings = registry.mappings();
-        assertEquals(10, mappings.size());
+        assertEquals(14, mappings.size());
         assertTerminalPostMapping(mappings.get("/api/terminal/group-workspaces/*/activation"), "http://127.0.0.1:8093");
         assertTerminalPostMapping(
                 mappings.get("/api/terminal/group-workspaces/*/terminals/*/activation/cancel"),
@@ -72,9 +72,27 @@ class EdgeWebConfigurationTest {
                 "/api/terminal/group-workspaces/*/stores/*/basic",
                 "/api/terminal/group-workspaces/*/stores/*/organization-path",
                 "/api/terminal/group-workspaces/*/stores/*/service-point-areas",
-                "/api/terminal/group-workspaces/*/stores/*/service-points")) {
+                "/api/terminal/group-workspaces/*/stores/*/service-points",
+                "/api/terminal/group-workspaces/*/update-rules/projects/*")) {
             assertTerminalGetMapping(mappings.get(path), "http://127.0.0.1:8093");
         }
+        assertTerminalPostMapping(
+                mappings.get("/api/terminal/group-workspaces/*/update-artifacts/*/download-grant"),
+                "http://127.0.0.1:8093");
+        CorsConfiguration content = mappings.get("/api/terminal/group-workspaces/*/update-artifacts/*/content");
+        assertNotNull(content);
+        assertEquals(List.of("http://127.0.0.1:8093"), content.getAllowedOrigins());
+        assertEquals(List.of("GET"), content.getAllowedMethods());
+        assertEquals(List.of("X-Terminal-Update-Grant"), content.getAllowedHeaders());
+        assertTrue(!Boolean.TRUE.equals(content.getAllowCredentials()));
+        CorsConfiguration report = mappings.get("/api/terminal/group-workspaces/*/update-reports");
+        assertNotNull(report);
+        assertEquals(List.of("http://127.0.0.1:8093"), report.getAllowedOrigins());
+        assertEquals(List.of("POST"), report.getAllowedMethods());
+        assertEquals(
+                List.of("Authorization", "Content-Type", "Idempotency-Key", "X-Correlation-Id", "X-Request-Id", "X-Terminal-Ref"),
+                report.getAllowedHeaders());
+        assertTrue(!Boolean.TRUE.equals(report.getAllowCredentials()));
     }
 
     @Test
@@ -110,7 +128,6 @@ class EdgeWebConfigurationTest {
                         "Content-Type",
                         "X-Correlation-Id",
                         "X-Request-Id",
-                        "X-Terminal-Device-Id",
                         "X-Terminal-Ref"),
                 configuration.getAllowedHeaders());
         assertTrue(!Boolean.TRUE.equals(configuration.getAllowCredentials()));
@@ -121,7 +138,7 @@ class EdgeWebConfigurationTest {
         assertEquals(List.of(origin), configuration.getAllowedOrigins());
         assertEquals(List.of("GET"), configuration.getAllowedMethods());
         assertEquals(
-                List.of("Authorization", "X-Correlation-Id", "X-Request-Id", "X-Terminal-Device-Id", "X-Terminal-Ref"),
+                List.of("Authorization", "X-Correlation-Id", "X-Request-Id", "X-Terminal-Ref"),
                 configuration.getAllowedHeaders());
         assertTrue(!Boolean.TRUE.equals(configuration.getAllowCredentials()));
     }

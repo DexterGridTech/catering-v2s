@@ -9,6 +9,7 @@ import {
   unavailableLogUploadPort,
   unavailableScriptPort,
   unavailableTopologyHostPort,
+  unavailableUpdatePort,
   type PortResult,
 } from '@catering-v2s/kernel-base-platform-ports';
 import {
@@ -16,6 +17,8 @@ import {
   defaultRequestMaxResidenceMs,
   createRuntime,
   primarySurfaceReadyCommand,
+  recordLocalInteractionCommand,
+  selectLastLocalInteraction,
   type Runtime,
   type RuntimeModule,
 } from '@catering-v2s/kernel-base-runtime';
@@ -30,12 +33,14 @@ import {
 } from '@catering-v2s/kernel-base-platform-ports';
 import {moduleName as stateModuleName} from '@catering-v2s/kernel-base-state';
 import {
-  acceptTerminalUpdateTargetCommand,
+  createRequestTerminalUpdatePayload,
+  requestTerminalUpdateCommand,
   confirmTerminalUpdateBootCommand,
+  confirmTerminalUpdateInstallCommand,
+  deferTerminalUpdateInstallCommand,
   createTerminalUpdateModule,
-  refreshTerminalUpdateRuleSnapshotCommand,
   reconcileTerminalUpdateCommand,
-  selectTerminalUpdateRuleSnapshot,
+  selectTerminalUpdateInvitation,
   selectTerminalUpdateRecentStatus,
   selectTerminalUpdateTask,
   type FixedUpdateTarget,
@@ -66,7 +71,7 @@ import {
   terminalUpdateSliceName,
 } from '../src/features/slices/terminalUpdate';
 import {createTerminalUpdateActor} from '../src/features/actors/terminalUpdateActor';
-import type {TerminalUpdateState, UpdateRuleSnapshotContext} from '../src/types/terminalUpdate';
+import type {TerminalUpdateState, TerminalUpdateContextFacts} from '../src/types/terminalUpdate';
 import {createPersistenceFieldKey, createPersistenceNamespacePrefix} from '../../state/src/foundations/keyspace';
 
 const ok = <TValue>(value: TValue): PortResult<TValue> => ({status: 'succeeded', value, completedAt: 1 as TimestampMs});
@@ -84,10 +89,12 @@ const artifact = Object.freeze({
 });
 const target: FixedUpdateTarget = Object.freeze({
   ruleRef: 'fixture-rule',
+  collectionHash: 'a'.repeat(64),
   createdAt: 1 as TimestampMs,
   applicationId: artifact.applicationId,
   full: Object.freeze({sourceRef: 'artifact:full', expectedSha256: artifact.publicationId, artifact}),
   hot: Object.freeze({sourceRef: 'artifact:hot', expectedSha256: artifact.publicationId, artifact}),
+  policy: Object.freeze({nSeconds: 300, hotStrategy: 'IMMEDIATE' as const, mSeconds: null}),
   strategy: Object.freeze({maxNetworkAttempts: 2, bootTimeoutMs: 60_000}),
   selectionContext: Object.freeze({
     selectedSpace: 'development',
@@ -96,6 +103,15 @@ const target: FixedUpdateTarget = Object.freeze({
   }),
 });
 const newerHotArtifact = Object.freeze({...artifact, bundleVersion: '1.0.1', publicationId: 'c'.repeat(64)});
+const laterHotArtifact = Object.freeze({...artifact, bundleVersion: '1.0.2', publicationId: 'd'.repeat(64)});
+const hotCandidateTarget: FixedUpdateTarget = Object.freeze({
+  ...target,
+  hot: Object.freeze({
+    sourceRef: 'artifact:hot-1.0.1',
+    expectedSha256: newerHotArtifact.publicationId,
+    artifact: newerHotArtifact,
+  }),
+});
 const fixedResumeTarget: FixedUpdateTarget = Object.freeze({
   ...target,
   hot: Object.freeze({
@@ -107,9 +123,9 @@ const fixedResumeTarget: FixedUpdateTarget = Object.freeze({
 
 describe('terminal-update command deadline', () => {
   it('keeps the full-update command and runtime residence limits consistent', () => {
-    expect(acceptTerminalUpdateTargetCommand.timeoutMs).toBe(300_000);
+    expect(requestTerminalUpdateCommand.timeoutMs).toBe(300_000);
     expect(defaultRequestMaxResidenceMs).toBeGreaterThan(
-      defaultMaxCommandDepth * acceptTerminalUpdateTargetCommand.timeoutMs,
+      defaultMaxCommandDepth * requestTerminalUpdateCommand.timeoutMs,
     );
   });
 });
@@ -146,11 +162,23 @@ let testProtocolUuidSequence = 0;
 const createTestProtocolUuid = (): string =>
   `40000000-0000-4000-8000-${String(++testProtocolUuidSequence).padStart(12, '0')}`;
 const createTestTerminalUpdateModule = (
-  input: Omit<Parameters<typeof createTerminalUpdateModule>[0], 'createProtocolUuid'>,
-) => createTerminalUpdateModule({...input, createProtocolUuid: createTestProtocolUuid});
+  input: Omit<Parameters<typeof createTerminalUpdateModule>[0], 'createProtocolUuid' | 'port'> &
+    Readonly<{port?: Partial<UpdatePort>}>,
+) =>
+  createTerminalUpdateModule({
+    ...input,
+    port: {...unavailableUpdatePort, ...input.port},
+    createProtocolUuid: createTestProtocolUuid,
+  });
 const createTestTerminalUpdateActor = (
-  input: Omit<Parameters<typeof createTerminalUpdateActor>[0], 'createProtocolUuid'>,
-) => createTerminalUpdateActor({...input, createProtocolUuid: createTestProtocolUuid});
+  input: Omit<Parameters<typeof createTerminalUpdateActor>[0], 'createProtocolUuid' | 'port'> &
+    Readonly<{port: Partial<UpdatePort>}>,
+) =>
+  createTerminalUpdateActor({
+    ...input,
+    port: {...unavailableUpdatePort, ...input.port},
+    createProtocolUuid: createTestProtocolUuid,
+  });
 
 const createFixture = (
   input: Readonly<{
@@ -160,17 +188,20 @@ const createFixture = (
     readNetworkSnapshot?: Parameters<typeof createTerminalUpdateModule>[0]['readNetworkSnapshot'];
     persistKv?: ReturnType<typeof createStorage>;
     persistenceKey?: string;
-    port?: UpdatePort;
+    port?: Partial<UpdatePort>;
   }> = {},
 ) => {
   const persistenceKey = input.persistenceKey ?? `terminal-update-test-${createRequestId()}`;
-  const port: UpdatePort = input.port ?? {
-    readFacts: async () => ok(facts),
-    prepareArtifact: async () => ok({preparedId: 'prepared', artifact}),
-    applyPrepared: async () => ok(noAction),
-    readAction: async () => ok(noAction),
-    confirmBoot: async () => ok({confirmed: true}),
-    releasePrepared: async () => ok({released: true}),
+  const port: UpdatePort = {
+    ...unavailableUpdatePort,
+    ...(input.port ?? {
+      readFacts: async () => ok(facts),
+      prepareArtifact: async () => ok({preparedId: 'prepared', artifact}),
+      applyPrepared: async () => ok(noAction),
+      readAction: async () => ok(noAction),
+      confirmBoot: async () => ok({confirmed: true}),
+      releasePrepared: async () => ok({released: true}),
+    }),
   };
   const transportModule: RuntimeModule = {
     moduleName: 'kernel.base.transport',
@@ -298,397 +329,7 @@ const createStorage = (input: Readonly<{failWrite?: (key: string) => boolean; fa
   };
 };
 
-describe('terminal-update project rule snapshot', () => {
-  it('gives state-triggered rule refresh a request identity for its public child commands', async () => {
-    const clientState = terminalDataClientReducer(undefined, {type: 'test/init'});
-    const updateState = {
-      ruleSnapshot: Object.freeze({
-        contextIdentity: null,
-        selectedSpace: null,
-        projectRef: null,
-        collectionHash: null,
-        items: Object.freeze([]),
-      }),
-      ruleSnapshotStatus: Object.freeze({status: 'empty', errorCode: null}),
-      reportDescriptor: Object.freeze({
-        bindingIdentity: null,
-        contextIdentity: null,
-        nextReportSequence: 1,
-        pendingReports: Object.freeze({}),
-        sendPaused: false,
-        latestDeliveryFailure: null,
-      }),
-    };
-    const state = {[terminalDataClientSliceName]: clientState, [terminalUpdateSliceName]: updateState};
-    const dispatchCalls: Array<
-      Readonly<{
-        commandName: string;
-        options?: Readonly<{requestId?: string}>;
-      }>
-    > = [];
-    const dispatchCommand = async (
-      command: Readonly<{commandName: string}>,
-      _payload: unknown,
-      options?: Readonly<{requestId?: string}>,
-    ) => {
-      dispatchCalls.push(Object.freeze({commandName: command.commandName, options}));
-      return Object.freeze({status: 'completed' as const, actorResults: Object.freeze([])});
-    };
-    const stateListener: {current?: () => void} = {};
-    let ruleContext: UpdateRuleSnapshotContext | null = null;
-    const runtimeModule = createTestTerminalUpdateModule({
-      port: {} as UpdatePort,
-      readRuleSnapshotContext: () => ruleContext as never,
-    });
-    await runtimeModule.install?.({
-      dispatchCommand,
-      getState: () => state,
-      subscribeState: (next: () => void) => {
-        stateListener.current = next;
-        return () => undefined;
-      },
-      registerResource: () => () => undefined,
-      platformPorts: {logger: {info: () => undefined, warn: () => undefined, error: () => undefined}},
-    } as never);
-
-    ruleContext = {
-      terminalRef: '00000000-0000-4000-8000-000000000010',
-      bindingGeneration: 4,
-      selectedSpace: 'development',
-      storeRef: '00000000-0000-4000-8000-000000000011',
-      projectRef: '00000000-0000-4000-8000-000000000012',
-      projectUpdatedAtEpochMillis: 17,
-    };
-    if (stateListener.current === undefined) throw new Error('terminal update state listener was not installed');
-    stateListener.current();
-
-    await vi.waitFor(() => {
-      const refreshCalls = dispatchCalls.filter(
-        call => call.commandName === refreshTerminalUpdateRuleSnapshotCommand.commandName,
-      );
-      expect(refreshCalls).toHaveLength(2);
-      expect(
-        refreshCalls.every(call => typeof call.options?.requestId === 'string' && call.options.requestId.length > 0),
-      ).toBe(true);
-    });
-  });
-
-  it('uses the persisted CBS snapshot when the module has no local source provider', async () => {
-    const projectRef = '00000000-0000-4000-8000-000000000010';
-    const terminalRef = '00000000-0000-4000-8000-000000000011';
-    const storeRef = '00000000-0000-4000-8000-000000000012';
-    const bindingGeneration = 4;
-    const projectUpdatedAtEpochMillis = 17;
-    const contextIdentity = `${terminalRef}:${bindingGeneration}:development:${storeRef}:${projectRef}:${projectUpdatedAtEpochMillis}`;
-    const selectionContext = Object.freeze({selectedSpace: 'development', contextIdentity, ruleRef: 'cbs-rule-1'});
-    let clientState = terminalDataClientReducer(undefined, {type: 'test/init'});
-    clientState = terminalDataClientReducer(
-      clientState,
-      terminalDataClientActions.replaceCredential({
-        groupWorkspaceKey: 'development',
-        terminalRef,
-        storeRef,
-        deviceId: 'fixture-device',
-        bindingGeneration,
-        credentialSecret: 'S'.repeat(43),
-      }),
-    );
-    let updateState: TerminalUpdateState = {
-      ruleSnapshot: Object.freeze({
-        contextIdentity,
-        selectedSpace: 'development',
-        projectRef,
-        collectionHash: 'a'.repeat(64),
-        items: Object.freeze([
-          Object.freeze({
-            ruleRef: selectionContext.ruleRef,
-            targetMode: 'ALL' as const,
-            storeRefs: Object.freeze([]),
-            applicationId: 'com.example.terminal',
-            createdAtEpochMillis: 21,
-            full: Object.freeze({
-              artifactRef: 'full-artifact',
-              kind: 'FULL' as const,
-              applicationId: 'com.example.terminal',
-              runtimeVersion: '1',
-              nativeBuildNumber: 20,
-              apkVersion: '1.0.0',
-              jsVersion: '1.0.0',
-              publicationId: 'full-publication',
-              apkSha256: 'c'.repeat(64),
-              zipSha256: 'b'.repeat(64),
-              byteSize: 100,
-              createdAtEpochMillis: 20,
-            }),
-            hot: null,
-            nSeconds: 300,
-            hotStrategy: null,
-            mSeconds: null,
-            description: null,
-          }),
-        ]),
-      }),
-      ruleSnapshotStatus: Object.freeze({status: 'ready', errorCode: null}),
-      currentTask: null,
-      recentStatus: {taskId: null, state: 'idle', reason: null, changedAt: 0 as TimestampMs},
-      failedArtifactIds: [],
-      actualVersions: null,
-      reportDescriptor: {
-        bindingIdentity: null,
-        contextIdentity: null,
-        nextReportSequence: 1,
-        pendingReports: {},
-        sendPaused: false,
-        latestDeliveryFailure: null,
-      },
-    };
-    let readFactsCount = 0;
-    const port = {
-      readFacts: async () => {
-        readFactsCount += 1;
-        return readFactsCount === 1
-          ? {
-              status: 'succeeded',
-              value: Object.freeze({...facts, actual: Object.freeze({...facts.actual!, apkSha256: 'd'.repeat(64)})}),
-            }
-          : {status: 'failed', error: {code: 'FIXTURE_STOP'}};
-      },
-    } as unknown as UpdatePort;
-    const module = createTestTerminalUpdateModule({
-      port,
-      readRuleSnapshotContext: () =>
-        Object.freeze({
-          terminalRef,
-          bindingGeneration,
-          selectedSpace: 'development',
-          storeRef,
-          projectRef,
-          projectUpdatedAtEpochMillis,
-        }),
-    });
-    const actor = module.actorDefinitions?.[0];
-    const handler = actor?.handlers.find(item => item.commandName === acceptTerminalUpdateTargetCommand.commandName);
-    if (handler === undefined) throw new Error('module target acceptance handler missing');
-    const context = {
-      runtimeId: 'module-snapshot-test-runtime',
-      command: {
-        commandName: acceptTerminalUpdateTargetCommand.commandName,
-        commandId: 'accept',
-        requestId: null,
-        payload: {selectionContext},
-      },
-      actor: {actorKey: 'update-owner', moduleName: 'kernel.base.terminal-update', actorName: 'update-owner'},
-      platformPorts: {logger: {info: () => undefined, warn: () => undefined, error: () => undefined}},
-      getState: () => ({
-        [terminalDataClientSliceName]: clientState,
-        [terminalUpdateSliceName]: updateState,
-      }),
-      dispatchAction: (action: unknown) => {
-        const value = action as {type: string; payload: unknown};
-        if (value.type === terminalUpdateActions.replaceTask.type)
-          updateState = {...updateState, currentTask: value.payload as TerminalUpdateState['currentTask']};
-        if (value.type === terminalUpdateActions.replaceRecentStatus.type)
-          updateState = {...updateState, recentStatus: value.payload as TerminalUpdateState['recentStatus']};
-        if (value.type === terminalUpdateActions.replaceReportDescriptor.type)
-          updateState = {...updateState, reportDescriptor: value.payload as TerminalUpdateState['reportDescriptor']};
-        if (value.type === terminalUpdateActions.replaceActualVersions.type)
-          updateState = {...updateState, actualVersions: value.payload as TerminalUpdateState['actualVersions']};
-      },
-      flushPersistence: async () => ({status: 'succeeded'}),
-      dispatchCommand: async () => ({status: 'rejected'}),
-    } as never;
-
-    await expect(handler.handle(context)).resolves.toMatchObject({status: 'unknown', reason: 'failed'});
-    expect(updateState.currentTask?.target).toMatchObject({
-      ruleRef: selectionContext.ruleRef,
-      full: {artifactRef: 'full-artifact'},
-      selectionContext,
-    });
-    const pendingReport = Object.values(updateState.reportDescriptor.pendingReports)[0];
-    expect(pendingReport?.idempotencyKey).toMatch(/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/u);
-    expect(pendingReport?.body.reportId).toBe(pendingReport?.idempotencyKey);
-    expect(pendingReport?.body.actual.apkSha256).toBe('d'.repeat(64));
-    expect(pendingReport?.body.recent.state).toBe('UNKNOWN');
-  });
-
-  it('reuses the accepted topic time when an existing project subscription is refreshed', async () => {
-    const projectRef = '00000000-0000-4000-8000-000000000010';
-    const terminalRef = '00000000-0000-4000-8000-000000000011';
-    const storeRef = '00000000-0000-4000-8000-000000000012';
-    const subscriberKey = 'kernel.base.terminal-update';
-    const subscriptionId = '00000000-0000-4000-8000-000000000013';
-    const acceptedTimeEpochMillis = 42_000;
-    let clientState = terminalDataClientReducer(undefined, {type: 'test/init'});
-    clientState = terminalDataClientReducer(
-      clientState,
-      terminalDataClientActions.replaceCredential({
-        groupWorkspaceKey: 'development',
-        terminalRef,
-        storeRef,
-        deviceId: 'fixture-device',
-        bindingGeneration: 4,
-        credentialSecret: 'S'.repeat(43),
-      }),
-    );
-    const identityKey = JSON.stringify([
-      'development',
-      terminalRef,
-      storeRef,
-      4,
-      subscriberKey,
-      'TERMINAL_UPDATE_RULES',
-      projectRef,
-    ]);
-    clientState = terminalDataClientReducer(
-      clientState,
-      terminalDataClientActions.putTopicSubscription({
-        identityKey,
-        subscription: Object.freeze({
-          subscriptionId,
-          identityKey,
-          subscriberKey,
-          topicKey: 'TERMINAL_UPDATE_RULES',
-          ownerRef: projectRef,
-          acceptedTimeEpochMillis,
-          pendingNotification: null,
-        }),
-      }),
-    );
-    let updateState: TerminalUpdateState = {
-      ruleSnapshot: {contextIdentity: null, selectedSpace: null, projectRef: null, collectionHash: null, items: []},
-      ruleSnapshotStatus: {status: 'empty', errorCode: null},
-      currentTask: null,
-      recentStatus: {taskId: null, state: 'idle', reason: null, changedAt: 0 as TimestampMs},
-      failedArtifactIds: [],
-      actualVersions: null,
-      reportDescriptor: {
-        bindingIdentity: `${terminalRef}:4`,
-        contextIdentity: 'old-rule-context',
-        nextReportSequence: 2,
-        pendingReports: {stale: {idempotencyKey: 'stale', body: {} as never}},
-        sendPaused: true,
-        latestDeliveryFailure: {
-          taskId: 'stale-task',
-          reportId: 'stale',
-          reportSequence: 1,
-          reasonCode: 'OLD_CONTEXT',
-          observedAt: 1 as TimestampMs,
-        },
-      },
-    };
-    const currentState = () => ({
-      [terminalDataClientSliceName]: clientState,
-      [terminalUpdateSliceName]: updateState,
-    });
-    const page = Object.freeze({
-      items: Object.freeze([
-        Object.freeze({
-          ruleRef: 'full-only-rule',
-          targetMode: 'ALL' as const,
-          storeRefs: Object.freeze([]),
-          applicationId: 'com.example.terminal',
-          createdAtEpochMillis: 21,
-          full: Object.freeze({
-            artifactRef: 'full-artifact',
-            kind: 'FULL' as const,
-            applicationId: 'com.example.terminal',
-            runtimeVersion: '1',
-            nativeBuildNumber: 20,
-            apkVersion: '1.0.0',
-            jsVersion: '1.0.0',
-            publicationId: 'full-publication',
-            apkSha256: 'c'.repeat(64),
-            zipSha256: 'b'.repeat(64),
-            byteSize: 100,
-            createdAtEpochMillis: 20,
-          }),
-          hot: null,
-          nSeconds: 300,
-          hotStrategy: null,
-          mSeconds: null,
-          description: null,
-        }),
-      ]),
-      collectionHash: 'a'.repeat(64),
-      nextCursor: null,
-    });
-    const dispatchCommand = vi.fn(async (definition: {commandName: string}, payload: unknown) => {
-      if (definition.commandName === 'kernel.base.terminal-data-client.subscribe-topic')
-        return {status: 'completed', actorResults: [{status: 'completed', result: {status: 'already-subscribed'}}]};
-      if (definition.commandName === 'kernel.base.terminal-data-client.read-terminal-data')
-        return {status: 'completed', actorResults: [{status: 'completed', result: {kind: 'success', body: page}}]};
-      throw new Error(`Unexpected command: ${definition.commandName} ${String(payload)}`);
-    });
-    const actor = createTestTerminalUpdateActor({
-      port: {} as UpdatePort,
-      readRuleSnapshotContext: () =>
-        Object.freeze({
-          terminalRef,
-          bindingGeneration: 4,
-          selectedSpace: 'development',
-          storeRef,
-          projectRef,
-          projectUpdatedAtEpochMillis: 17,
-        }),
-    });
-    const handler = actor.handlers.find(
-      item => item.commandName === refreshTerminalUpdateRuleSnapshotCommand.commandName,
-    );
-    if (handler === undefined) throw new Error('rule snapshot refresh handler missing');
-    const context = {
-      runtimeId: 'snapshot-test-runtime',
-      command: {
-        commandName: refreshTerminalUpdateRuleSnapshotCommand.commandName,
-        commandId: 'refresh',
-        requestId: null,
-        payload: {},
-      },
-      actor: {actorKey: actor.actorKey, moduleName: actor.moduleName, actorName: actor.actorName},
-      platformPorts: {logger: {info: () => undefined, warn: () => undefined, error: () => undefined}},
-      getState: currentState,
-      dispatchAction: (action: unknown) => {
-        const value = action as {type: string; payload: unknown};
-        if (value.type === terminalUpdateActions.replaceRuleSnapshot.type)
-          updateState = {...updateState, ruleSnapshot: value.payload as TerminalUpdateState['ruleSnapshot']};
-        if (value.type === terminalUpdateActions.replaceRuleSnapshotStatus.type)
-          updateState = {
-            ...updateState,
-            ruleSnapshotStatus: value.payload as TerminalUpdateState['ruleSnapshotStatus'],
-          };
-        if (value.type === terminalUpdateActions.replaceReportDescriptor.type)
-          updateState = {...updateState, reportDescriptor: value.payload as TerminalUpdateState['reportDescriptor']};
-      },
-      flushPersistence: async () => ({status: 'succeeded'}),
-      dispatchCommand,
-    } as never;
-
-    await expect(handler.handle(context)).resolves.toMatchObject({status: 'ready'});
-    const subscriptionCall = dispatchCommand.mock.calls.find(call => call[0].commandName.endsWith('.subscribe-topic'));
-    expect(subscriptionCall?.[1]).toMatchObject({initialTimeEpochMillis: acceptedTimeEpochMillis});
-    expect(updateState.ruleSnapshotStatus).toEqual({status: 'ready', errorCode: null});
-    expect(updateState.ruleSnapshot).toMatchObject({
-      contextIdentity: expect.any(String),
-      projectRef,
-      collectionHash: page.collectionHash,
-    });
-    expect(updateState.ruleSnapshot.items).toMatchObject([
-      {ruleRef: 'full-only-rule', hot: null, hotStrategy: null, mSeconds: null},
-    ]);
-    expect(selectTerminalUpdateRuleSnapshot(currentState(), 'full-only-rule').items).toMatchObject([
-      {
-        ruleRef: 'full-only-rule',
-        applicationId: 'com.example.terminal',
-        full: {kind: 'FULL', apkSha256: 'c'.repeat(64)},
-      },
-    ]);
-    expect(updateState.reportDescriptor).toMatchObject({
-      bindingIdentity: `${terminalRef}:4`,
-      contextIdentity: expect.any(String),
-      pendingReports: {},
-      sendPaused: false,
-      latestDeliveryFailure: null,
-    });
-  });
+describe('terminal-update report delivery', () => {
 
   it('restores the pending report when a successful receipt cannot be flushed locally', async () => {
     const terminalRef = '00000000-0000-4000-8000-000000000011';
@@ -751,8 +392,6 @@ describe('terminal-update project rule snapshot', () => {
       ),
     );
     let updateState: TerminalUpdateState = {
-      ruleSnapshot: {contextIdentity: null, selectedSpace: null, projectRef: null, collectionHash: null, items: []},
-      ruleSnapshotStatus: {status: 'empty', errorCode: null},
       currentTask: null,
       recentStatus: {taskId, state: 'succeeded', reason: null, changedAt: 1 as TimestampMs},
       failedArtifactIds: [],
@@ -871,8 +510,6 @@ describe('terminal-update project rule snapshot', () => {
       ),
     );
     let updateState: TerminalUpdateState = {
-      ruleSnapshot: {contextIdentity: null, selectedSpace: null, projectRef: null, collectionHash: null, items: []},
-      ruleSnapshotStatus: {status: 'empty', errorCode: null},
       currentTask: null,
       recentStatus: {taskId: 'task-late', state: 'succeeded', reason: null, changedAt: 3 as TimestampMs},
       failedArtifactIds: [],
@@ -1013,8 +650,6 @@ describe('terminal-update project rule snapshot', () => {
       ),
     );
     let updateState: TerminalUpdateState = {
-      ruleSnapshot: {contextIdentity: null, selectedSpace: null, projectRef: null, collectionHash: null, items: []},
-      ruleSnapshotStatus: {status: 'empty', errorCode: null},
       currentTask: null,
       recentStatus: {taskId: 'old-task', state: 'unknown', reason: null, changedAt: 4 as TimestampMs},
       failedArtifactIds: [],
@@ -1037,7 +672,7 @@ describe('terminal-update project rule snapshot', () => {
     const sent: unknown[] = [];
     const actor = createTestTerminalUpdateActor({
       port: {} as UpdatePort,
-      readRuleSnapshotContext: () =>
+      readTerminalUpdateContextFacts: () =>
         Object.freeze({
           terminalRef,
           bindingGeneration,
@@ -1077,7 +712,7 @@ describe('terminal-update project rule snapshot', () => {
     expect(updateState.reportDescriptor).toMatchObject({
       bindingIdentity,
       contextIdentity: `${terminalRef}:${bindingGeneration}:development:${storeRef}:00000000-0000-4000-8000-000000000033:19`,
-      nextReportSequence: 1,
+      nextReportSequence: 5,
       pendingReports: {},
       sendPaused: false,
       latestDeliveryFailure: null,
@@ -1085,10 +720,74 @@ describe('terminal-update project rule snapshot', () => {
   });
 
   it.each([
-    {status: 409, errorCode: 'TERMINAL_UPDATE_REPORT_IDENTITY_CONFLICT', nextKey: 'task-2', nextTaskId: 'task-2'},
-    {status: 422, errorCode: 'PLATFORM_COMMON_VALIDATION_FAILED', nextKey: 'observation', nextTaskId: null},
+    {
+      status: 409,
+      errorCode: 'TERMINAL_UPDATE_REPORT_IDENTITY_CONFLICT',
+      kind: 'business-rejection',
+      failureCategory: 'unknown-business-rejection',
+      expectedStatus: 'terminal-rejection',
+      expectedReason: 'TERMINAL_UPDATE_REPORT_IDENTITY_CONFLICT',
+      pause: false,
+      nextKey: 'task-2',
+      nextTaskId: 'task-2',
+    },
+    {
+      status: 422,
+      errorCode: 'PLATFORM_COMMON_VALIDATION_FAILED',
+      kind: 'business-rejection',
+      failureCategory: 'unknown-business-rejection',
+      expectedStatus: 'terminal-rejection',
+      expectedReason: 'PLATFORM_COMMON_VALIDATION_FAILED',
+      pause: false,
+      nextKey: 'observation',
+      nextTaskId: null,
+    },
+    {
+      status: 200,
+      errorCode: 'TERMINAL_RESPONSE_SCHEMA_INVALID',
+      kind: 'failure',
+      failureCategory: 'delivered-failure',
+      expectedStatus: 'terminal-rejection',
+      expectedReason: 'REPORT_RESPONSE_INVALID',
+      pause: false,
+      nextKey: 'task-2',
+      nextTaskId: 'task-2',
+    },
+    {
+      status: 409,
+      errorCode: 'NEW_SERVER_ERROR',
+      kind: 'failure',
+      failureCategory: 'unknown-business-rejection',
+      expectedStatus: 'terminal-rejection',
+      expectedReason: 'REPORT_SUBMISSION_INVALID',
+      pause: false,
+      nextKey: 'task-2',
+      nextTaskId: 'task-2',
+    },
+    {
+      status: 401,
+      errorCode: 'HTTP_DELIVERED_FAILURE',
+      kind: 'failure',
+      failureCategory: 'delivered-failure',
+      expectedStatus: 'terminal-rejection',
+      expectedReason: 'REPORT_IDENTITY_REJECTED',
+      pause: true,
+      nextKey: 'task-2',
+      nextTaskId: 'task-2',
+    },
+    {
+      status: 503,
+      errorCode: 'HTTP_DELIVERED_FAILURE',
+      kind: 'failure',
+      failureCategory: 'delivered-failure',
+      expectedStatus: 'retry-retained',
+      expectedReason: null,
+      pause: false,
+      nextKey: 'task-2',
+      nextTaskId: 'task-2',
+    },
   ] as const)(
-    'removes a terminal $status report rejection and continues with the next pending record',
+    'classifies terminal $status report outcomes and preserves or advances the pending queue',
     async scenario => {
       const terminalRef = '00000000-0000-4000-8000-000000000021';
       const storeRef = '00000000-0000-4000-8000-000000000022';
@@ -1151,8 +850,6 @@ describe('terminal-update project rule snapshot', () => {
         ),
       );
       let updateState: TerminalUpdateState = {
-        ruleSnapshot: {contextIdentity: null, selectedSpace: null, projectRef: null, collectionHash: null, items: []},
-        ruleSnapshotStatus: {status: 'empty', errorCode: null},
         currentTask: null,
         recentStatus: {taskId: null, state: 'idle', reason: null, changedAt: 0 as TimestampMs},
         failedArtifactIds: [],
@@ -1197,9 +894,14 @@ describe('terminal-update project rule snapshot', () => {
                 {
                   status: 'completed',
                   result: {
-                    kind: 'business-rejection',
-                    status: scenario.status,
-                    errorCode: scenario.errorCode,
+                    kind: scenario.kind,
+                    ...(scenario.kind === 'business-rejection'
+                      ? {status: scenario.status, errorCode: scenario.errorCode}
+                      : {
+                          category: scenario.failureCategory,
+                          status: scenario.status,
+                          code: scenario.errorCode,
+                        }),
                   },
                 },
               ],
@@ -1235,21 +937,35 @@ describe('terminal-update project rule snapshot', () => {
       await expect(handler.handle(staleContext)).resolves.toEqual({status: 'stale-connection'});
       expect(sent).toEqual([]);
 
-      await expect(handler.handle(context)).resolves.toEqual({status: 'terminal-rejection'});
+      await expect(handler.handle(context)).resolves.toEqual({status: scenario.expectedStatus});
       expect(updateState.reportDescriptor).toMatchObject({
-        sendPaused: false,
-        pendingReports: {[scenario.nextKey]: second},
-        latestDeliveryFailure: {
-          taskId: first.body.taskId,
-          reportId: first.body.reportId,
-          reportSequence: first.body.reportSequence,
-          reasonCode: scenario.errorCode,
-          observedAt: expect.any(Number),
-        },
+        sendPaused: scenario.pause,
+        pendingReports:
+          scenario.pause || scenario.expectedStatus === 'retry-retained'
+            ? {[first.body.taskId ?? 'observation']: first, [scenario.nextKey]: second}
+            : {[scenario.nextKey]: second},
+        latestDeliveryFailure:
+          scenario.expectedReason === null
+            ? null
+            : {
+                taskId: first.body.taskId,
+                reportId: first.body.reportId,
+                reportSequence: first.body.reportSequence,
+                reasonCode: scenario.expectedReason,
+                observedAt: expect.any(Number),
+              },
       });
-      await expect(handler.handle(context)).resolves.toEqual({status: 'accepted'});
-      expect(sent).toEqual(['report-1', 'report-2']);
-      expect(updateState.reportDescriptor.pendingReports).toEqual({});
+      if (scenario.pause) {
+        await expect(handler.handle(context)).resolves.toEqual({status: 'paused'});
+        expect(sent).toEqual(['report-1']);
+      } else if (scenario.expectedStatus === 'retry-retained') {
+        await expect(handler.handle(context)).resolves.toEqual({status: 'retry-retained'});
+        expect(sent).toEqual(['report-1', 'report-1']);
+      } else {
+        await expect(handler.handle(context)).resolves.toEqual({status: 'accepted'});
+        expect(sent).toEqual(['report-1', 'report-2']);
+        expect(updateState.reportDescriptor.pendingReports).toEqual({});
+      }
     },
   );
 });
@@ -1260,27 +976,225 @@ describe('terminal-update local owner', () => {
     await Promise.all(runtimes.splice(0).map(runtime => releaseRuntimeForTestAsync(runtime)));
   });
 
+  it('surfaces a presentation unsubscribe failure through Runtime cleanup', async () => {
+    const unsubscribePresentation = vi.fn(() => {
+      throw new Error('fixture unsubscribe failure');
+    });
+    const runtime = createFixture({
+      port: {
+        readPresentation: async () => ok('foreground' as const),
+        subscribePresentation: () => unsubscribePresentation,
+      },
+    });
+    runtimes.push(runtime);
+    await runtime.start();
+
+    await expect(releaseRuntimeForTestAsync(runtime)).rejects.toThrow('RUNTIME_RESOURCE_RELEASE_FAILED');
+    expect(unsubscribePresentation).toHaveBeenCalledOnce();
+  });
+
+  it('queues one actual-version observation for an active terminal without an update task', async () => {
+    const terminalRef = '00000000-0000-4000-8000-000000000071';
+    const storeRef = '00000000-0000-4000-8000-000000000072';
+    const projectRef = '00000000-0000-4000-8000-000000000073';
+    const bindingGeneration = 3;
+    let ruleContext: TerminalUpdateContextFacts = Object.freeze({
+      terminalRef,
+      bindingGeneration,
+      selectedSpace: 'development',
+      storeRef,
+      projectRef,
+      projectUpdatedAtEpochMillis: 10,
+    });
+    let clientState = terminalDataClientReducer(undefined, {type: 'test/init'});
+    clientState = terminalDataClientReducer(
+      clientState,
+      terminalDataClientActions.replaceCredential({
+        groupWorkspaceKey: 'development',
+        terminalRef,
+        storeRef,
+        deviceId: 'fixture-device',
+        bindingGeneration,
+        credentialSecret: 'S'.repeat(43),
+      }),
+    );
+    let updateState: TerminalUpdateState = {
+      currentTask: null,
+      recentStatus: {
+        taskId: 'old-task',
+        state: 'succeeded',
+        reason: null,
+        changedAt: 9 as TimestampMs,
+        applicationId: 'com.old.terminal',
+        ruleRef: 'old-rule',
+        fullArtifactRef: 'old-full',
+        hotArtifactRef: 'old-hot',
+      },
+      failedArtifactIds: [],
+      actualVersions: null,
+      reportDescriptor: {
+        bindingIdentity: 'old-terminal:2',
+        contextIdentity: 'old-context',
+        nextReportSequence: 1,
+        pendingReports: {},
+        sendPaused: false,
+        latestDeliveryFailure: null,
+      },
+    };
+    let factsReads = 0;
+    let currentFacts = facts;
+    const actor = createTestTerminalUpdateActor({
+      port: {
+        readFacts: async () => {
+          factsReads += 1;
+          return ok(currentFacts);
+        },
+      } as unknown as UpdatePort,
+      readTerminalUpdateContextFacts: () => ruleContext,
+    });
+    const handler = actor.handlers.find(item => item.commandName === reconcileTerminalUpdateCommand.commandName);
+    if (handler === undefined) throw new Error('terminal update reconciliation handler missing');
+    const context = {
+      runtimeId: 'initial-version-observation-test',
+      command: {
+        commandName: reconcileTerminalUpdateCommand.commandName,
+        commandId: 'reconcile-initial-version',
+        requestId: null,
+        payload: {resumeFixedTask: false},
+      },
+      actor: {actorKey: 'update-owner', moduleName: 'kernel.base.terminal-update', actorName: 'update-owner'},
+      platformPorts: {logger: {info: () => undefined, warn: () => undefined, error: () => undefined}},
+      getState: () => ({[terminalDataClientSliceName]: clientState, [terminalUpdateSliceName]: updateState}),
+      dispatchAction: (action: unknown) => {
+        const value = action as {type: string; payload: unknown};
+        if (value.type === terminalUpdateActions.replaceActualVersions.type)
+          updateState = {...updateState, actualVersions: value.payload as UpdateActualVersions};
+        if (value.type === terminalUpdateActions.replaceTask.type)
+          updateState = {...updateState, currentTask: value.payload as TerminalUpdateState['currentTask']};
+        if (value.type === terminalUpdateActions.replaceRecentStatus.type)
+          updateState = {...updateState, recentStatus: value.payload as TerminalUpdateState['recentStatus']};
+        if (value.type === terminalUpdateActions.replaceReportDescriptor.type)
+          updateState = {...updateState, reportDescriptor: value.payload as TerminalUpdateState['reportDescriptor']};
+      },
+      flushPersistence: async () => ({status: 'succeeded'}),
+      dispatchCommand: async () => ({status: 'rejected'}),
+    } as never;
+
+    await expect(handler.handle(context)).resolves.toMatchObject({status: 'read', observation: 'queued'});
+    const initial = updateState.reportDescriptor.pendingReports.observation;
+    expect(initial?.body).toMatchObject({
+      taskId: null,
+      reportSequence: 1,
+      recent: {
+        ruleRef: null,
+        fullArtifactRef: null,
+        hotArtifactRef: null,
+      },
+      actual: {
+        applicationId: facts.actual?.applicationId,
+        runtimeVersion: facts.actual?.runtimeVersion,
+        entryKind: 'EMBEDDED_BUNDLE',
+      },
+    });
+    expect(updateState.recentStatus).toMatchObject({
+      taskId: null,
+      applicationId: null,
+      ruleRef: null,
+      fullArtifactRef: null,
+      hotArtifactRef: null,
+    });
+    expect(updateState.reportDescriptor.nextReportSequence).toBe(2);
+
+    await expect(handler.handle(context)).resolves.toEqual({status: 'read'});
+    expect(updateState.reportDescriptor.pendingReports.observation).toBe(initial);
+    expect(updateState.reportDescriptor.nextReportSequence).toBe(2);
+    expect(factsReads).toBe(2);
+
+    // Simulate a committed observation, then a project context change in the same binding.
+    // The boot changes, but the actual version facts do not.
+    updateState = {
+      ...updateState,
+      reportDescriptor: {...updateState.reportDescriptor, pendingReports: {}},
+    };
+    ruleContext = Object.freeze({...ruleContext, projectUpdatedAtEpochMillis: 11});
+    const nextContextIdentity = `${terminalRef}:${bindingGeneration}:development:${storeRef}:${projectRef}:11`;
+    currentFacts = {...facts, actual: facts.actual === null ? null : {...facts.actual, bootId: 'next-boot'}};
+
+    await expect(handler.handle(context)).resolves.toMatchObject({status: 'read', observation: 'queued'});
+    const nextContextObservation = updateState.reportDescriptor.pendingReports.observation;
+    expect(nextContextObservation?.body).toMatchObject({taskId: null, reportSequence: 2});
+    expect(updateState.reportDescriptor).toMatchObject({
+      bindingIdentity: `${terminalRef}:${bindingGeneration}`,
+      contextIdentity: nextContextIdentity,
+      nextReportSequence: 3,
+    });
+    expect(updateState.recentStatus).toMatchObject({
+      taskId: null,
+      applicationId: null,
+      ruleRef: null,
+      fullArtifactRef: null,
+      hotArtifactRef: null,
+    });
+
+    // After ACK, another reconciliation with the same actual version must not allocate a new report.
+    updateState = {
+      ...updateState,
+      reportDescriptor: {...updateState.reportDescriptor, pendingReports: {}},
+    };
+    await expect(handler.handle(context)).resolves.toEqual({status: 'read'});
+    expect(updateState.reportDescriptor.pendingReports).toEqual({});
+    expect(updateState.reportDescriptor.nextReportSequence).toBe(3);
+  });
+
   it('releases a terminal task only after a new boot so the next rule can be selected', async () => {
     const persistenceKey = 'terminal-update-next-boot-target-test';
     const persistence = createStorage();
     const nextTarget: FixedUpdateTarget = Object.freeze({
-      ...target,
+      ...hotCandidateTarget,
       ruleRef: 'next-boot-rule',
       createdAt: 2 as TimestampMs,
+      selectionContext: Object.freeze({...hotCandidateTarget.selectionContext, ruleRef: 'next-boot-rule'}),
+      hot: Object.freeze({
+        sourceRef: 'artifact:next-boot-hot',
+        expectedSha256: laterHotArtifact.publicationId,
+        artifact: laterHotArtifact,
+      }),
     });
-    let offeredTarget = target;
+    let offeredTarget = hotCandidateTarget;
+    const successfulPort = (readFacts: () => UpdateFacts): UpdatePort => {
+      let preparedPublicationId = '';
+      return {
+        ...unavailableUpdatePort,
+        readFacts: async () => ok(readFacts()),
+        prepareArtifact: async input => {
+          preparedPublicationId = input.artifact.publicationId;
+          return ok({preparedId: 'prepared', artifact: input.artifact});
+        },
+        applyPrepared: async input =>
+          ok({
+            ...noAction,
+            taskId: input.taskId,
+            actionId: input.actionId,
+            publicationId: preparedPublicationId,
+            state: 'succeeded' as const,
+            bootId: readFacts().actual?.bootId ?? null,
+          }),
+        readAction: async () => ok(null),
+        confirmBoot: async () => ok({confirmed: true}),
+        releasePrepared: async () => ok({released: true}),
+      };
+    };
     const firstRuntime = createFixture({
       persistKv: persistence,
       persistenceKey,
       readTarget: async () => offeredTarget,
+      port: successfulPort(() => facts),
     });
     runtimes.push(firstRuntime);
     await firstRuntime.start();
     await firstRuntime.dispatchCommand(
-      acceptTerminalUpdateTargetCommand,
-      {
-        selectionContext: target.selectionContext,
-      },
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(hotCandidateTarget),
       {requestId: createRequestId()},
     );
     const firstTaskId = selectTerminalUpdateTask(firstRuntime.getState())?.taskId;
@@ -1297,14 +1211,12 @@ describe('terminal-update local owner', () => {
     });
     offeredTarget = nextTarget;
     const sameBoot = await firstRuntime.dispatchCommand(
-      acceptTerminalUpdateTargetCommand,
-      {
-        selectionContext: nextTarget.selectionContext,
-      },
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(nextTarget),
       {requestId: createRequestId()},
     );
-    expect(sameBoot.actorResults[0]?.result).toMatchObject({status: 'already-fixed'});
-    expect(selectTerminalUpdateTask(firstRuntime.getState())?.target).toEqual(target);
+    expect(sameBoot.actorResults[0]?.result).toMatchObject({status: 'rejected', reason: 'IDENTITY_CONFLICT'});
+    expect(selectTerminalUpdateTask(firstRuntime.getState())?.target).toEqual(hotCandidateTarget);
     await releaseRuntimeForTestAsync(firstRuntime);
     runtimes.splice(runtimes.indexOf(firstRuntime), 1);
 
@@ -1316,14 +1228,7 @@ describe('terminal-update local owner', () => {
       persistKv: persistence,
       persistenceKey,
       readTarget: async () => nextTarget,
-      port: {
-        readFacts: async () => ok(nextBootFacts),
-        prepareArtifact: async () => ok({preparedId: 'prepared', artifact}),
-        applyPrepared: async () => ok(noAction),
-        readAction: async () => ok(noAction),
-        confirmBoot: async () => ok({confirmed: true}),
-        releasePrepared: async () => ok({released: true}),
-      },
+      port: successfulPort(() => nextBootFacts),
     });
     runtimes.push(secondRuntime);
     await secondRuntime.start();
@@ -1334,10 +1239,8 @@ describe('terminal-update local owner', () => {
       state: 'succeeded',
     });
     const next = await secondRuntime.dispatchCommand(
-      acceptTerminalUpdateTargetCommand,
-      {
-        selectionContext: nextTarget.selectionContext,
-      },
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(nextTarget),
       {requestId: createRequestId()},
     );
 
@@ -1348,12 +1251,13 @@ describe('terminal-update local owner', () => {
     expect(nextTask?.taskId).not.toBe(firstTaskId);
   });
 
-  it('uses the observed boot for FULL-only success and releases it on the next boot', async () => {
+  it('retains the execution boot for FULL-only success and releases it on the next boot', async () => {
     const persistenceKey = 'terminal-update-full-only-success-next-boot-test';
     const persistence = createStorage();
     const fullArtifact = Object.freeze({...artifact, nativeBuildNumber: 2, publicationId: '8'.repeat(64)});
     const fullOnlyTarget: FixedUpdateTarget = Object.freeze({
       ...target,
+      policy: Object.freeze({...target.policy, hotStrategy: null, mSeconds: null}),
       full: Object.freeze({
         sourceRef: 'artifact:full-only',
         expectedSha256: fullArtifact.publicationId,
@@ -1365,6 +1269,7 @@ describe('terminal-update local owner', () => {
       ...target,
       ruleRef: 'after-full-only-rule',
       createdAt: 2 as TimestampMs,
+      selectionContext: Object.freeze({...target.selectionContext, ruleRef: 'after-full-only-rule'}),
       full: null,
       hot: Object.freeze({
         sourceRef: 'artifact:after-full-only-hot',
@@ -1377,6 +1282,7 @@ describe('terminal-update local owner', () => {
     let currentAction: UpdateAction = noAction;
     let preparedPublicationId = fullArtifact.publicationId;
     const port: UpdatePort = {
+      ...unavailableUpdatePort,
       readFacts: async () => ok(currentFacts),
       prepareArtifact: async input => {
         preparedPublicationId = input.artifact.publicationId;
@@ -1407,8 +1313,8 @@ describe('terminal-update local owner', () => {
     await firstRuntime.start();
 
     const acceptedFull = await firstRuntime.dispatchCommand(
-      acceptTerminalUpdateTargetCommand,
-      {selectionContext: fullOnlyTarget.selectionContext},
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(fullOnlyTarget),
       {requestId: createRequestId()},
     );
     expect(acceptedFull.actorResults[0]?.result).toMatchObject({status: 'applying'});
@@ -1433,16 +1339,16 @@ describe('terminal-update local owner', () => {
     expect(completed.actorResults[0]?.result).toMatchObject({status: 'succeeded'});
     expect(selectTerminalUpdateTask(firstRuntime.getState())).toMatchObject({
       phase: 'succeeded',
-      bootId: 'full-only-success-boot',
+      bootId: facts.actual!.bootId,
     });
 
     offeredTarget = nextTarget;
     const sameBoot = await firstRuntime.dispatchCommand(
-      acceptTerminalUpdateTargetCommand,
-      {selectionContext: nextTarget.selectionContext},
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(nextTarget),
       {requestId: createRequestId()},
     );
-    expect(sameBoot.actorResults[0]?.result).toMatchObject({status: 'already-fixed'});
+    expect(sameBoot.actorResults[0]?.result).toMatchObject({status: 'rejected', reason: 'IDENTITY_CONFLICT'});
     expect(selectTerminalUpdateTask(firstRuntime.getState())?.target).toEqual(fullOnlyTarget);
     await releaseRuntimeForTestAsync(firstRuntime);
     runtimes.splice(runtimes.indexOf(firstRuntime), 1);
@@ -1461,8 +1367,8 @@ describe('terminal-update local owner', () => {
     await secondRuntime.start();
     expect(selectTerminalUpdateTask(secondRuntime.getState())).toBeNull();
     const acceptedNext = await secondRuntime.dispatchCommand(
-      acceptTerminalUpdateTargetCommand,
-      {selectionContext: nextTarget.selectionContext},
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(nextTarget),
       {requestId: createRequestId()},
     );
     expect(acceptedNext.actorResults[0]?.result).toMatchObject({status: 'applying'});
@@ -1525,10 +1431,8 @@ describe('terminal-update local owner', () => {
     await firstRuntime.start();
 
     const failed = await firstRuntime.dispatchCommand(
-      acceptTerminalUpdateTargetCommand,
-      {
-        selectionContext: failedTarget.selectionContext,
-      },
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(failedTarget),
       {requestId: createRequestId()},
     );
     expect(failed.actorResults[0]?.result).toMatchObject({status: 'failed', reason: 'HOT_BOOT_UNCONFIRMED'});
@@ -1542,10 +1446,8 @@ describe('terminal-update local owner', () => {
     });
 
     const sameBoot = await firstRuntime.dispatchCommand(
-      acceptTerminalUpdateTargetCommand,
-      {
-        selectionContext: nextTarget.selectionContext,
-      },
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(nextTarget),
       {requestId: createRequestId()},
     );
     expect(sameBoot.actorResults[0]?.result).toMatchObject({status: 'rejected', reason: 'IDENTITY_CONFLICT'});
@@ -1590,10 +1492,8 @@ describe('terminal-update local owner', () => {
       recentStatus: {state: 'failed', reason: 'HOT_BOOT_UNCONFIRMED'},
     });
     const next = await secondRuntime.dispatchCommand(
-      acceptTerminalUpdateTargetCommand,
-      {
-        selectionContext: nextTarget.selectionContext,
-      },
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(nextTarget),
       {requestId: createRequestId()},
     );
     expect(next.actorResults[0]?.result).toMatchObject({status: 'applying'});
@@ -1608,18 +1508,33 @@ describe('terminal-update local owner', () => {
   });
 
   it('fixes one immutable target before exposing a successful command result', async () => {
-    const runtime = createFixture();
+    const port: UpdatePort = {
+      ...unavailableUpdatePort,
+      readFacts: async () => ok(facts),
+      prepareArtifact: async input => ok({preparedId: 'prepared', artifact: input.artifact}),
+      applyPrepared: async input =>
+        ok({
+          ...noAction,
+          taskId: input.taskId,
+          actionId: input.actionId,
+          publicationId: newerHotArtifact.publicationId,
+          state: 'succeeded',
+          bootId: facts.actual?.bootId ?? null,
+        }),
+      readAction: async () => ok(null),
+      confirmBoot: async () => ok({confirmed: true}),
+      releasePrepared: async () => ok({released: true}),
+    };
+    const runtime = createFixture({readTarget: async () => hotCandidateTarget, port});
     runtimes.push(runtime);
     await runtime.start();
     const result = await runtime.dispatchCommand(
-      acceptTerminalUpdateTargetCommand,
-      {
-        selectionContext: target.selectionContext,
-      },
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(hotCandidateTarget),
       {requestId: createRequestId()},
     );
     expect(result.status).toBe('completed');
-    expect(selectTerminalUpdateTask(runtime.getState())).toMatchObject({target, phase: 'succeeded'});
+    expect(selectTerminalUpdateTask(runtime.getState())).toMatchObject({target: hotCandidateTarget, phase: 'succeeded'});
     expect(selectTerminalUpdateRecentStatus(runtime.getState()).state).toBe('succeeded');
   });
 
@@ -1632,6 +1547,7 @@ describe('terminal-update local owner', () => {
     const wallpaperTarget: FixedUpdateTarget = Object.freeze({
       ...target,
       applicationId: wallpaperArtifact.applicationId,
+      policy: Object.freeze({...target.policy, hotStrategy: null, mSeconds: null}),
       full: Object.freeze({
         sourceRef: 'artifact:wallpaper-full',
         expectedSha256: wallpaperArtifact.publicationId,
@@ -1641,6 +1557,7 @@ describe('terminal-update local owner', () => {
     });
     const prepareArtifact = vi.fn(async () => ok({preparedId: 'prepared', artifact: wallpaperArtifact}));
     const port: UpdatePort = {
+      ...unavailableUpdatePort,
       readFacts: async () => ok(facts),
       prepareArtifact,
       applyPrepared: async () => ok(noAction),
@@ -1653,8 +1570,8 @@ describe('terminal-update local owner', () => {
     await runtime.start();
 
     const result = await runtime.dispatchCommand(
-      acceptTerminalUpdateTargetCommand,
-      {selectionContext: wallpaperTarget.selectionContext},
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(wallpaperTarget),
       {requestId: createRequestId()},
     );
 
@@ -1667,30 +1584,69 @@ describe('terminal-update local owner', () => {
     expect(prepareArtifact).not.toHaveBeenCalled();
   });
 
+  it('rechecks a target after native readback and does not fix a candidate that was withdrawn', async () => {
+    let targetReadCount = 0;
+    const prepareArtifact = vi.fn(async () => ok({preparedId: 'must-not-prepare', artifact}));
+    const runtime = createFixture({
+      readTarget: async () => {
+        targetReadCount += 1;
+        return targetReadCount === 1 ? hotCandidateTarget : null;
+      },
+      port: {
+        readFacts: async () => ok(facts),
+        prepareArtifact,
+        applyPrepared: async () => ok(noAction),
+        readAction: async () => ok(noAction),
+        confirmBoot: async () => ok({confirmed: true}),
+        releasePrepared: async () => ok({released: true}),
+      },
+    });
+    runtimes.push(runtime);
+    await runtime.start();
+
+    const result = await runtime.dispatchCommand(
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(hotCandidateTarget),
+      {requestId: createRequestId()},
+    );
+
+    expect(targetReadCount).toBe(2);
+    expect(result.actorResults[0]?.result).toMatchObject({status: 'rejected', reason: 'TARGET_CHANGED'});
+    expect(selectTerminalUpdateTask(runtime.getState())).toBeNull();
+    expect(prepareArtifact).not.toHaveBeenCalled();
+  });
+
   it('does not expose a target when persistence fails after identity preflight, and allows retry', async () => {
     const persistence = createStorage({failWrite: key => key.endsWith('/field/recentStatus'), failWriteCount: 3});
     let readFactsCount = 0;
     const port: UpdatePort = {
+      ...unavailableUpdatePort,
       readFacts: async () => {
         readFactsCount += 1;
         return ok(facts);
       },
-      prepareArtifact: async () => ok({preparedId: 'prepared', artifact}),
-      applyPrepared: async () => ok(noAction),
+      prepareArtifact: async () => ok({preparedId: 'prepared', artifact: newerHotArtifact}),
+      applyPrepared: async input =>
+        ok({
+          ...noAction,
+          taskId: input.taskId,
+          actionId: input.actionId,
+          publicationId: newerHotArtifact.publicationId,
+          state: 'succeeded',
+          bootId: facts.actual?.bootId ?? null,
+        }),
       readAction: async () => ok(noAction),
       confirmBoot: async () => ok({confirmed: true}),
       releasePrepared: async () => ok({released: true}),
     };
-    const runtime = createFixture({persistKv: persistence, port});
+    const runtime = createFixture({persistKv: persistence, readTarget: async () => hotCandidateTarget, port});
     runtimes.push(runtime);
     await runtime.start();
     const startupReadFactsCount = readFactsCount;
 
     const failed = await runtime.dispatchCommand(
-      acceptTerminalUpdateTargetCommand,
-      {
-        selectionContext: target.selectionContext,
-      },
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(hotCandidateTarget),
       {requestId: createRequestId()},
     );
 
@@ -1709,14 +1665,12 @@ describe('terminal-update local owner', () => {
     expect(JSON.parse(persistence.values.get(statusKey!)!).state).toBe('idle');
 
     const retried = await runtime.dispatchCommand(
-      acceptTerminalUpdateTargetCommand,
-      {
-        selectionContext: target.selectionContext,
-      },
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(hotCandidateTarget),
       {requestId: createRequestId()},
     );
     expect(retried.status).toBe('completed');
-    expect(selectTerminalUpdateTask(runtime.getState())).toMatchObject({target, phase: 'succeeded'});
+    expect(selectTerminalUpdateTask(runtime.getState())).toMatchObject({target: hotCandidateTarget, phase: 'succeeded'});
     expect(selectTerminalUpdateRecentStatus(runtime.getState()).state).toBe('succeeded');
     expect(readFactsCount).toBe(startupReadFactsCount + 3);
   });
@@ -1744,6 +1698,7 @@ describe('terminal-update local owner', () => {
     );
     const prepareArtifact = vi.fn(async () => ok({preparedId: 'prepared', artifact}));
     const port: UpdatePort = {
+      ...unavailableUpdatePort,
       readFacts: async () => ok(facts),
       prepareArtifact,
       applyPrepared: async () => ok(noAction),
@@ -1810,6 +1765,7 @@ describe('terminal-update local owner', () => {
       });
     });
     const port: UpdatePort = {
+      ...unavailableUpdatePort,
       readFacts: async () => ok(facts),
       prepareArtifact,
       applyPrepared: async () => ok(noAction),
@@ -1849,6 +1805,7 @@ describe('terminal-update local owner', () => {
     });
     const confirmBoot = vi.fn<UpdatePort['confirmBoot']>().mockResolvedValue(ok({confirmed: true as const}));
     const port: UpdatePort = {
+      ...unavailableUpdatePort,
       readFacts: async () => ok(Object.freeze({...facts, actual})),
       prepareArtifact: async () => ok({preparedId: 'unused', artifact}),
       applyPrepared: async () => ok(noAction),
@@ -1909,6 +1866,7 @@ describe('terminal-update local owner', () => {
       })
       .mockResolvedValue(ok({released: true}));
     const port: UpdatePort = {
+      ...unavailableUpdatePort,
       readFacts: async () => ok(facts),
       prepareArtifact,
       applyPrepared: async () => ok(noAction),
@@ -1980,6 +1938,7 @@ describe('terminal-update local owner', () => {
     );
     const confirmBoot = vi.fn<UpdatePort['confirmBoot']>().mockResolvedValue(ok({confirmed: true as const}));
     const port: UpdatePort = {
+      ...unavailableUpdatePort,
       readFacts: async () => ok(facts),
       prepareArtifact: async () => ok({preparedId: 'prepared', artifact}),
       applyPrepared: async () => ok(noAction),
@@ -2040,6 +1999,7 @@ describe('terminal-update local owner', () => {
     );
     const prepareArtifact = vi.fn(async () => ok({preparedId: 'unexpected-hot', artifact: newerHotArtifact}));
     const port: UpdatePort = {
+      ...unavailableUpdatePort,
       readFacts: async () =>
         ok(Object.freeze({...facts, actual: Object.freeze({...facts.actual!, bundleVersion: '1.0.0'})})),
       prepareArtifact,
@@ -2079,10 +2039,8 @@ describe('terminal-update local owner', () => {
     runtimes.push(runtime);
     await runtime.start();
     const result = await runtime.dispatchCommand(
-      acceptTerminalUpdateTargetCommand,
-      {
-        selectionContext: target.selectionContext,
-      },
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(target),
       {requestId: createRequestId()},
     );
     expect(result.status).toBe('completed');
@@ -2091,45 +2049,58 @@ describe('terminal-update local owner', () => {
   });
 
   it('re-reads the current task after source lookup before claiming a target', async () => {
-    const secondTarget: FixedUpdateTarget = Object.freeze({...target, ruleRef: 'later-rule'});
+    const secondTarget: FixedUpdateTarget = Object.freeze({
+      ...hotCandidateTarget,
+      ruleRef: 'later-rule',
+      selectionContext: Object.freeze({...hotCandidateTarget.selectionContext, ruleRef: 'later-rule'}),
+      hot: Object.freeze({
+        sourceRef: 'artifact:hot-1.0.2',
+        expectedSha256: laterHotArtifact.publicationId,
+        artifact: laterHotArtifact,
+      }),
+    });
     const pending: Array<(value: FixedUpdateTarget) => void> = [];
     let resolveBothStarted!: () => void;
     const bothStarted = new Promise<void>(resolve => {
       resolveBothStarted = resolve;
+    });
+    let resolveFinalEligibilityRead!: () => void;
+    const finalEligibilityReadStarted = new Promise<void>(resolve => {
+      resolveFinalEligibilityRead = resolve;
     });
     const runtime = createFixture({
       readTarget: () =>
         new Promise(resolve => {
           pending.push(resolve);
           if (pending.length === 2) resolveBothStarted();
+          if (pending.length === 3) resolveFinalEligibilityRead();
         }),
     });
     runtimes.push(runtime);
     await runtime.start();
 
     const first = runtime.dispatchCommand(
-      acceptTerminalUpdateTargetCommand,
-      {
-        selectionContext: target.selectionContext,
-      },
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(hotCandidateTarget),
       {requestId: createRequestId()},
     );
     const second = runtime.dispatchCommand(
-      acceptTerminalUpdateTargetCommand,
-      {
-        selectionContext: target.selectionContext,
-      },
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(hotCandidateTarget),
       {requestId: createRequestId()},
     );
 
     await bothStarted;
     expect(pending).toHaveLength(2);
-    pending[0]!(target);
+    pending[0]!(hotCandidateTarget);
+    await finalEligibilityReadStarted;
+    expect(pending).toHaveLength(3);
+    pending[2]!(hotCandidateTarget);
     await first;
     pending[1]!(secondTarget);
     await second;
 
-    expect(selectTerminalUpdateTask(runtime.getState())?.target).toEqual(target);
+    expect(selectTerminalUpdateTask(runtime.getState())?.target).toEqual(hotCandidateTarget);
   });
 
   it('keeps an identical target idempotent when concurrent source lookups finish', async () => {
@@ -2138,39 +2109,72 @@ describe('terminal-update local owner', () => {
     const bothStarted = new Promise<void>(resolve => {
       resolveBothStarted = resolve;
     });
+    let resolveFinalEligibilityRead!: () => void;
+    const finalEligibilityReadStarted = new Promise<void>(resolve => {
+      resolveFinalEligibilityRead = resolve;
+    });
+    let actionIdentity: Readonly<{taskId: string; actionId: string}> | null = null;
+    const prepareArtifact = vi.fn(async (input: Parameters<UpdatePort['prepareArtifact']>[0]) =>
+      ok({preparedId: 'prepared-concurrent', artifact: input.artifact}),
+    );
     const runtime = createFixture({
+      port: {
+        readFacts: async () => ok(facts),
+        prepareArtifact,
+        applyPrepared: async input => {
+          actionIdentity = Object.freeze({taskId: input.taskId, actionId: input.actionId});
+          return ok({
+            ...noAction,
+            taskId: input.taskId,
+            actionId: input.actionId,
+            publicationId: newerHotArtifact.publicationId,
+            state: 'accepted',
+          });
+        },
+        readAction: async input =>
+          ok({
+            ...noAction,
+            taskId: actionIdentity?.taskId ?? input.taskId,
+            actionId: actionIdentity?.actionId ?? input.actionId,
+            publicationId: newerHotArtifact.publicationId,
+            state: 'accepted',
+          }),
+        confirmBoot: async () => ok({confirmed: true}),
+        releasePrepared: async () => ok({released: true}),
+      },
       readTarget: () =>
         new Promise(resolve => {
           pending.push(resolve);
           if (pending.length === 2) resolveBothStarted();
+          if (pending.length === 3) resolveFinalEligibilityRead();
         }),
     });
     runtimes.push(runtime);
     await runtime.start();
 
     const first = runtime.dispatchCommand(
-      acceptTerminalUpdateTargetCommand,
-      {
-        selectionContext: target.selectionContext,
-      },
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(hotCandidateTarget),
       {requestId: createRequestId()},
     );
     const second = runtime.dispatchCommand(
-      acceptTerminalUpdateTargetCommand,
-      {
-        selectionContext: target.selectionContext,
-      },
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(hotCandidateTarget),
       {requestId: createRequestId()},
     );
     await bothStarted;
 
-    pending[0]!(target);
+    pending[0]!(hotCandidateTarget);
+    await finalEligibilityReadStarted;
+    expect(pending).toHaveLength(3);
+    pending[2]!(hotCandidateTarget);
     await first;
-    pending[1]!(target);
+    pending[1]!(hotCandidateTarget);
     await second;
 
-    expect(selectTerminalUpdateTask(runtime.getState())).toMatchObject({target, phase: 'succeeded'});
-    expect(selectTerminalUpdateRecentStatus(runtime.getState()).state).toBe('succeeded');
+    expect(selectTerminalUpdateTask(runtime.getState())).toMatchObject({target: hotCandidateTarget, phase: 'applying-hot'});
+    expect(selectTerminalUpdateRecentStatus(runtime.getState()).state).toBe('applying');
+    expect(prepareArtifact).toHaveBeenCalledOnce();
   });
 
   it('selects the fixed FULL artifact when the installed native build is below its minimum', async () => {
@@ -2208,6 +2212,7 @@ describe('terminal-update local owner', () => {
       });
     };
     const port: UpdatePort = {
+      ...unavailableUpdatePort,
       readFacts: async () =>
         ok(Object.freeze({...facts, actual: Object.freeze({...facts.actual!, nativeBuildNumber: 1})})),
       prepareArtifact,
@@ -2221,10 +2226,8 @@ describe('terminal-update local owner', () => {
     await runtime.start();
 
     const result = await runtime.dispatchCommand(
-      acceptTerminalUpdateTargetCommand,
-      {
-        selectionContext: target.selectionContext,
-      },
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(fixedTarget),
       {requestId: createRequestId()},
     );
 
@@ -2244,6 +2247,7 @@ describe('terminal-update local owner', () => {
     const hotArtifact = Object.freeze({...fullArtifact, bundleVersion: '1.0.1', publicationId: 'd'.repeat(64)});
     let selectedKind: 'full' | 'hot' | null = null;
     const port: UpdatePort = {
+      ...unavailableUpdatePort,
       readFacts: async () =>
         ok(
           Object.freeze({
@@ -2286,8 +2290,8 @@ describe('terminal-update local owner', () => {
     await runtime.start();
 
     await runtime.dispatchCommand(
-      acceptTerminalUpdateTargetCommand,
-      {selectionContext: target.selectionContext},
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(fixedTarget),
       {requestId: createRequestId()},
     );
 
@@ -2316,6 +2320,7 @@ describe('terminal-update local owner', () => {
     let action: UpdateAction | null = null;
     let factsRead = 0;
     const port: UpdatePort = {
+      ...unavailableUpdatePort,
       readFacts: async () => {
         factsRead += 1;
         return ok(
@@ -2358,8 +2363,8 @@ describe('terminal-update local owner', () => {
     runtimes.push(runtime);
     await runtime.start();
     await runtime.dispatchCommand(
-      acceptTerminalUpdateTargetCommand,
-      {selectionContext: target.selectionContext},
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(fixedTarget),
       {requestId: createRequestId()},
     );
     const pendingFull = selectTerminalUpdateTask(runtime.getState());
@@ -2411,6 +2416,7 @@ describe('terminal-update local owner', () => {
       })
       .mockResolvedValue(ok({released: true}));
     const port: UpdatePort = {
+      ...unavailableUpdatePort,
       readFacts: async () =>
         ok(Object.freeze({...facts, actual: Object.freeze({...facts.actual!, nativeBuildNumber: 1})})),
       prepareArtifact: async input => {
@@ -2444,8 +2450,8 @@ describe('terminal-update local owner', () => {
 
     const accept = () =>
       runtime.dispatchCommand(
-        acceptTerminalUpdateTargetCommand,
-        {selectionContext: target.selectionContext},
+        requestTerminalUpdateCommand,
+        createRequestTerminalUpdatePayload(fixedTarget),
         {requestId: createRequestId()},
       );
     const first = await accept();
@@ -2517,6 +2523,7 @@ describe('terminal-update local owner', () => {
     let observedAction: UpdateAction | null = null;
     const releasePrepared = vi.fn<UpdatePort['releasePrepared']>(async () => ok({released: true}));
     const port: UpdatePort = {
+      ...unavailableUpdatePort,
       readFacts: async () => ok(facts),
       prepareArtifact: async () => ok({preparedId: 'prepared-full', artifact: fullArtifact}),
       applyPrepared: async input => {
@@ -2535,14 +2542,14 @@ describe('terminal-update local owner', () => {
     await runtime.start();
 
     await runtime.dispatchCommand(
-      acceptTerminalUpdateTargetCommand,
-      {selectionContext: target.selectionContext},
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(fixedTarget),
       {requestId: createRequestId()},
     );
     const before = selectTerminalUpdateTask(runtime.getState());
     const result = await runtime.dispatchCommand(
-      acceptTerminalUpdateTargetCommand,
-      {selectionContext: target.selectionContext},
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(fixedTarget),
       {requestId: createRequestId()},
     );
 
@@ -2563,6 +2570,7 @@ describe('terminal-update local owner', () => {
     const fixedTarget: FixedUpdateTarget = Object.freeze({
       ...target,
       hot: null,
+      policy: Object.freeze({...target.policy, hotStrategy: null, mSeconds: null}),
       full: Object.freeze({
         sourceRef: 'artifact:full-fixed',
         expectedSha256: fullArtifact.publicationId,
@@ -2578,6 +2586,7 @@ describe('terminal-update local owner', () => {
       bootId: 'wrong-boot',
     });
     const port: UpdatePort = {
+      ...unavailableUpdatePort,
       readFacts: async () => ok(facts),
       prepareArtifact: async () => ok({preparedId: 'prepared-full', artifact: fullArtifact}),
       applyPrepared: async () => ok(wrongAction),
@@ -2590,8 +2599,8 @@ describe('terminal-update local owner', () => {
     await runtime.start();
 
     const result = await runtime.dispatchCommand(
-      acceptTerminalUpdateTargetCommand,
-      {selectionContext: target.selectionContext},
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(fixedTarget),
       {requestId: createRequestId()},
     );
 
@@ -2638,6 +2647,7 @@ describe('terminal-update local owner', () => {
     let fullActionId: string | null = null;
     const preparedKinds: string[] = [];
     const port: UpdatePort = {
+      ...unavailableUpdatePort,
       readFacts: async () =>
         ok(
           Object.freeze({
@@ -2694,10 +2704,8 @@ describe('terminal-update local owner', () => {
     await runtime.start();
 
     const accepted = await runtime.dispatchCommand(
-      acceptTerminalUpdateTargetCommand,
-      {
-        selectionContext: target.selectionContext,
-      },
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(fixedTarget),
       {requestId: createRequestId()},
     );
     expect(accepted.actorResults[0]?.result).toMatchObject({status: 'unknown', reason: 'INSTALLER_AWAITING_READBACK'});
@@ -2757,6 +2765,7 @@ describe('terminal-update local owner', () => {
       return ok({preparedId: 'prepared-hot', artifact: hotArtifact});
     });
     const port: UpdatePort = {
+      ...unavailableUpdatePort,
       readFacts: async () =>
         ok(
           Object.freeze({
@@ -2789,16 +2798,15 @@ describe('terminal-update local owner', () => {
     await runtime.start();
 
     const compatible = await runtime.dispatchCommand(
-      acceptTerminalUpdateTargetCommand,
-      {
-        selectionContext: target.selectionContext,
-      },
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(fixedTarget),
       {requestId: createRequestId()},
     );
     expect(compatible.actorResults[0]?.result).toMatchObject({status: 'waiting-user'});
     expect(prepareArtifact).toHaveBeenCalledOnce();
     expect(preparedKind).toBe('hot');
     const incompatiblePort: UpdatePort = {
+      ...unavailableUpdatePort,
       ...port,
       readFacts: async () =>
         ok(
@@ -2817,17 +2825,12 @@ describe('terminal-update local owner', () => {
     runtimes.push(incompatibleRuntime);
     await incompatibleRuntime.start();
     const incompatible = await incompatibleRuntime.dispatchCommand(
-      acceptTerminalUpdateTargetCommand,
-      {
-        selectionContext: target.selectionContext,
-      },
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(fixedTarget),
       {requestId: createRequestId()},
     );
-    expect(incompatible.actorResults[0]?.result).toMatchObject({status: 'failed', reason: 'HOT_RUNTIME_MISMATCH'});
-    expect(selectTerminalUpdateTask(incompatibleRuntime.getState())).toMatchObject({
-      phase: 'failed',
-      failureCode: 'HOT_RUNTIME_MISMATCH',
-    });
+    expect(incompatible.actorResults[0]?.result).toMatchObject({status: 'rejected', reason: 'HOT_RUNTIME_MISMATCH'});
+    expect(selectTerminalUpdateTask(incompatibleRuntime.getState())).toBeNull();
   });
 
   it('rejects HOT when the installed same-build APK does not match the fixed FULL digest', async () => {
@@ -2857,24 +2860,25 @@ describe('terminal-update local owner', () => {
     await runtime.start();
 
     const result = await runtime.dispatchCommand(
-      acceptTerminalUpdateTargetCommand,
-      {selectionContext: target.selectionContext},
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(fixedTarget),
       {requestId: createRequestId()},
     );
 
-    expect(result.actorResults[0]?.result).toMatchObject({status: 'failed', reason: 'FULL_IDENTITY_CONFLICT'});
+    expect(result.actorResults[0]?.result).toMatchObject({status: 'rejected', reason: 'FULL_IDENTITY_CONFLICT'});
     expect(prepareArtifact).not.toHaveBeenCalled();
-    expect(selectTerminalUpdateTask(runtime.getState())).toMatchObject({
-      phase: 'failed',
-      failureCode: 'FULL_IDENTITY_CONFLICT',
-    });
+    expect(selectTerminalUpdateTask(runtime.getState())).toBeNull();
   });
 
   it('rejects a HOT grant whose minimum FULL identity differs from the fixed target', async () => {
     const fullApkSha256 = 'a'.repeat(64);
     const fullPublicationId = 'b'.repeat(64);
     const hotPublicationId = 'c'.repeat(64);
-    const selectionContext = Object.freeze({selectedSpace: 'development', contextIdentity: 'context', ruleRef: 'rule'});
+    const selectionContext = Object.freeze({
+      selectedSpace: 'development',
+      contextIdentity: 'context',
+      ruleRef: target.ruleRef,
+    });
     const fixedTarget: FixedUpdateTarget = Object.freeze({
       ...target,
       full: Object.freeze({
@@ -2894,14 +2898,6 @@ describe('terminal-update local owner', () => {
     });
     const prepareArtifact = vi.fn(async () => ok({preparedId: 'unexpected', artifact}));
     let updateState = {
-      ruleSnapshot: Object.freeze({
-        contextIdentity: null,
-        selectedSpace: null,
-        projectRef: null,
-        collectionHash: null,
-        items: Object.freeze([]),
-      }),
-      ruleSnapshotStatus: Object.freeze({status: 'empty' as const, errorCode: null}),
       currentTask: null,
       recentStatus: Object.freeze({taskId: null, state: 'idle' as const, reason: null, changedAt: 0 as TimestampMs}),
       failedArtifactIds: Object.freeze([] as readonly string[]),
@@ -2942,15 +2938,15 @@ describe('terminal-update local owner', () => {
       sourceProvider: {readTarget: async () => fixedTarget, resolveSourcePath: () => '/unused'},
       readNetworkSnapshot: () => Object.freeze({addresses: Object.freeze([])}),
     });
-    const handler = actor.handlers.find(item => item.commandName === acceptTerminalUpdateTargetCommand.commandName);
+    const handler = actor.handlers.find(item => item.commandName === requestTerminalUpdateCommand.commandName);
     if (handler === undefined) throw new Error('accept target handler missing');
     const context = {
       runtimeId: 'grant-minimum-full-test',
       command: {
-        commandName: acceptTerminalUpdateTargetCommand.commandName,
+        commandName: requestTerminalUpdateCommand.commandName,
         commandId: 'accept',
         requestId: null,
-        payload: {selectionContext},
+        payload: createRequestTerminalUpdatePayload(fixedTarget),
       },
       actor: {actorKey: actor.actorKey, moduleName: actor.moduleName, actorName: actor.actorName},
       platformPorts: {logger: {info: () => undefined, warn: () => undefined, error: () => undefined}},
@@ -3026,6 +3022,7 @@ describe('terminal-update local owner', () => {
     });
     const fixedTarget: FixedUpdateTarget = Object.freeze({
       ...target,
+      policy: Object.freeze({...target.policy, hotStrategy: null, mSeconds: null}),
       full: Object.freeze({
         sourceRef: 'artifact:full-old-js',
         expectedSha256: fullArtifact.publicationId,
@@ -3035,6 +3032,7 @@ describe('terminal-update local owner', () => {
     });
     const prepareArtifact = vi.fn(async () => ok({preparedId: 'unexpected', artifact: fullArtifact}));
     const port: UpdatePort = {
+      ...unavailableUpdatePort,
       readFacts: async () =>
         ok(
           Object.freeze({
@@ -3053,14 +3051,13 @@ describe('terminal-update local owner', () => {
     await runtime.start();
 
     const result = await runtime.dispatchCommand(
-      acceptTerminalUpdateTargetCommand,
-      {
-        selectionContext: target.selectionContext,
-      },
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(fixedTarget),
       {requestId: createRequestId()},
     );
-    expect(result.actorResults[0]?.result).toMatchObject({status: 'failed', reason: 'FULL_ONLY_VERSION_DOWNGRADE'});
+    expect(result.actorResults[0]?.result).toMatchObject({status: 'rejected', reason: 'FULL_ONLY_VERSION_DOWNGRADE'});
     expect(prepareArtifact).not.toHaveBeenCalled();
+    expect(selectTerminalUpdateTask(runtime.getState())).toBeNull();
   });
 
   it('records a HOT preparation timeout as unknown without applying or marking the artifact failed', async () => {
@@ -3076,6 +3073,7 @@ describe('terminal-update local owner', () => {
     });
     const applyPrepared = vi.fn(async () => ok(noAction));
     const port: UpdatePort = {
+      ...unavailableUpdatePort,
       readFacts: async () => ok(facts),
       prepareArtifact: async () => ({
         status: 'timed-out',
@@ -3093,10 +3091,8 @@ describe('terminal-update local owner', () => {
     await runtime.start();
 
     const result = await runtime.dispatchCommand(
-      acceptTerminalUpdateTargetCommand,
-      {
-        selectionContext: target.selectionContext,
-      },
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(fixedTarget),
       {requestId: createRequestId()},
     );
 
@@ -3123,6 +3119,7 @@ describe('terminal-update local owner', () => {
     });
     const fullOnlyTarget: FixedUpdateTarget = Object.freeze({
       ...target,
+      policy: Object.freeze({...target.policy, hotStrategy: null, mSeconds: null}),
       full: Object.freeze({
         sourceRef: 'artifact:failed-full',
         expectedSha256: failedFullArtifact.publicationId,
@@ -3152,8 +3149,8 @@ describe('terminal-update local owner', () => {
     await firstRuntime.start();
 
     const failed = await firstRuntime.dispatchCommand(
-      acceptTerminalUpdateTargetCommand,
-      {selectionContext: fullOnlyTarget.selectionContext},
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(fullOnlyTarget),
       {requestId: createRequestId()},
     );
     expect(failed.actorResults[0]?.result).toMatchObject({status: 'failed', reason: 'APK_SIGNER_MISMATCH'});
@@ -3186,18 +3183,19 @@ describe('terminal-update local owner', () => {
     await nextRuntime.start();
 
     const retry = await nextRuntime.dispatchCommand(
-      acceptTerminalUpdateTargetCommand,
-      {selectionContext: fullOnlyTarget.selectionContext},
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(fullOnlyTarget),
       {requestId: createRequestId()},
     );
     expect(retry.actorResults[0]?.result).toMatchObject({
-      status: 'failed',
+      status: 'rejected',
       reason: 'FAILED_ARTIFACT_REENTRY_FORBIDDEN',
     });
     expect(prepareArtifact).not.toHaveBeenCalled();
     expect(nextRuntime.getState()['kernel.base.terminal-update.state']).toMatchObject({
       failedArtifactIds: [failedFullArtifact.publicationId],
     });
+    expect(selectTerminalUpdateTask(nextRuntime.getState())).toBeNull();
   });
 
   it('preserves the task boot through non-success FULL readbacks and releases the failure on the next boot', async () => {
@@ -3207,6 +3205,7 @@ describe('terminal-update local owner', () => {
     const repairArtifact = Object.freeze({...artifact, nativeBuildNumber: 3, publicationId: '7'.repeat(64)});
     const fullOnlyTarget: FixedUpdateTarget = Object.freeze({
       ...target,
+      policy: Object.freeze({...target.policy, hotStrategy: null, mSeconds: null}),
       full: Object.freeze({
         sourceRef: 'artifact:full-readback',
         expectedSha256: fullArtifact.publicationId,
@@ -3218,6 +3217,8 @@ describe('terminal-update local owner', () => {
       ...target,
       ruleRef: 'failed-full-repair-rule',
       createdAt: 4 as TimestampMs,
+      policy: Object.freeze({...target.policy, hotStrategy: null, mSeconds: null}),
+      selectionContext: Object.freeze({...target.selectionContext, ruleRef: 'failed-full-repair-rule'}),
       full: Object.freeze({
         sourceRef: 'artifact:full-repair',
         expectedSha256: repairArtifact.publicationId,
@@ -3230,6 +3231,7 @@ describe('terminal-update local owner', () => {
     let offeredTarget = fullOnlyTarget;
     const releasePrepared = vi.fn(async () => ok({released: true}));
     const port: UpdatePort = {
+      ...unavailableUpdatePort,
       readFacts: async () => ok(currentFacts),
       prepareArtifact: async () => ok({preparedId: 'prepared-full', artifact: fullArtifact}),
       applyPrepared: async input =>
@@ -3262,8 +3264,8 @@ describe('terminal-update local owner', () => {
     await runtime.start();
 
     await runtime.dispatchCommand(
-      acceptTerminalUpdateTargetCommand,
-      {selectionContext: fullOnlyTarget.selectionContext},
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(fullOnlyTarget),
       {requestId: createRequestId()},
     );
     expect(runtime.getState()['kernel.base.terminal-update.state']).toMatchObject({failedArtifactIds: []});
@@ -3292,11 +3294,11 @@ describe('terminal-update local owner', () => {
 
     offeredTarget = repairTarget;
     const sameBoot = await runtime.dispatchCommand(
-      acceptTerminalUpdateTargetCommand,
-      {selectionContext: repairTarget.selectionContext},
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(repairTarget),
       {requestId: createRequestId()},
     );
-    expect(sameBoot.actorResults[0]?.result).toMatchObject({status: 'already-fixed'});
+    expect(sameBoot.actorResults[0]?.result).toMatchObject({status: 'rejected', reason: 'IDENTITY_CONFLICT'});
     await releaseRuntimeForTestAsync(runtime);
     runtimes.splice(runtimes.indexOf(runtime), 1);
 
@@ -3328,14 +3330,15 @@ describe('terminal-update local owner', () => {
     expect(selectTerminalUpdateTask(nextRuntime.getState())).toBeNull();
 
     const rejectedOldArtifact = await nextRuntime.dispatchCommand(
-      acceptTerminalUpdateTargetCommand,
-      {selectionContext: fullOnlyTarget.selectionContext},
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(fullOnlyTarget),
       {requestId: createRequestId()},
     );
     expect(rejectedOldArtifact.actorResults[0]?.result).toMatchObject({
-      status: 'failed',
+      status: 'rejected',
       reason: 'FAILED_ARTIFACT_REENTRY_FORBIDDEN',
     });
+    expect(selectTerminalUpdateTask(nextRuntime.getState())).toBeNull();
 
     await releaseRuntimeForTestAsync(nextRuntime);
     runtimes.splice(runtimes.indexOf(nextRuntime), 1);
@@ -3368,8 +3371,8 @@ describe('terminal-update local owner', () => {
     expect(selectTerminalUpdateTask(repairRuntime.getState())).toBeNull();
 
     const acceptedRepair = await repairRuntime.dispatchCommand(
-      acceptTerminalUpdateTargetCommand,
-      {selectionContext: repairTarget.selectionContext},
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(repairTarget),
       {requestId: createRequestId()},
     );
     expect(acceptedRepair.actorResults[0]?.result).toMatchObject({status: 'applying'});
@@ -3394,6 +3397,7 @@ describe('terminal-update local owner', () => {
       }),
     });
     const port: UpdatePort = {
+      ...unavailableUpdatePort,
       readFacts: async () => ok(facts),
       prepareArtifact: async () => ok({preparedId: 'prepared-hot', artifact: hotArtifact}),
       applyPrepared: async input =>
@@ -3414,10 +3418,8 @@ describe('terminal-update local owner', () => {
     await runtime.start();
 
     const result = await runtime.dispatchCommand(
-      acceptTerminalUpdateTargetCommand,
-      {
-        selectionContext: target.selectionContext,
-      },
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(fixedTarget),
       {requestId: createRequestId()},
     );
 
@@ -3481,8 +3483,8 @@ describe('terminal-update local owner', () => {
     await runtime.start();
 
     await runtime.dispatchCommand(
-      acceptTerminalUpdateTargetCommand,
-      {selectionContext: hotOnlyTarget.selectionContext},
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(hotOnlyTarget),
       {requestId: createRequestId()},
     );
     const applying = selectTerminalUpdateTask(runtime.getState());
@@ -3526,17 +3528,188 @@ describe('terminal-update local owner', () => {
       {requestId: createRequestId()},
     );
     const retry = await runtime.dispatchCommand(
-      acceptTerminalUpdateTargetCommand,
-      {selectionContext: hotOnlyTarget.selectionContext},
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(hotOnlyTarget),
       {requestId: createRequestId()},
     );
 
-    expect(retry.actorResults[0]?.result).toEqual({status: 'failed', reason: 'FAILED_ARTIFACT_REENTRY_FORBIDDEN'});
+    expect(retry.actorResults[0]?.result).toEqual({status: 'rejected', reason: 'FAILED_ARTIFACT_REENTRY_FORBIDDEN'});
+    expect(selectTerminalUpdateTask(runtime.getState())).toBeNull();
     expect(prepareArtifact).toHaveBeenCalledOnce();
     expect(applyPrepared).toHaveBeenCalledOnce();
     expect(runtime.getState()['kernel.base.terminal-update.state']).toMatchObject({
       failedArtifactIds: [hotArtifact.publicationId],
     });
+  });
+
+  it('applies an IDLE HOT artifact only after a fresh full M window without local input', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(1_000_000);
+    try {
+      const idleTarget: FixedUpdateTarget = Object.freeze({
+        ...target,
+        hot: Object.freeze({
+          sourceRef: 'artifact:idle-hot',
+          expectedSha256: newerHotArtifact.publicationId,
+          artifact: newerHotArtifact,
+        }),
+        policy: Object.freeze({...target.policy, hotStrategy: 'IDLE' as const, mSeconds: 60}),
+      });
+      const prepareArtifact = vi.fn(async (input: Parameters<UpdatePort['prepareArtifact']>[0]) =>
+        ok({preparedId: 'prepared-idle-hot', artifact: input.artifact}),
+      );
+      const applyPrepared = vi.fn(async (input: Parameters<UpdatePort['applyPrepared']>[0]) =>
+        ok(Object.freeze({
+          ...noAction,
+          taskId: input.taskId,
+          actionId: input.actionId,
+          publicationId: newerHotArtifact.publicationId,
+          state: 'accepted' as const,
+        })),
+      );
+      const runtime = createFixture({
+        readTarget: async () => idleTarget,
+        port: {
+          readPresentation: async () => ok('foreground' as const),
+          readFacts: async () => ok(facts),
+          prepareArtifact,
+          applyPrepared,
+        },
+      });
+      runtimes.push(runtime);
+      await runtime.start();
+
+      const accepted = await runtime.dispatchCommand(
+        requestTerminalUpdateCommand,
+        createRequestTerminalUpdatePayload(idleTarget),
+        {requestId: createRequestId()},
+      );
+      expect(accepted.actorResults[0]?.result).toMatchObject({status: 'waiting-idle'});
+      expect(selectTerminalUpdateTask(runtime.getState())).toMatchObject({
+        phase: 'waiting-idle',
+        actionKind: 'hot',
+        preparedId: 'prepared-idle-hot',
+      });
+      expect(prepareArtifact).toHaveBeenCalledOnce();
+      expect(applyPrepared).not.toHaveBeenCalled();
+
+      await vi.advanceTimersByTimeAsync(59_999);
+      expect(applyPrepared).not.toHaveBeenCalled();
+
+      await runtime.dispatchCommand(
+        recordLocalInteractionCommand,
+        {runtimeIdentity: runtime.runtimeId},
+        {requestId: createRequestId()},
+      );
+      const interaction = selectLastLocalInteraction(runtime.getState());
+      expect(interaction.revision).toBe(1);
+      await vi.advanceTimersByTimeAsync(59_999);
+      expect(applyPrepared).not.toHaveBeenCalled();
+
+      await vi.advanceTimersByTimeAsync(1);
+      await vi.waitFor(() => expect(applyPrepared).toHaveBeenCalledOnce());
+      expect(applyPrepared).toHaveBeenCalledWith(expect.objectContaining({
+        taskId: expect.any(String),
+        actionId: expect.any(String),
+        preparedId: 'prepared-idle-hot',
+        kind: 'hot',
+      }));
+      expect(selectTerminalUpdateTask(runtime.getState())).toMatchObject({phase: 'applying-hot'});
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('invites FULL installation after N, defers once, and confirms the same pending action without reinstalling', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(2_000_000);
+    try {
+      const fullArtifact = Object.freeze({
+        ...artifact,
+        nativeVersion: '1.1.0',
+        nativeBuildNumber: 2,
+        publicationId: 'd'.repeat(64),
+      });
+      const fullTarget: FixedUpdateTarget = Object.freeze({
+        ...target,
+        full: Object.freeze({
+          sourceRef: 'artifact:reminder-full',
+          expectedSha256: fullArtifact.publicationId,
+          artifact: fullArtifact,
+        }),
+        hot: null,
+        policy: Object.freeze({...target.policy, nSeconds: 60, hotStrategy: null, mSeconds: null}),
+      });
+      let currentAction: UpdateAction = noAction;
+      const applyPrepared = vi.fn(async (input: Parameters<UpdatePort['applyPrepared']>[0]) => {
+        currentAction = Object.freeze({
+          ...noAction,
+          taskId: input.taskId,
+          actionId: input.actionId,
+          publicationId: fullArtifact.publicationId,
+          state: 'waiting-user',
+        });
+        return ok(currentAction);
+      });
+      const presentInstallerConfirmation = vi.fn(async () =>
+        ok({status: 'presented' as const, reason: null}),
+      );
+      const runtime = createFixture({
+        readTarget: async () => fullTarget,
+        port: {
+          readPresentation: async () => ok('foreground' as const),
+          readFacts: async () => ok(facts),
+          prepareArtifact: async input => ok({preparedId: 'prepared-full-reminder', artifact: input.artifact}),
+          applyPrepared,
+          readAction: async () => ok(currentAction),
+          presentInstallerConfirmation,
+        },
+      });
+      runtimes.push(runtime);
+      await runtime.start();
+
+      const accepted = await runtime.dispatchCommand(
+        requestTerminalUpdateCommand,
+        createRequestTerminalUpdatePayload(fullTarget),
+        {requestId: createRequestId()},
+      );
+      expect(accepted.actorResults[0]?.result).toMatchObject({status: 'waiting-user'});
+      const task = selectTerminalUpdateTask(runtime.getState());
+      expect(task).toMatchObject({phase: 'waiting-user', actionKind: 'full'});
+      expect(selectTerminalUpdateInvitation(runtime.getState())).toBeNull();
+
+      await vi.advanceTimersByTimeAsync(60_000);
+      await vi.waitFor(() => {
+        expect(selectTerminalUpdateInvitation(runtime.getState())).toEqual({
+          taskId: task?.taskId,
+          actionId: task?.actionId,
+          bootId: facts.actual?.bootId,
+        });
+      });
+      const decision = {
+        taskId: task!.taskId,
+        actionId: task!.actionId,
+        bootId: facts.actual!.bootId,
+      };
+      await runtime.dispatchCommand(deferTerminalUpdateInstallCommand, decision, {requestId: createRequestId()});
+      expect(selectTerminalUpdateInvitation(runtime.getState())).toBeNull();
+      await vi.advanceTimersByTimeAsync(59_999);
+      expect(selectTerminalUpdateInvitation(runtime.getState())).toBeNull();
+      await vi.advanceTimersByTimeAsync(1);
+      await vi.waitFor(() => expect(selectTerminalUpdateInvitation(runtime.getState())).not.toBeNull());
+
+      await runtime.dispatchCommand(confirmTerminalUpdateInstallCommand, decision, {requestId: createRequestId()});
+      expect(presentInstallerConfirmation).toHaveBeenCalledWith(expect.objectContaining({
+        taskId: task?.taskId,
+        actionId: task?.actionId,
+        publicationId: fullArtifact.publicationId,
+        trigger: 'user-confirm',
+      }));
+      expect(applyPrepared).toHaveBeenCalledOnce();
+      expect(selectTerminalUpdateInvitation(runtime.getState())).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('root reset retains only its declared persistent fields and clears transient, other-owner and orphan state', async () => {
@@ -3562,6 +3735,7 @@ describe('terminal-update local owner', () => {
         script: unavailableScriptPort,
         connector: unavailableConnectorPort,
         update: {
+          ...unavailableUpdatePort,
           readFacts: async () => ok(facts),
           prepareArtifact: async () => ok({preparedId: 'none', artifact}),
           applyPrepared: async () => ok(noAction),
@@ -3619,7 +3793,7 @@ describe('terminal-update local owner', () => {
     stateRuntime.getStore().dispatch({type: 'test-other/enable'});
     expect((await stateRuntime.flushPersistence()).status).toBe('succeeded');
 
-    const retainedKeys = ['ruleSnapshot', 'currentTask', 'recentStatus', 'failedArtifactIds', 'reportDescriptor'].map(
+    const retainedKeys = ['currentTask', 'recentStatus', 'failedArtifactIds', 'reportDescriptor'].map(
       storageKey =>
         createPersistenceFieldKey({persistenceKey: namespace, sliceName: terminalUpdateRegistration.name, storageKey}),
     );
@@ -3663,7 +3837,7 @@ describe('terminal-update local owner', () => {
     ).toEqual(expect.arrayContaining(retainedKeys));
     expect(
       [...plainStorage.values.keys()].filter(key => key.startsWith(createPersistenceNamespacePrefix(namespace))),
-    ).toHaveLength(5);
+    ).toHaveLength(4);
     expect(plainStorage.values.has(otherKey)).toBe(false);
     expect(plainStorage.values.has(orphanKey)).toBe(false);
     expect(protectedStorage.values.has(protectedCredentialKey)).toBe(false);

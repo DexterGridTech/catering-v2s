@@ -16,7 +16,7 @@ function readWire(name) {
 }
 
 test('only terminal request schemas permit unknown fields and generated parsing still rejects duplicates', () => {
-  const terminalRequests = ['TerminalActivationRequest', 'TerminalActivationCancellationRequest'];
+  const terminalRequests = ['TerminalActivationRequest'];
   for (const name of terminalRequests) {
     assert.equal(canonical[name].additionalProperties, true, `${name} canonical schema permits unknown fields`);
     assert.equal(materialized[name].additionalProperties, true, `${name} materialized schema matches canonical source`);

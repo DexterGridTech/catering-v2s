@@ -318,6 +318,13 @@ public final class ContractProblemAdvice {
         return problem(HttpStatus.CONFLICT, code, "规则已变化，请重新读取后再操作", request);
     }
 
+    @ExceptionHandler(TerminalUpdateRuleOwnerService.TerminalUpdateRuleSnapshotChangedException.class)
+    ResponseEntity<Problem> terminalUpdateRuleSnapshotChanged(
+            TerminalUpdateRuleOwnerService.TerminalUpdateRuleSnapshotChangedException exception,
+            HttpServletRequest request) {
+        return problem(HttpStatus.CONFLICT, "TERMINAL_UPDATE_SNAPSHOT_CHANGED", "终端规则集合已变化，请重新读取完整快照", request);
+    }
+
     @ExceptionHandler({
         TerminalUpdateRuleOwnerService.TerminalUpdateRuleInvalidException.class,
         TerminalUpdateRuleOwnerService.TerminalUpdateRuleTargetInvalidException.class,
@@ -714,7 +721,8 @@ public final class ContractProblemAdvice {
         BusinessEntityService.OrganizationAuthorizationException.class,
         OrganizationHierarchyService.OrganizationAuthorizationException.class,
         StoreTerminalOwnerService.TerminalAuthorizationException.class,
-        TerminalBindingOwnerService.TerminalOperationsAuthorizationException.class
+        TerminalBindingOwnerService.TerminalOperationsAuthorizationException.class,
+        TerminalUpdateRuleOwnerService.TerminalUpdateRuleAuthorizationException.class
     })
     ResponseEntity<Problem> accessDenied(RuntimeException exception, HttpServletRequest request) {
         return problem(

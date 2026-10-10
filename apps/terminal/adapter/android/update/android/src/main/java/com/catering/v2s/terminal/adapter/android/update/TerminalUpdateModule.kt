@@ -14,9 +14,9 @@ class TerminalUpdateModule : Module() {
 
     OnActivityEntersForeground {
       appContext.currentActivity?.let { activity ->
-        TerminalUpdateRuntime.resumePendingInstallerConfirmation(activity)
+        TerminalUpdateRuntime.reconcileBusyInstallerOnForeground(activity)
       } ?: run {
-        Log.i("TerminalUpdate", "event=installer-confirmation-resume outcome=activity-unavailable")
+        Log.i("TerminalUpdate", "event=installer-busy-reconcile outcome=activity-unavailable")
       }
     }
 
@@ -67,6 +67,12 @@ class TerminalUpdateModule : Module() {
     AsyncFunction("readAction") { taskId: String, actionId: String ->
       val context = appContext.reactContext?.applicationContext ?: error("TERMINAL_UPDATE_APPLICATION_NOT_READY")
       TerminalUpdateRuntime.readAction(context, taskId, actionId)
+    }
+
+    AsyncFunction("presentInstallerConfirmation") { taskId: String, actionId: String, publicationId: String, trigger: String ->
+      val activity = appContext.currentActivity
+        ?: return@AsyncFunction mapOf("status" to "unknown", "reason" to "ACTIVITY_NOT_AVAILABLE")
+      TerminalUpdateRuntime.presentInstallerConfirmation(activity, taskId, actionId, publicationId, trigger)
     }
 
     AsyncFunction("releasePrepared") { preparedId: String ->

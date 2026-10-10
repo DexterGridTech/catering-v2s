@@ -5,3 +5,4 @@ export {runtimeInstanceModeChangedCommand} from './runtimeInstanceModeChanged';
 export {resetRuntimeAfterSystemFailureCommand} from './resetRuntimeAfterSystemFailure';
 export {helloWorldCommand} from './helloWorld';
 export {primarySurfaceReadyCommand} from './primarySurfaceReady';
+export {recordLocalInteractionCommand} from './recordLocalInteraction';

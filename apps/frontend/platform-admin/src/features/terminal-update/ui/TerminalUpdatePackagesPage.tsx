@@ -3,14 +3,25 @@ import {Alert, Button, Card, Descriptions, Drawer, Form, Select, Space, Spin, Up
 import {InboxOutlined, ReloadOutlined} from '@ant-design/icons';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {
+  CursorPagination,
+  adminDetailDescriptionsProps,
+  adminDrawerSurfaceProps,
   createContentIdempotencyKey,
   digestFileContent,
   formatCanonicalDateTime,
   testId,
+  useCursorStack,
+  useDrawerFormLifecycle,
   useOverlayLock,
+  useRefreshVersion,
 } from '@catering-v2s/admin-ui-foundation';
 import {WorkspaceScope} from '../../../app/state/WorkspaceScope';
-import {platformClient, platformProblemOf, platformRtk} from '../../../app/api/PlatformTransport';
+import {
+  platformClient,
+  platformContentTabRefreshSignal,
+  platformProblemOf,
+  platformRtk,
+} from '../../../app/api/PlatformTransport';
 import {platformAdminRtkRequest} from '../../../app/api/generated/platform-edge.rtk';
 import {
   PLATFORM_ADMIN_OPERATION_IDS,
@@ -50,12 +61,10 @@ export function TerminalUpdatePackagesPage() {
 }
 
 function PackagesForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) {
-  const [cursor, setCursor] = useState<string>();
   const [filters, setFilters] = useState<ArtifactFilters>({});
   const [uploadOpen, setUploadOpen] = useState(false);
   const [file, setFile] = useState<File>();
   const [problem, setProblem] = useState<string>();
-  const [saving, setSaving] = useState(false);
   const uploadOperationInFlight = useRef(false);
   const [detailRef, setDetailRef] = useState<string>();
   const [detail, setDetail] = useState<TerminalUpdateArtifactDetail>();
@@ -64,7 +73,23 @@ function PackagesForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) 
   const [pendingStage, setPendingStage] = useState<PendingStage>();
   const [pendingStageRelease, setPendingStageRelease] = useState<PendingStageRelease>();
   const [form] = Form.useForm<FormValues>();
-  useOverlayLock(uploadOpen || Boolean(detailRef));
+  const pager = useCursorStack({resetKey: `${groupWorkspaceKey}:${JSON.stringify(filters)}`});
+  const contentTabRefreshVersion = useRefreshVersion(platformContentTabRefreshSignal);
+  const uploadLifecycle = useDrawerFormLifecycle({
+    open: uploadOpen,
+    onOpenChange: next => setUploadOpen(next),
+    dirtyMessage: '已选择的更新包和未保存资料不会保留。',
+  });
+  const saving = uploadLifecycle.submitting;
+  useOverlayLock(Boolean(detailRef));
+  useEffect(() => {
+    if (uploadOpen) {
+      form.resetFields();
+      setFile(undefined);
+      setProblem(undefined);
+      uploadLifecycle.resetPreservingOpen();
+    }
+  }, [form, uploadLifecycle, uploadOpen]);
   const currentPendingStage =
     pendingStage?.groupWorkspaceKey === groupWorkspaceKey && pendingStage.file === file ? pendingStage : undefined;
   useEffect(() => {
@@ -84,11 +109,11 @@ function PackagesForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) 
     () =>
       platformAdminRtkRequest.getPlatformTerminalUpdateArtifactPage(
         {groupWorkspaceKey},
-        {query: {...filters, cursor, limit: 50}},
+        {query: {...filters, cursor: pager.cursor || undefined, limit: 50}},
       ),
-    [cursor, filters, groupWorkspaceKey],
+    [filters, groupWorkspaceKey, pager.cursor],
   );
-  const {data, error, isFetching, refetch} = platformRtk.useGetPlatformTerminalUpdateArtifactPageQuery(request);
+  const {currentData: data, error, isFetching, refetch} = platformRtk.useGetPlatformTerminalUpdateArtifactPageQuery(request);
   useEffect(() => {
     if (!detailRef) {
       setDetail(undefined);
@@ -112,7 +137,7 @@ function PackagesForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) 
     return () => {
       current = false;
     };
-  }, [detailRef, groupWorkspaceKey]);
+  }, [contentTabRefreshVersion, detailRef, groupWorkspaceKey]);
   const openArtifactDetail = (artifactRef: string) => {
     setDetail(undefined);
     setDetailProblem(undefined);
@@ -153,9 +178,9 @@ function PackagesForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) 
       dataIndex: 'applicationId',
       search: false,
       render: (_, row) => (
-        <a onClick={() => openArtifactDetail(row.artifactRef)} {...testId(terminalUpdateTestIds.artifactOpen(row.artifactRef))}>
+        <Button type="link" onClick={() => openArtifactDetail(row.artifactRef)} {...testId(terminalUpdateTestIds.artifactOpen(row.artifactRef))}>
           {row.applicationId} · {artifactKindLabel(row.kind)} · {artifactDisplayVersion(row)}
-        </a>
+        </Button>
       ),
     },
     {title: '应用', dataIndex: 'applicationId', search: false},
@@ -188,19 +213,23 @@ function PackagesForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) 
       setProblem(`临时上传资源释放失败：${platformProblemOf(cause).detail || '请重试释放'}`);
     }
   };
-  const closeUpload = () => {
-    if (uploadOperationInFlight.current) return;
-    if (pendingStage) void releaseStage(pendingStage);
-    setPendingStage(undefined);
-    setUploadOpen(false);
+  const finishUploadClose = (visible: boolean) => {
+    uploadLifecycle.afterOpenChange(visible);
+    if (visible) return;
+    const staged = pendingStage;
+    if (staged) {
+      setPendingStage(undefined);
+      void releaseStage(staged);
+    }
     setFile(undefined);
     setProblem(undefined);
     form.resetFields();
+    uploadLifecycle.reset();
   };
   const parse = async (selectedFile: File, stageWorkspace = groupWorkspaceKey) => {
     if (uploadOperationInFlight.current) return;
     uploadOperationInFlight.current = true;
-    setSaving(true);
+    uploadLifecycle.setSubmitting(true);
     setProblem(undefined);
     try {
       const sha256 = await digestFileContent(selectedFile);
@@ -225,7 +254,7 @@ function PackagesForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) 
       setProblem(platformProblemOf(cause).detail || '更新包解析失败');
     } finally {
       uploadOperationInFlight.current = false;
-      setSaving(false);
+      uploadLifecycle.setSubmitting(false);
     }
   };
   const save = async (values: FormValues) => {
@@ -242,7 +271,7 @@ function PackagesForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) 
       return;
     }
     uploadOperationInFlight.current = true;
-    setSaving(true);
+    uploadLifecycle.setSubmitting(true);
     setProblem(undefined);
     try {
       const body = {
@@ -267,10 +296,11 @@ function PackagesForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) 
       setPendingStage(undefined);
       setPendingStageRelease(undefined);
       openArtifactDetail(saved.artifactRef);
-      setUploadOpen(false);
       setFile(undefined);
       setProblem(undefined);
       form.resetFields();
+      uploadLifecycle.setDirty(false);
+      uploadLifecycle.closeAfterSuccess();
       void refetch();
       message.success('更新包已保存');
     } catch (cause) {
@@ -279,7 +309,7 @@ function PackagesForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) 
       await releaseStage(staged);
     } finally {
       uploadOperationInFlight.current = false;
-      setSaving(false);
+      uploadLifecycle.setSubmitting(false);
     }
   };
   const retryStageRelease = async () => {
@@ -334,7 +364,7 @@ function PackagesForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) 
               onClick={() => {
                 searchConfig.form?.resetFields();
                 setFilters({});
-                setCursor(undefined);
+                pager.reset();
               }}
               {...testId(terminalUpdateTestIds.artifactFilterReset)}
             >
@@ -352,11 +382,11 @@ function PackagesForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) 
             ...(runtimeVersion ? {runtimeVersion} : {}),
             ...(queryText ? {queryText} : {}),
           });
-          setCursor(undefined);
+          pager.reset();
         }}
         onReset={() => {
           setFilters({});
-          setCursor(undefined);
+          pager.reset();
         }}
         options={false}
         loading={isFetching}
@@ -367,10 +397,7 @@ function PackagesForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) 
           <Button
             key="refresh"
             icon={<ReloadOutlined />}
-            onClick={() => {
-              setCursor(undefined);
-              void refetch();
-            }}
+            onClick={() => void refetch()}
             {...testId(terminalUpdateTestIds.refresh)}
           >
             刷新
@@ -386,11 +413,48 @@ function PackagesForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) 
         ]}
         {...testId(terminalUpdateTestIds.list)}
       />
-      {data?.nextCursor && <Button onClick={() => setCursor(data.nextCursor!)}>加载更多</Button>}
+      <CursorPagination
+        state={pager}
+        nextCursor={data?.nextCursor ?? undefined}
+        testIdPrefix={terminalUpdateTestIds.list + '-pagination'}
+      />
       {error && <Alert type="error" showIcon message={platformProblemOf(error).detail || '读取更新包失败'} />}
-      <Drawer title="上传终端更新包" open={uploadOpen} onClose={closeUpload} width={560} destroyOnClose>
+      <Drawer
+        title="上传终端更新包"
+        open={uploadOpen}
+        onClose={uploadLifecycle.requestClose}
+        afterOpenChange={finishUploadClose}
+        maskClosable={!saving}
+        keyboard={!saving}
+        width={720}
+        destroyOnHidden
+        {...adminDrawerSurfaceProps}
+        footer={(
+          <Space>
+            <Button onClick={uploadLifecycle.requestClose} disabled={saving}>取消</Button>
+            <Button
+              type="primary"
+              htmlType="submit"
+              form="terminal-update-artifact-upload-form"
+              loading={saving}
+              disabled={!currentPendingStage || saving}
+              {...testId(terminalUpdateTestIds.save)}
+            >
+              保存
+            </Button>
+          </Space>
+        )}
+      >
         {problem && <Alert type="error" showIcon message={problem} />}
-        <Form form={form} layout="vertical" initialValues={{kind: 'FULL'}} onFinish={save}>
+        <Form
+          id="terminal-update-artifact-upload-form"
+          form={form}
+          layout="vertical"
+          initialValues={{kind: 'FULL'}}
+          onFinish={save}
+          onValuesChange={() => uploadLifecycle.setDirty(true)}
+          disabled={saving}
+        >
           <Form.Item name="kind" label="更新包类型" rules={[{required: true}]}>
             <Select
               options={[
@@ -438,6 +502,7 @@ function PackagesForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) 
             disabled={saving}
             beforeUpload={candidate => {
               if (uploadOperationInFlight.current) return false;
+              uploadLifecycle.setDirty(true);
               if (pendingStage) {
                 void releaseStage(pendingStage);
                 setPendingStage(undefined);
@@ -452,6 +517,7 @@ function PackagesForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) 
               if (pendingStage) void releaseStage(pendingStage);
               setPendingStage(undefined);
               setFile(undefined);
+              uploadLifecycle.setDirty(true);
               return true;
             }}
             fileList={file ? [{uid: file.name, name: file.name, status: 'done'}] : []}
@@ -503,18 +569,6 @@ function PackagesForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) 
               {...testId(terminalUpdateTestIds.parseSuccess)}
             />
           )}
-          <Space style={{marginTop: 20}}>
-            <Button onClick={closeUpload} disabled={saving}>取消</Button>
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={saving}
-              disabled={!currentPendingStage || saving}
-              {...testId(terminalUpdateTestIds.save)}
-            >
-              保存
-            </Button>
-          </Space>
         </Form>
       </Drawer>
       <Drawer
@@ -525,13 +579,14 @@ function PackagesForWorkspace({groupWorkspaceKey}: {groupWorkspaceKey: string}) 
         }
         open={Boolean(detailRef)}
         onClose={() => setDetailRef(undefined)}
-        width={680}
+        width={720}
+        {...adminDrawerSurfaceProps}
         {...testId(terminalUpdateTestIds.detail)}
       >
         {detailLoading && <Spin />}
         {detailProblem && <Alert type="error" showIcon message={detailProblem} />}
         {detail && (
-          <Descriptions column={1} bordered size="small">
+          <Descriptions {...adminDetailDescriptionsProps}>
             <Descriptions.Item label="类型">{artifactKindLabel(detail.kind)}</Descriptions.Item>
             <Descriptions.Item label="应用">{detail.applicationId}</Descriptions.Item>
             <Descriptions.Item label="Runtime">{detail.runtimeVersion}</Descriptions.Item>

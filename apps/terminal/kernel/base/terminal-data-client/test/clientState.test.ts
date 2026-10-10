@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {createStateRuntime} from '@catering-v2s/kernel-base-state';
+import {createStateRuntime, defineStateRuntimeSlice} from '@catering-v2s/kernel-base-state';
 import {createFakeLogger, createFakeStorage} from '../../state/test/testSupport';
 import {
   selectActivationState,
@@ -11,7 +11,10 @@ import {
   terminalDataClientActions,
   terminalDataClientReducer,
   terminalDataClientStateSlice,
+  getTerminalDataClientSyncEntries,
+  applyTerminalDataClientSyncEntries,
 } from '../src/features/slices/terminalDataClient';
+import type {TerminalClientState} from '../src/types/client';
 import {
   terminalClientStatusProjectionActions,
   terminalClientStatusProjectionSliceName,
@@ -20,7 +23,16 @@ import {
 import {selectTerminalClientStatusProjection} from '../src/selectors/selectTerminalDataClientStatusProjection';
 
 const initial = () => terminalDataClientReducer(undefined, {type: 'test/init'});
-const root = (client: object) => ({[terminalDataClientStateSlice.name]: client});
+const runtimeInstanceModeSliceName = 'kernel.base.runtime.instance-mode' as const;
+const runtimeInstanceModeTestSlice = defineStateRuntimeSlice({
+  name: runtimeInstanceModeSliceName,
+  reducer: (state: Readonly<{instanceMode: 'MASTER'}> | undefined = {instanceMode: 'MASTER'}) => state,
+  persistIntent: 'never',
+});
+const root = (client: object) => ({
+  [runtimeInstanceModeSliceName]: {instanceMode: 'MASTER'},
+  [terminalDataClientStateSlice.name]: client,
+});
 const createPersistenceTestRuntime = (
   plainStorage: ReturnType<typeof createFakeStorage>,
   protectedStorage: ReturnType<typeof createFakeStorage>,
@@ -28,7 +40,7 @@ const createPersistenceTestRuntime = (
   createStateRuntime({
     runtimeName: 'terminal-data-client-persistence-boundary-test',
     environmentMode: 'TEST',
-    slices: [terminalDataClientStateSlice],
+    slices: [runtimeInstanceModeTestSlice, terminalDataClientStateSlice],
     logger: createFakeLogger(),
     plainStorage,
     protectedStorage,
@@ -106,7 +118,8 @@ describe('terminal-data-client selectors', () => {
       }),
     );
     expect((await firstRuntime.flushPersistence()).status).toBe('succeeded');
-    expect([...protectedStorage.values.values()].join('\n')).toContain(activeSecret);
+    expect([...plainStorage.values.values()].join('\n')).toContain(activeSecret);
+    expect([...protectedStorage.values.values()].join('\n')).not.toContain(activeSecret);
 
     const restartedRuntime = await createPersistenceTestRuntime(plainStorage, protectedStorage);
     const restartedState = restartedRuntime.getState()[terminalDataClientStateSlice.name];
@@ -122,6 +135,89 @@ describe('terminal-data-client selectors', () => {
       pendingActivations: {},
     });
     expect(selectActivationState(restartedRuntime.getState()).status).toBe('active');
+  });
+
+  it('moves an existing protected credential to the same plain key before removing the protected copy', async () => {
+    const plainStorage = createFakeStorage();
+    const protectedStorage = createFakeStorage();
+    const legacyProtectedSlice = defineStateRuntimeSlice<TerminalClientState>({
+      name: terminalDataClientSliceName,
+      reducer: terminalDataClientReducer,
+      persistIntent: 'owner-only',
+      persistence: [{kind: 'field', stateKey: 'credential', protection: 'protected', flushMode: 'immediate'}],
+      syncIntent: 'isolated',
+    });
+    const legacyRuntime = await createStateRuntime({
+      runtimeName: 'terminal-data-client-legacy-protected-test',
+      environmentMode: 'TEST',
+      slices: [runtimeInstanceModeTestSlice, legacyProtectedSlice],
+      logger: createFakeLogger(),
+      plainStorage,
+      protectedStorage,
+      persistenceKey: 'terminal-data-client-persistence-boundary-test',
+      persistenceDebounceMs: 0,
+    });
+    const secret = 'A'.repeat(43);
+    legacyRuntime.getStore().dispatch(
+      terminalDataClientActions.replaceCredential({
+        groupWorkspaceKey: 'workspace-1',
+        terminalRef: '00000000-0000-4000-8000-000000000001',
+        storeRef: '00000000-0000-4000-8000-000000000002',
+        deviceId: 'device-1',
+        bindingGeneration: 3,
+        credentialSecret: secret,
+      }),
+    );
+    expect((await legacyRuntime.flushPersistence()).status).toBe('succeeded');
+    expect([...protectedStorage.values.values()].join('\n')).toContain(secret);
+    expect([...plainStorage.values.values()].join('\n')).not.toContain(secret);
+
+    const currentRuntime = await createPersistenceTestRuntime(plainStorage, protectedStorage);
+    expect((await currentRuntime.flushPersistence()).status).toBe('succeeded');
+    expect([...plainStorage.values.values()].join('\n')).toContain(secret);
+    expect([...protectedStorage.values.values()].join('\n')).not.toContain(secret);
+  });
+
+  it('keeps a protected credential intact when the new plain write fails', async () => {
+    const credential = {
+      groupWorkspaceKey: 'workspace-1',
+      terminalRef: '00000000-0000-4000-8000-000000000001',
+      storeRef: '00000000-0000-4000-8000-000000000002',
+      deviceId: 'device-1',
+      bindingGeneration: 3,
+      credentialSecret: 'A'.repeat(43),
+    };
+    const plainStorage = createFakeStorage();
+    const protectedStorage = createFakeStorage();
+    const legacyProtectedSlice = defineStateRuntimeSlice<TerminalClientState>({
+      name: terminalDataClientSliceName,
+      reducer: terminalDataClientReducer,
+      persistIntent: 'owner-only',
+      persistence: [{kind: 'field', stateKey: 'credential', protection: 'protected', flushMode: 'immediate'}],
+      syncIntent: 'isolated',
+    });
+    const legacyRuntime = await createStateRuntime({
+      runtimeName: 'terminal-data-client-legacy-protected-failure-test',
+      environmentMode: 'TEST',
+      slices: [runtimeInstanceModeTestSlice, legacyProtectedSlice],
+      logger: createFakeLogger(),
+      plainStorage,
+      protectedStorage,
+      persistenceKey: 'terminal-data-client-persistence-boundary-test',
+      persistenceDebounceMs: 0,
+    });
+    legacyRuntime.getStore().dispatch(terminalDataClientActions.replaceCredential(credential));
+    expect((await legacyRuntime.flushPersistence()).status).toBe('succeeded');
+    const protectedValue = [...protectedStorage.values.values()][0];
+    if (protectedValue === undefined) throw new Error('TDC_LEGACY_PROTECTED_CREDENTIAL_MISSING');
+
+    const key = [...protectedStorage.values.keys()][0];
+    if (key === undefined) throw new Error('TDC_LEGACY_PROTECTED_KEY_MISSING');
+    plainStorage.setOptions({failWrites: [key]});
+    const currentRuntime = await createPersistenceTestRuntime(plainStorage, protectedStorage);
+    expect((await currentRuntime.flushPersistence()).status).toBe('failed');
+    expect(protectedStorage.values.get(key)).toBe(protectedValue);
+    expect(plainStorage.values.has(key)).toBe(false);
   });
 
   it('persists accepted topic times but rebuilds active registrations after a runtime restart', async () => {
@@ -209,7 +305,7 @@ describe('terminal-data-client selectors', () => {
       createStateRuntime({
         runtimeName: key,
         environmentMode: 'TEST',
-        slices: [terminalDataClientStateSlice, terminalClientStatusProjectionStateSlice],
+        slices: [runtimeInstanceModeTestSlice, terminalDataClientStateSlice, terminalClientStatusProjectionStateSlice],
         logger: createFakeLogger(),
         plainStorage,
         protectedStorage,
@@ -224,12 +320,14 @@ describe('terminal-data-client selectors', () => {
       branchPlainStorage,
       branchProtectedStorage,
     );
-    const secret = 'C'.repeat(43);
+    const secret = 'A'.repeat(43);
+    const terminalRef = '00000000-0000-4000-8000-000000000001';
+    const storeRef = '00000000-0000-4000-8000-000000000002';
     host.getStore().dispatch(
       terminalDataClientActions.replaceCredential({
         groupWorkspaceKey: 'workspace-1',
-        terminalRef: 'terminal-1',
-        storeRef: 'store-1',
+        terminalRef,
+        storeRef,
         deviceId: 'device-1',
         bindingGeneration: 3,
         credentialSecret: secret,
@@ -251,8 +349,8 @@ describe('terminal-data-client selectors', () => {
         sourceNodeId: 'host-node-1',
         activation: {
           status: 'active',
-          terminalRef: 'terminal-1',
-          storeRef: 'store-1',
+          terminalRef,
+          storeRef,
           groupWorkspaceKey: 'workspace-1',
           bindingGeneration: 3,
         },
@@ -261,28 +359,61 @@ describe('terminal-data-client selectors', () => {
         updatedAt: 100,
       }),
     );
+    host.getStore().dispatch(
+      terminalDataClientActions.markCredentialReady({credentialRevision: 1, instanceMode: 'MASTER'}),
+    );
     const payload = host.createFullSyncPayload(terminalClientStatusProjectionSliceName);
     expect(payload.status).toBe('ready');
     if (payload.status !== 'ready') throw new Error('TDC_STATUS_PROJECTION_SYNC_NOT_READY');
     expect(JSON.stringify(payload.payload)).not.toContain(secret);
     expect(JSON.stringify(payload.payload)).not.toContain('credentialSecret');
-    expect(host.createFullSyncPayload(terminalDataClientSliceName)).toMatchObject({
-      status: 'skipped',
-      reason: 'SYNC_NOT_DECLARED',
+    const credentialPayload = host.createFullSyncPayload(terminalDataClientSliceName);
+    expect(credentialPayload.status).toBe('ready');
+    if (credentialPayload.status !== 'ready') throw new Error('TDC_CREDENTIAL_SYNC_NOT_READY');
+    expect(credentialPayload.payload).toEqual({
+      mode: 'authoritative',
+      replaceMissing: true,
+      entries: [
+        {
+          key: 'credential',
+          value: {
+            value: {
+              groupWorkspaceKey: 'workspace-1',
+              terminalRef,
+              storeRef,
+              deviceId: 'device-1',
+              bindingGeneration: 3,
+              credentialSecret: secret,
+            },
+            updatedAt: 0,
+          },
+        },
+      ],
     });
+    expect(branch.applyAuthoritativeSync(terminalDataClientSliceName, credentialPayload.payload).status).toBe(
+      'applied',
+    );
     expect(branch.applyAuthoritativeSync(terminalClientStatusProjectionSliceName, payload.payload).status).toBe(
       'applied',
     );
     expect(selectTerminalClientStatusProjection(branch.getState())).toMatchObject({
       available: true,
       sourceNodeId: 'host-node-1',
-      activation: {status: 'active', terminalRef: 'terminal-1'},
+      activation: {status: 'active', terminalRef},
       connection: {status: 'connected', nodeId: 'tds-1'},
       lastRttMs: 21,
       updatedAt: 100,
     });
-    expect(branch.getState()[terminalDataClientSliceName]).toMatchObject({credential: null, pendingActivations: {}});
+    expect(branch.getState()[terminalDataClientSliceName]).toMatchObject({
+      credential: {terminalRef, credentialSecret: secret},
+      activationStatus: 'inactive',
+      connection: {status: 'stopped'},
+      pendingActivations: {},
+      remoteOperations: {},
+    });
     expect((await branch.flushPersistence()).status).toBe('succeeded');
+    expect([...branchPlainStorage.values.values()].join('\n')).toContain(secret);
+    expect([...branchProtectedStorage.values.values()].join('\n')).not.toContain(secret);
     const restartedBranch = await createProjectionRuntime(
       'terminal-status-projection-branch',
       branchPlainStorage,
@@ -291,8 +422,45 @@ describe('terminal-data-client selectors', () => {
     expect(selectTerminalClientStatusProjection(restartedBranch.getState())).toMatchObject({
       available: true,
       sourceNodeId: 'host-node-1',
-      activation: {status: 'active', terminalRef: 'terminal-1'},
+      activation: {status: 'active', terminalRef},
       lastRttMs: 21,
     });
+    expect(restartedBranch.getState()[terminalDataClientSliceName]).toMatchObject({
+      credential: {terminalRef, credentialSecret: secret},
+      activationStatus: 'inactive',
+    });
+  });
+
+  it('withholds sync until MASTER persistence readiness and rejects malformed projection records', () => {
+    const credential = {
+      groupWorkspaceKey: 'workspace-1',
+      terminalRef: '00000000-0000-4000-8000-000000000001',
+      storeRef: '00000000-0000-4000-8000-000000000002',
+      deviceId: 'device-1',
+      bindingGeneration: 1,
+      credentialSecret: 'A'.repeat(43),
+    };
+    let state = initial();
+    state = terminalDataClientReducer(state, terminalDataClientActions.replaceCredential(credential));
+    expect(getTerminalDataClientSyncEntries(state).credential).toEqual({value: null, updatedAt: 0});
+    state = terminalDataClientReducer(
+      state,
+      terminalDataClientActions.markCredentialReady({credentialRevision: state.credentialRevision, instanceMode: 'MASTER'}),
+    );
+    expect(getTerminalDataClientSyncEntries(state).credential).toEqual({value: credential, updatedAt: 0});
+    expect(() => applyTerminalDataClientSyncEntries(state, {credential: {value: credential, updatedAt: 1}})).toThrow(
+      'TDC_SYNC_CREDENTIAL_ENVELOPE_INVALID',
+    );
+    expect(() =>
+      applyTerminalDataClientSyncEntries(state, {
+        credential: {value: {...credential, credentialSecret: 'not-a-base64url-secret'}, updatedAt: 0},
+      }),
+    ).toThrow('TDC_SYNC_CREDENTIAL_INVALID');
+    expect(() => applyTerminalDataClientSyncEntries(state, {credential: {value: credential, updatedAt: 0}, extra: {}})).toThrow(
+      'TDC_SYNC_CREDENTIAL_ENTRY_SET_INVALID',
+    );
+    const applied = applyTerminalDataClientSyncEntries(initial(), {credential: {value: credential, updatedAt: 0}});
+    expect(applied).toMatchObject({credential, activationStatus: 'inactive'});
+    expect(applied.credentialReadyRevision).toBeNull();
   });
 });

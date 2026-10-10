@@ -13,11 +13,18 @@ const native = vi.hoisted(() => ({
   prepareArtifact: vi.fn(),
   applyPrepared: vi.fn(),
   readAction: vi.fn(),
+  presentInstallerConfirmation: vi.fn(),
   confirmBoot: vi.fn(),
   releasePrepared: vi.fn(),
 }));
+const appState = vi.hoisted(() => ({
+  currentState: 'active' as string | null,
+  isAvailable: true,
+  addEventListener: vi.fn(),
+}));
 
 vi.mock('expo-modules-core', () => ({requireNativeModule: vi.fn(() => native)}));
+vi.mock('react-native', () => ({AppState: appState}));
 
 describe('createAndroidUpdatePort', () => {
   beforeEach(() => {
@@ -26,8 +33,12 @@ describe('createAndroidUpdatePort', () => {
     native.prepareArtifact.mockResolvedValue({preparedId: 'prepared'});
     native.applyPrepared.mockResolvedValue({} satisfies Partial<UpdateAction>);
     native.readAction.mockResolvedValue(null);
+    native.presentInstallerConfirmation.mockResolvedValue({status: 'presented', reason: null});
     native.confirmBoot.mockResolvedValue({confirmed: true as const});
     native.releasePrepared.mockResolvedValue({released: true});
+    appState.currentState = 'active';
+    appState.isAvailable = true;
+    appState.addEventListener.mockReset();
   });
 
   it('maps each update port call to the positional Expo AsyncFunction contract', async () => {
@@ -69,6 +80,7 @@ describe('createAndroidUpdatePort', () => {
       'a'.repeat(64),
       JSON.stringify(artifact),
       'full',
+      null,
       prepareInput.network.proxy,
     );
 
@@ -93,6 +105,16 @@ describe('createAndroidUpdatePort', () => {
     native.readAction.mockResolvedValue(action);
     await port.readAction({timeoutMs: 10_000, taskId: 'task-1', actionId: 'action-1'});
     expect(native.readAction).toHaveBeenCalledWith('task-1', 'action-1');
+    await port.presentInstallerConfirmation({
+      timeoutMs: 10_000,
+      taskId: 'task-1',
+      actionId: 'action-1',
+      publicationId: 'publication-2',
+      trigger: 'user-confirm',
+    });
+    expect(native.presentInstallerConfirmation).toHaveBeenCalledWith(
+      'task-1', 'action-1', 'publication-2', 'user-confirm',
+    );
 
     native.confirmBoot.mockResolvedValue({confirmed: true});
     const confirmed = await port.confirmBoot({
@@ -129,6 +151,7 @@ describe('createAndroidUpdatePort', () => {
       JSON.stringify(input.artifact),
       'hot',
       null,
+      null,
     );
   });
 
@@ -146,6 +169,45 @@ describe('createAndroidUpdatePort', () => {
       },
     });
     expect(result.status === 'failed' && result.error.message).toBe('native update operation failed');
+  });
+
+  it.each([
+    ['active', 'foreground'],
+    ['background', 'background'],
+    ['inactive', 'background'],
+    [null, 'unknown'],
+    ['unknown', 'unknown'],
+  ] as const)('reads AppState %s as presentation %s', async (nativeState, expected) => {
+    appState.currentState = nativeState;
+    const result = await createAndroidUpdatePort().readPresentation({timeoutMs: 10_000});
+    expect(result).toMatchObject({status: 'succeeded', value: expected});
+  });
+
+  it('subscribes to AppState changes and removes the listener on cleanup', () => {
+    let onChange: ((state: string) => void) | undefined;
+    const remove = vi.fn();
+    appState.addEventListener.mockImplementation((_event: string, listener: (state: string) => void) => {
+      onChange = listener;
+      return {remove};
+    });
+    const received: string[] = [];
+
+    const unsubscribe = createAndroidUpdatePort().subscribePresentation(value => received.push(value));
+    expect(appState.addEventListener).toHaveBeenCalledWith('change', expect.any(Function));
+    onChange?.('background');
+    onChange?.('active');
+    expect(received).toEqual(['background', 'foreground']);
+    unsubscribe();
+    expect(remove).toHaveBeenCalledOnce();
+  });
+
+  it('keeps presentation unavailable when AppState is unavailable', async () => {
+    appState.isAvailable = false;
+    const listener = vi.fn();
+    const unsubscribe = createAndroidUpdatePort().subscribePresentation(listener);
+    expect(appState.addEventListener).not.toHaveBeenCalled();
+    unsubscribe();
+    expect(listener).not.toHaveBeenCalled();
   });
 
   it('maps non-stable native rejection details to the generic safe failure', async () => {

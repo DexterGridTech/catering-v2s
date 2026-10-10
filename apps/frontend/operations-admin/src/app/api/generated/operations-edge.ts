@@ -3129,7 +3129,7 @@ export type TerminalUpdateReportHistoryPage = {
 };
 
 export type TerminalUpdateReportRecent = {
-  state: "WAITING_USER" | "DOWNLOADING" | "VERIFYING" | "INSTALLING" | "APPLYING_HOT" | "SUCCEEDED" | "FAILED" | "CANCELLED" | "UNKNOWN";
+  state: "WAITING_USER" | "DOWNLOADING" | "VERIFYING" | "WAITING_IDLE" | "INSTALLING" | "APPLYING_HOT" | "SUCCEEDED" | "FAILED" | "CANCELLED" | "UNKNOWN";
   reason: "NONE" | "NETWORK" | "HTTP_REJECTED" | "HASH_MISMATCH" | "PREPARE_FAILED" | "INSTALLER_CANCELLED" | "INSTALL_FAILED" | "HOT_APPLY_FAILED" | "UNKNOWN";
   changedAtEpochMillis: number;
   ruleRef: string & { readonly __uuid: "Uuid" } | null;

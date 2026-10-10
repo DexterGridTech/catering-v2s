@@ -126,6 +126,8 @@ export type RenderProviderProps = Readonly<{
   readonly nativeLoadingCapability: NativeLoadingCapability;
   /** Integration-owned command bridge invoked only after the real primary part lays out. */
   readonly onPrimarySurfaceReady?: (input: RenderSurfaceReadyInput) => void | Promise<void>;
+  /** Records a local interaction without claiming the touch responder. */
+  readonly onLocalInteraction?: () => void | Promise<void>;
   /** Run-scoped latch shared by the primary surface's successive providers. */
   readonly getPrimarySurfaceReady?: () => boolean;
   readonly runtimeFacts: RenderRuntimeFacts;

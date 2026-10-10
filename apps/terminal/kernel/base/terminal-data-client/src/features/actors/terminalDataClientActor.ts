@@ -7,6 +7,7 @@ import {
   type CommandDefinition,
 } from '@catering-v2s/kernel-base-runtime';
 import {selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
+import type {RuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
 import type {PersistenceOperationResult, StateJsonValue, StateRoot} from '@catering-v2s/kernel-base-state';
 import {
   createTerminalApiClient,
@@ -38,6 +39,7 @@ import type {
   TerminalTopicSubscription,
   TerminalUpdateDownloadGrantPayload,
   TerminalUpdateReportPayload,
+  ClearSharedTerminalCredentialPayload,
 } from '../../types/client';
 import {
   selectActivationState,
@@ -70,6 +72,8 @@ import {
   requestTerminalUpdateDownloadGrantCommand,
   submitTerminalUpdateReportCommand,
   terminalDataHeartbeatCommand,
+  reconcileTerminalCredentialReadinessCommand,
+  clearSharedTerminalCredentialCommand,
 } from '../commands/terminalDataClientCommands';
 
 const profileId = 'terminal-data-client';
@@ -109,6 +113,52 @@ const readStatusProjection = (state: StateRoot): TerminalClientStatusProjectionS
   return current as TerminalClientStatusProjectionState;
 };
 const isHostRuntime = (state: StateRoot): boolean => selectRuntimeInstanceMode(state) === 'MASTER';
+const credentialReadyForCurrentMode = (
+  state: StateRoot,
+  client: TerminalClientState,
+): client is TerminalClientState & {credential: NonNullable<TerminalClientState['credential']>} => {
+  const mode = selectRuntimeInstanceMode(state);
+  return (
+    client.credential !== null &&
+    client.credentialReadyRevision === client.credentialRevision &&
+    client.credentialReadyInstanceMode === mode &&
+    (mode === 'MASTER' ? client.activationStatus === 'active' : client.activationStatus === 'inactive')
+  );
+};
+
+const reconcileCredentialReadiness = async (
+  context: ActorExecutionContext,
+): Promise<'ready' | 'inactive' | 'stale' | 'persistence-failed'> => {
+  const before = readState(context.getState());
+  const credential = before.credential;
+  const credentialRevision = before.credentialRevision;
+  const instanceMode = selectRuntimeInstanceMode(context.getState());
+  if (credential === null) return 'inactive';
+  if (
+    before.credentialReadyRevision === credentialRevision &&
+    before.credentialReadyInstanceMode === instanceMode &&
+    (instanceMode === 'MASTER' ? before.activationStatus === 'active' : before.activationStatus === 'inactive')
+  ) return 'ready';
+  if (instanceMode === 'SLAVE' && before.activationStatus !== 'inactive') {
+    context.dispatchAction(terminalDataClientActions.setActivationStatus('inactive'));
+  }
+  try {
+    await flush(context);
+  } catch {
+    return 'persistence-failed';
+  }
+  const afterState = context.getState();
+  const after = readState(afterState);
+  if (
+    after.credential !== credential ||
+    after.credentialRevision !== credentialRevision ||
+    selectRuntimeInstanceMode(afterState) !== instanceMode
+  ) return 'stale';
+  context.dispatchAction(
+    terminalDataClientActions.markCredentialReady({credentialRevision, instanceMode}),
+  );
+  return 'ready';
+};
 const sameStatusProjection = (
   left: TerminalClientStatusProjection,
   right: Omit<TerminalClientStatusProjection, 'updatedAt'>,
@@ -910,11 +960,67 @@ export const createTerminalDataClientActor = (
       );
       return Object.freeze({status: 'updated'});
     }),
-    onCommand(initializeTerminalDataClientCommand, async context => {
-      if (!isHostRuntime(context.getState())) return Object.freeze({status: 'not-host'});
+    onCommand(reconcileTerminalCredentialReadinessCommand, async context => {
+      const status = await reconcileCredentialReadiness(context);
+      if (status === 'persistence-failed') {
+        context.platformPorts.logger
+          .scope({moduleName, layer: 'kernel', subsystem: 'terminal-data-client', component: 'credential-readiness'})
+          .error({
+            category: 'terminal.credential.readiness',
+            event: 'credential-readiness-persistence-failed',
+            message: 'Shared terminal credential is not usable because local persistence did not complete',
+            context: {commandId: context.command.commandId},
+            data: {instanceMode: selectRuntimeInstanceMode(context.getState())},
+          });
+      }
+      return Object.freeze({status});
+    }),
+    onCommand(clearSharedTerminalCredentialCommand, async context => {
       const state = readState(context.getState());
-      if (state.credential === null) return Object.freeze({status: 'inactive'});
-      // Activation status is intentionally not persisted with the protected credential.
+      const mode = selectRuntimeInstanceMode(context.getState());
+      if (mode !== 'SLAVE') return Object.freeze({status: 'rejected', reason: 'SLAVE_ROLE_REQUIRED'});
+      const expected = context.command.payload as ClearSharedTerminalCredentialPayload;
+      const credential = state.credential;
+      if (credential !== null && (
+        expected?.groupWorkspaceKey !== credential.groupWorkspaceKey ||
+        expected?.terminalRef !== credential.terminalRef ||
+        expected?.storeRef !== credential.storeRef ||
+        expected?.bindingGeneration !== credential.bindingGeneration
+      )) return Object.freeze({status: 'stale-credential'});
+      if (credential !== null) context.dispatchAction(terminalDataClientActions.replaceCredential(null));
+      try {
+        await flush(context);
+      } catch {
+        context.platformPorts.logger
+          .scope({moduleName, layer: 'kernel', subsystem: 'terminal-data-client', component: 'credential-readiness'})
+          .error({
+            category: 'terminal.credential.unpair',
+            event: 'shared-credential-clear-persistence-failed',
+            message: 'Shared terminal credential was cleared locally but could not be persisted before topology transition',
+            context: {commandId: context.command.commandId},
+            data: {instanceMode: mode},
+          });
+        return Object.freeze({status: 'persistence-failed'});
+      }
+      const after = readState(context.getState());
+      if (
+        after.credential !== null ||
+        after.credentialRevision !== state.credentialRevision + (credential === null ? 0 : 1)
+      ) {
+        return Object.freeze({status: 'stale-credential'});
+      }
+      return Object.freeze({status: credential === null ? 'already-clear' : 'cleared'});
+    }),
+    onCommand(initializeTerminalDataClientCommand, async context => {
+      const readiness = await reconcileCredentialReadiness(context);
+      if (readiness === 'inactive') return Object.freeze({status: 'inactive'});
+      if (readiness !== 'ready') return Object.freeze({status: readiness});
+      if (!isHostRuntime(context.getState())) {
+        context.dispatchAction(terminalDataClientActions.setActivationStatus('inactive'));
+        return Object.freeze({status: 'credential-ready'});
+      }
+      const state = readState(context.getState());
+      // Activation status is intentionally not persisted with the credential.
       // Re-establish the active view from the restored credential before startup reads run.
       if (state.activationStatus !== 'active') {
         context.dispatchAction(terminalDataClientActions.setActivationStatus('active'));
@@ -927,9 +1033,8 @@ export const createTerminalDataClientActor = (
     }),
     onCommand(readTerminalDataCommand, async context => {
       const state = readState(context.getState());
-      const credential = state.credential;
       const payload = context.command.payload as TerminalDataReadPayload;
-      if (!isHostRuntime(context.getState()) || state.activationStatus !== 'active' || credential === null) {
+      if (!credentialReadyForCurrentMode(context.getState(), state)) {
         context.platformPorts.logger.info({
           category: 'terminal.data.read',
           event: 'terminal-read-rejected',
@@ -941,6 +1046,7 @@ export const createTerminalDataClientActor = (
         });
         return Object.freeze({kind: 'failure', category: 'not-delivered', code: 'TERMINAL_NOT_ACTIVE'});
       }
+      const credential = state.credential;
       if (
         payload === null ||
         typeof payload !== 'object' ||
@@ -977,7 +1083,6 @@ export const createTerminalDataClientActor = (
       }
       const headers = Object.freeze({
         Authorization: `Terminal ${credential.bindingGeneration}.${credential.credentialSecret}`,
-        'X-Terminal-Device-Id': credential.deviceId,
         'X-Terminal-Ref': credential.terminalRef,
       });
       const operation = terminalClient.client[payload.operationId as keyof typeof terminalClient.client];
@@ -1099,10 +1204,10 @@ export const createTerminalDataClientActor = (
     }),
     onCommand(requestTerminalUpdateDownloadGrantCommand, async context => {
       const state = readState(context.getState());
-      const credential = state.credential;
       const payload = context.command.payload as TerminalUpdateDownloadGrantPayload;
-      if (!isHostRuntime(context.getState()) || state.activationStatus !== 'active' || credential === null)
+      if (!credentialReadyForCurrentMode(context.getState(), state))
         return Object.freeze({kind: 'failure', category: 'not-delivered', code: 'TERMINAL_NOT_ACTIVE'});
+      const credential = state.credential;
       if (!isCanonicalUuid(payload?.artifactRef))
         return Object.freeze({
           kind: 'failure',
@@ -1115,10 +1220,8 @@ export const createTerminalDataClientActor = (
         queryParameters: {},
         headers: {
           Authorization: `Terminal ${credential.bindingGeneration}.${credential.credentialSecret}`,
-          'X-Terminal-Device-Id': credential.deviceId,
           'X-Terminal-Ref': credential.terminalRef,
         },
-        body: {},
       });
       await terminalClient.acceptBusinessResponse(profileId, dependencies.businessServerName, result);
       context.platformPorts.logger
@@ -1181,7 +1284,6 @@ export const createTerminalDataClientActor = (
         body: payload.body,
         headers: {
           Authorization: `Terminal ${credential.bindingGeneration}.${credential.credentialSecret}`,
-          'X-Terminal-Device-Id': credential.deviceId,
           'X-Terminal-Ref': credential.terminalRef,
           'Idempotency-Key': payload.idempotencyKey,
         },
@@ -1394,7 +1496,23 @@ export const createTerminalDataClientActor = (
           ),
         );
         context.dispatchAction(terminalDataClientActions.removePendingActivation(pending.operationId));
+        const pendingCredentialState = readState(context.getState());
+        const savedCredential = pendingCredentialState.credential;
+        const savedRevision = pendingCredentialState.credentialRevision;
         await flush(context);
+        const postFlushState = context.getState();
+        const postFlushClient = readState(postFlushState);
+        if (
+          savedCredential === null ||
+          postFlushClient.credential !== savedCredential ||
+          postFlushClient.credentialRevision !== savedRevision ||
+          selectRuntimeInstanceMode(postFlushState) !== 'MASTER'
+        ) return Object.freeze({status: 'rejected', reason: 'ACTIVATION_RESULT_STALE'});
+        context.dispatchAction(
+          terminalDataClientActions.markCredentialReady({credentialRevision: savedRevision, instanceMode: 'MASTER'}),
+        );
+        if (!credentialReadyForCurrentMode(context.getState(), readState(context.getState())))
+          return Object.freeze({status: 'rejected', reason: 'ACTIVATION_RESULT_STALE'});
         const activationSucceeded = await context.dispatchCommand(
           terminalActivationSucceededCommand,
           {
@@ -1493,7 +1611,6 @@ export const createTerminalDataClientActor = (
           pathParameters: {terminalRef: credential.terminalRef},
           queryParameters: {},
           headers: {Authorization: `Terminal ${credential.bindingGeneration}.${credential.credentialSecret}`},
-          body: {deviceId: credential.deviceId},
         });
       } catch (error) {
         context.dispatchAction(terminalDataClientActions.setActivationStatus('active'));

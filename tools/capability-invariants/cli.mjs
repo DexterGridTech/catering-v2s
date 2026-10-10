@@ -1022,7 +1022,7 @@ function validateResolver(resolver) {
   }
   if (resolver.authorizationMode === TERMINAL_CREDENTIAL_MODE
     && (resolver.resolverId !== TERMINAL_CREDENTIAL_RESOLVER
-      || !exactSet(resolver.inputs, ["parsedTerminalCredential", "deviceId", "serverResolvedTerminalBinding"])
+      || !exactSet(resolver.inputs, ["parsedTerminalCredential", "serverResolvedTerminalBinding"])
       || resolver.authenticatedWorkspaceSessionForbidden !== true)) {
     fail(`CAPABILITY_TERMINAL_CREDENTIAL_RESOLVER_INVALID:${resolver.resolverId}`);
   }
@@ -1494,7 +1494,7 @@ function writeFixture(root, operation) {
       {resolverId: "AUTHENTICATED_WORKSPACE_TARGET_SCOPE", authorizationMode: AUTHENTICATED_MODE, inputs: ["authenticatedWorkspaceSession", "serverResolvedResourceTypeAndId", "assignmentNode"], outputs: ["ALLOW", "DENY", "firstOwnerQueryPredicate"], clientDerivedInputsForbidden: ["pageDesignKey", "clientCapabilityLiteral"]},
       {resolverId: "PLATFORM_SESSION_ENABLED_ADMIN", authorizationMode: PLATFORM_SUPER_ADMIN_MODE, inputs: ["activePlatformSession", "enabledPlatformAdministrator"], outputs: ["ALLOW", "DENY", "firstOwnerQueryPredicate"], clientDerivedInputsForbidden: ["pageDesignKey", "clientCapabilityLiteral"], authenticatedWorkspaceSessionForbidden: true},
       {resolverId: "PUBLIC_PROTOCOL_TOKEN", authorizationMode: PUBLIC_MODE, inputs: ["serverValidatedInvitationOrResetToken", "serverResolvedResourceTypeAndId"], outputs: ["ALLOW", "DENY", "firstOwnerQueryPredicate"], clientDerivedInputsForbidden: ["pageDesignKey", "clientCapabilityLiteral"], authenticatedWorkspaceSessionForbidden: true},
-      {resolverId: TERMINAL_CREDENTIAL_RESOLVER, authorizationMode: TERMINAL_CREDENTIAL_MODE, inputs: ["parsedTerminalCredential", "deviceId", "serverResolvedTerminalBinding"], outputs: ["ALLOW", "DENY", "terminalBindingIdentity"], clientDerivedInputsForbidden: ["pageDesignKey", "clientCapabilityLiteral"], authenticatedWorkspaceSessionForbidden: true},
+      {resolverId: TERMINAL_CREDENTIAL_RESOLVER, authorizationMode: TERMINAL_CREDENTIAL_MODE, inputs: ["parsedTerminalCredential", "serverResolvedTerminalBinding"], outputs: ["ALLOW", "DENY", "terminalBindingIdentity"], clientDerivedInputsForbidden: ["pageDesignKey", "clientCapabilityLiteral"], authenticatedWorkspaceSessionForbidden: true},
     ],
     ownerRechecks: [{ownerRecheckId: "OWNER_RECHECK_" + ownerId, ownerModule: operation.ownerModule, requiredInOwnerCommand: true, transactionRequirement: "REQUIRED", crossOwnerWritesUsePublicCommandApi: true}],
     typedProblemMappings: [{typedProblemMappingId: "PROBLEM_" + ownerId + "_TYPED_OWNER_EXCEPTION", ownerModule: operation.ownerModule, typedProblemOnly: true, noTestCodeInResponse: true, unmappedExceptionFails: true}],
@@ -1747,6 +1747,14 @@ function selfTest() {
       || terminalCredentialRegistry.requirements[0].capabilityMapping !== undefined) {
       fail("CAPABILITY_SELF_TEST_TERMINAL_CREDENTIAL_WORKSPACE_CAPABILITY_ADDED");
     }
+    terminalCredentialRegistry.resolvers.find((resolver) => resolver.resolverId === TERMINAL_CREDENTIAL_RESOLVER).inputs.push("deviceId");
+    fs.writeFileSync(path.join(root, REGISTRY_PATH), JSON.stringify(terminalCredentialRegistry));
+    try { validateCapabilityInvariants(root); fail("CAPABILITY_SELF_TEST_TERMINAL_CREDENTIAL_DEVICE_ID_NOT_DETECTED"); }
+    catch (error) {
+      if (!String(error.message).includes(`CAPABILITY_TERMINAL_CREDENTIAL_RESOLVER_INVALID:${TERMINAL_CREDENTIAL_RESOLVER}`)) throw error;
+      process.stdout.write("RED_TERMINAL_CREDENTIAL_DEVICE_ID=PASS\n");
+    }
+    writeFixture(root, terminalCredentialCancellation);
     const terminalCredentialOpenApi = json(root, "contracts/openapi/fixture.json", "CAPABILITY_SELF_TEST_FIXTURE_INVALID");
     terminalCredentialOpenApi.paths[terminalCredentialCancellation.path].post["x-consumer-faces"] = ["operations-admin"];
     fs.writeFileSync(path.join(root, "contracts/openapi/fixture.json"), JSON.stringify(terminalCredentialOpenApi));
@@ -1767,13 +1775,13 @@ function selfTest() {
       writeFixture(root, terminalCredentialRead);
       validateCapabilityInvariants(root);
       const unmarkedTerminalRead = json(root, "contracts/openapi/fixture.json", "CAPABILITY_SELF_TEST_FIXTURE_INVALID");
-      delete unmarkedTerminalRead.paths[terminalCredentialRead.path].get["x-required-terminal-credential"];
+      delete unmarkedTerminalRead.paths[terminalCredentialRead.path][terminalCredentialRead.method.toLowerCase()]["x-required-terminal-credential"];
       fs.writeFileSync(path.join(root, "contracts/openapi/fixture.json"), JSON.stringify(unmarkedTerminalRead));
       try { mutatingOperationInventory(root); fail(`CAPABILITY_SELF_TEST_TERMINAL_CREDENTIAL_READ_MARKER_NOT_DETECTED:${operationId}`); }
       catch (error) {
         if (!String(error.message).includes(`CAPABILITY_TERMINAL_CREDENTIAL_CONTRACT_DRIFT:${operationId}`)) throw error;
       }
-      process.stdout.write(`RED_TERMINAL_CREDENTIAL_READ_MARKER:${operationId}=PASS\n`);
+      process.stdout.write(`RED_TERMINAL_CREDENTIAL_MARKER:${operationId}=PASS\n`);
     }
     writeFixture(root, terminalCredentialCancellation);
 
@@ -2092,7 +2100,7 @@ function selfTest() {
     try { validateP3AStaticProofSurfaces(root); fail("CAPABILITY_SELF_TEST_PROBLEM_ADVICE_NOT_DETECTED"); }
     catch (error) { if (!String(error.message).includes("P3_A_TYPED_PROBLEM_ADVICE_HANDLER_MISSING")) throw error; }
 
-    process.stdout.write("CAPABILITY_INVARIANTS_SELF_TEST=PASS\nRED_TERMINAL_ACTIVATION_PERMISSION=PASS\nRED_TERMINAL_ACTIVATION_IAM_REQUIREMENT=PASS\nRED_TERMINAL_CREDENTIAL_WORKSPACE_CAPABILITY=PASS\nRED_TERMINAL_CREDENTIAL_CROSS_FACE=PASS\nRED_TERMINAL_CREDENTIAL_READ_MARKER=PASS\nRED_MISSING_REQUIREMENT=PASS\nRED_PUBLIC_PROTOCOL=PASS\nRED_PLATFORM_CAPABILITY=PASS\nRED_OWNER_RECHECK=PASS\nRED_ORG_NODE_MAPPING=PASS\nRED_CATALOG_INVENTORY_REQUIREMENT=PASS\nRED_CATALOG_INVENTORY_OPENAPI_REQUIREMENT=PASS\nRED_CATALOG_INVENTORY_TARGET_CAPABILITY_MAPPING=PASS\nRED_CATALOG_INVENTORY_READ_CAPABILITY=PASS\nRED_CATALOG_INVENTORY_DUAL_SCOPE_READ_SELECTOR_SCHEMA=PASS\nRED_CATALOG_INVENTORY_DUAL_SCOPE_READ_SELECTOR_PARAMETER=PASS\nRED_CATALOG_INVENTORY_DEFINITION_COMMAND_MISSING=PASS\nRED_CATALOG_INVENTORY_DEFINITION_COMMAND_EXPANSION=PASS\nRED_CATALOG_INVENTORY_DEFINITION_COMMAND_READ_PLACEMENT=PASS\nRED_CATALOG_INVENTORY_DIRECT_CONFIGURATION_CAPABILITY=PASS\nRED_R24_SHARED_BUSINESS_CAPABILITY=PASS\nRED_R24_CLIENT_BC_REQUIREMENT=PASS\nRED_R24_BLOCKER_PROJECTION=PASS\nRED_READ_OPENAPI_CAPABILITY=PASS\nRED_READ_REGISTRY_CAPABILITY=PASS\nRED_READ_REGISTRY_SCOPE_MODEL=PASS\nRED_READ_EDGE_GET_CAPABILITY=PASS\nRED_READ_EDGE_GET_CAPABILITY_HELPER=PASS\nRED_P3_C_PAGE_KEY_OR_FALLBACK=PASS\nRED_P3_C_EXACT_OPERATION_SET=PASS\nRED_P3_C_CLIENT_TARGET=PASS\nRED_P3_C_TARGET_CAPABILITY=PASS\nRED_P3_C_EDGE_ROOT_OMISSION=PASS\nRED_P3_C_EDGE_LEGACY_ROOT=PASS\nRED_OTP_OPENAPI_EXPOSURE=PASS\nRED_OTP_GENERATED_WIRE_EXPOSURE=PASS\nRED_OTP_OWNER_ESCAPE=PASS\nRED_PROBLEM_ADVICE_SHAPE=PASS\nRED_TYPED_OWNER_EXCEPTION_MAPPING=PASS\nRED_TYPED_OWNER_EXCEPTION_EXACT_MAPPING=PASS\nRED_TYPED_OWNER_EXCEPTION_CATCH_ALL=PASS\nCLEANUP=PASS\n");
+    process.stdout.write("CAPABILITY_INVARIANTS_SELF_TEST=PASS\nRED_TERMINAL_ACTIVATION_PERMISSION=PASS\nRED_TERMINAL_ACTIVATION_IAM_REQUIREMENT=PASS\nRED_TERMINAL_CREDENTIAL_WORKSPACE_CAPABILITY=PASS\nRED_TERMINAL_CREDENTIAL_CROSS_FACE=PASS\nRED_TERMINAL_CREDENTIAL_MARKER=PASS\nRED_MISSING_REQUIREMENT=PASS\nRED_PUBLIC_PROTOCOL=PASS\nRED_PLATFORM_CAPABILITY=PASS\nRED_OWNER_RECHECK=PASS\nRED_ORG_NODE_MAPPING=PASS\nRED_CATALOG_INVENTORY_REQUIREMENT=PASS\nRED_CATALOG_INVENTORY_OPENAPI_REQUIREMENT=PASS\nRED_CATALOG_INVENTORY_TARGET_CAPABILITY_MAPPING=PASS\nRED_CATALOG_INVENTORY_READ_CAPABILITY=PASS\nRED_CATALOG_INVENTORY_DUAL_SCOPE_READ_SELECTOR_SCHEMA=PASS\nRED_CATALOG_INVENTORY_DUAL_SCOPE_READ_SELECTOR_PARAMETER=PASS\nRED_CATALOG_INVENTORY_DEFINITION_COMMAND_MISSING=PASS\nRED_CATALOG_INVENTORY_DEFINITION_COMMAND_EXPANSION=PASS\nRED_CATALOG_INVENTORY_DEFINITION_COMMAND_READ_PLACEMENT=PASS\nRED_CATALOG_INVENTORY_DIRECT_CONFIGURATION_CAPABILITY=PASS\nRED_R24_SHARED_BUSINESS_CAPABILITY=PASS\nRED_R24_CLIENT_BC_REQUIREMENT=PASS\nRED_R24_BLOCKER_PROJECTION=PASS\nRED_READ_OPENAPI_CAPABILITY=PASS\nRED_READ_REGISTRY_CAPABILITY=PASS\nRED_READ_REGISTRY_SCOPE_MODEL=PASS\nRED_READ_EDGE_GET_CAPABILITY=PASS\nRED_READ_EDGE_GET_CAPABILITY_HELPER=PASS\nRED_P3_C_PAGE_KEY_OR_FALLBACK=PASS\nRED_P3_C_EXACT_OPERATION_SET=PASS\nRED_P3_C_CLIENT_TARGET=PASS\nRED_P3_C_TARGET_CAPABILITY=PASS\nRED_P3_C_EDGE_ROOT_OMISSION=PASS\nRED_P3_C_EDGE_LEGACY_ROOT=PASS\nRED_OTP_OPENAPI_EXPOSURE=PASS\nRED_OTP_GENERATED_WIRE_EXPOSURE=PASS\nRED_OTP_OWNER_ESCAPE=PASS\nRED_PROBLEM_ADVICE_SHAPE=PASS\nRED_TYPED_OWNER_EXCEPTION_MAPPING=PASS\nRED_TYPED_OWNER_EXCEPTION_EXACT_MAPPING=PASS\nRED_TYPED_OWNER_EXCEPTION_CATCH_ALL=PASS\nCLEANUP=PASS\n");
   } finally {
     fs.rmSync(root, {recursive: true, force: true});
   }

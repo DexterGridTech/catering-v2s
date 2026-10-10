@@ -104,6 +104,7 @@ describe('generated terminal API contract', () => {
       expect(descriptor.owner).toBe('terminal-binding');
       expect(descriptor.idempotencyRequired).toBe(false);
       expect(request.headers.Authorization).toBe('Terminal 1.' + 'A'.repeat(43));
+      expect(request).not.toHaveProperty('body');
       return {
         kind: 'response',
         status: 401,
@@ -122,7 +123,6 @@ describe('generated terminal API contract', () => {
       pathParameters: {terminalRef: '00000000-0000-4000-8000-000000000001'},
       queryParameters: {},
       headers: {Authorization: 'Terminal 1.' + 'A'.repeat(43)},
-      body: {bindingGeneration: 1, deviceId: 'device-1'},
     });
     expect(rejected).toMatchObject({kind: 'business-rejection', errorCode: 'TERMINAL_BINDING_CREDENTIAL_INVALID'});
 
@@ -144,7 +144,12 @@ describe('generated terminal API contract', () => {
           credentialSecret: 'A'.repeat(43),
         },
       }),
-    ).resolves.toEqual({kind: 'failure', category: 'delivered-failure', code: 'TERMINAL_RESPONSE_SCHEMA_INVALID'});
+    ).resolves.toEqual({
+      kind: 'failure',
+      category: 'delivered-failure',
+      code: 'TERMINAL_RESPONSE_SCHEMA_INVALID',
+      status: 200,
+    });
 
     const unknownProblem = createTerminalApiClient(async () => ({
       kind: 'response',
@@ -171,7 +176,32 @@ describe('generated terminal API contract', () => {
           credentialSecret: 'A'.repeat(43),
         },
       }),
-    ).resolves.toEqual({kind: 'failure', category: 'unknown-business-rejection', code: 'NEW_SERVER_ERROR'});
+    ).resolves.toEqual({
+      kind: 'failure',
+      category: 'unknown-business-rejection',
+      code: 'NEW_SERVER_ERROR',
+      status: 409,
+    });
+
+    const untypedForbidden = createTerminalApiClient(async () => ({
+      kind: 'response',
+      status: 403,
+      body: {detail: 'access denied'},
+    }));
+    await expect(
+      untypedForbidden.activateTerminal({
+        pathParameters: {},
+        queryParameters: {},
+        headers: {},
+        body: {
+          activationCode: '12345678',
+          deviceId: 'device-1',
+          surfaceForm: 'laptop',
+          appVersion: 'test',
+          credentialSecret: 'A'.repeat(43),
+        },
+      }),
+    ).resolves.toEqual({kind: 'failure', category: 'delivered-failure', code: 'HTTP_DELIVERED_FAILURE', status: 403});
 
     const deliveryFailure: TerminalRequestExecutor = async () => ({
       kind: 'failure',

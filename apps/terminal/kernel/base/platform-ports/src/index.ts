@@ -111,6 +111,10 @@ export type {
 export type {
   UpdatePort,
   UpdateCall,
+  UpdatePresentation,
+  UpdatePresentationListener,
+  UpdateInstallerConfirmationResult,
+  UpdateInstallerConfirmationTrigger,
   UpdateActualVersions,
   UpdateFacts,
   UpdateSource,

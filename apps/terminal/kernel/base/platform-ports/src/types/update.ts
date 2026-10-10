@@ -23,6 +23,14 @@ export interface UpdateCall {
   readonly timeoutMs: number;
 }
 
+export type UpdatePresentation = 'foreground' | 'background' | 'unknown';
+export type UpdatePresentationListener = (presentation: UpdatePresentation) => void;
+export type UpdateInstallerConfirmationTrigger = 'source-permission-return' | 'user-confirm';
+export type UpdateInstallerConfirmationResult = Readonly<{
+  status: 'presented' | 'not-pending' | 'not-authorized' | 'unknown';
+  reason: string | null;
+}>;
+
 export interface UpdateActualVersions {
   readonly applicationId: string;
   readonly nativeVersion: string;
@@ -84,12 +92,23 @@ export interface UpdateAction {
 }
 
 export interface UpdatePort {
+  readPresentation(input: UpdateCall): Promise<PortResult<UpdatePresentation>>;
+  subscribePresentation(listener: UpdatePresentationListener): () => void;
   readFacts(input: UpdateCall): Promise<PortResult<UpdateFacts>>;
   prepareArtifact(input: PrepareUpdateArtifactInput): Promise<PortResult<UpdatePreparedArtifact>>;
   applyPrepared(input: UpdateActionInput): Promise<PortResult<UpdateAction>>;
   readAction(
     input: UpdateCall & Readonly<{taskId: string; actionId: string}>,
   ): Promise<PortResult<UpdateAction | null>>;
+  /** Launches only the exact, still-pending PackageInstaller confirmation; it never creates or commits a session. */
+  presentInstallerConfirmation(
+    input: UpdateCall & Readonly<{
+      taskId: string;
+      actionId: string;
+      publicationId: string;
+      trigger: UpdateInstallerConfirmationTrigger;
+    }>,
+  ): Promise<PortResult<UpdateInstallerConfirmationResult>>;
   confirmBoot(
     input: UpdateCall & Readonly<{bootToken: string; publicationId: string}>,
   ): Promise<PortResult<Readonly<{confirmed: true}>>>;

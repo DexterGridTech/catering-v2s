@@ -3,14 +3,15 @@
 ## 定位
 
 `application.base.android` 是 TER terminal 两个 Android App 共用的原生能力装配包。它
-拥有 `NativeLoadingCapability` 的 provider 与 Expo splash JS 入口，不拥有业务状态、
-渲染树、failure page、picker 选择或 App 身份。
+拥有 `NativeLoadingCapability`、Android platform binding，以及只在受管自动化构建中启用的
+更新目标 source provider；不拥有业务状态、渲染树、failure page、picker 选择或 App 身份。
 
 ## 结构
 
 - `src/moduleName.ts`：模块名与包的公开身份。
 - `src/dependencies.ts`：该装配包声明的 workspace 依赖。
 - `src/foundations/nativeLoadingCapability.ts`：module-scope prevent 与幂等 hide provider。
+- `src/foundations/androidAutomationUpdateTargetSourceProvider.ts`：读取受管自动化构建注入的更新目标；生产构建返回未配置状态。
 - `src/index.ts`：唯一公开入口和 capability 类型转出。
 - `terminal-invariants.json`：公开面的静态不变量。
 
@@ -19,11 +20,16 @@
 
 ## 用法
 
-App assembly 在构造 render/runtime 时创建本包的 provider，并把 required capability
+App assembly 在构造 render/runtime 时创建本包的 binding，并把 required capability
 传给共享 render assembly；assembly rejection 的 UI 也必须由 App 注入 render-owned
 `StandaloneStartupFailurePage`，本包不自绘 failure page 或另起一条 hide reason。provider
 的目标固定为物理 PRIMARY surface；业务 feature 不得直接调用 Expo splash API，也不得以
 no-op capability 兜底。
+
+`AndroidPlatformBinding.terminalUpdateSourceProvider` 只在受管自动化构建变量完整时提供
+run-scoped fixture source；Android app assembly 将它传给 integration 的
+`terminalUpdateSourceProvider` 输入。常规构建下该值为 `undefined`，真实版本规则仍由
+project-basic 和 terminal-update owner 处理。
 
 ## 迭代边界
 

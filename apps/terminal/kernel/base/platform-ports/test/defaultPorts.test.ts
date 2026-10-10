@@ -274,6 +274,11 @@ describe('D-3/D-4/D-5/D-6/D-7/D-8/D-9/D-10: unavailable defaults', () => {
       publicationId: 'b'.repeat(64),
     };
     expectUnavailable(await unavailableUpdatePort.readFacts(timeout), 'update', 'readFacts');
+    expectUnavailable(await unavailableUpdatePort.readPresentation(timeout), 'update', 'readPresentation');
+    const presentationListener = vi.fn();
+    const unsubscribePresentation = unavailableUpdatePort.subscribePresentation(presentationListener);
+    unsubscribePresentation();
+    expect(presentationListener).not.toHaveBeenCalled();
     expectUnavailable(
       await unavailableUpdatePort.prepareArtifact({
         ...timeout,

@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "package": "@catering-v2s/kernel-feature-project-basic",
+  "owned": {
+    "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/kernel-feature-project-basic", "runner": "vitest"},
+    "lint": {"kind": "OWNED", "owner": "@catering-v2s/kernel-feature-project-basic", "runner": "eslint"},
+    "clean": {"kind": "ABSENT"}
+  },
+  "ownerKind": "owner",
+  "publicExports": [
+    "createProjectBasicModule",
+    "dependencyModuleNames",
+    "devDependencyModuleNames",
+    "fixedTargetFromProjectCandidate",
+    "initializeProjectBasicCommand",
+    "moduleKind",
+    "moduleName",
+    "projectBasicSliceName",
+    "refreshProjectBasicTopicCommand",
+    "refreshProjectTerminalUpdateRulesCommand",
+    "selectCommercialGroup",
+    "selectProject",
+    "selectProjectBasicLoadReadiness",
+    "selectProjectBasicState",
+    "selectProjectBasicTopicState",
+    "selectProjectOrganizationPath",
+    "selectProjectTerminalUpdateCandidate",
+    "selectProjectTerminalUpdateRules",
+    "selectRegion",
+    "ProjectBasicState",
+    "ProjectTerminalUpdateCandidate",
+    "StoredTerminalUpdateRule"
+  ],
+  "tr01Exceptions": [
+    {"sourceFile":"src/features/actors/actors.ts","declarationId":"setTopic","dispatchExpression":"context.dispatchAction","reasonCategory":"project-basic-topic-read-status"},
+    {"sourceFile":"src/features/actors/actors.ts","declarationId":"setReadiness","dispatchExpression":"context.dispatchAction","reasonCategory":"project-basic-load-readiness"},
+    {"sourceFile":"src/features/actors/actors.ts","declarationId":"writeRuleSnapshot","dispatchExpression":"context.dispatchAction","reasonCategory":"project-basic-write-rule-snapshot"},
+    {"sourceFile":"src/features/actors/actors.ts","declarationId":"writeRuleSnapshot","dispatchExpression":"context.dispatchAction","reasonCategory":"project-basic-write-rule-snapshot-status"},
+    {"sourceFile":"src/features/actors/actors.ts","declarationId":"writeRuleSnapshot","dispatchExpression":"context.dispatchAction","reasonCategory":"project-basic-rollback-rule-snapshot"},
+    {"sourceFile":"src/features/actors/actors.ts","declarationId":"writeRuleSnapshot","dispatchExpression":"context.dispatchAction","reasonCategory":"project-basic-rollback-rule-snapshot-status"},
+    {"sourceFile":"src/features/actors/actors.ts","declarationId":"refreshRules","dispatchExpression":"context.dispatchAction","reasonCategory":"project-basic-rule-refresh-status"},
+    {"sourceFile":"src/features/actors/actors.ts","declarationId":"loadProject","dispatchExpression":"context.dispatchAction","reasonCategory":"project-basic-binding"},
+    {"sourceFile":"src/features/actors/actors.ts","declarationId":"loadProject","dispatchExpression":"context.dispatchAction","reasonCategory":"project-basic-organization-path"},
+    {"sourceFile":"src/features/actors/actors.ts","declarationId":"onTopicChanged","dispatchExpression":"context.dispatchAction","reasonCategory":"project-basic-topic-organization-path"},
+    {"sourceFile":"src/features/actors/actors.ts","declarationId":"onTopicChanged","dispatchExpression":"context.dispatchAction","reasonCategory":"project-basic-topic-rule-snapshot"},
+    {"sourceFile":"src/features/actors/actors.ts","declarationId":"onTopicChanged","dispatchExpression":"context.dispatchAction","reasonCategory":"project-basic-topic-rule-snapshot-status"}
+  ]
+}

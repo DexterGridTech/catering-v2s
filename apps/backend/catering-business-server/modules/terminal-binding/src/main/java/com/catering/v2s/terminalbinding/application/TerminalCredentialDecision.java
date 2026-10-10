@@ -10,6 +10,15 @@ final class TerminalCredentialDecision {
     private TerminalCredentialDecision() {}
 
     static Disposition classify(long generation, byte[] digest, String deviceId, AuthenticationFacts facts) {
+        return classify(generation, digest, deviceId, true, facts);
+    }
+
+    static Disposition classifyBusinessCredential(long generation, byte[] digest, AuthenticationFacts facts) {
+        return classify(generation, digest, null, false, facts);
+    }
+
+    private static Disposition classify(
+            long generation, byte[] digest, String deviceId, boolean compareDeviceId, AuthenticationFacts facts) {
         if (facts == null || facts.terminalStatus() == null || facts.generation() == null) {
             return Disposition.INVALID;
         }
@@ -19,7 +28,7 @@ final class TerminalCredentialDecision {
         if (generation == currentGeneration) {
             if (!sameDigest(facts.credentialDigest(), digest)) return Disposition.INVALID;
             if ("ENDED".equals(facts.bindingStatus())) return Disposition.CANCELLED;
-            if (!Objects.equals(deviceId, facts.boundDeviceId())) return Disposition.INVALID;
+            if (compareDeviceId && !Objects.equals(deviceId, facts.boundDeviceId())) return Disposition.INVALID;
         }
         if (generation < currentGeneration
                 || "ENDED".equals(facts.bindingStatus())

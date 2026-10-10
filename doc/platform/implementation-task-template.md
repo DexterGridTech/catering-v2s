@@ -165,6 +165,8 @@ problem、审计和权威 readback 不变,共享机制已复用且不存在安�
 
 **6c. 动态运行的阶段准入与失败族关闭(强制,来自 2026-09-02 执行诊断)**:
 
+**动态测试前先补全链路调试日志，再做两轮fresh独立源码对抗审查（Dexter 2026-10-10）**：详设必须列本次受管入口→fixture/身份/权限→动作/请求→协议/owner→异步结果/oracle→cleanup的真实链路与日志落点。主agent先补齐现有安全结构化诊断；第一轮检查全链低级错误和失败可定位性，修复确认项后第二轮由新的fresh审查者检查修复及同根遗漏。未关闭不得进入动态，不能不经思考地来回重跑。此为 `TEST_CHAIN_PREFLIGHT`，不重开DESIGN cycle，不替代CP/6b或UI/testId准入，也不授权环境/数据操作；详细适用、两轮可计入条件、首败后focused重验与有限日志要求唯一见 `doc/decisions/2026-07-29-v2s-observability-and-acceptance-standard.md` §3 同日补充。CP内首次动态proof也先按其实际链路完成这两轮，不需提前伪造整个CP已MATCHED；后续跨CP整体验收涉及新增链路时补该影响面的准备与复核。
+
 受管构建、生成与验收产生的中间文件和大体积产物必须写入当前 `run-manifest` 所属的 run 目录。计划和 runner 要列清哪些小型结果记录需要保留、哪些构建树/包/暂存文件属于清理分母；运行结束按 manifest 所有权定点清理，并通过文件系统 readback 确认无残留，清理结果计入 `cleanup`。进程退出或业务 PASS 不能代替产物清理 PASS。不得删除共享依赖缓存、其他 run 或身份不明的文件；清理失败必须报告 `cleanup=FAIL`。
 
 - **失败族 stop condition**:同一 `failureCategory` **第二次**出现,立即停止该失败族之后的业务推进,

@@ -141,7 +141,6 @@
       "authorizationMode": "TERMINAL_CREDENTIAL",
       "inputs": [
         "parsedTerminalCredential",
-        "deviceId",
         "serverResolvedTerminalBinding"
       ],
       "outputs": [

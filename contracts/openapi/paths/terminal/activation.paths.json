@@ -111,6 +111,7 @@
         ],
         "x-page-key": null,
         "x-idempotency-policy": "FORBIDDEN",
+        "x-request-schema": "NoBody",
         "x-safe-retryable": true,
         "x-error-codes": [
           "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
@@ -187,17 +188,7 @@
           }
         },
         "x-authorization-mode": "TERMINAL_CREDENTIAL",
-        "x-required-terminal-credential": "REQ_CANCEL_TERMINAL_ACTIVATION",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "../../components/terminal-binding/terminal-binding.schemas.json#/components/schemas/TerminalActivationCancellationRequest"
-              }
-            }
-          }
-        }
+        "x-required-terminal-credential": "REQ_CANCEL_TERMINAL_ACTIVATION"
       }
     }
   }

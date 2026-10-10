@@ -74,20 +74,6 @@
           }
         }
       },
-      "TerminalActivationCancellationRequest": {
-        "type": "object",
-        "additionalProperties": true,
-        "required": [
-          "deviceId"
-        ],
-        "properties": {
-          "deviceId": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 128
-          }
-        }
-      },
       "TerminalActivationCancellationResult": {
         "type": "object",
         "additionalProperties": false,

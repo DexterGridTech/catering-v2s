@@ -111,14 +111,12 @@ public interface TerminalBindingOwnerApi {
             String groupWorkspaceKey,
             UUID terminalRef,
             long credentialGeneration,
-            byte[] secretDigest,
-            String deviceId) {
+            byte[] secretDigest) {
         public DeviceCancelCommand {
             groupWorkspaceKey = requiredGroupWorkspaceKey(groupWorkspaceKey);
             terminalRef = Objects.requireNonNull(terminalRef, "terminalRef");
             if (credentialGeneration < 1) throw new IllegalArgumentException("credentialGeneration is invalid");
             secretDigest = digest(secretDigest);
-            deviceId = required(deviceId, "deviceId", 128);
         }
 
         @Override
@@ -129,7 +127,7 @@ public interface TerminalBindingOwnerApi {
         @Override
         public String toString() {
             return "DeviceCancelCommand[groupWorkspaceKey=" + groupWorkspaceKey + ", terminalRef=" + terminalRef
-                    + ", credentialGeneration=" + credentialGeneration + ", secretDigest=redacted, deviceId=redacted]";
+                    + ", credentialGeneration=" + credentialGeneration + ", secretDigest=redacted]";
         }
     }
 

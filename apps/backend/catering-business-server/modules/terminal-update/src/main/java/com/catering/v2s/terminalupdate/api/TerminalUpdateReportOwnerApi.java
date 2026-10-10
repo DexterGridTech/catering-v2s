@@ -21,6 +21,10 @@ public interface TerminalUpdateReportOwnerApi {
 
     record ReportReceipt(UUID reportId, UUID taskId, long acceptedSequence, String outcome) {}
 
+    final class BindingNoLongerActiveException extends RuntimeException {
+        public BindingNoLongerActiveException() { super("TERMINAL_BINDING_CREDENTIAL_INVALID"); }
+    }
+
     record VersionQuery(UUID workspaceUuid, String groupWorkspaceKey, UUID projectRef, UUID storeRef,
             String queryText, String currentApkVersion, String currentJsVersion, String runtimeVersion,
             String cursor, int limit) {}

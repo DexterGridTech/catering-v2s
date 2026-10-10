@@ -1,6 +1,7 @@
 package com.catering.v2s.terminalupdate.application;
 
 import com.catering.v2s.platform.foundation.time.TimeProvider;
+import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.Verification;
 import com.catering.v2s.terminalupdate.api.TerminalUpdateReportOwnerApi;
 import com.catering.v2s.terminalupdate.api.TerminalUpdateReportOwnerApi.ReportHistoryPage;
@@ -21,10 +22,15 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class TerminalUpdateReportOwnerService implements TerminalUpdateReportOwnerApi {
     private final TerminalUpdateReportPersistence persistence;
+    private final TerminalCredentialVerificationApi credentials;
     private final TimeProvider time;
 
-    public TerminalUpdateReportOwnerService(TerminalUpdateReportPersistence persistence, TimeProvider time) {
+    public TerminalUpdateReportOwnerService(
+            TerminalUpdateReportPersistence persistence,
+            TerminalCredentialVerificationApi credentials,
+            TimeProvider time) {
         this.persistence = Objects.requireNonNull(persistence, "persistence");
+        this.credentials = Objects.requireNonNull(credentials, "credentials");
         this.time = Objects.requireNonNull(time, "time");
     }
 
@@ -33,6 +39,8 @@ public class TerminalUpdateReportOwnerService implements TerminalUpdateReportOwn
     public ReportReceipt record(Verification binding, ReportInput input) {
         Objects.requireNonNull(binding, "binding");
         validate(input);
+        if (!credentials.lockCurrentActiveBinding(binding))
+            throw new TerminalUpdateReportOwnerApi.BindingNoLongerActiveException();
         persistence.lock(binding);
 
         ReportFacts facts = persistence.facts(binding, input);

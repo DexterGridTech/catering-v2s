@@ -4,6 +4,7 @@ import type {
   UpdateActualVersions,
   UpdatePort,
 } from '@catering-v2s/kernel-base-platform-ports';
+import {unavailableUpdatePort} from '@catering-v2s/kernel-base-platform-ports';
 import type {TimestampMs} from '@catering-v2s/kernel-base-contracts';
 import type {FixedUpdateTarget, UpdateTargetSourceProvider} from '../types/terminalUpdate';
 
@@ -83,6 +84,7 @@ export const createTerminalUpdateAutomationFixture = (
   });
   const target: FixedUpdateTarget = Object.freeze({
     ruleRef: `automation-${runId}`,
+    collectionHash: `automation-collection-${runId}`,
     createdAt: 1 as TimestampMs,
     applicationId,
     full: Object.freeze({
@@ -97,6 +99,7 @@ export const createTerminalUpdateAutomationFixture = (
       artifact: mode === 'compatibility' ? compatibilityHot : targetArtifact,
       manifest: mode === 'compatibility' ? compatibilityHot : targetArtifact,
     }),
+    policy: Object.freeze({nSeconds: 300, hotStrategy: 'IMMEDIATE' as const, mSeconds: null}),
     strategy: Object.freeze({maxNetworkAttempts: 2, bootTimeoutMs: 60_000}),
     selectionContext: Object.freeze({selectedSpace: 'development', contextIdentity: runId, ruleRef: `automation-${runId}`}),
   });
@@ -105,6 +108,7 @@ export const createTerminalUpdateAutomationFixture = (
   let actionCount = 0;
   let firstCancellationObserved = false;
   const port: UpdatePort = {
+    ...unavailableUpdatePort,
     readFacts: async () =>
       succeeded(
         Object.freeze({

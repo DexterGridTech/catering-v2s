@@ -9,6 +9,8 @@ DEXTER_IA_REVIEW=ACCEPTED@2026-10-09；DEXTER_WIREFRAME_REVIEW=ACCEPTED_IA_CONTE
 
 2026-10-10 职责追加：project-basic拥有项目/大区/商业集团及项目规则；store-basic保留门店业务；terminal-update actor接收feature公开local command后办理本机更新。此搬移不增加页面/控件，已确认邀请保持原样，当前源码尚未搬移。
 
+本轮底层映射按详设§8.6：提案PROPOSED/正式正本待同步，新增实现/运行NOT_RUN；不新增可见控件，原IA确认范围不升级为新动态PASS。
+
 ## 2. 逐面维度
 
 ### 2.1 可见维度
@@ -29,15 +31,15 @@ DEXTER_IA_REVIEW=ACCEPTED@2026-10-09；DEXTER_WIREFRAME_REVIEW=ACCEPTED_IA_CONTE
 
 | 维度 | 最低可证伪观察 |
 | --- | --- |
-| stateAndPermission | [owner focused] 伪造 taskId/actionId/boot 点击零 native；副机调用 report 被拒，下载只对当前 paired MAIN 发 command |
+| stateAndPermission | [owner focused] 伪造 taskId/actionId/boot 点击零 native；副机调用 report 被拒，下载由本机TDC已保存credential直调CBS，零MAIN逐次中转；未保存/解绑后零授权HTTP |
 | navigationAndRefresh | [组件] “稍后”只关闭本次邀请并记录下次 N，不换业务页面；回前台先 actual/action readback 再提醒；旧邀请不能覆盖新任务 |
 | collectionShapeAndScale | [focused] 每机器最多一个邀请；单机两屏组件同时挂载也只物理 PRIMARY 可呈现；规则完整集合保留 B 字节预算，邀请不抽干规则列表 |
-| dataSourceAndCascade | [focused] store具体门店flush→自身storeBasicInformationLoadedCommand→两个owner listener：store加载合同/服务点，project加载组织再规则；两下游互不等待→feature候选command→update actor。晚装由store重发当前成功command；副机用project-basic两个record投影及当前connection/entry身份资格，失败entry为tombstone，零业务资料HTTP/TDP。本机update selector提供task/actual/presentation，投影不改task/点击/actual；失联未固定资格失效但固定目标不换 |
+| dataSourceAndCascade | [focused] store具体门店flush→自身storeBasicInformationLoadedCommand→两个owner listener：store加载合同/服务点，project加载组织再规则；两下游互不等待→feature候选command→update actor。晚装由store重发当前成功command；副机用project-basic两个record投影及当前connection/entry身份资格，失败entry为tombstone，这两个feature不主动HTTP刷新资料/订topic；普通TDC CBS HTTP能力允许副机使用。本机update selector提供task/actual/presentation，投影不改task/点击/actual；失联未固定资格失效但固定目标不换 |
 | forbiddenUI | [静态/组件] 无手工重试、坏包清标记、规则选择、停止固定任务、凭证/grant/本地路径或副机报告入口 |
 
 ## 3. 权限、来源与资源模型
 
-TER 无管理后台 capability。安装用户授权由 Android 系统决定；本机提示的可见资格不是授予静默安装权限。CBS 查询/下载沿 B 当前激活主机及项目/门店/工件授权；副机借当前 MAIN 获取临时下载 grant，不得到 credential/deviceSecret，不在 CBS 注册对象。
+TER 无管理后台 capability。安装用户授权由 Android 系统决定；本机提示的可见资格不是授予静默安装权限。CBS查询/下载以同一有效terminal credential认证，不按deviceId匹配；项目/门店/工件scope及CBS短期download grant保留。TDC只credential同App投影，两端plain持久；副机本机TDC/network直连CBS，普通断链无需MAIN在线，无新CBS对象。激活/取消/报告/TDS仍MASTER-only，副机admin取消激活只读，显式解绑先TDC清凭证再角色切换。
 
 提示跟随本机 fixed task，而非 MAIN UI 投影。副机在充电显示 LMS 时，该机器物理 PRIMARY 仍承载它自己的升级邀请，不能沿 MAIN 的业务层投影显示主机更新。既有 admin 恢复入口始终可用。
 

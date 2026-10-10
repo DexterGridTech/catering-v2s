@@ -2042,12 +2042,12 @@
       "path": "project-memory/operations/execution-economics-and-failure-family-closure.md",
       "layer": "routed",
       "route": {
-        "taskKinds": ["implementation", "backend-acceptance", "testing", "review"],
+        "taskKinds": ["design", "implementation", "backend-acceptance", "testing", "review"],
         "domains": ["platform", "backend", "contract", "admin-ui"],
         "consumerFaces": ["all"],
         "owners": ["platform", "backend", "frontend-platform"],
-        "impacts": ["evidence", "governance", "runtime"],
-        "triggers": ["implementation", "failure", "review"]
+        "impacts": ["architecture", "evidence", "governance", "runtime"],
+        "triggers": ["task-start", "implementation", "failure", "review"]
       },
       "requiredAssertions": [
         "RUN_COUNT_NOT_RUN_COST_DOMINATES",
@@ -2061,6 +2061,11 @@
         "AGGREGATE_GATE_FAILURE_FAMILY_CLOSURE"
       ],
       "assertionSources": [
+        {
+          "assertionKey": "RECONCILIATION_BEFORE_FIRST_DYNAMIC_RUN",
+          "path": "doc/decisions/2026-07-29-v2s-observability-and-acceptance-standard.md",
+          "anchor": "### 2026-10-10 Dexter 补充：动态测试前全链日志与两轮对抗审查"
+        },
         {
           "assertionKey": "RUN_COUNT_NOT_RUN_COST_DOMINATES",
           "path": "doc/review/platform/2026-09-02-v2s-sales-menu-execution-diagnosis-claude.md",
@@ -2119,6 +2124,7 @@
       ],
       "sourceRefs": [
         "build.gradle.kts",
+        "doc/decisions/2026-07-29-v2s-observability-and-acceptance-standard.md",
         "doc/review/platform/2026-09-02-v2s-sales-menu-execution-diagnosis-claude.md",
         "project-memory/operations/execution-economics-and-failure-family-closure.md",
         "tools/verify-gates/verify.mjs"

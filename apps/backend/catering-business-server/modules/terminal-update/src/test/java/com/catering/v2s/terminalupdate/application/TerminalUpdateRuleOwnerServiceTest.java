@@ -14,6 +14,8 @@ import static org.mockito.Mockito.when;
 import com.catering.v2s.audit.contract.AuditActor;
 import com.catering.v2s.audit.contract.AuditEventWriter;
 import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
+import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
+import com.catering.v2s.organization.application.OrganizationTaskPathService;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.terminalupdate.api.TerminalUpdateArtifactOwnerApi;
 import com.catering.v2s.terminalupdate.api.TerminalUpdateArtifactOwnerApi.ArtifactReadback;
@@ -85,7 +87,7 @@ final class TerminalUpdateRuleOwnerServiceTest {
         owner.create(command());
         owner.create(new TerminalUpdateRuleOwnerApi.CreateRule(WORKSPACE, GROUP, PROJECT, "STORE_REFS", List.of(STORE),
                 FULL, HOT, "ENABLED", 300, "IMMEDIATE", null, "same-millisecond", 8,
-                "idempotency-key-0003", actor()));
+                "idempotency-key-0003", actor(), createGrant()));
 
         verify(persistence, times(2)).lockProject(WORKSPACE, GROUP, PROJECT);
         verify(persistence, times(2)).refreshTopic(WORKSPACE, GROUP, PROJECT, 1_000L);
@@ -114,7 +116,7 @@ final class TerminalUpdateRuleOwnerServiceTest {
         stubArtifactPair();
         var invalid = new TerminalUpdateRuleOwnerApi.CreateRule(WORKSPACE, GROUP, PROJECT, "STORE_REFS", List.of(STORE),
                 FULL, HOT, "ENABLED", 300, "IDLE", null, "release", 8,
-                "idempotency-key-0004", actor());
+                "idempotency-key-0004", actor(), createGrant());
 
         assertThrows(TerminalUpdateRuleOwnerService.TerminalUpdateRuleInvalidException.class,
                 () -> owner.create(invalid));
@@ -129,7 +131,7 @@ final class TerminalUpdateRuleOwnerServiceTest {
         when(artifacts.read(WORKSPACE, GROUP, FULL)).thenReturn(artifact(FULL, "FULL", DIGEST, null));
         var fullOnly = new TerminalUpdateRuleOwnerApi.CreateRule(WORKSPACE, GROUP, PROJECT, "ALL", List.of(),
                 FULL, null, "ENABLED", 300, null, null, "full only", 8,
-                "idempotency-key-full-only", actor());
+                "idempotency-key-full-only", actor(), createGrant());
 
         var created = owner.create(fullOnly);
 
@@ -143,7 +145,7 @@ final class TerminalUpdateRuleOwnerServiceTest {
         stubScope();
         var fullOnlyWithStrategy = new TerminalUpdateRuleOwnerApi.CreateRule(WORKSPACE, GROUP, PROJECT, "ALL", List.of(),
                 FULL, null, "ENABLED", 300, "IMMEDIATE", null, "invalid full only", 8,
-                "idempotency-key-full-only-invalid", actor());
+                "idempotency-key-full-only-invalid", actor(), createGrant());
 
         assertThrows(TerminalUpdateRuleOwnerService.TerminalUpdateRuleInvalidException.class,
                 () -> owner.create(fullOnlyWithStrategy));
@@ -158,7 +160,7 @@ final class TerminalUpdateRuleOwnerServiceTest {
         stubArtifactPair();
         var idle = new TerminalUpdateRuleOwnerApi.CreateRule(WORKSPACE, GROUP, PROJECT, "STORE_REFS", List.of(STORE),
                 FULL, HOT, "ENABLED", 300, "IDLE", 600L, "ten minutes", 8,
-                "idempotency-key-idle", actor());
+                "idempotency-key-idle", actor(), createGrant());
         ArgumentCaptor<TerminalUpdateRuleOwnerApi.RuleReadback> row =
                 ArgumentCaptor.forClass(TerminalUpdateRuleOwnerApi.RuleReadback.class);
 
@@ -172,7 +174,7 @@ final class TerminalUpdateRuleOwnerServiceTest {
     void staleRevisionCannotChangeRuleOrEmitAuditAndTopic() {
         var command = new TerminalUpdateRuleOwnerApi.ChangeRuleStatus(
                 WORKSPACE, GROUP, PROJECT, UUID.randomUUID(), 3, "DISABLED", "operator request", 8,
-                "idempotency-key-0002", actor());
+                "idempotency-key-0002", actor(), statusGrant());
         stubScope();
         var current = new TerminalUpdateRuleOwnerApi.RuleReadback(UUID.randomUUID(), PROJECT, "ALL", List.of(), FULL,
                 null, "ENABLED", 300, null, null, null, 10, 10, 4);
@@ -222,6 +224,61 @@ final class TerminalUpdateRuleOwnerServiceTest {
     }
 
     @Test
+    void ownerRejectsMissingOrStaleGrantBeforeReturningAnIdempotentReceipt() {
+        var unauthorized = new TerminalUpdateRuleOwnerApi.CreateRule(WORKSPACE, GROUP, PROJECT, "ALL", List.of(),
+                FULL, null, "ENABLED", 300, null, null, "full only", 8,
+                "idempotency-key-full-only", actor(), grant("REQ_CREATE_OPERATIONS_PROJECT_TERMINAL_UPDATE_RULE", 7));
+        when(persistence.findReceipt(eq(GROUP), eq("create_rule"), eq("idempotency-key-full-only")))
+                .thenReturn(Optional.of(new TerminalUpdateRuleOwnerApi.RuleReadback(
+                        UUID.randomUUID(), PROJECT, "ALL", List.of(), FULL, null,
+                        "ENABLED", 300, null, null, null, 10, 10, 1)));
+
+        assertThrows(TerminalUpdateRuleOwnerService.TerminalUpdateRuleAuthorizationException.class,
+                () -> owner.create(unauthorized));
+
+        verify(persistence, never()).findReceipt(eq(GROUP), eq("create_rule"), eq("idempotency-key-full-only"));
+        verify(persistence, never()).insert(any(), any(), any());
+    }
+
+    @Test
+    void createRechecksEnabledProjectBeforeReturningAnIdempotentReceipt() {
+        var prior = new TerminalUpdateRuleOwnerApi.RuleReadback(
+                UUID.randomUUID(), PROJECT, "ALL", List.of(), FULL, null,
+                "ENABLED", 300, null, null, null, 10, 10, 1);
+        when(persistence.findReceipt(eq(GROUP), eq("create_rule"), eq("idempotency-key-0001")))
+                .thenReturn(Optional.of(prior));
+        when(organization.requireTaskPath(WORKSPACE, GROUP, "PROJECT", PROJECT))
+                .thenThrow(new OrganizationTaskPathService.TaskPathNotFoundException());
+
+        assertThrows(OrganizationTaskPathService.TaskPathNotFoundException.class,
+                () -> owner.create(command()));
+
+        verify(persistence).lockProject(WORKSPACE, GROUP, PROJECT);
+        verify(persistence, never()).receiptHash(eq(GROUP), eq("create_rule"), eq("idempotency-key-0001"));
+        verify(persistence, never()).findReceipt(eq(GROUP), eq("create_rule"), eq("idempotency-key-0001"));
+    }
+
+    @Test
+    void statusChangeRechecksEnabledProjectBeforeReturningAnIdempotentReceipt() {
+        var command = new TerminalUpdateRuleOwnerApi.ChangeRuleStatus(
+                WORKSPACE, GROUP, PROJECT, UUID.randomUUID(), 3, "DISABLED", "operator request", 8,
+                "idempotency-status-stale-project", actor(), statusGrant());
+        when(persistence.findReceipt(eq(GROUP), eq("change_rule_status"), eq(command.idempotencyKey())))
+                .thenReturn(Optional.of(new TerminalUpdateRuleOwnerApi.RuleReadback(
+                        command.ruleRef(), PROJECT, "ALL", List.of(), FULL, null,
+                        "ENABLED", 300, null, null, null, 10, 10, 1)));
+        when(organization.requireTaskPath(WORKSPACE, GROUP, "PROJECT", PROJECT))
+                .thenThrow(new OrganizationTaskPathService.TaskPathNotFoundException());
+
+        assertThrows(OrganizationTaskPathService.TaskPathNotFoundException.class,
+                () -> owner.changeStatus(command));
+
+        verify(persistence).lockProject(WORKSPACE, GROUP, PROJECT);
+        verify(persistence, never()).receiptHash(eq(GROUP), eq("change_rule_status"), eq(command.idempotencyKey()));
+        verify(persistence, never()).findReceipt(eq(GROUP), eq("change_rule_status"), eq(command.idempotencyKey()));
+    }
+
+    @Test
     void terminalSnapshotCarriesAuthoritativeRuleCreationTime() {
         var full = new TerminalUpdateRuleSnapshotPersistence.Artifact(FULL, "FULL", "com.example.terminal",
                 "terminal-main-v1", 9, "1.0", "1.0", DIGEST, DIGEST, DIGEST, 128, 900L);
@@ -233,6 +290,16 @@ final class TerminalUpdateRuleOwnerServiceTest {
 
         assertEquals(700L, page.items().getFirst().createdAtEpochMillis());
         assertEquals(DIGEST, page.items().getFirst().full().apkSha256());
+    }
+
+    @Test
+    void terminalSnapshotUsesItsTypedChangedErrorWhenTheMemberHashMoved() {
+        when(snapshots.page(WORKSPACE, GROUP, PROJECT, null, null, 11))
+                .thenReturn(List.of(new TerminalUpdateRuleSnapshotPersistence.Row(
+                        "changed-members", null, null, List.of(), null, null, null, null, null, null, null, null)));
+
+        assertThrows(TerminalUpdateRuleOwnerService.TerminalUpdateRuleSnapshotChangedException.class,
+                () -> owner.terminalSnapshot(WORKSPACE, GROUP, PROJECT, null, 10, DIGEST));
     }
 
     private void stubScope() {
@@ -258,7 +325,20 @@ final class TerminalUpdateRuleOwnerServiceTest {
     private static TerminalUpdateRuleOwnerApi.CreateRule command() {
         return new TerminalUpdateRuleOwnerApi.CreateRule(WORKSPACE, GROUP, PROJECT, "STORE_REFS", List.of(STORE),
                 FULL, HOT, "ENABLED", 300, "IMMEDIATE", null, "release", 8,
-                "idempotency-key-0001", actor());
+                "idempotency-key-0001", actor(), createGrant());
+    }
+
+    private static OperationsOwnerScopeGrant createGrant() {
+        return grant("REQ_CREATE_OPERATIONS_PROJECT_TERMINAL_UPDATE_RULE", 8);
+    }
+
+    private static OperationsOwnerScopeGrant statusGrant() {
+        return grant("REQ_CHANGE_OPERATIONS_PROJECT_TERMINAL_UPDATE_RULE_STATUS", 8);
+    }
+
+    private static OperationsOwnerScopeGrant grant(String requirementId, long contextVersion) {
+        return new OperationsOwnerScopeGrant(WORKSPACE, GROUP, requirementId, "MANAGE_PROJECT_TERMINAL_VERSION",
+                "PROJECT", PROJECT, "PROJECT", PROJECT, List.of(), contextVersion);
     }
 
     private static AuditActor actor() {

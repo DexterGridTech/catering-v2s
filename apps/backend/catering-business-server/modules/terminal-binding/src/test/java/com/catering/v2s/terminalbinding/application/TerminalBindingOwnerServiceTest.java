@@ -159,7 +159,7 @@ class TerminalBindingOwnerServiceTest {
                 .thenReturn(5678L);
         TerminalBindingOwnerService service = new TerminalBindingOwnerService(persistence, auditWriter);
 
-        var outcome = service.cancelByDevice(new DeviceCancelCommand(GROUP_KEY, TERMINAL, 9, DIGEST, DEVICE_ID));
+        var outcome = service.cancelByDevice(new DeviceCancelCommand(GROUP_KEY, TERMINAL, 9, DIGEST));
 
         assertEquals(DeviceCancelOutcome.CANCELLED, outcome);
         InOrder order = inOrder(persistence, auditWriter);
@@ -181,7 +181,7 @@ class TerminalBindingOwnerServiceTest {
     }
 
     @Test
-    void endedCurrentCredentialWithDifferentDeviceIsAlreadyCancelledWithoutWrites() {
+    void endedCurrentCredentialIsAlreadyCancelledWithoutWrites() {
         TerminalBindingOwnerPersistence persistence = mock(TerminalBindingOwnerPersistence.class);
         AuditEventWriter auditWriter = mock(AuditEventWriter.class);
         var facts = new TerminalBindingOwnerPersistence.AuthenticationFacts(
@@ -192,8 +192,7 @@ class TerminalBindingOwnerServiceTest {
         when(persistence.lockLatest(WORKSPACE, GROUP_KEY, TERMINAL)).thenReturn(endedBinding);
         TerminalBindingOwnerService service = new TerminalBindingOwnerService(persistence, auditWriter);
 
-        var outcome =
-                service.cancelByDevice(new DeviceCancelCommand(GROUP_KEY, TERMINAL, 9, DIGEST, "different-device"));
+        var outcome = service.cancelByDevice(new DeviceCancelCommand(GROUP_KEY, TERMINAL, 9, DIGEST));
 
         assertEquals(DeviceCancelOutcome.ALREADY_CANCELLED, outcome);
         verify(persistence, never()).endActive(any(UUID.class), anyString(), any(UUID.class), anyString());

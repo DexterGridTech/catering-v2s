@@ -106,7 +106,6 @@ internal object TerminalUpdateRuntime {
   private val contextBoots = WeakHashMap<ReactContext, String>()
   // Suppress duplicate foreground callbacks only within this process. Persisting this
   // marker would prevent a fresh process from reopening a still-pending installer UI.
-  private val installerConfirmationResumeAttempts = mutableSetOf<String>()
   @Volatile private var application: WeakReference<Context>? = null
   @Volatile private var reactHost: WeakReference<ReactHost>? = null
   @Volatile private var currentReservation: TerminalUpdateBootReservation? = null
@@ -507,116 +506,105 @@ internal object TerminalUpdateRuntime {
     Log.i(LOG_TAG, "event=installer-callback status=$status")
   }
 
-  /** Replays PackageInstaller's exact user-action Intent once after source permission is granted. */
-  fun resumePendingInstallerConfirmation(activity: Activity) = synchronized(lock) {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return@synchronized
-    if (activity.isFinishing || activity.isDestroyed) {
-      Log.i(LOG_TAG, "event=installer-confirmation-resume outcome=activity-not-resumable")
-      return@synchronized
-    }
+  /** Reconciles only the existing installer-busy record; it never launches UI. */
+  fun reconcileBusyInstallerOnForeground(activity: Activity) = synchronized(lock) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || activity.isFinishing || activity.isDestroyed) return@synchronized
     val app = activity.applicationContext
     val value = readRecord(app) ?: return@synchronized
-    if (value.optString("actionKind") == "full" &&
-      value.optString("actionState") == "unknown" &&
-      value.optString("actionReason") == "BUSY_UNKNOWN") {
-      val sessions = runCatching { app.packageManager.packageInstaller.mySessions }.getOrNull()
-      if (sessions == null || sessions.isNotEmpty()) {
-        Log.i(LOG_TAG, "event=installer-busy-reconcile outcome=still-occupied query=${if (sessions == null) "failed" else "succeeded"}")
-        return@synchronized
-      }
-      val actual = runCatching { readInstalledIdentity(app) }.getOrNull()
-      if (actual == null) {
-        Log.i(LOG_TAG, "event=installer-busy-reconcile outcome=installed-identity-unknown")
-        return@synchronized
-      }
-      val targetInstalled = matchesInstalledFullAction(
-        actual,
-        value.optString("actionApplicationId"),
-        value.optLong("actionNativeBuildNumber", -1),
-        value.optString("actionPublicationId"),
-        value.optString("actionApkSha256").ifBlank { null },
-      )
-      val exit = busyInstallerExit(targetInstalled,
-        value.optString("actionPreviousInstalledIdentity") == actual.key()) ?: return@synchronized
-      value.put("actionState", exit.state)
-      value.put("actionReason", exit.reason ?: JSONObject.NULL)
-      value.put("installerState", exit.installerState)
-      writeRecord(app, value)
-      Log.i(LOG_TAG, "event=installer-busy-reconcile outcome=${exit.state}")
+    if (value.optString("actionKind") != "full" ||
+      value.optString("actionState") != "unknown" ||
+      value.optString("actionReason") != "BUSY_UNKNOWN") return@synchronized
+    val sessions = runCatching { app.packageManager.packageInstaller.mySessions }.getOrNull()
+    if (sessions == null || sessions.isNotEmpty()) {
+      Log.i(LOG_TAG, "event=installer-busy-reconcile outcome=still-occupied query=${if (sessions == null) "failed" else "succeeded"}")
       return@synchronized
     }
-    val sessionId = value.optInt("installerSessionId", PackageInstaller.SessionInfo.INVALID_ID)
-    if (!app.packageManager.canRequestPackageInstalls()) {
-      Log.i(LOG_TAG, "event=installer-confirmation-resume outcome=not-authorized")
+    val actual = runCatching { readInstalledIdentity(app) }.getOrNull()
+    if (actual == null) {
+      Log.i(LOG_TAG, "event=installer-busy-reconcile outcome=installed-identity-unknown")
       return@synchronized
     }
+    val targetInstalled = matchesInstalledFullAction(
+      actual,
+      value.optString("actionApplicationId"),
+      value.optLong("actionNativeBuildNumber", -1),
+      value.optString("actionPublicationId"),
+      value.optString("actionApkSha256").ifBlank { null },
+    )
+    val exit = busyInstallerExit(targetInstalled,
+      value.optString("actionPreviousInstalledIdentity") == actual.key()) ?: return@synchronized
+    value.put("actionState", exit.state)
+    value.put("actionReason", exit.reason ?: JSONObject.NULL)
+    value.put("installerState", exit.installerState)
+    writeRecord(app, value)
+    Log.i(LOG_TAG, "event=installer-busy-reconcile outcome=${exit.state}")
+  }
 
-    val sessionInfo = if (sessionId != PackageInstaller.SessionInfo.INVALID_ID) {
-      runCatching { app.packageManager.packageInstaller.getSessionInfo(sessionId) }.getOrNull()
-    } else null
-    if (sessionInfo == null || !isResumableInstallerSession(
+  /** Presents only the exact pending installer confirmation authorized by the update owner. */
+  fun presentInstallerConfirmation(
+    activity: Activity,
+    taskId: String,
+    actionId: String,
+    publicationId: String,
+    trigger: String,
+  ): Map<String, Any?> = synchronized(lock) {
+    fun result(status: String, reason: String? = null) = mapOf("status" to status, "reason" to reason)
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return@synchronized result("unknown", "API_UNSUPPORTED")
+    if (activity.isFinishing || activity.isDestroyed) return@synchronized result("unknown", "ACTIVITY_NOT_RESUMABLE")
+    if (trigger != "source-permission-return" && trigger != "user-confirm")
+      return@synchronized result("unknown", "TRIGGER_INVALID")
+    val app = activity.applicationContext
+    val value = readRecord(app) ?: return@synchronized result("not-pending", "ACTION_RECORD_MISSING")
+    if (value.optString("taskId") != taskId ||
+      value.optString("actionId") != actionId ||
+      value.optString("actionPublicationId") != publicationId ||
+      value.optString("actionKind") != "full")
+      return@synchronized result("not-pending", "ACTION_IDENTITY_MISMATCH")
+    if (value.optString("installerState") != "pending-user" || value.optString("actionState") != "pending-user")
+      return@synchronized result("not-pending", "ACTION_NOT_WAITING_FOR_USER")
+    if (trigger == "source-permission-return" && !value.optBoolean("installerAwaitingSourcePermission"))
+      return@synchronized result("not-pending", "SOURCE_PERMISSION_NOT_PENDING")
+    if (!app.packageManager.canRequestPackageInstalls())
+      return@synchronized result("not-authorized", "INSTALL_SOURCE_PERMISSION_MISSING")
+
+    val sessionId = value.optInt("installerSessionId", PackageInstaller.SessionInfo.INVALID_ID)
+    if (sessionId == PackageInstaller.SessionInfo.INVALID_ID)
+      return@synchronized result("unknown", "INSTALLER_SESSION_ID_UNAVAILABLE")
+    val sessionRead = runCatching { app.packageManager.packageInstaller.getSessionInfo(sessionId) }
+    if (sessionRead.isFailure) return@synchronized result("unknown", "INSTALLER_SESSION_READBACK_UNAVAILABLE")
+    val sessionInfo = sessionRead.getOrNull() ?: return@synchronized result("not-pending", "INSTALLER_SESSION_ENDED")
+    if (!isResumableInstallerSession(
         sessionInfo.appPackageName, app.packageName, sessionInfo.isCommitted, sessionInfo.isSealed,
-      )) {
-      Log.i(LOG_TAG, "event=installer-confirmation-resume outcome=session-not-resumable")
-      return@synchronized
-    }
+      ))
+      return@synchronized result("not-pending", "INSTALLER_SESSION_NOT_RESUMABLE")
 
     val confirmationUri = value.optString("installerConfirmationIntentUri").takeIf { it.isNotBlank() }
-    val confirmation = confirmationUri?.let {
-      runCatching { Intent.parseUri(it, Intent.URI_INTENT_SCHEME) }.getOrNull()
-    }
-    if (confirmation == null) {
-      value.put("actionState", "unknown")
-      value.put("actionReason", "INSTALL_CONFIRMATION_UNAVAILABLE")
-      writeRecord(app, value)
-      Log.i(LOG_TAG, "event=installer-confirmation-resume outcome=confirmation-intent-unavailable")
-      return@synchronized
-    }
-
-    val resolved = confirmation.resolveActivity(app.packageManager)
+      ?: return@synchronized result("unknown", "INSTALL_CONFIRMATION_UNAVAILABLE")
+    val confirmation = runCatching { Intent.parseUri(confirmationUri, Intent.URI_INTENT_SCHEME) }.getOrNull()
+      ?: return@synchronized result("unknown", "INSTALL_CONFIRMATION_UNAVAILABLE")
+    val resolvedActivity = confirmation.resolveActivity(app.packageManager)
+      ?: return@synchronized result("unknown", "INSTALL_CONFIRMATION_UNAVAILABLE")
     val confirmationSessionId = confirmation.getIntExtra(
       PackageInstaller.EXTRA_SESSION_ID,
       PackageInstaller.SessionInfo.INVALID_ID,
     )
-    if (!isMatchingInstallerConfirmation(sessionId, confirmationSessionId, resolved != null)) {
-      value.put("actionState", "unknown")
-      value.put("actionReason", "INSTALL_CONFIRMATION_UNAVAILABLE")
-      writeRecord(app, value)
-      Log.i(
-        LOG_TAG,
-        "event=installer-confirmation-resume outcome=confirmation-not-resolvable resolved=${resolved != null} sessionMatches=${confirmationSessionId == sessionId}",
-      )
-      return@synchronized
-    }
+    if (!isMatchingInstallerConfirmation(sessionId, confirmationSessionId, hasResolvedActivity = true))
+      return@synchronized result("unknown", "INSTALL_CONFIRMATION_IDENTITY_MISMATCH")
 
-    val attemptIdentity = "${value.optString("taskId")}\u0000${value.optString("actionId")}\u0000$sessionId"
-    if (!shouldResumePendingInstallerConfirmation(
-        value.optString("actionKind"),
-        value.optString("actionState"),
-        value.optString("installerState"),
-        value.optBoolean("installerAwaitingSourcePermission"),
-        canRequestPackageInstalls = true,
-        attemptedInCurrentProcess = attemptIdentity in installerConfirmationResumeAttempts,
-      )) {
-      Log.i(LOG_TAG, "event=installer-confirmation-resume outcome=already-attempted-in-process session=$sessionId")
-      return@synchronized
-    }
-    installerConfirmationResumeAttempts.add(attemptIdentity)
     runCatching {
       activity.startActivity(confirmation)
-      Log.i(
-        LOG_TAG,
-        "event=installer-confirmation-resume outcome=launched context=foreground-activity component=${resolved.flattenToShortString()} session=$sessionId task=${activity.taskId}",
-      )
-    }.onFailure {
-      installerConfirmationResumeAttempts.remove(attemptIdentity)
+      if (trigger == "source-permission-return") {
+        value.put("installerAwaitingSourcePermission", false)
+        writeRecord(app, value)
+      }
+      Log.i(LOG_TAG, "event=installer-confirmation-presented trigger=$trigger component=${resolvedActivity.flattenToShortString()} session=$sessionId task=${activity.taskId}")
+      result("presented")
+    }.getOrElse { error ->
       value.put("actionState", "unknown")
       value.put("actionReason", "INSTALL_CONFIRMATION_UNAVAILABLE")
       writeRecord(app, value)
-      Log.e(
-        LOG_TAG,
-        "event=installer-confirmation-resume outcome=failed context=foreground-activity component=${resolved.flattenToShortString()} session=$sessionId errorType=${it.javaClass.simpleName}",
-      )
+      Log.e(LOG_TAG, "event=installer-confirmation-present-failed trigger=$trigger session=$sessionId errorType=${error.javaClass.simpleName}")
+      result("unknown", "INSTALL_CONFIRMATION_UNAVAILABLE")
     }
   }
 

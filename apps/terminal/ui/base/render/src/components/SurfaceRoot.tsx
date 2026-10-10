@@ -49,7 +49,7 @@ export const SurfaceRoot = ({
   surfaceHostSource,
 }: SurfaceRootProps) => {
   const renderContext = useRenderContext();
-  const {logger, selectSurfaceForm, createRouteContext} = renderContext;
+  const {logger, selectSurfaceForm, createRouteContext, onLocalInteraction} = renderContext;
   const selectedSurfaceForm = useUiStateSelector(selectSurfaceForm);
   const surfaceForm = selectedSurfaceForm ?? 'laptop';
   const selectSurfaceRouteContext = useCallback(
@@ -73,6 +73,26 @@ export const SurfaceRoot = ({
         : Object.freeze({...renderContext, dispatchCommand: scopedDispatchCommand}),
     [createRouteContext, renderContext, scopedDispatchCommand],
   );
+  const observeLocalInteraction = useCallback(() => {
+    try {
+      void Promise.resolve(onLocalInteraction?.()).catch(error => {
+        logger.error({
+          category: 'runtime.local-interaction',
+          event: 'runtime.local-interaction.record-dispatch-failed',
+          message: 'Failed to record a local surface interaction',
+          data: {errorName: error instanceof Error ? error.name : 'UnknownError'},
+        });
+      });
+    } catch (error) {
+      logger.error({
+        category: 'runtime.local-interaction',
+        event: 'runtime.local-interaction.record-dispatch-failed',
+        message: 'Failed to record a local surface interaction',
+        data: {errorName: error instanceof Error ? error.name : 'UnknownError'},
+      });
+    }
+    return false;
+  }, [logger, onLocalInteraction]);
   const surfaceHostSnapshot = useSurfaceHostSnapshot(surfaceHostSource);
   const explicitSurfaceHostAvailability = useSurfaceHostAvailability(surfaceHostSource);
   const surfaceHostAvailability =
@@ -188,7 +208,12 @@ export const SurfaceRoot = ({
   return (
     <AutomationSurfaceProvider scope={automationSurfaceScope}>
       <SurfaceContext.Provider value={surfaceValue}>
-        <View testID={renderTestIds.surfaceRoot} style={styles.root} onLayout={reportLayout}>
+        <View
+          testID={renderTestIds.surfaceRoot}
+          style={styles.root}
+          onLayout={reportLayout}
+          onStartShouldSetResponderCapture={observeLocalInteraction}
+        >
           <RenderContext.Provider value={scopedRenderContext}>{hostedContent}</RenderContext.Provider>
         </View>
       </SurfaceContext.Provider>

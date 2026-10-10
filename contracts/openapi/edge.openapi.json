@@ -1008,9 +1008,6 @@
       "TerminalActivationResult": {
         "$ref": "./components/terminal-binding/terminal-binding.schemas.json#/components/schemas/TerminalActivationResult"
       },
-      "TerminalActivationCancellationRequest": {
-        "$ref": "./components/terminal-binding/terminal-binding.schemas.json#/components/schemas/TerminalActivationCancellationRequest"
-      },
       "TerminalActivationCancellationResult": {
         "$ref": "./components/terminal-binding/terminal-binding.schemas.json#/components/schemas/TerminalActivationCancellationResult"
       },

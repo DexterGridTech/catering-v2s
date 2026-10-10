@@ -22,9 +22,6 @@ class TerminalActivationSecretToStringTest {
                 .doesNotContain("activationCode");
         assertThat(renderedActivation.split("redacted=\\[REDACTED]", -1)).hasSize(3);
 
-        TerminalActivationCancellationRequest cancellationRequest = new TerminalActivationCancellationRequest("device-1");
-        assertThat(cancellationRequest.toString()).doesNotContain(secret);
-
         byte[] digest = MessageDigest.getInstance("SHA-256").digest(secret.getBytes(StandardCharsets.US_ASCII));
         try (TerminalCredentialContext cancellationCredential = new TerminalCredentialContext(1, digest)) {
             assertThat(cancellationCredential.toString()).doesNotContain(secret).contains("secretDigest=redacted");

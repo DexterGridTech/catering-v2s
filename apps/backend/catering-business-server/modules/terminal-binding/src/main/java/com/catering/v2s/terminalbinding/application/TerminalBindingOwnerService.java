@@ -129,8 +129,8 @@ public class TerminalBindingOwnerService implements TerminalBindingOwnerApi {
         }
         requireLockedAuthenticationFacts(locked, facts);
 
-        TerminalCredentialDecision.Disposition disposition = TerminalCredentialDecision.classify(
-                command.credentialGeneration(), command.secretDigest(), command.deviceId(), facts);
+        TerminalCredentialDecision.Disposition disposition = TerminalCredentialDecision.classifyBusinessCredential(
+                command.credentialGeneration(), command.secretDigest(), facts);
         if (disposition == TerminalCredentialDecision.Disposition.INVALID) {
             return DeviceCancelOutcome.CREDENTIAL_INVALID;
         }

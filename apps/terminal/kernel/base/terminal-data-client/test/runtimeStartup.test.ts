@@ -205,7 +205,7 @@ describe('terminal-data-client runtime startup', () => {
     }
   });
 
-  it('retains but never uses a conflicting local credential when SLAVE mode is restored', async () => {
+  it('restores a shared credential as inactive on SLAVE and permits local CBS reads without connecting TDS', async () => {
     const protectedStorage = createProcessMemoryStateStoragePort();
     const plainStorage = createProcessMemoryStateStoragePort();
     const first = createComposition({
@@ -249,9 +249,20 @@ describe('terminal-data-client runtime startup', () => {
         expect(restoredSlave.getConnectionAttempts()).toBe(0);
         expect(selectConnectionState(restoredSlave.runtime.getState()).status).not.toBe('awaiting-ready');
         expect(selectActivationState(restoredSlave.runtime.getState())).toMatchObject({
-          status: 'active',
+          status: 'inactive',
           terminalRef: '00000000-0000-4000-8000-000000000001',
         });
+        const read = await restoredSlave.runtime.dispatchCommand(
+          readTerminalDataCommand,
+          {
+            operationId: 'terminalReadStoreBasic',
+            pathParameters: {storeRef: 'caller-store'},
+          },
+          {requestId: createRequestId()},
+        );
+        expect(read.status).toBe('completed');
+        expect(restoredSlave.getBusinessRequestAttempts()).toBe(1);
+        expect(restoredSlave.getConnectionAttempts()).toBe(0);
       } finally {
         if (slaveStarted) await releaseRuntimeForTestAsync(restoredSlave.runtime);
       }

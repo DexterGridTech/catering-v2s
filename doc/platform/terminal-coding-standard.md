@@ -1034,6 +1034,8 @@ TER 业务指令仍走 command，数据与状态读取仍走 selector，不因�
 壁纸偏好归属；同步仍复用现有 owner 能力，不引入第二套广播或状态协议。本条是需求裁决，
 不据此声称新增 topic 同步已经实现。
 
+**阶段 C 共享终端凭证（Dexter 2026-10-10）**：TDC 仍是唯一 credential owner。MASTER 激活并成功持久化后，既有同 App 配对 state-sync 只投影完整 credential/null；主副两端 TDC 均明文持久化同一 credential。SLAVE 可由本机 TDC command 使用共享凭证直连获准的 CBS 业务 HTTP，CBS 不比较物理 deviceId；这不使 SLAVE 成为 active，也不开放独立激活/取消、TDS 连接或版本报告。不得复制 pending activation、socket、心跳、topic、任务/报告等其他 TDC 状态；凭证仍按秘密脱敏，禁止进入日志和诊断产物。普通断线保留凭证，明确解绑/换主机先由 TDC command 清除并成功 flush，再转换角色。此为阶段 C 具名裁决，不扩成通用凭证同步机制或 TR-09 retain 例外。
+
 **topic 初始时间与更新接受确认（Dexter 2026-10-03 最新修正）**：首次 HTTP 成功后由 feature
 计算 topic 初始时间，使用业务记录原始更新时间，结果集取成员最大值、空结果集取0。以后收到
 TDC 的 topic 更新广播，feature 刷新并保存成功后用 command 确认该更新已接受；TDC 将对应

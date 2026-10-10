@@ -45,7 +45,8 @@ sample 业务；管理员通过共享 admin console 查看状态、维护服务�
   sample 会员不启动 parked 正式会员域，不新增会员主数据、营销、权限或业务 HTTP 接口。
 
 最新专项裁决优先于旧批次关于 UI/application 延期、standalone slave 或代理密码保护的旧限定。
-代理密码明文例外只覆盖 server-config 的代理配置，不扩大到终端激活凭证或店员口令。
+代理密码的既有明文配置例外属于 server-config；Dexter 2026-10-10 D-52 另行裁决 TDC terminal credential 两端明文持久化与同步。两项均不扩大到店员口令，也不放宽秘密日志脱敏。
+Dexter 2026-10-10 的阶段 C 共享凭证裁决（D-52）覆盖本稿中“副机不持凭证/不复制 credentialSecret”的旧句：已配对同 App 副机持有并明文持久化由主机 TDC 同步的同一 credential；这不使副机成为 active、不授予 TDS 连接、独立激活/取消或版本报告资格，也不放宽凭证日志脱敏。
 
 ## 1 · 范围与合理性
 
@@ -87,7 +88,7 @@ selector-aware hook 订阅。端口事件经既有 bridge 翻译为 command，�
 
 | 包/层 | 唯一职责 | 业务边界 |
 | --- | --- | --- |
-| terminal-data-client | 本机激活凭证、激活/取消 command、TDS 协议和激活/连接/延时 selectors；副机存储主机状态信息 | 只有主机拥有可用凭证/TDS 会话；UI 不接触秘密 |
+| terminal-data-client | 本机激活凭证、激活/取消 command、TDS 协议和激活/连接/延时 selectors；作为唯一凭证 owner，主机激活后只将完整 credential/null 投影给同 App 副机 | 主副机 TDC 持久化同一明文 credential；副机可通过自己的 TDC command 直连 CBS；仅主机激活/取消、连接 TDS 和提交版本报告；UI 不接触秘密 |
 | server-config | 服务空间、URL 前缀/地址、代理配置及其 commands/selectors | 主机配置权威，副机同步存储并只读消费；不做激活或 TDS 业务 |
 | transport | 通信、稳定性、重试与连接切换等通用机制 | 不识别集团空间业务、激活状态或店员资格 |
 | terminal-activation | 四面激活交互和激活状态 tab | 不持有第二份凭证，不直接 HTTP，不拥有取消事实 |
@@ -132,7 +133,7 @@ MMP/LMP 激活表单只有 8 位数字激活码，按字符串保留前导零。
 | operationId | UI/actor 一次操作身份，沿现有重试规则复用 |
 | surfaceForm、appVersion | application/composition 的真实机型和版本元数据 |
 | deviceId | client 经既有设备端口读取，不使用固定假身份 |
-| credentialSecret | client 既有安全随机来源，只有 client 持有；同次激活复用规则保留 |
+| credentialSecret | 主机 client 既有安全随机来源并持有权威值；TDC 只经配对同步该 credential 字段给副机；UI 不接触秘密，同次激活复用规则保留 |
 | 终端/门店/绑定/集团凭证身份 | 激活成功响应，由 client 提交为凭证，不由 UI 或配置猜测 |
 
 激活提交使用 client `activateTerminalCommand`。提交中避免重复制造不同操作；失败显示业务原因并
@@ -276,22 +277,21 @@ admin 关闭后未恢复仍显示遮罩；服务配置与激活状态 tab 仍只
 
 ## 8 · 副机身份、同步存储与 HTTP（R-12）
 
-已配对副机仅作为主机扩展：无本机激活凭证、不独立连接 TDS。已有本机激活资格或正在连 TDS
+已配对副机仅作为主机扩展：本机可持有主机 TDC 同步的同一明文 credential，但不因此成为本机已激活，也不独立连接 TDS。已有本机激活资格或正在连 TDS
 不能切副机；已激活但 socket 暂断同样不允许，必须先显式完成取消，配对不偷偷清凭证。
 约束覆盖启动恢复、配对/切角色、激活、连接及异步完成提交；异常持久状态明确拒绝冲突运行，
 不自行清秘密或把冲突假装成合法副机。
 
-主机 server-config 和 client 状态同步并存储到副机：配置含服务空间、实际地址和完整代理密码，
-client 含激活身份及连接/延时状态。副机显示与配置均以主机为准，不能反向编辑/取消。
-client 的 credentialSecret、pending activation 秘密、socket、seq/deadline 和重连任务不复制；
+主机 server-config 和经裁决允许的 client 状态同步并存储到副机：配置含服务空间、实际地址和完整代理密码；client 投影含 credential/null 与主机激活/连接/延时显示状态。副机配置以主机为准，不能反向编辑。
+credential 投影仅包含完整 credential 六字段或 null，不包含 pending activation 秘密、socket、seq/deadline、重连任务或其他 TDC 状态；副机不独立激活/取消激活、连接 TDS 或提交版本报告。
 主机信息持久缓存与本机 credential/state 必须可区分，缓存不授予本机 active 或独立 TDS。
 
 重启先展示等待/缓存语义并禁止业务，当前配对连接同步就绪后按最新主机信息路由。
 本机不同 package defaults 不得替换主机配置；同步 fields、revision、authoritative apply 与
 持久化复用既有 state/topology，并由两个 composition 显式注册，不假设声明即自动启用。
 
-副机可用同步配置/明文代理独立发送后台业务 **HTTP**，这项能力属于本需求；仍通过具名业务
-command 和 selector，不直接 component HTTP，不因此使用主机终端凭证或新增后台接口。
+副机可用同步配置/明文代理与本机持久化的共享 credential 独立发送获准的后台业务 **HTTP**，这项能力属于本需求；仍通过具名业务
+command 和 selector，不直接 component HTTP，不新增后台接口。CBS 以同一 terminal binding credential 校验，不比较副机物理 `deviceId`；CBS 业务 scope 与对象状态照常校验。CBS 短期工件下载 grant 保留，删除的是主机代副机逐次中转 grant。
 现有两个 sample 的共享会员仍走主机 registry，壁纸仍本机 owner，不为证明 HTTP 改写 sample
 的业务事实住址。具体获准 HTTP operation、请求身份与 adapter 证明在详设列明，不能凭配对或
 URL 获得后端授权；新增业务身份/接口若确有需求另交 Dexter 裁决。
@@ -304,7 +304,7 @@ URL 获得后端授权；新增业务身份/接口若确有需求另交 Dexter �
 | --- | --- | --- |
 | 本机角色/供电显示角色 | runtime/display owner commands；用户确认后切显示角色 | 不由 integration 擅改；供电/内容不产生凭证 |
 | 配对身份、可达、当前连接/应用修订 | topology/state 原 owner | 身份持久、可达瞬态；应用就绪区别于可达 |
-| 本机激活/pending/取消 | client actor 成功提交后 active，取消开始 cancelling，清理按原语义终结 | 只有主机凭证 protected 本机保存；副机不持凭证 |
+| 本机激活/pending/取消 | MASTER client actor 成功提交后 active，取消开始 cancelling，清理按原语义终结；SLAVE 不建立本机激活状态 | TDC 唯一 owner；主副机仅明文持久化同一 credential/null 投影，pending、连接和其他 TDC 状态不投影 |
 | 本机 TDS 连接/RTT/心跳 | client/transport 原 owner | 副机不建连接；主机摘要与本机状态分开 |
 | 主机激活/连接/延时投影 | 主机 client selector 产生；副机 authoritative apply | 副机存储，绑定当前主机；缺失/失效非 inactive，缓存不放行业务 |
 | 内置 serverSpaces | package 启动/打包输入，经 composition 注入 config defaults | 只读内置；不覆盖合法 hydration 配置 |

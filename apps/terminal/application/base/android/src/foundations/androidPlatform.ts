@@ -12,6 +12,7 @@ import {createAndroidDevicePort} from '@catering-v2s/adapter-android-device';
 import {createAndroidSurfaceHostSource} from '@catering-v2s/adapter-android-dual-screen';
 import {createAndroidPersistKvPort} from '@catering-v2s/adapter-android-persist-kv';
 import {createAndroidUpdatePort} from '@catering-v2s/adapter-android-update';
+import {createAndroidAutomationUpdateTargetSourceProvider} from './androidAutomationUpdateTargetSourceProvider';
 import {createAndroidNativeLoadingCapability} from './nativeLoadingCapability';
 import {
   createAndroidAppControlPort,
@@ -22,10 +23,12 @@ import type {TopologyPeerChannel} from '@catering-v2s/kernel-base-transport';
 import type {TransportNetworkAdapter, TransportNetworkSnapshot} from '@catering-v2s/kernel-base-transport';
 import {createAndroidTransportNetworkAdapter} from './androidTransportNetworkAdapter';
 import {androidStructuredLoggerBinding} from './androidStructuredLoggerBinding';
+import type {UpdateTargetSourceProvider} from '@catering-v2s/kernel-base-terminal-update';
 
 export type AndroidPlatformBinding = Readonly<{
   readonly environmentMode: EnvironmentMode;
   readonly platformPorts: PlatformPorts;
+  readonly terminalUpdateSourceProvider: UpdateTargetSourceProvider | undefined;
   readonly topologyPeerChannel: TopologyPeerChannel;
   readonly transportNetworkAdapterFactory: (
     readSnapshot: (serverName: string) => Promise<TransportNetworkSnapshot>,
@@ -61,6 +64,7 @@ export const createAndroidPlatformBinding = (persistenceKey: string): AndroidPla
   return Object.freeze({
     environmentMode,
     platformPorts,
+    terminalUpdateSourceProvider: createAndroidAutomationUpdateTargetSourceProvider(),
     topologyPeerChannel,
     transportNetworkAdapterFactory: readSnapshot => createAndroidTransportNetworkAdapter(readSnapshot),
     nativeLoadingCapability,

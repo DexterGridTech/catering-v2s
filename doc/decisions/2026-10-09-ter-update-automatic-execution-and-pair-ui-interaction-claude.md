@@ -155,3 +155,7 @@ DEXTER_IA_REVIEW=ACCEPTED@2026-10-09；DEXTER_WIREFRAME_REVIEW=ACCEPTED_IA_CONTE
 | defer / bootId | 不显示，HIDDEN_OWNER_FACT | 同selector本机actual.bootId | C§8.2/4 | 当前boot，旧点击拒绝 |
 
 当前/目标版本为FIXED_READONLY展示，不进按钮payload；准备文件、N策略、nextDue及publication由owner从固定task读，clock由owner取，不由UI填写。复制上述事实不授予权限；动作前订阅，owner最终复核，read/flush失败保持准确状态。无输入控件，表单依赖图N/A_WITH_REASON；不会因此省略两个确认variant事实。
+
+## 14. 2026-10-10共享凭证差量映射
+
+详设§8.6定义TDC credential-only/plain同步和副机本机CBS请求，CBS仅凭证鉴权。本机邀请/按钮/TestId及副机admin只读不变，无凭证显示或新取消入口。正本待同步，新增实现/动态NOT_RUN；本轮只改设计，旧IA确认不是新链路运行PASS。

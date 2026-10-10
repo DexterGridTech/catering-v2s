@@ -2,14 +2,14 @@
 id: operations.execution-economics-and-failure-family-closure
 status: active
 layer: routed
-taskKinds: ["implementation","backend-acceptance","testing","review"]
+taskKinds: ["design","implementation","backend-acceptance","testing","review"]
 domains: ["platform","backend","contract","admin-ui"]
 consumerFaces: ["all"]
 owners: ["platform","backend","frontend-platform"]
-impacts: ["evidence","governance","runtime"]
-triggers: ["implementation","failure","review"]
+impacts: ["architecture","evidence","governance","runtime"]
+triggers: ["task-start","implementation","failure","review"]
 assertions: ["RUN_COUNT_NOT_RUN_COST_DOMINATES","FAILURE_FAMILY_CLOSED_BEFORE_NEXT","AUTHORIZED_FAILURE_DRIVES_REPAIR_AND_CONTINUATION","GOAL_HAS_NO_TOKEN_BUDGET_OR_EARLY_STOP","BROAD_RUN_IS_REGRESSION_NOT_DISCOVERY","PASS_WITHOUT_REVIEWED_FIXTURE_DENOMINATOR_IS_NOT_COMPLETION","RECONCILIATION_BEFORE_FIRST_DYNAMIC_RUN","NATIVE_SEMANTIC_PROP_MUST_BE_PLATFORM_SUPPORTED","AGGREGATE_GATE_FAILURE_FAMILY_CLOSURE"]
-sourceRefs: ["build.gradle.kts","doc/review/platform/2026-09-02-v2s-sales-menu-execution-diagnosis-claude.md","project-memory/operations/execution-economics-and-failure-family-closure.md","tools/verify-gates/verify.mjs"]
+sourceRefs: ["build.gradle.kts","doc/decisions/2026-07-29-v2s-observability-and-acceptance-standard.md","doc/review/platform/2026-09-02-v2s-sales-menu-execution-diagnosis-claude.md","project-memory/operations/execution-economics-and-failure-family-closure.md","tools/verify-gates/verify.mjs"]
 ---
 # 执行经济学与失败族关闭
 
@@ -68,6 +68,14 @@ sourceRefs: ["build.gradle.kts","doc/review/platform/2026-09-02-v2s-sales-menu-e
   纸面复核一次的成本远低于一次动态运行的间隙成本。
 
 ## 推论:静态优先的经济学判断
+
+### 2026-10-10：全链日志先行，两轮动态前对抗审查
+
+Dexter 原话：“进入到动态测试之前，必须把整条测试链路加好调试日志，再做两轮对抗性review，查缺补漏确保没有低级错误，切勿不经思考的不断来回往复重跑”。这细化本文既有 `RECONCILIATION_BEFORE_FIRST_DYNAMIC_RUN` 和 `FAILURE_FAMILY_CLOSED_BEFORE_NEXT`，不新建恢复或日志机制。
+
+唯一执行正本见 `doc/decisions/2026-07-29-v2s-observability-and-acceptance-standard.md` §3 的同日补充；设计/实施模板引用同一正文。`UNENFORCEABLE_BY_MACHINE`，评审清单为该补充五项：完整实际链路有安全关联日志；第一轮fresh源码证伪；主agent确认与最小修复；第二轮fresh复核及同根检查；未闭合不运行、首败读日志后按改变的假设focused重验。不能把计划或两份报告当成真实运行PASS。
+
+两轮为 `TEST_CHAIN_PREFLIGHT`，在测试链路与诊断实现就绪之后、动态启动之前，不是重新打开已关闭的DESIGN cycle，不替代CP/6b、UI/testId或交付review。符合相同链路/日志后字节条件的既有审查可计入，避免重复对账；后续改动只复核真实影响面。适用范围含backend-acceptance、Expo Web、浏览器L2、Android/设备和真实网络/数据库proof；纯文档及无动态环境的编译/类型检查不进入本前置。不会因本条擅自运行、reset、seed或部署。
 
 由 `RUN_COUNT_NOT_RUN_COST_DOMINATES` 直接得出:
 **凡能静态确定的,必须在第一次动态运行前全部确定完。**

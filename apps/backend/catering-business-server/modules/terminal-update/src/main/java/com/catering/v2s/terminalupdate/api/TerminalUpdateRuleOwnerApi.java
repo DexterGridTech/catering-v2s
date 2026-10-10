@@ -1,6 +1,7 @@
 package com.catering.v2s.terminalupdate.api;
 
 import com.catering.v2s.audit.contract.AuditActor;
+import com.catering.v2s.organization.api.OperationsOwnerScopeGrant;
 import java.util.List;
 import java.util.UUID;
 
@@ -69,7 +70,8 @@ public interface TerminalUpdateRuleOwnerApi {
             String description,
             long expectedContextVersion,
             String idempotencyKey,
-            AuditActor actor) {
+            AuditActor actor,
+            OperationsOwnerScopeGrant ownerScopeGrant) {
         public CreateRule {
             storeRefs = storeRefs == null ? List.of() : List.copyOf(storeRefs);
         }
@@ -85,7 +87,8 @@ public interface TerminalUpdateRuleOwnerApi {
             String reason,
             long expectedContextVersion,
             String idempotencyKey,
-            AuditActor actor) {}
+            AuditActor actor,
+            OperationsOwnerScopeGrant ownerScopeGrant) {}
 
     record RuleReadback(
             UUID ruleRef,

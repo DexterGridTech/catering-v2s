@@ -1,7 +1,7 @@
 import {requireNativeModule} from 'expo-modules-core';
+import {AppState} from 'react-native';
 export {moduleName} from './moduleName';
 export {dependencyModuleNames, devDependencyModuleNames} from './dependencies';
-export {createAndroidAutomationUpdateTargetSourceProvider} from './automationUpdateTargetSourceProvider';
 import type {
   PortResult,
   UpdateAction,
@@ -9,7 +9,11 @@ import type {
   UpdateCall,
   UpdateFacts,
   UpdatePort,
+  UpdatePresentation,
+  UpdatePresentationListener,
   PrepareUpdateArtifactInput,
+  UpdateInstallerConfirmationResult,
+  UpdateInstallerConfirmationTrigger,
 } from '@catering-v2s/kernel-base-platform-ports';
 
 type NativeUpdateModule = Readonly<{
@@ -25,6 +29,12 @@ type NativeUpdateModule = Readonly<{
   ) => Promise<Readonly<{preparedId: string}>>;
   applyPrepared: (taskId: string, actionId: string, preparedId: string, kind: 'full' | 'hot') => Promise<UpdateAction>;
   readAction: (taskId: string, actionId: string) => Promise<UpdateAction | null>;
+  presentInstallerConfirmation: (
+    taskId: string,
+    actionId: string,
+    publicationId: string,
+    trigger: UpdateInstallerConfirmationTrigger,
+  ) => Promise<UpdateInstallerConfirmationResult>;
   confirmBoot: (bootToken: string, publicationId: string) => Promise<Readonly<{confirmed: true}>>;
   releasePrepared: (preparedId: string) => Promise<Readonly<{released: boolean}>>;
 }>;
@@ -59,6 +69,12 @@ const invoke = async <TValue>(capability: string, operation: () => Promise<TValu
   }
 };
 
+const toUpdatePresentation = (state: string | null | undefined): UpdatePresentation => {
+  if (state === 'active') return 'foreground';
+  if (state === 'background' || state === 'inactive') return 'background';
+  return 'unknown';
+};
+
 const resolveDownloadUrl = (baseUrl: string, sourcePath: string): string => {
   if (
     !sourcePath.startsWith('/') ||
@@ -83,6 +99,13 @@ const resolveDownloadUrl = (baseUrl: string, sourcePath: string): string => {
 /** Composition supplies the current server-config snapshot to each prepare call. */
 export const createAndroidUpdatePort = (): UpdatePort =>
   Object.freeze({
+    readPresentation: async (_input: UpdateCall) =>
+      invoke('readPresentation', async () => toUpdatePresentation(AppState.currentState)),
+    subscribePresentation: (listener: UpdatePresentationListener) => {
+      if (!AppState.isAvailable) return () => undefined;
+      const subscription = AppState.addEventListener('change', state => listener(toUpdatePresentation(state)));
+      return () => subscription.remove();
+    },
     readFacts: async (_input: UpdateCall) => invoke('readFacts', () => native().readFacts()),
     prepareArtifact: async (input: PrepareUpdateArtifactInput) =>
       invoke('prepareArtifact', async () => {
@@ -105,6 +128,17 @@ export const createAndroidUpdatePort = (): UpdatePort =>
       invoke('applyPrepared', () => native().applyPrepared(input.taskId, input.actionId, input.preparedId, input.kind)),
     readAction: async (input: UpdateCall & Readonly<{taskId: string; actionId: string}>) =>
       invoke('readAction', () => native().readAction(input.taskId, input.actionId)),
+    presentInstallerConfirmation: async (
+      input: UpdateCall & Readonly<{
+        taskId: string;
+        actionId: string;
+        publicationId: string;
+        trigger: UpdateInstallerConfirmationTrigger;
+      }>,
+    ) =>
+      invoke('presentInstallerConfirmation', () =>
+        native().presentInstallerConfirmation(input.taskId, input.actionId, input.publicationId, input.trigger),
+      ),
     confirmBoot: async (input: UpdateCall & Readonly<{bootToken: string; publicationId: string}>) =>
       invoke('confirmBoot', () => native().confirmBoot(input.bootToken, input.publicationId)),
     releasePrepared: async (input: UpdateCall & Readonly<{preparedId: string}>) =>

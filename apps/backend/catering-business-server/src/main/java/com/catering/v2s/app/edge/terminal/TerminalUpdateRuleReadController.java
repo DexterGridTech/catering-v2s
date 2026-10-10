@@ -40,12 +40,11 @@ public final class TerminalUpdateRuleReadController {
             @PathVariable UUID projectRef,
             @RequestHeader(value = "Authorization", required = false) String authorization,
             @RequestHeader(value = "X-Terminal-Ref", required = false) String terminalRef,
-            @RequestHeader(value = "X-Terminal-Device-Id", required = false) String deviceId,
             @RequestParam(required = false) String cursor,
             @RequestParam int limit,
             @RequestParam(required = false) String collectionHash) {
         Verification binding = TerminalCredentialEdgeVerifier.verify(credentials, groupWorkspaceKey,
-                authorization, terminalRef, deviceId);
+                authorization, terminalRef);
         var store = organization.store(binding.workspaceUuid(), groupWorkspaceKey, binding.storeRef());
         if (!store.project().id().equals(projectRef)) throw TerminalDataReadProblem.denied();
         var page = rules.terminalSnapshot(binding.workspaceUuid(), groupWorkspaceKey, projectRef,

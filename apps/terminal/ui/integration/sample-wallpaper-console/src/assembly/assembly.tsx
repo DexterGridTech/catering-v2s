@@ -11,6 +11,7 @@ import {
 } from '@catering-v2s/ui-base-terminal-activation';
 import {createServerConfigPanelParts} from '@catering-v2s/ui-base-server-config-panel';
 import {
+  clearSharedTerminalCredentialCommand,
   createTerminalDataClientModule,
   selectActivationState,
   selectConnectionState,
@@ -30,9 +31,14 @@ import {sampleWallpaperPickerAssembly, WallpaperBackground} from '@catering-v2s/
 import {createSampleStaffSessionModule} from '@catering-v2s/kernel-feature-sample-staff-session';
 import {
   createStoreBasicModule,
-  selectStoreBasicLoadReadiness,
-  selectStoreOrganizationPath,
+  selectStoreBasicBinding,
 } from '@catering-v2s/kernel-feature-store-basic';
+import {
+  createProjectBasicModule,
+  fixedTargetFromProjectCandidate,
+  selectProjectTerminalUpdateCandidate,
+  selectProjectTerminalUpdateContextFacts,
+} from '@catering-v2s/kernel-feature-project-basic';
 import {createSampleWallpaperModule} from '@catering-v2s/kernel-feature-sample-wallpaper';
 import {createServerConfigModule} from '@catering-v2s/kernel-base-server-config';
 import {createTerminalUpdateModule, type UpdateTargetSourceProvider} from '@catering-v2s/kernel-base-terminal-update';
@@ -173,6 +179,7 @@ export async function createSampleWallpaperConsoleAssembly(
         canActivate: state => !selectTopologyState(state).repairPending,
       });
       const storeBasicModule = createStoreBasicModule();
+      const projectBasicModule = createProjectBasicModule();
       return [
         serverConfigModule,
         transportModule,
@@ -180,38 +187,16 @@ export async function createSampleWallpaperConsoleAssembly(
           port: input.platformPorts.update,
           createProtocolUuid: () => Crypto.randomUUID(),
           sourceProvider: input.terminalUpdateSourceProvider,
-          readNetworkSnapshot: (state, serverName) => resolveServerNetworkSnapshot(state, serverSpaces, serverName),
-          readRuleSnapshotContext: state => {
-            const activation = selectActivationState(state);
-            const readiness = selectStoreBasicLoadReadiness(state);
-            const path = selectStoreOrganizationPath(state);
-            if (
-              activation.status !== 'active' ||
-              activation.terminalRef === null ||
-              activation.bindingGeneration === null ||
-              activation.storeRef === null ||
-              activation.groupWorkspaceKey === null ||
-              readiness.runtimeId === null ||
-              readiness.binding === null ||
-              readiness.binding.terminalRef !== activation.terminalRef ||
-              readiness.binding.bindingGeneration !== activation.bindingGeneration ||
-              readiness.binding.storeRef !== activation.storeRef ||
-              readiness.binding.groupWorkspaceKey !== activation.groupWorkspaceKey ||
-              readiness.storeStatus !== 'flushed' ||
-              readiness.projectStatus !== 'flushed' ||
-              path === null ||
-              readiness.projectRef !== path.projectRef
-            )
-              return null;
-            return Object.freeze({
-              terminalRef: activation.terminalRef,
-              bindingGeneration: activation.bindingGeneration,
-              selectedSpace: activation.groupWorkspaceKey,
-              storeRef: activation.storeRef,
-              projectRef: path.projectRef,
-              projectUpdatedAtEpochMillis: path.projectUpdatedAtEpochMillis,
-            });
+          readTerminalUpdateContextFacts: selectProjectTerminalUpdateContextFacts,
+          readCurrentTarget: (state, requested) => {
+            const binding = selectStoreBasicBinding(state);
+            if (binding === null) return null;
+            const candidate = selectProjectTerminalUpdateCandidate(state, requested.applicationId, binding.storeRef);
+            if (candidate === null) return null;
+            const target = fixedTargetFromProjectCandidate(candidate);
+            return JSON.stringify(target) === JSON.stringify(requested) ? target : null;
           },
+          readNetworkSnapshot: (state, serverName) => resolveServerNetworkSnapshot(state, serverSpaces, serverName),
         }),
         createTopologyModule({
           displayName: 'sample-wallpaper-console',
@@ -227,6 +212,31 @@ export async function createSampleWallpaperConsoleAssembly(
               (connection.status === 'stopped' || connection.status === 'disconnected')
             );
           },
+          beforeSlaveCredentialTransition: async (context, transition) => {
+            const activation = selectActivationState(context.getState());
+            const dispatched = await context.dispatchCommand(clearSharedTerminalCredentialCommand, {
+              groupWorkspaceKey: activation.groupWorkspaceKey,
+              terminalRef: activation.terminalRef,
+              storeRef: activation.storeRef,
+              bindingGeneration: activation.bindingGeneration,
+            });
+            const actorResult = dispatched.status === 'completed' ? dispatched.actorResults[0] : undefined;
+            const outcome = actorResult?.result as Readonly<{status?: string}> | undefined;
+            if (
+              dispatched.status !== 'completed' ||
+              actorResult?.status !== 'completed' ||
+              (outcome?.status !== 'cleared' && outcome?.status !== 'already-clear')
+            ) {
+              context.platformPorts.logger.error({
+                category: 'terminal.topology.credential',
+                event: 'slave-credential-transition-blocked',
+                message: 'Topology transition was blocked because the shared credential was not durably cleared',
+                context: {commandId: context.command.commandId},
+                data: {transition, dispatchStatus: dispatched.status, outcome: outcome?.status ?? 'unavailable'},
+              });
+              throw new Error(`Shared terminal credential clear failed before ${transition}`);
+            }
+          },
           stateSyncSlices: selectStateSyncSlices([
             ...(uiStateModule.stateSlices ?? []),
             ...(staffSessionModule.stateSlices ?? []),
@@ -234,12 +244,14 @@ export async function createSampleWallpaperConsoleAssembly(
             ...(serverConfigModule.stateSlices ?? []),
             ...(terminalDataClientModule.stateSlices ?? []),
             ...(storeBasicModule.stateSlices ?? []),
+            ...(projectBasicModule.stateSlices ?? []),
           ]),
         }),
         createSampleWallpaperConsoleModule(surfaceForm),
         createTerminalActivationModule(),
         terminalDataClientModule,
         storeBasicModule,
+        projectBasicModule,
         staffSessionModule,
         wallpaperModule,
         sampleStaffAuthAssembly.createModule(),

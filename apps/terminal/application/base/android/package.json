@@ -21,6 +21,7 @@
     "@catering-v2s/adapter-android-update": "workspace:*",
     "@catering-v2s/kernel-base-platform-ports": "workspace:*",
     "@catering-v2s/kernel-base-transport": "workspace:*",
+    "@catering-v2s/kernel-base-terminal-update": "workspace:*",
     "expo-splash-screen": "~57.0.9"
   },
   "peerDependencies": {

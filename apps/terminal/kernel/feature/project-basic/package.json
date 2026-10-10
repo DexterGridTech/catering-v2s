@@ -1,0 +1,26 @@
+{
+  "name": "@catering-v2s/kernel-feature-project-basic",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "node ../../../../../tools/terminal-shared/run-owned-lint.mjs",
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "test": "node ../../../../../tools/terminal-shared/run-owned-tests.mjs"
+  },
+  "dependencies": {
+    "@catering-v2s/kernel-base-contracts": "workspace:*",
+    "@catering-v2s/kernel-base-runtime": "workspace:*",
+    "@catering-v2s/kernel-base-state": "workspace:*",
+    "@catering-v2s/kernel-base-terminal-data-client": "workspace:*",
+    "@catering-v2s/kernel-base-terminal-update": "workspace:*",
+    "@catering-v2s/kernel-feature-store-basic": "workspace:*",
+    "@reduxjs/toolkit": "2.12.0"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.3",
+    "vitest": "4.1.10"
+  }
+}

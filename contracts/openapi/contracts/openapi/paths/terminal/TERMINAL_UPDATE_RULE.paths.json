@@ -96,16 +96,6 @@
               "type": "string",
               "format": "uuid"
             }
-          },
-          {
-            "name": "X-Terminal-Device-Id",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 128
-            }
           }
         ],
         "responses": {
@@ -214,16 +204,6 @@
             "schema": {
               "type": "string",
               "format": "uuid"
-            }
-          },
-          {
-            "name": "X-Terminal-Device-Id",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 128
             }
           }
         ],

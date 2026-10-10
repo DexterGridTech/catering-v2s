@@ -34,7 +34,6 @@ import type {
   TerminalServicePointRead,
   TerminalStoreActiveContractsRead,
   TerminalStoreBasicRead,
-  TerminalStoreOrganizationPathRead,
   TerminalStoreServicePointAreasRead,
   TerminalStoreServicePointsRead,
 } from '@catering-v2s/kernel-base-terminal-data-client';
@@ -237,8 +236,6 @@ const updateLoadReadiness = (
     runtimeId: context.runtimeId,
     binding,
     storeStatus: same ? current.storeStatus : 'idle',
-    projectStatus: same ? current.projectStatus : 'idle',
-    projectRef: same ? current.projectRef : null,
     ...patch,
   })));
 };
@@ -313,7 +310,9 @@ const reconcileTopicSubscriptions = async (
 
 export const createStoreBasicActors = (): readonly ActorDefinition[] => {
   const activeInitialLoads = new Set<string>();
+  const activeContractLoads = new Set<string>();
   const completedStoreLoads = new Set<string>();
+  const completedContractLoads = new Set<string>();
   const completedServicePointLoads = new Set<string>();
   const latestNotificationByTopic = new Map<string, string>();
 
@@ -333,24 +332,19 @@ export const createStoreBasicActors = (): readonly ActorDefinition[] => {
         readiness.storeStatus === 'flushed';
       if (!storeReady) {
         completedStoreLoads.delete(key);
+        completedContractLoads.delete(key);
         completedServicePointLoads.delete(key);
       } else {
-        if (readiness.projectStatus !== 'flushed') {
-          activeInitialLoads.add(key);
-          try {
-            await loadOrganizationAndContracts(context, binding);
-          } finally {
-            activeInitialLoads.delete(key);
-          }
-        }
-        if (!completedServicePointLoads.has(key))
-          await context.dispatchCommand(
-            initializeStoreServicePointsCommand,
-            {binding},
-            {
-              requestId: childRequestId(context),
-            },
-          );
+        await context.dispatchCommand(
+          storeBasicInformationLoadedCommand,
+          {
+            terminalRef: binding.terminalRef,
+            storeRef: binding.storeRef,
+            groupWorkspaceKey: binding.groupWorkspaceKey,
+            bindingGeneration: binding.bindingGeneration,
+          },
+          {requestId: childRequestId(context)},
+        );
         return {status: 'already-loaded'};
       }
     }
@@ -376,7 +370,6 @@ export const createStoreBasicActors = (): readonly ActorDefinition[] => {
               : 'STORE_READ_FAILED',
         );
         logRead(context, 'terminalReadStoreBasic', 'failed');
-        if (checkCurrentMasterBinding(context, binding)) await loadOrganizationAndContracts(context, binding);
         return {status: 'store-read-failed'};
       }
       if (!checkCurrentBinding(context, binding)) return {status: 'stale-binding'};
@@ -432,84 +425,27 @@ export const createStoreBasicActors = (): readonly ActorDefinition[] => {
         },
         {requestId: childRequestId(context)},
       );
-      if (!checkCurrentMasterBinding(context, binding)) return {status: 'stale-binding'};
-      await context.dispatchCommand(
-        initializeStoreServicePointsCommand,
-        {binding},
-        {
-          requestId: childRequestId(context),
-        },
-      );
-      await loadOrganizationAndContracts(context, binding);
       return {status: 'store-loaded'};
     } finally {
       activeInitialLoads.delete(key);
     }
   };
 
-  const loadOrganizationAndContracts = async (
+  const loadActiveContracts = async (
     context: ActorExecutionContext,
     binding: StoreBasicBinding,
-  ): Promise<void> => {
-    if (!checkCurrentMasterBinding(context, binding)) return;
-    updateLoadReadiness(context, binding, {projectStatus: 'loading', projectRef: null});
-    const pathResult = await readOperation(context, {
-      operationId: 'terminalReadStoreOrganizationPath',
-      pathParameters: {storeRef: binding.storeRef},
-    });
-    if (!checkCurrentMasterBinding(context, binding)) return;
-    if (pathResult?.kind === 'success') {
-      const path = pathResult.body as TerminalStoreOrganizationPathRead;
-      context.dispatchAction(storeBasicActions.setOrganizationPath(path));
-      setLoaded(context, 'PROJECT');
-      setLoaded(context, 'REGION');
-      setLoaded(context, 'COMMERCIAL_GROUP');
-      try {
-        await flush(context);
-      } catch (error) {
-        if (!checkCurrentMasterBinding(context, binding)) return;
-        updateLoadReadiness(context, binding, {projectStatus: 'failed', projectRef: null});
-        currentTopicStatus(context, 'PROJECT', error instanceof Error ? error.message : 'PROJECT_PERSISTENCE_FAILED');
-        return;
-      }
-      if (!checkCurrentMasterBinding(context, binding)) return;
-      updateLoadReadiness(context, binding, {projectStatus: 'flushed', projectRef: path.projectRef});
-      await subscribe({
-        context,
-        binding,
-        isLatest: () => checkCurrentMasterBinding(context, binding),
-        topicKey: 'PROJECT',
-        ownerRef: path.projectRef,
-        initialTimeEpochMillis: path.projectUpdatedAtEpochMillis,
-      });
-      await subscribe({
-        context,
-        binding,
-        isLatest: () => checkCurrentMasterBinding(context, binding),
-        topicKey: 'REGION',
-        ownerRef: path.regionRef,
-        initialTimeEpochMillis: path.regionUpdatedAtEpochMillis,
-      });
-      await subscribe({
-        context,
-        binding,
-        isLatest: () => checkCurrentMasterBinding(context, binding),
-        topicKey: 'COMMERCIAL_GROUP',
-        ownerRef: path.commercialGroupRef,
-        initialTimeEpochMillis: path.commercialGroupUpdatedAtEpochMillis,
-      });
-    } else {
-      if (!checkCurrentMasterBinding(context, binding)) return;
-      updateLoadReadiness(context, binding, {projectStatus: 'failed', projectRef: null});
-      const code = pathResult?.kind === 'business-rejection' ? pathResult.errorCode : 'ORGANIZATION_PATH_READ_FAILED';
-      for (const key of ['PROJECT', 'REGION', 'COMMERCIAL_GROUP'] as const) currentTopicStatus(context, key, code);
-    }
-    if (!checkCurrentMasterBinding(context, binding)) return;
+  ): Promise<StateJsonValue> => {
+    const key = bindingKey(binding);
+    if (!checkCurrentMasterBinding(context, binding)) return {status: 'stale-binding'};
+    if (completedContractLoads.has(key)) return {status: 'already-loaded'};
+    if (activeContractLoads.has(key)) return {status: 'already-loading'};
+    activeContractLoads.add(key);
+    try {
     const contractsResult = await readOperation(context, {
       operationId: 'terminalReadStoreActiveContracts',
       pathParameters: {storeRef: binding.storeRef},
     });
-    if (!checkCurrentMasterBinding(context, binding)) return;
+    if (!checkCurrentMasterBinding(context, binding)) return {status: 'stale-binding'};
     if (contractsResult?.kind === 'success') {
       const value = contractsResult.body as TerminalStoreActiveContractsRead;
       context.dispatchAction(
@@ -521,7 +457,7 @@ export const createStoreBasicActors = (): readonly ActorDefinition[] => {
       setLoaded(context, 'VALID_CONTRACT_COLLECTION');
       setLoaded(context, 'CONTRACT');
       await flush(context);
-      if (!checkCurrentMasterBinding(context, binding)) return;
+      if (!checkCurrentMasterBinding(context, binding)) return {status: 'stale-binding'};
       await subscribe({
         context,
         binding,
@@ -531,7 +467,7 @@ export const createStoreBasicActors = (): readonly ActorDefinition[] => {
         initialTimeEpochMillis: value.collectionUpdatedAtEpochMillis,
       });
       for (const contract of value.items) {
-        if (!checkCurrentMasterBinding(context, binding)) return;
+        if (!checkCurrentMasterBinding(context, binding)) return {status: 'stale-binding'};
         await subscribe({
           context,
           binding,
@@ -541,13 +477,19 @@ export const createStoreBasicActors = (): readonly ActorDefinition[] => {
           initialTimeEpochMillis: contract.updatedAt,
         });
       }
+      if (checkCurrentMasterBinding(context, binding)) completedContractLoads.add(key);
+      return {status: 'contracts-loaded'};
     } else {
-      if (!checkCurrentMasterBinding(context, binding)) return;
+      if (!checkCurrentMasterBinding(context, binding)) return {status: 'stale-binding'};
       currentTopicStatus(
         context,
         'VALID_CONTRACT_COLLECTION',
         contractsResult?.kind === 'business-rejection' ? contractsResult.errorCode : 'CONTRACT_COLLECTION_READ_FAILED',
       );
+      return {status: 'contract-read-failed'};
+    }
+    } finally {
+      activeContractLoads.delete(key);
     }
   };
 
@@ -656,6 +598,39 @@ export const createStoreBasicActors = (): readonly ActorDefinition[] => {
     }
   };
 
+  const loadAfterStore = async (
+    context: ActorExecutionContext,
+    requestedBinding: TerminalActivationSucceededPayload,
+  ): Promise<StateJsonValue> => {
+    const binding = currentBinding(context);
+    if (binding === null || !sameBinding(binding, requestedBinding) || !checkCurrentMasterBinding(context, binding))
+      return {status: 'inactive-or-stale'};
+    const state = selectStoreBasicState(context.getState());
+    const readiness = state.loadReadiness;
+    if (
+      readiness.runtimeId !== context.runtimeId ||
+      !sameBinding(readiness.binding, binding) ||
+      readiness.storeStatus !== 'flushed' ||
+      state.store === null ||
+      state.store.value.id !== binding.storeRef ||
+      state.store.value.groupWorkspaceKey !== binding.groupWorkspaceKey ||
+      state.store.value.project.id.length === 0
+    )
+      return {status: 'store-prerequisite-missing'};
+
+    const servicePoints = context.dispatchCommand(
+      initializeStoreServicePointsCommand,
+      {binding},
+      {requestId: childRequestId(context)},
+    );
+    const [contractsResult, servicePointsResult] = await Promise.all([loadActiveContracts(context, binding), servicePoints]);
+    return Object.freeze({
+      status: 'store-followups-settled',
+      contracts: contractsResult,
+      servicePoints: childOutcomeStatus(servicePointsResult) ?? servicePointsResult.status,
+    });
+  };
+
   const onTopicChanged = async (
     context: ActorExecutionContext,
     binding: StoreBasicBinding,
@@ -703,18 +678,6 @@ export const createStoreBasicActors = (): readonly ActorDefinition[] => {
               updatedAtEpochMillis: (read.body as TerminalStoreBasicRead).operatingRulesUpdatedAtEpochMillis,
             }),
           );
-        break;
-      case 'PROJECT':
-      case 'REGION':
-      case 'COMMERCIAL_GROUP':
-        read = await readOperation(context, {
-          operationId: 'terminalReadStoreOrganizationPath',
-          pathParameters: {storeRef: binding.storeRef},
-        });
-        if (!isLatest()) return {status: 'stale-result'};
-        if (read?.kind !== 'success')
-          return fail(read?.kind === 'business-rejection' ? read.errorCode : 'ORGANIZATION_PATH_READ_FAILED');
-        context.dispatchAction(storeBasicActions.setOrganizationPath(read.body as TerminalStoreOrganizationPathRead));
         break;
       case 'VALID_CONTRACT_COLLECTION':
         read = await readOperation(context, {
@@ -794,6 +757,8 @@ export const createStoreBasicActors = (): readonly ActorDefinition[] => {
           isLatest,
         });
         break;
+      default:
+        return {status: 'unowned-topic'};
     }
     if (!isLatest()) return {status: 'stale-result'};
     if (topicSubscriptionSucceeded) setLoaded(context, notification.topicKey);
@@ -814,7 +779,7 @@ export const createStoreBasicActors = (): readonly ActorDefinition[] => {
     defineActor(moduleName, 'store-basic', [
       onCommand(initializeStoreBasicCommand, context => loadStore(context)),
       onCommand(terminalActivationSucceededCommand, context => loadStore(context, context.command.payload)),
-      onCommand(storeBasicInformationLoadedCommand, () => null),
+      onCommand(storeBasicInformationLoadedCommand, context => loadAfterStore(context, context.command.payload)),
       onCommand(initializeStoreServicePointsCommand, context =>
         loadServicePoints(context, context.command.payload.binding),
       ),

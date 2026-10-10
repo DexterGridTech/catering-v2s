@@ -52,7 +52,8 @@ public class CreateOperationsProjectTerminalUpdateRuleOperation {
                 request.storeRefs(), request.fullArtifactRef(), request.hotArtifactRef(), request.status(),
                 request.nSeconds(), request.hotStrategy(), request.mSeconds(), request.description(),
                 session.contextVersion(), invocation.idempotencyKey(),
-                new AuditActor("WORKSPACE_ACCOUNT", session.accountId(), session.accountDisplayName()))));
+                new AuditActor("WORKSPACE_ACCOUNT", session.accountId(), session.accountDisplayName()),
+                authorization.ownerScopeGrant(REQUIREMENT))));
     }
 
     public record Invocation(

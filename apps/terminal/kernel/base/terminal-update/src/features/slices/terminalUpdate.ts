@@ -5,18 +5,17 @@ import type {TerminalUpdateRecentStatus, TerminalUpdateState, TerminalUpdateTask
 
 export const terminalUpdateSliceName = `${moduleName}.state` as const;
 const initialState: TerminalUpdateState = Object.freeze({
-  ruleSnapshot: Object.freeze({contextIdentity: null, selectedSpace: null, projectRef: null,
-    collectionHash: null, items: Object.freeze([])}),
-  ruleSnapshotStatus: Object.freeze({status: 'empty', errorCode: null}),
   currentTask: null,
   recentStatus: Object.freeze({taskId: null, state: 'idle', reason: null, changedAt: 0 as never,
     applicationId: null, ruleRef: null, fullArtifactRef: null, hotArtifactRef: null}),
   failedArtifactIds: Object.freeze([]),
   actualVersions: null,
+  invitation: null,
   reportDescriptor: Object.freeze({
     bindingIdentity: null,
     contextIdentity: null,
     nextReportSequence: 1,
+    lastObservationFactsKey: null,
     pendingReports: Object.freeze({}),
     sendPaused: false,
     latestDeliveryFailure: null,
@@ -27,14 +26,6 @@ const definition = createSlice({
   name: terminalUpdateSliceName,
   initialState,
   reducers: {
-    replaceRuleSnapshot: (
-      state,
-      action: PayloadAction<TerminalUpdateState['ruleSnapshot']>,
-    ): TerminalUpdateState => ({...state, ruleSnapshot: action.payload}),
-    replaceRuleSnapshotStatus: (
-      state,
-      action: PayloadAction<TerminalUpdateState['ruleSnapshotStatus']>,
-    ): TerminalUpdateState => ({...state, ruleSnapshotStatus: action.payload}),
     replaceTask: (state, action: PayloadAction<TerminalUpdateTask | null>): TerminalUpdateState => ({
       ...state,
       currentTask: action.payload,
@@ -51,6 +42,10 @@ const definition = createSlice({
       state,
       action: PayloadAction<TerminalUpdateState['actualVersions']>,
     ): TerminalUpdateState => ({...state, actualVersions: action.payload}),
+    replaceInvitation: (
+      state,
+      action: PayloadAction<TerminalUpdateState['invitation']>,
+    ): TerminalUpdateState => ({...state, invitation: action.payload ?? null}),
     replaceReportDescriptor: (
       state,
       action: PayloadAction<TerminalUpdateState['reportDescriptor']>,
@@ -64,7 +59,6 @@ export const terminalUpdateRegistration = defineStateRuntimeSlice<TerminalUpdate
   persistIntent: 'owner-only',
   resetIntent: 'retain',
   persistence: [
-    {kind: 'field', stateKey: 'ruleSnapshot', protection: 'plain', flushMode: 'immediate'},
     {kind: 'field', stateKey: 'currentTask', protection: 'plain', flushMode: 'immediate'},
     {kind: 'field', stateKey: 'recentStatus', protection: 'plain', flushMode: 'immediate'},
     {kind: 'field', stateKey: 'failedArtifactIds', protection: 'plain', flushMode: 'immediate'},

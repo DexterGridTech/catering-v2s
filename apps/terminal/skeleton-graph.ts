@@ -37,7 +37,7 @@ export const skeletonGraph = {
   'kernel.base.terminal-update': {
     batch: 2,
     kind: 'owner',
-    dependencies: ['kernel.base.contracts', 'kernel.base.platform-ports', 'kernel.base.runtime', 'kernel.base.state'],
+    dependencies: ['kernel.base.contracts', 'kernel.base.platform-ports', 'kernel.base.runtime', 'kernel.base.state', 'kernel.base.terminal-data-client'],
     devDependencies: [],
   },
   'kernel.base.terminal-data-client': {
@@ -216,6 +216,18 @@ export const skeletonGraph = {
     ],
     devDependencies: [],
   },
+  'kernel.feature.project-basic': {
+    batch: 2,
+    dependencies: [
+      'kernel.base.contracts',
+      'kernel.base.state',
+      'kernel.base.runtime',
+      'kernel.base.terminal-data-client',
+      'kernel.base.terminal-update',
+      'kernel.feature.store-basic',
+    ],
+    devDependencies: [],
+  },
   'kernel.feature.sample-wallpaper': {
     batch: 2,
     dependencies: ['kernel.base.contracts', 'kernel.base.state', 'kernel.base.runtime'],
@@ -279,6 +291,7 @@ export const skeletonGraph = {
       'kernel.base.terminal-update',
       'kernel.base.terminal-data-client',
       'kernel.feature.store-basic',
+      'kernel.feature.project-basic',
       'kernel.base.topology',
       'kernel.base.transport',
       'kernel.base.display-context',
@@ -307,6 +320,7 @@ export const skeletonGraph = {
       'kernel.base.terminal-update',
       'kernel.base.terminal-data-client',
       'kernel.feature.store-basic',
+      'kernel.feature.project-basic',
       'kernel.base.topology',
       'kernel.base.transport',
       'kernel.base.display-context',
@@ -385,6 +399,7 @@ export const skeletonGraph = {
       'adapter.android.persist-kv',
       'adapter.android.update',
       'kernel.base.transport',
+      'kernel.base.terminal-update',
     ],
     devDependencies: ['ui.base.primitives'],
   },
