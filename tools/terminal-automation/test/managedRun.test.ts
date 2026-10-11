@@ -35,6 +35,50 @@ describe('createManagedRun', () => {
     expect(manifest.processes).toEqual([manifest.owner]);
   });
 
+  it('records both explicitly named pair devices with their MASTER and SLAVE roles', () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'terminal-automation-'));
+    roots.push(root);
+    const manifest = createManagedRun(
+      root,
+      Object.freeze({
+        phase: 'update',
+        platform: 'android',
+        shape: 'mobile',
+        case: 'update.pair',
+        sample: 'console',
+        deviceSerial: 'emulator-master',
+        peerDeviceSerial: 'emulator-slave',
+      }),
+      'pair-run',
+    );
+
+    expect(manifest.androidDevices).toEqual([
+      {serial: 'emulator-master', role: 'PAIR_MASTER_EMULATOR'},
+      {serial: 'emulator-slave', role: 'PAIR_SLAVE_EMULATOR'},
+    ]);
+  });
+
+  it('rejects pair manifests without two distinct device identities before creating a run root', () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'terminal-automation-'));
+    roots.push(root);
+
+    expect(() =>
+      createManagedRun(
+        root,
+        Object.freeze({
+          phase: 'update',
+          platform: 'android',
+          shape: 'mobile',
+          case: 'update.pair',
+          sample: 'console',
+          deviceSerial: 'emulator-master',
+        }),
+        'pair-run',
+      ),
+    ).toThrow('TERMINAL_AUTOMATION_UPDATE_PAIR_DEVICE_IDENTITY_INVALID');
+    expect(existsSync(path.join(root, '.runtime/terminal-automation/pair-run'))).toBe(false);
+  });
+
   it('rejects a runtime symlink that escapes the repository', () => {
     const root = mkdtempSync(path.join(tmpdir(), 'terminal-automation-'));
     roots.push(root);

@@ -36,6 +36,8 @@
     "adminTestIds",
     "createAdminSectionCommandBoundary",
     "createInitialAdminGestureState",
+    "createServerConfigPanelParts",
+    "createTerminalUpdateInstallReminderParts",
     "AdminPasswordDerivationInput",
     "AdminPasswordVerificationInput",
     "TerminalDeviceIdentity",

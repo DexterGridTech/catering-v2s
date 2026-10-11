@@ -26,7 +26,13 @@ export {
   setTopologyHostEnabledCommand,
   topologyDisplayChangedCommand,
   topologyHostEventCommand,
+  requestTopologySlaveUnpairStateClearCommand,
+  completeTopologySlaveUnpairStateClearCommand,
   unpairTopologyCommand,
 } from './features/commands/commands';
-export type {TopologyDisplayChangedPayload} from './features/commands/commands';
+export type {
+  TopologyDisplayChangedPayload,
+  TopologySlaveUnpairTransition,
+  TopologySlaveUnpairTransitionPayload,
+} from './features/commands/commands';
 export type {TopologyState} from './types/state';

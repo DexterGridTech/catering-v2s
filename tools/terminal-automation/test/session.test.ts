@@ -26,7 +26,9 @@ const createServer = (): Readonly<{
   const server = {
     getSessions: () => Object.freeze([...sessions]),
     getSession: (sessionId?: string) =>
-      sessionId === undefined ? (sessions.at(-1) ?? null) : (sessions.find(session => session.sessionId === sessionId) ?? null),
+      sessionId === undefined
+        ? (sessions.at(-1) ?? null)
+        : (sessions.find(session => session.sessionId === sessionId) ?? null),
     onSessionChange: (listener: () => void) => {
       listeners.add(listener);
       return () => listeners.delete(listener);

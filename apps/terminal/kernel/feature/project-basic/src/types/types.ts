@@ -47,7 +47,14 @@ export type ProjectBasicState = Readonly<{
     status: 'idle' | 'loading' | 'flushed' | 'failed';
     projectRef: string | null;
   }>;
-  readStates: Readonly<Partial<Record<'PROJECT' | 'REGION' | 'COMMERCIAL_GROUP' | 'TERMINAL_UPDATE_RULES', 'idle' | 'loading' | 'loaded' | 'failed'>>>;
+  readStates: Readonly<
+    Partial<
+      Record<
+        'PROJECT' | 'REGION' | 'COMMERCIAL_GROUP' | 'TERMINAL_UPDATE_RULES',
+        'idle' | 'loading' | 'loaded' | 'failed'
+      >
+    >
+  >;
   failures: Readonly<Partial<Record<'PROJECT' | 'REGION' | 'COMMERCIAL_GROUP' | 'TERMINAL_UPDATE_RULES', string>>>;
 }>;
 
@@ -59,5 +66,3 @@ export type ProjectTerminalUpdateCandidate = Readonly<{
   storeRef: string;
   rule: StoredTerminalUpdateRule;
 }>;
-
-

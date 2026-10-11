@@ -53,9 +53,9 @@ integration 或 assembly。
 
 | id | 原始 URL | 许可证 | 尺寸 | 字节数 | SHA-256 |
 | --- | --- | --- | ---: | ---: | --- |
-| w1 | https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=1280&q=80 | Unsplash License (https://unsplash.com/license) | 1280×853 | 48202 | 62b0e442964cab657bfa5e7013b8218afe92d3e6eb944740ec40693957afee4c |
-| w2 | https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=1280&q=80 | Unsplash License (https://unsplash.com/license) | 1280×853 | 231276 | d0886dae3c12648e2b1ab24367884126ed4c6f4cfe8661b419a132817a6fe734 |
-| w3 | https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1280&q=80 | Unsplash License (https://unsplash.com/license) | 1280×851 | 147656 | d851c09ecb633c4ba2c1714e41a22f55f2d2af82fcb75ce3fc4081e23bd19d9b |
+| w1 | https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=1280&q=80 | Unsplash 许可（https://unsplash.com/license） | 1280×853 | 48202 | 62b0e442964cab657bfa5e7013b8218afe92d3e6eb944740ec40693957afee4c |
+| w2 | https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=1280&q=80 | Unsplash 许可（https://unsplash.com/license） | 1280×853 | 231276 | d0886dae3c12648e2b1ab24367884126ed4c6f4cfe8661b419a132817a6fe734 |
+| w3 | https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1280&q=80 | Unsplash 许可（https://unsplash.com/license） | 1280×851 | 147656 | d851c09ecb633c4ba2c1714e41a22f55f2d2af82fcb75ce3fc4081e23bd19d9b |
 
 ## 公共包入口
 
@@ -64,7 +64,7 @@ WallpaperBackground、WallpaperPickerAssembly、WallpaperId、WallpaperPickerCom
 assetsById、confirmWallpaperRequestedCommand、createSampleWallpaperPickerModule、
 dependencyModuleNames、devDependencyModuleNames、moduleKind、moduleName、parts、
 sampleWallpaperPickerAssembly、wallpaperOptionTestId、wallpaperPickerTestIds、
-wallpaperOptionSelectedCommand。唯一 export-map 路径是 . → ./src/index.ts；
+wallpaperOptionSelectedCommand。唯一包导出映射为 . → ./src/index.ts；
 parts 与 module factory 本批保持原样，任何后续收窄须先经 Dexter 逐项裁定。该清单与
 terminal-invariants.json 和 test/publicSurface.test.ts 对齐。
 

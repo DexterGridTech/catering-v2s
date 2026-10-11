@@ -15,7 +15,6 @@ import {moduleName as staffAuth} from '@catering-v2s/ui-feature-sample-staff-aut
 import {moduleName as memberDesk} from '@catering-v2s/ui-feature-sample-member-desk';
 import {moduleName as devHost} from '@catering-v2s/ui-base-dev-host';
 import {moduleName as adminShell} from '@catering-v2s/ui-base-admin-shell';
-import {moduleName as serverConfigPanel} from '@catering-v2s/ui-base-server-config-panel';
 import {moduleName as terminalActivation} from '@catering-v2s/ui-base-terminal-activation';
 import {moduleName as terminalDataClient} from '@catering-v2s/kernel-base-terminal-data-client';
 import {moduleName as terminalUpdate} from '@catering-v2s/kernel-base-terminal-update';
@@ -41,7 +40,6 @@ export const dependencyModuleNames = [
   staffAuth,
   memberDesk,
   adminShell,
-  serverConfigPanel,
   terminalActivation,
   terminalDataClient,
   terminalUpdate,

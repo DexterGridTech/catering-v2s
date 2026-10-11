@@ -101,7 +101,11 @@ export const createTerminalUpdateAutomationFixture = (
     }),
     policy: Object.freeze({nSeconds: 300, hotStrategy: 'IMMEDIATE' as const, mSeconds: null}),
     strategy: Object.freeze({maxNetworkAttempts: 2, bootTimeoutMs: 60_000}),
-    selectionContext: Object.freeze({selectedSpace: 'development', contextIdentity: runId, ruleRef: `automation-${runId}`}),
+    selectionContext: Object.freeze({
+      selectedSpace: 'development',
+      contextIdentity: runId,
+      ruleRef: `automation-${runId}`,
+    }),
   });
 
   let currentAction: UpdateAction | null = null;
@@ -161,8 +165,11 @@ export const createTerminalUpdateAutomationFixture = (
 
   const sourceProvider: UpdateTargetSourceProvider = {
     readTarget: async selectionContext =>
-      selectionContext.contextIdentity === runId && selectionContext.selectedSpace === 'development' &&
-      selectionContext.ruleRef === target.ruleRef ? target : null,
+      selectionContext.contextIdentity === runId &&
+      selectionContext.selectedSpace === 'development' &&
+      selectionContext.ruleRef === target.ruleRef
+        ? target
+        : null,
     resolveSourcePath: sourceRef =>
       sourceRef === target.full?.sourceRef
         ? '/fixtures/full.zip'

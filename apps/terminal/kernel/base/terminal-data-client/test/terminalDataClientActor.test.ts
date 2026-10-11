@@ -18,13 +18,21 @@ import {
   readTerminalDataCommand,
   submitTerminalUpdateReportCommand,
   requestTerminalUpdateDownloadGrantCommand,
-  clearSharedTerminalCredentialCommand,
 } from '../src/features/commands/terminalDataClientCommands';
+import {
+  completeTopologySlaveUnpairStateClearCommand,
+  requestTopologySlaveUnpairStateClearCommand,
+} from '@catering-v2s/kernel-base-topology';
 import {
   terminalDataClientActions,
   terminalDataClientReducer,
   terminalDataClientStateSlice,
 } from '../src/features/slices/terminalDataClient';
+import {
+  terminalClientStatusProjectionActions,
+  terminalClientStatusProjectionReducer,
+  terminalClientStatusProjectionSliceName,
+} from '../src/features/slices/terminalClientStatusProjection';
 import {
   createTerminalDataClientActor,
   terminalConnectionCloseReasons,
@@ -37,7 +45,7 @@ import {
 } from '../src/selectors/selectTerminalDataClientState';
 import type {ActorExecutionContext, CommandDefinition} from '@catering-v2s/kernel-base-runtime';
 import type {StateJsonValue, StateRoot} from '@catering-v2s/kernel-base-state';
-import type {TransportConnectionEvent} from '@catering-v2s/kernel-base-transport';
+import type {TransportConnectionEvent, TransportHttpExecutionResult} from '@catering-v2s/kernel-base-transport';
 import type {RemoteOperationFact} from '../src/types/client';
 
 const createActivationTestLogger = () => {
@@ -67,9 +75,14 @@ const createActivationTestLogger = () => {
   return {logger, events};
 };
 
-const actorState = (clientState: unknown, instanceMode: 'MASTER' | 'SLAVE' = 'MASTER'): StateRoot =>
+const actorState = (
+  clientState: unknown,
+  instanceMode: 'MASTER' | 'SLAVE' = 'MASTER',
+  projectionState: unknown = terminalClientStatusProjectionReducer(undefined, {type: 'test/init'}),
+): StateRoot =>
   ({
     [terminalDataClientStateSlice.name]: clientState,
+    [terminalClientStatusProjectionSliceName]: projectionState,
     'kernel.base.runtime.instance-mode': {instanceMode},
   }) as StateRoot;
 
@@ -305,7 +318,10 @@ describe('terminal-data-client activation command actor', () => {
     );
     activeState = terminalDataClientReducer(
       activeState,
-      terminalDataClientActions.markCredentialReady({credentialRevision: activeState.credentialRevision, instanceMode: 'MASTER'}),
+      terminalDataClientActions.markCredentialReady({
+        credentialRevision: activeState.credentialRevision,
+        instanceMode: 'MASTER',
+      }),
     );
     const handler = actorRuntime.actor.handlers.find(
       candidate => candidate.commandName === readTerminalDataCommand.commandName,
@@ -434,7 +450,10 @@ describe('terminal-data-client activation command actor', () => {
     );
     state = terminalDataClientReducer(
       state,
-      terminalDataClientActions.markCredentialReady({credentialRevision: state.credentialRevision, instanceMode: 'SLAVE'}),
+      terminalDataClientActions.markCredentialReady({
+        credentialRevision: state.credentialRevision,
+        instanceMode: 'SLAVE',
+      }),
     );
     const executeHttp = vi.fn(async (_request: unknown) => ({
       kind: 'failure' as const,
@@ -562,14 +581,120 @@ describe('terminal-data-client activation command actor', () => {
     actor.dispose();
   });
 
+  it('discards a download-grant response when the credential changes while HTTP is pending', async () => {
+    const originalSecret = 'A'.repeat(43);
+    const diagnostics = createActivationTestLogger();
+    let state = terminalDataClientReducer(undefined, {type: 'test/init'});
+    state = terminalDataClientReducer(
+      state,
+      terminalDataClientActions.replaceCredential({
+        groupWorkspaceKey: 'workspace-1',
+        terminalRef: 'terminal-1',
+        storeRef: 'store-1',
+        deviceId: 'device-1',
+        bindingGeneration: 8,
+        credentialSecret: originalSecret,
+      }),
+    );
+    state = terminalDataClientReducer(
+      state,
+      terminalDataClientActions.markCredentialReady({
+        credentialRevision: state.credentialRevision,
+        instanceMode: 'MASTER',
+      }),
+    );
+    let resolveHttp!: (result: TransportHttpExecutionResult) => void;
+    const executeHttp = vi.fn(
+      () =>
+        new Promise<TransportHttpExecutionResult>(resolve => {
+          resolveHttp = resolve;
+        }),
+    );
+    const transport = {
+      start: vi.fn(),
+      ready: vi.fn(),
+      invalid: vi.fn(),
+      stop: vi.fn(),
+      executeHttp,
+      reportHttpAddressAvailable: vi.fn(),
+    };
+    const actor = createTerminalDataClientActor({
+      transport,
+      businessServerName: 'terminal-business-api',
+      createCredentialSecret: () => originalSecret,
+      createProtocolUuid: () => '00000000-0000-4000-8000-000000000004',
+      now: () => 1_000,
+      appVersion: '1.0.0',
+      surfaceForm: 'laptop',
+    });
+    const handler = actor.actor.handlers.find(
+      item => item.commandName === requestTerminalUpdateDownloadGrantCommand.commandName,
+    );
+    if (handler === undefined) throw new Error('terminal download-grant handler missing');
+    const context = (payload: unknown): ActorExecutionContext =>
+      ({
+        runtimeId: 'grant-race-runtime',
+        localNodeId: 'grant-race-node',
+        platformPorts: {device: {getDeviceInfo: vi.fn()}, logger: diagnostics.logger},
+        command: {
+          commandName: requestTerminalUpdateDownloadGrantCommand.commandName,
+          payload,
+          requestId: 'grant-race-request',
+          commandId: 'grant-race-command',
+        } as never,
+        actor: {actorKey: actor.actor.actorKey, moduleName: actor.actor.moduleName, actorName: actor.actor.actorName},
+        getState: () => actorState(state),
+        dispatchAction: (action: unknown) => {
+          state = terminalDataClientReducer(state, action as never);
+          return action as never;
+        },
+        flushPersistence: async () => ({status: 'succeeded'}),
+        subscribeState: () => () => undefined,
+        dispatchCommand: async () => ({status: 'completed'}),
+        requestApplicationReset: vi.fn(),
+      }) as unknown as ActorExecutionContext;
+
+    const pending = handler.handle(context({artifactRef: '00000000-0000-4000-8000-000000000099'}));
+    await vi.waitFor(() => expect(executeHttp).toHaveBeenCalledOnce());
+    state = terminalDataClientReducer(
+      state,
+      terminalDataClientActions.replaceCredential({
+        groupWorkspaceKey: 'workspace-1',
+        terminalRef: 'terminal-1',
+        storeRef: 'store-1',
+        deviceId: 'device-1',
+        bindingGeneration: 9,
+        credentialSecret: 'B'.repeat(43),
+      }),
+    );
+    resolveHttp({
+      kind: 'failure',
+      category: 'not-delivered',
+      code: 'BROWSER_TRANSPORT_PROXY_UNSUPPORTED',
+    });
+
+    await expect(pending).resolves.toMatchObject({
+      kind: 'failure',
+      category: 'not-delivered',
+      code: 'TERMINAL_CREDENTIAL_CHANGED',
+    });
+    expect(executeHttp).toHaveBeenCalledOnce();
+    actor.dispose();
+  });
+
   it('requires a successful flush before an empty SLAVE credential is accepted as cleared', async () => {
     let state = terminalDataClientReducer(undefined, {type: 'test/init'});
-    const flushPersistence = vi.fn()
+    const flushPersistence = vi
+      .fn()
       .mockResolvedValueOnce({status: 'failed', failures: [{key: 'credential'}]})
       .mockResolvedValueOnce({status: 'succeeded'});
     const actor = createTerminalDataClientActor({
       transport: {
-        start: vi.fn(), ready: vi.fn(), invalid: vi.fn(), stop: vi.fn(), executeHttp: vi.fn(),
+        start: vi.fn(),
+        ready: vi.fn(),
+        invalid: vi.fn(),
+        stop: vi.fn(),
+        executeHttp: vi.fn(),
         reportHttpAddressAvailable: vi.fn(),
       },
       businessServerName: 'terminal-business-api',
@@ -579,19 +704,23 @@ describe('terminal-data-client activation command actor', () => {
       surfaceForm: 'laptop',
     });
     const handler = actor.actor.handlers.find(
-      candidate => candidate.commandName === clearSharedTerminalCredentialCommand.commandName,
+      candidate => candidate.commandName === requestTopologySlaveUnpairStateClearCommand.commandName,
     );
-    if (handler === undefined) throw new Error('terminal credential clear handler missing');
+    if (handler === undefined) throw new Error('slave TDC state clear handler missing');
     const diagnostics = createActivationTestLogger();
+    const dispatchCompletion = vi.fn(async (definition: typeof completeTopologySlaveUnpairStateClearCommand) => {
+      expect(definition.commandName).toBe(completeTopologySlaveUnpairStateClearCommand.commandName);
+      return {status: 'completed' as const};
+    });
     const context = {
       runtimeId: 'slave-runtime',
       localNodeId: 'slave-node',
       platformPorts: {logger: diagnostics.logger},
       command: {
-        commandName: clearSharedTerminalCredentialCommand.commandName,
+        commandName: requestTopologySlaveUnpairStateClearCommand.commandName,
         commandId: 'clear-empty',
         requestId: 'clear-empty',
-        payload: {groupWorkspaceKey: null, terminalRef: null, storeRef: null, bindingGeneration: null},
+        payload: {transition: 'local-unpair'},
       },
       actor: {actorKey: actor.actor.actorKey, moduleName: actor.actor.moduleName, actorName: actor.actor.actorName},
       getState: () => actorState(state, 'SLAVE'),
@@ -601,18 +730,19 @@ describe('terminal-data-client activation command actor', () => {
       },
       flushPersistence,
       subscribeState: () => () => undefined,
-      dispatchCommand: async () => ({status: 'completed'}),
+      dispatchCommand: dispatchCompletion,
       requestApplicationReset: vi.fn(),
     } as unknown as ActorExecutionContext;
 
-    await expect(handler.handle(context)).resolves.toEqual({status: 'persistence-failed'});
-    await expect(handler.handle(context)).resolves.toEqual({status: 'already-clear'});
+    await expect(handler.handle(context)).rejects.toThrow('TDC unpair state clear persistence failed');
+    await expect(handler.handle(context)).resolves.toEqual({status: 'cleared'});
     expect(flushPersistence).toHaveBeenCalledTimes(2);
+    expect(dispatchCompletion).toHaveBeenCalledOnce();
     expect(state.credential).toBeNull();
     actor.dispose();
   });
 
-  it('clears a non-empty SLAVE credential only after the clear has been durably flushed', async () => {
+  it('clears the complete SLAVE TDC state before the unpair transition is accepted', async () => {
     const credential = {
       groupWorkspaceKey: 'workspace-1',
       terminalRef: '00000000-0000-4000-8000-000000000001',
@@ -623,10 +753,87 @@ describe('terminal-data-client activation command actor', () => {
     };
     let state = terminalDataClientReducer(undefined, {type: 'test/init'});
     state = terminalDataClientReducer(state, terminalDataClientActions.replaceCredential(credential));
+    const identityKey = '["workspace-1","terminal-1","store-1",8,"feature.store-basic","STORE","owner-1"]';
+    const subscriptionId = '8b81d930-f455-407c-88b6-e777934e54c2';
+    state = terminalDataClientReducer(
+      state,
+      terminalDataClientActions.putTopicSubscription({
+        identityKey,
+        subscription: {
+          subscriptionId,
+          identityKey,
+          subscriberKey: 'feature.store-basic',
+          topicKey: 'STORE',
+          ownerRef: 'owner-1',
+          acceptedTimeEpochMillis: 200,
+          pendingNotification: null,
+        },
+      }),
+    );
+    state = terminalDataClientReducer(
+      state,
+      terminalDataClientActions.setTopicAcceptedTime({subscriptionId, identityKey, acceptedTimeEpochMillis: 250}),
+    );
+    state = terminalDataClientReducer(state, terminalDataClientActions.putRemoteOperation(remoteOperationFact(91)));
+    state = terminalDataClientReducer(
+      state,
+      terminalDataClientActions.setPendingActivation({
+        operationId: 'pending-before-unpair',
+        activationCode: '12345678',
+        deviceId: 'slave-device',
+        surfaceForm: 'laptop',
+        appVersion: '1.0.0',
+        credentialSecret: credential.credentialSecret,
+      }),
+    );
+    state = terminalDataClientReducer(
+      state,
+      terminalDataClientActions.sessionReady({
+        sessionId: 'session-before-unpair',
+        nodeId: 'node-before-unpair',
+        heartbeatIntervalMs: 1_000,
+        observedAt: 1_000,
+      }),
+    );
+    state = terminalDataClientReducer(
+      state,
+      terminalDataClientActions.setConnection({
+        status: 'disconnected',
+        addressName: 'dev',
+        nodeId: 'node-before-unpair',
+        sessionId: 'session-before-unpair',
+        lastCloseReason: 'NETWORK_ERROR',
+      }),
+    );
+    state = terminalDataClientReducer(state, terminalDataClientActions.recordRtt({rttMs: 12, observedAt: 1_000}));
+    state = terminalDataClientReducer(state, terminalDataClientActions.setActivationStatus('inactive'));
+    const previousCredentialRevision = state.credentialRevision;
+    let statusProjection = terminalClientStatusProjectionReducer(
+      undefined,
+      terminalClientStatusProjectionActions.replaceProjection({
+        available: true,
+        sourceNodeId: 'master-node',
+        activation: {
+          status: 'inactive',
+          terminalRef: credential.terminalRef,
+          storeRef: credential.storeRef,
+          groupWorkspaceKey: credential.groupWorkspaceKey,
+          bindingGeneration: credential.bindingGeneration,
+        },
+        connection: {status: 'stopped', addressName: null, nodeId: null, lastCloseReason: null},
+        lastRttMs: 0,
+        updatedAt: 1_000,
+      }),
+    );
     const flushPersistence = vi.fn(async () => ({status: 'succeeded' as const}));
+    const requestApplicationReset = vi.fn();
     const actor = createTerminalDataClientActor({
       transport: {
-        start: vi.fn(), ready: vi.fn(), invalid: vi.fn(), stop: vi.fn(), executeHttp: vi.fn(),
+        start: vi.fn(),
+        ready: vi.fn(),
+        invalid: vi.fn(),
+        stop: vi.fn(),
+        executeHttp: vi.fn(),
         reportHttpAddressAvailable: vi.fn(),
       },
       businessServerName: 'terminal-business-api',
@@ -636,43 +843,79 @@ describe('terminal-data-client activation command actor', () => {
       surfaceForm: 'laptop',
     });
     const handler = actor.actor.handlers.find(
-      candidate => candidate.commandName === clearSharedTerminalCredentialCommand.commandName,
+      candidate => candidate.commandName === requestTopologySlaveUnpairStateClearCommand.commandName,
     );
-    if (handler === undefined) throw new Error('terminal credential clear handler missing');
+    if (handler === undefined) throw new Error('slave TDC state clear handler missing');
     const context = {
       runtimeId: 'slave-runtime',
       localNodeId: 'slave-node',
       platformPorts: {logger: createActivationTestLogger().logger},
       command: {
-        commandName: clearSharedTerminalCredentialCommand.commandName,
-        commandId: 'clear-shared-credential',
-        requestId: 'clear-shared-credential',
-        payload: {
-          groupWorkspaceKey: credential.groupWorkspaceKey,
-          terminalRef: credential.terminalRef,
-          storeRef: credential.storeRef,
-          bindingGeneration: credential.bindingGeneration,
-        },
+        commandName: requestTopologySlaveUnpairStateClearCommand.commandName,
+        commandId: 'clear-slave-tdc-state',
+        requestId: 'clear-slave-tdc-state',
+        payload: {transition: 'local-unpair'},
       },
       actor: {actorKey: actor.actor.actorKey, moduleName: actor.actor.moduleName, actorName: actor.actor.actorName},
-      getState: () => actorState(state, 'SLAVE'),
+      getState: () => actorState(state, 'SLAVE', statusProjection),
       dispatchAction: (action: unknown) => {
         state = terminalDataClientReducer(state, action as never);
+        statusProjection = terminalClientStatusProjectionReducer(statusProjection, action as never);
         return action as never;
       },
       flushPersistence: async () => {
         expect(state.credential).toBeNull();
+        expect(state.acceptedTopicTimes).toEqual({});
+        expect(state.remoteOperations).toEqual({});
+        expect(statusProjection.projection.available).toBe(false);
         expect(actorState(state, 'SLAVE')['kernel.base.runtime.instance-mode']).toEqual({instanceMode: 'SLAVE'});
         return flushPersistence();
       },
       subscribeState: () => () => undefined,
-      dispatchCommand: async () => ({status: 'completed'}),
-      requestApplicationReset: vi.fn(),
+      dispatchCommand: async (definition: CommandDefinition<StateJsonValue>) => {
+        expect(definition.commandName).toBe(completeTopologySlaveUnpairStateClearCommand.commandName);
+        expect(state.credential).toBeNull();
+        expect(state.acceptedTopicTimes).toEqual({});
+        expect(state.remoteOperations).toEqual({});
+        expect(statusProjection.projection.available).toBe(false);
+        return {status: 'completed'};
+      },
+      requestApplicationReset,
     } as unknown as ActorExecutionContext;
 
     await expect(handler.handle(context)).resolves.toEqual({status: 'cleared'});
     expect(flushPersistence).toHaveBeenCalledOnce();
-    expect(state.credential).toBeNull();
+    expect(state).toMatchObject({
+      credential: null,
+      credentialRevision: previousCredentialRevision + 1,
+      credentialReadyRevision: null,
+      credentialReadyInstanceMode: null,
+      pendingActivations: {},
+      activationStatus: 'inactive',
+      connection: {
+        status: 'stopped',
+        addressName: null,
+        nodeId: null,
+        sessionId: null,
+        lastCloseReason: null,
+      },
+      heartbeatIntervalMs: null,
+      nextPingSequence: 1,
+      lastRttMs: 0,
+      latencySamples: [],
+      topicSubscriptions: {},
+      acceptedTopicTimes: {},
+      remoteOperations: {},
+    });
+    expect(statusProjection.projection).toEqual({
+      available: false,
+      sourceNodeId: null,
+      activation: null,
+      connection: null,
+      lastRttMs: null,
+      updatedAt: 0,
+    });
+    expect(requestApplicationReset).not.toHaveBeenCalled();
     actor.dispose();
   });
 
@@ -764,9 +1007,7 @@ describe('terminal-data-client activation command actor', () => {
         expect(reset).toHaveBeenCalledWith('TERMINAL_ACTIVATION_CANCELLED');
         expect(transport.invalid).not.toHaveBeenCalled();
       } else {
-        expect(
-          selectActivationState(actorState(state)),
-        ).toMatchObject({
+        expect(selectActivationState(actorState(state))).toMatchObject({
           status: 'active',
           terminalRef: '00000000-0000-4000-8000-000000000001',
         });
@@ -2508,9 +2749,7 @@ describe('terminal-data-client activation command actor', () => {
         () => null,
         (error: unknown) => error,
       );
-      expect(selectActivationState(actorState(state)).status).toBe(
-        'cancelling',
-      );
+      expect(selectActivationState(actorState(state)).status).toBe('cancelling');
       expect(
         await findHandler(connectTerminalCommand.commandName).handle(
           makeContext(connectTerminalCommand.commandName, {}),
@@ -2521,9 +2760,7 @@ describe('terminal-data-client activation command actor', () => {
       });
       rejectStop(new Error('stop failed'));
       expect(await settledCancel).toBeInstanceOf(Error);
-      expect(selectActivationState(actorState(state)).status).toBe(
-        'cancelling',
-      );
+      expect(selectActivationState(actorState(state)).status).toBe('cancelling');
       expect(reset).not.toHaveBeenCalled();
       actorRuntime.dispose();
     }

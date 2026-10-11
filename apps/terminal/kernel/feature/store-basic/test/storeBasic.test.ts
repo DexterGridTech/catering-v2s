@@ -33,22 +33,15 @@ const readBody = (operationId: TerminalReadOperationId): unknown => {
   switch (operationId) {
     case 'terminalReadStoreBasic':
       return {
-        store: {id: 'store-1', name: 'Sample', groupWorkspaceKey: 'workspace-1', project: {id: 'project-1', name: 'Project'}},
+        store: {
+          id: 'store-1',
+          name: 'Sample',
+          groupWorkspaceKey: 'workspace-1',
+          project: {id: 'project-1', name: 'Project'},
+        },
         operatingRules: {catalogManagementEnabled: true},
         storeUpdatedAtEpochMillis: 10,
         operatingRulesUpdatedAtEpochMillis: 11,
-      };
-    case 'terminalReadStoreOrganizationPath':
-      return {
-        projectRef: 'project-1',
-        projectName: 'Project',
-        regionRef: 'region-1',
-        regionName: 'Region',
-        commercialGroupRef: 'group-1',
-        commercialGroupName: 'Group',
-        projectUpdatedAtEpochMillis: 12,
-        regionUpdatedAtEpochMillis: 13,
-        commercialGroupUpdatedAtEpochMillis: 14,
       };
     case 'terminalReadStoreActiveContracts':
       return {
@@ -87,9 +80,12 @@ const activeCredential = () => {
     topicSubscriptions: {},
     acceptedTopicTimes: {},
   };
-  expect(selectActivationState({'kernel.base.terminal-data-client.client': state} as unknown as StateRoot).status).toBe(
-    'active',
-  );
+  expect(
+    selectActivationState({
+      'kernel.base.runtime.instance-mode': {instanceMode: 'MASTER'},
+      'kernel.base.terminal-data-client.client': state,
+    } as unknown as StateRoot).status,
+  ).toBe('active');
   return state;
 };
 
@@ -287,7 +283,8 @@ const createActorHarness = (
     getFlushCount: () => flushCount,
     rebuildStoreState: () => {
       storeState = storeBasicReducer(undefined, {type: 'test/reset'});
-      for (const subscriptionId of Object.keys(tdcState.topicSubscriptions)) delete tdcState.topicSubscriptions[subscriptionId];
+      for (const subscriptionId of Object.keys(tdcState.topicSubscriptions))
+        delete tdcState.topicSubscriptions[subscriptionId];
     },
   };
 };
@@ -315,44 +312,57 @@ describe('store-basic feature owner', () => {
   it('reinitializes store-basic through its owner command after Runtime reset', async () => {
     const module = createStoreBasicModule();
     const calls: unknown[][] = [];
-    await module.onApplicationReset?.({
-      dispatchCommand: (...args: unknown[]) => {
-        calls.push(args);
-        return Promise.resolve({status: 'completed'});
-      },
-      platformPorts: {logger: {scope: () => ({error: () => undefined})}},
-    } as unknown as RuntimeModuleContext, {reason: 'test', previousState: {} as StateRoot} as never);
+    await module.onApplicationReset?.(
+      {
+        dispatchCommand: (...args: unknown[]) => {
+          calls.push(args);
+          return Promise.resolve({status: 'completed'});
+        },
+        platformPorts: {logger: {scope: () => ({error: () => undefined})}},
+      } as unknown as RuntimeModuleContext,
+      {reason: 'test', previousState: {} as StateRoot} as never,
+    );
 
     expect(calls).toHaveLength(1);
     expect(calls[0]?.[0]).toBe(initializeStoreBasicCommand);
-    expect(calls[0]?.[2]).toEqual({requestId: expect.stringMatching(/^req_/) });
+    expect(calls[0]?.[2]).toEqual({requestId: expect.stringMatching(/^req_/)});
   });
 
   it('keeps project readiness out of store-basic readiness', async () => {
     const harness = createActorHarness();
-    const initialize = harness.actor.handlers.find(item => item.commandName === initializeStoreBasicCommand.commandName);
+    const initialize = harness.actor.handlers.find(
+      item => item.commandName === initializeStoreBasicCommand.commandName,
+    );
     if (initialize === undefined) throw new Error('store-basic initialize handler missing');
 
     await expect(initialize.handle(harness.context)).resolves.toEqual({status: 'store-loaded'});
-    expect(selectStoreBasicLoadReadiness(harness.getState())).toEqual(expect.objectContaining({storeStatus: 'flushed'}));
-    expect(harness.calls.some(call =>
-      call.name === readTerminalDataCommand.commandName &&
-      (call.payload as {operationId?: string}).operationId === 'terminalReadStoreOrganizationPath',
-    )).toBe(false);
+    expect(selectStoreBasicLoadReadiness(harness.getState())).toEqual(
+      expect.objectContaining({storeStatus: 'flushed'}),
+    );
+    expect(
+      harness.calls.some(
+        call =>
+          call.name === readTerminalDataCommand.commandName &&
+          (call.payload as {operationId?: string}).operationId === 'terminalReadStoreOrganizationPath',
+      ),
+    ).toBe(false);
   });
 
   it('reloads store facts when Runtime reset rebuilt readiness but retained actor-local completion state', async () => {
     const harness = createActorHarness();
-    const initialize = harness.actor.handlers.find(item => item.commandName === initializeStoreBasicCommand.commandName);
+    const initialize = harness.actor.handlers.find(
+      item => item.commandName === initializeStoreBasicCommand.commandName,
+    );
     if (initialize === undefined) throw new Error('store-basic initialize handler missing');
 
     await initialize.handle(harness.context);
     harness.rebuildStoreState();
     await expect(initialize.handle(harness.context)).resolves.toEqual({status: 'store-loaded'});
 
-    const storeReads = harness.calls.filter(call =>
-      call.name === readTerminalDataCommand.commandName &&
-      (call.payload as {operationId?: string}).operationId === 'terminalReadStoreBasic',
+    const storeReads = harness.calls.filter(
+      call =>
+        call.name === readTerminalDataCommand.commandName &&
+        (call.payload as {operationId?: string}).operationId === 'terminalReadStoreBasic',
     );
     expect(storeReads).toHaveLength(2);
     expect(selectStoreBasicLoadReadiness(harness.getState())).toMatchObject({

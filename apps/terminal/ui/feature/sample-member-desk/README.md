@@ -74,7 +74,7 @@ ui-state 的通用 closeLayer；业务 partKey、容器准入与呈现文案只�
 
 包根 @catering-v2s/ui-feature-sample-member-desk 当前公开以下符号（含类型）：
 MemberDeskAssembly、dependencyModuleNames、devDependencyModuleNames、moduleKind、moduleName、
-sampleMemberDeskAssembly。唯一 export-map 路径是 . → ./src/index.ts；包内实现深路径不是包级导入入口。
+sampleMemberDeskAssembly。唯一包导出映射为 . → ./src/index.ts；包内实现深路径不是包级导入入口。
 该清单与 terminal-invariants.json 的 publicExports / publicExportMap 及
 test/publicSurface.test.ts 对齐。
 

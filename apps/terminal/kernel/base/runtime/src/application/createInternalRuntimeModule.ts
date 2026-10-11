@@ -99,6 +99,11 @@ export const createInternalRuntimeModule = (
       {name: runtimeRequestLedgerSlaveSliceName, persistIntent: 'never' as const},
       {name: localInteractionSliceName, persistIntent: 'never' as const},
     ],
-    stateSlices: [runtimeInstanceModeSlice, runtimeRequestLedgerMasterSlice, runtimeRequestLedgerSlaveSlice, localInteractionSlice],
+    stateSlices: [
+      runtimeInstanceModeSlice,
+      runtimeRequestLedgerMasterSlice,
+      runtimeRequestLedgerSlaveSlice,
+      localInteractionSlice,
+    ],
   });
 };

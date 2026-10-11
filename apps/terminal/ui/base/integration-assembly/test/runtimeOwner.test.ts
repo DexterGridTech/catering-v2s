@@ -1,3 +1,4 @@
+import type {ReactElement} from 'react';
 import {describe, expect, it} from 'vitest';
 import {
   createPlatformPorts,
@@ -15,9 +16,11 @@ import {
   defineActor,
   defineCommand,
   onCommand,
+  selectLastLocalInteraction,
   type RuntimeModuleContext,
   type RuntimeModule,
 } from '@catering-v2s/kernel-base-runtime';
+import {RenderProvider} from '@catering-v2s/ui-base-render';
 import {createIntegrationAssembly} from '../src/foundations/integrationAssembly';
 
 const moduleName = 'test.console-owner-retry';
@@ -97,6 +100,10 @@ describe('console assembly runtime owner recovery', () => {
     });
 
     const failedRuntime = assembly.runtime;
+    const surface = assembly.createSurface({displayIndex: 0, displayMode: 'PRIMARY', surfaceForm: 'laptop'});
+    const renderProvider = surface.props.children as ReactElement<Record<string, unknown>>;
+    expect(renderProvider.type).toBe(RenderProvider);
+    const onLocalInteraction = renderProvider.props.onLocalInteraction as () => Promise<void>;
     expect(failedRuntime.status).toBe('failed');
     expect(installAttempts).toBe(1);
     expect(cleanupCalls).toBe(1);
@@ -112,6 +119,9 @@ describe('console assembly runtime owner recovery', () => {
     expect(recoveredRuntime.runtimeId).not.toBe(failedRuntime.runtimeId);
     expect(installAttempts).toBe(2);
     expect(cleanupCalls).toBe(1);
+
+    await onLocalInteraction();
+    expect(selectLastLocalInteraction(recoveredRuntime.getState()).revision).toBe(1);
 
     await assembly.retryRuntime();
     expect(assembly.runtime).toBe(recoveredRuntime);

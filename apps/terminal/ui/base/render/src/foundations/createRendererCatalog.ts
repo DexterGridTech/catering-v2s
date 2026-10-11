@@ -1,9 +1,15 @@
 import type {ComponentType} from 'react';
-import type {LayerGuard, LayerTier, RendererBinding, RendererCatalog} from '../types/catalog';
+import type {LayerGuard, LayerTier, RendererBinding, RendererCatalog, RendererPlacementScope} from '../types/catalog';
 
 const isRenderComponent = (value: unknown): value is ComponentType<object> => typeof value === 'function';
 
-const APPROVED_RENDERER_BINDING_KEYS = Object.freeze(['rendererKey', 'component', 'layerTier', 'layerGuard'] as const);
+const APPROVED_RENDERER_BINDING_KEYS = Object.freeze([
+  'rendererKey',
+  'component',
+  'layerTier',
+  'layerGuard',
+  'placementScope',
+] as const);
 
 const hasExactRendererBindingKeys = (binding: object): boolean => {
   const actual = Reflect.ownKeys(binding);
@@ -21,7 +27,7 @@ const canonicalBinding = (binding: RendererBinding): RendererBinding => {
     !hasExactRendererBindingKeys(binding)
   ) {
     throw new Error(
-      '[ui-base-render] renderer binding fields must equal rendererKey, component, layerTier, layerGuard',
+      '[ui-base-render] renderer binding fields must equal rendererKey, component, layerTier, layerGuard, placementScope',
     );
   }
   if (typeof binding.rendererKey !== 'string' || binding.rendererKey.trim().length === 0) {
@@ -36,11 +42,15 @@ const canonicalBinding = (binding: RendererBinding): RendererBinding => {
   if (binding.layerGuard !== 'dismissible' && binding.layerGuard !== 'decisive') {
     throw new Error('[ui-base-render] renderer layerGuard is invalid');
   }
+  if (binding.placementScope !== 'workspace' && binding.placementScope !== 'local-primary') {
+    throw new Error('[ui-base-render] renderer placementScope is invalid');
+  }
   return Object.freeze({
     rendererKey: binding.rendererKey,
     component: binding.component,
     layerTier: binding.layerTier,
     layerGuard: binding.layerGuard,
+    placementScope: binding.placementScope,
   });
 };
 
@@ -49,6 +59,7 @@ type RendererBindingInput = Readonly<{
   readonly component: unknown;
   readonly layerTier: LayerTier;
   readonly layerGuard: LayerGuard;
+  readonly placementScope: RendererPlacementScope;
 }>;
 
 type ValidRendererBinding<TValue> =
@@ -67,5 +78,7 @@ export const createRendererCatalog = <TValue>(bindings: readonly ValidRendererBi
   const resolve = (rendererKey: string): RendererBinding | undefined => byRendererKey.get(rendererKey);
   const tierOf = (rendererKey: string): LayerTier | undefined => byRendererKey.get(rendererKey)?.layerTier;
   const guardOf = (rendererKey: string): LayerGuard | undefined => byRendererKey.get(rendererKey)?.layerGuard;
-  return Object.freeze({resolve, tierOf, guardOf});
+  const placementScopeOf = (rendererKey: string): RendererPlacementScope | undefined =>
+    byRendererKey.get(rendererKey)?.placementScope;
+  return Object.freeze({resolve, tierOf, guardOf, placementScopeOf});
 };

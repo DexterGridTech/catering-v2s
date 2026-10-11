@@ -65,6 +65,12 @@ internal fun isPendingUserInstallerAction(
   installerState == "pending-user" &&
   actionState !in setOf("callback-success", "callback-aborted", "callback-failed", "succeeded", "failed")
 
+internal fun pendingUserInstallerReadbackState(
+  sessionPresent: Boolean,
+  installerState: String,
+  actionState: String,
+): String? = if (isPendingUserInstallerAction(sessionPresent, installerState, actionState)) "waiting-user" else null
+
 internal fun isMatchingInstallerConfirmation(
   expectedSessionId: Int,
   confirmationSessionId: Int,

@@ -1,7 +1,11 @@
 export {moduleKind, moduleName} from './moduleName';
 export {dependencyModuleNames, devDependencyModuleNames} from './dependencies';
 export {createProjectBasicModule} from './application/module';
-export {initializeProjectBasicCommand, refreshProjectBasicTopicCommand, refreshProjectTerminalUpdateRulesCommand} from './features/commands/commands';
+export {
+  initializeProjectBasicCommand,
+  refreshProjectBasicTopicCommand,
+  refreshProjectTerminalUpdateRulesCommand,
+} from './features/commands/commands';
 export {
   selectCommercialGroup,
   fixedTargetFromProjectCandidate,

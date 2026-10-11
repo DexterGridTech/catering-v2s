@@ -104,7 +104,7 @@ B 当前已存在的精确入口：`TerminalUpdateRuleOwnerApi.java#RuleSnapshot
 
 ## 5. TestId唯一表（计划新增，非当前存在）
 
-唯一源 `apps/terminal/ui/base/terminal-update-presentation/src/foundations/terminalUpdatePresentationTestIds.ts`，品牌TestId只createTestId(module,part,{element?,key?})。
+唯一源 `apps/terminal/ui/base/admin-shell/src/foundations/adminTestIds.ts`，品牌TestId只createTestId(module,part,{element?,key?})；安装提醒 TestId 归入该对象的 installReminder 子对象。
 
 | 常量 | 元素 | 表达式语义 |
 | --- | --- | --- |

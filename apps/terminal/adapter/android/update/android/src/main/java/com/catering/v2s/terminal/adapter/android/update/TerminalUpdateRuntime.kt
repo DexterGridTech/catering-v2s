@@ -397,12 +397,17 @@ internal object TerminalUpdateRuntime {
       return@synchronized actionResult(taskId, actionId, "unknown", "INSTALLER_SESSION_READBACK_UNAVAILABLE", publicationId, null)
     }
     val sessionPresent = sessionRead.getOrThrow()
-    if (isPendingUserInstallerAction(sessionPresent, value.optString("installerState"), value.optString("actionState"))) {
+    val pendingUserState = pendingUserInstallerReadbackState(
+      sessionPresent,
+      value.optString("installerState"),
+      value.optString("actionState"),
+    )
+    if (pendingUserState != null) {
       Log.i(
         LOG_TAG,
-        "event=installer-readback state=accepted sessionIdValid=${sessionId != PackageInstaller.SessionInfo.INVALID_ID} sessionPresent=true installerState=${value.optString("installerState")} actionState=${value.optString("actionState")}",
+        "event=installer-readback state=$pendingUserState sessionIdValid=${sessionId != PackageInstaller.SessionInfo.INVALID_ID} sessionPresent=true installerState=${value.optString("installerState")} actionState=${value.optString("actionState")}",
       )
-      return@synchronized actionResult(taskId, actionId, "accepted", null, publicationId, value.optString("actionBootId").ifBlank { null })
+      return@synchronized actionResult(taskId, actionId, pendingUserState, null, publicationId, value.optString("actionBootId").ifBlank { null })
     }
     Log.i(
       LOG_TAG,

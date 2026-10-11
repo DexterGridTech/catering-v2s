@@ -8,7 +8,360 @@ import {
   projectAndroidTerminalTopicSubscriptionLog,
   projectAndroidTransportFailureLog,
   projectAndroidTerminalUpdateReportLog,
+  projectTerminalAutomationAppEvent,
 } from '../src/androidAppDiagnostics.js';
+
+describe('TER Stage C owner log projection', () => {
+  it('correlates project and update lifecycle without retaining raw owner data', () => {
+    const projected = projectTerminalAutomationAppEvent({
+      category: 'terminal.update.lifecycle',
+      event: 'artifact-prepare-returned',
+      level: 'info',
+      message: 'must not be copied',
+      context: {commandId: 'cmd-123', requestId: 'request-456'},
+      data: {
+        taskId: 'task-789',
+        artifactKind: 'hot',
+        portStatus: 'succeeded',
+        elapsedMs: 37,
+        downloadGrant: 'private-grant',
+        sourcePath: '/private/path',
+        url: 'https://user:secret@example.invalid/payload',
+      },
+    });
+    expect(projected).toMatchObject({
+      category: 'terminal.update.lifecycle',
+      event: 'artifact-prepare-returned',
+      commandId: 'cmd-123',
+      requestId: 'request-456',
+      taskId: 'task-789',
+      artifactKind: 'hot',
+      portStatus: 'succeeded',
+      elapsedMs: 37,
+    });
+    const serialized = JSON.stringify(projected);
+    for (const forbidden of ['must not be copied', 'private-grant', '/private/path', 'secret', 'example.invalid']) {
+      expect(serialized).not.toContain(forbidden);
+    }
+  });
+
+  it('projects project-basic owner failures and rejects unregistered events', () => {
+    expect(
+      projectTerminalAutomationAppEvent({
+        category: 'terminal.project-basic.read',
+        event: 'owner-read-completed',
+        context: {requestId: 'req-1'},
+        data: {
+          operationId: 'terminalReadProject',
+          dispatchStatus: 'completed',
+          resultKind: 'failure',
+          errorCode: 'UPSTREAM_UNAVAILABLE',
+          elapsedMs: 9,
+        },
+      }),
+    ).toMatchObject({
+      category: 'terminal.project-basic.read',
+      event: 'owner-read-completed',
+      requestId: 'req-1',
+      operationId: 'terminalReadProject',
+      errorCode: 'UPSTREAM_UNAVAILABLE',
+      elapsedMs: 9,
+    });
+    expect(
+      projectTerminalAutomationAppEvent({category: 'terminal.update.lifecycle', event: 'unregistered', data: {}}),
+    ).toBeNull();
+  });
+
+  it('retains safe project-basic update rejection reason codes', () => {
+    expect(
+      projectTerminalAutomationAppEvent({
+        category: 'terminal.project-basic.read',
+        event: 'terminal-update-requested',
+        context: {requestId: 'req-update-1'},
+        data: {
+          resultStatus: 'rejected',
+          reasonCode: 'TARGET_CHANGED',
+          candidatePresent: true,
+          elapsedMs: 21,
+          target: {secret: 'must-not-be-copied'},
+        },
+      }),
+    ).toMatchObject({
+      category: 'terminal.project-basic.read',
+      event: 'terminal-update-requested',
+      requestId: 'req-update-1',
+      resultStatus: 'rejected',
+      reasonCode: 'TARGET_CHANGED',
+      candidatePresent: true,
+      elapsedMs: 21,
+    });
+  });
+
+  it('collects the fixed-task failure events with safe codes and no owner payloads', () => {
+    const events = [
+      {
+        category: 'terminal.update.lifecycle',
+        event: 'target-admission-rejected',
+        data: {
+          reasonCode: 'TARGET_CONTEXT_MISMATCH',
+          message: 'private diagnostic',
+          grant: 'private-grant',
+          url: 'https://private.example.invalid/download',
+          credential: 'private-credential',
+          payload: {activationCode: 'private-payload'},
+          path: '/private/workspace/file',
+        },
+      },
+      {
+        category: 'terminal.update.lifecycle',
+        event: 'target-revalidation-rejected',
+        data: {
+          phase: 'before-commit',
+          reasonCode: 'TARGET_CHANGED',
+          candidatePresent: true,
+          targetValid: true,
+          targetMatches: false,
+          ruleMatches: true,
+          collectionMatches: false,
+          target: {secret: 'must-not-be-copied'},
+        },
+      },
+      {
+        category: 'terminal.project-basic.read',
+        event: 'rules-snapshot-failed',
+        data: {
+          reasonCode: 'SNAPSHOT_COLLECTION_CHANGED',
+          elapsedMs: 17,
+          message: 'private diagnostic',
+          payload: {ruleBody: 'private-payload'},
+        },
+      },
+      {
+        category: 'terminal.project-basic.read',
+        event: 'topic-notification-accept-failed',
+        data: {
+          topicKey: 'TERMINAL_UPDATE_RULES',
+          dispatchStatus: 'failed',
+          resultStatus: 'rejected',
+          message: 'private diagnostic',
+          grant: 'private-grant',
+        },
+      },
+    ];
+    const output = collectAndroidRuntimeFailureDiagnostics(
+      events.map(event => `I/ReactNativeJS (123): ${JSON.stringify(event)}`).join('\n'),
+    );
+
+    expect(output).toContain('"event":"target-admission-rejected"');
+    expect(output).toContain('"reasonCode":"TARGET_CONTEXT_MISMATCH"');
+    expect(output).toContain('"event":"target-revalidation-rejected"');
+    expect(output).toContain('"phase":"before-commit"');
+    expect(output).toContain('"collectionMatches":false');
+    expect(output).toContain('"event":"rules-snapshot-failed"');
+    expect(output).toContain('"reasonCode":"SNAPSHOT_COLLECTION_CHANGED"');
+    expect(output).toContain('"elapsedMs":17');
+    expect(output).toContain('"event":"topic-notification-accept-failed"');
+    expect(output).toContain('"topicKey":"TERMINAL_UPDATE_RULES"');
+    expect(output).toContain('"dispatchStatus":"failed"');
+    expect(output).toContain('"resultStatus":"rejected"');
+    for (const forbidden of [
+      'private diagnostic',
+      'private-grant',
+      'private.example.invalid',
+      'private-credential',
+      'private-payload',
+      '/private/workspace/file',
+    ]) {
+      expect(output).not.toContain(forbidden);
+    }
+  });
+
+  it('projects a deferred fixed-task context with safe readiness and reason fields', () => {
+    const projected = projectTerminalAutomationAppEvent({
+      category: 'terminal.update.lifecycle',
+      event: 'fixed-task-context-not-ready',
+      level: 'info',
+      context: {commandId: 'command-resume'},
+      data: {
+        taskId: 'task-fixed',
+        artifactKind: 'hot',
+        contextReady: false,
+        reasonCode: 'UPDATE_CONTEXT_NOT_READY',
+        secret: 'must-not-leak',
+      },
+    });
+
+    expect(projected).toMatchObject({
+      event: 'fixed-task-context-not-ready',
+      taskId: 'task-fixed',
+      artifactKind: 'hot',
+      contextReady: false,
+      reasonCode: 'UPDATE_CONTEXT_NOT_READY',
+    });
+    expect(JSON.stringify(projected)).not.toContain('must-not-leak');
+  });
+
+  it('captures primary-ready continuation state with only safe lifecycle fields', () => {
+    const received = projectTerminalAutomationAppEvent({
+      category: 'terminal-update.primary-ready',
+      event: 'terminal-update.primary-ready-received',
+      data: {contentReady: true, taskPhase: 'fixed', actionPending: 0, secret: 'must-not-leak'},
+    });
+    const continued = projectTerminalAutomationAppEvent({
+      category: 'terminal-update.primary-ready',
+      event: 'terminal-update.primary-ready-continuation-result',
+      data: {taskId: 'task-safe', dispatchStatus: 'completed', secret: 'must-not-leak'},
+    });
+
+    expect(received).toMatchObject({
+      category: 'terminal-update.primary-ready',
+      event: 'terminal-update.primary-ready-received',
+      contentReady: true,
+      taskPhase: 'fixed',
+      actionPending: 0,
+    });
+    expect(continued).toMatchObject({
+      event: 'terminal-update.primary-ready-continuation-result',
+      taskId: 'task-safe',
+      dispatchStatus: 'completed',
+    });
+    expect(JSON.stringify([received, continued])).not.toContain('must-not-leak');
+  });
+
+  it('retains report-descriptor persistence outcome without exposing binding or report bodies', () => {
+    const projected = projectTerminalAutomationAppEvent({
+      category: 'terminal.update.lifecycle',
+      event: 'report-descriptor-persist-failed',
+      level: 'warn',
+      context: {commandId: 'cmd-report', requestId: null},
+      data: {
+        nextReportSequence: 7,
+        pendingReportCount: 1,
+        sendPaused: true,
+        bindingIdentityPresent: true,
+        contextIdentityPresent: true,
+        persistenceStatus: 'failed',
+        elapsedMs: 11,
+        bindingIdentity: 'private-binding',
+        pendingReports: {report: 'private-body'},
+      },
+    });
+
+    expect(projected).toMatchObject({
+      category: 'terminal.update.lifecycle',
+      event: 'report-descriptor-persist-failed',
+      commandId: 'cmd-report',
+      nextReportSequence: 7,
+      pendingReportCount: 1,
+      sendPaused: true,
+      bindingIdentityPresent: true,
+      contextIdentityPresent: true,
+      persistenceStatus: 'failed',
+      elapsedMs: 11,
+    });
+    const serialized = JSON.stringify(projected);
+    expect(serialized).not.toContain('private-binding');
+    expect(serialized).not.toContain('private-body');
+  });
+
+  it('projects paired topology and admin lifecycle without the peer address or connection identity', () => {
+    const topology = projectTerminalAutomationAppEvent({
+      category: 'topology.peer',
+      event: 'topology.peer.hello-accepted-accepted',
+      context: {commandId: 'pair-command'},
+      data: {
+        localMode: 'SLAVE',
+        messageType: 'hello-accepted',
+        connectionId: 'private-connection',
+        peerHost: '10.0.2.2',
+      },
+    });
+    const admin = projectTerminalAutomationAppEvent({
+      category: 'admin.topology',
+      event: 'admin.topology-operation-completed',
+      data: {operation: 'pair', status: 'completed', reasonCode: 'TOPOLOGY_PAIRED', host: '10.0.2.2'},
+    });
+    expect(topology).toMatchObject({category: 'topology.peer', localMode: 'SLAVE', messageType: 'hello-accepted'});
+    expect(admin).toMatchObject({category: 'admin.topology', operation: 'pair', status: 'completed'});
+    const serialized = JSON.stringify([topology, admin]);
+    expect(serialized).not.toMatch(/private-connection|10\.0\.2\.2/u);
+  });
+
+  it('projects topology state-transfer progress while dropping connection identity and slice contents', () => {
+    const applied = projectTerminalAutomationAppEvent({
+      category: 'topology.peer',
+      event: 'topology.peer.state-full-applied',
+      data: {
+        sliceName: 'terminal.project-basic',
+        direction: 'master-to-slave',
+        revision: 7,
+        changed: true,
+        syncEntryCount: 4,
+        primaryContainerCount: 2,
+        secondaryContainerCount: 1,
+        primaryPartKey: 'private-primary-part',
+        secondaryPartKey: 'private-secondary-part',
+        peerHost: '10.0.2.2',
+        connectionId: 'private-connection',
+        credentialSecret: 'private-secret',
+      },
+    });
+    const failed = projectTerminalAutomationAppEvent({
+      category: 'topology.peer',
+      event: 'topology.peer.state-full-transfer-failed',
+      data: {reason: 'TOPOLOGY_REASSEMBLY_TIMEOUT', deterministic: false, transferId: 'private-transfer'},
+    });
+
+    expect(applied).toMatchObject({
+      category: 'topology.peer',
+      event: 'topology.peer.state-full-applied',
+      sliceName: 'terminal.project-basic',
+      direction: 'master-to-slave',
+      revision: 7,
+      changed: true,
+      syncEntryCount: 4,
+      primaryContainerCount: 2,
+      secondaryContainerCount: 1,
+    });
+    expect(failed).toMatchObject({
+      event: 'topology.peer.state-full-transfer-failed',
+      resultReason: 'TOPOLOGY_REASSEMBLY_TIMEOUT',
+      deterministic: false,
+    });
+    const serialized = JSON.stringify([applied, failed]);
+    for (const forbidden of [
+      'private-primary-part',
+      'private-secondary-part',
+      '10.0.2.2',
+      'private-connection',
+      'private-secret',
+      'private-transfer',
+    ]) {
+      expect(serialized).not.toContain(forbidden);
+    }
+  });
+
+  it('captures allowlisted Runtime owner and topology events from Android logcat without addresses or payloads', () => {
+    const logs = [
+      `I/ReactNativeJS (123): ${JSON.stringify({
+        category: 'topology.peer',
+        event: 'topology.peer.hello-accepted-accepted',
+        data: {localMode: 'SLAVE', messageType: 'hello-accepted', connectionId: 'opaque-id', peerHost: '10.0.2.2'},
+      })}`,
+      `I/ReactNativeJS (123): ${JSON.stringify({
+        category: 'terminal.project-basic.read',
+        event: 'terminal-update-requested',
+        context: {requestId: 'request-safe-1'},
+        data: {dispatchStatus: 'completed', resultKind: 'success', selectedCredential: 'private-secret'},
+      })}`,
+    ].join('\n');
+    const output = collectAndroidRuntimeFailureDiagnostics(logs);
+    expect(output).toContain('topology.peer.hello-accepted-accepted');
+    expect(output).toContain('terminal-update-requested');
+    expect(output).toContain('"localMode":"SLAVE"');
+    for (const forbidden of ['10.0.2.2', 'opaque-id', 'private-secret']) expect(output).not.toContain(forbidden);
+  });
+});
 
 describe('Android terminal rule chain diagnostics', () => {
   it('projects topic subscription outcomes without owner or credential identity', () => {
@@ -149,7 +502,13 @@ describe('Android terminal update report diagnostics', () => {
         reportSequence: 3,
         reportState: 'SUCCEEDED',
         reportReason: 'NONE',
+        taskIdPresent: true,
+        receiptTaskIdPresent: true,
+        receiptTaskMatchesPayload: true,
+        receiptSequenceMatchesPayload: true,
+        receiptOutcome: 'ACCEPTED',
         reportId: 'private-report-id',
+        taskId: 'private-task-id',
         credentialSecret: 'private-secret',
       },
     })}`;
@@ -162,12 +521,36 @@ describe('Android terminal update report diagnostics', () => {
       attemptNumber: 3,
       reportState: 'SUCCEEDED',
       reportReason: 'NONE',
+      taskIdPresent: true,
+      receiptTaskIdPresent: true,
+      receiptTaskMatchesPayload: true,
+      receiptSequenceMatchesPayload: true,
+      receiptOutcome: 'ACCEPTED',
     });
     expect(JSON.stringify(projected)).not.toContain('private-report-id');
+    expect(JSON.stringify(projected)).not.toContain('private-task-id');
     expect(JSON.stringify(projected)).not.toContain('private-secret');
     expect(
       projectAndroidTerminalUpdateReportLog(line.replace('"reportReason":"NONE"', '"reportReason":"PRIVATE_REASON"')),
     ).not.toHaveProperty('reportReason');
+  });
+
+  it('projects report task identity comparisons without exposing the task identity', () => {
+    const projected = projectTerminalAutomationAppEvent({
+      category: 'terminal.update.lifecycle',
+      event: 'report-submit-started',
+      data: {
+        taskIdPresent: true,
+        taskMatchesCurrentTask: true,
+        taskMatchesRecentStatus: false,
+      },
+    });
+    expect(projected).toMatchObject({
+      taskIdPresent: true,
+      taskMatchesCurrentTask: true,
+      taskMatchesRecentStatus: false,
+    });
+    expect(JSON.stringify(projected)).not.toContain('private-task-id');
   });
 });
 

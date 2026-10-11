@@ -22,6 +22,8 @@ Dexter 2026-10-09 追加边界：只满足常见主流程，不为极端情况�
 
 Dexter 2026-10-10 职责裁决：阶段 C 新建 `apps/terminal/kernel/feature/project-basic`。项目终端版本规则是业务数据，与项目、大区、商业集团资料一起由该 feature 拥有；后面三类资料从 store-basic 搬出，规则数据链从 base/terminal-update 搬出。store-basic 只保留门店及其经营规则、合同、服务点区域/服务点；terminal-update 只保留本机版本判断、固定任务、执行策略、下载/安装/加载与报告。此条覆盖本包旧的“update slice 同步规则”方案及历史单一 store-basic 组织资料归属；不原位修改历史需求、规范或 A/B 文档，不表示当前源码已搬移。该职责边界仍是当前实施依据。
 
+Dexter 2026-10-11 明确配对/解绑语义：配对不调用 `appControl.resetRuntime`；角色切换后复用 topology 现有 state-sync，把已声明为 `master-to-slave` 的主机共享 slice 权威覆盖到副机，未声明同步的本机状态保持本地，不做全局 reset。解绑不做 root reset：Topology 发 `requestTopologySlaveUnpairStateClearCommand`，TDC actor 清空并 flush 本机两个 TDC-owned slices；成功后 TDC 发 `completeTopologySlaveUnpairStateClearCommand`，Topology 收到后才继续解绑/角色转换。普通断链保留凭证；不清 `terminal-update` 本机固定任务。解绑后 TDC 无凭证，CBS 报告请求可失败，但不能阻止本机已固定更新任务继续执行。
+
 Dexter 同日追加：project-basic 有版本信息需要升级时，必须发送 terminal-update 的公开 command，由 terminal-update actor 承接。project-basic 负责选取业务适用候选与发出请求；terminal-update 负责最终实际版本比较、固定及执行，不自己订阅业务规则/自行发起候选。selector 只用于读状态和提交前身份复核，不得代替此跨包指令。
 
 ### 0.0 本轮共享凭证裁决与范围
@@ -34,17 +36,17 @@ C完整目标包括共用CBS credential/cancel鉴权及canonical/generated、TDC
 
 静态截面更新为 2026-10-10：本次依据 B 当前生产源码与直接测试读取，不读取运行产物，不代表 B 已验收。附件保存具体锚点；实施前重开，不将行号/hash当长期规则。
 
-| 接缝 | 当前静态事实 | C 处置与准入 |
-| --- | --- | --- |
-| A 固定核 | actual/embedded、FULL→HOT、boot/action、prepared release 在 owner/adapter 已存在 | 复用；A 最终接受范围仍由其交付 review 确定，C 不重建 loader/installer |
-| B TER | 全规则分页目前在 base/terminal-update；TDC grant/HTTP report、PONG补发已写入 source；显式接受 ruleRef | C 将规则读取/订阅/持久数据搬到 project-basic；grant/执行/报告仍复用原核，不另建链路 |
-| B 规则时间 | RuleSnapshotItem、terminalSnapshot、edge wire、generated 已传规则自身 createdAtEpochMillis；与 artifact 时间不同 | STATIC_PRESENT；直接搬移该字段/排序消费，不再要求 B 补一个已存在字段；实际行为证明仍非本次对象 |
-| B 报告 | TerminalUpdateReportController→ReportOwnerService→ReportPersistence 与 terminal_update.terminal_report 已存在；TER taskId 经 createProtocolUuid 生成，reportSequence 属绑定周期 | STATIC_PRESENT；2026-10-10 已修复并 focused 验证同 binding context 变化保留序号、无任务观察按实际版本事实去重；CP-01 仍重读最终接口与报告状态形状，不在 C 重建 POST/表/账本 |
-| B 初次观察/快照重读 | 无任务 actual observation 已增加按 binding/context 实际版本事实的持久去重标记；snapshot 遇成员变化的有限整快照重读仍待核 | 初次 observation 的阶段 B S-1 已由 focused 测试证明；有限快照重读在 CP-01 按当前 owning source 核验后再决定复用或修正，不能把计划写成运行通过 |
-| runtime/render | 双屏共享 Runtime；无统一最后点击事实 | C 新增 isolated fact 与统一承载采集 |
-| topology | 规则未 sync；配对/HELLO 强制同 moduleName，protocol=1 | 保留同 App 身份检查；C 只增加同 App 规则投影和下载接缝 |
-| store-basic 组织资料 | organizationPath、PROJECT/REGION/COMMERCIAL_GROUP 订阅与 projectStatus 当前在 store-basic；合同加载与组织加载在同函数 | C 拆出 project-basic；合同留原包且不等待项目资料成功，两套 assembly 同步换公开 selector |
-| automation | 当前唯一入口 terminal-automation，已有 A update case；无 C pair/policy suite | C 扩现有 driver，不调用退役入口 |
+| 接缝                 | 当前静态事实                                                                                                                                                                    | C 处置与准入                                                                                                                                                                |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A 固定核             | actual/embedded、FULL→HOT、boot/action、prepared release 在 owner/adapter 已存在                                                                                                | 复用；A 最终接受范围仍由其交付 review 确定，C 不重建 loader/installer                                                                                                       |
+| B TER                | 全规则分页目前在 base/terminal-update；TDC grant/HTTP report、PONG补发已写入 source；显式接受 ruleRef                                                                           | C 将规则读取/订阅/持久数据搬到 project-basic；grant/执行/报告仍复用原核，不另建链路                                                                                         |
+| B 规则时间           | RuleSnapshotItem、terminalSnapshot、edge wire、generated 已传规则自身 createdAtEpochMillis；与 artifact 时间不同                                                                | STATIC_PRESENT；直接搬移该字段/排序消费，不再要求 B 补一个已存在字段；实际行为证明仍非本次对象                                                                              |
+| B 报告               | TerminalUpdateReportController→ReportOwnerService→ReportPersistence 与 terminal_update.terminal_report 已存在；TER taskId 经 createProtocolUuid 生成，reportSequence 属绑定周期 | STATIC_PRESENT；2026-10-10 已修复并 focused 验证同 binding context 变化保留序号、无任务观察按实际版本事实去重；CP-01 仍重读最终接口与报告状态形状，不在 C 重建 POST/表/账本 |
+| B 初次观察/快照重读  | 无任务 actual observation 已增加按 binding/context 实际版本事实的持久去重标记；snapshot 遇成员变化的有限整快照重读仍待核                                                        | 初次 observation 的阶段 B S-1 已由 focused 测试证明；有限快照重读在 CP-01 按当前 owning source 核验后再决定复用或修正，不能把计划写成运行通过                               |
+| runtime/render       | 双屏共享 Runtime；无统一最后点击事实                                                                                                                                            | C 新增 isolated fact 与统一承载采集                                                                                                                                         |
+| topology             | 规则未 sync；配对/HELLO 强制同 moduleName，protocol=1                                                                                                                           | 保留同 App 身份检查；C 只增加同 App 规则投影和下载接缝                                                                                                                      |
+| store-basic 组织资料 | organizationPath、PROJECT/REGION/COMMERCIAL_GROUP 订阅与 projectStatus 当前在 store-basic；合同加载与组织加载在同函数                                                           | C 拆出 project-basic；合同留原包且不等待项目资料成功，两套 assembly 同步换公开 selector                                                                                     |
+| automation           | 当前唯一入口 terminal-automation，已有 A update case；无 C pair/policy suite                                                                                                    | C 扩现有 driver，不调用退役入口                                                                                                                                             |
 
 当前 B 静态 findings 与 C 依赖对应见 `doc/review/platform/2026-10-10-ter-version-update-stage-b-source-static-review-claude.md`、本次 C source-impact intake。没有进入 C 的 B 普通后台修复不得被搬成 C 新功能。
 
@@ -54,51 +56,51 @@ C完整目标包括共用CBS credential/cancel鉴权及canonical/generated、TDC
 
 用户要的是：管理员只维护规则，主副机独立自动达到最新适用目标；FULL 持续邀请、HOT 按本机点击等待；真实运行结果可见。无需新管理界面、通用调度平台或双机共同提交。
 
-| 可行路线 | 优点/代价 | 决定 |
-| --- | --- | --- |
-| project-basic 拥有业务资料；现有 update owner＋纯选择函数＋本机一次截止 timer | 明确数据与执行归属，搬移现有 B/组织读取链，复用 A 核；可以证伪竞态 | 采用 |
-| 继续把项目业务资料/规则放在 store-basic 或 base/update | 少一次搬移，但混淆领域职责，造成 base 持有项目业务缓存 | 按 Dexter 裁决拒绝；不以兼容层保留旧事实副本 |
-| 另建 scheduler/队列、按历史规则逐条执行 | 第二账本、抢占/回放复杂，违反唯一规则配对 | 拒绝 |
-| React effect 驱动主机并复制执行结果给副机 | 少初始代码，但无页面漏启动、双机版本混淆 | 拒绝 |
+| 可行路线                                                                      | 优点/代价                                                          | 决定                                         |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------------ | -------------------------------------------- |
+| project-basic 拥有业务资料；现有 update owner＋纯选择函数＋本机一次截止 timer | 明确数据与执行归属，搬移现有 B/组织读取链，复用 A 核；可以证伪竞态 | 采用                                         |
+| 继续把项目业务资料/规则放在 store-basic 或 base/update                        | 少一次搬移，但混淆领域职责，造成 base 持有项目业务缓存             | 按 Dexter 裁决拒绝；不以兼容层保留旧事实副本 |
+| 另建 scheduler/队列、按历史规则逐条执行                                       | 第二账本、抢占/回放复杂，违反唯一规则配对                          | 拒绝                                         |
+| React effect 驱动主机并复制执行结果给副机                                     | 少初始代码，但无页面漏启动、双机版本混淆                           | 拒绝                                         |
 
 只允许同 App 配对，复用现有 moduleName/protocol 检查，不扩任意 App 兼容矩阵。副机用自己的TDC HTTP向CBS取得短期download grant，删除逐次peer中转；完整HTTP清单不进入peer command，不增加WS分片。N/M 用同 owner 技术桥，不给每个 feature 加监听或忙闲判断。
 
 ## 2. CP 总览及实际退出
 
-| CP | 完整阶段 | 出口 focused/静态事实（非整体验收） |
-| --- | --- | --- |
+| CP    | 完整阶段                                                                                                          | 出口 focused/静态事实（非整体验收）                                                     |
+| ----- | ----------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
 | CP-01 | A/B 接口准入、project-basic 建包及资料/规则链搬移、两 assembly selector 接线、固定 policy/context、比较与生成同步 | 单一数据 owner；当前周期前提/分页/订退/失败与旧读面删除反例；接口缺口关闭或具体 BLOCKED |
-| CP-02 | Runtime 最后点击、render 采集、foreground 技术桥与模块常驻生命周期 | 点击不吞、双屏共用、新 boot 播种、订阅无空窗、cleanup focused |
-| CP-03 | 同 owner 自动选择、固定 N/M、FULL 邀请与 HOT deadline、跨启动续接 | flush/迟到/timer/UNKNOWN/ended-session 等反例；本机一次执行 |
-| CP-04 | project-basic 组织/规则投影、副机 context、TDC credential-only同步/保存、副机直接CBS grant、下载校验接缝 | 本机事实不覆盖、同 App 不同版本/不同 App 拒绝、帧边界与身份反例 |
-| CP-05 | 本机邀请呈现、两 integration 接线、唯一 driver 和全部场景源码 | UI/TestId 对账、场景真实触发/selector结果/owned cleanup 源码与 focused |
-| CP-06 | seed/fixture/执行资源和跨阶段最终静态收敛 | 场景/数据/权限/预算清单、适用类型/编译/机械门、最终 source closure |
+| CP-02 | Runtime 最后点击、render 采集、foreground 技术桥与模块常驻生命周期                                                | 点击不吞、双屏共用、新 boot 播种、订阅无空窗、cleanup focused                           |
+| CP-03 | 同 owner 自动选择、固定 N/M、FULL 邀请与 HOT deadline、跨启动续接                                                 | flush/迟到/timer/UNKNOWN/ended-session 等反例；本机一次执行                             |
+| CP-04 | project-basic 组织/规则投影、副机 context、TDC credential-only同步/保存、副机直接CBS grant、下载校验接缝          | 本机事实不覆盖、同 App 不同版本/不同 App 拒绝、帧边界与身份反例                         |
+| CP-05 | 本机邀请呈现、两 integration 接线、唯一 driver 和全部场景源码                                                     | UI/TestId 对账、场景真实触发/selector结果/owned cleanup 源码与 focused                  |
+| CP-06 | seed/fixture/执行资源和跨阶段最终静态收敛                                                                         | 场景/数据/权限/预算清单、适用类型/编译/机械门、最终 source closure                      |
 
 每 CP focused 和修复完成后完整 CP fresh 三维对账 MATCHED 再进入下一 CP。**全 CP→全批 6b→整体验收→13c＋整批 implementation review**；CP-06 不等待后面的整体验收/cleanup/13c，动态结果不回流成为 CP-06 的首次出口。动态发现源码修复时只回到受影响 CP 差量及全批影响复核，不无变化重做旧对账。
 
 ## 3. 横切机制对照（固定行集）
 
-| 机制 | 现成能力/规范 | 可证伪观察 | 形态/本批全集 |
-| --- | --- | --- | --- |
-| 读侧节点授权 | B terminal-update owner task read | [HTTP] 换项目/门店 grant 拒绝 | C不新增后台GET；供给/报告复用 B |
-| 凭证鉴权与 grant 复核 | TDC角色分类；CBS凭证鉴权与issueGrant/content业务复核 | [focused+HTTP] 旧binding拒绝；换主机先清凭证；普通断链后仍可直连 | §8.6 全部主副机下载；仅同一TDC credential投影 |
-| 跨 owner 写与事务 | TR-01/09 actor dispatchAction | [静态] update不写runtime/topology/TDC slice | 点击、规则、任务、报告各 owner；无新事务 |
-| 集合形态与分页 | B完整快照/hash分页 | [focused] 末页/空/跨hash不ready | 全项目规则，不按主机App先过滤 |
-| 缓存失效 / 改完刷新什么 | currentRuleContext/Topology readiness | [focused] 旧连接/项目规则不可择新 | 未固定资格失效；固定任务不撤换 |
-| RTK 数据读取与加载判定 | N/A：C不改两后台查询 | B RTK/foundation回归按影响选择 | TER selector不使用RTK |
-| 同一事实只有一个住址 | project-basic业务数据、terminal-update本机任务＋runtime＋native最小记录 | [focused] projection保留本机task/actual，旧两包不再保存组织/规则副本 | 项目/大区/集团/规则只权威MAIN，副机投影；固定task.target是已接受任务事实，不是实时规则缓存 |
-| 失败可见且原因不得改写 | B finite reason映射/最近状态 | [focused] FULL成功HOT失败实际分列 | 无原始异常或伪success |
-| owner错误到HTTP映射与注册处 | B catalog/error disposition | [HTTP] 403/409/422沿原操作；无新增op | C内部失败用具名typed结果，不改B error集 |
-| 新owner审计三件套 | N/A：没有新CBS owner/业务写 | [静态] 没有新增audit表/路由 | B规则审计沿原模型，C不自建流水 |
-| 幂等键构成与重放语义 | task/action/boot身份，Runtimerequest | [focused] 重复通知/两屏零第二准备 | taskId沿B最终契约，不重新计算替换旧task |
-| 该用生成物不得手搓字符串 | canonical artifact/topic、generatedTDC | [类型] 最终schema/codegen消费一致 | 修改公共port/selector/invariants/README原子组 |
-| 日志落点与脱敏字段 | AGENTS/observability | [focused] 日志无credential/grant/path/raw | policy/role/boot/action/pair/cleanup事件 |
-| 迁移回填与可逆性 | state descriptor现有持久化 | [focused] A/B未fixed target没有policy不得自动猜值 | §10最小版本读取；不变造旧策略 |
-| 前端共享行为 | TERui-state/render/primitives；Bfoundation | [组件] 仅一个local邀请、focus恢复 | 不重复Dialog/overlay/后台Drawer |
-| 管理后台交互一致性 | B三交互工件、前端§3-K | [UI] 复用包页/规则报告Tab，不新增控件 | C变化限TER，B承载未变 |
-| 候选/下拉数据源 | N/A：无新增候选 | [静态] 终端无规则选择器 | 管理选包/门店继续B |
-| 编码与名称呈现 | B应用/版本事实、有限原因中文 | [组件] 不以ruleRef当标题 | 本机current→target、N分钟 |
-| 会同时坏的东西原子组 | §9a路径组 | [类型/focused] 两App/port/default/adapter/consumer全对齐 | 全部公共面与driver场景 |
+| 机制                        | 现成能力/规范                                                           | 可证伪观察                                                           | 形态/本批全集                                                                              |
+| --------------------------- | ----------------------------------------------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| 读侧节点授权                | B terminal-update owner task read                                       | [HTTP] 换项目/门店 grant 拒绝                                        | C不新增后台GET；供给/报告复用 B                                                            |
+| 凭证鉴权与 grant 复核       | TDC角色分类；CBS凭证鉴权与issueGrant/content业务复核                    | [focused+HTTP] 旧binding拒绝；换主机先清凭证；普通断链后仍可直连     | §8.6 全部主副机下载；仅同一TDC credential投影                                              |
+| 跨 owner 写与事务           | TR-01/09 actor dispatchAction                                           | [静态] update不写runtime/topology/TDC slice                          | 点击、规则、任务、报告各 owner；无新事务                                                   |
+| 集合形态与分页              | B完整快照/hash分页                                                      | [focused] 末页/空/跨hash不ready                                      | 全项目规则，不按主机App先过滤                                                              |
+| 缓存失效 / 改完刷新什么     | currentRuleContext/Topology readiness                                   | [focused] 旧连接/项目规则不可择新                                    | 未固定资格失效；固定任务不撤换                                                             |
+| RTK 数据读取与加载判定      | N/A：C不改两后台查询                                                    | B RTK/foundation回归按影响选择                                       | TER selector不使用RTK                                                                      |
+| 同一事实只有一个住址        | project-basic业务数据、terminal-update本机任务＋runtime＋native最小记录 | [focused] projection保留本机task/actual，旧两包不再保存组织/规则副本 | 项目/大区/集团/规则只权威MAIN，副机投影；固定task.target是已接受任务事实，不是实时规则缓存 |
+| 失败可见且原因不得改写      | B finite reason映射/最近状态                                            | [focused] FULL成功HOT失败实际分列                                    | 无原始异常或伪success                                                                      |
+| owner错误到HTTP映射与注册处 | B catalog/error disposition                                             | [HTTP] 403/409/422沿原操作；无新增op                                 | C内部失败用具名typed结果，不改B error集                                                    |
+| 新owner审计三件套           | N/A：没有新CBS owner/业务写                                             | [静态] 没有新增audit表/路由                                          | B规则审计沿原模型，C不自建流水                                                             |
+| 幂等键构成与重放语义        | task/action/boot身份，Runtimerequest                                    | [focused] 重复通知/两屏零第二准备                                    | taskId沿B最终契约，不重新计算替换旧task                                                    |
+| 该用生成物不得手搓字符串    | canonical artifact/topic、generatedTDC                                  | [类型] 最终schema/codegen消费一致                                    | 修改公共port/selector/invariants/README原子组                                              |
+| 日志落点与脱敏字段          | AGENTS/observability                                                    | [focused] 日志无credential/grant/path/raw                            | policy/role/boot/action/pair/cleanup事件                                                   |
+| 迁移回填与可逆性            | state descriptor现有持久化                                              | [focused] A/B未fixed target没有policy不得自动猜值                    | §10最小版本读取；不变造旧策略                                                              |
+| 前端共享行为                | TERui-state/render/primitives；Bfoundation                              | [组件] 仅一个local邀请、focus恢复                                    | 不重复Dialog/overlay/后台Drawer                                                            |
+| 管理后台交互一致性          | B三交互工件、前端§3-K                                                   | [UI] 复用包页/规则报告Tab，不新增控件                                | C变化限TER，B承载未变                                                                      |
+| 候选/下拉数据源             | N/A：无新增候选                                                         | [静态] 终端无规则选择器                                              | 管理选包/门店继续B                                                                         |
+| 编码与名称呈现              | B应用/版本事实、有限原因中文                                            | [组件] 不以ruleRef当标题                                             | 本机current→target、N分钟                                                                  |
+| 会同时坏的东西原子组        | §9a路径组                                                               | [类型/focused] 两App/port/default/adapter/consumer全对齐             | 全部公共面与driver场景                                                                     |
 
 第三方行为及实际版本在附件 §3；不新增库。所有观察是未来计划，当前 NOT_RUN。
 
@@ -106,31 +108,31 @@ C完整目标包括共用CBS credential/cancel鉴权及canonical/generated、TDC
 
 UI_DESIGN_REVIEW=OPEN；TESTID_REVIEW=OPEN；L2_SCRIPT_ADMISSION=BLOCKED。
 
-| case/action | 控件/动作 | owning source（计划） | TestIds唯一源 | 实际目标/观察 |
-| --- | --- | --- | --- | --- |
-| update.install-reminder/defer | 稍后click | ui/base/terminal-update-presentation/components/InstallInvitation.tsx | terminalUpdatePresentationTestIds.deferInstall | PrimitiveButton；request匹配本task，N重新计时 |
-| update.install-reminder/install | 安装click | 同上 | confirmInstall | Button；flush/action/actual，不只request完成 |
-| update.idle/click | 内容、admin、虚拟键盘、SECONDARY操作 | 既有sample/admin/input | 各包现有TestIds | 真实操作＋lastClick变化＋零吞操作 |
-| update.pair/recover | 左上admin、取消配对/地址 | admin-shell/topology/server-config-panel | 原ownerTestIds | 本机恢复入口，不新增业务按钮 |
-| update.supply-chain/admin | 上传、保存、规则新建/启停、报告Tab/详情/历史 | B两后台既有feature | B附件§9常量 | 标准容器，合法role/session，真实HTTP状态 |
-| update.install-reminder/native | installer/来源设置/系统返回 | Android外部系统 | N/A:driver系统UI窄例外 | uiautomator语义身份，不读TER文本替代TestId |
+| case/action                     | 控件/动作                                    | owning source（计划）                                                  | TestIds唯一源                                    | 实际目标/观察                                 |
+| ------------------------------- | -------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------ | --------------------------------------------- |
+| update.install-reminder/defer   | 稍后click                                    | ui/base/admin-shell/src/components/installReminder/InstallReminder.tsx | adminShellTestIds.installReminder.deferInstall   | PrimitiveButton；request匹配本task，N重新计时 |
+| update.install-reminder/install | 安装click                                    | 同上                                                                   | adminShellTestIds.installReminder.confirmInstall | Button；flush/action/actual，不只request完成  |
+| update.idle/click               | 内容、admin、虚拟键盘、SECONDARY操作         | 既有sample/admin/input                                                 | 各包现有TestIds                                  | 真实操作＋lastClick变化＋零吞操作             |
+| update.pair/recover             | 左上admin、取消配对/地址                     | admin-shell/topology/server-config panel（并入 admin-shell）           | 原ownerTestIds                                   | 本机恢复入口，不新增业务按钮                  |
+| update.supply-chain/admin       | 上传、保存、规则新建/启停、报告Tab/详情/历史 | B两后台既有feature                                                     | B附件§9常量                                      | 标准容器，合法role/session，真实HTTP状态      |
+| update.install-reminder/native  | installer/来源设置/系统返回                  | Android外部系统                                                        | N/A:driver系统UI窄例外                           | uiautomator语义身份，不读TER文本替代TestId    |
 
 UI/constant/真实节点 focused＋fresh复核齐备后才能写/修改动作 binding；任意变更重新 BLOCKED。TestId用createTestId(module,part,{element?,key?})、禁止cast。B现有控制面若无变动只核适用性，不复制同一表或重新L2全量。
 
-**控制面全集**：唯一 `scripts/test/terminal-automation.mjs`、`tools/terminal-automation/src/{runner,managedRun,androidDevice,androidAutomationConnection,androidCleanupRecovery}.ts` 及对应 tests、既有Web/Android journey UI ports、同工具 `journeys/update.policy.test.ts`/`update.policy.android.test.ts`/`update.pair.android.test.ts`、共享 `journeys/updatePolicyJourney.ts`、既有 update supply/admin helper与fixture、`.agents/skills/cs-terminal-automation/SKILL.md`（仅API变动同步）、resource profile/health/format已有登记源。拟case为 update.project-data、update.auto-selection、update.idle、update.install-reminder、update.pair、update.supply-chain；case属于metadata，不进入目录/类名。参数与suite显式登记，未实现必须拒绝启动。
+**控制面全集**：唯一 `scripts/test/terminal-automation.mjs`、`tools/terminal-automation/src/{runner,managedRun,androidDevice,androidAutomationConnection,androidCleanupRecovery}.ts` 及对应 tests、既有Web/Android journey UI ports、同工具 `journeys/update.policy.test.ts`/`update.policy.android.test.ts`/`update.pair.android.test.ts`、共享 `journeys/updatePolicyJourney.ts`、既有 update supply/admin helper与fixture、`.agents/skills/cs-terminal-automation/SKILL.md`（仅API变动同步）、resource profile/health/format已有登记源。阶段 C 的顶层 CLI case 仅为可执行的 `update.supply-chain` 与 `update.pair`；§11 的 `update.*` 名称是验收矩阵行 ID，不是 `--case` 参数，也不各自启动 runner。粒度较小的 owner 分支由 §11a 指定的 focused tests 覆盖，业务主链由这两条 journey 覆盖；未列入真实 runner 的标签必须由参数解析拒绝，不能登记成“可选但未实现”的伪 case。case 名不进入目录/类名。
 
 C不新增后台browser-L2 suite/八文件控制面；同DEV供给链复用 B 现行 §15.2a 的唯一 `scripts/test/terminal-automation.mjs` → `tools/terminal-automation/src/runner.ts` → `update.supply-chain`，后台与TER动作在同一父run内顺序执行。后台DOM操作复用 `terminalUpdateSupplyUi.ts` 的Playwright/helper，TER React控件走agent，系统安装/设置只用driver窄例外；不是两个入口或两个managed run的交接。父run拥有其新建browser/context/session及TER设备、reverse/forward、安装与绑定，统一预算、首败诊断和cleanup；DEV已有Vite/tunnel只借用，不停止或计作本run资源。CP-01重开B最终argv、helper、DEV来源与fixture交接，CP-05只扩同一入口的C自动选择断言，不新造runner。若实际需改后台控件或新增隔离L2，先回设计补完整控制面、单独授权，不用本节N/A逃过准入。
 
 ## 4. 各 CP 门控
 
-| CP | 可证伪失败条件 | 不变量 / FORBID | 比例验证/形态理由 | RECALL |
-| --- | --- | --- | --- | --- |
-| 01 | 项目资料/规则留两份；store与project循环等待；base反向依赖feature；B字段未闭合 | project-basic单一数据owner，公开selector＋command；A/B接口读回，不改B文档/后台语义，不用fixture冒充供给 | 搬移focused＋纯选择反例，复用现有读取核 | reqR01/06/09；Dexter2026-10-10；本稿§8.0；当前源 |
-| 02 | 页面未挂载不订阅；任一屏点击被吞；旧boot时间继承 | isolated/runtime actor唯一写；不得逐按钮effect或业务callback | 模块/组件fake timer＋同原动作断言 | reqR07/12；TR01/03/11；SurfaceRoot/Runtime资源 |
-| 03 | 新通知抢固定任务；同boot领取第二条；N重新commitUNKNOWN；M绕过flush | 同核、持久policy、一次截止；不得等待上限/坏包重试 | owner时序/持久化失败、native sessionfocused | reqR09～14；A核/port；本稿§8 |
-| 04 | 全slice投影；未保存凭证可用；解绑后带共享凭证变MASTER；仍逐次peer grant | 业务record＋TDC credential唯一entry；副机无激活取消/TDS/report | 双Runtime sync/flush/plain迁移/角色/HTTP gate focused；native原核 | reqR07/08/15；本会话裁决；state/topology/TDC |
-| 05 | 旧runner/假selector完成替代真实操作；邀请重复或挡admin | ui仅selector/command；driver唯一owned | UITestIdfocused、runner自测、同清单双端 | IA/UI、automation正式需求/skill、§3a |
-| 06 | 未授权reset/seed；动态结果回流CP退出；旧proof称current | seed只来源契约；CP与6b动态顺序；不得全仓无关verify | 相关类型/机械门、资源cleanupfocused，静态场景读回 | scriptsREADME、实施模板6c、§10b/11 |
+| CP  | 可证伪失败条件                                                                | 不变量 / FORBID                                                                                         | 比例验证/形态理由                                                 | RECALL                                           |
+| --- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------ |
+| 01  | 项目资料/规则留两份；store与project循环等待；base反向依赖feature；B字段未闭合 | project-basic单一数据owner，公开selector＋command；A/B接口读回，不改B文档/后台语义，不用fixture冒充供给 | 搬移focused＋纯选择反例，复用现有读取核                           | reqR01/06/09；Dexter2026-10-10；本稿§8.0；当前源 |
+| 02  | 页面未挂载不订阅；任一屏点击被吞；旧boot时间继承                              | isolated/runtime actor唯一写；不得逐按钮effect或业务callback                                            | 模块/组件fake timer＋同原动作断言                                 | reqR07/12；TR01/03/11；SurfaceRoot/Runtime资源   |
+| 03  | 新通知抢固定任务；同boot领取第二条；N重新commitUNKNOWN；M绕过flush            | 同核、持久policy、一次截止；不得等待上限/坏包重试                                                       | owner时序/持久化失败、native sessionfocused                       | reqR09～14；A核/port；本稿§8                     |
+| 04  | 全slice投影；未保存凭证可用；解绑后带共享凭证变MASTER；仍逐次peer grant       | 业务record＋TDC credential唯一entry；副机无激活取消/TDS/report                                          | 双Runtime sync/flush/plain迁移/角色/HTTP gate focused；native原核 | reqR07/08/15；本会话裁决；state/topology/TDC     |
+| 05  | 旧runner/假selector完成替代真实操作；邀请重复或挡admin                        | ui仅selector/command；driver唯一owned                                                                   | UITestIdfocused、runner自测、同清单双端                           | IA/UI、automation正式需求/skill、§3a             |
+| 06  | 未授权reset/seed；动态结果回流CP退出；旧proof称current                        | seed只来源契约；CP与6b动态顺序；不得全仓无关verify                                                      | 相关类型/机械门、资源cleanupfocused，静态场景读回                 | scriptsREADME、实施模板6c、§10b/11               |
 
 ## 5. operation / path / face / 规模
 
@@ -140,38 +142,38 @@ C不新增CBS operation身份或管理权限；本轮修改既有terminal-bindin
 
 ## 6. 引入事实、关系与生命周期
 
-| 事实 | 唯一owner/住址 | 持久/同步/失效 |
-| --- | --- | --- |
-| lastLocalInteractionAt + revision | Runtime新增isolated slice | ephemeral、不sync，新JS初始化now；revision每click加1仅为本机竞态身份 |
-| presentation availability | update adapter技术观察→owner command | ephemeral、本机；foreground且可呈现；系统pending额外由readAction判定 |
-| currentTask.bootId（既有字段） | currentTask 内执行 boot 事实 | 持久/isolated；执行前 flush 更新，旧动作确认不更新；无第二名额账本 |
-| FULL/HOT policy | 固定task.target.strategy | 持久、isolated；nSeconds/hotStrategy/mSeconds来自所选B规则并在port前flush |
-| installation invitation | update owner presentation事实，UI只读 | ephemeral、local；taskId/actionId/boot关联；每机一份 |
-| reminder deadline / idle schedule | update owner运行资源 | 一个timer、epoch/runtime关联；durable lastInviteAt可随task保存，background仅due；M时间不持久 |
-| 项目/大区/商业集团资料及组织路径 | project-basic owner-only 持久 slice | MAIN取得/保存，SLAVE record投影；不再存 store-basic.organizationPath；沿真实组织引用链 |
-| 完整项目规则快照 | project-basic 同一业务 slice 的 rules entry | MAIN权威、SLAVE只读；items/hash/非秘密context；不含task/actual/路径/报告；不先按主机App/版本过滤 |
-| store 当前周期加载前提 | store-basic.loadReadiness | storeStatus仍归原包；projectStatus/projectRef门移至project-basic，hydrated数据不冒充当前周期成功 |
+| 事实                              | 唯一owner/住址                                  | 持久/同步/失效                                                                                             |
+| --------------------------------- | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| lastLocalInteractionAt + revision | Runtime新增isolated slice                       | ephemeral、不sync，新JS初始化now；revision每click加1仅为本机竞态身份                                       |
+| presentation availability         | update adapter技术观察→owner command            | ephemeral、本机；foreground且可呈现；系统pending额外由readAction判定                                       |
+| currentTask.bootId（既有字段）    | currentTask 内执行 boot 事实                    | 持久/isolated；执行前 flush 更新，旧动作确认不更新；无第二名额账本                                         |
+| FULL/HOT policy                   | 固定task.target.strategy                        | 持久、isolated；nSeconds/hotStrategy/mSeconds来自所选B规则并在port前flush                                  |
+| installation invitation           | update owner presentation事实，UI只读           | ephemeral、local；taskId/actionId/boot关联；每机一份                                                       |
+| reminder deadline / idle schedule | update owner运行资源                            | 一个timer、epoch/runtime关联；durable lastInviteAt可随task保存，background仅due；M时间不持久               |
+| 项目/大区/商业集团资料及组织路径  | project-basic owner-only 持久 slice             | MAIN取得/保存，SLAVE record投影；不再存 store-basic.organizationPath；沿真实组织引用链                     |
+| 完整项目规则快照                  | project-basic 同一业务 slice 的 rules entry     | MAIN权威、SLAVE只读；items/hash/非秘密context；不含task/actual/路径/报告；不先按主机App/版本过滤           |
+| store 当前周期加载前提            | store-basic.loadReadiness                       | storeStatus仍归原包；projectStatus/projectRef门移至project-basic，hydrated数据不冒充当前周期成功           |
 | project 当前周期加载/规则就绪前提 | project-basic.loadReadiness及ruleSnapshotStatus | 本机运行态不持久；组织flush后可用；规则全页flush后ready；副机另依当前connection投影资格，不伪造主机flushed |
-| fixed origin | task内 context/pair origin | 持久；标起始空间/项目/门店/绑定generation或pair身份，不为其续接重选 |
-| 共享terminal credential | 原TDC slice.credential，MASTER bootstrap权威 | 两机plain持久；record仅一credential entry，见§8.6.1 |
-| scoped download grant | 各机TDC HTTP→各机update attempt | CBS短期授权、零slice持久/零sync；过期重取同artifact，无MAIN中转 |
+| fixed origin                      | task内 context/pair origin                      | 持久；标起始空间/项目/门店/绑定generation或pair身份，不为其续接重选                                        |
+| 共享terminal credential           | 原TDC slice.credential，MASTER bootstrap权威    | 两机plain持久；record仅一credential entry，见§8.6.1                                                        |
+| scoped download grant             | 各机TDC HTTP→各机update attempt                 | CBS短期授权、零slice持久/零sync；过期重取同artifact，无MAIN中转                                            |
 
 不改TR-09 retain范围：update owner已批准持久currentTask/recentStatus/failedArtifactIds；B报告descriptor按其最终批准语义。project-basic 不声明 retain，root reset 清其组织/规则资料及资格；固定本机task按批准retain语义处理，不能从旧缓存恢复新候选资格。Runtime点击/presentation/timer仍清除。project-basic投影不写update本机task/actual/failed/report；terminal-update整个slice保持isolated。retained slice reset机制按slice，任何新根级reset调用仍需重新评审例外。
 
 ## 7. 跨层事实与机制矩阵
 
-| 链路 | 唯一事实 / 机制 | 错误边界 |
-| --- | --- | --- |
-| CBS→PG通知→TDS/TDC→MAIN project-basic | B规则topic＋组织topic；既有HTTP组织路径/完整snapshot | 通知不是正文；feature保存flush后确认；页/hash失败不ready |
-| MAIN project-basic→BRANCH project-basic | 既有record sync + connection/revision readiness | 旧连接/应用失败/空projection不可用；空完整规则集合ready=无规则；副机不HTTP刷新业务资料 |
-| project-basic→本机 terminal-update | feature actor发公开local requestTerminalUpdateCommand；两assembly只绑定必要的纯selector身份复核接缝 | base不import feature、不写他包slice、不自行观察业务规则发起升级；数据失败不撤换已经fixed的task |
-| Runtime/render→update | 本机interaction command＋selector、一次截止timer | 重复/旧runtime时钟不修改任务；原操作保留 |
-| auto→固定task→UpdatePort | 当前实际readFacts、比较、双读资格、flush | preport失效零native；fixed后不替换 |
-| FULL/系统→新boot | A action/session、installed embedded、APK signer事实 | pending/unknown零重复，取消等待；新boot优先HOT |
-| HOT→newJS/boot确认 | A Host/file loader＋nativeT＋PRIMARY | M不计入T；迟到boot不确认候选 |
-| MASTER TDC→SLAVE TDC credential | 原state-sync单entry、connection/revision及flush | 不复制全slice；apply非保存；瞬断保留、显式解绑/换主机清理 |
-| 各机TDC→CBS grant→本机下载 | 同terminal credential＋CBS scope/工件复核 | 不要求主机在线；旧凭证/配置/任务结果不提交 |
-| MAIN→CBS HTTP→运营报告 | B owner pending/task sequence/receipt | 报告不阻塞更新；副机拒绝且不代报 |
+| 链路                                    | 唯一事实 / 机制                                                                                     | 错误边界                                                                                       |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| CBS→PG通知→TDS/TDC→MAIN project-basic   | B规则topic＋组织topic；既有HTTP组织路径/完整snapshot                                                | 通知不是正文；feature保存flush后确认；页/hash失败不ready                                       |
+| MAIN project-basic→BRANCH project-basic | 既有record sync + connection/revision readiness                                                     | 旧连接/应用失败/空projection不可用；空完整规则集合ready=无规则；副机不HTTP刷新业务资料         |
+| project-basic→本机 terminal-update      | feature actor发公开local requestTerminalUpdateCommand；两assembly只绑定必要的纯selector身份复核接缝 | base不import feature、不写他包slice、不自行观察业务规则发起升级；数据失败不撤换已经fixed的task |
+| Runtime/render→update                   | 本机interaction command＋selector、一次截止timer                                                    | 重复/旧runtime时钟不修改任务；原操作保留                                                       |
+| auto→固定task→UpdatePort                | 当前实际readFacts、比较、双读资格、flush                                                            | preport失效零native；fixed后不替换                                                             |
+| FULL/系统→新boot                        | A action/session、installed embedded、APK signer事实                                                | pending/unknown零重复，取消等待；新boot优先HOT                                                 |
+| HOT→newJS/boot确认                      | A Host/file loader＋nativeT＋PRIMARY                                                                | M不计入T；迟到boot不确认候选                                                                   |
+| MASTER TDC→SLAVE TDC credential         | 原state-sync单entry、connection/revision及flush                                                     | 同步仍只投影credential；SLAVE显式解绑时由TDC actor清空本机TDC slice并flush；瞬断保留           |
+| 各机TDC→CBS grant→本机下载              | 同terminal credential＋CBS scope/工件复核                                                           | 不要求主机在线；旧凭证/配置/任务结果不提交                                                     |
+| MAIN→CBS HTTP→运营报告                  | B owner pending/task sequence/receipt                                                               | 报告不阻塞更新；副机拒绝且不代报                                                               |
 
 ## 8. 精确行为设计
 
@@ -179,12 +181,12 @@ C不新增CBS operation身份或管理权限；本轮修改既有terminal-bindin
 
 **职责闭集与搬移：**
 
-| owner | 保存/办理 | 明确移出/不做 |
-| --- | --- | --- |
-| kernel/feature/project-basic | `organizationPath`（项目/大区/商业集团ref、名称及原始更新时间）、完整项目版本规则快照与hash/context；组织/规则HTTP读取、topic订退/接受、本包加载状态、持久化与MAIN→SLAVE同步；选业务候选并发update command | 不复制门店正文、凭证、本机actual、任务、报告、点击、N/M timer；不下载APK/ZIP或安装 |
-| kernel/feature/store-basic | 门店、经营规则、有效合同集合/详情、启用区域及服务点集合/详情，原store成功广播及服务点前提 | 删除组织路径字段/持久descriptor/投影、项目加载门、PROJECT/REGION/COMMERCIAL_GROUP处理及旧项目/大区/集团selectors；合同不得因组织读取失败被阻断 |
-| kernel/base/terminal-update | 消费feature提交的一条候选及当前资格，读取本机actual、比较、准入、固定目标、执行N/M、下载/安装/HOT/boot、HTTP报告 | 删除实时ruleSnapshot字段/descriptor/selector、规则HTTP分页、规则topic处理和refresh command；不筛选项目/门店/App规则或排序，不保存项目资料或依赖feature包 |
-| TDC / 两 integration assembly | TDC沿公开command提供认证HTTP/topic协议；assembly装配两个feature，绑定纯selector读面给update的既有读接缝 | TDC不解释规则/组织业务；assembly不查询HTTP、不写slice、不做topic仲裁或任务调度 |
+| owner                         | 保存/办理                                                                                                                                                                                                  | 明确移出/不做                                                                                                                                            |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| kernel/feature/project-basic  | `organizationPath`（项目/大区/商业集团ref、名称及原始更新时间）、完整项目版本规则快照与hash/context；组织/规则HTTP读取、topic订退/接受、本包加载状态、持久化与MAIN→SLAVE同步；选业务候选并发update command | 不复制门店正文、凭证、本机actual、任务、报告、点击、N/M timer；不下载APK/ZIP或安装                                                                       |
+| kernel/feature/store-basic    | 门店、经营规则、有效合同集合/详情、启用区域及服务点集合/详情，原store成功广播及服务点前提                                                                                                                  | 删除组织路径字段/持久descriptor/投影、项目加载门、PROJECT/REGION/COMMERCIAL_GROUP处理及旧项目/大区/集团selectors；合同不得因组织读取失败被阻断           |
+| kernel/base/terminal-update   | 消费feature提交的一条候选及当前资格，读取本机actual、比较、准入、固定目标、执行N/M、下载/安装/HOT/boot、HTTP报告                                                                                           | 删除实时ruleSnapshot字段/descriptor/selector、规则HTTP分页、规则topic处理和refresh command；不筛选项目/门店/App规则或排序，不保存项目资料或依赖feature包 |
+| TDC / 两 integration assembly | TDC沿公开command提供认证HTTP/topic协议；assembly装配两个feature，绑定纯selector读面给update的既有读接缝                                                                                                    | TDC不解释规则/组织业务；assembly不查询HTTP、不写slice、不做topic仲裁或任务调度                                                                           |
 
 **启动与刷新顺序（Dexter 2026-10-10 同command两下游）：**store-basic先对当前MASTER绑定读取具体门店和经营规则，保存并flush后广播自己已有的 `storeBasicInformationLoadedCommand`。门店值必须非空，`store.id/groupWorkspaceKey`与当前binding匹配，readiness属于当前runtimeId/binding且storeStatus=flushed；项目身份来自这份具体门店的 `store.project.id`。仅激活、binding ref或hydrated旧资料不满足此门。门店HTTP/flush失败不广播成功，零项目/规则首查，零后续合同/服务点初始化；移除当前失败分支调用旧组织/合同helper的行为。
 
@@ -200,6 +202,8 @@ project-basic先注册handler及必要selector观察/registerResource，再发 `
 公开业务指令拟为 `initializeProjectBasicCommand`、`refreshProjectBasicTopicCommand`、`refreshProjectTerminalUpdateRulesCommand`；HTTP/topic/持久化写均在本包actor。公开读面拟为 `selectProjectOrganizationPath`、`selectProject`、`selectRegion`、`selectCommercialGroup`、`selectProjectBasicLoadReadiness`、`selectProjectTerminalUpdateRules`（含status/context/hash/items）。命名与类型在CP-01一次闭合，不提供getter/service或回调订阅替代。没有实际消费者的额外成功command不建。
 
 project-basic 常驻模块观察自己公开selector、store前提、Runtime角色/本机App、topology当前投影资格，以及 terminal-update 的actual/task公开selectors；必要事实变化时只发本包内部 `evaluateProjectTerminalUpdateCommand`。本包actor依 §8.1 选最新业务适用规则，读取actual辅助判断；有升级候选（或需由update owner读回actual才能确定）时发 **terminal-update公开local `requestTerminalUpdateCommand`**，带一条候选的ruleRef、collectionHash、contextIdentity、FULL/HOT摘要与N/M，不传整个列表、不读写他包slice。update actor自己readFacts、比较、核身份与名额；返回no-update/rejected/fixed及有限原因，不把dispatch completed当成安装成功。两端仅运行态in-flight/相关identity去重，无第二持久候选队列；update task优先，project-basic不抢占、不主动重试failedArtifact，不重复转发本包dispatch造成的无关state通知。普通重启、ready数据取得、投影apply及旧task跨boot释放都能经同一selector→本包command→actor检查闭合，副机同样发本机local command，零peer升级指令。
+
+当完整业务上下文与规则快照已ready且当前固定任务为 `phase=fixed`、`actionId=null` 时，project-basic 不重新选择规则，也不重新提交固定target；只发送既有 `requestTerminalUpdateCommand({target:null})` 作为本机续接信号。terminal-update 对该信号优先恢复该fixed task；当前无task时仍执行既有实际版本观察，其他task阶段保持原有占用语义。remote grant 所需上下文暂未ready时，update owner 保留fixed task并记录脱敏的延期原因，待project-basic ready变化再次通过同一公开command续接；上下文已ready但身份确实不匹配时仍按原失配拒绝处理。
 
 组织topic通知复用一次完整组织路径读取，按本包slice的旧/新refs调整本包订阅，保留成员不重复订退；PROJECT变化可能影响规则scope/context，就先使旧规则资格失效，再按新真实项目重读规则。不由GROUP/REGION普通名称刷新强制重拉所有规则，不新增移店/移区业务；同项目真实关系或绑定改变按现有返回值处理即可。旧request、notification、runtime/binding/project身份失配则不提交/不确认，查询或flush失败保留可观察原因、禁止用旧snapshot新择规则；已fixed任务不因此换目标。每次通知只确认其实际处理身份，重复通知/同topic多消费者沿已有TDC机制。
 
@@ -225,18 +229,18 @@ project-basic actor 从自己的**完整ready快照**筛选项目/门店scope、
 
 沿 A currentTask，不新增独立名额账本。既有 `TerminalUpdateTask.bootId` 就是执行 boot，不新增 executionBootId 或迁移字段：在本 boot 第一次准备/应用前随固定事实 flush；只读回、确认旧动作不得覆写它。S1 固定并执行 FULL；S2 确认 FULL 后续接 HOT，执行前把 task.bootId 更新为 S2；S3 确认 S2 的 HOT/旧任务最终成功，保留最近状态/报告后释放旧 task，允许在 S3 固定一条新规则。若 task.bootId 等于当前 boot，无论成功或失败均本 boot 不再领取；旧 boot 的终态确认不是本 boot 执行。复用同任务 release/confirm 流程，C 修改 A 接缝但不把 A 当前覆写 bootId 的行为当成 R-09 正确判据。failedArtifactIds 禁同坏工件重入，UNKNOWN 回读同 action、不重复提交；无等待超时或手工重试。
 
-
-
 现有 `terminalUpdateActor.ts` 的全部 task.bootId 写/读点按以下处置（行号是当前截面导航，实施按符号重开）：
 
-| 当前点 | C 最小处置 |
-| --- | --- |
+| 当前点                                                        | C 最小处置                                                                                                                                                                                  |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | executeNextArtifact：当前 L998–1017（初次执行读回/boot 写入） | 不再只在 null 时写；本 boot 首次真正 prepare/apply 前，若 task.bootId 与权威 actual.bootId 不同，更新既有字段并 flush；originalBundleVersion 仍保留最初值。无权威 boot 或 flush 失败零 port |
-| executeNextArtifact selected=null：当前 L1045–1052 | 删除确认时覆写，保留 task 原执行 boot；已达到本身不是一次 prepare/apply |
-| reconcile FULL→HOT fixed：当前 L1308–1316 | 只把任务恢复 fixed，保留原执行 boot；到本 boot 首次 HOT prepare/apply 时才写本 boot并 flush，不由纯 FULL 确认占名额 |
-| reconcile action→updated：当前 L1347–1352 | 删除成功或失败确认对 task.bootId 的覆写；action.bootId 仍用于 action 身份核验，不能替代任务执行 boot |
-| accept handler 的 next task：当前 L1560–1579 | 初始 null 表示尚未执行；首次 port 前写权威执行 boot并 flush，无新字段 |
-| reconcile 终态跨 boot释放：当前 L1246–1255 | 沿既有 task.bootId 非空且不同于 actual.bootId 判定；同执行 boot 不释放，继任 boot 的纯确认后可释放 |
+| executeNextArtifact selected=null：当前 L1045–1052            | 删除确认时覆写，保留 task 原执行 boot；已达到本身不是一次 prepare/apply                                                                                                                     |
+| reconcile FULL→HOT fixed：当前 L1308–1316                     | 只把任务恢复 fixed，保留原执行 boot；到本 boot 首次 HOT prepare/apply 时才写本 boot并 flush，不由纯 FULL 确认占名额                                                                         |
+| reconcile action→updated：当前 L1347–1352                     | 删除成功或失败确认对 task.bootId 的覆写；action.bootId 仍用于 action 身份核验，不能替代任务执行 boot                                                                                        |
+| accept handler 的 next task：当前 L1560–1579                  | 初始 null 表示尚未执行；首次 port 前写权威执行 boot并 flush，无新字段                                                                                                                       |
+| reconcile 终态跨 boot释放：当前 L1246–1255                    | 沿既有 task.bootId 非空且不同于 actual.bootId 判定；同执行 boot 不释放，继任 boot 的纯确认后可释放                                                                                          |
+
+FULL 已处于 `waiting-user` 时，系统确认邀请按 `{taskId, actionId, actual.bootId}` 绑定当前启动；跨启动后先读回同一 native action，若仍为 `waiting-user`，可用新 `actual.bootId` 恢复邀请及 N 提醒。此时 `task.bootId` 继续表示最近一次真实 prepare/apply 的执行 boot：提醒、稍后、确认原 action 和恢复系统页面均不得改写它。只有用户确认后读回明确 `user-cancelled`（或等价的已结束且未安装结果）、并准备以新 `actionId` 再次调用 `applyPrepared` 时，才把当前 `actual.bootId` 写入任务并 flush；flush 成功前不得提交。已接受/等待中的原 action 只读回并沿用原 session，不重复 commit。所有按钮仍需同时匹配当前 actual、邀请及精确 task/action；N 到期仍须重读当前 actual 与原 action。
 
 已有 prepared 工件直接 apply、ENDED_NOT_INSTALLED 再提交以及 FULL→HOT 续接，同样经过这一个“本 boot 首次 port 前更新＋flush”接缝；不只修首次下载路径。focused 覆盖 S1 执行/S2 续接/S3 纯确认、同 boot 重复、prepared 跨 boot、无 boot/flush 失败，零第二名额账本。
 
@@ -256,12 +260,12 @@ Runtime新增公开 `recordLocalInteractionCommand`（payload只runtimeIdentity�
 
 owner 首次等待记录 lastInviteAt/nextDue；“稍后”或系统用户取消仍同 task 下次 N。统一四类 readback：
 
-| 实际 native 事实 | N 到期且本机前台的动作 |
-| --- | --- |
+| 实际 native 事实                                                                      | N 到期且本机前台的动作                                                      |
+| ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
 | known pending-user：当前 action/session 匹配、exact confirmation 可恢复、目前不在显示 | 允许本机再邀请；用户“安装”只恢复该 session 的精确 Intent，零 prepare/commit |
-| 安装中或本次系统确认正在显示 | 不叠第二邀请，不重复 commit；由技术状态变化后再核对 |
-| UNKNOWN：session 尚在但无法判断，或无法证明确认可恢复 | 仅回读同 action，不盲创建新 session |
-| 用户取消/ended-not-installed，已确认 session 结束且版本未达到 | waiting-user；N 后邀请，用户确认才沿原 prepared 工件创建新 action/session |
+| 安装中或本次系统确认正在显示                                                          | 不叠第二邀请，不重复 commit；由技术状态变化后再核对                         |
+| UNKNOWN：session 尚在但无法判断，或无法证明确认可恢复                                 | 仅回读同 action，不盲创建新 session                                         |
+| 用户取消/ended-not-installed，已确认 session 结束且版本未达到                         | waiting-user；N 后邀请，用户确认才沿原 prepared 工件创建新 action/session   |
 
 后台只留 due，回前台先 readFacts/readAction。C 将原 native foreground 自主呈现接缝统一成技术事件→owner command→上述处理，native 仅核身份并呈现指定确认，不再与 owner 的 N 各自调度。可呈现由 Activity resumed＋本次确认发起/离开事实提供，无法判定则 unavailable，不建系统全局窗口扫描或 OEM 恢复框架。
 
@@ -285,7 +289,7 @@ project-basic沿§8.0 record导出组织/规则及空间/项目/门店/bindingge
 2. MASTER沿现有flush保存成功后才具备credential发布/HTTP资格；新值未保存或失败不发布可用值。SLAVE apply只替换credential及必要本机binding失效事实，不能沿replaceCredential把activationStatus变active；SLAVE保持inactive/stopped、不复制主机active。HTTP使用资格是原TDC slice内非持久/不同步的本机credentialReady事实，绑定完整当前credential与角色转换epoch；owner在flush成功且重读匹配后dispatch资格完成，触发现有sync观察发布。credential变更/clear同步失效该资格，不能在下一异步tick前放行。无第二store或持久资格表。
 3. Topology applied只证明dispatch，不等于保存。TDC先订阅credential变化，owner command通过现有flushPersistence等待保存；完成后重读role及完整credential身份，匹配才允许HTTP。保存失败阻断新值且typed失败可见，不回退旧generation。MASTER getEntries仅导出已保存且匹配的credential，否则null；初次同步接线纳入该entry。无需通用sync ACK。普通HTTP资格不要求当前peer connection在线。
 4. protected→plain复用现有state engine同key读相反storage→write plain→成功后删protected；初始化等待迁移flush，无新迁移层/永久fallback。失败不丢旧存储、不假报plain完成。SLAVE reload从成功hydration恢复凭证资格，仍inactive/stopped；initialize拆开凭证恢复与建连，仅MASTER调用connectTerminal。
-5. 普通断链保留凭证，MASTER停机后副机可直连CBS。显式unpair/换主机/收到TOPOLOGY_UNPAIRED在变MASTER或接纳新主机前，通过TDC公开local clearSharedTerminalCredentialCommand清credential及资格并flush；仅当前SLAVE及transition身份匹配可清，失败不得推进转换。composition注入解绑前owner command接缝，topology不直接写TDC slice、不root reset。clear期间迟到旧connection apply必须失效；同主机瞬断重连不清。升MASTER不能带共享凭证自动连TDS。
+5. 普通断链保留凭证，MASTER停机后副机可直连CBS。显式unpair/换主机/收到 `TOPOLOGY_UNPAIRED` 时，Topology发内部 `requestTopologySlaveUnpairStateClearCommand`，TDC actor清空副机本机两个TDC-owned slices并flush：`terminalDataClient` 中的credential、pending activation、connection/latency、topic/cursor和remote operation facts，以及 `terminalClientStatusProjection` 中的主机状态投影。内部 `credentialRevision` 单调递增以使旧异步结果失效。清理与readback成功后TDC发 `completeTopologySlaveUnpairStateClearCommand`；Topology只在收到完成command后才继续角色转换或清主机事实。失败不得推进转换。Topology不直接写TDC slice、不root reset；terminal-update isolated slice及固定任务不清除，任务继续本机执行，解绑后CBS报告可能失败且不阻塞更新。同主机瞬断重连不清。升MASTER不能带共享凭证自动连TDS。
 6. MASTER cancel或ACTIVATION_CANCELLED保留既有root reset/CBS撤销闭包；连接尚可用时安排null投影，但不能承诺离线即时清除或已经发送成功。离线副机旧凭证由CBS拒绝，重连full sync的null整体覆盖并flush；原主机不可重连时本机admin取消配对清共享凭证。无离线撤销队列。
 
 #### 8.6.2 CBS仅凭证鉴权与caller全集
@@ -296,21 +300,21 @@ Dexter最新裁决覆盖提案deviceId建议。沿现有 `Authorization: Termina
 
 “只校验凭证”不取消撤销/旧generation拒绝，也不取消operation自身scope、空间/门店/终端启用状态、工件资格、owner锁/事务和download grant复核；删除的是设备匹配认证。CBS不需区分主副来源。
 
-| generated operation（全集13项） | C caller | command语义 |
-| --- | --- | --- |
-| activateTerminal | MASTER | bootstrap；真实deviceId建立binding；SLAVE在HTTP前拒绝 |
-| cancelTerminalActivation | MASTER | 保留正式配对要求的副机admin只读/无取消入口；SLAVE拒绝，不local reset、不peer代取消 |
-| submitTerminalUpdateReport | MASTER | R-15主机版本/任务；副机零row/代报 |
-| issueTerminalUpdateArtifactDownloadGrant | MASTER/SLAVE | 已保存TDC credential，直调CBS短期grant |
-| terminalReadContract | MASTER/SLAVE | 同terminal，CBS保留read scope |
-| terminalReadProjectUpdateRuleSnapshotPage | MASTER/SLAVE | 同上；project-basic副机仍只读投影，不新增查询 |
-| terminalReadServicePoint | MASTER/SLAVE | 同terminal/read scope |
-| terminalReadServicePointArea | MASTER/SLAVE | 同terminal/read scope |
-| terminalReadStoreActiveContracts | MASTER/SLAVE | 同terminal/read scope |
-| terminalReadStoreBasic | MASTER/SLAVE | 同terminal/read scope |
-| terminalReadStoreOrganizationPath | MASTER/SLAVE | 同terminal/read scope |
-| terminalReadStoreServicePointAreas | MASTER/SLAVE | 同terminal/read scope |
-| terminalReadStoreServicePoints | MASTER/SLAVE | 同terminal/read scope |
+| generated operation（全集13项）           | C caller     | command语义                                                                        |
+| ----------------------------------------- | ------------ | ---------------------------------------------------------------------------------- |
+| activateTerminal                          | MASTER       | bootstrap；真实deviceId建立binding；SLAVE在HTTP前拒绝                              |
+| cancelTerminalActivation                  | MASTER       | 保留正式配对要求的副机admin只读/无取消入口；SLAVE拒绝，不local reset、不peer代取消 |
+| submitTerminalUpdateReport                | MASTER       | R-15主机版本/任务；副机零row/代报                                                  |
+| issueTerminalUpdateArtifactDownloadGrant  | MASTER/SLAVE | 已保存TDC credential，直调CBS短期grant                                             |
+| terminalReadContract                      | MASTER/SLAVE | 同terminal，CBS保留read scope                                                      |
+| terminalReadProjectUpdateRuleSnapshotPage | MASTER/SLAVE | 同上；project-basic副机仍只读投影，不新增查询                                      |
+| terminalReadServicePoint                  | MASTER/SLAVE | 同terminal/read scope                                                              |
+| terminalReadServicePointArea              | MASTER/SLAVE | 同terminal/read scope                                                              |
+| terminalReadStoreActiveContracts          | MASTER/SLAVE | 同terminal/read scope                                                              |
+| terminalReadStoreBasic                    | MASTER/SLAVE | 同terminal/read scope                                                              |
+| terminalReadStoreOrganizationPath         | MASTER/SLAVE | 同terminal/read scope                                                              |
+| terminalReadStoreServicePointAreas        | MASTER/SLAVE | 同terminal/read scope                                                              |
+| terminalReadStoreServicePoints            | MASTER/SLAVE | 同terminal/read scope                                                              |
 
 cancel保留MASTER-only是既有配对正式需求的最小延续，无新产品决定。MASTER取消结束整个binding，CBS审计/PG撤销/TDS主机关闭/root reset不变，两端旧credential后续CBS拒绝；若将来开放副机取消，需另裁双端reset/配对语义。普通十类HTTP允许SLAVE，用TDC凭证资格而非本机active；connect/reconnect/TDS/topic/PING/remote operation仍MASTER-only，禁止整包删host gate。
 
@@ -320,19 +324,19 @@ cancel保留MASTER-only是既有配对正式需求的最小延续，无新产品
 
 完整grant.manifest由本机HTTP取得，沿既有typed prepare/同Preparer，不再为peer摘要增加native summary分支或下载器。FULL取manifest.apk的path/sha/certificate及ZIP摘要/固定publication，沿extractFull/validateFull，不解析未安装APK embedded metadata；HOT沿ZIP publication/entry/files原核。普通摘要/path/大小检查保留；无manifest跨peer压缩前提，不扩大command单帧65,536字节。
 
-grant仅attempt临时不持久/不投影。发起/返回双读task/artifact、来源space/store/project、当前credential generation与network配置；旧身份结果不提交。fixed不因启用集合更新重选，空间改变不跨空间下载，过期有限重取同artifact。**普通配对断链不阻止fixed任务持有效credential直连CBS**；prepared照A核继续；显式解绑清凭证后不得用旧凭证发请求。无新恢复队列。
+grant仅attempt临时不持久/不投影。TDC 在授权 HTTP 前后复核本机 credential/角色；更新 owner 在命令返回后复核 task/action、来源 space/store/project 与 network 配置，旧请求上下文结果不提交。不得在两个 owner 重复维护凭证快照。CBS 短期 grant 的 content 请求仍重核当前 binding、scope 和工件归属，因此授权后发生解绑时由 CBS 拒绝内容读取；不增加本地取消屏障或 grant 撤销框架。fixed不因启用集合更新重选，空间改变不跨空间下载，过期有限重取同artifact。**普通配对断链不阻止fixed任务持有效credential直连CBS**；prepared照A核继续；显式解绑后后续普通请求不得再使用旧凭证。无新恢复队列。
 
 ### 8.7 同 App 配对与不同版本保护
 
 保留 HELLO/pairByHost 的真实 moduleName 和现有 protocol 检查，不建立跨 App 矩阵，不为 C 的规则字段/具名 command 单独升级 protocol。console↔console、wallpaper↔wallpaper 各自沿已有业务投影/peer owner；console↔wallpaper 或反向明确拒绝配对。本轮直接裁决覆盖旧需求 R-07 的不同 App 句。
 
-| 配对/实例 | 原业务和本机更新呈现 |
-| --- | --- |
-| MASTER/MAIN，本机 PRIMARY/SECONDARY | 原 LMP/LMS；仅物理 PRIMARY 本机安装邀请，SECONDARY 不重复 |
-| 同 App SLAVE/VICE，BRANCH 物理 PRIMARY、逻辑业务 SECONDARY | 原 LMS 主机业务投影；本机更新层使用 BRANCH/PRIMARY 上下文，不能复用主机更新邀请 |
-| 同 App SLAVE/CHIEF，BRANCH 物理 PRIMARY | 原 LSP 本地功能和既有 peer owner；本机更新层仍 BRANCH/PRIMARY |
-| 同 App 配对失联或协议不兼容 | 既有业务保护；本机 admin 仍可恢复；无当前 projection 不接新规则，固定任务不换目标 |
-| 不同 App | 配对请求拒绝，保持原本机角色/页面；不以新遮罩或本地业务 fallback 偷开配对 |
+| 配对/实例                                                  | 原业务和本机更新呈现                                                              |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| MASTER/MAIN，本机 PRIMARY/SECONDARY                        | 原 LMP/LMS；仅物理 PRIMARY 本机安装邀请，SECONDARY 不重复                         |
+| 同 App SLAVE/VICE，BRANCH 物理 PRIMARY、逻辑业务 SECONDARY | 原 LMS 主机业务投影；本机更新层使用 BRANCH/PRIMARY 上下文，不能复用主机更新邀请   |
+| 同 App SLAVE/CHIEF，BRANCH 物理 PRIMARY                    | 原 LSP 本地功能和既有 peer owner；本机更新层仍 BRANCH/PRIMARY                     |
+| 同 App 配对失联或协议不兼容                                | 既有业务保护；本机 admin 仍可恢复；无当前 projection 不接新规则，固定任务不换目标 |
+| 不同 App                                                   | 配对请求拒绝，保持原本机角色/页面；不以新遮罩或本地业务 fallback 偷开配对         |
 
 各机 actual/点击/任务独立；实际协议不兼容沿原 typed 拒绝和业务 interlock，不用 runtimeVersion 冒充 topology 协议。不协商任意 feature，不改变既有 VICE/CHIEF 确认流程。
 
@@ -342,20 +346,22 @@ B HTTP/PONG 发送核与批准的结果处置闭集复用；当前未准确实�
 
 必要事件：selection（no-rule/reached/rejected/fixed）、policy-wait、deadline-stale、invitation、grant、prepare/apply、boot-reconcile、projection-invalid、dispose/cleanup。关联task/action/boot/runtime/pairgeneration，不记录点击内容坐标、credential、代理秘密、grant/URL、absolute路径/rawpayload。cleanup分别断言timer/订阅、prepared/staging、runnerPID/starttoken/reverse/forward/APK，只删自身资源；active/安装未知session/其他run资源不删。
 
+**测试链诊断落点（2026-10-10 Dexter 要求，进入动态前完成）：**父入口 `tools/terminal-automation/src/runner.ts` 的 `events.jsonl`/`runner.log` 记录 run、managed DEV 身份、suite 退出、业务判定与 cleanup；`tools/terminal-automation/src/server.ts` 记录 WebSocket session、command/selector 请求名、requestId、响应/错误类型、耗时及 Runtime actor/selector 状态；不记录 command payload、selector value、输入文本或 token。Journey diagnostics 在步骤、观察请求和实际 selector push 到达时立即输出安全摘要，失败报告含安全的 runId、时间、first failure、pending request、最后相关 push。所有 runId 均从受管入口取得并按安全标识校验。Android 在资源清理前读取 pid-scoped ReactNativeJS/TerminalUpdate allowlist；应用已退出时明确写 `LOG_NOT_AVAILABLE`，不以本机清理推导设备日志可用。远端 CBS/TDS 日志只由 `scripts/dev/r5-dev-runner.mjs` 在 canonical DEV manifest、host/boot/PID/start ticks/command digest 与 readiness 复核后各读不超过 256 KiB，事件和字段白名单投影后才进入当前 TER run；raw log 不落盘、不输出。所有非 adapter Expo/设备受管 update run 启动业务 suite 前，先从同一 DEV manifest 完成 CBS 与至少一个 TDS 来源的身份复核及日志投影；任何来源未能 `READ` 时记录 `LOG_NOT_AVAILABLE` 并阻止 suite 启动。业务运行结束后的日志读回若失败，单列 diagnostics `FAIL` 并令 runner 非零退出，但不改写业务或 cleanup 结论。已有 owner 安全结构化事件为 source of truth，测试链只聚合其边界摘要，不复制业务判断。每个源同时记录 run identity、source、read status、事件数和缺失原因；业务结果及资源 cleanup 仍独立判定。
+
 ## 9. owner API、调用者与公开面
 
-| 公开/内部面 | 调用者 | 语义 |
-| --- | --- | --- |
-| recordLocalInteractionCommand / selectLastLocalInteraction（runtime新增） | render共同承载 / update owner | 本机点击事实；无更新策略 |
-| evaluateProjectTerminalUpdateCommand（project-basic内部） | feature常驻selector桥 | 选最新适用业务候选；读取update actual/task，不办理安装 |
-| requestTerminalUpdateCommand（update公开local） | project-basic actor | 一条候选→update actor读回actual/身份，比较/拒绝/no-update/固定执行；不绕准入、不保存完整规则集合 |
-| terminalUpdateDeadlineCommand / terminalUpdatePresentationChangedCommand（内部） | 一次timer / port技术桥 | identity核验后actor写状态 |
-| confirmTerminalUpdateInstallCommand / deferTerminalUpdateInstallCommand（公开local） | presentation实际按钮 | 同fixed task的邀请行为，不手工坏包重试 |
-| requestTerminalUpdateDownloadGrantCommand及九类terminalRead命令（TDC既有） | 两机本地actor | 当前TDC凭证→CBS，无MAIN中转或secret外借 |
-| clearSharedTerminalCredentialCommand（TDC新增local） | topology解绑前composition接缝 | TDC清共享凭证并flush；成功后角色转换，无root reset |
-| selectTerminalUpdateSelection / selectTerminalUpdatePresentation（新增） | UI/automation | 有限状态/原因；JSON，不泄漏secret |
-| accept/reconcile/confirmBoot及actual/task/recent/report selectors | 既有同owner/PRIMARY/automation | 继续原职责，移除旧规则数据selector/refresh；公开request只委托同固定核，不建第二生产执行路径 |
-| UpdatePort技术观察/恢复确认/既有 prepare | update owner桥/nativeadapter | typed unavailable/failed；不定义command、不反向依赖runtime |
+| 公开/内部面                                                                                                           | 调用者                         | 语义                                                                                                                                                                                                                 |
+| --------------------------------------------------------------------------------------------------------------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| recordLocalInteractionCommand / selectLastLocalInteraction（runtime新增）                                             | render共同承载 / update owner  | 本机点击事实；无更新策略                                                                                                                                                                                             |
+| evaluateProjectTerminalUpdateCommand（project-basic内部）                                                             | feature常驻selector桥          | 选最新适用业务候选；读取update actual/task，不办理安装                                                                                                                                                               |
+| requestTerminalUpdateCommand（update公开local）                                                                       | project-basic actor            | 一条候选→update actor读回actual/身份，比较/拒绝/no-update/固定执行；不绕准入、不保存完整规则集合                                                                                                                     |
+| terminalUpdateDeadlineCommand / terminalUpdatePresentationChangedCommand（内部）                                      | 一次timer / port技术桥         | identity核验后actor写状态                                                                                                                                                                                            |
+| confirmTerminalUpdateInstallCommand / deferTerminalUpdateInstallCommand（公开local）                                  | presentation实际按钮           | 同fixed task的邀请行为，不手工坏包重试                                                                                                                                                                               |
+| requestTerminalUpdateDownloadGrantCommand及九类terminalRead命令（TDC既有）                                            | 两机本地actor                  | 当前TDC凭证→CBS，无MAIN中转或secret外借                                                                                                                                                                              |
+| `requestTopologySlaveUnpairStateClearCommand` / `completeTopologySlaveUnpairStateClearCommand`（Topology内部command） | Topology actor ↔ TDC actor     | Topology请求清理；TDC清空并flush两个本机TDC-owned slices，成功后发完成command；Topology收到完成command后继续解绑。配对沿现有 `master-to-slave` state-sync 覆盖共享slice，不调用root reset；`terminal-update`任务保留 |
+| selectTerminalUpdateSelection / selectTerminalUpdatePresentation（新增）                                              | UI/automation                  | 有限状态/原因；JSON，不泄漏secret                                                                                                                                                                                    |
+| accept/reconcile/confirmBoot及actual/task/recent/report selectors                                                     | 既有同owner/PRIMARY/automation | 继续原职责，移除旧规则数据selector/refresh；公开request只委托同固定核，不建第二生产执行路径                                                                                                                          |
+| UpdatePort技术观察/恢复确认/既有 prepare                                                                              | update owner桥/nativeadapter   | typed unavailable/failed；不定义command、不反向依赖runtime                                                                                                                                                           |
 
 新增public每项至少一生产caller和automation注册；无zero-caller入口。改包根、README、terminal-invariants publicExports/selector registry与tests同批；不再新建流程名包或helper总线。
 
@@ -363,8 +369,8 @@ B HTTP/PONG 发送核与批准的结果处置闭集复用；当前未准确实�
 
 1. runtime `types`、新增 `features/slices/localInteraction.ts`/command/actor/selector、application install/index、两integration依赖/invariants；render SurfaceRoot/必要外部portal；同组tests。
 2. update `types/terminalUpdate.ts`、slice/actor/module/commands/selectors/index/README；platform-ports `types/update.ts` 与defaultUnavailable、adapter/android/update TS桥/Kotlin Runtime/Module/Preparer，application provider、boot/版本focused。
-3. topology stateSync/角色转换接缝、project-basic两个record、TDC原slice credential-only record/plain descriptor、flush/初始化/HTTP gate/clear command、两assembly接线；删peer grant生产公开面，update全isolated。保留moduleName/protocol和原业务projection；codec/flush/plain迁移/解绑/gate tests。
-4. 新 ui/base/terminal-update-presentation 标准包、TestIds、组件/局部presentation actor、两assembly uiCatalog、render 既有 alert 层的 local-primary placement scope、相关UItests。业务owner决定due，UIactor只placement，无第二策略。
+3. topology stateSync/角色转换接缝、project-basic两个record、TDC原slice credential-only sync record/plain credential descriptor、flush/初始化/HTTP gate/解绑command握手、两assembly接线；删peer grant生产公开面，update全isolated。配对只用现有 state-sync 权威覆盖声明的共享slice，不调用root reset；解绑由Topology请求、TDC清空并flush `terminalDataClient` 与 `terminalClientStatusProjection`、TDC再通知Topology继续；保留terminal-update本机任务；保留moduleName/protocol和原业务projection；codec/flush/plain迁移/解绑/gate tests。
+4. 扩展既有 ui/base/admin-shell：承载安装提醒 TestIds、组件及本地 layer placement；同时把 ui/base/server-config-panel 的组件、parts、TestIds 与测试移入 admin-shell，删除独立包及其依赖图节点。两套 assembly 只调用 admin-shell 的 parts 工厂。render 为既有 alert layer 增加 local-primary placement scope 并补 focused tests。业务 owner 决定 due，admin-shell 只观察 selector、呈现并调用 owner command，无第二策略。
 5. automation唯一runner/managedRun/显式case与suite、共享policyJourney和两端harness/pairharness、fixtures、androidDevice/Android connection/cleanup recovery 的 pair forward＋reverse 及对应 tests、资源profile/run根登记、health/format、skill/API变动同步；B后台helper引用不复制。
 6. CBS认证原子组：terminal-binding VerificationApi/Service/Decision及cancel owner/API、共用edge verifier/九GET/规则/grant/report/cancel controllers；canonical inputs/error mapping/catalog→materialize→edge-codegen→terminal-client-api→真实TDC headers/body；TDS codec/handler保留现有verify(Credential)消费与设备匹配行为，直接tests成对核验两个认证用途。不复制认证器，不改bootstrap device绑定；业务scope/锁/撤销及content grant保留。报告有限 state/reason 新增：canonical report schema/catalog/error disposition→materialize→edge-codegen→terminal generation→CBS/两后台/TDC/update consumers；无generated手改；若 B 最终数据库约束不支持新值，含 §10 的具名现有表差量迁移及 owner persistence/acceptance 同组。C不新增operation/schema owner。
 7. 新 `apps/terminal/kernel/feature/project-basic/`：package.json、terminal-invariants.json、中文README、src/{moduleName,dependencies,index}.ts、types/types.ts、application/module.ts、features/{commands/commands,actors/actors,slices/slice}.ts、selectors/selectors.ts、test/projectBasic.test.ts；沿store-basic既有标准布局，不新增依赖库。store-basic同名结构、test/storeBasic.test.ts删组织/项目门并保合同与服务点链；terminal-update同名结构及test/terminalUpdate.test.ts移出规则数据链。两integration的实际装配锚点为 `src/assembly/assembly.tsx`：dependencies/package/invariants、project-basic模块安装、sync列表、context/规则selector绑定及直接tests；automation与已有TDC验收消费者按实际导出引用同步，不能保留旧selector转发兼容层。API形状/中文README/selector注册及标准layout门随所属CP完成。
@@ -409,8 +415,6 @@ fixturecleanup：run创建规则停用/包stage释放通过原owner；不删除�
 
 单run覆盖主/副两session可并行观察但不启动另一个managedrun；设备serial/display标识显式输入，不依列表顺序。manifest非秘密记录host/boot/starttoken、terminalkey/ref/store/device与pair/session/app/build身份；grant/凭证正文不写manifest/诊断；两机TDC credential的plain持久化是明确要求，不能误写为所有住址零落盘。扩现有资源门的profile与run根，启动前拒绝未知/既存Android build树，退出精确清理run-owned build/APK/ZIP/prepared staging/browser/reverse/forward/process，留小结果与首败日志。
 
-
-
 [已定·本轮不执行] Dexter 的设备矩阵采用交叉覆盖，共 **4 个设备 run**：console 真机单机双屏；wallpaper mobile 安卓虚拟机；console 同 App 两安卓虚拟机配对；wallpaper 同 App 两安卓虚拟机配对。两个 integration 的 Web 先分别完成非 adapter 清单（另计 2 个 Web 执行计划），然后按上述四个设备 run 顺序，最后 13c。run 数指无失败的计划基数，不包含修复后有依据的 focused 重验。
 
 manifest 每 device 具名 `deviceRole`：PHYSICAL_DUAL、MOBILE_EMULATOR、PAIR_MASTER_EMULATOR、PAIR_SLAVE_EMULATOR；分别记录显式 serial、applicationId、API、物理 display 映射、业务 surfaceForm 和本机 Runtime/session 身份。禁止以列表顺序选设备；pair 两 serial 必须不同。配对虚拟机两端都是 laptop 单物理 PRIMARY；复用 driver 现有单 display 映射（shape=mobile 的映射能力），但 pair case 的 application surfaceForm 明确为 laptop，不能沿目前 shape→mobile 构建注入；新增这一 case 分支而非新增设备模型。普通 wallpaper mobile case 仍 mobile。CP-01 核设备 API≥29、installer/来源设置可用、真实 dual 的两个 display、虚拟机单屏与 laptop 配对资格，CBS HTTP/TDS 使用已有 reverse 接缝；缺任何能力停 CP-01 报具名缺口，不换设备方案或减分母。
@@ -426,80 +430,83 @@ manifest 每 device 具名 `deviceRole`：PHYSICAL_DUAL、MOBILE_EMULATOR、PAIR
 
 ADB/模拟器实际版本与官方依据见附件 §3；以上是设计推论与未来验证，不是现有 driver 已支持或网络已跑通。配对需要的 adapter 行为列 F→双虚拟机 P＋H；不补 Web topology 模拟。
 
-## 11. 可执行场景与业务oracle
+## 11. 验收场景与业务oracle
 
-均为 **拟新增/扩展场景，NOT_RUN**；公共名是case metadata，不作为文件/类名。F=owned unit/组件/typed/codec；W=Expo Web integration；D=console 真机双屏／wallpaper mobile 虚拟机上的 application；P=每 App 一组双安卓虚拟机真实 topology；H=真实CBS HTTP/PG/资产。Web fixture port只automation-enabled，生产Web unavailable，不把Web模拟native作为真实更新。
+均为 **验收矩阵行，NOT_RUN**；表中 `update.*` 是断言分组 ID，不是 runner 的 `--case` 值，也不要求每行新建一条自动化流程。阶段 C 只保留两条顶层业务 journey：`update.supply-chain`（供给到报告主链）与 `update.pair`（同 App 双机主副链）。供给链 case 的受支持形态为 Android console/dual 与 Android wallpaper/mobile；pair case 为 Android/mobile，sample显式console或wallpaper。两 integration 的主 Journey 另按 §10 先跑 Expo Web。F=owned unit/组件/typed/codec；W=Expo Web integration；D=console 真机双屏／wallpaper mobile 虚拟机上的 application；P=每 App 一组双安卓虚拟机真实 topology；H=真实CBS HTTP/PG/资产。Web fixture port只automation-enabled，生产Web unavailable，不把Web模拟native作为真实更新。
 
-| 场景 | fixture/actions | 必须业务断言 | 执行/cleanup |
-| --- | --- | --- | --- |
-| update.auto-selection | 6规则fixture；通过Bproduction供给/空/disabled/同time；当前actual variants | 最新tuple、ALL未来store、不同App、zeroaction、sameJS冲突、不暗降/找旧 | F→W→D；清run规则/APP |
-| update.project-data | 复用seed当前门店/项目/大区/集团；后台真实资料更新及规则启停，HTTP/flush拒绝用focused | project-basic单一组织/规则事实；门店先成功后组织/规则读取，组织失败不挡合同/服务点；topic变化准确刷新，旧scope不能提交；feature公开local command→update actor；selector只读/身份复核，固定任务不换；重启重建及副机同步 | F→两个integration W→四设备run适用子断言；配对同步F→P，TR-16 adapter例外；沿同父run恢复其修改资料/停用fixture规则，不删历史，不另建runner |
-| update.fixed | 两屏ready并发、读取期间换context、fixed后停用新规则/断链 | flush失败零prepare；一个task/boot；fixedtarget不变，nextboot才新rule | F→W→D/P；timer/subscription cleanup |
-| update.idle | HOT IDLE，内容/admin/键盘/SECONDARY真实点击，边界timer；immediate对照 | 最后点击M、原业务动作仍成功、两机隔离，新boot等待，flush失败zeroapply | F→W→D/P；无遗留timer |
-| update.install-reminder | FULL初次apply、系统取消/稍后、N、后台/前台/pending/unknown/session消失 | 可silent不额外阻断；samefixedN、zero重复commit、准确真实actual | F→W策略→Dnative；未知session不乱删 |
-| update.full-hot | 两App合法B包规则，APK1/JS3→APK2/embeddedJS4→HOT5（含IDLE） | 同task/N-M固定、真实两重启/实际身份、同boot不第二rule | H+W非native→D；ownedZIP/APK/build/APP |
-| update.pair | 两个App分别sameApp、不同版本、fullrules投影、失联/re-pair（不同 App 检查仅静态＋既有 focused） | 各自App规则/versions/task/click、公共投影、业务保护/admin、本机state未覆盖、仅MAINreport | F 双 Runtime codec/投影 apply→双虚拟机 P＋H；TR-16 adapter 例外，Web topologyHost unavailable；两设备/reverse/forward；无peer grant |
-| update.shared-credential | 同App两Runtime、protected旧key、sync/flush失败、瞬断/解绑/换主机 | 六字段或null单entry；plain迁移/reload；SLAVEinactive/stopped但HTTP可用；先保存后用，旧revision拒绝；断链直连、解绑先清；CBS不按deviceId鉴权，TDS正确设备通过/错误设备拒绝；激活/cancel/report/TDS仍拒副机 | F→两个integration W非adapter→P＋H；复用四设备run，无新增run/恢复框架 |
-| update.grant | 副机fixed工件、主机停机、过期/配置/binding变化、正常manifest | 副机本机TDC→CBS，零peer请求；CBS短期grant必需；ZIP/APK/FULL身份/HOT清单原核；迟到旧身份不提交 | F+H+D/P；grant仅attempt，精确preparedrelease |
-| update.report | 无taskactual、waiting/partialsuccess/failed、HTTP retry/PONG、BRANCH | CBS同task单历史，最终actual非target，旧binding拒绝、副机无row，pending不挡update | F+H+D/P；保留CBS历史，不伪cleanup删除 |
-| update.supply-chain | build→platform上传/解析/保存→operations新建/启用→MAIN自动FULL/HOT→运营报告详情/历史 | 两后台scope/session/标准控件、真实规则自动而非accept fixture、actual匹配、历史task同一行 | 同DEVproductionbrowser＋console 真机双屏；wallpaper mobile 虚拟机核同供给/报告主流程；P 按配对适用子断言；Bhelper复用 |
-| update.cleanup | 首败、dispose、staging/browser/dualdevice资源不匹配 | business与cleanup分别；unknown资源不动、FAIL不得完成 | F＋runnerowned readback |
+| 验收行 ID（非 CLI case） | fixture/actions                                                                                | 必须业务断言                                                                                                                                                                                                           | 执行来源与 cleanup                                                                                                                       |
+| ------------------------ | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| update.auto-selection    | 6规则fixture；通过Bproduction供给/空/disabled/同time；当前actual variants                      | 最新tuple、ALL未来store、不同App、zeroaction、sameJS冲突、不暗降/找旧                                                                                                                                                  | F→W→D；清run规则/APP                                                                                                                     |
+| update.project-data      | 复用seed当前门店/项目/大区/集团；后台真实资料更新及规则启停，HTTP/flush拒绝用focused           | project-basic单一组织/规则事实；门店先成功后组织/规则读取，组织失败不挡合同/服务点；topic变化准确刷新，旧scope不能提交；feature公开local command→update actor；selector只读/身份复核，固定任务不换；重启重建及副机同步 | F→两个integration W→四设备run适用子断言；配对同步F→P，TR-16 adapter例外；沿同父run恢复其修改资料/停用fixture规则，不删历史，不另建runner |
+| update.fixed             | 两屏ready并发、读取期间换context、fixed后停用新规则/断链                                       | flush失败零prepare；一个task/boot；fixedtarget不变，nextboot才新rule                                                                                                                                                   | F→W→D/P；timer/subscription cleanup                                                                                                      |
+| update.idle              | HOT IDLE，内容/admin/键盘/SECONDARY真实点击，边界timer；immediate对照                          | 最后点击M、原业务动作仍成功、两机隔离，新boot等待，flush失败zeroapply                                                                                                                                                  | F→W→D/P；无遗留timer                                                                                                                     |
+| update.install-reminder  | FULL初次apply、系统取消/稍后、N、后台/前台/pending/unknown/session消失                         | 可silent不额外阻断；samefixedN、zero重复commit、准确真实actual                                                                                                                                                         | F→W策略→Dnative；未知session不乱删                                                                                                       |
+| update.full-hot          | 两App合法B包规则，APK1/JS3→APK2/embeddedJS4→HOT5（含IDLE）                                     | 同task/N-M固定、真实两重启/实际身份、同boot不第二rule                                                                                                                                                                  | H+W非native→D；ownedZIP/APK/build/APP                                                                                                    |
+| update.pair              | 两个App分别sameApp、不同版本、fullrules投影、失联/re-pair（不同 App 检查仅静态＋既有 focused） | 各自App规则/versions/task/click、公共投影、业务保护/admin、本机state未覆盖、仅MAINreport                                                                                                                               | F 双 Runtime codec/投影 apply→双虚拟机 P＋H；TR-16 adapter 例外，Web topologyHost unavailable；两设备/reverse/forward；无peer grant      |
+| update.shared-credential | 同App两Runtime、protected旧key、sync/flush失败、瞬断/解绑/换主机                               | 六字段或null单entry；plain迁移/reload；SLAVEinactive/stopped但HTTP可用；先保存后用，旧revision拒绝；断链直连、解绑先清；CBS不按deviceId鉴权，TDS正确设备通过/错误设备拒绝；激活/cancel/report/TDS仍拒副机              | F→两个integration W非adapter→P＋H；复用四设备run，无新增run/恢复框架                                                                     |
+| update.grant             | 副机fixed工件、主机停机、过期/配置/binding变化、正常manifest                                   | 副机本机TDC→CBS，零peer请求；CBS短期grant必需；ZIP/APK/FULL身份/HOT清单原核；迟到旧身份不提交                                                                                                                          | F+H+D/P；grant仅attempt，精确preparedrelease                                                                                             |
+| update.report            | 无taskactual、waiting/partialsuccess/failed、HTTP retry/PONG、BRANCH                           | CBS同task单历史，最终actual非target，旧binding拒绝、副机无row，pending不挡update                                                                                                                                       | F+H+D/P；保留CBS历史，不伪cleanup删除                                                                                                    |
+| update.supply-chain      | build→platform上传/解析/保存→operations新建/启用→MAIN自动FULL/HOT→运营报告详情/历史            | 两后台scope/session/标准控件、真实规则自动而非accept fixture、actual匹配、历史task同一行                                                                                                                               | 同DEVproductionbrowser＋console 真机双屏；wallpaper mobile 虚拟机核同供给/报告主流程；P 按配对适用子断言；Bhelper复用                    |
+| update.cleanup           | 首败、dispose、staging/browser/dualdevice资源不匹配                                            | business与cleanup分别；unknown资源不动、FAIL不得完成                                                                                                                                                                   | F＋runnerowned readback                                                                                                                  |
+
+**验收行到可执行源码的映射**：`project-data`/`auto-selection` → `apps/terminal/kernel/feature/project-basic/test/projectBasic.test.ts` 的 “loads project facts after the store-ready command and submits only the selected app candidate to update” 与 `apps/terminal/kernel/feature/project-basic/test/projectBasicRuntime.test.ts`；`tools/terminal-automation/journeys/update.android.test.ts` 的 pair projection、project readiness 与 rule snapshot 段提供设备主链读回。CBS→store-basic selector 数据变化验收由 console 主 journey 共用 `tools/terminal-automation/journeys/mainSampleJourney.ts` + `storeBasicDataChange.ts` 完成，Web 和 Android 两个执行面均复用该断言；wallpaper 主 journey 只验证壁纸选择与确认。`fixed`/`full-hot` → `apps/terminal/kernel/base/terminal-update/test/terminalUpdate.test.ts` 的 fixed-target、FULL→HOT 续接测试，端到端实际工件/供给/报告由 `update.supply-chain` 执行。`idle` → 同文件 “applies an IDLE HOT artifact only after a fresh full M window without local input”。`install-reminder` → `apps/terminal/ui/base/admin-shell/test/installReminder.test.tsx` 与同 owner 的 N/稍后/同 action测试。`shared-credential`/`grant` → `apps/terminal/kernel/base/terminal-data-client/test/terminalDataClientActor.test.ts` 的 SLAVE 保存凭证读取/下载授权及迟到授权反例；真实主副投影由 `update.pair` 执行。`report` → `terminalUpdate.test.ts` 报告队列/回执测试与 `tools/terminal-automation/journeys/terminalUpdateSupplyUi.ts` 的 `assertTerminalUpdateReportInUi`，真实上报/读回由 `update.supply-chain` 执行。`pair` → `tools/terminal-automation/journeys/update.pair.android.test.ts`；`supply-chain` → `tools/terminal-automation/journeys/update.android.test.ts` 的规则快照、`requestTerminalUpdate`、安装/实际版本及报告读回链。`cleanup` → `tools/terminal-automation/test/runner.test.ts`、`androidAutomationConnection.test.ts` 与相应 managed cleanup tests。上述源码映射说明验证归属，不把存在测试源码说成已通过；所有尚未运行的面仍标 `NOT_RUN`。
 
 授权时确认设备可用与签名安装渠道。C不同于B临时验证收敛：B单机双屏真机范围不自动覆盖C，C按 §10b.6 已裁定交叉覆盖及 TR-16 规划两 integration Web→真机双屏→mobile 虚拟机→两组同 App 双虚拟机配对；未获授权的执行面保持NOT_AUTHORIZED，不缩分母报全专项PASS。
 
 ## 11a. R/V逐条承接，不重复无变化旧验证
 
-| 需求 | C实现或前置 | 场景 |
-| --- | --- | --- |
-| R01～03 | A/B真实工件/版本/打包前置；C直接HTTP工件输入沿A身份/校验 | auto-selection/grant/full-hot；未影响打包重用适用A/Bproof |
-| R04～05 | B包库/规则/权限不新增 | supply-chain真实管理动作；B未变化owner proof可复用 |
-| R06 | §8.1/8.2 | auto-selection/full-hot |
-| R07及D-52 | §8.5/6/7 | fixed/pair/shared-credential/grant |
-| R08及D-52 | §6/7/9、TDC唯一owner/CBS凭证鉴权 | 全部source调用链、shared-credential |
-| R09 | §8.1/2/3 | fixed/full-hot |
-| R10 | A有限重试＋§8.4未知等待 | install-reminder/grant/cleanup |
-| R11 | §8.4 | install-reminder/full-hot |
-| R12 | §8.3/4 | idle/full-hot |
-| R13～14 | A加载/保护复用＋C直接HTTP工件输入复用 | grant/full-hot；A未变化T/rollback proof仅按scope复用 |
-| R15后续裁决 | §8.8，B报告契约 | report/supply-chain/pair |
+| 需求        | C实现或前置                                              | 场景                                                      |
+| ----------- | -------------------------------------------------------- | --------------------------------------------------------- |
+| R01～03     | A/B真实工件/版本/打包前置；C直接HTTP工件输入沿A身份/校验 | auto-selection/grant/full-hot；未影响打包重用适用A/Bproof |
+| R04～05     | B包库/规则/权限不新增                                    | supply-chain真实管理动作；B未变化owner proof可复用        |
+| R06         | §8.1/8.2                                                 | auto-selection/full-hot                                   |
+| R07及D-52   | §8.5/6/7                                                 | fixed/pair/shared-credential/grant                        |
+| R08及D-52   | §6/7/9、TDC唯一owner/CBS凭证鉴权                         | 全部source调用链、shared-credential                       |
+| R09         | §8.1/2/3                                                 | fixed/full-hot                                            |
+| R10         | A有限重试＋§8.4未知等待                                  | install-reminder/grant/cleanup                            |
+| R11         | §8.4                                                     | install-reminder/full-hot                                 |
+| R12         | §8.3/4                                                   | idle/full-hot                                             |
+| R13～14     | A加载/保护复用＋C直接HTTP工件输入复用                    | grant/full-hot；A未变化T/rollback proof仅按scope复用      |
+| R15后续裁决 | §8.8，B报告契约                                          | report/supply-chain/pair                                  |
 
-| V | C子断言/场景（均NOT_RUN；A/B复用≠本轮新PASS） |
-| --- | --- |
-| 01 | A两App三产物identity；supply-chain使用真实相同产物，未改builder不整批重跑 |
-| 02 | auto-selection/grant拒错App/runtime；A native baseline复用 |
-| 03 | B合规上传/配对及grant真实identity；supply-chain不新增极端parser |
-| 04 | C直接HTTP工件输入的普通有效/坏摘要/相对path focused；既定恶意ZIP/symlink/bomb专项按A/B范围NOT_COVERED，不宣称全V04PASS |
-| 05 | supply-chain与grant跨space/project拒绝；B原权限proof沿scope |
-| 06 | supply-chain不编辑规则，N/M秒分钟读回；B创建/启停focused复用 |
-| 07 | auto-selection全部tuple/scope/无规则零动作 |
-| 08 | full-hot真实2次启动finalidentity |
-| 09 | auto-selection实际build/runtime/samepub及no-downgrade |
-| 10 | A/B配对及中间数据兼容为前置；full-hot真实续接，不新增任意schema备份 |
-| 11 | B完整分页/topic；C fixed/pair首次/重复/重连与空projection |
-| 12 | pair/模块focused无页面、已有state、退订failure、本机state隔离 |
-| 13 | pair 同 App 双虚拟机版本独立/H仅MAINrow/协议保护admin；不同 App 拒绝仅静态读回与既有 focused，不进设备分母 |
-| 14 | fixed持久化fail、队列双读、停用/断链与双屏one |
-| 15 | full-hot优先续接、每boot一次执行、S3确认旧结果后可择新 |
-| 16 | install-reminder取消/ended/pending/unknown/technicalfailure |
-| 17 | grant/auto-selection有限故障/权限/failedArtifact/no手工retry |
-| 18 | install-reminder初次immediate＋N、background/sysUi/resume |
-| 19 | idle全部点击/两屏/双机/deadline竞态 |
-| 20 | idle/full-hot新boot播种、flushfailure、本机ownerdurable读回 |
-| 21 | A真实离线image/font/Hermes适用proof；C各App后继加载验actual，不声称新engineproof |
-| 22 | A进程中断proof复用；C waiting-policy/pair当前context与actual续接 |
-| 23 | A boot/hydration/failedpage/T；C不拿TDPready当boot确认 |
-| 24 | A同Host新boot/旧token隔离；C module/timer旧boot不推进 |
-| 25 | A发布纪律/有限rollback前置；CfailedArtifact阻重入 |
-| 26 | A已确认不rollback；C断链只资格/业务保护不随意回滚 |
-| 27 | full-hot/report实际部分成功，pair副机仅local |
-| 28 | report真实HTTP/PONG/ready/lateidentity，B无taskactual接缝先闭合 |
-| 29 | R15后续裁决覆盖旧文：运营两Tab enabled终端、任务历史；supply-chain/report，运维不加报告页 |
-| 30 | cleanup＋全链脱敏必要日志/owned资源 |
+| V   | C子断言/场景（均NOT_RUN；A/B复用≠本轮新PASS）                                                                          |
+| --- | ---------------------------------------------------------------------------------------------------------------------- |
+| 01  | A两App三产物identity；supply-chain使用真实相同产物，未改builder不整批重跑                                              |
+| 02  | auto-selection/grant拒错App/runtime；A native baseline复用                                                             |
+| 03  | B合规上传/配对及grant真实identity；supply-chain不新增极端parser                                                        |
+| 04  | C直接HTTP工件输入的普通有效/坏摘要/相对path focused；既定恶意ZIP/symlink/bomb专项按A/B范围NOT_COVERED，不宣称全V04PASS |
+| 05  | supply-chain与grant跨space/project拒绝；B原权限proof沿scope                                                            |
+| 06  | supply-chain不编辑规则，N/M秒分钟读回；B创建/启停focused复用                                                           |
+| 07  | auto-selection全部tuple/scope/无规则零动作                                                                             |
+| 08  | full-hot真实2次启动finalidentity                                                                                       |
+| 09  | auto-selection实际build/runtime/samepub及no-downgrade                                                                  |
+| 10  | A/B配对及中间数据兼容为前置；full-hot真实续接，不新增任意schema备份                                                    |
+| 11  | B完整分页/topic；C fixed/pair首次/重复/重连与空projection                                                              |
+| 12  | pair/模块focused无页面、已有state、退订failure、本机state隔离                                                          |
+| 13  | pair 同 App 双虚拟机版本独立/H仅MAINrow/协议保护admin；不同 App 拒绝仅静态读回与既有 focused，不进设备分母             |
+| 14  | fixed持久化fail、队列双读、停用/断链与双屏one                                                                          |
+| 15  | full-hot优先续接、每boot一次执行、S3确认旧结果后可择新                                                                 |
+| 16  | install-reminder取消/ended/pending/unknown/technicalfailure                                                            |
+| 17  | grant/auto-selection有限故障/权限/failedArtifact/no手工retry                                                           |
+| 18  | install-reminder初次immediate＋N、background/sysUi/resume                                                              |
+| 19  | idle全部点击/两屏/双机/deadline竞态                                                                                    |
+| 20  | idle/full-hot新boot播种、flushfailure、本机ownerdurable读回                                                            |
+| 21  | A真实离线image/font/Hermes适用proof；C各App后继加载验actual，不声称新engineproof                                       |
+| 22  | A进程中断proof复用；C waiting-policy/pair当前context与actual续接                                                       |
+| 23  | A boot/hydration/failedpage/T；C不拿TDPready当boot确认                                                                 |
+| 24  | A同Host新boot/旧token隔离；C module/timer旧boot不推进                                                                  |
+| 25  | A发布纪律/有限rollback前置；CfailedArtifact阻重入                                                                      |
+| 26  | A已确认不rollback；C断链只资格/业务保护不随意回滚                                                                      |
+| 27  | full-hot/report实际部分成功，pair副机仅local                                                                           |
+| 28  | report真实HTTP/PONG/ready/lateidentity，B无taskactual接缝先闭合                                                        |
+| 29  | R15后续裁决覆盖旧文：运营两Tab enabled终端、任务历史；supply-chain/report，运维不加报告页                              |
+| 30  | cleanup＋全链脱敏必要日志/owned资源                                                                                    |
 
 ## 12. OPEN与设计准入
 
 - OPEN-B：本任务指定的 B R3 S-1 已修复；其 focused 结果和独立差量对账记录于 `doc/review/platform/2026-10-10-ter-version-update-stage-b-r3-finding-intake-codex.md`。CP-01 仍须重开 CBS/TDC/update 现有接口、snapshot分页和报告状态形状；不把 S-1 局部关闭升级为 B 整批验收。
 - OPEN-A：最终实施review/真实native范围及当前既有 prepare 输入改动影响，CP-01确认；FULL最低API≥29按Dexter已裁决，不再询问。
+- OPEN-GLOBAL-BUDGET：CP-01 的 edge-codegen `IDENTITY_ONLY --check` 只证明 operation identity/生成字节；当前默认模式已知因 `BUDGET_PROJECTION_OPERATION_MISSING:stagePlatformTerminalUpdateArtifact` 失败，不记为 PASS。C 不新增 CBS operation identity，CP-06 也未要求全仓默认 `scripts/verify`，所以本批不安排 CP-05 calibration；默认预算门保持 `NOT_RUN/OPEN`，不得手填预算消红。若后续授权明确要求默认预算门，再依据届时适用测量规范处理。
 - UI：Dexter已确认C的IA内容（含当前低保真安装再邀请）；真实呈现/可访问性/控件行为仍NOT_RUN，不推成UI动态通过。外部 review 旧字节已获 GO_WITH_UNVERIFIED_UI；该历史 verdict 不替代当前实施证据。
 - OPEN-NATIVE：foreground/presentation桥、pendingIntent重复保护、既有ZIP校验的当前解析版本和API focused NOT_RUN。
 - OPEN-PAIR：同App规则/credential投影、副机直接CBS下载command与实际driver双设备能力NOT_RUN，须按§8.7/10b.6.1准确落地，新增 forward/reverse、pair laptop 单屏和预算/清理仍未实现；不把主副独立升级变成同步升级。
@@ -509,13 +516,13 @@ ADB/模拟器实际版本与官方依据见附件 §3；以上是设计推论与
 
 以下列出本阶段C已按Dexter 2026-10-10授权完成的正本同步，以及仍待实施的契约/源码动作。提案文件继续保持PROPOSED，不作为正本；本实施不重开已关闭的设计cycle。
 
-| 正本当前条款 | 同步文本/动作 | 状态 |
-| --- | --- | --- |
-| 更新正式需求R-07 L129–139仅规则同步、未定义共享凭证，旧不同App句 | 补：“同App MASTER激活建立唯一credential，TDC只credential record同步副机，两端明文持久。副机本机TDC直调CBS、不逐次主机grant；不独立激活/TDS/报告。瞬断保留，显式解绑/换主机先由TDC清共享凭证。CBS短期download grant保留。”同App句按既有裁决同步。 | SYNCED：2026-10-10 已写入 R-07 |
-| R-08 L141–154 TDC拥有凭证但无共享/caller表 | TDC行补：“唯一credential owner/MASTER bootstrap；credential-only record/plain；两端普通CBS HTTP，激活/取消/报告/TDS仅MASTER。CBS后续认证以凭证有效性为准，不核设备匹配；业务scope/状态及download grant复核保持。” | SYNCED：2026-10-10 已写入 R-08 |
-| 提案§4/5要求CBS核master binding deviceId | 由本会话最新裁决覆盖；提案保留PROPOSED历史，后续维护标明deviceId仅激活来源/CBS不要求该头，本轮不悄改提案。 | SUPERSEDED_INPUT |
+| 正本当前条款                                                                                                                         | 同步文本/动作                                                                                                                                                                                                                                                                                                                                                                                  | 状态                                        |
+| ------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| 更新正式需求R-07 L129–139仅规则同步、未定义共享凭证，旧不同App句                                                                     | 补：“同App MASTER激活建立唯一credential，TDC只credential record同步副机，两端明文持久。副机本机TDC直调CBS、不逐次主机grant；不独立激活/TDS/报告。瞬断保留，显式解绑/换主机先由TDC清共享凭证。CBS短期download grant保留。”同App句按既有裁决同步。                                                                                                                                               | SYNCED：2026-10-10 已写入 R-07              |
+| R-08 L141–154 TDC拥有凭证但无共享/caller表                                                                                           | TDC行补：“唯一credential owner/MASTER bootstrap；credential-only record/plain；两端普通CBS HTTP，激活/取消/报告/TDS仅MASTER。CBS后续认证以凭证有效性为准，不核设备匹配；业务scope/状态及download grant复核保持。”                                                                                                                                                                              | SYNCED：2026-10-10 已写入 R-08              |
+| 提案§4/5要求CBS核master binding deviceId                                                                                             | 由本会话最新裁决覆盖；提案保留PROPOSED历史，后续维护标明deviceId仅激活来源/CBS不要求该头，本轮不悄改提案。                                                                                                                                                                                                                                                                                     | SUPERSEDED_INPUT                            |
 | 原终端激活R-2.2/R-2.3/R-3.1/R-4.7/R-9.3、V-B4/V-S2，配对正式需求R-02/R-04/R-12/R-13及TER规范相关protected/isolated、deviceId鉴权条款 | R-3.1删除CBS取消接口deviceId输入；R-2.2明确CBS凭证认证不比物理deviceId、TDS在绑定有效期间保留设备匹配；R-2.3/R-9.3改TDC两端明文credential持久并保留其他秘密脱敏。R-4.7区分TDS设备匹配与CBS凭证分类；V-B4不再把deviceId作为请求输入，V-S2保留TDS错device拒绝。配对R-02/R-04/R-12/R-13仅增加credential-only/plain共享，副机仍不独立激活/取消/TDS/报告；规范已加阶段C具名边界，TR-09 retain不扩。 | SYNCED：2026-10-10；契约与源码仍待 CP-01/04 |
-| canonical九GET/grant/report/cancel头/body及共享JavaAPI | 仅移除CBS后续deviceId认证输入、cancel body；TDS原认证入口/协议设备匹配保留；materialize→codegen→terminal generation/所有caller。activate真实device输入、scope/error保持。 | CP-01 待实施与生成，NOT_RUN |
+| canonical九GET/grant/report/cancel头/body及共享JavaAPI                                                                               | 仅移除CBS后续deviceId认证输入、cancel body；TDS原认证入口/协议设备匹配保留；materialize→codegen→terminal generation/所有caller。activate真实device输入、scope/error保持。                                                                                                                                                                                                                      | CP-01 待实施与生成，NOT_RUN                 |
 
 本轮阶段C授权覆盖表中所列正本同步与契约/源码实施。已对账且无影响的内容不重复；本阶段动态结果仍按实际运行记录，不以本表状态代替验证。没有新增产品候选，cancel按既有副机只读边界，R-15不变。
 

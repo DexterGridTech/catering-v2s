@@ -50,9 +50,7 @@ Object.defineProperty(unavailableUpdatePort, PORT_DESCRIPTOR_KEY, {
         'presentInstallerConfirmation',
         'confirmBoot',
         'releasePrepared',
-      ].map(
-        capability => Object.freeze({capability, state: 'unavailable' as const, source: 'default' as const}),
-      ),
+      ].map(capability => Object.freeze({capability, state: 'unavailable' as const, source: 'default' as const})),
     ),
   }),
   enumerable: false,

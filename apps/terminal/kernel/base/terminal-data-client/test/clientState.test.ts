@@ -359,9 +359,9 @@ describe('terminal-data-client selectors', () => {
         updatedAt: 100,
       }),
     );
-    host.getStore().dispatch(
-      terminalDataClientActions.markCredentialReady({credentialRevision: 1, instanceMode: 'MASTER'}),
-    );
+    host
+      .getStore()
+      .dispatch(terminalDataClientActions.markCredentialReady({credentialRevision: 1, instanceMode: 'MASTER'}));
     const payload = host.createFullSyncPayload(terminalClientStatusProjectionSliceName);
     expect(payload.status).toBe('ready');
     if (payload.status !== 'ready') throw new Error('TDC_STATUS_PROJECTION_SYNC_NOT_READY');
@@ -445,7 +445,10 @@ describe('terminal-data-client selectors', () => {
     expect(getTerminalDataClientSyncEntries(state).credential).toEqual({value: null, updatedAt: 0});
     state = terminalDataClientReducer(
       state,
-      terminalDataClientActions.markCredentialReady({credentialRevision: state.credentialRevision, instanceMode: 'MASTER'}),
+      terminalDataClientActions.markCredentialReady({
+        credentialRevision: state.credentialRevision,
+        instanceMode: 'MASTER',
+      }),
     );
     expect(getTerminalDataClientSyncEntries(state).credential).toEqual({value: credential, updatedAt: 0});
     expect(() => applyTerminalDataClientSyncEntries(state, {credential: {value: credential, updatedAt: 1}})).toThrow(
@@ -456,9 +459,9 @@ describe('terminal-data-client selectors', () => {
         credential: {value: {...credential, credentialSecret: 'not-a-base64url-secret'}, updatedAt: 0},
       }),
     ).toThrow('TDC_SYNC_CREDENTIAL_INVALID');
-    expect(() => applyTerminalDataClientSyncEntries(state, {credential: {value: credential, updatedAt: 0}, extra: {}})).toThrow(
-      'TDC_SYNC_CREDENTIAL_ENTRY_SET_INVALID',
-    );
+    expect(() =>
+      applyTerminalDataClientSyncEntries(state, {credential: {value: credential, updatedAt: 0}, extra: {}}),
+    ).toThrow('TDC_SYNC_CREDENTIAL_ENTRY_SET_INVALID');
     const applied = applyTerminalDataClientSyncEntries(initial(), {credential: {value: credential, updatedAt: 0}});
     expect(applied).toMatchObject({credential, activationStatus: 'inactive'});
     expect(applied.credentialReadyRevision).toBeNull();

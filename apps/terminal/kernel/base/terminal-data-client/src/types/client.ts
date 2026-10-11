@@ -166,14 +166,6 @@ export type TerminalUpdateReportPayload = Readonly<{
   readonly body: TerminalRequestMap['submitTerminalUpdateReport']['body'];
 }>;
 
-/** Safe credential identity supplied by topology before an explicit SLAVE unpair/host replacement. */
-export type ClearSharedTerminalCredentialPayload = Readonly<{
-  readonly groupWorkspaceKey: string | null;
-  readonly terminalRef: string | null;
-  readonly storeRef: string | null;
-  readonly bindingGeneration: number | null;
-}>;
-
 /** Shared Runtime command fanned out to feature actors; each consumer matches its own subscription. */
 export type TerminalTopicChangedPayload = Readonly<{
   readonly subscriberKey: string;

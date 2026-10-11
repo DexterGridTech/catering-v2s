@@ -60,6 +60,14 @@ class TerminalConnectionFrameCodecTest {
     }
 
     @Test
+    void requiresAValidDeviceIdForTdsAuthenticationFrames() {
+        String validFrame = authenticateFrame("7." + SECRET, "device-1", "1.2.3");
+
+        assertInvalid(validFrame.replace(",\"deviceId\":\"device-1\"", ""));
+        assertInvalid(validFrame.replace("\"deviceId\":\"device-1\"", "\"deviceId\":7"));
+    }
+
+    @Test
     void ignoresUnknownAuthenticateFieldsWhileStillReadingTheKnownFields() {
         TerminalConnectionFrameCodec.Authenticate authenticate = codec.authenticate(
                 GROUP_KEY, authenticateFrame("7." + SECRET, "device-1", "1.2.3", ",\"futureField\":true"));

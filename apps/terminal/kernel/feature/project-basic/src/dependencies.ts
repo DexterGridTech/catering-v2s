@@ -7,6 +7,22 @@ import {moduleName as topology} from '@catering-v2s/kernel-base-topology';
 import {moduleName as serverConfig} from '@catering-v2s/kernel-base-server-config';
 import {moduleName as storeBasic} from '@catering-v2s/kernel-feature-store-basic';
 
-export const dependencyModuleNames = [contracts, runtime, state, terminalDataClient, terminalUpdate, topology, serverConfig, storeBasic] as const;
+export const dependencyModuleNames = [
+  contracts,
+  runtime,
+  state,
+  terminalDataClient,
+  terminalUpdate,
+  topology,
+  serverConfig,
+  storeBasic,
+] as const;
 export const devDependencyModuleNames = [] as const;
-export const runtimeModuleDependencyNames = [runtime, terminalDataClient, storeBasic, terminalUpdate, topology, serverConfig] as const;
+export const runtimeModuleDependencyNames = [
+  runtime,
+  terminalDataClient,
+  storeBasic,
+  terminalUpdate,
+  topology,
+  serverConfig,
+] as const;

@@ -1147,6 +1147,10 @@ function reportStateLabel(value: string | undefined): string {
       return '正在下载更新内容';
     case 'VERIFYING':
       return '正在校验更新内容';
+    case 'WAITING_IDLE':
+      return '等待闲时更新';
+    case 'ADMISSION_REJECTED':
+      return '更新规则不适用于此终端';
     case 'INSTALLING':
       return '正在安装完整更新';
     case 'APPLYING_HOT':
@@ -1178,6 +1182,12 @@ function reportReasonLabel(value: string | undefined): string {
       return '更新内容准备失败';
     case 'INSTALLER_CANCELLED':
       return '已取消系统安装';
+    case 'INCOMPATIBLE':
+      return '应用不匹配';
+    case 'WOULD_DOWNGRADE':
+      return '更新版本低于当前版本';
+    case 'FAILED_ARTIFACT':
+      return '更新包此前已失败';
     case 'INSTALL_FAILED':
       return '完整更新安装失败';
     case 'HOT_APPLY_FAILED':

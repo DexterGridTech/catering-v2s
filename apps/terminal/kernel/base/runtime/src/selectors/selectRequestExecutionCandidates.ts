@@ -14,11 +14,14 @@ import {selectRuntimeInstanceMode} from './selectRuntimeInstanceMode';
 import {freezeList} from '../foundations/freezeList';
 
 const hasMatchingRootCommand = (
-  local: RequestExecutionRecord | undefined,
-  peer: RequestExecutionRecord | undefined,
-  commandName: string,
-  displayMode: 'PRIMARY' | 'SECONDARY',
+  input: Readonly<{
+    local: RequestExecutionRecord | undefined;
+    peer: RequestExecutionRecord | undefined;
+    commandName: string;
+    displayMode: 'PRIMARY' | 'SECONDARY';
+  }>,
 ): boolean => {
+  const {local, peer, commandName, displayMode} = input;
   const commands = new Map<string, CommandExecutionObservation>();
   for (const command of local?.commands ?? []) commands.set(String(command.commandId), command);
   for (const command of peer?.commands ?? []) {
@@ -34,10 +37,13 @@ const hasMatchingRootCommand = (
 
 const selectRequestExecutionCandidatesImplementation = (
   state: StateRoot,
-  workspace: 'MAIN' | 'BRANCH',
-  commandName: string,
-  displayMode: 'PRIMARY' | 'SECONDARY',
+  filter: Readonly<{
+    workspace: 'MAIN' | 'BRANCH';
+    commandName: string;
+    displayMode: 'PRIMARY' | 'SECONDARY';
+  }>,
 ): readonly RequestExecutionCandidate[] => {
+  const {workspace, commandName, displayMode} = filter;
   const mode = selectRuntimeInstanceMode(state);
   const local = readRequestLedgerState(state, requestLedgerSliceNameForMode(mode));
   const peer = readRequestLedgerState(state, peerRequestLedgerSliceNameForMode(mode));
@@ -55,7 +61,7 @@ const selectRequestExecutionCandidatesImplementation = (
     const peerRecord = readLiveRequestEnvelope(peer, requestId)?.value;
     const chosen = localRecord ?? peerRecord;
     if (chosen === undefined || (chosen.workspace !== null && chosen.workspace !== workspace)) continue;
-    if (!hasMatchingRootCommand(localRecord, peerRecord, commandName, displayMode)) continue;
+    if (!hasMatchingRootCommand({local: localRecord, peer: peerRecord, commandName, displayMode})) continue;
     candidates.push(Object.freeze({requestId, workspace: chosen.workspace}));
   }
   candidates.sort((left, right) => String(left.requestId).localeCompare(String(right.requestId)));
@@ -64,9 +70,14 @@ const selectRequestExecutionCandidatesImplementation = (
 
 export const selectRequestExecutionCandidates = defineStateSelector(moduleName, 'selectRequestExecutionCandidates', {
   parameters: [
-    {kind: 'enum', values: ['MAIN', 'BRANCH']},
-    {kind: 'string'},
-    {kind: 'enum', values: ['PRIMARY', 'SECONDARY']},
+    {
+      kind: 'object',
+      properties: {
+        workspace: {kind: 'enum', values: ['MAIN', 'BRANCH']},
+        commandName: {kind: 'string'},
+        displayMode: {kind: 'enum', values: ['PRIMARY', 'SECONDARY']},
+      },
+    },
   ],
   selector: selectRequestExecutionCandidatesImplementation,
 });

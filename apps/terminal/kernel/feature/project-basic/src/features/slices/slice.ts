@@ -9,7 +9,13 @@ export const projectBasicSliceName = `${moduleName}.state` as const;
 export const initialProjectBasicState: ProjectBasicState = Object.freeze({
   binding: null,
   organizationPath: null,
-  ruleSnapshot: Object.freeze({contextIdentity: null, selectedSpace: null, projectRef: null, collectionHash: null, items: Object.freeze([])}),
+  ruleSnapshot: Object.freeze({
+    contextIdentity: null,
+    selectedSpace: null,
+    projectRef: null,
+    collectionHash: null,
+    items: Object.freeze([]),
+  }),
   ruleSnapshotStatus: Object.freeze({status: 'empty', errorCode: null}),
   loadReadiness: Object.freeze({runtimeId: null, binding: null, status: 'idle', projectRef: null}),
   readStates: Object.freeze({}),
@@ -17,14 +23,27 @@ export const initialProjectBasicState: ProjectBasicState = Object.freeze({
 });
 
 const setBinding = createAction<ProjectBasicState['binding']>(`${projectBasicSliceName}/setBinding`);
-const setOrganizationPath = createAction<NonNullable<ProjectBasicState['organizationPath']>>(`${projectBasicSliceName}/setOrganizationPath`);
+const setOrganizationPath = createAction<NonNullable<ProjectBasicState['organizationPath']>>(
+  `${projectBasicSliceName}/setOrganizationPath`,
+);
 const setRuleSnapshot = createAction<ProjectBasicState['ruleSnapshot']>(`${projectBasicSliceName}/setRuleSnapshot`);
-const setRuleSnapshotStatus = createAction<ProjectBasicState['ruleSnapshotStatus']>(`${projectBasicSliceName}/setRuleSnapshotStatus`);
+const setRuleSnapshotStatus = createAction<ProjectBasicState['ruleSnapshotStatus']>(
+  `${projectBasicSliceName}/setRuleSnapshotStatus`,
+);
 const setLoadReadiness = createAction<ProjectBasicState['loadReadiness']>(`${projectBasicSliceName}/setLoadReadiness`);
-const setTopicState = createAction<Readonly<{topicKey: keyof ProjectBasicState['readStates']; status: 'idle' | 'loading' | 'loaded' | 'failed'; errorCode?: string | null}>>(`${projectBasicSliceName}/setTopicState`);
+const setTopicState = createAction<
+  Readonly<{
+    topicKey: keyof ProjectBasicState['readStates'];
+    status: 'idle' | 'loading' | 'loaded' | 'failed';
+    errorCode?: string | null;
+  }>
+>(`${projectBasicSliceName}/setTopicState`);
 const reset = createAction(`${projectBasicSliceName}/reset`);
 
-export const projectBasicReducer = (state: ProjectBasicState = initialProjectBasicState, action: UnknownAction): ProjectBasicState => {
+export const projectBasicReducer = (
+  state: ProjectBasicState = initialProjectBasicState,
+  action: UnknownAction,
+): ProjectBasicState => {
   if (setBinding.match(action)) return Object.freeze({...initialProjectBasicState, binding: action.payload});
   if (setOrganizationPath.match(action)) return Object.freeze({...state, organizationPath: action.payload});
   if (setRuleSnapshot.match(action)) return Object.freeze({...state, ruleSnapshot: action.payload});
@@ -33,7 +52,8 @@ export const projectBasicReducer = (state: ProjectBasicState = initialProjectBas
   if (setTopicState.match(action)) {
     const readStates = {...state.readStates, [action.payload.topicKey]: action.payload.status};
     const failures = {...state.failures};
-    if (action.payload.status === 'loaded' || action.payload.errorCode == null) delete failures[action.payload.topicKey];
+    if (action.payload.status === 'loaded' || action.payload.errorCode == null)
+      delete failures[action.payload.topicKey];
     else failures[action.payload.topicKey] = action.payload.errorCode;
     return Object.freeze({...state, readStates: Object.freeze(readStates), failures: Object.freeze(failures)});
   }
@@ -43,28 +63,52 @@ export const projectBasicReducer = (state: ProjectBasicState = initialProjectBas
 
 const orgEntryKey = 'organization';
 const rulesEntryKey = 'rules';
-const asSyncEntry = <TValue>(value: TValue): SyncValueEnvelope => ({value: value as never, updatedAt: nowTimestampMs()});
+const asSyncEntry = <TValue>(value: TValue): SyncValueEnvelope => ({
+  value: value as never,
+  updatedAt: nowTimestampMs(),
+});
 const tombstone = (): SyncValueEnvelope => ({tombstone: true, updatedAt: nowTimestampMs()});
 export const projectBasicContextIdentity = (
   binding: NonNullable<ProjectBasicState['binding']>,
   path: NonNullable<ProjectBasicState['organizationPath']>['value'],
-): string => `${binding.terminalRef}:${binding.bindingGeneration}:${binding.groupWorkspaceKey}:${binding.storeRef}:${path.projectRef}:${path.projectUpdatedAtEpochMillis}`;
+): string =>
+  `${binding.terminalRef}:${binding.bindingGeneration}:${binding.groupWorkspaceKey}:${binding.storeRef}:${path.projectRef}:${path.projectUpdatedAtEpochMillis}`;
 const sameBinding = (left: ProjectBasicState['binding'], right: ProjectBasicState['binding']): boolean =>
-  left !== null && right !== null && left.terminalRef === right.terminalRef && left.storeRef === right.storeRef &&
-  left.groupWorkspaceKey === right.groupWorkspaceKey && left.bindingGeneration === right.bindingGeneration;
+  left !== null &&
+  right !== null &&
+  left.terminalRef === right.terminalRef &&
+  left.storeRef === right.storeRef &&
+  left.groupWorkspaceKey === right.groupWorkspaceKey &&
+  left.bindingGeneration === right.bindingGeneration;
 const organizationIsReady = (state: ProjectBasicState): boolean => {
   const path = state.organizationPath?.value;
   const readiness = state.loadReadiness;
-  return path !== undefined && state.binding !== null && readiness.runtimeId !== null && readiness.status === 'flushed' &&
-    sameBinding(readiness.binding, state.binding) && readiness.projectRef === path.projectRef;
+  return (
+    path !== undefined &&
+    state.binding !== null &&
+    readiness.runtimeId !== null &&
+    readiness.status === 'flushed' &&
+    sameBinding(readiness.binding, state.binding) &&
+    readiness.projectRef === path.projectRef
+  );
 };
 const rulesAreReady = (state: ProjectBasicState): boolean => {
   const path = state.organizationPath?.value;
   const binding = state.binding;
   const rules = state.ruleSnapshot;
-  if (!organizationIsReady(state) || path === undefined || binding === null || state.ruleSnapshotStatus.status !== 'ready') return false;
-  return rules.contextIdentity === projectBasicContextIdentity(binding, path) && rules.selectedSpace === binding.groupWorkspaceKey &&
-    rules.projectRef === path.projectRef && rules.collectionHash !== null;
+  if (
+    !organizationIsReady(state) ||
+    path === undefined ||
+    binding === null ||
+    state.ruleSnapshotStatus.status !== 'ready'
+  )
+    return false;
+  return (
+    rules.contextIdentity === projectBasicContextIdentity(binding, path) &&
+    rules.selectedSpace === binding.groupWorkspaceKey &&
+    rules.projectRef === path.projectRef &&
+    rules.collectionHash !== null
+  );
 };
 export const getProjectBasicSyncEntries = (state: ProjectBasicState): Readonly<Record<string, SyncValueEnvelope>> => ({
   [orgEntryKey]: organizationIsReady(state) ? asSyncEntry(state.organizationPath) : tombstone(),
@@ -86,10 +130,12 @@ export const projectBasicStateRegistration = defineStateRuntimeSlice<ProjectBasi
     applyEntries: (state, entries: Readonly<Partial<Record<string, SyncValueEnvelope>>>) => {
       const organization = entries[orgEntryKey];
       const rules = entries[rulesEntryKey];
-      const organizationPath = organization?.value === undefined ? null : organization.value as ProjectBasicState['organizationPath'];
-      const ruleSnapshot = rules?.value === undefined
-        ? initialProjectBasicState.ruleSnapshot
-        : rules.value as ProjectBasicState['ruleSnapshot'];
+      const organizationPath =
+        organization?.value === undefined ? null : (organization.value as ProjectBasicState['organizationPath']);
+      const ruleSnapshot =
+        rules?.value === undefined
+          ? initialProjectBasicState.ruleSnapshot
+          : (rules.value as ProjectBasicState['ruleSnapshot']);
       return Object.freeze({
         ...state,
         organizationPath,
@@ -101,4 +147,12 @@ export const projectBasicStateRegistration = defineStateRuntimeSlice<ProjectBasi
   },
 });
 
-export const projectBasicActions = Object.freeze({setBinding, setOrganizationPath, setRuleSnapshot, setRuleSnapshotStatus, setLoadReadiness, setTopicState, reset});
+export const projectBasicActions = Object.freeze({
+  setBinding,
+  setOrganizationPath,
+  setRuleSnapshot,
+  setRuleSnapshotStatus,
+  setLoadReadiness,
+  setTopicState,
+  reset,
+});

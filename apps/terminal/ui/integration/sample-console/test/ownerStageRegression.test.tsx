@@ -20,10 +20,7 @@ import {
   selectProjectTerminalUpdateCandidate,
   selectProjectTerminalUpdateRules,
 } from '@catering-v2s/kernel-feature-project-basic';
-import {
-  selectTerminalUpdateTask,
-  type FixedUpdateTarget,
-} from '@catering-v2s/kernel-base-terminal-update';
+import {selectTerminalUpdateTask, type FixedUpdateTarget} from '@catering-v2s/kernel-base-terminal-update';
 import {createPersistenceFieldKey} from '../../../../kernel/base/state/src/foundations/keyspace';
 import {terminalUpdateRegistration} from '../../../../kernel/base/terminal-update/src/features/slices/terminalUpdate';
 import {terminalDataClientActions} from '../../../../../terminal/kernel/base/terminal-data-client/src/features/slices/terminalDataClient';
@@ -139,78 +136,86 @@ const createUpdateReadyNetworkAdapter = (
     rule: unknown;
     downloadGrant: Readonly<{artifactRef: string; body: unknown}>;
   }>,
-) => createReadyTerminalNetworkAdapter(readSnapshot, async request => {
-  const path = request.pathAndQuery.split('?')[0];
-  const operatingRules = Object.freeze({
-    catalogManagementEnabled: false,
-    externalCatalogSyncEnabled: false,
-    openPlatformDeveloperCode: '',
-    reservationEnabled: false,
-    reservationDepositEnabled: false,
-    queueCallEnabled: false,
-    tableManagementEnabled: false,
-    tableStatusEnabled: false,
-    tableWaitCallEnabled: false,
-    banquetOrderEnabled: false,
-    pickupCallEnabled: false,
-    receivableEnabled: false,
-  });
-  let body: unknown;
-  if (path === '/activation') {
-    body = Object.freeze({
-      terminalRef: fixture.terminalRef,
-      storeRef: fixture.storeRef,
-      groupWorkspaceKey: 'workspace-stage-test',
-      bindingGeneration: 1,
+) =>
+  createReadyTerminalNetworkAdapter(readSnapshot, async request => {
+    const path = request.pathAndQuery.split('?')[0];
+    const operatingRules = Object.freeze({
+      catalogManagementEnabled: false,
+      externalCatalogSyncEnabled: false,
+      openPlatformDeveloperCode: '',
+      reservationEnabled: false,
+      reservationDepositEnabled: false,
+      queueCallEnabled: false,
+      tableManagementEnabled: false,
+      tableStatusEnabled: false,
+      tableWaitCallEnabled: false,
+      banquetOrderEnabled: false,
+      pickupCallEnabled: false,
+      receivableEnabled: false,
     });
-  } else if (path === `/stores/${fixture.storeRef}/basic`) {
-    body = Object.freeze({
-      store: Object.freeze({
-        id: fixture.storeRef,
+    let body: unknown;
+    if (path === '/activation') {
+      body = Object.freeze({
+        terminalRef: fixture.terminalRef,
+        storeRef: fixture.storeRef,
         groupWorkspaceKey: 'workspace-stage-test',
-        code: 'STAGE-TEST',
-        name: 'Stage Test Store',
-        project: Object.freeze({id: fixture.projectRef, code: 'PROJECT', name: 'Stage Test Project'}),
-        brand: Object.freeze({id: '00000000-0000-4000-8000-000000000008', code: 'BRAND', name: 'Stage Test Brand'}),
-        tenant: Object.freeze({id: '00000000-0000-4000-8000-000000000009', code: 'TENANT', name: 'Stage Test Tenant'}),
-        status: 'ENABLED',
-        extensionValues: Object.freeze({}),
-        extensionRuleRevision: 0,
-        revision: 1,
-        createdAt: 1,
-        updatedAt: 2,
-        contractDerivedStatus: 'OPERATING',
-        operatingRuleSwitches: operatingRules,
-      }),
-      operatingRules,
-      storeUpdatedAtEpochMillis: 2,
-      operatingRulesUpdatedAtEpochMillis: 2,
-    });
-  } else if (path === `/stores/${fixture.storeRef}/organization-path`) {
-    body = Object.freeze({
-      projectRef: fixture.projectRef,
-      projectName: 'Stage Test Project',
-      regionRef: '00000000-0000-4000-8000-000000000014',
-      regionName: 'Stage Test Region',
-      commercialGroupRef: '00000000-0000-4000-8000-000000000010',
-      commercialGroupName: 'Stage Test Group',
-      projectUpdatedAtEpochMillis: 3,
-      regionUpdatedAtEpochMillis: 3,
-      commercialGroupUpdatedAtEpochMillis: 3,
-    });
-  } else if (path === `/update-rules/projects/${fixture.projectRef}`) {
-    body = Object.freeze({items: Object.freeze([fixture.rule]), collectionHash: 'a'.repeat(64), nextCursor: null});
-  } else if (path === `/update-artifacts/${fixture.downloadGrant.artifactRef}/download-grant`) {
-    body = fixture.downloadGrant.body;
-  } else if (path === `/stores/${fixture.storeRef}/contracts`) {
-    body = Object.freeze({items: Object.freeze([]), collectionUpdatedAtEpochMillis: 2});
-  } else if (path === `/stores/${fixture.storeRef}/service-point-areas` || path === `/stores/${fixture.storeRef}/service-points`) {
-    body = Object.freeze({items: Object.freeze([]), collectionUpdatedAtEpochMillis: 2});
-  } else {
-    return Object.freeze({kind: 'response' as const, status: 404, body: Object.freeze({})});
-  }
-  return Object.freeze({kind: 'response' as const, status: 200, body});
-});
+        bindingGeneration: 1,
+      });
+    } else if (path === `/stores/${fixture.storeRef}/basic`) {
+      body = Object.freeze({
+        store: Object.freeze({
+          id: fixture.storeRef,
+          groupWorkspaceKey: 'workspace-stage-test',
+          code: 'STAGE-TEST',
+          name: 'Stage Test Store',
+          project: Object.freeze({id: fixture.projectRef, code: 'PROJECT', name: 'Stage Test Project'}),
+          brand: Object.freeze({id: '00000000-0000-4000-8000-000000000008', code: 'BRAND', name: 'Stage Test Brand'}),
+          tenant: Object.freeze({
+            id: '00000000-0000-4000-8000-000000000009',
+            code: 'TENANT',
+            name: 'Stage Test Tenant',
+          }),
+          status: 'ENABLED',
+          extensionValues: Object.freeze({}),
+          extensionRuleRevision: 0,
+          revision: 1,
+          createdAt: 1,
+          updatedAt: 2,
+          contractDerivedStatus: 'OPERATING',
+          operatingRuleSwitches: operatingRules,
+        }),
+        operatingRules,
+        storeUpdatedAtEpochMillis: 2,
+        operatingRulesUpdatedAtEpochMillis: 2,
+      });
+    } else if (path === `/stores/${fixture.storeRef}/organization-path`) {
+      body = Object.freeze({
+        projectRef: fixture.projectRef,
+        projectName: 'Stage Test Project',
+        regionRef: '00000000-0000-4000-8000-000000000014',
+        regionName: 'Stage Test Region',
+        commercialGroupRef: '00000000-0000-4000-8000-000000000010',
+        commercialGroupName: 'Stage Test Group',
+        projectUpdatedAtEpochMillis: 3,
+        regionUpdatedAtEpochMillis: 3,
+        commercialGroupUpdatedAtEpochMillis: 3,
+      });
+    } else if (path === `/update-rules/projects/${fixture.projectRef}`) {
+      body = Object.freeze({items: Object.freeze([fixture.rule]), collectionHash: 'a'.repeat(64), nextCursor: null});
+    } else if (path === `/update-artifacts/${fixture.downloadGrant.artifactRef}/download-grant`) {
+      body = fixture.downloadGrant.body;
+    } else if (path === `/stores/${fixture.storeRef}/contracts`) {
+      body = Object.freeze({items: Object.freeze([]), collectionUpdatedAtEpochMillis: 2});
+    } else if (
+      path === `/stores/${fixture.storeRef}/service-point-areas` ||
+      path === `/stores/${fixture.storeRef}/service-points`
+    ) {
+      body = Object.freeze({items: Object.freeze([]), collectionUpdatedAtEpochMillis: 2});
+    } else {
+      return Object.freeze({kind: 'response' as const, status: 404, body: Object.freeze({})});
+    }
+    return Object.freeze({kind: 'response' as const, status: 200, body});
+  });
 
 const makeReady = async (assembly: Awaited<ReturnType<typeof createAssembly>>) => {
   const result = await assembly.runtime.dispatchCommand(
@@ -389,10 +394,14 @@ describe('sample-console integration owner-stage regressions', () => {
       persistenceKey: `sample-console-boot-confirm-${Date.now()}`,
       surfaceForm: 'mobile',
       serverSpaces: stageServerSpaces,
-      transportNetworkAdapterFactory: readSnapshot => createUpdateReadyNetworkAdapter(readSnapshot, {
-        terminalRef, storeRef, projectRef, rule,
-        downloadGrant: Object.freeze({artifactRef: hotSummary.artifactRef, body: hotGrant}),
-      }),
+      transportNetworkAdapterFactory: readSnapshot =>
+        createUpdateReadyNetworkAdapter(readSnapshot, {
+          terminalRef,
+          storeRef,
+          projectRef,
+          rule,
+          downloadGrant: Object.freeze({artifactRef: hotSummary.artifactRef, body: hotGrant}),
+        }),
     });
     try {
       const failedReady = await assembly.runtime.dispatchCommand(
@@ -410,14 +419,20 @@ describe('sample-console integration owner-stage regressions', () => {
       await activate(assembly);
       await waitFor(() => expect(selectProjectBasicLoadReadiness(assembly.runtime.getState()).status).toBe('flushed'));
       await waitFor(() => expect(selectProjectTerminalUpdateRules(assembly.runtime.getState()).status).toBe('ready'));
-      const candidate = selectProjectTerminalUpdateCandidate(assembly.runtime.getState(), embedded.applicationId, storeRef);
+      const candidate = selectProjectTerminalUpdateCandidate(
+        assembly.runtime.getState(),
+        embedded.applicationId,
+        storeRef,
+      );
       if (candidate === null)
         throw new Error(
           `PROJECT_UPDATE_CANDIDATE_MISSING bindingReady=${JSON.stringify(selectProjectBasicLoadReadiness(assembly.runtime.getState()))} path=${JSON.stringify(selectProjectOrganizationPath(assembly.runtime.getState()))} rules=${JSON.stringify(selectProjectTerminalUpdateRules(assembly.runtime.getState()))}`,
         );
       await waitFor(() => {
         if (appliedActionId === null)
-          throw new Error(`PROJECT_CANDIDATE_NOT_EXECUTED candidate=${JSON.stringify(candidate)} events=${JSON.stringify(events)}`);
+          throw new Error(
+            `PROJECT_CANDIDATE_NOT_EXECUTED candidate=${JSON.stringify(candidate)} events=${JSON.stringify(events)}`,
+          );
       });
       expect(selectProjectBasicLoadReadiness(assembly.runtime.getState()).status).toBe('flushed');
       expect(selectProjectOrganizationPath(assembly.runtime.getState())?.value.projectRef).toBe(projectRef);
@@ -487,7 +502,11 @@ describe('sample-console integration owner-stage regressions', () => {
       hot: Object.freeze({sourceRef: 'fixture:hot', expectedSha256: hot.publicationId, artifact: hot}),
       policy: Object.freeze({nSeconds: 300, hotStrategy: 'IMMEDIATE' as const, mSeconds: null}),
       strategy: Object.freeze({maxNetworkAttempts: 0, bootTimeoutMs: 30_000}),
-      selectionContext: Object.freeze({selectedSpace: 'development', contextIdentity: 'full-action-resume', ruleRef: 'full-action-resume-rule'}),
+      selectionContext: Object.freeze({
+        selectedSpace: 'development',
+        contextIdentity: 'full-action-resume',
+        ruleRef: 'full-action-resume-rule',
+      }),
     });
     const task = Object.freeze({
       taskId: 'full-action-resume-task',

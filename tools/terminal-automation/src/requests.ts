@@ -87,7 +87,7 @@ const readSelector = async (
   const result = resultOf(await server.request(sessionId, 'selector.read', {selectorName, argsTuple}));
   if (!isRecord(result) || result.valueState !== 'JSON') throw new Error('TERMINAL_AUTOMATION_SELECTOR_VALUE_NOT_JSON');
   return result.value;
-  };
+};
 
 const isRequestCandidate = (value: unknown): value is RequestCandidate =>
   isRecord(value) &&
@@ -198,7 +198,13 @@ export const requests = Object.freeze({
       const subscribeResponse = await input.server.request(input.sessionId, 'selector.subscribe', {
         subscriptionId: listSubscriptionId,
         selectorName: 'kernel.base.runtime.selectRequestExecutionCandidates',
-        argsTuple: [input.workspace, input.commandName, input.displayMode],
+        argsTuple: [
+          {
+            workspace: input.workspace,
+            commandName: input.commandName,
+            displayMode: input.displayMode,
+          },
+        ],
       });
       subscribePending = false;
       listSubscribeRequestMessageId =

@@ -9,12 +9,17 @@ import {selectActivationState} from '@catering-v2s/kernel-base-terminal-data-cli
 import {selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
 import {selectTopologyRequiredProjectionsReady, selectTopologyState} from '@catering-v2s/kernel-base-topology';
 import {serverConfigSliceName} from '@catering-v2s/kernel-base-server-config';
-import {selectStore, selectStoreBasicBinding, selectStoreBasicLoadReadiness} from '@catering-v2s/kernel-feature-store-basic';
+import {
+  selectStore,
+  selectStoreBasicBinding,
+  selectStoreBasicLoadReadiness,
+} from '@catering-v2s/kernel-feature-store-basic';
 import {storeBasicSliceName} from '@catering-v2s/kernel-feature-store-basic';
 
 const readState = (root: StateRoot): ProjectBasicState => {
   const value = root[projectBasicSliceName];
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) throw new Error('PROJECT_BASIC_STATE_MISSING');
+  if (typeof value !== 'object' || value === null || Array.isArray(value))
+    throw new Error('PROJECT_BASIC_STATE_MISSING');
   return value as ProjectBasicState;
 };
 
@@ -39,7 +44,9 @@ const compareRulesDescending = (left: StoredTerminalUpdateRule, right: StoredTer
 
 const requiredPeerProjectionSliceNames = [serverConfigSliceName, storeBasicSliceName, projectBasicSliceName] as const;
 
-const selectReadyUpdateContext = (root: StateRoot): Readonly<{
+const selectReadyUpdateContext = (
+  root: StateRoot,
+): Readonly<{
   readonly binding: NonNullable<ProjectBasicState['binding']>;
   readonly path: NonNullable<ProjectBasicState['organizationPath']>;
   readonly contextFacts: TerminalUpdateContextFacts;
@@ -50,35 +57,52 @@ const selectReadyUpdateContext = (root: StateRoot): Readonly<{
   const storeReadiness = selectStoreBasicLoadReadiness(root);
   const path = state.organizationPath?.value;
   const mode = selectRuntimeInstanceMode(root);
-  if (binding === null || store === null || path === undefined || state.ruleSnapshotStatus.status !== 'ready') return null;
+  if (binding === null || store === null || path === undefined || state.ruleSnapshotStatus.status !== 'ready')
+    return null;
   const pathFact = state.organizationPath;
-  if (pathFact === null || store.value.id !== binding.storeRef || store.value.groupWorkspaceKey !== binding.groupWorkspaceKey ||
-      path.projectRef !== store.value.project.id || path.projectRef.length === 0) return null;
+  if (
+    pathFact === null ||
+    store.value.id !== binding.storeRef ||
+    store.value.groupWorkspaceKey !== binding.groupWorkspaceKey ||
+    path.projectRef !== store.value.project.id ||
+    path.projectRef.length === 0
+  )
+    return null;
 
   if (mode === 'MASTER') {
     const activation = selectActivationState(root);
-    if (activation.status !== 'active' || activation.terminalRef !== binding.terminalRef ||
-        activation.bindingGeneration !== binding.bindingGeneration || activation.storeRef !== binding.storeRef ||
-        activation.groupWorkspaceKey !== binding.groupWorkspaceKey ||
-        state.loadReadiness.runtimeId === null || state.loadReadiness.status !== 'flushed' ||
-        state.loadReadiness.projectRef !== path.projectRef || state.loadReadiness.binding === null ||
-        state.loadReadiness.binding.terminalRef !== binding.terminalRef ||
-        state.loadReadiness.binding.bindingGeneration !== binding.bindingGeneration ||
-        state.loadReadiness.binding.storeRef !== binding.storeRef ||
-        state.loadReadiness.binding.groupWorkspaceKey !== binding.groupWorkspaceKey ||
-        storeReadiness.runtimeId !== state.loadReadiness.runtimeId || storeReadiness.storeStatus !== 'flushed' ||
-        storeReadiness.binding?.terminalRef !== binding.terminalRef ||
-        storeReadiness.binding?.bindingGeneration !== binding.bindingGeneration ||
-        storeReadiness.binding?.storeRef !== binding.storeRef ||
-        storeReadiness.binding?.groupWorkspaceKey !== binding.groupWorkspaceKey) return null;
+    if (
+      activation.status !== 'active' ||
+      activation.terminalRef !== binding.terminalRef ||
+      activation.bindingGeneration !== binding.bindingGeneration ||
+      activation.storeRef !== binding.storeRef ||
+      activation.groupWorkspaceKey !== binding.groupWorkspaceKey ||
+      state.loadReadiness.runtimeId === null ||
+      state.loadReadiness.status !== 'flushed' ||
+      state.loadReadiness.projectRef !== path.projectRef ||
+      state.loadReadiness.binding === null ||
+      state.loadReadiness.binding.terminalRef !== binding.terminalRef ||
+      state.loadReadiness.binding.bindingGeneration !== binding.bindingGeneration ||
+      state.loadReadiness.binding.storeRef !== binding.storeRef ||
+      state.loadReadiness.binding.groupWorkspaceKey !== binding.groupWorkspaceKey ||
+      storeReadiness.runtimeId !== state.loadReadiness.runtimeId ||
+      storeReadiness.storeStatus !== 'flushed' ||
+      storeReadiness.binding?.terminalRef !== binding.terminalRef ||
+      storeReadiness.binding?.bindingGeneration !== binding.bindingGeneration ||
+      storeReadiness.binding?.storeRef !== binding.storeRef ||
+      storeReadiness.binding?.groupWorkspaceKey !== binding.groupWorkspaceKey
+    )
+      return null;
   } else if (mode === 'SLAVE') {
     const topology = selectTopologyState(root);
-    if (topology.peerIdentity?.instanceMode !== 'MASTER' || topology.peerIdentity.moduleName.length === 0 ||
-        !selectTopologyRequiredProjectionsReady(root, requiredPeerProjectionSliceNames)) return null;
+    if (
+      topology.peerIdentity?.instanceMode !== 'MASTER' ||
+      topology.peerIdentity.moduleName.length === 0 ||
+      !selectTopologyRequiredProjectionsReady(root, requiredPeerProjectionSliceNames)
+    )
+      return null;
   } else return null;
 
-  const serverConfig = root[serverConfigSliceName] as Readonly<{selectedSpace?: unknown}> | undefined;
-  if (serverConfig?.selectedSpace !== binding.groupWorkspaceKey) return null;
   const contextIdentity = projectBasicContextIdentity(binding, path);
   if (
     state.ruleSnapshot.contextIdentity !== contextIdentity ||
@@ -86,7 +110,8 @@ const selectReadyUpdateContext = (root: StateRoot): Readonly<{
     state.ruleSnapshot.projectRef !== path.projectRef ||
     state.ruleSnapshot.collectionHash === null ||
     !/^[a-f0-9]{64}$/u.test(state.ruleSnapshot.collectionHash)
-  ) return null;
+  )
+    return null;
 
   return Object.freeze({
     binding,
@@ -102,7 +127,11 @@ const selectReadyUpdateContext = (root: StateRoot): Readonly<{
   });
 };
 
-const selectCandidate = (root: StateRoot, applicationId: string, requestedStoreRef: string): ProjectTerminalUpdateCandidate | null => {
+const selectCandidate = (
+  root: StateRoot,
+  applicationId: string,
+  requestedStoreRef: string,
+): ProjectTerminalUpdateCandidate | null => {
   const state = readState(root);
   const context = selectReadyUpdateContext(root);
   if (context === null || context.binding.storeRef !== requestedStoreRef) return null;
@@ -112,7 +141,11 @@ const selectCandidate = (root: StateRoot, applicationId: string, requestedStoreR
   if (collectionHash === null) return null;
 
   const selected = state.ruleSnapshot.items
-    .filter(rule => rule.applicationId === applicationId && (rule.targetMode === 'ALL' || rule.storeRefs.includes(requestedStoreRef)))
+    .filter(
+      rule =>
+        rule.applicationId === applicationId &&
+        (rule.targetMode === 'ALL' || rule.storeRefs.includes(requestedStoreRef)),
+    )
     .sort(compareRulesDescending)[0];
   if (selected === undefined) return null;
   return Object.freeze({
@@ -125,10 +158,14 @@ const selectCandidate = (root: StateRoot, applicationId: string, requestedStoreR
   });
 };
 
-export const selectProjectTerminalUpdateContextFacts = defineStateSelector(moduleName, 'selectProjectTerminalUpdateContextFacts', {
-  parameters: [],
-  selector: (root: StateRoot) => selectReadyUpdateContext(root)?.contextFacts ?? null,
-});
+export const selectProjectTerminalUpdateContextFacts = defineStateSelector(
+  moduleName,
+  'selectProjectTerminalUpdateContextFacts',
+  {
+    parameters: [],
+    selector: (root: StateRoot) => selectReadyUpdateContext(root)?.contextFacts ?? null,
+  },
+);
 
 export const fixedTargetFromProjectCandidate = (candidate: ProjectTerminalUpdateCandidate): FixedUpdateTarget => {
   const source = (artifact: ProjectTerminalUpdateCandidate['rule']['full']): NonNullable<FixedUpdateTarget['full']> =>
@@ -168,28 +205,51 @@ export const fixedTargetFromProjectCandidate = (candidate: ProjectTerminalUpdate
 };
 
 export const selectProjectOrganizationPath = defineStateSelector(moduleName, 'selectProjectOrganizationPath', {
-  parameters: [], selector: (root: StateRoot) => readState(root).organizationPath,
+  parameters: [],
+  selector: (root: StateRoot) => readState(root).organizationPath,
 });
 export const selectProject = defineStateSelector(moduleName, 'selectProject', {
-  parameters: [], selector: (root: StateRoot) => {
+  parameters: [],
+  selector: (root: StateRoot) => {
     const fact = readState(root).organizationPath;
-    return fact === null ? null : Object.freeze({value: Object.freeze({projectRef: fact.value.projectRef, name: fact.value.projectName}), updatedAtEpochMillis: fact.value.projectUpdatedAtEpochMillis});
+    return fact === null
+      ? null
+      : Object.freeze({
+          value: Object.freeze({projectRef: fact.value.projectRef, name: fact.value.projectName}),
+          updatedAtEpochMillis: fact.value.projectUpdatedAtEpochMillis,
+        });
   },
 });
 export const selectRegion = defineStateSelector(moduleName, 'selectRegion', {
-  parameters: [], selector: (root: StateRoot) => {
+  parameters: [],
+  selector: (root: StateRoot) => {
     const fact = readState(root).organizationPath;
-    return fact === null ? null : Object.freeze({value: Object.freeze({regionRef: fact.value.regionRef, name: fact.value.regionName}), updatedAtEpochMillis: fact.value.regionUpdatedAtEpochMillis});
+    return fact === null
+      ? null
+      : Object.freeze({
+          value: Object.freeze({regionRef: fact.value.regionRef, name: fact.value.regionName}),
+          updatedAtEpochMillis: fact.value.regionUpdatedAtEpochMillis,
+        });
   },
 });
 export const selectCommercialGroup = defineStateSelector(moduleName, 'selectCommercialGroup', {
-  parameters: [], selector: (root: StateRoot) => {
+  parameters: [],
+  selector: (root: StateRoot) => {
     const fact = readState(root).organizationPath;
-    return fact === null ? null : Object.freeze({value: Object.freeze({commercialGroupRef: fact.value.commercialGroupRef, name: fact.value.commercialGroupName}), updatedAtEpochMillis: fact.value.commercialGroupUpdatedAtEpochMillis});
+    return fact === null
+      ? null
+      : Object.freeze({
+          value: Object.freeze({
+            commercialGroupRef: fact.value.commercialGroupRef,
+            name: fact.value.commercialGroupName,
+          }),
+          updatedAtEpochMillis: fact.value.commercialGroupUpdatedAtEpochMillis,
+        });
   },
 });
 export const selectProjectBasicLoadReadiness = defineStateSelector(moduleName, 'selectProjectBasicLoadReadiness', {
-  parameters: [], selector: (root: StateRoot) => readState(root).loadReadiness,
+  parameters: [],
+  selector: (root: StateRoot) => readState(root).loadReadiness,
 });
 export const selectProjectBasicTopicState = defineStateSelector(moduleName, 'selectProjectBasicTopicState', {
   parameters: [{kind: 'enum', values: ['PROJECT', 'REGION', 'COMMERCIAL_GROUP', 'TERMINAL_UPDATE_RULES']}],
@@ -199,8 +259,15 @@ export const selectProjectBasicTopicState = defineStateSelector(moduleName, 'sel
   },
 });
 export const selectProjectTerminalUpdateRules = defineStateSelector(moduleName, 'selectProjectTerminalUpdateRules', {
-  parameters: [], selector: (root: StateRoot) => Object.freeze({...readState(root).ruleSnapshot, ...readState(root).ruleSnapshotStatus}),
+  parameters: [],
+  selector: (root: StateRoot) =>
+    Object.freeze({...readState(root).ruleSnapshot, ...readState(root).ruleSnapshotStatus}),
 });
-export const selectProjectTerminalUpdateCandidate = defineStateSelector(moduleName, 'selectProjectTerminalUpdateCandidate', {
-  parameters: [{kind: 'string'}, {kind: 'string'}], selector: selectCandidate,
-});
+export const selectProjectTerminalUpdateCandidate = defineStateSelector(
+  moduleName,
+  'selectProjectTerminalUpdateCandidate',
+  {
+    parameters: [{kind: 'string'}, {kind: 'string'}],
+    selector: selectCandidate,
+  },
+);

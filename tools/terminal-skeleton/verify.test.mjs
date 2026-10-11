@@ -40,6 +40,7 @@ try {
 }
 
 const expectedTestPackages = [
+  '@catering-v2s/adapter-android-update',
   '@catering-v2s/application-base-android',
   '@catering-v2s/kernel-base-contracts',
   '@catering-v2s/kernel-base-platform-ports',
@@ -47,22 +48,24 @@ const expectedTestPackages = [
   '@catering-v2s/kernel-base-runtime',
   '@catering-v2s/kernel-base-server-config',
   '@catering-v2s/kernel-base-terminal-data-client',
+  '@catering-v2s/kernel-base-terminal-update',
   '@catering-v2s/kernel-base-display-context',
   '@catering-v2s/kernel-base-topology',
   '@catering-v2s/kernel-base-transport',
   '@catering-v2s/kernel-base-ui-state',
   '@catering-v2s/kernel-feature-sample-member-registry',
+  '@catering-v2s/kernel-feature-project-basic',
   '@catering-v2s/kernel-feature-store-basic',
   '@catering-v2s/kernel-feature-sample-staff-session',
   '@catering-v2s/kernel-feature-sample-wallpaper',
   '@catering-v2s/ui-base-admin-shell',
+  '@catering-v2s/ui-base-automation-agent',
   '@catering-v2s/ui-base-integration-assembly',
   '@catering-v2s/ui-base-dev-host',
   '@catering-v2s/ui-base-feature-assembly',
   '@catering-v2s/ui-base-input',
   '@catering-v2s/ui-base-primitives',
   '@catering-v2s/ui-base-render',
-  '@catering-v2s/ui-base-server-config-panel',
   '@catering-v2s/ui-base-terminal-activation',
   '@catering-v2s/ui-feature-sample-member-desk',
   '@catering-v2s/ui-feature-sample-staff-auth',
@@ -74,6 +77,7 @@ const expectedTestPackages = [
   '@catering-v2s/adapter-android-persist-kv',
 ].sort();
 const realTestPackages = [
+  '@catering-v2s/adapter-android-update',
   '@catering-v2s/application-base-android',
   '@catering-v2s/kernel-base-contracts',
   '@catering-v2s/kernel-base-platform-ports',
@@ -81,22 +85,24 @@ const realTestPackages = [
   '@catering-v2s/kernel-base-runtime',
   '@catering-v2s/kernel-base-server-config',
   '@catering-v2s/kernel-base-terminal-data-client',
+  '@catering-v2s/kernel-base-terminal-update',
   '@catering-v2s/kernel-base-display-context',
   '@catering-v2s/kernel-base-topology',
   '@catering-v2s/kernel-base-transport',
   '@catering-v2s/kernel-base-ui-state',
   '@catering-v2s/kernel-feature-sample-member-registry',
+  '@catering-v2s/kernel-feature-project-basic',
   '@catering-v2s/kernel-feature-store-basic',
   '@catering-v2s/kernel-feature-sample-staff-session',
   '@catering-v2s/kernel-feature-sample-wallpaper',
   '@catering-v2s/ui-base-admin-shell',
+  '@catering-v2s/ui-base-automation-agent',
   '@catering-v2s/ui-base-integration-assembly',
   '@catering-v2s/ui-base-dev-host',
   '@catering-v2s/ui-base-feature-assembly',
   '@catering-v2s/ui-base-input',
   '@catering-v2s/ui-base-primitives',
   '@catering-v2s/ui-base-render',
-  '@catering-v2s/ui-base-server-config-panel',
   '@catering-v2s/ui-base-terminal-activation',
   '@catering-v2s/ui-feature-sample-member-desk',
   '@catering-v2s/ui-feature-sample-staff-auth',
@@ -154,7 +160,7 @@ assert.deepEqual(expectedTaskOwners('test', 2).sort(), expectedTestPackages);
 assert.equal(parseStaticExecutionMode([]), 'RUN_STATIC');
 assert.equal(parseStaticExecutionMode(['--static-verified-by-parent']), 'REUSE_PARENT_STATIC');
 assert.throws(() => parseStaticExecutionMode(['--skip-static']), /TERMINAL_VERIFY_ACCEPTS_ONLY_PARENT_STATIC_MARKER/);
-assert.deepEqual(expectedLintPackages.length, 34);
+assert.deepEqual(expectedLintPackages.length, 37);
 const turboTestDryRunFixture = {
   packages: ['@catering-v2s/ui-base-render'],
   tasks: [

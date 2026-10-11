@@ -108,6 +108,103 @@ describe('automation driver server', () => {
     });
   });
 
+  it('traces command and Runtime event boundaries without recording payloads or credentials', async () => {
+    const traces: Readonly<Record<string, unknown>>[] = [];
+    const driver = createAutomationDriverServer({
+      token: 'driver-secret-token',
+      port: 0,
+      onDiagnostic: trace => traces.push(trace),
+    });
+    close = driver.close;
+    await waitFor(() => (driver.server.address() && typeof driver.server.address() === 'object' ? true : null));
+    const address = driver.server.address();
+    if (address === null || typeof address === 'string') throw new Error('TEST_SERVER_ADDRESS_MISSING');
+    socket = new WebSocket(`ws://127.0.0.1:${address.port}/automation`);
+    await new Promise<void>((resolve, reject) => {
+      socket?.once('open', resolve);
+      socket?.once('error', reject);
+    });
+    const welcome = new Promise<void>((resolve, reject) => {
+      socket?.once('message', data => {
+        const envelope = JSON.parse(data.toString()) as {type: string};
+        if (envelope.type === 'welcome') resolve();
+        else reject(new Error('AUTOMATION_WELCOME_MISMATCH'));
+      });
+    });
+    socket.send(
+      JSON.stringify({
+        protocolVersion: 1,
+        sessionId: 'session-trace',
+        messageId: 'hello-trace',
+        type: 'hello',
+        body: {
+          sessionToken: 'driver-secret-token',
+          runtimeId: 'runtime-trace',
+          localNodeId: 'node-trace',
+          appName: 'sample-terminal',
+          buildVersion: 'build-trace',
+        },
+      }),
+    );
+    await welcome;
+    socket.on('message', data => {
+      const envelope = JSON.parse(data.toString()) as {sessionId: string; messageId: string; type: string};
+      if (envelope.type !== 'command.dispatch') return;
+      socket?.send(
+        JSON.stringify({
+          protocolVersion: 1,
+          sessionId: envelope.sessionId,
+          messageId: 'reply-command-trace',
+          type: 'response',
+          body: {requestMessageId: envelope.messageId, result: {secret: 'command-private-payload'}},
+        }),
+      );
+    });
+    const response = await driver.request('session-trace', 'command.dispatch', {
+      commandName: 'sample.traceCommand',
+      requestId: 'operation-trace',
+      payload: {credential: 'credential-private-payload'},
+    });
+    expect(response.type).toBe('response');
+    socket.send(
+      JSON.stringify({
+        protocolVersion: 1,
+        sessionId: 'session-trace',
+        messageId: 'runtime-event-trace',
+        type: 'event',
+        body: {
+          requestId: 'operation-trace',
+          sequence: 5,
+          event: {kind: 'actor.completed', commandId: 'command-trace', actorKey: 'sample.actor', status: 'completed'},
+          value: {secret: 'selector-private-value'},
+        },
+      }),
+    );
+    await waitFor(() => (traces.some(entry => entry.event === 'runtime.event') ? true : null));
+
+    const serialized = JSON.stringify(traces);
+    expect(traces).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({event: 'session.authenticated', appName: 'sample-terminal'}),
+        expect.objectContaining({
+          event: 'request.started',
+          commandName: 'sample.traceCommand',
+          requestId: 'operation-trace',
+        }),
+        expect.objectContaining({event: 'request.completed', messageType: 'command.dispatch'}),
+        expect.objectContaining({event: 'runtime.request.response'}),
+        expect.objectContaining({event: 'runtime.event', actorKey: 'sample.actor'}),
+      ]),
+    );
+    for (const forbidden of [
+      'driver-secret-token',
+      'credential-private-payload',
+      'command-private-payload',
+      'selector-private-value',
+    ])
+      expect(serialized).not.toContain(forbidden);
+  });
+
   it('keeps two authenticated Runtime sessions independently addressable', async () => {
     const driver = createAutomationDriverServer({token: 'test-token', port: 0});
     close = driver.close;

@@ -1,6 +1,3 @@
-# Kernel feature boundary
+# Kernel feature 包边界
 
-Kernel feature packages own business state, commands, actors, selectors, and
-module descriptors. The sample verification slice currently contains
-`sample-staff-session` and `sample-member-registry`; both remain UI-independent
-and depend only on the shared kernel foundations required by their contracts.
+`kernel/feature` 下的 owner feature 包负责各自业务事实、command、actor、selector 与模块描述，不承载界面。当前示例范围包含 `sample-staff-session` 和 `sample-member-registry`；它们保持与 UI 解耦，只依赖契约所需的共享 kernel foundation。

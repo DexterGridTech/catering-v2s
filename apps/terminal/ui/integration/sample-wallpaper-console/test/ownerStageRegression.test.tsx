@@ -63,7 +63,8 @@ const wallpaperStageServerSpaces: TransportServerConfig = Object.freeze({
           addresses: Object.freeze([
             Object.freeze({
               addressName: 'primary',
-              baseUrl: 'https://wallpaper-stage-test.invalid/api/terminal/group-workspaces/workspace-wallpaper-stage-test',
+              baseUrl:
+                'https://wallpaper-stage-test.invalid/api/terminal/group-workspaces/workspace-wallpaper-stage-test',
               timeoutMs: 10_000,
             }),
           ]),
@@ -288,74 +289,92 @@ describe('sample-wallpaper-console integration owner-stage regressions', () => {
       persistenceKey: `sample-wallpaper-boot-confirm-${Date.now()}`,
       surfaceForm: 'mobile',
       serverSpaces: wallpaperStageServerSpaces,
-      transportNetworkAdapterFactory: readSnapshot => createReadyTerminalNetworkAdapter(readSnapshot, async request => {
-        const path = request.pathAndQuery.split('?')[0];
-        requestedPaths.push(path);
-        let body: unknown;
-        if (path === '/activation') {
-          body = {terminalRef, storeRef, groupWorkspaceKey: 'workspace-wallpaper-stage-test', bindingGeneration: 1};
-        } else if (path === `/stores/${storeRef}/basic`) {
-          const operatingRules = {
-            catalogManagementEnabled: false,
-            externalCatalogSyncEnabled: false,
-            openPlatformDeveloperCode: '',
-            reservationEnabled: false,
-            reservationDepositEnabled: false,
-            queueCallEnabled: false,
-            tableManagementEnabled: false,
-            tableStatusEnabled: false,
-            tableWaitCallEnabled: false,
-            banquetOrderEnabled: false,
-            pickupCallEnabled: false,
-            receivableEnabled: false,
-          };
-          body = {
-            store: {
-              id: storeRef,
-              groupWorkspaceKey: 'workspace-wallpaper-stage-test',
-              code: 'WALLPAPER-TEST',
-              name: 'Wallpaper Test Store',
-              project: {id: projectRef, code: 'WALLPAPER', name: 'Wallpaper Project'},
-              brand: {id: '00000000-0000-4000-8000-000000000017', code: 'BRAND', name: 'Brand'},
-              tenant: {id: '00000000-0000-4000-8000-000000000018', code: 'TENANT', name: 'Tenant'},
-              status: 'ENABLED', extensionValues: {}, extensionRuleRevision: 0, revision: 1,
-              createdAt: 1, updatedAt: 2, contractDerivedStatus: 'OPERATING', operatingRuleSwitches: operatingRules,
-            },
-            operatingRules,
-            storeUpdatedAtEpochMillis: 2,
-            operatingRulesUpdatedAtEpochMillis: 2,
-          };
-        } else if (path === `/stores/${storeRef}/organization-path`) {
-          body = {
-            projectRef, projectName: 'Wallpaper Project', regionRef: '00000000-0000-4000-8000-000000000019',
-            regionName: 'Region', commercialGroupRef: '00000000-0000-4000-8000-000000000020',
-            commercialGroupName: 'Group', projectUpdatedAtEpochMillis: 3, regionUpdatedAtEpochMillis: 3,
-            commercialGroupUpdatedAtEpochMillis: 3,
-          };
-        } else if (path === `/update-rules/projects/${projectRef}`) {
-          body = {items: [rule], collectionHash: 'b'.repeat(64), nextCursor: null};
-        } else if (path === `/update-artifacts/${hotSummary.artifactRef}/download-grant`) {
-          body = hotGrant;
-        } else if (path === `/stores/${storeRef}/contracts` || path === `/stores/${storeRef}/service-point-areas` || path === `/stores/${storeRef}/service-points`) {
-          body = {items: [], collectionUpdatedAtEpochMillis: 2};
-        } else {
-          return {kind: 'response' as const, status: 404, body: {}};
-        }
-        return {kind: 'response' as const, status: 200, body};
-      }),
+      transportNetworkAdapterFactory: readSnapshot =>
+        createReadyTerminalNetworkAdapter(readSnapshot, async request => {
+          const path = request.pathAndQuery.split('?')[0];
+          requestedPaths.push(path);
+          let body: unknown;
+          if (path === '/activation') {
+            body = {terminalRef, storeRef, groupWorkspaceKey: 'workspace-wallpaper-stage-test', bindingGeneration: 1};
+          } else if (path === `/stores/${storeRef}/basic`) {
+            const operatingRules = {
+              catalogManagementEnabled: false,
+              externalCatalogSyncEnabled: false,
+              openPlatformDeveloperCode: '',
+              reservationEnabled: false,
+              reservationDepositEnabled: false,
+              queueCallEnabled: false,
+              tableManagementEnabled: false,
+              tableStatusEnabled: false,
+              tableWaitCallEnabled: false,
+              banquetOrderEnabled: false,
+              pickupCallEnabled: false,
+              receivableEnabled: false,
+            };
+            body = {
+              store: {
+                id: storeRef,
+                groupWorkspaceKey: 'workspace-wallpaper-stage-test',
+                code: 'WALLPAPER-TEST',
+                name: 'Wallpaper Test Store',
+                project: {id: projectRef, code: 'WALLPAPER', name: 'Wallpaper Project'},
+                brand: {id: '00000000-0000-4000-8000-000000000017', code: 'BRAND', name: 'Brand'},
+                tenant: {id: '00000000-0000-4000-8000-000000000018', code: 'TENANT', name: 'Tenant'},
+                status: 'ENABLED',
+                extensionValues: {},
+                extensionRuleRevision: 0,
+                revision: 1,
+                createdAt: 1,
+                updatedAt: 2,
+                contractDerivedStatus: 'OPERATING',
+                operatingRuleSwitches: operatingRules,
+              },
+              operatingRules,
+              storeUpdatedAtEpochMillis: 2,
+              operatingRulesUpdatedAtEpochMillis: 2,
+            };
+          } else if (path === `/stores/${storeRef}/organization-path`) {
+            body = {
+              projectRef,
+              projectName: 'Wallpaper Project',
+              regionRef: '00000000-0000-4000-8000-000000000019',
+              regionName: 'Region',
+              commercialGroupRef: '00000000-0000-4000-8000-000000000020',
+              commercialGroupName: 'Group',
+              projectUpdatedAtEpochMillis: 3,
+              regionUpdatedAtEpochMillis: 3,
+              commercialGroupUpdatedAtEpochMillis: 3,
+            };
+          } else if (path === `/update-rules/projects/${projectRef}`) {
+            body = {items: [rule], collectionHash: 'b'.repeat(64), nextCursor: null};
+          } else if (path === `/update-artifacts/${hotSummary.artifactRef}/download-grant`) {
+            body = hotGrant;
+          } else if (
+            path === `/stores/${storeRef}/contracts` ||
+            path === `/stores/${storeRef}/service-point-areas` ||
+            path === `/stores/${storeRef}/service-points`
+          ) {
+            body = {items: [], collectionUpdatedAtEpochMillis: 2};
+          } else {
+            return {kind: 'response' as const, status: 404, body: {}};
+          }
+          return {kind: 'response' as const, status: 200, body};
+        }),
     });
     try {
       await activate(assembly);
       await waitFor(() => expect(selectProjectBasicLoadReadiness(assembly.runtime.getState()).status).toBe('flushed'));
       await waitFor(() => expect(selectProjectTerminalUpdateRules(assembly.runtime.getState()).status).toBe('ready'));
       await waitFor(() => expect(appliedActionId).not.toBeNull());
-      expect(requestedPaths).toEqual(expect.arrayContaining([
-        '/activation',
-        `/stores/${storeRef}/basic`,
-        `/stores/${storeRef}/organization-path`,
-        `/update-rules/projects/${projectRef}`,
-        `/update-artifacts/${hotSummary.artifactRef}/download-grant`,
-      ]));
+      expect(requestedPaths).toEqual(
+        expect.arrayContaining([
+          '/activation',
+          `/stores/${storeRef}/basic`,
+          `/stores/${storeRef}/organization-path`,
+          `/update-rules/projects/${projectRef}`,
+          `/update-artifacts/${hotSummary.artifactRef}/download-grant`,
+        ]),
+      );
       const ready = await assembly.runtime.dispatchCommand(
         startupReadyCommand,
         {
@@ -367,13 +386,15 @@ describe('sample-wallpaper-console integration owner-stage regressions', () => {
         dispatchOptions(),
       );
       expect(ready.status).toBe('completed');
-      await waitFor(() => expect(confirmations).toEqual([
-        {
-          timeoutMs: 60_000,
-          bootToken: 'wallpaper-native-boot-token',
-          publicationId: embedded.publicationId,
-        },
-      ]));
+      await waitFor(() =>
+        expect(confirmations).toEqual([
+          {
+            timeoutMs: 60_000,
+            bootToken: 'wallpaper-native-boot-token',
+            publicationId: embedded.publicationId,
+          },
+        ]),
+      );
     } finally {
       await releaseRuntimeForTestAsync(assembly.runtime);
     }

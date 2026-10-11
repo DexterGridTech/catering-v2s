@@ -73,6 +73,8 @@ import {
   topologyActions,
   topologyDisplayChangedCommand,
   topologyHostEventCommand,
+  requestTopologySlaveUnpairStateClearCommand,
+  completeTopologySlaveUnpairStateClearCommand,
   unpairTopologyCommand,
   topologyReasonMessages,
 } from '../src/index';
@@ -352,6 +354,36 @@ const deferred = <T>() => {
   return {promise, resolve, reject};
 };
 
+const createTdcUnpairHandshakeTestModule = (
+  input: Readonly<{
+    readonly onClear?: (
+      context: ActorExecutionContext,
+      transition: 'local-unpair' | 'peer-unpaired',
+    ) => void | Promise<void>;
+  }> = {},
+): RuntimeModule => {
+  const actor = defineActor('test.kernel.base.terminal-data-client', 'unpair-state', [
+    onCommand(requestTopologySlaveUnpairStateClearCommand, async context => {
+      await input.onClear?.(context, context.command.payload.transition);
+      const completion = await context.dispatchCommand(
+        completeTopologySlaveUnpairStateClearCommand,
+        context.command.payload,
+      );
+      if (completion.status !== 'completed') throw new Error('test TDC completion was not accepted');
+      return {status: 'cleared'};
+    }),
+  ]);
+  return Object.freeze({
+    moduleName: actor.moduleName,
+    kind: 'owner',
+    dependencies: [{moduleName: 'kernel.base.runtime'}, {moduleName: topologyModuleName}],
+    commands: [],
+    commandDefinitions: [],
+    actors: [{name: actor.actorName}],
+    actorDefinitions: [actor],
+  });
+};
+
 const createTopologyRuntime = (
   input: Readonly<{
     readonly host: FakeTopologyHost;
@@ -366,10 +398,6 @@ const createTopologyRuntime = (
     readonly extraModules?: readonly RuntimeModule[];
     readonly persistenceKey?: string;
     readonly persistenceDebounceMs?: number;
-    readonly beforeSlaveCredentialTransition?: (
-      context: ActorExecutionContext,
-      transition: 'unpair' | 'peer-unpaired',
-    ) => Promise<void>;
   }>,
 ): Readonly<{runtime: Runtime; device: DevicePort; events: readonly LogEvent[]}> => {
   const events: LogEvent[] = [];
@@ -383,7 +411,6 @@ const createTopologyRuntime = (
     nodeId: 'node-master',
     identityClient: input.identityClient,
     peerChannel: input.peer,
-    beforeSlaveCredentialTransition: input.beforeSlaveCredentialTransition,
     stateSyncSlices: [{name: membersSyncSliceName, syncIntent: 'master-to-slave'}],
   });
   const runtime = createRuntime({
@@ -856,10 +883,14 @@ describe('topology pairing facts', () => {
 
   it('marks only an applied full-state frame from the current accepted connection', () => {
     let currentConnectionId = 'sync-current-1';
+    let repairPending = false;
     let applyStatus: 'applied' | 'skipped' = 'applied';
     const applied: Array<Readonly<{connectionId: string; sliceName: string; revision: number}>> = [];
     const context = {
-      getState: () => ({'kernel.base.runtime.instance-mode': {instanceMode: 'MASTER'}}),
+      getState: () => ({
+        'kernel.base.runtime.instance-mode': {instanceMode: 'MASTER'},
+        [topologySliceName]: {repairPending},
+      }),
       applyAuthoritativeSync: vi.fn(() =>
         applyStatus === 'applied'
           ? {status: 'applied' as const, changed: true}
@@ -899,7 +930,15 @@ describe('topology pairing facts', () => {
     expect(context.applyAuthoritativeSync).toHaveBeenCalledOnce();
     expect(applied).toHaveLength(1);
 
-    applyStatus = 'skipped';
+    repairPending = true;
+    controller.acceptStateFull({
+      context,
+      message: {...message, revision: 2},
+      readDiff,
+      sourceConnectionId: currentConnectionId,
+    });
+    expect(context.applyAuthoritativeSync).toHaveBeenCalledOnce();
+    repairPending = false;
     controller.acceptStateFull({
       context,
       message: {...message, revision: 2},
@@ -907,7 +946,17 @@ describe('topology pairing facts', () => {
       sourceConnectionId: currentConnectionId,
     });
     expect(context.applyAuthoritativeSync).toHaveBeenCalledTimes(2);
-    expect(applied).toHaveLength(1);
+    expect(applied).toHaveLength(2);
+
+    applyStatus = 'skipped';
+    controller.acceptStateFull({
+      context,
+      message: {...message, revision: 3},
+      readDiff,
+      sourceConnectionId: currentConnectionId,
+    });
+    expect(context.applyAuthoritativeSync).toHaveBeenCalledTimes(3);
+    expect(applied).toHaveLength(2);
   });
 
   it('keeps membersSyncRevision unchanged when a transfer write fails and retries the same revision after reconnect', async () => {
@@ -1175,16 +1224,21 @@ describe('topology unpair peer cleanup', () => {
           return Object.freeze({type: 'identity' as const, ...identity});
         },
       },
-      beforeSlaveCredentialTransition: async (context, transition) => {
-        transitions.push(transition);
-        const current = context.getState()[topologySliceName] as import('../src/types/state').TopologyState;
-        if (transition === 'unpair') expect(current.repairPending).toBe(false);
-        if (transition === 'peer-unpaired') {
-          expect(current.peerReachable).toBe(false);
-          expect(current.peerStateSyncConnectionId).toBeNull();
-        }
-        throw new Error('test-clear-not-durable');
-      },
+      extraModules: [
+        createTdcUnpairHandshakeTestModule({
+          onClear: async (context, transition) => {
+            transitions.push(transition);
+            const current = context.getState()[topologySliceName] as import('../src/types/state').TopologyState;
+            expect(selectRuntimeInstanceMode(context.getState())).toBe('SLAVE');
+            if (transition === 'local-unpair') expect(current.repairPending).toBe(true);
+            if (transition === 'peer-unpaired') {
+              expect(current.peerReachable).toBe(false);
+              expect(current.peerStateSyncConnectionId).toBeNull();
+            }
+            throw new Error('test-clear-not-durable');
+          },
+        }),
+      ],
     });
     await runtime.start();
     try {
@@ -1200,15 +1254,17 @@ describe('topology unpair peer cleanup', () => {
       runtime.getStore().dispatch(topologyActions.setPeerReachable(true));
       runtime.getStore().dispatch(topologyActions.setPeerStateSyncConnection('peer-connection-1'));
 
-      await runtime.dispatchCommand(
+      const failedUnpair = await runtime.dispatchCommand(
         unpairTopologyCommand,
         {},
         {requestId: createRequestId(), routeContext: {displayMode: 'PRIMARY', workspace: 'MAIN'}},
       );
+      expect(failedUnpair.status).toBe('error');
+      expect(failedUnpair.actorResults).toEqual(expect.arrayContaining([expect.objectContaining({status: 'error'})]));
       expect(runtime.getState()[topologySliceName]).toMatchObject({
         masterLocator: locator,
         peerIdentity: identity,
-        repairPending: false,
+        repairPending: true,
       });
       expect(selectRuntimeInstanceMode(runtime.getState())).toBe('SLAVE');
       await expect(createTopologyAdminCapability(runtime).pairByHost({host: '192.0.2.47'})).resolves.toMatchObject({
@@ -1222,7 +1278,7 @@ describe('topology unpair peer cleanup', () => {
         {event: 'close', reason: 'TOPOLOGY_UNPAIRED'},
         {requestId: createRequestId()},
       );
-      expect(transitions).toEqual(['unpair', 'peer-unpaired']);
+      expect(transitions).toEqual(['local-unpair', 'peer-unpaired']);
       expect(runtime.getState()[topologySliceName]).toMatchObject({
         masterLocator: locator,
         peerIdentity: identity,
@@ -1238,7 +1294,7 @@ describe('topology unpair peer cleanup', () => {
   it('clears the slave locator from an explicit master unpair notice', async () => {
     const host = new FakeTopologyHost();
     const peer = new FakePeerChannel();
-    const {runtime} = createTopologyRuntime({host, peer});
+    const {runtime} = createTopologyRuntime({host, peer, extraModules: [createTdcUnpairHandshakeTestModule()]});
     await runtime.start();
     try {
       const locator: TopologyLocator = Object.freeze({
@@ -1449,6 +1505,14 @@ describe('topology admin capability', () => {
     const peer = new FakePeerChannel();
     const queriedHosts: string[] = [];
     let slaveCredentialCleared = false;
+    const resetRuntime = vi.fn(async (input: Parameters<AppControlPort['resetRuntime']>[0]) =>
+      Object.freeze({
+        status: 'accepted' as const,
+        requestId: input.requestId,
+        acceptedAt: completedAt,
+        terminalObservation: 'SUCCESSOR_RUNTIME_STARTED' as const,
+      }),
+    );
     const identityClient: TopologyIdentityClient = Object.freeze({
       query: async queriedHost => {
         queriedHosts.push(queriedHost);
@@ -1458,23 +1522,21 @@ describe('topology admin capability', () => {
     });
     const appControl: AppControlPort = {
       ...unavailableAppControlPort,
-      resetRuntime: async input =>
-        Object.freeze({
-          status: 'accepted' as const,
-          requestId: input.requestId,
-          acceptedAt: completedAt,
-          terminalObservation: 'SUCCESSOR_RUNTIME_STARTED' as const,
-        }),
+      resetRuntime,
     };
     const {runtime} = createTopologyRuntime({
       host,
       peer,
       appControl,
       identityClient,
-      beforeSlaveCredentialTransition: async (_context, transition) => {
-        expect(transition).toBe('unpair');
-        slaveCredentialCleared = true;
-      },
+      extraModules: [
+        createTdcUnpairHandshakeTestModule({
+          onClear: (_context, transition) => {
+            expect(transition).toBe('local-unpair');
+            slaveCredentialCleared = true;
+          },
+        }),
+      ],
     });
     await runtime.start();
     try {
@@ -1482,6 +1544,7 @@ describe('topology admin capability', () => {
 
       const paired = await capability.pairByHost({host: ' 192.0.2.40 '});
       expect(paired.status).toBe('completed');
+      expect(resetRuntime).not.toHaveBeenCalled();
       expect(paired.identity).toEqual(identity);
       expect(queriedHosts).toEqual(['192.0.2.40']);
       expect(selectRuntimeInstanceMode(runtime.getState())).toBe('SLAVE');
@@ -1512,6 +1575,7 @@ describe('topology admin capability', () => {
         repairPending: false,
       });
       expect(slaveCredentialCleared).toBe(true);
+      expect(resetRuntime).not.toHaveBeenCalled();
 
       const replacement = await capability.pairByHost({host: '192.0.2.48'});
       expect(replacement.status).toBe('completed');
@@ -1523,7 +1587,7 @@ describe('topology admin capability', () => {
     }
   });
 
-  it('returns typed direct-pair failures and rolls back every prepared fact', async () => {
+  it('returns typed direct-pair failures without preparing pair state', async () => {
     const invalid = createTopologyRuntime({host: new FakeTopologyHost()});
     await invalid.runtime.start();
     try {
@@ -1574,26 +1638,6 @@ describe('topology admin capability', () => {
       });
     } finally {
       await releaseRuntimeForTestAsync(moduleMismatch.runtime);
-    }
-
-    const rollback = createTopologyRuntime({
-      host: new FakeTopologyHost(),
-      identityClient: {query: async () => Object.freeze({type: 'identity' as const, ...identity})},
-    });
-    await rollback.runtime.start();
-    try {
-      const result = await createTopologyAdminCapability(rollback.runtime).pairByHost({host: '192.0.2.45'});
-      expect(result).toMatchObject({status: 'error', reasonCode: 'TOPOLOGY_UNAVAILABLE'});
-      expect(rollback.runtime.getState()[topologySliceName]).toMatchObject({
-        masterLocator: null,
-        peerIdentity: null,
-        peerReachable: false,
-        repairPending: false,
-      });
-      expect(selectRuntimeInstanceMode(rollback.runtime.getState())).toBe('MASTER');
-      expect(selectDisplayRole(rollback.runtime.getState())).toBe('CHIEF');
-    } finally {
-      await releaseRuntimeForTestAsync(rollback.runtime);
     }
   });
 
@@ -1770,7 +1814,6 @@ describe('topology lifecycle integration', () => {
         },
       );
       expect(paired.status).toBe('completed');
-      runtime.getStore().dispatch(topologyActions.setRepairPending(false));
       await waitForReconciliation();
       peer.emit({
         type: 'message',
@@ -1867,7 +1910,6 @@ describe('topology lifecycle integration', () => {
         },
       );
       expect(paired.status).toBe('completed');
-      runtime.getStore().dispatch(topologyActions.setRepairPending(false));
       await waitForReconciliation();
       peer.emit({
         type: 'message',
@@ -2018,7 +2060,6 @@ describe('topology lifecycle integration', () => {
         },
       );
       expect(paired.status).toBe('completed');
-      runtime.getStore().dispatch(topologyActions.setRepairPending(false));
       await waitForReconciliation();
       peer.emit({
         type: 'message',
@@ -2587,7 +2628,7 @@ describe('topology lifecycle integration', () => {
     });
   });
 
-  it('pairs through the ordered reset sequence and reconnects only after protocol acceptance', async () => {
+  it('pairs without resetting Runtime and reconnects after local pairing is durable', async () => {
     const host = new FakeTopologyHost();
     const peer = new FakePeerChannel();
     const resetCalls: string[] = [];
@@ -2603,7 +2644,11 @@ describe('topology lifecycle integration', () => {
         });
       },
     };
-    const {runtime} = createTopologyRuntime({host, peer, appControl});
+    const {runtime} = createTopologyRuntime({
+      host,
+      peer,
+      appControl,
+    });
     await runtime.start();
     expect(peer.listenCalls).toBe(1);
     await waitForReconciliation();
@@ -2622,16 +2667,15 @@ describe('topology lifecycle integration', () => {
       },
     );
     expect(paired).toMatchObject({status: 'completed'});
-    expect(resetCalls).toHaveLength(1);
+    expect(resetCalls).toHaveLength(0);
     expect(runtime.getState()['kernel.base.topology.state']).toMatchObject({
       masterLocator: locator,
       peerReachable: false,
-      repairPending: true,
+      repairPending: false,
     });
     expect(selectRuntimeInstanceMode(runtime.getState())).toBe('SLAVE');
     expect(selectDisplayRole(runtime.getState())).toBe('VICE');
 
-    runtime.getStore().dispatch(topologyActions.setRepairPending(false));
     await waitForReconciliation();
 
     expect(peer.connectCalls).toEqual(['ws://192.0.2.20:43172/terminal-topology/ws']);
@@ -2675,7 +2719,12 @@ describe('topology lifecycle integration', () => {
           terminalObservation: 'SUCCESSOR_RUNTIME_STARTED' as const,
         }),
     };
-    const {runtime} = createTopologyRuntime({host, peer, appControl});
+    const {runtime} = createTopologyRuntime({
+      host,
+      peer,
+      appControl,
+      extraModules: [createTdcUnpairHandshakeTestModule()],
+    });
     await runtime.start();
     const locator: TopologyLocator = Object.freeze({
       host: '192.0.2.21',
@@ -2689,7 +2738,6 @@ describe('topology lifecycle integration', () => {
       {requestId: createRequestId(), routeContext: {displayMode: 'PRIMARY', workspace: 'MAIN'}},
     );
     expect(paired.status).toBe('completed');
-    runtime.getStore().dispatch(topologyActions.setRepairPending(false));
     await waitForReconciliation();
 
     const unpairRequestId = createRequestId();
@@ -2730,6 +2778,7 @@ describe('topology lifecycle integration', () => {
       protectedStorage,
       persistenceKey: 'topology-unpair-hydrate-recovery',
       persistenceDebounceMs: 300,
+      extraModules: [createTdcUnpairHandshakeTestModule()],
       appControl: {
         ...unavailableAppControlPort,
         resetRuntime: async input =>
@@ -2756,8 +2805,6 @@ describe('topology lifecycle integration', () => {
         {requestId: createRequestId(), routeContext: {displayMode: 'PRIMARY', workspace: 'MAIN'}},
       );
       expect(paired.status).toBe('completed');
-      first.runtime.getStore().dispatch(topologyActions.setRepairPending(false));
-
       const unpaired = await createTopologyAdminCapability(first.runtime).unpair();
       expect(unpaired.status).toBe('completed');
       expect(selectTopologyFacts(first.runtime.getState())).toMatchObject({paired: false});
@@ -2815,7 +2862,6 @@ describe('topology lifecycle integration', () => {
       {requestId: createRequestId(), routeContext: {displayMode: 'PRIMARY', workspace: 'MAIN'}},
     );
     expect(paired.status).toBe('completed');
-    runtime.getStore().dispatch(topologyActions.setRepairPending(false));
     await waitForReconciliation();
     expect(peer.connectCalls).toHaveLength(1);
 

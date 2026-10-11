@@ -58,6 +58,11 @@ import {
   type TransportNetworkAdapter,
 } from '@catering-v2s/kernel-base-transport';
 import {
+  completeTopologySlaveUnpairStateClearCommand,
+  moduleName as topologyModuleName,
+  requestTopologySlaveUnpairStateClearCommand,
+} from '@catering-v2s/kernel-base-topology';
+import {
   executeManagedTerminalDevAction,
   readManagedTdsLatestState,
 } from '../../../../../../scripts/dev/r5-dev-runner.mjs';
@@ -91,6 +96,16 @@ const toolkit = (name: string, dependencies: readonly string[]): RuntimeModule =
   moduleName: name,
   kind: 'toolkit',
   dependencies: dependencies.map(moduleName => ({moduleName})),
+});
+
+const topologyCommandModule: RuntimeModule = Object.freeze({
+  moduleName: topologyModuleName,
+  kind: 'owner',
+  dependencies: [{moduleName: 'kernel.base.runtime'}, {moduleName: 'kernel.base.transport'}],
+  commands: [requestTopologySlaveUnpairStateClearCommand, completeTopologySlaveUnpairStateClearCommand].map(
+    definition => ({name: definition.commandName, visibility: definition.visibility}),
+  ),
+  commandDefinitions: [requestTopologySlaveUnpairStateClearCommand, completeTopologySlaveUnpairStateClearCommand],
 });
 
 type ScenarioClient = Readonly<{
@@ -370,6 +385,7 @@ const createScenarioClient = async (alias: string, requireCompression = false): 
     toolkit(stateModuleName, [contractsModuleName, platformPortsModuleName]),
     serverConfigModule,
     transportModule,
+    topologyCommandModule,
     terminalModule,
   ];
   const platformPorts = createPlatformPorts({

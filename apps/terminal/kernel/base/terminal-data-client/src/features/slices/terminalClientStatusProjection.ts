@@ -35,6 +35,7 @@ const definition = createSlice({
       _state,
       action: PayloadAction<TerminalClientStatusProjection>,
     ): TerminalClientStatusProjectionState => Object.freeze({projection: Object.freeze(action.payload)}),
+    clearProjection: (): TerminalClientStatusProjectionState => initialState,
   },
 });
 

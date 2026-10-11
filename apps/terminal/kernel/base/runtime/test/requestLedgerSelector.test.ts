@@ -270,12 +270,11 @@ describe('runtime request ledger selectors', () => {
       },
     });
 
-    const candidates = selectRequestExecutionCandidates(
-      state,
-      'MAIN',
-      'kernel.feature.sample-staff-session.login',
-      'PRIMARY',
-    );
+    const candidates = selectRequestExecutionCandidates(state, {
+      workspace: 'MAIN',
+      commandName: 'kernel.feature.sample-staff-session.login',
+      displayMode: 'PRIMARY',
+    });
 
     expect(candidates).toEqual([{requestId: matchingId, workspace: 'MAIN'}]);
     expect(JSON.stringify(candidates)).not.toContain(privateResult);

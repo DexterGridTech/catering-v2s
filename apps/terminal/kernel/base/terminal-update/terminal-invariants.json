@@ -9,39 +9,51 @@
   "tr01Exceptions": [
     {
       "sourceFile": "src/features/actors/terminalUpdateActor.ts",
-      "declarationId": "writeTask",
+      "declarationId": "writeTaskWithOptions",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "terminal-update-command-task-write"
     },
     {
       "sourceFile": "src/features/actors/terminalUpdateActor.ts",
-      "declarationId": "writeTask",
+      "declarationId": "writeTaskWithOptions",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "terminal-update-command-status-write"
     },
     {
       "sourceFile": "src/features/actors/terminalUpdateActor.ts",
-      "declarationId": "writeTask",
+      "declarationId": "writeTaskWithOptions",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "terminal-update-command-report-descriptor-write"
     },
     {
       "sourceFile": "src/features/actors/terminalUpdateActor.ts",
-      "declarationId": "writeTask",
+      "declarationId": "writeTaskWithOptions",
+      "dispatchExpression": "context.dispatchAction",
+      "reasonCategory": "terminal-update-command-invitation-clear"
+    },
+    {
+      "sourceFile": "src/features/actors/terminalUpdateActor.ts",
+      "declarationId": "writeTaskWithOptions",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "terminal-update-command-task-rollback"
     },
     {
       "sourceFile": "src/features/actors/terminalUpdateActor.ts",
-      "declarationId": "writeTask",
+      "declarationId": "writeTaskWithOptions",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "terminal-update-command-status-rollback"
     },
     {
       "sourceFile": "src/features/actors/terminalUpdateActor.ts",
-      "declarationId": "writeTask",
+      "declarationId": "writeTaskWithOptions",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "terminal-update-command-report-descriptor-rollback"
+    },
+    {
+      "sourceFile": "src/features/actors/terminalUpdateActor.ts",
+      "declarationId": "writeTaskWithOptions",
+      "dispatchExpression": "context.dispatchAction",
+      "reasonCategory": "terminal-update-command-invitation-rollback"
     },
     {
       "sourceFile": "src/features/actors/terminalUpdateActor.ts",
@@ -54,6 +66,42 @@
       "declarationId": "executeNextArtifact",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "terminal-update-command-actual-version-readback"
+    },
+    {
+      "sourceFile": "src/features/actors/terminalUpdateActor.ts",
+      "declarationId": "handleDeadline",
+      "dispatchExpression": "context.dispatchAction",
+      "reasonCategory": "terminal-update-command-deadline-actual-version-readback"
+    },
+    {
+      "sourceFile": "src/features/actors/terminalUpdateActor.ts",
+      "declarationId": "handleDeadline",
+      "dispatchExpression": "context.dispatchAction",
+      "reasonCategory": "terminal-update-command-deadline-installer-invitation"
+    },
+    {
+      "sourceFile": "src/features/actors/terminalUpdateActor.ts",
+      "declarationId": "confirmInstall",
+      "dispatchExpression": "context.dispatchAction",
+      "reasonCategory": "terminal-update-command-confirmation-01-presented-clear"
+    },
+    {
+      "sourceFile": "src/features/actors/terminalUpdateActor.ts",
+      "declarationId": "confirmInstall",
+      "dispatchExpression": "context.dispatchAction",
+      "reasonCategory": "terminal-update-command-confirmation-02-accepted-clear"
+    },
+    {
+      "sourceFile": "src/features/actors/terminalUpdateActor.ts",
+      "declarationId": "confirmInstall",
+      "dispatchExpression": "context.dispatchAction",
+      "reasonCategory": "terminal-update-command-confirmation-03-terminal-result-clear"
+    },
+    {
+      "sourceFile": "src/features/actors/terminalUpdateActor.ts",
+      "declarationId": "deferInstall",
+      "dispatchExpression": "context.dispatchAction",
+      "reasonCategory": "terminal-update-command-install-deferred-invitation-clear"
     },
     {
       "sourceFile": "src/features/actors/terminalUpdateActor.ts",

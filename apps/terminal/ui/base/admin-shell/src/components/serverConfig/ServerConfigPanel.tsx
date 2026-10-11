@@ -25,9 +25,11 @@ import {
   PrimitiveText,
 } from '@catering-v2s/ui-base-primitives';
 import {selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
-import type {AdminSectionProps} from '@catering-v2s/ui-base-admin-shell';
+import type {AdminSectionProps} from '../../types/adminSection';
 import {ConfigField} from './ConfigField';
-import {serverConfigPanelTestIds as testIds} from './serverConfigPanelTestIds';
+import {adminTestIds} from '../../foundations/adminTestIds';
+
+const testIds = adminTestIds.serverConfig;
 
 type AddressDraft = Readonly<{addressName: string; baseUrl: string; timeoutMs: string}>;
 type ConfigDraft = Readonly<{

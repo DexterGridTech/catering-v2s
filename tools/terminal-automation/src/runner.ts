@@ -54,6 +54,10 @@ const updateCases = new Set([
   'update.rollback',
   'update.recent',
   'update.cleanup',
+  // Stage C exposes only its two executable main journeys. More granular
+  // acceptance rows live in the design matrix and are covered by the parent
+  // journey or owner-focused tests; they are not CLI cases.
+  'update.pair',
   'update.supply-chain',
 ]);
 const updateCasesRequiringManagedDev = new Set([
@@ -65,7 +69,12 @@ const updateCasesRequiringManagedDev = new Set([
   'update.compatibility',
   'update.rollback',
   'update.supply-chain',
+  'update.pair',
 ]);
+const isSupportedSupplyChainRun = (execution: TerminalAutomationExecution): boolean =>
+  execution.platform === 'android' &&
+  ((execution.shape === 'dual' && (execution.sample === undefined || execution.sample === 'console')) ||
+    (execution.shape === 'mobile' && execution.sample === 'wallpaper'));
 const implementedUpdateCases: Readonly<Record<AutomationPlatform, ReadonlySet<string>>> = Object.freeze({
   web: new Set(['update.artifacts', 'update.fixed', 'update.install-result', 'update.compatibility']),
   android: new Set([
@@ -77,6 +86,7 @@ const implementedUpdateCases: Readonly<Record<AutomationPlatform, ReadonlySet<st
     'update.compatibility',
     'update.rollback',
     'update.supply-chain',
+    'update.pair',
   ]),
 });
 const phaseSuite: Readonly<Record<AutomationPlatform, Readonly<Partial<Record<AutomationPhase, string>>>>> =
@@ -123,13 +133,35 @@ const managedProcessTree = require('../../../scripts/dev/managed-process-tree.mj
     treeReadback: readonly {pid: number; pgid: number; startToken: string; ownershipUnverified?: boolean}[];
   }>;
 };
+const readManagedDevDiagnosticEvents = async (input: Readonly<{manifestPath: string; runId: string}>) => {
+  const {readManagedDevDiagnosticEvents: readEvents} = await import('../../../scripts/dev/r5-dev-runner.mjs');
+  return readEvents(input);
+};
 
 export type TerminalAutomationRunOptions = TerminalAutomationExecution;
 
 export const resolveAutomationSuite = (execution: TerminalAutomationRunOptions): string => {
+  if (execution.phase === 'update' && execution.case === 'update.pair') {
+    return 'journeys/update.pair.android.test.ts';
+  }
   const suite = phaseSuite[execution.platform as AutomationPlatform]?.[execution.phase as AutomationPhase];
   if (suite === undefined) throw new Error('TERMINAL_AUTOMATION_PHASE_PLATFORM_NOT_IMPLEMENTED');
   return suite;
+};
+
+export const assertManagedDevDiagnosticSourcesReadable = (
+  sources: readonly Readonly<{readonly source: string; readonly status: string}>[],
+): void => {
+  const names = sources.map(source => source.source);
+  if (
+    sources.length < 2 ||
+    new Set(names).size !== names.length ||
+    !names.includes('cbs') ||
+    !names.some(name => name.startsWith('tds-')) ||
+    sources.some(source => source.status !== 'READ')
+  ) {
+    throw new Error('TERMINAL_AUTOMATION_MANAGED_DIAGNOSTICS_PREFLIGHT_INCOMPLETE');
+  }
 };
 
 export const updateRequiresManagedDev = (execution: TerminalAutomationRunOptions): boolean =>
@@ -142,8 +174,7 @@ export const updateCaseImplemented = (execution: TerminalAutomationRunOptions): 
   execution.phase !== 'update' ||
   (execution.case !== undefined &&
     implementedUpdateCases[execution.platform as AutomationPlatform]?.has(execution.case) === true &&
-    (execution.case !== 'update.supply-chain' ||
-      (execution.platform === 'android' && execution.shape === 'dual')));
+    (execution.case !== 'update.supply-chain' || isSupportedSupplyChainRun(execution)));
 
 export const updateScenarioAssertionsObserved = (
   execution: TerminalAutomationRunOptions,
@@ -261,7 +292,6 @@ export const cleanupManagedRunArtifacts = (
         `update/${app}/${app}-hot.zip`,
         `update/${app}/${app}-compat-full.zip`,
         `update/${app}/${app}-compat-external-full.zip`,
-        `update/${app}/${app}-compat-external.apk`,
         `update/${app}/full-package.json`,
         `update/${app}/compatibility-full-package.json`,
         `update/${app}/compatibility-external-full-package.json`,
@@ -471,9 +501,25 @@ export const parseAutomationRunArguments = (argv: readonly string[]): TerminalAu
   } else if (caseName !== undefined || age !== undefined || sample !== undefined) {
     fail('TERMINAL_AUTOMATION_CASE_NOT_APPLICABLE');
   }
-  if (phase === 'update' && caseName === 'update.supply-chain'
-      && (checkedPlatform !== 'android' || checkedShape !== 'dual')) {
-    fail('TERMINAL_AUTOMATION_UPDATE_SUPPLY_CHAIN_REQUIRES_ANDROID_DUAL');
+  if (
+    phase === 'update' &&
+    caseName === 'update.supply-chain' &&
+    !isSupportedSupplyChainRun({
+      phase,
+      platform: checkedPlatform,
+      shape: checkedShape,
+      case: caseName,
+      ...(sample === undefined ? {} : {sample: sample as 'console' | 'wallpaper'}),
+    })
+  ) {
+    fail('TERMINAL_AUTOMATION_UPDATE_SUPPLY_CHAIN_SAMPLE_SHAPE_INVALID');
+  }
+  if (
+    phase === 'update' &&
+    caseName === 'update.pair' &&
+    (checkedPlatform !== 'android' || checkedShape !== 'mobile' || (sample !== 'console' && sample !== 'wallpaper'))
+  ) {
+    fail('TERMINAL_AUTOMATION_UPDATE_PAIR_REQUIRES_ANDROID_MOBILE_SAMPLE');
   }
   const deviceSerial = values.get('--device-serial');
   const peerDeviceSerial = values.get('--peer-device-serial');
@@ -485,10 +531,16 @@ export const parseAutomationRunArguments = (argv: readonly string[]): TerminalAu
       fail('TERMINAL_AUTOMATION_ANDROID_PEER_DEVICE_SERIAL_INVALID');
     }
     if (peerDeviceSerial === deviceSerial) fail('TERMINAL_AUTOMATION_ANDROID_DEVICE_SERIALS_MUST_DIFFER');
-    if (phase === 'capabilities' && checkedShape === 'dual' && peerDeviceSerial === undefined) {
+    if (
+      ((phase === 'capabilities' && checkedShape === 'dual') || (phase === 'update' && caseName === 'update.pair')) &&
+      peerDeviceSerial === undefined
+    ) {
       fail('TERMINAL_AUTOMATION_ANDROID_PEER_DEVICE_SERIAL_REQUIRED');
     }
-    if (peerDeviceSerial !== undefined && (phase !== 'capabilities' || checkedShape !== 'dual')) {
+    if (
+      peerDeviceSerial !== undefined &&
+      !((phase === 'capabilities' && checkedShape === 'dual') || (phase === 'update' && caseName === 'update.pair'))
+    ) {
       fail('TERMINAL_AUTOMATION_ANDROID_PEER_DEVICE_SERIAL_NOT_APPLICABLE');
     }
   } else if (deviceSerial !== undefined) {
@@ -600,13 +652,14 @@ const readManagedDevContext = async (): Promise<ManagedDevContext> => {
 export const selectManagedDevAdminOrigins = (
   value: unknown,
 ): Readonly<{readonly platformAdmin: string; readonly operationsAdmin: string}> | undefined => {
-  if (!isRecord(value))
-    return undefined;
+  if (!isRecord(value)) return undefined;
   const processes = value.processes;
   const readiness = value.readiness;
   if (!Array.isArray(processes) || !isRecord(readiness) || !isRecord(readiness.vite)) return undefined;
   const resolve = (name: 'platform-admin' | 'operations-admin'): string | undefined => {
-    const entries = processes.filter((entry): entry is Record<string, unknown> => isRecord(entry) && entry.name === name);
+    const entries = processes.filter(
+      (entry): entry is Record<string, unknown> => isRecord(entry) && entry.name === name,
+    );
     if (entries.length !== 1) return undefined;
     const processEntry = entries[0];
     const runtimeIdentity = processEntry.runtimeIdentity;
@@ -724,6 +777,13 @@ const failRun = (
   });
   record(manifest.runId, 'run.failed', {code: reason});
   return next;
+};
+
+const managedDiagnosticsFailureCode = (error: unknown): string => {
+  if (!(error instanceof Error)) return 'TERMINAL_AUTOMATION_MANAGED_DIAGNOSTIC_READ_FAILED';
+  if (/^TERMINAL_AUTOMATION_[A-Z0-9_]+$/u.test(error.message)) return error.message;
+  const refused = /^R5_DEV_RUNNER=REFUSED; REASON=([A-Z0-9_]+)$/u.exec(error.message);
+  return refused?.[1] ?? 'TERMINAL_AUTOMATION_MANAGED_DIAGNOSTIC_READ_FAILED';
 };
 
 const printRunSummary = (manifest: TerminalAutomationManifest): void => {
@@ -1075,6 +1135,57 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
     return 1;
   }
 
+  if (execution.phase === 'update' && managedDevContext !== undefined) {
+    try {
+      const sources = await readManagedDevDiagnosticEvents({
+        manifestPath: managedDevContext.manifestPath,
+        runId: managedDevContext.runId,
+      });
+      assertManagedDevDiagnosticSourcesReadable(sources);
+      for (const source of sources) {
+        const line = `TERMINAL_AUTOMATION_MANAGED_DEV_DIAGNOSTICS ${JSON.stringify({
+          at: new Date().toISOString(),
+          runId: manifest.runId,
+          managedDevRunId: managedDevContext.runId,
+          phase: 'preflight',
+          source: source.source,
+          status: source.status,
+          tailBytes: source.tailBytes,
+          eventCount: source.eventCount,
+          events: source.events,
+        })}\n`;
+        appendFileSync(logPath, line, {mode: 0o600});
+        process.stdout.write(line);
+        record(manifest.runId, 'managed-dev.diagnostics.preflight.read', {
+          managedDevRunId: managedDevContext.runId,
+          source: source.source,
+          eventCount: source.eventCount,
+          tailBytes: source.tailBytes,
+        });
+      }
+    } catch (error) {
+      const code = managedDiagnosticsFailureCode(error);
+      const line = `TERMINAL_AUTOMATION_MANAGED_DEV_DIAGNOSTICS ${JSON.stringify({
+        at: new Date().toISOString(),
+        runId: manifest.runId,
+        managedDevRunId: managedDevContext.runId,
+        phase: 'preflight',
+        status: 'LOG_NOT_AVAILABLE',
+        code,
+      })}\n`;
+      appendFileSync(logPath, line, {mode: 0o600});
+      process.stdout.write(line);
+      record(manifest.runId, 'managed-dev.diagnostics.preflight.failed', {
+        managedDevRunId: managedDevContext.runId,
+        code,
+      });
+      manifest = failRun(manifest, 'TERMINAL_AUTOMATION_MANAGED_DIAGNOSTICS_PREFLIGHT_FAILED', 'PASS');
+      printRunSummary(manifest);
+      process.stderr.write(`TERMINAL_AUTOMATION_MANAGED_DIAGNOSTICS_PREFLIGHT_FAILED code=${code}\n`);
+      return 1;
+    }
+  }
+
   const vitest = path.join(root, 'node_modules/.bin/vitest');
   const env = {
     ...process.env,
@@ -1130,7 +1241,12 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
           EXPO_PUBLIC_TER_MANAGED_TDS_ENTRY_ONE_WS_URL: managedDevContext.tdsEntryOneUrl,
           EXPO_PUBLIC_TER_MANAGED_TDS_ENTRY_TWO_WS_URL: managedDevContext.tdsEntryTwoUrl,
           ...(execution.platform === 'web' ? {EXPO_PUBLIC_TER_MANAGED_DEVICE_ID: `ter-auto-${manifest.runId}`} : {}),
-          EXPO_PUBLIC_TER_AUTOMATION_SURFACE_FORM: execution.shape === 'mobile' ? 'mobile' : 'laptop',
+          EXPO_PUBLIC_TER_AUTOMATION_SURFACE_FORM:
+            execution.phase === 'update' && execution.case === 'update.pair'
+              ? 'laptop'
+              : execution.shape === 'mobile'
+                ? 'mobile'
+                : 'laptop',
         }),
   };
   manifest = save(manifest, {stage: 'TEST_STARTING'});
@@ -1255,6 +1371,50 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
   clearInterval(heartbeat);
   writeOutput('stdout', Buffer.alloc(0), true);
   writeOutput('stderr', Buffer.alloc(0), true);
+  let managedDevDiagnosticsUnavailable: string | null = null;
+  if (managedDevContext !== undefined) {
+    try {
+      const sources = await readManagedDevDiagnosticEvents({
+        manifestPath: managedDevContext.manifestPath,
+        runId: managedDevContext.runId,
+      });
+      for (const source of sources) {
+        const line = `TERMINAL_AUTOMATION_MANAGED_DEV_DIAGNOSTICS ${JSON.stringify({
+          at: new Date().toISOString(),
+          runId: manifest.runId,
+          managedDevRunId: managedDevContext.runId,
+          source: source.source,
+          status: source.status,
+          tailBytes: source.tailBytes,
+          eventCount: source.eventCount,
+          events: source.events,
+        })}\n`;
+        appendFileSync(logPath, line, {mode: 0o600});
+        process.stdout.write(line);
+        record(manifest.runId, 'managed-dev.diagnostics.read', {
+          managedDevRunId: managedDevContext.runId,
+          source: source.source,
+          eventCount: source.eventCount,
+          tailBytes: source.tailBytes,
+        });
+      }
+    } catch (error) {
+      managedDevDiagnosticsUnavailable = managedDiagnosticsFailureCode(error);
+      const line = `TERMINAL_AUTOMATION_MANAGED_DEV_DIAGNOSTICS ${JSON.stringify({
+        at: new Date().toISOString(),
+        runId: manifest.runId,
+        managedDevRunId: managedDevContext.runId,
+        status: 'LOG_NOT_AVAILABLE',
+        code: managedDevDiagnosticsUnavailable,
+      })}\n`;
+      appendFileSync(logPath, line, {mode: 0o600});
+      process.stdout.write(line);
+      record(manifest.runId, 'managed-dev.diagnostics.unavailable', {
+        managedDevRunId: managedDevContext.runId,
+        code: managedDevDiagnosticsUnavailable,
+      });
+    }
+  }
   let fixtureIntentFailure: string | null = null;
   try {
     const fixture = readFixtureIntent(runDirectory);
@@ -1353,8 +1513,17 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
     generatedArtifactBytesRemoved: artifactCleanup?.removedBytes ?? null,
     androidDeviceCleanup: androidDeviceCleanupStatus,
   });
+  const managedDevDiagnosticsStatus =
+    managedDevContext === undefined ? 'N/A' : managedDevDiagnosticsUnavailable === null ? 'PASS' : 'FAIL';
+  record(manifest.runId, 'managed-dev.diagnostics.result', {
+    status: managedDevDiagnosticsStatus,
+    code: managedDevDiagnosticsUnavailable,
+  });
+  process.stdout.write(
+    `TERMINAL_AUTOMATION_DIAGNOSTICS_RESULT runId=${manifest.runId} managedDev=${managedDevDiagnosticsStatus}\n`,
+  );
   printRunSummary(manifest);
-  return businessStatus === 'PASS' && cleanupStatus === 'PASS' ? 0 : 1;
+  return businessStatus === 'PASS' && cleanupStatus === 'PASS' && managedDevDiagnosticsStatus !== 'FAIL' ? 0 : 1;
 };
 
 const main = async (): Promise<void> => {

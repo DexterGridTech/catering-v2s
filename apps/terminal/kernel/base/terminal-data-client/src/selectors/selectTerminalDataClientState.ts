@@ -19,17 +19,18 @@ const readState = (state: StateRoot): TerminalClientState => {
 const selectActivationStateImplementation = (state: StateRoot): TerminalActivationView => {
   const current = readState(state);
   const credential = current.credential;
-  const status = selectRuntimeInstanceMode(state) === 'SLAVE'
-    ? 'inactive'
-    : current.activationStatus === 'cancelling'
-      ? 'cancelling'
-      : current.activationStatus === 'activating'
-        ? 'activating'
-        : credential !== null
-          ? 'active'
-          : Object.keys(current.pendingActivations).length > 0
-            ? 'activating'
-            : 'inactive';
+  const status =
+    selectRuntimeInstanceMode(state) === 'SLAVE'
+      ? 'inactive'
+      : current.activationStatus === 'cancelling'
+        ? 'cancelling'
+        : current.activationStatus === 'activating'
+          ? 'activating'
+          : credential !== null
+            ? 'active'
+            : Object.keys(current.pendingActivations).length > 0
+              ? 'activating'
+              : 'inactive';
   return Object.freeze({
     status,
     terminalRef: credential?.terminalRef ?? null,

@@ -13,6 +13,7 @@ import {
   collectStopDiagnostics,
   haproxyImageDigestLookupScript,
   parseRemoteRootCleanupResult,
+  projectManagedDevDiagnosticEvents,
   remoteRootCleanupScript,
   remoteHaproxyStopScript,
   remoteProcessStopMarkerCommand,
@@ -26,6 +27,36 @@ import {createHaproxyConfiguration, remoteHaproxyIdentityMatches, validateManage
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const start = path.join(root, 'scripts/dev/start');
 const runnerSource = readFileSync(path.join(root, 'scripts/dev/r5-dev-runner.mjs'), 'utf8');
+
+test('managed DEV diagnostic projection retains only bounded safe CBS and TDS event fields', () => {
+  const cbs = projectManagedDevDiagnosticEvents('cbs', [
+    '2026-10-10 INFO event=TERMINAL_UPDATE_REPORT_ACCEPTED terminalRef=term-1 reportId=report-1 taskId=task-1 outcome=SUCCEEDED Authorization=Bearer-secret body=private',
+    '2026-10-10 INFO event=TERMINAL_UPDATE_ARTIFACT_STAGE requestId=req-1 stage=PRIVATE_OBJECT_PUT outcome=STARTED byteSize=18000000 elapsedMs=0 path=/tmp/private token=secret',
+    '2026-10-10 INFO event=UNRELATED_REQUEST_COMPLETED login=private-user password=private-secret',
+  ].join('\n'));
+  const tds = projectManagedDevDiagnosticEvents('tds', [
+    '2026-10-10 INFO event=tds_ws_session_registered connectionId=connection-1 sessionId=session-1 generation=4 credential=private-secret payload=private',
+    '2026-10-10 INFO event=unapproved_event sessionId=session-2 token=private-token',
+  ].join('\n'));
+  const serialized = JSON.stringify({cbs, tds});
+  assert.equal(cbs.length, 2);
+  assert.equal(tds.length, 1);
+  assert.equal(cbs[0].event, 'TERMINAL_UPDATE_REPORT_ACCEPTED');
+  assert.deepEqual(cbs[1], {
+    source: 'cbs',
+    event: 'TERMINAL_UPDATE_ARTIFACT_STAGE',
+    requestId: 'req-1',
+    stage: 'PRIVATE_OBJECT_PUT',
+    outcome: 'STARTED',
+    elapsedMs: '0',
+    byteSize: '18000000',
+  });
+  assert.equal(tds[0].event, 'tds_ws_session_registered');
+  for (const forbidden of ['Bearer-secret', 'private-user', 'private-secret', 'private-token', 'private', '/tmp/private', 'secret']) {
+    assert.equal(serialized.includes(forbidden), false);
+  }
+  assert.throws(() => projectManagedDevDiagnosticEvents('unknown', 'event=tds_ws_ready'), /TERMINAL_ACCEPTANCE_MANAGED_DIAGNOSTIC_INPUT_INVALID/);
+});
 
 test('managed HAProxy image resolution uses the remote Docker daemon and pins RepoDigest', () => {
   const digest = `sha256:${'a'.repeat(64)}`;

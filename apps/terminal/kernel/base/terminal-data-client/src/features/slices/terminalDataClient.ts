@@ -22,7 +22,13 @@ const initialState: TerminalClientState = Object.freeze({
   credentialReadyInstanceMode: null,
   pendingActivations: Object.freeze({}),
   activationStatus: 'inactive',
-  connection: Object.freeze({status: 'stopped', addressName: null, nodeId: null, sessionId: null, lastCloseReason: null}),
+  connection: Object.freeze({
+    status: 'stopped',
+    addressName: null,
+    nodeId: null,
+    sessionId: null,
+    lastCloseReason: null,
+  }),
   heartbeatIntervalMs: null,
   nextPingSequence: 1,
   lastRttMs: 0,
@@ -33,7 +39,14 @@ const initialState: TerminalClientState = Object.freeze({
 });
 
 const credentialEntryKey = 'credential';
-const credentialFields = ['bindingGeneration', 'credentialSecret', 'deviceId', 'groupWorkspaceKey', 'storeRef', 'terminalRef'] as const;
+const credentialFields = [
+  'bindingGeneration',
+  'credentialSecret',
+  'deviceId',
+  'groupWorkspaceKey',
+  'storeRef',
+  'terminalRef',
+] as const;
 const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 const hasExactKeys = (value: Readonly<Record<string, unknown>>, expected: readonly string[]): boolean => {
@@ -50,9 +63,13 @@ const isTerminalCredential = (value: unknown): value is TerminalCredential => {
     /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/.test(value.groupWorkspaceKey) &&
     isCanonicalUuid(value.terminalRef) &&
     isCanonicalUuid(value.storeRef) &&
-    typeof value.deviceId === 'string' && value.deviceId.length > 0 && value.deviceId.length <= 128 &&
-    Number.isSafeInteger(value.bindingGeneration) && Number(value.bindingGeneration) >= 1 &&
-    typeof value.credentialSecret === 'string' && /^[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$/.test(value.credentialSecret)
+    typeof value.deviceId === 'string' &&
+    value.deviceId.length > 0 &&
+    value.deviceId.length <= 128 &&
+    Number.isSafeInteger(value.bindingGeneration) &&
+    Number(value.bindingGeneration) >= 1 &&
+    typeof value.credentialSecret === 'string' &&
+    /^[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$/.test(value.credentialSecret)
   );
 };
 const sameCredential = (left: TerminalCredential | null, right: TerminalCredential | null): boolean =>
@@ -157,9 +174,16 @@ const definition = createSlice({
     },
     sessionReady: (
       state,
-      action: PayloadAction<Readonly<{sessionId: string; nodeId: string; heartbeatIntervalMs: number; observedAt: number}>>,
+      action: PayloadAction<
+        Readonly<{sessionId: string; nodeId: string; heartbeatIntervalMs: number; observedAt: number}>
+      >,
     ) => {
-      state.connection = {...state.connection, status: 'connected', nodeId: action.payload.nodeId, sessionId: action.payload.sessionId};
+      state.connection = {
+        ...state.connection,
+        status: 'connected',
+        nodeId: action.payload.nodeId,
+        sessionId: action.payload.sessionId,
+      };
       state.heartbeatIntervalMs = action.payload.heartbeatIntervalMs;
       const maxSamples = Math.floor(7_200_000 / action.payload.heartbeatIntervalMs);
       const cutoff = action.payload.observedAt - 7_200_000;
@@ -288,6 +312,11 @@ const definition = createSlice({
     clearRemoteOperations: state => {
       state.remoteOperations = {};
     },
+    clearLocalStateForUnpair: state => ({
+      ...initialState,
+      // Keep the local epoch monotonic so an in-flight response from the old pairing cannot match a later one.
+      credentialRevision: state.credentialRevision + 1,
+    }),
     clearConnection: state => {
       state.connection = {...state.connection, status: 'stopped', addressName: null, nodeId: null, sessionId: null};
       state.heartbeatIntervalMs = null;

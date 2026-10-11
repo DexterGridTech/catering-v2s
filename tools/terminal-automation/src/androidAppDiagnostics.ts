@@ -27,9 +27,16 @@ type RuntimeFailureDiagnostic = Readonly<{
   readonly connectionToken?: number;
   readonly reasonCode?: string;
   readonly currentRevision?: string;
-  readonly status?: number;
+  readonly status?: number | string;
   readonly attemptNumber?: number;
   readonly attemptCount?: number;
+  readonly actionPending?: number;
+  readonly nextReportSequence?: number;
+  readonly pendingReportCount?: number;
+  readonly sendPaused?: boolean;
+  readonly bindingIdentityPresent?: boolean;
+  readonly contextIdentityPresent?: boolean;
+  readonly persistenceStatus?: string;
   readonly candidateCount?: number;
   readonly addressCount?: number;
   readonly elapsedMs?: number;
@@ -42,6 +49,7 @@ type RuntimeFailureDiagnostic = Readonly<{
   readonly transportCauseName?: string;
   readonly transportCauseCode?: string;
   readonly sessionId?: string;
+  readonly requestId?: string;
   readonly selectorName?: string;
   readonly budgetMs?: number;
   readonly closeCode?: number;
@@ -78,8 +86,15 @@ type RuntimeFailureDiagnostic = Readonly<{
   readonly failureCategory?: string;
   readonly resultCode?: string;
   readonly contextReady?: boolean;
+  readonly contentReady?: boolean;
   readonly connectionStatus?: string;
   readonly snapshotStatus?: string;
+  readonly sliceName?: string;
+  readonly direction?: string;
+  readonly codec?: string;
+  readonly syncEntryCount?: number;
+  readonly primaryContainerCount?: number;
+  readonly secondaryContainerCount?: number;
   readonly errorCode?: string;
   readonly itemCount?: number;
   readonly contextPresent?: boolean;
@@ -96,6 +111,9 @@ type RuntimeFailureDiagnostic = Readonly<{
   readonly projectRefMatchesPath?: boolean;
   readonly storeStatus?: string;
   readonly projectStatus?: string;
+  readonly localMode?: string;
+  readonly operation?: string;
+  readonly transition?: string;
 }>;
 
 const safeToken = (value: unknown): string | undefined =>
@@ -181,6 +199,291 @@ const safeNumber = (value: unknown): number | undefined =>
   typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : undefined;
 
 const safeBoolean = (value: unknown): boolean | undefined => (typeof value === 'boolean' ? value : undefined);
+
+const terminalOwnerEvents: Readonly<Record<string, ReadonlySet<string>>> = Object.freeze({
+  'terminal.data.read': new Set([
+    'terminal-read-rejected',
+    'terminal-read-http.begin',
+    'terminal-read-http.response',
+    'terminal-read-response-accept.begin',
+    'terminal-read-response-accept.completed',
+    'terminal-read-completed',
+    'terminal-read-threw',
+  ]),
+  'terminal.data.topic-subscription': new Set([
+    'terminal-topic-subscribe.begin',
+    'terminal-topic-subscribe.completed',
+    'terminal-topic-subscribe.failed',
+    'terminal-topic-subscribe.frame-send.begin',
+    'terminal-topic-subscribe.frame-send.completed',
+    'terminal-topic-subscribe.frame-send.failed',
+    'terminal-topic-subscribe.persist.begin',
+    'terminal-topic-subscribe.persist.readback',
+    'terminal-topic-subscribe.rejected',
+  ]),
+  'terminal.update.download-grant': new Set(['download-grant-completed']),
+  'terminal.update.report': new Set(['report-submit-completed', 'report-submit-rejected']),
+  'terminal.connection.heartbeat': new Set([
+    'heartbeat-consumer-completed',
+    'heartbeat-consumer-not-completed',
+    'heartbeat-consumer-rejected',
+    'heartbeat-pong-matched',
+  ]),
+  'terminal.project-basic.read': new Set([
+    'owner-read-started',
+    'owner-read-completed',
+    'owner-read-threw',
+    'organization-refresh-failed',
+    'rules-snapshot-failed',
+    'topic-notification-accept-failed',
+    'rules-snapshot-ready',
+    'terminal-update-request-started',
+    'terminal-update-requested',
+    'organization-load-started',
+    'organization-load-complete',
+  ]),
+  'terminal.update.lifecycle': new Set([
+    'task-state-persisted',
+    'task-state-persist-failed',
+    'report-descriptor-persisted',
+    'report-descriptor-persist-failed',
+    'report-submit-started',
+    'report-submit-returned',
+    'artifact-apply-started',
+    'artifact-apply-threw',
+    'artifact-apply-returned',
+    'update-facts-read-returned',
+    'download-grant-request-started',
+    'download-grant-request-returned',
+    'fixed-task-context-not-ready',
+    'target-admission-rejected',
+    'target-revalidation-rejected',
+    'artifact-prepare-started',
+    'artifact-prepare-threw',
+    'artifact-prepare-returned',
+  ]),
+  'terminal-update.primary-ready': new Set([
+    'terminal-update.primary-ready-received',
+    'terminal-update.primary-ready-continuation-result',
+    'terminal-update.primary-ready-continuation-failed',
+  ]),
+  'terminal.credential.readiness': new Set([
+    'credential-readiness-reconcile-failed',
+    'credential-readiness-persistence-failed',
+  ]),
+  'terminal.credential.unpair': new Set(['shared-credential-clear-persistence-failed']),
+  'terminal.topology.credential': new Set(['slave-credential-transition-blocked']),
+  'terminal.project-basic.update': new Set(['terminal.project-basic.update.evaluation-dispatch-failed']),
+  'admin.topology': new Set([
+    'admin.topology-operation-started',
+    'admin.topology-operation-completed',
+    'admin.topology-operation-failed',
+  ]),
+  'topology.pairing': new Set([
+    'topology.pairing.identity-failed',
+    'topology.pairing.failed',
+    'topology.pairing.completed',
+    'topology.pairing.started',
+    'topology.pairing.instance-mode-completed',
+    'topology.pairing.display-role-completed',
+    'topology.pairing.persistence-completed',
+    'topology.pairing.runtime-reset-accepted',
+  ]),
+  'topology.unpairing': new Set([
+    'topology.unpairing.wire-notice-sent',
+    'topology.unpairing.persistence-failed',
+    'topology.unpairing.persistence-completed',
+    'topology.unpairing.started',
+    'topology.unpairing.display-role-completed',
+    'topology.unpairing.instance-mode-completed',
+    'topology.unpairing.host-stop-completed',
+    'topology.unpairing.completed',
+    'topology.unpairing.failed',
+  ]),
+  'topology.peer': new Set([
+    'topology.peer.frame-sent',
+    'topology.peer.frame-received',
+    'topology.peer.hello-accepted-accepted',
+    'topology.peer.hello-accepted-rejected',
+    'topology.peer.session-installed',
+    'topology.peer.hello-rejected-received',
+    'topology.peer.closed-error-received',
+    'topology.peer.send-rejected',
+    'topology.peer.reconnect-scheduled',
+    'topology.peer.command-result-received',
+    'topology.peer.state-full-transfer-planned',
+    'topology.peer.state-full-transfer-failed',
+    'topology.peer.state-full-ignored',
+    'topology.peer.state-full-rejected',
+    'topology.peer.state-full-applied',
+  ]),
+});
+
+const ownerLogTextFields = [
+  'commandId',
+  'requestId',
+  'operationId',
+  'taskId',
+  'actionId',
+  'attemptId',
+  'artifactKind',
+  'sourceKind',
+  'resultKind',
+  'errorCode',
+  'code',
+  'resultStatus',
+  'dispatchStatus',
+  'topicKey',
+  'portStatus',
+  'actionState',
+  'taskPhase',
+  'recentState',
+  'reportState',
+  'reasonCode',
+  'phase',
+  'snapshotStatus',
+  'storeStatus',
+  'projectStatus',
+  'persistenceStatus',
+  'messageType',
+  'localMode',
+  'operation',
+  'transition',
+  'outcome',
+  'status',
+] as const;
+const ownerLogNumberFields = [
+  'elapsedMs',
+  'status',
+  'itemCount',
+  'attempt',
+  'attemptNumber',
+  'attemptCount',
+  'actionPending',
+  'reportSequence',
+  'subscriptionCount',
+  'persistedSubscriptionCount',
+  'pageLimit',
+  'candidateCount',
+  'revision',
+  'lastReceivedRevision',
+  'encodedBytes',
+  'frameCount',
+  'syncEntryCount',
+  'primaryContainerCount',
+  'secondaryContainerCount',
+  'nextReportSequence',
+  'pendingReportCount',
+] as const;
+const ownerLogBooleanFields = [
+  'candidatePresent',
+  'actualPresent',
+  'embeddedPresent',
+  'collectionHashPresent',
+  'contextReady',
+  'contentReady',
+  'matchingSubscriptionPresent',
+  'connectionReady',
+  'connectionPresent',
+  'retryable',
+  'willRetry',
+  'persisted',
+  'deterministic',
+  'changed',
+  'sendPaused',
+  'bindingIdentityPresent',
+  'contextIdentityPresent',
+  'targetValid',
+  'targetMatches',
+  'ruleMatches',
+  'collectionMatches',
+  'applicationMatches',
+  'fullArtifactMatches',
+  'hotArtifactMatches',
+  'policyMatches',
+  'strategyMatches',
+  'selectionMatches',
+  'createdAtMatches',
+  'contextIdentityMatches',
+  'bindingIdentityMatches',
+  'taskIdPresent',
+  'taskMatchesCurrentTask',
+  'taskMatchesRecentStatus',
+  'receiptTaskIdPresent',
+  'receiptTaskMatchesPayload',
+  'receiptSequenceMatchesPayload',
+] as const;
+
+/** Safe projection shared by Web console capture and Android logcat capture. Raw messages, URLs and payloads are omitted. */
+export const projectTerminalAutomationAppEvent = (value: unknown): RuntimeFailureDiagnostic | null => {
+  const event = record(value);
+  const category = safeToken(event?.category);
+  const name = safeToken(event?.event);
+  const allowed = category === undefined ? undefined : terminalOwnerEvents[category];
+  const data = record(event?.data);
+  if (!category || !name || !allowed?.has(name) || !data) return null;
+  const context = record(event?.context);
+  const projected: Record<string, string | number | boolean> = {category, event: name};
+  const level = safeToken(event?.level);
+  if (level !== undefined && ['debug', 'info', 'warn', 'error'].includes(level)) projected.level = level;
+  for (const key of ['commandId', 'requestId', 'sessionId'] as const) {
+    const token = safeToken(context?.[key]);
+    if (token !== undefined) projected[key] = token;
+  }
+  for (const key of ownerLogTextFields) {
+    const token = safeToken(data[key]);
+    if (token === undefined) continue;
+    if (['errorCode', 'code', 'reasonCode'].includes(key) && !/^[A-Z0-9_:-]{1,100}$/u.test(token)) continue;
+    if (
+      category === 'topology.peer' &&
+      key === 'messageType' &&
+      ![
+        'hello',
+        'hello-accepted',
+        'hello-rejected',
+        'command-request',
+        'command-result',
+        'command-cancel',
+        'state-full-chunk',
+        'ping',
+        'pong',
+        'closed-error',
+      ].includes(token)
+    )
+      continue;
+    if (category === 'topology.peer' && key === 'localMode' && !['MASTER', 'SLAVE'].includes(token)) continue;
+    projected[key] = token;
+  }
+  if (category === 'topology.peer') {
+    const sliceName = safeToken(data.sliceName);
+    if (sliceName !== undefined && /^[A-Za-z0-9_.:-]{1,100}$/u.test(sliceName)) projected.sliceName = sliceName;
+    const direction = safeToken(data.direction);
+    if (direction === 'master-to-slave' || direction === 'slave-to-master') projected.direction = direction;
+    const codec = safeToken(data.codec);
+    if (codec !== undefined && /^[A-Za-z0-9_.:-]{1,100}$/u.test(codec)) projected.codec = codec;
+    const reason = safeToken(data.reason);
+    if (reason !== undefined && /^[A-Za-z0-9_.:-]{1,100}$/u.test(reason)) projected.resultReason = reason;
+  }
+  for (const key of ownerLogNumberFields) {
+    const number = safeNumber(data[key]);
+    if (number !== undefined) projected[key] = number;
+  }
+  for (const key of ownerLogBooleanFields) {
+    const boolean = safeBoolean(data[key]);
+    if (boolean !== undefined) projected[key] = boolean;
+  }
+  return Object.freeze(projected) as RuntimeFailureDiagnostic;
+};
+
+const projectTerminalAutomationAppLine = (line: string): RuntimeFailureDiagnostic | null => {
+  const match = line.match(/^[VDIWEF]\/ReactNativeJS\s*\(\s*\d+\):\s*(\{.*\})\s*$/u);
+  if (!match) return null;
+  try {
+    return projectTerminalAutomationAppEvent(JSON.parse(match[1]!));
+  } catch {
+    return null;
+  }
+};
 
 /** Project only non-sensitive rule-refresh and page-read progress emitted by the update owner. */
 export const projectAndroidTerminalUpdateRuleLog = (line: string): RuntimeFailureDiagnostic | null => {
@@ -422,6 +725,17 @@ export const projectAndroidTerminalUpdateReportLog = (line: string): RuntimeFail
     ...(safeNumber(data.status) === undefined ? {} : {status: safeNumber(data.status)}),
     ...(safeNumber(data.reportSequence) === undefined ? {} : {attemptNumber: safeNumber(data.reportSequence)}),
     ...(safeNumber(data.elapsedMs) === undefined ? {} : {elapsedMs: safeNumber(data.elapsedMs)}),
+    ...(safeBoolean(data.taskIdPresent) === undefined ? {} : {taskIdPresent: safeBoolean(data.taskIdPresent)}),
+    ...(safeBoolean(data.receiptTaskIdPresent) === undefined
+      ? {}
+      : {receiptTaskIdPresent: safeBoolean(data.receiptTaskIdPresent)}),
+    ...(safeBoolean(data.receiptTaskMatchesPayload) === undefined
+      ? {}
+      : {receiptTaskMatchesPayload: safeBoolean(data.receiptTaskMatchesPayload)}),
+    ...(safeBoolean(data.receiptSequenceMatchesPayload) === undefined
+      ? {}
+      : {receiptSequenceMatchesPayload: safeBoolean(data.receiptSequenceMatchesPayload)}),
+    ...(safeToken(data.receiptOutcome) === undefined ? {} : {receiptOutcome: safeToken(data.receiptOutcome)}),
   });
 };
 
@@ -640,7 +954,8 @@ export const collectAndroidRuntimeFailureDiagnostics = (logcat: string): string 
         projectAndroidTerminalTopicSubscriptionLog(line) ??
         projectAndroidTerminalHeartbeatLog(line) ??
         projectAndroidTerminalUpdateReportLog(line) ??
-        projectAndroidTerminalDataReadLog(line),
+        projectAndroidTerminalDataReadLog(line) ??
+        projectTerminalAutomationAppLine(line),
     )
     .filter((value): value is RuntimeFailureDiagnostic => value !== null)
     .map(value => JSON.stringify(value))

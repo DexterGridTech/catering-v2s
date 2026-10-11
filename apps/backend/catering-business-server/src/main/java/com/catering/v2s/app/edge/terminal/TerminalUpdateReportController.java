@@ -96,10 +96,12 @@ public final class TerminalUpdateReportController {
     private static void validate(TerminalUpdateReportRequest request) {
         if (request.reportSequence() < 1 || request.reportSequence() > 9_007_199_254_740_991L
                 || request.recent().changedAtEpochMillis() == null || request.recent().changedAtEpochMillis() < 0
-                || !oneOf(request.recent().state(), "WAITING_USER", "DOWNLOADING", "VERIFYING", "INSTALLING",
-                        "APPLYING_HOT", "SUCCEEDED", "FAILED", "CANCELLED", "UNKNOWN")
+                || !oneOf(request.recent().state(), "WAITING_USER", "DOWNLOADING", "VERIFYING", "WAITING_IDLE",
+                        "ADMISSION_REJECTED", "INSTALLING", "APPLYING_HOT", "SUCCEEDED", "FAILED", "CANCELLED",
+                        "UNKNOWN")
                 || !oneOf(request.recent().reason(), "NONE", "NETWORK", "HTTP_REJECTED", "HASH_MISMATCH",
-                        "PREPARE_FAILED", "INSTALLER_CANCELLED", "INSTALL_FAILED", "HOT_APPLY_FAILED", "UNKNOWN")
+                        "PREPARE_FAILED", "INSTALLER_CANCELLED", "INCOMPATIBLE", "WOULD_DOWNGRADE",
+                        "FAILED_ARTIFACT", "INSTALL_FAILED", "HOT_APPLY_FAILED", "UNKNOWN")
                 || !oneOf(request.actual().entryKind(), "INSTALLED_APK", "EMBEDDED_BUNDLE", "HOT_BUNDLE", "UNKNOWN")
                 || !oneOfNullable(request.actual().unknownReason(), "READBACK_UNAVAILABLE", "NOT_INSTALLED", "MISMATCH", "OTHER")
                 || !nullableText(request.actual().apkVersion()) || !nullableText(request.actual().jsVersion())

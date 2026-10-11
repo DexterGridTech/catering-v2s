@@ -3129,8 +3129,8 @@ export type TerminalUpdateReportHistoryPage = {
 };
 
 export type TerminalUpdateReportRecent = {
-  state: "WAITING_USER" | "DOWNLOADING" | "VERIFYING" | "WAITING_IDLE" | "INSTALLING" | "APPLYING_HOT" | "SUCCEEDED" | "FAILED" | "CANCELLED" | "UNKNOWN";
-  reason: "NONE" | "NETWORK" | "HTTP_REJECTED" | "HASH_MISMATCH" | "PREPARE_FAILED" | "INSTALLER_CANCELLED" | "INSTALL_FAILED" | "HOT_APPLY_FAILED" | "UNKNOWN";
+  state: "WAITING_USER" | "DOWNLOADING" | "VERIFYING" | "WAITING_IDLE" | "ADMISSION_REJECTED" | "INSTALLING" | "APPLYING_HOT" | "SUCCEEDED" | "FAILED" | "CANCELLED" | "UNKNOWN";
+  reason: "NONE" | "NETWORK" | "HTTP_REJECTED" | "HASH_MISMATCH" | "PREPARE_FAILED" | "INSTALLER_CANCELLED" | "INCOMPATIBLE" | "WOULD_DOWNGRADE" | "FAILED_ARTIFACT" | "INSTALL_FAILED" | "HOT_APPLY_FAILED" | "UNKNOWN";
   changedAtEpochMillis: number;
   ruleRef: string & { readonly __uuid: "Uuid" } | null;
   fullArtifactRef: string & { readonly __uuid: "Uuid" } | null;

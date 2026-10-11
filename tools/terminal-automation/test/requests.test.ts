@@ -62,7 +62,7 @@ const fakeServer = (actionViews: readonly View[]) => {
       });
   };
   const server = {
-    getSession: (_sessionId?: string) => sessionPresent ? ({sessionId: 'session'}) : null,
+    getSession: (_sessionId?: string) => (sessionPresent ? {sessionId: 'session'} : null),
     onMessage: (_sessionId: string, listener: (message: {type: string; body: unknown}) => void) => {
       listeners.add(listener);
       return () => listeners.delete(listener);
@@ -81,8 +81,7 @@ const fakeServer = (actionViews: readonly View[]) => {
           exactSubscribedWithListActive = [...activeSubscriptions].some(id => id.startsWith('request-list-'));
         }
         activeSubscriptions.add(request.subscriptionId);
-        if (request.selectorName.endsWith('selectRequestExecutionCandidates'))
-          sendValue(request.subscriptionId, []);
+        if (request.selectorName.endsWith('selectRequestExecutionCandidates')) sendValue(request.subscriptionId, []);
         else
           sendValue(
             request.subscriptionId,
@@ -141,7 +140,7 @@ const initialListFailureServer = (
     for (const listener of [...sessionListeners]) listener();
   };
   const server = {
-    getSession: () => sessionPresent ? session : null,
+    getSession: () => (sessionPresent ? session : null),
     onMessage: (_sessionId: string, listener: (message: {type: string; body: unknown}) => void) => {
       listeners.add(listener);
       return () => listeners.delete(listener);
@@ -156,7 +155,10 @@ const initialListFailureServer = (
         if (failure === 'NON_JSON') {
           setTimeout(() => {
             for (const listener of [...listeners])
-              listener({type: 'event', body: {subscriptionId, sequence: 1, valueState: 'NON_JSON', reason: 'UNDEFINED'}});
+              listener({
+                type: 'event',
+                body: {subscriptionId, sequence: 1, valueState: 'NON_JSON', reason: 'UNDEFINED'},
+              });
           }, 0);
         } else if (failure === 'RESOURCE_LIMIT_BEFORE_RESPONSE') {
           for (const listener of [...listeners])
@@ -318,7 +320,13 @@ describe('Runtime UI request observation', () => {
     expect(server.exactSubscribedWithListActive()).toBe(false);
     expect(server.candidateQuery()).toEqual({
       selectorName: 'kernel.base.runtime.selectRequestExecutionCandidates',
-      argsTuple: ['MAIN', 'kernel.feature.sample-staff-session.login', 'PRIMARY'],
+      argsTuple: [
+        {
+          workspace: 'MAIN',
+          commandName: 'kernel.feature.sample-staff-session.login',
+          displayMode: 'PRIMARY',
+        },
+      ],
     });
     expect(server.activeSubscriptions.size).toBe(0);
   });

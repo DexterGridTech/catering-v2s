@@ -7,8 +7,9 @@ status: DRAFT_FOR_DEXTER_CLAUDE_REVIEW
 ## 0. 元数据、当前字节与授权
 BUSINESS_SOURCE=doc/plans/platform/2026-10-10-ter-remote-control-formal-requirements-claude.md；JOURNEY_REFS=doc/decisions/2026-10-10-ter-remote-control-journey-claude.md；IA_REF=doc/decisions/2026-10-10-ter-remote-control-ia-claude.md；INTERACTION_REF=doc/decisions/2026-10-10-ter-remote-control-ui-interaction-claude.md；SOURCE_APPENDIX=doc/plans/platform/2026-10-10-ter-remote-control-source-and-api-appendix-claude.md。
 SKILL_USED=cs-spec-to-plan,cs-writing-plans,cs-review；AUTHORIZED=本包文档与独立静态审查；IMPLEMENTATION_AUTHORITY=false。
-NOT_AUTHORIZED=源码、规范、需求修改、依赖安装/生成、编译/测试/verify、DEV、reset/seed、Web/Android/设备、L2/UAT/部署。
-这是遵照Dexter完整设计包指派产出的可评审草案。DEXTER_WIREFRAME_REVIEW=UNSET；T-01～T-04 OPEN。不冻结未经原生proof确认的具体供应商桥接API，不把该草案或GO_WITH_UNVERIFIED_UI变成实施授权。
+NOT_AUTHORIZED=源码、规范、需求产品语义扩张、依赖安装/生成、编译/测试/verify、DEV、reset/seed、Web/Android/设备、L2/UAT/部署。
+Dexter 2026-10-10已明确批准三态并授权需求同步：R-01/R-02/R-20与本包现统一为NOT_ACTIVATED/OFFLINE/ONLINE；删除不可产生的第四态，不新增连接字段或heartbeat机制。此文档同步不代表设计已获独立GO，也不授权契约生成、源码或动态运行。
+这是遵照Dexter完整设计包指派产出的可评审草案。DEXTER_WIREFRAME_REVIEW=ACCEPTED@2026-10-10；T-01～T-04 OPEN。不冻结未经原生proof确认的具体供应商桥接API，不把该草案或GO_WITH_UNVERIFIED_UI变成实施授权。
 阶段C仍在并发实施，不改它的文件，也不把读到的中间源码当最终出口。实施CP-01必须重开其最终字节；不恢复旧MASTER逐次grant中转、不让SLAVE连TDS。
 
 ## 1. 真实目标与方案比较
@@ -51,7 +52,7 @@ CP内部focused与最小可行性proof不等于整体验收。全CP退出后单�
 | 日志/脱敏 | SafeLogger/LoggerPort/受管日志 | 只session/stream/phase/finitecode/count，不记录JWT/触摸payload | 外部SDK调试日志默认关闭或按既有sink脱敏 | CBS/TER/driver/Compose |
 | 迁移回填/可逆 | 单Flyway history | 新空session/audit表；旧业务行不伪造ONLINE | 无历史媒体回填；只新增 | CP-02migration |
 | 前端共享行为 | useDetailDrawer/AdminDetailActionMenu/useOverlayLock/createAsyncGenerationGuard | 无app-local第二Drawer lifecycle或context lock | 新Modal媒体内容为本域，不泛化foundation | LIST/DETAIL/WORKSPACE |
-| 管理后台交互一致性 | frontend-coding-standard §3-K-1..10 | 动作在详情菜单，状态文字、闭合焦点和全屏布局 | 需求R02承载例外，具体线框UNSET | 3screen |
+| 管理后台交互一致性 | frontend-coding-standard §3-K-1..10 | 动作在详情菜单，状态文字、闭合焦点和全屏布局 | 需求R02承载例外，具体线框ACCEPTED@2026-10-10 | 3screen |
 | 候选/下拉源 | N/A：无新增业务选择表单 | 目标取原最新详情，不让用户填ref/endpoint | 禁止猜门店/peer | start目标 |
 | 编码名称呈现 | formatNameCode/原terminal标题 | 用门店/终端名称，不把UUID/SDK identity渲染为标题 | 本域原因中文见交互§5 | list/detail/modal |
 | 原子组 | foundation-charter §5-C | 两屏任一失败结束整个会话；不留另一屏控制 | 一session固定拓扑，1/2endpoint | 4拓扑 |
@@ -80,7 +81,7 @@ Modal maskClosable=false；初始焦点放标题或关闭按钮，不自动把�
 UI_DESIGN_REVIEW=OPEN；TESTID_REVIEW=OPEN；L2_SCRIPT_ADMISSION=BLOCKED。静态动作/节点计划已列，真实UI、binding与focused均NOT_RUN，不能标MATCHED。以下是业务case清单；逐动作九列表、控件roster及精确控制面在本节和附件§4/§4b，是已有模板要求，不建新台账或扫描门。
 | case | fixtureRef | actions | 最終断言 |
 | --- | --- | --- | --- |
-| remote.online | term-front/term-handheld+inactive/offline fixture | 查询、翻页、打开终端详情 | 四态、当前终端身份、原分页/版本查询不变 |
+| remote.online | term-front/term-handheld+inactive/offline fixture | 查询、翻页、打开终端详情 | 三态、当前终端身份、原分页/版本查询不变 |
 | remote.permission | 同PROJECT有权/只读/另PROJECT账号 | 点击/HTTP伪造scope/重复request | 正确拒绝，未创建token或operation；菜单状态 |
 | remote.start | term-front在线、两controller Tab | 真实菜单click→等待所有画面→第二Tab发起 | 首TabACTIVE，第二OCCUPIED；不复用grant |
 | remote.input | 明确设备四拓扑和App | 浏览器视频真实pointer点击/拖动/虚拟键盘；本机正常点击 | 原feature selector/request变化；不是直接dispatch原业务command |
@@ -108,9 +109,9 @@ Room名`rc_<sessionUUID>`，participantIdentity从endpoint/controllerUUID构造�
 register认证绑定与stored启动node/session/sequence仍是当前PG事实；description只第一次写入，重复等值返回，内容冲突拒绝。冻结topology→endpoint/slot与peerIdentity；CBS不生成新slave业务终端。MAX endpoints=2/screens=2来自四拓扑，不是业务数量配额。
 report/renew：锁session，先有效credential/binding和当前PG启动身份及actor权限复核；expired/ENDED拒绝续约，不能复活；ACTIVE要求所需screen恰好齐、endpoint归属正确。ready集合变化只更新现存stream，不能换endpoint/peer。STARTING不能把初始期限重设30s；ACTIVE租约更新为now+30s。ENDED同事实幂等，第一次才audit。
 运营end先事务writeENDED+audit/release，after-return调用现有online stop与官方RoomService.removeParticipant/DeleteRoom做有限best-effort清理；外部RPC失败写脱敏诊断，不回滚已结束业务事实。end owner返回需清理的本session公开descriptor给application orchestration，不另建outbox/重试队列。
-GET只读：发现租约到期时按已有deadline导出公开ENDED/LEASE_EXPIRED，endedAt取leaseExpiresAt，不更新session、不写audit、不发stop。仅新start/report/end的写事务持久化过期结束并按幂等规则写一次审计，不建扫描器。撤销写capability后，只要原session/context/页面与PROJECT读scope及发起账号仍有效，仍可GET观察本次结束事实；grant/续约仍拒绝，不能继续控制。仅HTTP/房间kick不能证明SLAVE已停；MASTER退出、pair/liveness和SLAVE本机watchdog保证有限结束，原生cleanup另报。
+GET只读：发现租约到期时按已有deadline导出公开ENDED/LEASE_EXPIRED，endedAt取leaseExpiresAt，不更新session、不写audit、不发stop。仅新start/report/end的写事务持久化过期结束并按幂等规则写一次审计，不建扫描器。撤销写capability后，只要原session/context/页面与PROJECT读scope及发起账号仍有效，仍可GET观察本次结束事实；grant/续约仍拒绝，不能继续控制。仅HTTP/房间kick不能证明SLAVE已停；MASTER退出、pair/liveness和SLAVE本机watchdog保证有限结束，原生cleanup仅经本机selector/结构化日志观察，不回传CBS。
 ### 6.3 列表连接事实
-在现有TerminalUpdateReportPersistence.page/detail显式task join active binding+terminal_connection.latest_state。只有当前绑定对应device与generation能确认PGsession时才ONLINE；冲突UNCONFIRMED，无binding NOT_ACTIVATED，无current未断session OFFLINE。node/seq不返回UI。page每item和detail顶层均追加`connectionStatus: NOT_ACTIVATED|OFFLINE|UNCONFIRMED|ONLINE`、`observedAt: canonical timestamp|null`、`evaluatedAt: canonical timestamp`，不另包connection对象或使用connection.state别名；schema→edge→generated→UI/fixture逐层同形。
+在现有TerminalUpdateReportPersistence.page/detail显式task join当前ACTIVE binding与terminal_connection.latest_state，关联键为(workspace_uuid,group_workspace_key,terminal_ref)，复用TerminalControlPersistence.readActiveBinding/readOnlineSession的资格语义。无有效ACTIVE binding为NOT_ACTIVATED；有ACTIVE binding但latest_state无行或disconnected_at_epoch_millis非空为OFFLINE；有ACTIVE binding且latest_state存在、disconnected_at_epoch_millis为空为ONLINE。连接表没有deviceId或binding generation，不要求比对不存在的列、不新增列或另立状态。start仍捕获当前binding generation与PG node/session/sequence，既有claim复核各自权威表，不能因三态简化而删掉投递身份保护。node/seq不返回UI。page每item和detail顶层均追加`connectionStatus: NOT_ACTIVATED|OFFLINE|ONLINE`、`observedAt: canonical timestamp|null`、`evaluatedAt: canonical timestamp`，不另包connection对象或使用connection.state别名；schema→edge→generated→UI/fixture逐层同形。observedAt取该scope最新session的last_activity_at_epoch_millis转换为canonical timestamp；无binding或无session时null，已断开session仍显示该行末次观察时间；evaluatedAt为本次查询评估时间。
 不新增heartbeat权威行、不通过Doris判断ONLINE、不按“多久没ping”另加应用公式。远端进程刚崩时旧PG可能暂时ONLINE，点击时仍30s内失败；该事实及时间字段供用户理解。不能逐终端调用owner来制造N+1。
 
 ## 7. 声明→传递→消费矩阵
@@ -192,7 +193,7 @@ SCREEN_READY只有native当前mapping可用且首帧轨道已准备才发；brow
 ### 8.7 Watchdog、lease与结束
 controller加入即KEEPALIVE，每5s一轮到全部endpoints；15s必要KEEPALIVE_ACK缺失end；endpoint15s无KEEPALIVE end。关联probe取当前/前一个，seq仍全局单调。SDK进入reconnecting/requiredparticipantdisconnected即end，不等SDK自动恢复；ICE内部切换但连接未断不误结束。永久unpublish目标track等同屏断。
 MASTER每10s report当前ready，只有控制端存活/各端点ready/当前participant身份成立才续；local deadline=HTTP发出前monotonic t0+remainingLeaseMs（保守，不按收到时重新加30s）；最多一个当前renew请求。逾期先停止本机，再peerstop/Roomleave，无成功HTTP依赖。SLAVE借主机participant/pair信号和自己的KEEPALIVEwatchdog有限停止，不增加第二lease。新start在CBS事务回收expired占用，不靠扫库或token过期。
-结束先owner/native禁输入→CANCEL→stopcapture/unpublish→Roomdisconnect→unsubscribe/timer清理→报告CBSENDED；每项资源身份限定session/Window/track。失败聚合cleanup，不以ENDED或退出Modal掩盖。旧调用不删新资源，不回收其他run/别App。
+结束先owner/native禁输入→CANCEL→stopcapture/unpublish→Roomdisconnect→unsubscribe/timer清理→报告CBSENDED；每项资源身份限定session/Window/track。失败聚合cleanup，不以ENDED或退出Modal掩盖。后台释放失败文案只覆盖浏览器本地Room/track；TER释放结果留在selectRemoteControlStatus.cleanup与结构化日志，由automation逐端点断言，不回传CBS、不扩report body、不在ENDED后追加cleanup上报。CBS RoomService清理失败仅按§6.2写服务端诊断，不冒充浏览器或TER的资源读回。旧调用不删新资源，不回收其他run/别App。
 
 ## 9. Owner API与消费者
 | owner方法/能力 | 唯一真实caller（计划） |
@@ -211,7 +212,7 @@ MASTER每10s report当前ready，只有控制端存活/各端点ready/当前part
 | --- | --- | --- | --- | --- | --- |
 | 远控HTTP六能力 | 新remote-control.schemas.json；catalog/placement/error/IAM；materialize→edge-codegen→terminal-client-api | terminal-control owner+两controllers+application grant | generated operationsClient/TDC terminalApi+两具名commands | 每op真实HTTP场景 | 权限seed/activation共享helper |
 | 新PROJECT权限 | admin-catalog、iam manifest→generated IAM | resolver/ownergrant、标准auditread | actionCapabilityKeys，不能借版本管理权限 | 无权/错scope/replay撤权 | role-project具名新cap；GROUP_SEED_CAPABILITIES保留原集；r5-seed-plan |
-| 顶层连接字段 | 原terminal-update.schemas.json扩page/detail；catalogSHA→generator | 原显式query+edge mapping | 原reportColumns/Drawer | 四态/51条分页/无N+1 | 现有terminalfixtures＋测试状态fixture |
+| 顶层连接字段 | 原terminal-update.schemas.json扩page/detail；catalogSHA→generator | 原显式query+edge mapping | 原reportColumns/Drawer | 三态/51条分页/无N+1 | 现有terminalfixtures＋测试状态fixture |
 | 六Data消息 | 新terminal-remote-control-protocol.json→新generate脚本→TS | CBS/TDS不消费逐触摸；N/A理由是传输绕过它们 | remote-control codec/operations codec | 边界、方向、seq、geometry | 无持久seed消息 |
 | ports/Window接缝 | value-type remote port，无HTTPgenerated | N/A后端无Window | ports bindings/defaults/descriptors、adapter与原dual-screen | native/focused及两屏真实输入 | Webfixture只automation构建 |
 | 标准审计 | audit-history entity enum/catalog→generated | owneraudit table/writer/read，audit-read依赖/switch | 标准audit读取能力，非本期新页面 | HTTPauditread | 不seed假session/audit |
@@ -229,7 +230,8 @@ MASTER每10s report当前ready，只有控制端存活/各端点ready/当前part
 ### 10b.2 两类改动
 新功能只有PROJECT远控capability、已声明角色授权与服务配置；原term-front/term-handheld按seed key共享，activationCode从契约读，不另存。旧shape未改变不迁移；当前有版本管理权限不自动推远控权，新能力必须显式列在角色计划。
 ### 10b.3 覆盖
-DEV正常使用有权账号与当前项目终端；无权/其他project/inactive/offline/UNCONFIRMED/occupied/leaseexpired等场景用独立acceptance fixture或合法动态动作制造，不seed假ONLINE/假Room。DEV seed具名授权差量见附件§5：只给role-project加入新cap，role-group保留原cap/page且无远控权；正常操作选asg-multi-project，读取无写权选asg-multi-group的同项目可见scope。独立acceptance/L2 fixture另用remote-readonly/remote-controller测试role和不同account，不能把无任职account当只读者；边界在fixture而非更改整个DEV组织状态。
+DEV正常使用有权账号与当前项目终端；无权/其他project/inactive/offline/occupied/leaseexpired等场景用独立acceptance fixture或合法动态动作制造，不seed假ONLINE/假Room。DEV seed具名授权差量见附件§5：只给role-project加入新cap，role-group保留原cap/page且无远控权；正常操作选asg-multi-project，读取无写权选asg-multi-group的同项目可见scope。独立acceptance/L2 fixture另用remote-readonly/remote-controller测试role和不同account，不能把无任职account当只读者；边界在fixture而非更改整个DEV组织状态。
+三态fixture只使用实际可产生的事实：NOT_ACTIVATED为未激活或已取消的终端；OFFLINE为有效ACTIVE binding但尚未建连，或TDS已写入断开；ONLINE必须通过真实激活与TDS ready形成未断开的latest_state。SQL读取失败是读取失败/503，不伪装成第四种连接状态；不造连接表不存在的device/generation字段。列表取三态不削弱start/claim/register/renew对各自绑定与固定TDP目标的再次核验。
 ### 10b.4 同步
 seed static test验证新能力属于PROJECTscope及同源catalog；完整dry-run后父报告计数和首败原因同步。不得把不存在的新session业务种子凑成COUNTS。
 ### 10b.5 边界
@@ -264,7 +266,7 @@ owner-command seed使用现有受管workspace会话/权限写入，凭据取既�
 ## 12. 未决项与冻结界限
 | 项 | 状态 | 本批文档允许 | 实施前禁止/关闭目标 |
 | --- | --- | --- | --- |
-| 看图 | UNSET | 完整草案/线框提交Dexter | 未确认不冻结UI实现 |
+| 看图 | ACCEPTED@2026-10-10 | Dexter已确认三个交互面线框 | 只确认交互设计，真实UI与媒体/触摸行为仍NOT_RUN |
 | 阶段C最终出口 | OPEN | 当前source导航 | 重开最终credential/TDC/topology/driver，不能继承中间字节 |
 | T01 SDK/bridge/JVM | OPEN | 精确候选与官方source导航 | 实际解析、public frame桥及双track证明后冻结port供应商实现 |
 | T02持续捕获/覆盖 | OPEN | Window与普通控件分母 | 首帧不能代替持续两屏/native释放 |
@@ -285,4 +287,4 @@ owner-command seed使用现有受管workspace会话/权限写入，凭据取既�
 ## 14. 交付检查
 六文档逐事实一致，protocol/root/peer边界不越owner，三UI面均具模板字段；独立DESIGN最多两轮，本轮范围是新设计包不是重开需求cycle。GO_WITH_UNVERIFIED_UI只描述静态可接受＋明确OPEN，不承诺技术/运行PASS。
 
-最终作者处置与字节边界见 doc/review/platform/2026-10-10-ter-remote-control-design-review-intake-r2-codex.md。内部R2原始NO-GO保留，后来修订不继承独立verdict；本包仍是技术前置OPEN/看图UNSET的外部评审草案。
+最终作者处置与字节边界见 doc/review/platform/2026-10-10-ter-remote-control-design-review-intake-r2-codex.md。内部R2原始NO-GO保留，后来修订不继承独立verdict；本包仍是技术前置OPEN/线框已确认的外部评审草案。

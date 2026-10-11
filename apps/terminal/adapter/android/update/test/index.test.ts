@@ -113,7 +113,10 @@ describe('createAndroidUpdatePort', () => {
       trigger: 'user-confirm',
     });
     expect(native.presentInstallerConfirmation).toHaveBeenCalledWith(
-      'task-1', 'action-1', 'publication-2', 'user-confirm',
+      'task-1',
+      'action-1',
+      'publication-2',
+      'user-confirm',
     );
 
     native.confirmBoot.mockResolvedValue({confirmed: true});

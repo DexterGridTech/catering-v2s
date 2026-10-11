@@ -36,7 +36,6 @@ describe('sample-console package surface', () => {
       'ui.base.input',
       'ui.base.integration-assembly',
       'ui.base.render',
-      'ui.base.server-config-panel',
       'ui.base.terminal-activation',
       'ui.feature.sample-member-desk',
       'ui.feature.sample-staff-auth',

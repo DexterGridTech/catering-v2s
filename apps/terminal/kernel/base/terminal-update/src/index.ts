@@ -18,10 +18,9 @@ export {
   selectTerminalUpdateRecentStatus,
   selectTerminalUpdateTask,
   selectTerminalUpdateInvitation,
+  selectTerminalUpdateReportDelivery,
 } from './selectors/selectors';
-export type {
-  TerminalUpdateInstallDecision,
-} from './features/commands/commands';
+export type {TerminalUpdateInstallDecision} from './features/commands/commands';
 export type {
   FixedUpdateTarget,
   RequestTerminalUpdatePayload,

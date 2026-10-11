@@ -15,6 +15,11 @@ export type ManagedReverseLifecycle = Readonly<{
   readonly onAttached?: (mapping: Readonly<{readonly remote: string; readonly local: string}>) => void;
   readonly onReleased?: (mapping: Readonly<{readonly remote: string; readonly local: string}>) => void;
 }>;
+export type ManagedHostForward = Readonly<{readonly local: string; readonly remote: string}>;
+export type ManagedHostForwardLifecycle = Readonly<{
+  readonly onAttached?: (mapping: ManagedHostForward) => void;
+  readonly onReleased?: (mapping: ManagedHostForward) => void;
+}>;
 export type ManagedDevServiceUrls = Readonly<{
   readonly businessBaseUrl: string;
   readonly tdsEntryOneUrl: string;
@@ -77,6 +82,10 @@ export type AndroidDeviceSession = Readonly<{
   readonly attachManagedServicePorts: (
     ports: readonly ManagedServiceReverse[],
     lifecycle?: ManagedReverseLifecycle,
+  ) => Promise<() => Promise<void>>;
+  readonly attachTopologyHostForward: (
+    port: number,
+    lifecycle?: ManagedHostForwardLifecycle,
   ) => Promise<() => Promise<void>>;
 }>;
 
@@ -149,7 +158,7 @@ const listDeviceReverses = async (device: DeviceClient): Promise<readonly Revers
 
 const validateManagedServicePorts = (ports: readonly ManagedServiceReverse[]): void => {
   if (
-    ports.length !== 3 ||
+    (ports.length !== 1 && ports.length !== 3) ||
     ports.some(
       value =>
         !Number.isSafeInteger(value.remotePort) ||
@@ -165,6 +174,29 @@ const validateManagedServicePorts = (ports: readonly ManagedServiceReverse[]): v
   ) {
     fail('TERMINAL_AUTOMATION_ANDROID_MANAGED_PORTS_INVALID');
   }
+};
+
+type HostForwardEntry = Readonly<{readonly serial: string; readonly local: string; readonly remote: string}>;
+
+export const parseAndroidHostForwardList = (output: string): readonly HostForwardEntry[] => {
+  const result: HostForwardEntry[] = [];
+  for (const line of output.split(/\r?\n/u)) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const parts = trimmed.split(/\s+/u);
+    const port = (value: string | undefined): boolean =>
+      value !== undefined && /^tcp:[1-9][0-9]{0,4}$/u.test(value) && Number(value.slice(4)) <= 65_535;
+    if (
+      parts.length !== 3 ||
+      !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/u.test(parts[0] ?? '') ||
+      !port(parts[1]) ||
+      !port(parts[2])
+    ) {
+      fail('TERMINAL_AUTOMATION_ANDROID_FORWARD_LIST_INVALID');
+    }
+    result.push(Object.freeze({serial: parts[0]!, local: parts[1]!, remote: parts[2]!}));
+  }
+  return Object.freeze(result);
 };
 
 const runAdbArgs = async (
@@ -522,6 +554,73 @@ export const createAndroidDeviceSession = async (
         }
         if (error instanceof Error && error.message.startsWith('TERMINAL_AUTOMATION_')) throw error;
         fail('TERMINAL_AUTOMATION_ANDROID_MANAGED_REVERSE_CREATE_FAILED');
+      }
+      let released = false;
+      return async () => {
+        if (released) return;
+        await releaseOwned(true);
+        released = true;
+      };
+    },
+    attachTopologyHostForward: async (port, lifecycle) => {
+      if (!Number.isSafeInteger(port) || port < 1 || port > 65_535) {
+        fail('TERMINAL_AUTOMATION_ANDROID_HOST_FORWARD_PORT_INVALID');
+      }
+      const mapping = Object.freeze({local: `tcp:${port}`, remote: `tcp:${port}`});
+      const list = async (): Promise<readonly HostForwardEntry[]> =>
+        parseAndroidHostForwardList(await runTextCommand(input.adbPath, ['forward', '--list']));
+      const before = await list();
+      if (before.some(entry => entry.local === mapping.local)) {
+        fail('TERMINAL_AUTOMATION_ANDROID_HOST_FORWARD_PORT_OCCUPIED');
+      }
+      let created = false;
+      const releaseOwned = async (strict: boolean): Promise<void> => {
+        const current = await list();
+        const localEntries = current.filter(entry => entry.local === mapping.local);
+        if (localEntries.length === 0) return;
+        if (
+          localEntries.length !== 1 ||
+          localEntries[0]?.serial !== input.serial ||
+          localEntries[0]?.remote !== mapping.remote
+        ) {
+          if (strict) fail('TERMINAL_AUTOMATION_ANDROID_HOST_FORWARD_OWNERSHIP_CHANGED');
+          return;
+        }
+        await runCommand(
+          input.adbPath,
+          ['-s', input.serial, 'forward', '--remove', mapping.local],
+          'TERMINAL_AUTOMATION_ANDROID_HOST_FORWARD_REMOVE_FAILED',
+        );
+        if ((await list()).some(entry => entry.local === mapping.local)) {
+          if (strict) fail('TERMINAL_AUTOMATION_ANDROID_HOST_FORWARD_CLEANUP_READBACK_FAILED');
+          return;
+        }
+        lifecycle?.onReleased?.(mapping);
+      };
+      try {
+        await runCommand(
+          input.adbPath,
+          ['-s', input.serial, 'forward', '--no-rebind', mapping.local, mapping.remote],
+          'TERMINAL_AUTOMATION_ANDROID_HOST_FORWARD_CREATE_FAILED',
+        );
+        created = true;
+        lifecycle?.onAttached?.(mapping);
+        const after = await list();
+        const exact = after.filter(
+          entry => entry.serial === input.serial && entry.local === mapping.local && entry.remote === mapping.remote,
+        );
+        if (exact.length !== 1 || after.filter(entry => entry.local === mapping.local).length !== 1) {
+          fail('TERMINAL_AUTOMATION_ANDROID_HOST_FORWARD_READBACK_MISMATCH');
+        }
+      } catch (setupError) {
+        if (created) {
+          try {
+            await releaseOwned(true);
+          } catch {
+            fail('TERMINAL_AUTOMATION_DEVICE_CLEANUP_FAILED:ANDROID_HOST_FORWARD_ACQUISITION');
+          }
+        }
+        throw setupError;
       }
       let released = false;
       return async () => {

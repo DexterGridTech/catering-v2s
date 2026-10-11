@@ -68,7 +68,7 @@ N/A_WITH_REASON：本机邀请没有搜索、候选、total 或列表；不得�
 | owner / surface | 唯一责任 |
 | --- | --- |
 | kernel/base/terminal-update | due/固定任务/策略/本机版本，决定邀请资格，confirm/defer 命令核身份 |
-| ui/base/terminal-update-presentation | 单纯 selector→组件＋两个 local command，无 timer/HTTP/native 调用 |
+| ui/base/admin-shell | 复用现有共享管理呈现包；安装提醒只读 terminal-update selector、调用两个 local command，无 timer/HTTP/native 调用。服务配置面板也归入该包，不另建小包 |
 | ui-state/render | 既有 alert layer/ephemeral 生命周期、local-primary scope、PRIMARY 布局和 admin 优先；零更新业务判断 |
 | Android UpdatePort | 技术可呈现/精确确认恢复，不选规则、不计 N |
 | automation driver | React 真实节点走 agent；系统 installer/设置仅已批准非 React 窄例外 |
@@ -124,7 +124,7 @@ Dexter 2026-10-10 追加的数据归属不改变已确认可见交互：project-
 
 confirm/defer 的输入均为 taskId＋当前 actionId|null＋bootId；owner 原子核对本机当前 task 与邀请资格，旧点击零 native。
 
-owner 决定是否 due 与 stage；ui/base/terminal-update-presentation 仅 selector→呈现/command，无规则排序、HTTP、timer、native 调用或另一个 task state。render 只承载 local layer。应用成功仍由 A 实际安装/boot/publication 确认，B 主机 HTTP 报告。
+owner 决定是否 due 与 stage；ui/base/admin-shell 中的安装提醒仅 selector→呈现/command，无规则排序、HTTP、timer、native 调用或另一个 task state。服务配置面板在同一包中复用 admin section。render 只承载 local layer。应用成功仍由 A 实际安装/boot/publication 确认，B 主机 HTTP 报告。
 
 ## 8. B4/B5 与跨层引用
 

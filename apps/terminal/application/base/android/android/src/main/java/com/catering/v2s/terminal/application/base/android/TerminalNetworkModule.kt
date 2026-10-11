@@ -18,10 +18,16 @@ import okhttp3.Credentials
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
+
+internal fun createTerminalHttpRequestBody(method: String, bodyText: String?): RequestBody? {
+  if (bodyText != null) return bodyText.toRequestBody("application/json; charset=utf-8".toMediaType())
+  return if (method.equals("POST", ignoreCase = true)) ByteArray(0).toRequestBody() else null
+}
 
 /** Android's owner-injected HTTP/WebSocket adapter. Business protocol stays in terminal-data-client. */
 class TerminalNetworkModule : Module() {
@@ -40,7 +46,7 @@ class TerminalNetworkModule : Module() {
       timeoutMs: Double,
       proxy: ReadableMap? ->
       val client = client(timeoutMs.toLong(), proxy)
-      val requestBody = bodyText?.toRequestBody(JSON_MEDIA_TYPE)
+      val requestBody = createTerminalHttpRequestBody(method, bodyText)
       val builder = Request.Builder().url(url)
       headers.keySetIterator().let { iterator ->
         while (iterator.hasNextKey()) {
@@ -195,6 +201,5 @@ class TerminalNetworkModule : Module() {
   private companion object {
     const val SOCKET_EVENT = "onSocketEvent"
     const val MAX_RESPONSE_BYTES = 65_536
-    val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
   }
 }

@@ -23,7 +23,8 @@ public interface TerminalUpdateAssetStorage {
             String expectedSha256,
             long declaredSizeBytes,
             InputStream content,
-            String idempotencyKey);
+            String idempotencyKey,
+            String requestId);
 
     PackageContent openTerminalUpdatePackage(
             UUID workspaceUuid, String groupWorkspaceKey, UUID assetRef, boolean requireStaged);

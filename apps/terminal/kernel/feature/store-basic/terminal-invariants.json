@@ -21,11 +21,16 @@
     "selectServicePoints",
     "selectStore",
     "selectStoreBasicBinding",
+    "selectStoreBasicLoadReadiness",
     "selectStoreBasicState",
     "selectStoreBasicTopicState",
     "selectStoreOperatingRules",
     "storeBasicInformationLoadedCommand",
-    "storeBasicSliceName"
+    "storeBasicSliceName",
+    "StoreBasicBinding",
+    "StoreBasicState",
+    "StoreFact",
+    "StoreReadState"
   ],
   "tr01Exceptions": [
     {

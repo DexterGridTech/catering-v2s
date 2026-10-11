@@ -30,11 +30,26 @@ import {
   type TransportManagedConnection,
   type TransportNetworkAdapter,
 } from '@catering-v2s/kernel-base-transport';
+import {
+  completeTopologySlaveUnpairStateClearCommand,
+  moduleName as topologyModuleName,
+  requestTopologySlaveUnpairStateClearCommand,
+} from '@catering-v2s/kernel-base-topology';
 
 const toolkit = (name: string, dependencies: readonly string[]): RuntimeModule => ({
   moduleName: name,
   kind: 'toolkit',
   dependencies: dependencies.map(moduleName => ({moduleName})),
+});
+
+const topologyCommandModule: RuntimeModule = Object.freeze({
+  moduleName: topologyModuleName,
+  kind: 'owner',
+  dependencies: [{moduleName: 'kernel.base.runtime'}, {moduleName: 'kernel.base.transport'}],
+  commands: [requestTopologySlaveUnpairStateClearCommand, completeTopologySlaveUnpairStateClearCommand].map(
+    definition => ({name: definition.commandName, visibility: definition.visibility}),
+  ),
+  commandDefinitions: [requestTopologySlaveUnpairStateClearCommand, completeTopologySlaveUnpairStateClearCommand],
 });
 
 const createComposition = (
@@ -94,6 +109,7 @@ const createComposition = (
     toolkit(platformPortsModuleName, [contractsModuleName]),
     toolkit(stateModuleName, [contractsModuleName, platformPortsModuleName]),
     transportModule,
+    topologyCommandModule,
     terminalDataClientModule,
   ];
   const platformPorts = createPlatformPorts({
@@ -192,10 +208,14 @@ describe('terminal-data-client runtime startup', () => {
         expect(selectConnectionState(restored.runtime.getState()).status).toBe('awaiting-ready');
         expect(selectActivationState(restored.runtime.getState()).status).toBe('active');
         expect(restored.getBusinessRequestAttempts()).toBe(0);
-        await restored.runtime.dispatchCommand(readTerminalDataCommand, {
-          operationId: 'terminalReadStoreBasic',
-          pathParameters: {storeRef: '00000000-0000-4000-8000-000000000002'},
-        }, {requestId: createRequestId()});
+        await restored.runtime.dispatchCommand(
+          readTerminalDataCommand,
+          {
+            operationId: 'terminalReadStoreBasic',
+            pathParameters: {storeRef: '00000000-0000-4000-8000-000000000002'},
+          },
+          {requestId: createRequestId()},
+        );
         expect(restored.getBusinessRequestAttempts()).toBe(1);
       } finally {
         if (restoredStarted) await releaseRuntimeForTestAsync(restored.runtime);

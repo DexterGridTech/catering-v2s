@@ -54,7 +54,19 @@ export const selectStoreBasicLoadReadiness = defineStateSelector(moduleName, 'se
 });
 export const selectStoreBasicTopicState = defineStateSelector(moduleName, 'selectStoreBasicTopicState', {
   parameters: [
-    {kind: 'enum', values: ['STORE', 'STORE_OPERATING_RULE', 'VALID_CONTRACT_COLLECTION', 'CONTRACT', 'SERVICE_POINT_AREA_COLLECTION', 'SERVICE_POINT_AREA', 'SERVICE_POINT_COLLECTION', 'SERVICE_POINT']},
+    {
+      kind: 'enum',
+      values: [
+        'STORE',
+        'STORE_OPERATING_RULE',
+        'VALID_CONTRACT_COLLECTION',
+        'CONTRACT',
+        'SERVICE_POINT_AREA_COLLECTION',
+        'SERVICE_POINT_AREA',
+        'SERVICE_POINT_COLLECTION',
+        'SERVICE_POINT',
+      ],
+    },
   ],
   selector: selectStoreBasicTopicStateImplementation,
 });

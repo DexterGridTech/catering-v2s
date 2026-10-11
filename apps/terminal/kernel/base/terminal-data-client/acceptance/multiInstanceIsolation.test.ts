@@ -31,6 +31,11 @@ import {
   type TransportManagedConnection,
   type TransportNetworkAdapter,
 } from '@catering-v2s/kernel-base-transport';
+import {
+  completeTopologySlaveUnpairStateClearCommand,
+  moduleName as topologyModuleName,
+  requestTopologySlaveUnpairStateClearCommand,
+} from '@catering-v2s/kernel-base-topology';
 
 type WireSocket = TransportManagedConnection &
   Readonly<{
@@ -68,6 +73,16 @@ const toolkit = (name: string, dependencies: readonly string[]): RuntimeModule =
   moduleName: name,
   kind: 'toolkit',
   dependencies: dependencies.map(moduleName => ({moduleName})),
+});
+
+const topologyCommandModule: RuntimeModule = Object.freeze({
+  moduleName: topologyModuleName,
+  kind: 'owner',
+  dependencies: [{moduleName: 'kernel.base.runtime'}, {moduleName: 'kernel.base.transport'}],
+  commands: [requestTopologySlaveUnpairStateClearCommand, completeTopologySlaveUnpairStateClearCommand].map(
+    definition => ({name: definition.commandName, visibility: definition.visibility}),
+  ),
+  commandDefinitions: [requestTopologySlaveUnpairStateClearCommand, completeTopologySlaveUnpairStateClearCommand],
 });
 
 const createComposition = (
@@ -131,6 +146,7 @@ const createComposition = (
     toolkit(platformPortsModuleName, [contractsModuleName]),
     toolkit(stateModuleName, [contractsModuleName, platformPortsModuleName]),
     transportModule,
+    topologyCommandModule,
     terminalClientModule,
   ];
   const platformPorts = createPlatformPorts({

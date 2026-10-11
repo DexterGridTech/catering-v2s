@@ -1,7 +1,7 @@
 export {moduleName} from './moduleName';
 export {renderTestIds} from './foundations/renderTestIds';
 export {dependencyModuleNames, devDependencyModuleNames} from './dependencies';
-export type {LayerGuard, LayerTier, RendererBinding, RendererCatalog} from './types/catalog';
+export type {LayerGuard, LayerTier, RendererBinding, RendererCatalog, RendererPlacementScope} from './types/catalog';
 export type {
   ContentFailureReason,
   RenderRouteContextFactory,

@@ -13,7 +13,6 @@ import {
   disconnectTerminalCommand,
   initializeTerminalDataClientCommand,
   reconcileTerminalCredentialReadinessCommand,
-  clearSharedTerminalCredentialCommand,
   refreshTerminalClientStatusProjectionCommand,
   readTerminalDataCommand,
   requestTerminalUpdateDownloadGrantCommand,
@@ -61,7 +60,6 @@ export const createTerminalDataClientModule = (dependencies: TerminalDataClientD
     terminalTopicChangedCommand,
     initializeTerminalDataClientCommand,
     reconcileTerminalCredentialReadinessCommand,
-    clearSharedTerminalCredentialCommand,
     refreshTerminalClientStatusProjectionCommand,
     terminalTransportEventCommand,
     terminalHeartbeatTickCommand,
@@ -114,7 +112,12 @@ export const createTerminalDataClientModule = (dependencies: TerminalDataClientD
                 : 'unavailable';
             if (result.status !== 'completed' || (resultStatus !== 'ready' && resultStatus !== 'inactive')) {
               context.platformPorts.logger
-                .scope({moduleName, layer: 'kernel', subsystem: 'terminal-data-client', component: 'credential-readiness'})
+                .scope({
+                  moduleName,
+                  layer: 'kernel',
+                  subsystem: 'terminal-data-client',
+                  component: 'credential-readiness',
+                })
                 .error({
                   category: 'terminal.credential.readiness',
                   event: 'credential-readiness-reconcile-failed',

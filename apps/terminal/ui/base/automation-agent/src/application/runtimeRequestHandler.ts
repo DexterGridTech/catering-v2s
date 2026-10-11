@@ -237,13 +237,15 @@ export const createRuntimeRequestHandler = (
     sessionId: string;
     context: RuntimeModuleContext;
     deviceIdentity?: Readonly<{available: boolean; deviceId: string | null}>;
-    onSelectorFailure?: (diagnostic: Readonly<{
-      selectorName: string;
-      failureCode: string;
-      phase: SelectorFailurePhase;
-      elapsedMs: number;
-      budgetMs: number;
-    }>) => void;
+    onSelectorFailure?: (
+      diagnostic: Readonly<{
+        selectorName: string;
+        failureCode: string;
+        phase: SelectorFailurePhase;
+        elapsedMs: number;
+        budgetMs: number;
+      }>,
+    ) => void;
   }>,
 ) => {
   const selectorSubscriptions = new Map<string, SelectorSubscription>();
@@ -423,8 +425,7 @@ export const createRuntimeRequestHandler = (
                   : 'SELECTOR_EVALUATION_FAILED';
       const diagnosticSelectorName = /^[A-Za-z0-9_.:-]{1,160}$/u.test(name) ? name : 'INVALID_SELECTOR_NAME';
       const diagnosticPhase = error instanceof SelectorBudgetFailure ? error.phase : 'evaluate';
-      const elapsedMs =
-        error instanceof SelectorBudgetFailure ? error.elapsedMs : performance.now() - startedAt;
+      const elapsedMs = error instanceof SelectorBudgetFailure ? error.elapsedMs : performance.now() - startedAt;
       try {
         input.onSelectorFailure?.({
           selectorName: diagnosticSelectorName,

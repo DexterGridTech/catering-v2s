@@ -3,10 +3,12 @@ import {Pressable, Text, View} from 'react-native';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {act, render} from '@testing-library/react-native';
 import type {TransportServerConfig} from '@catering-v2s/kernel-base-contracts';
-import type {AdminSectionProps} from '@catering-v2s/ui-base-admin-shell';
+import type {AdminSectionProps} from '../src/types/adminSection';
 import {setServerOverrideCommand} from '@catering-v2s/kernel-base-server-config';
-import {serverConfigPanelTestIds as testIds} from '../src/components/serverConfigPanelTestIds';
-import {ServerConfigPanel} from '../src/components/ServerConfigPanel';
+import {adminTestIds} from '../src/foundations/adminTestIds';
+import {ServerConfigPanel} from '../src/components/serverConfig/ServerConfigPanel';
+
+const testIds = adminTestIds.serverConfig;
 
 const mockRuntime = vi.hoisted(() => ({
   instanceMode: 'MASTER' as 'MASTER' | 'SLAVE',
@@ -19,8 +21,6 @@ vi.mock('@catering-v2s/ui-base-render', () => ({
   useUiStateSelector: (selector: (state: Record<string, unknown>) => unknown) => selector(mockRuntime.state),
   useTrackedCommand: () => ({requestInFlight: false, run: mockRuntime.commandRun}),
 }));
-
-vi.mock('@catering-v2s/ui-base-admin-shell', () => ({ADMIN_CONSOLE_FOCUS_SCOPE_ID: 'admin.console'}));
 
 vi.mock('@catering-v2s/ui-base-input', async () => {
   const ReactNative = await import('react-native');

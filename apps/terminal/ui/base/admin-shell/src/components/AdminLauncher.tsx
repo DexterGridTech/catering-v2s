@@ -22,6 +22,7 @@ import {
   type AdminGestureState,
 } from '../foundations/adminLauncher';
 import {adminTestIds} from '../foundations/adminTestIds';
+import {InstallReminderController} from './InstallReminderController';
 
 const coordinateSpaceOf = (
   windowMeasurement: Readonly<{
@@ -410,6 +411,7 @@ export const AdminLauncher = ({canvas, children}: AdminLauncherProps) => {
       {...launcherEventProps}
     >
       {children}
+      <InstallReminderController />
     </View>
   );
 };

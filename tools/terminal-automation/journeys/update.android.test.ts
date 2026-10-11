@@ -7,11 +7,16 @@ import {
   type Server as HttpServer,
 } from 'node:http';
 import {createServer as createNetServer, type Server as NetServer} from 'node:net';
-import {closeSync, copyFileSync, createReadStream, openSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
+import {closeSync, copyFileSync, createReadStream, mkdirSync, openSync, readFileSync, rmSync, statSync, writeFileSync} from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {afterAll, beforeAll, expect, it} from 'vitest';
 import type {Client} from '@devicefarmer/adbkit';
+import {topologyTransportConfig, type CommandRouteContext} from '@catering-v2s/kernel-base-contracts';
+import {serverConfigSliceName} from '@catering-v2s/kernel-base-server-config';
+import {pairByHostTopologyCommand, setTopologyHostEnabledCommand} from '@catering-v2s/kernel-base-topology';
+import {projectBasicSliceName} from '@catering-v2s/kernel-feature-project-basic';
+import {storeBasicSliceName} from '@catering-v2s/kernel-feature-store-basic';
 import type {TerminalUpdateArtifact} from '@catering-v2s/kernel-base-platform-ports';
 import {
   androidAutomationBuildIdentity,
@@ -51,7 +56,10 @@ const selectedSample = process.env.TERMINAL_AUTOMATION_SAMPLE ?? 'console';
 const sample = terminalUpdateSampleConfig(selectedSample);
 const appName = selectedSample === 'console' ? 'sample-terminal' : 'sample-wallpaper-terminal';
 const updateCase = process.env.TERMINAL_AUTOMATION_CASE;
-const isSupplyChainCase = updateCase === 'update.supply-chain';
+const isPairCase = updateCase === 'update.pair';
+const isSupplyChainCase = updateCase === 'update.supply-chain' || isPairCase;
+const projectTerminalUpdateCandidateSelector = 'kernel.feature.project-basic.selectProjectTerminalUpdateCandidate';
+const projectOrganizationPathSelector = 'kernel.feature.project-basic.selectProjectOrganizationPath';
 const adbPath = process.env.ADB_PATH || 'adb';
 const installerPackagePrefixes = ['com.android.packageinstaller', 'com.google.android.packageinstaller'] as const;
 const settingsPackagePrefixes = ['com.android.settings'] as const;
@@ -107,11 +115,15 @@ const sha256File = async (filePath: string): Promise<string> => {
   return digest.digest('hex');
 };
 
-const extractCompatibilityFullApk = async (
-  input: Readonly<{artifact: ArtifactManifest; packageManifestName: string}>,
+const extractFullPackageApk = async (
+  input: Readonly<{
+    artifact: ArtifactManifest;
+    packageManifestName: string;
+    zipName: string;
+    outputName: string;
+  }>,
 ) => {
-  if (!runDirectory || input.artifact.apk === undefined)
-    throw new Error('TERMINAL_AUTOMATION_COMPATIBILITY_EXTERNAL_APK_INVALID');
+  if (!runDirectory || input.artifact.apk === undefined) throw new Error('TERMINAL_AUTOMATION_FULL_PACKAGE_APK_INVALID');
   const outputRoot = path.join(runDirectory, 'update', appName);
   const packageManifest = JSON.parse(readFileSync(path.join(outputRoot, input.packageManifestName), 'utf8')) as {
     schemaVersion: number;
@@ -119,26 +131,26 @@ const extractCompatibilityFullApk = async (
     zip: Readonly<{path: string; sha256: string}>;
     apk: Readonly<{path: string; sha256: string}>;
   };
-  const zipName = `${appName}-compat-external-full.zip`;
   if (
     packageManifest.schemaVersion !== 1 ||
     packageManifest.publicationId !== input.artifact.publicationId ||
-    packageManifest.zip.path !== zipName ||
+    packageManifest.zip.path !== input.zipName ||
     packageManifest.apk.path !== `${appName}.apk` ||
     packageManifest.apk.sha256 !== input.artifact.apk.sha256 ||
     !/^[a-f0-9]{64}$/u.test(packageManifest.zip.sha256) ||
     !/^[a-f0-9]{64}$/u.test(packageManifest.apk.sha256)
-  )
-    throw new Error('TERMINAL_AUTOMATION_COMPATIBILITY_EXTERNAL_PACKAGE_IDENTITY_INVALID');
+  ) throw new Error('TERMINAL_AUTOMATION_FULL_PACKAGE_IDENTITY_INVALID');
 
-  const zipPath = path.join(outputRoot, zipName);
+  const zipPath = path.join(outputRoot, input.zipName);
   if ((await sha256File(zipPath)) !== packageManifest.zip.sha256)
-    throw new Error('TERMINAL_AUTOMATION_COMPATIBILITY_EXTERNAL_ZIP_DIGEST_MISMATCH');
+    throw new Error('TERMINAL_AUTOMATION_FULL_PACKAGE_ZIP_DIGEST_MISMATCH');
   const listing = spawnSync('unzip', ['-Z1', zipPath], {encoding: 'utf8', maxBuffer: 1024 * 1024});
   if (listing.error || listing.status !== 0 || listing.stdout.trim() !== packageManifest.apk.path)
-    throw new Error('TERMINAL_AUTOMATION_COMPATIBILITY_EXTERNAL_ZIP_ENTRY_MISMATCH');
+    throw new Error('TERMINAL_AUTOMATION_FULL_PACKAGE_ZIP_ENTRY_MISMATCH');
 
-  const apkPath = path.join(outputRoot, `${appName}-compat-external.apk`);
+  const stagingRoot = path.join(outputRoot, 'full-staging');
+  mkdirSync(stagingRoot, {recursive: true, mode: 0o700});
+  const apkPath = path.join(stagingRoot, input.outputName);
   const outputDescriptor = openSync(apkPath, 'w', 0o600);
   let extraction;
   try {
@@ -152,8 +164,11 @@ const extractCompatibilityFullApk = async (
   }
   if (extraction.error || extraction.status !== 0 || (await sha256File(apkPath)) !== packageManifest.apk.sha256) {
     rmSync(apkPath, {force: true});
-    throw new Error('TERMINAL_AUTOMATION_COMPATIBILITY_EXTERNAL_APK_DIGEST_MISMATCH');
+    throw new Error('TERMINAL_AUTOMATION_FULL_PACKAGE_APK_DIGEST_MISMATCH');
   }
+  process.stdout.write(
+    `TERMINAL_AUTOMATION_FULL_PACKAGE_EXTRACTED run=${runId} app=${appName} source=${input.zipName} output=${input.outputName} bytes=${statSync(apkPath).size} apkSha256=${packageManifest.apk.sha256}\n`,
+  );
   return apkPath;
 };
 const createStaffLoginPort = (
@@ -375,10 +390,13 @@ const closeServer = async (server: HttpServer | NetServer | undefined): Promise<
 
 let adb: Client | undefined;
 let connection: AndroidAutomationConnection | undefined;
+let peerConnection: AndroidAutomationConnection | undefined;
 let androidNativeArchitecture: string | undefined;
 let packageId: string | undefined;
 let packageWasAbsent = false;
 let installAttempted = false;
+let peerPackageWasAbsent = false;
+let peerInstallAttempted = false;
 let httpServer: HttpServer | undefined;
 let tdsOneSink: NetServer | undefined;
 let tdsTwoSink: NetServer | undefined;
@@ -393,6 +411,9 @@ let hotSourceResponseGate: Promise<void> | undefined;
 let releaseHotSourceResponse: (() => void) | undefined;
 let initialSessionId: string | null = null;
 let initialDeviceId: string | null = null;
+let peerSessionId: string | null = null;
+let peerInitialSession: Awaited<ReturnType<typeof waitForAutomationSession>> | null = null;
+let peerDeviceId: string | null = null;
 let compatibilityTargetDocument:
   Readonly<{target: UpdateTarget; sourcePaths: Readonly<Record<string, string>>}> | undefined;
 const updatePayloadPaths = new Map<
@@ -510,7 +531,7 @@ const writeAndroidFailureDiagnostics = async (
     readonly connection: AndroidAutomationConnection;
     readonly packageId: string;
     readonly runId: string;
-    readonly boundary: 'full-session' | 'hot-session';
+    readonly boundary: 'full-session' | 'hot-session' | 'pair-peer-report-readback';
     readonly expectedSessionId?: string;
   }>,
 ): Promise<void> => {
@@ -632,6 +653,53 @@ const waitForCommandResult = (
       rejectResult(new Error('TERMINAL_AUTOMATION_UPDATE_COMMAND_RESULT_CANCELLED'));
     },
   });
+};
+
+const dispatchManagedCommand = async (
+  input: Readonly<{
+    readonly driver: AndroidAutomationConnection['driver'];
+    readonly sessionId: string;
+    readonly commandName: string;
+    readonly payload: unknown;
+    readonly role: 'PAIR_MASTER' | 'PAIR_SLAVE';
+    readonly routeContext?: CommandRouteContext;
+  }>,
+): Promise<Readonly<{readonly requestId: string; readonly result: unknown}>> => {
+  if (!runId) throw new Error('TERMINAL_AUTOMATION_RUN_ID_REQUIRED');
+  const requestId = `req_${Date.now().toString(36)}_${randomUUID().replaceAll('-', '').slice(0, 16)}`;
+  const startedAt = Date.now();
+  const completion = waitForCommandResult(input.driver, input.sessionId, requestId, 90_000);
+  void completion.promise.catch(() => undefined);
+  process.stdout.write(
+    `TERMINAL_AUTOMATION_PAIR_COMMAND_BEGIN run=${runId} role=${input.role} request=${requestId} command=${input.commandName}\n`,
+  );
+  try {
+    const accepted = responseResult(
+      await input.driver.request(input.sessionId, 'command.dispatch', {
+        commandName: input.commandName,
+        payload: input.payload,
+        requestId,
+        ...(input.routeContext === undefined ? {} : {routeContext: input.routeContext}),
+      }),
+    );
+    if (!isRecord(accepted) || accepted.requestId !== requestId || accepted.accepted !== true)
+      throw new Error('TERMINAL_AUTOMATION_PAIR_COMMAND_NOT_ACCEPTED');
+    const completionEvent = await completion.promise;
+    const result = isRecord(completionEvent.result) ? completionEvent.result : undefined;
+    const actor = result && Array.isArray(result.actorResults) ? result.actorResults[0] : undefined;
+    process.stdout.write(
+      `TERMINAL_AUTOMATION_PAIR_COMMAND_RESULT run=${runId} role=${input.role} request=${requestId} command=${input.commandName} status=${typeof result?.status === 'string' ? result.status : 'invalid'} actorStatus=${isRecord(actor) && typeof actor.status === 'string' ? actor.status : 'unknown'} elapsedMs=${Math.max(0, Date.now() - startedAt)}\n`,
+    );
+    if (!result || result.status !== 'completed' || !isRecord(actor) || !('result' in actor))
+      throw new Error('TERMINAL_AUTOMATION_PAIR_COMMAND_RESULT_INVALID');
+    return Object.freeze({requestId, result: actor.result});
+  } catch (error) {
+    completion.cancel();
+    process.stdout.write(
+      `TERMINAL_AUTOMATION_PAIR_COMMAND_FAILED run=${runId} role=${input.role} request=${requestId} command=${input.commandName} elapsedMs=${Math.max(0, Date.now() - startedAt)}\n`,
+    );
+    throw error;
+  }
 };
 
 const waitForWallpaperAssets = async (
@@ -760,7 +828,7 @@ const buildArtifact = (
 ): void => {
   if (!runId || !packageId || !httpServer) throw new Error('TERMINAL_AUTOMATION_UPDATE_BUILD_CONTEXT_MISSING');
   const shape = parseMainSampleShape(process.env.TERMINAL_AUTOMATION_SHAPE);
-  const surfaceForm = mainSampleSurfaceForm(shape);
+  const surfaceForm = isPairCase ? 'laptop' : mainSampleSurfaceForm(shape);
   const address = httpServer.address();
   if (!address || typeof address === 'string') throw new Error('TERMINAL_AUTOMATION_UPDATE_HTTP_ADDRESS_MISSING');
   const environment: NodeJS.ProcessEnv = {
@@ -778,7 +846,7 @@ const buildArtifact = (
     EXPO_PUBLIC_TER_MANAGED_TDS_ENTRY_ONE_WS_URL: 'ws://127.0.0.1:28180',
     EXPO_PUBLIC_TER_MANAGED_TDS_ENTRY_TWO_WS_URL: 'ws://127.0.0.1:28181',
   };
-  if (updateCase !== 'update.supply-chain') {
+  if (updateCase !== 'update.supply-chain' && !isPairCase) {
     environment.EXPO_PUBLIC_TER_AUTOMATION_UPDATE_TARGET_URL = 'http://127.0.0.1:28080/update-target';
     environment.EXPO_PUBLIC_TER_AUTOMATION_UPDATE_REVISION = kind;
   }
@@ -936,7 +1004,8 @@ beforeAll(
       updateCase !== 'update.interruption' &&
       updateCase !== 'update.compatibility' &&
       updateCase !== 'update.rollback' &&
-      updateCase !== 'update.supply-chain'
+      updateCase !== 'update.supply-chain' &&
+      !isPairCase
     )
       return;
     if (!runId || !runDirectory) throw new Error('TERMINAL_AUTOMATION_RUN_ID_REQUIRED');
@@ -944,6 +1013,8 @@ beforeAll(
       throw new Error('TERMINAL_AUTOMATION_SAMPLE_INVALID');
     const serial = process.env.TERMINAL_AUTOMATION_ANDROID_DEVICE_SERIAL;
     if (!serial) throw new Error('TERMINAL_AUTOMATION_ANDROID_DEVICE_SERIAL_REQUIRED');
+    const deviceShape = parseMainSampleShape(process.env.TERMINAL_AUTOMATION_SHAPE);
+    const fixtureShape = isPairCase ? 'dual' : deviceShape;
     const managedDevRunId = process.env.TERMINAL_AUTOMATION_MANAGED_DEV_RUN_ID;
     if (!managedDevRunId) throw new Error('TERMINAL_AUTOMATION_MANAGED_DEV_RUN_ID_REQUIRED');
     const identity = androidAutomationBuildIdentity(runId, selectedSample);
@@ -1051,7 +1122,7 @@ beforeAll(
       serial,
       repositoryRoot: root,
       adbPath,
-      shape: parseMainSampleShape(process.env.TERMINAL_AUTOMATION_SHAPE),
+      shape: deviceShape,
       token: sessionToken,
       managedServicePorts: [
         {remotePort: 28080, localPort: businessLocalPort},
@@ -1072,7 +1143,7 @@ beforeAll(
           },
         }),
     });
-    await prepareAndroidJourneySurface(connection, parseMainSampleShape(process.env.TERMINAL_AUTOMATION_SHAPE));
+    await prepareAndroidJourneySurface(connection, deviceShape);
     const apiLevel = await connection.readApiLevel();
     process.stdout.write(`TERMINAL_AUTOMATION_ANDROID_API_LEVEL run=${runId} serial=${serial} api=${apiLevel}\n`);
     if (apiLevel < 29) throw new Error('TERMINAL_AUTOMATION_ANDROID_API_LEVEL_BELOW_29');
@@ -1213,13 +1284,136 @@ beforeAll(
     initialDeviceId = await readApplicationDeviceId(connection.driver, initial.sessionId);
     try {
       await ensureMainSampleActivated(connection.fixtures, {
-        shape: parseMainSampleShape(process.env.TERMINAL_AUTOMATION_SHAPE),
+        shape: fixtureShape,
         deviceId: initialDeviceId,
         runId,
       });
     } catch (error) {
       await writeAndroidFailureDiagnostics({connection, packageId, runId, boundary: 'full-session'});
       throw error;
+    }
+    if (isPairCase) {
+      const peerSerial = process.env.TERMINAL_AUTOMATION_ANDROID_PEER_DEVICE_SERIAL;
+      if (!peerSerial || peerSerial === serial) throw new Error('TERMINAL_AUTOMATION_ANDROID_PEER_SERIAL_INVALID');
+      peerConnection = await createAndroidAutomationConnection({
+        client: adb,
+        serial: peerSerial,
+        repositoryRoot: root,
+        adbPath,
+        shape: deviceShape,
+        token: sessionToken,
+        managedServicePorts: [{remotePort: 28_080, localPort: businessLocalPort}],
+      });
+      await prepareAndroidJourneySurface(peerConnection, deviceShape);
+      const peerApiLevel = await peerConnection.readApiLevel();
+      const peerAbi = await peerConnection.readPrimaryAbi();
+      process.stdout.write(
+        `TERMINAL_AUTOMATION_PAIR_DEVICE run=${runId} role=PAIR_SLAVE serial=${peerSerial} api=${peerApiLevel} abi=${peerAbi} managedReverseCount=1 tdsReverse=0\n`,
+      );
+      if (peerApiLevel < 29) throw new Error('TERMINAL_AUTOMATION_ANDROID_API_LEVEL_BELOW_29_PEER');
+      if (peerAbi !== androidNativeArchitecture) throw new Error('TERMINAL_AUTOMATION_PAIR_ANDROID_ABI_MISMATCH');
+      if (await peerConnection.isInstalled(packageId))
+        throw new Error('TERMINAL_AUTOMATION_PAIR_PEER_PACKAGE_ALREADY_INSTALLED');
+      peerPackageWasAbsent = true;
+      const initialFull = readArtifact('full.json');
+      if (initialFull.apk === undefined) throw new Error('TERMINAL_AUTOMATION_PAIR_FULL_APK_MISSING');
+      peerInstallAttempted = true;
+      const peerInitialFullApk = await extractFullPackageApk({
+        artifact: initialFull,
+        packageManifestName: 'full-package.json',
+        zipName: `${appName}-full.zip`,
+        outputName: `${appName}-pair-peer-full.apk`,
+      });
+      await peerConnection.install(peerInitialFullApk);
+      if (!(await peerConnection.isInstalled(packageId)))
+        throw new Error('TERMINAL_AUTOMATION_PAIR_PEER_INSTALL_READBACK_FAILED');
+      await peerConnection.launch(`${packageId}/${sample.applicationId}.MainActivity`);
+      const peerSession = await waitForAutomationSession(
+        peerConnection.driver,
+        value => value.appName === sample.appName,
+        60_000,
+      );
+      peerInitialSession = peerSession;
+      peerSessionId = peerSession.sessionId;
+      peerDeviceId = await readApplicationDeviceId(peerConnection.driver, peerSession.sessionId);
+      if (initialSessionId === null || initialDeviceId === null || initialDeviceId === peerDeviceId)
+        throw new Error('TERMINAL_AUTOMATION_PAIR_RUNTIME_IDENTITIES_NOT_DISTINCT');
+      const peerInitialActual = await readSelector(
+        peerConnection.driver,
+        peerSession.sessionId,
+        'kernel.base.terminal-update.selectTerminalUpdateActualVersions',
+        [],
+      );
+      expect(peerInitialActual).toMatchObject({
+        applicationId: packageId,
+        nativeBuildNumber: initialFull.nativeBuildNumber,
+        publicationId: initialFull.publicationId,
+        entryKind: 'embedded',
+      });
+      expect(
+        await readSelector(
+          peerConnection.driver,
+          peerSession.sessionId,
+          'kernel.base.terminal-data-client.selectActivationState',
+          [],
+        ),
+      ).toMatchObject({status: 'inactive'});
+
+      await connection.attachTopologyHostForward(topologyTransportConfig.port);
+      await dispatchManagedCommand({
+        driver: connection.driver,
+        sessionId: initialSessionId,
+        commandName: setTopologyHostEnabledCommand.commandName,
+        payload: Object.freeze({enabled: true}),
+        role: 'PAIR_MASTER',
+      });
+      await waitForSelector(
+        connection.driver,
+        initialSessionId,
+        'kernel.base.topology.selectTopologyFacts',
+        [],
+        value => isRecord(value) && value.hostActual === 'running' && value.hostDesired === true,
+        30_000,
+      );
+      process.stdout.write(
+        `TERMINAL_AUTOMATION_PAIR_HOST_READY run=${runId} role=PAIR_MASTER port=${topologyTransportConfig.port}\n`,
+      );
+      await dispatchManagedCommand({
+        driver: peerConnection.driver,
+        sessionId: peerSession.sessionId,
+        commandName: pairByHostTopologyCommand.commandName,
+        payload: Object.freeze({host: '10.0.2.2'}),
+        role: 'PAIR_SLAVE',
+        routeContext: Object.freeze({workspace: 'MAIN', instanceMode: 'MASTER', displayMode: 'PRIMARY'}),
+      });
+      await waitForSelector(
+        peerConnection.driver,
+        peerSession.sessionId,
+        'kernel.base.topology.selectTopologyFacts',
+        [],
+        value =>
+          isRecord(value) && value.paired === true && value.instanceMode === 'SLAVE' && value.peerReachable === true,
+        90_000,
+      );
+      const requiredProjections = Object.freeze([serverConfigSliceName, storeBasicSliceName, projectBasicSliceName]);
+      await waitForSelector(
+        peerConnection.driver,
+        peerSession.sessionId,
+        'kernel.base.topology.selectTopologyRequiredProjectionsReady',
+        [requiredProjections],
+        value => value === true,
+        90_000,
+      );
+      const peerConnectionState = await readSelector(
+        peerConnection.driver,
+        peerSession.sessionId,
+        'kernel.base.terminal-data-client.selectConnectionState',
+        [],
+      );
+      expect(peerConnectionState).toMatchObject({status: 'stopped'});
+      process.stdout.write(
+        `TERMINAL_AUTOMATION_PAIR_READY run=${runId} masterSerial=${serial} slaveSerial=${peerSerial} runtimeIdsDistinct=1 peerInactive=1 peerTds=stopped projections=ready\n`,
+      );
     }
     if (isSupplyChainCase) {
       const manifestPath = process.env.V2S_TERMINAL_DEV_MANIFEST;
@@ -1229,8 +1423,8 @@ beforeAll(
       const operationsPassword = process.env.V2S_SEED_OPERATIONS_DEFAULT_PASSWORD;
       if (!manifestPath || !platformOrigin || !operationsOrigin || !platformPassword || !operationsPassword)
         throw new Error('TERMINAL_AUTOMATION_SUPPLY_UI_CONTEXT_MISSING');
-      const terminalSeedKey = mainSampleSeedKey(parseMainSampleShape(process.env.TERMINAL_AUTOMATION_SHAPE));
-      const terminalName = mainSampleTerminalName(parseMainSampleShape(process.env.TERMINAL_AUTOMATION_SHAPE));
+      const terminalSeedKey = mainSampleSeedKey(fixtureShape);
+      const terminalName = mainSampleTerminalName(fixtureShape);
       const {readManagedTerminalBindingByName} = await import('../../../scripts/dev/r5-dev-runner.mjs');
       const bindings = readManagedTerminalBindingByName({
         manifestPath,
@@ -1270,6 +1464,58 @@ beforeAll(
 );
 
 afterAll(async () => {
+  if (connection !== undefined && packageId !== undefined) {
+    for (const [source, read] of [
+      ['runtime', () => connection!.readRuntimeFailureDiagnostics(packageId!)],
+      ['native-update', () => connection!.readTerminalUpdateLogs(packageId!)],
+    ] as const) {
+      try {
+        const output = await read();
+        const lines = output.split(/\r?\n/u).filter(Boolean);
+        process.stdout.write(
+          `TERMINAL_AUTOMATION_DIAGNOSTICS run=${runId} source=android-${source} status=READ lines=${lines.length}\n`,
+        );
+        for (const line of lines) {
+          process.stdout.write(`TERMINAL_AUTOMATION_DIAGNOSTIC run=${runId} source=android-${source} ${line}\n`);
+        }
+      } catch (error) {
+        const code =
+          error instanceof Error && /^TERMINAL_AUTOMATION_[A-Z0-9_]+$/u.test(error.message)
+            ? error.message
+            : 'ANDROID_DIAGNOSTIC_READ_FAILED';
+        process.stdout.write(
+          `TERMINAL_AUTOMATION_DIAGNOSTICS run=${runId} source=android-${source} status=LOG_NOT_AVAILABLE code=${code}\n`,
+        );
+      }
+    }
+  }
+  if (peerConnection !== undefined && packageId !== undefined) {
+    for (const [source, read] of [
+      ['runtime', () => peerConnection!.readRuntimeFailureDiagnostics(packageId!)],
+      ['native-update', () => peerConnection!.readTerminalUpdateLogs(packageId!)],
+    ] as const) {
+      try {
+        const output = await read();
+        const lines = output.split(/\r?\n/u).filter(Boolean);
+        process.stdout.write(
+          `TERMINAL_AUTOMATION_DIAGNOSTICS run=${runId} role=PAIR_SLAVE source=android-${source} status=READ lines=${lines.length}\n`,
+        );
+        for (const line of lines) {
+          process.stdout.write(
+            `TERMINAL_AUTOMATION_DIAGNOSTIC run=${runId} role=PAIR_SLAVE source=android-${source} ${line}\n`,
+          );
+        }
+      } catch (error) {
+        const code =
+          error instanceof Error && /^TERMINAL_AUTOMATION_[A-Z0-9_]+$/u.test(error.message)
+            ? error.message
+            : 'ANDROID_DIAGNOSTIC_READ_FAILED';
+        process.stdout.write(
+          `TERMINAL_AUTOMATION_DIAGNOSTICS run=${runId} role=PAIR_SLAVE source=android-${source} status=LOG_NOT_AVAILABLE code=${code}\n`,
+        );
+      }
+    }
+  }
   if (
     updateCase !== 'update.full-hot' &&
     updateCase !== 'update.offline-assets' &&
@@ -1278,11 +1524,47 @@ afterAll(async () => {
     updateCase !== 'update.interruption' &&
     updateCase !== 'update.compatibility' &&
     updateCase !== 'update.rollback' &&
-    updateCase !== 'update.supply-chain'
+    updateCase !== 'update.supply-chain' &&
+    !isPairCase
   )
     return;
   const errors: string[] = [];
   releaseHotSourceResponse?.();
+  if (peerConnection !== undefined && packageId !== undefined) {
+    try {
+      if (peerPackageWasAbsent && (peerInstallAttempted || (await peerConnection.isInstalled(packageId)))) {
+        process.stdout.write(
+          `TERMINAL_AUTOMATION_DEVICE_CLEANUP_STAGE run=${runId} role=PAIR_SLAVE stage=force-stop\n`,
+        );
+        await peerConnection.forceStop(packageId);
+        process.stdout.write(`TERMINAL_AUTOMATION_DEVICE_CLEANUP_STAGE run=${runId} role=PAIR_SLAVE stage=uninstall\n`);
+        await peerConnection.uninstall(packageId);
+      }
+      process.stdout.write(
+        `TERMINAL_AUTOMATION_DEVICE_CLEANUP_STAGE run=${runId} role=PAIR_SLAVE stage=package-readback\n`,
+      );
+      if (await peerConnection.isInstalled(packageId)) errors.push('PAIR_SLAVE_ANDROID_PACKAGE_REMAINS');
+    } catch (error) {
+      const code =
+        error instanceof Error && /^TERMINAL_AUTOMATION_[A-Z0-9_]+$/u.test(error.message)
+          ? error.message
+          : 'PAIR_SLAVE_ANDROID_PACKAGE_CLEANUP_FAILED';
+      errors.push(code);
+    }
+    try {
+      process.stdout.write(
+        `TERMINAL_AUTOMATION_DEVICE_CLEANUP_STAGE run=${runId} role=PAIR_SLAVE stage=connection-close\n`,
+      );
+      await peerConnection.close();
+      peerConnection = undefined;
+    } catch (error) {
+      const code =
+        error instanceof Error && /^TERMINAL_AUTOMATION_[A-Z0-9_]+$/u.test(error.message)
+          ? error.message
+          : 'PAIR_SLAVE_ANDROID_CONNECTION_CLEANUP_FAILED';
+      errors.push(code);
+    }
+  }
   if (connection !== undefined && packageId !== undefined) {
     try {
       if (packageWasAbsent && (installAttempted || (await connection.isInstalled(packageId)))) {
@@ -1342,7 +1624,8 @@ it.skipIf(
     updateCase !== 'update.interruption' &&
     updateCase !== 'update.compatibility' &&
     updateCase !== 'update.rollback' &&
-    updateCase !== 'update.supply-chain',
+    updateCase !== 'update.supply-chain' &&
+    !isPairCase,
 )(
   'installs FULL then loads HOT on the same Android identity and verifies wallpaper images',
   async () => {
@@ -1428,7 +1711,7 @@ it.skipIf(
       throw new Error('TERMINAL_AUTOMATION_TERMINAL_DATA_CLIENT_OWNER_MISSING');
     }
     const commandName = descriptor.commandNames.find(
-      (value: unknown) => typeof value === 'string' && value.endsWith('.accept-target'),
+      (value: unknown) => typeof value === 'string' && value.endsWith('.request-terminal-update'),
     );
     if (typeof commandName !== 'string') throw new Error('TERMINAL_AUTOMATION_UPDATE_COMMAND_MISSING');
     let assertCompatibilityDataReadback: ((sessionId: string, stage: string) => Promise<void>) | undefined;
@@ -1680,96 +1963,106 @@ it.skipIf(
         `TERMINAL_AUTOMATION_UPDATE_COMPATIBILITY_TASK run=${runId} stage=after-new-runtime state=released\n`,
       );
     }
-    let targetSelectionContext: UpdateTarget['selectionContext'] | undefined = targetDocument?.target.selectionContext;
+    let updateOutcome: unknown;
+    let updateIdentity: string | undefined;
+    let installerReadbackDeferred = false;
+    let installButton: Awaited<ReturnType<AndroidAutomationConnection['systemUi']['waitForButton']>> | undefined;
     if (isSupplyChainCase) {
       if (!supplyUi || !supplyStoreRef) throw new Error('TERMINAL_AUTOMATION_SUPPLY_UI_NOT_READY');
-      const ruleSnapshotSelector = 'kernel.base.terminal-update.selectTerminalUpdateRuleSnapshot';
+      const candidateArgs = [packageId, supplyStoreRef];
       process.stdout.write(
-        `TERMINAL_AUTOMATION_SUPPLY run=${runId} stage=rule.snapshot.wait.begin selector=${ruleSnapshotSelector} timeoutMs=90000 session=${initial.sessionId}\n`,
+        `TERMINAL_AUTOMATION_SUPPLY run=${runId} stage=rule.candidate.wait.begin selector=${projectTerminalUpdateCandidateSelector} application=matched store=matched timeoutMs=90000 session=${initial.sessionId}\n`,
       );
-      let ruleSnapshot: unknown;
+      let candidate: unknown;
       try {
-        ruleSnapshot = await waitForSelector(
+        candidate = await waitForSelector(
           connection.driver,
           initial.sessionId,
-          ruleSnapshotSelector,
-          [supplyUi.ruleRef],
+          projectTerminalUpdateCandidateSelector,
+          candidateArgs,
           value =>
             isRecord(value) &&
-            value.status === 'ready' &&
-            value.filterRuleRef === supplyUi!.ruleRef &&
             typeof value.contextIdentity === 'string' &&
             typeof value.selectedSpace === 'string' &&
             value.selectedSpace.length > 0 &&
-            Array.isArray(value.items) &&
-            value.items.some(item => isRecord(item) && item.ruleRef === supplyUi!.ruleRef),
+            value.storeRef === supplyStoreRef &&
+            isRecord(value.rule) &&
+            value.rule.ruleRef === supplyUi!.ruleRef &&
+            value.rule.applicationId === packageId,
           90_000,
         );
       } catch (error) {
-        const [currentSnapshot, connectionState, activationState, loadReadiness, organizationPath] = await Promise.all([
-          readSelector(connection.driver, initial.sessionId, ruleSnapshotSelector, [supplyUi.ruleRef]).catch(
-            () => null,
-          ),
-          readSelector(
-            connection.driver,
-            initial.sessionId,
-            'kernel.base.terminal-data-client.selectConnectionState',
-            [],
-          ).catch(() => null),
-          readSelector(
-            connection.driver,
-            initial.sessionId,
-            'kernel.base.terminal-data-client.selectActivationState',
-            [],
-          ).catch(() => null),
-          readSelector(
-            connection.driver,
-            initial.sessionId,
-            'kernel.feature.store-basic.selectStoreBasicLoadReadiness',
-            [],
-          ).catch(() => null),
-          readSelector(
-            connection.driver,
-            initial.sessionId,
-            'kernel.feature.store-basic.selectStoreOrganizationPath',
-            [],
-          ).catch(() => null),
-        ]);
+        const [currentCandidate, connectionState, activationState, storeReadiness, projectReadiness, organizationPath] =
+          await Promise.all([
+            readSelector(
+              connection.driver,
+              initial.sessionId,
+              projectTerminalUpdateCandidateSelector,
+              candidateArgs,
+            ).catch(() => null),
+            readSelector(
+              connection.driver,
+              initial.sessionId,
+              'kernel.base.terminal-data-client.selectConnectionState',
+              [],
+            ).catch(() => null),
+            readSelector(
+              connection.driver,
+              initial.sessionId,
+              'kernel.base.terminal-data-client.selectActivationState',
+              [],
+            ).catch(() => null),
+            readSelector(
+              connection.driver,
+              initial.sessionId,
+              'kernel.feature.store-basic.selectStoreBasicLoadReadiness',
+              [],
+            ).catch(() => null),
+            readSelector(
+              connection.driver,
+              initial.sessionId,
+              'kernel.feature.project-basic.selectProjectBasicLoadReadiness',
+              [],
+            ).catch(() => null),
+            readSelector(connection.driver, initial.sessionId, projectOrganizationPathSelector, []).catch(() => null),
+          ]);
         const readinessBindingMatchesActivation =
-          isRecord(loadReadiness) &&
-          isRecord(loadReadiness.binding) &&
+          isRecord(storeReadiness) &&
+          isRecord(storeReadiness.binding) &&
           isRecord(activationState) &&
-          loadReadiness.binding.terminalRef === activationState.terminalRef &&
-          loadReadiness.binding.bindingGeneration === activationState.bindingGeneration &&
-          loadReadiness.binding.storeRef === activationState.storeRef &&
-          loadReadiness.binding.groupWorkspaceKey === activationState.groupWorkspaceKey;
+          storeReadiness.binding.terminalRef === activationState.terminalRef &&
+          storeReadiness.binding.bindingGeneration === activationState.bindingGeneration &&
+          storeReadiness.binding.storeRef === activationState.storeRef &&
+          storeReadiness.binding.groupWorkspaceKey === activationState.groupWorkspaceKey;
         const projectRefMatchesPath =
-          isRecord(loadReadiness) &&
+          isRecord(projectReadiness) &&
+          typeof projectReadiness.projectRef === 'string' &&
           isRecord(organizationPath) &&
-          loadReadiness.projectRef === organizationPath.projectRef;
-        const matchingRule =
-          isRecord(currentSnapshot) && Array.isArray(currentSnapshot.items)
-            ? currentSnapshot.items.some(item => isRecord(item) && item.ruleRef === supplyUi!.ruleRef)
-            : false;
+          isRecord(organizationPath.value) &&
+          projectReadiness.projectRef === organizationPath.value.projectRef;
+        const currentRule =
+          isRecord(currentCandidate) && isRecord(currentCandidate.rule) ? currentCandidate.rule : null;
+        const matchingRule = currentRule?.ruleRef === supplyUi.ruleRef && currentRule.applicationId === packageId;
         const failureCode =
           error instanceof Error && /^TERMINAL_AUTOMATION_[A-Z0-9_]+$/u.test(error.message)
             ? error.message
             : 'SELECTOR_WAIT_FAILED';
         process.stdout.write(
-          `TERMINAL_AUTOMATION_SUPPLY run=${runId} stage=rule.snapshot.wait.failed code=${failureCode} snapshotStatus=${isRecord(currentSnapshot) ? String(currentSnapshot.status) : 'unavailable'} snapshotError=${isRecord(currentSnapshot) && typeof currentSnapshot.errorCode === 'string' ? currentSnapshot.errorCode : 'none'} snapshotSpacePresent=${isRecord(currentSnapshot) && typeof currentSnapshot.selectedSpace === 'string'} snapshotSpaceMatchesActivation=${isRecord(currentSnapshot) && isRecord(activationState) && currentSnapshot.selectedSpace === activationState.groupWorkspaceKey} snapshotItems=${isRecord(currentSnapshot) && Array.isArray(currentSnapshot.items) ? currentSnapshot.items.length : -1} targetRulePresent=${matchingRule} connection=${isRecord(connectionState) && typeof connectionState.status === 'string' ? connectionState.status : 'unavailable'} activation=${isRecord(activationState) && typeof activationState.status === 'string' ? activationState.status : 'unavailable'} activationWorkspacePresent=${isRecord(activationState) && typeof activationState.groupWorkspaceKey === 'string'} activationWorkspaceMatchesManaged=${isRecord(activationState) && activationState.groupWorkspaceKey === 'aurora'} storeLoad=${isRecord(loadReadiness) && typeof loadReadiness.storeStatus === 'string' ? loadReadiness.storeStatus : 'unavailable'} projectLoad=${isRecord(loadReadiness) && typeof loadReadiness.projectStatus === 'string' ? loadReadiness.projectStatus : 'unavailable'} runtimeIdPresent=${isRecord(loadReadiness) && typeof loadReadiness.runtimeId === 'string'} bindingPresent=${isRecord(loadReadiness) && isRecord(loadReadiness.binding)} readinessBindingMatchesActivation=${readinessBindingMatchesActivation} organizationPathPresent=${isRecord(organizationPath)} projectRefMatchesPath=${projectRefMatchesPath}\n`,
+          `TERMINAL_AUTOMATION_SUPPLY run=${runId} stage=rule.candidate.wait.failed code=${failureCode} candidateAvailable=${isRecord(currentCandidate)} candidateSpacePresent=${isRecord(currentCandidate) && typeof currentCandidate.selectedSpace === 'string'} candidateSpaceMatchesActivation=${isRecord(currentCandidate) && isRecord(activationState) && currentCandidate.selectedSpace === activationState.groupWorkspaceKey} candidateStoreMatches=${isRecord(currentCandidate) && currentCandidate.storeRef === supplyStoreRef} targetRulePresent=${matchingRule} connection=${isRecord(connectionState) && typeof connectionState.status === 'string' ? connectionState.status : 'unavailable'} activation=${isRecord(activationState) && typeof activationState.status === 'string' ? activationState.status : 'unavailable'} activationWorkspacePresent=${isRecord(activationState) && typeof activationState.groupWorkspaceKey === 'string'} activationWorkspaceMatchesManaged=${isRecord(activationState) && activationState.groupWorkspaceKey === 'aurora'} storeLoad=${isRecord(storeReadiness) && typeof storeReadiness.storeStatus === 'string' ? storeReadiness.storeStatus : 'unavailable'} projectLoad=${isRecord(projectReadiness) && typeof projectReadiness.status === 'string' ? projectReadiness.status : 'unavailable'} runtimeIdPresent=${isRecord(storeReadiness) && typeof storeReadiness.runtimeId === 'string'} bindingPresent=${isRecord(storeReadiness) && isRecord(storeReadiness.binding)} readinessBindingMatchesActivation=${readinessBindingMatchesActivation} organizationPathPresent=${isRecord(organizationPath)} projectRefMatchesPath=${projectRefMatchesPath}\n`,
         );
         await writeNativeUpdateDiagnostics({connection, packageId, runId});
         throw new Error(`TERMINAL_AUTOMATION_SUPPLY_RULE_SNAPSHOT_WAIT_FAILED:${failureCode}`);
       }
       if (
-        !isRecord(ruleSnapshot) ||
-        typeof ruleSnapshot.contextIdentity !== 'string' ||
-        typeof ruleSnapshot.selectedSpace !== 'string' ||
-        ruleSnapshot.selectedSpace.length === 0 ||
-        !Array.isArray(ruleSnapshot.items)
+        !isRecord(candidate) ||
+        typeof candidate.contextIdentity !== 'string' ||
+        typeof candidate.selectedSpace !== 'string' ||
+        candidate.selectedSpace.length === 0 ||
+        candidate.storeRef !== supplyStoreRef ||
+        !isRecord(candidate.rule)
       )
-        throw new Error('TERMINAL_AUTOMATION_SUPPLY_RULE_SNAPSHOT_INVALID');
-      const rule = ruleSnapshot.items.find(item => isRecord(item) && item.ruleRef === supplyUi!.ruleRef);
+        throw new Error('TERMINAL_AUTOMATION_SUPPLY_RULE_CANDIDATE_INVALID');
+      const rule = candidate.rule;
       if (
         !isRecord(rule) ||
         rule.applicationId !== packageId ||
@@ -1782,20 +2075,95 @@ it.skipIf(
         !rule.storeRefs.includes(supplyStoreRef)
       )
         throw new Error('TERMINAL_AUTOMATION_SUPPLY_RULE_SNAPSHOT_IDENTITY_MISMATCH');
-      targetSelectionContext = Object.freeze({
-        selectedSpace: ruleSnapshot.selectedSpace,
-        contextIdentity: ruleSnapshot.contextIdentity,
-        ruleRef: supplyUi.ruleRef,
-      });
       process.stdout.write(
-        `TERMINAL_AUTOMATION_SUPPLY_SNAPSHOT run=${runId} rule=${supplyUi.ruleRef} artifacts=matched store=matched state=ready\n`,
+        `TERMINAL_AUTOMATION_SUPPLY_CANDIDATE run=${runId} rule=matched artifacts=matched store=matched app=matched context=ready\n`,
       );
+
+      // project-basic owns candidate selection and automatically submits the
+      // complete fixed target to terminal-update. Observe that business path
+      // through its public selectors; do not send a partial selectionContext
+      // directly to request-terminal-update, whose payload is {target}.
+      const taskSelector = 'kernel.base.terminal-update.selectTerminalUpdateTask';
+      const statusSelector = 'kernel.base.terminal-update.selectTerminalUpdateRecentStatus';
+      if (isSupplyChainCase) {
+        // A FULL install foregrounds Android Settings/PackageInstaller and can
+        // pause the old app Runtime before selector events reach the driver.
+        // Observe that native handoff first; bind the fixed task from the fresh
+        // post-install session below, then keep the final task/report readback.
+        installerReadbackDeferred = true;
+        process.stdout.write(
+          `TERMINAL_AUTOMATION_SUPPLY run=${runId} stage=preinstall-selector-readback deferred=1 reason=android-installer-foregrounds-app selector=${taskSelector}\n`,
+        );
+      } else {
+        let updateTask: unknown;
+        try {
+          updateTask = await waitForSelector(
+            connection.driver,
+            initial.sessionId,
+            taskSelector,
+            [],
+            value => isRecord(value) && isRecord(value.target) && value.target.ruleRef === supplyUi!.ruleRef,
+            30_000,
+          );
+        } catch (error) {
+          await writeUpdateStateDiagnostics(connection.driver, initial.sessionId, runId);
+          await writeNativeUpdateDiagnostics({connection, packageId, runId});
+          throw error;
+        }
+        if (
+          !isRecord(updateTask) ||
+          typeof updateTask.taskId !== 'string' ||
+          !isRecord(updateTask.target) ||
+          updateTask.target.ruleRef !== supplyUi.ruleRef
+        )
+          throw new Error('TERMINAL_AUTOMATION_UPDATE_AUTO_TASK_NOT_FIXED');
+        updateIdentity = updateTask.taskId;
+
+        try {
+          updateOutcome = await waitForSelector(
+            connection.driver,
+            initial.sessionId,
+            statusSelector,
+            [],
+            value =>
+              isRecord(value) &&
+              value.taskId === updateIdentity &&
+              (value.state === 'unknown' ||
+                value.state === 'failed' ||
+                value.state === 'admission-rejected' ||
+                value.state === 'succeeded'),
+            30_000,
+          );
+        } catch (error) {
+          await writeUpdateStateDiagnostics(connection.driver, initial.sessionId, runId);
+          await writeNativeUpdateDiagnostics({connection, packageId, runId});
+          throw error;
+        }
+        process.stdout.write(
+          `TERMINAL_AUTOMATION_UPDATE_AUTO_RESULT run=${runId} task=${updateIdentity} state=${isRecord(updateOutcome) && typeof updateOutcome.state === 'string' ? updateOutcome.state : 'invalid'} reason=${isRecord(updateOutcome) && typeof updateOutcome.reason === 'string' ? updateOutcome.reason : 'none'} source=project-basic-selector\n`,
+        );
+        if (
+          !isRecord(updateOutcome) ||
+          updateOutcome.state !== 'unknown' ||
+          updateOutcome.reason !== 'INSTALLER_AWAITING_READBACK'
+        ) {
+          await writeNativeUpdateDiagnostics({connection, packageId, runId});
+          throw new Error('TERMINAL_AUTOMATION_UPDATE_AUTO_RESULT_UNEXPECTED');
+        }
+      }
+    } else {
+      const targetSelectionContext = targetDocument?.target.selectionContext;
+      if (targetSelectionContext === undefined)
+        throw new Error('TERMINAL_AUTOMATION_UPDATE_SELECTION_CONTEXT_MISSING');
+      const acceptedTarget = await dispatchUpdateCommand(commandName, {selectionContext: targetSelectionContext});
+      updateIdentity = acceptedTarget.requestId;
+      updateOutcome = acceptedTarget.result;
     }
-    if (targetSelectionContext === undefined) throw new Error('TERMINAL_AUTOMATION_UPDATE_SELECTION_CONTEXT_MISSING');
-    const acceptedTarget = await dispatchUpdateCommand(commandName, {selectionContext: targetSelectionContext});
-    const requestId = acceptedTarget.requestId;
-    const updateOutcome = acceptedTarget.result;
-    if (isRecord(updateOutcome) && (updateOutcome.status === 'failed' || updateOutcome.status === 'unknown')) {
+    if (
+      !isSupplyChainCase &&
+      isRecord(updateOutcome) &&
+      (updateOutcome.status === 'failed' || updateOutcome.status === 'unknown')
+    ) {
       try {
         const diagnostics = await connection.readTerminalUpdateLogs(packageId);
         process.stdout.write(
@@ -1814,34 +2182,49 @@ it.skipIf(
         process.stdout.write(`TERMINAL_AUTOMATION_UPDATE_NATIVE_LOG_NOT_AVAILABLE run=${runId} code=${code}\n`);
       }
     }
-    expect(updateOutcome).toMatchObject({status: 'unknown', reason: 'INSTALLER_AWAITING_READBACK'});
-    process.stdout.write(
-      `TERMINAL_AUTOMATION_UPDATE_TARGET_ACCEPTED run=${runId} request=${requestId} state=INSTALLER_AWAITING_READBACK\n`,
-    );
+    if (!installerReadbackDeferred) {
+      expect(updateOutcome).toMatchObject(
+        isSupplyChainCase
+          ? {state: 'unknown', reason: 'INSTALLER_AWAITING_READBACK'}
+          : {status: 'unknown', reason: 'INSTALLER_AWAITING_READBACK'},
+      );
+      process.stdout.write(
+        `TERMINAL_AUTOMATION_UPDATE_TARGET_ACCEPTED run=${runId} identity=${updateIdentity ?? 'missing'} state=INSTALLER_AWAITING_READBACK\n`,
+      );
+    }
 
     const fullSessionMatches = (value: Readonly<{readonly appName: string; readonly sessionId: string}>): boolean =>
       value.appName === sample.appName && value.sessionId !== initial!.sessionId;
     let fullSession: Awaited<ReturnType<typeof waitForAutomationSession>> | undefined;
     let fullSessionId: string | undefined;
     let installerOpenedApp = false;
-    let installButton: Awaited<ReturnType<AndroidAutomationConnection['systemUi']['waitForButton']>> | undefined;
-    try {
-      installButton = await systemUi.waitForSystemButton({
-        labels: ['Install', 'Update', 'Settings', 'Allow from this source'],
-        timeoutMs: 20_000,
-        allowedPackagePrefixes: installSourcePackagePrefixes,
-        expectedContext: {label: 'Allow from this source', text: appName},
-      });
-    } catch (error) {
-      if (runDirectory) {
-        const screenshotPath = path.join(runDirectory, 'installer-user-action-not-visible.png');
-        writeFileSync(screenshotPath, await connection.capture('primary'), {mode: 0o600});
-        process.stdout.write(
-          `TERMINAL_AUTOMATION_INSTALLER_FAILURE_SCREEN run=${runId} screenshot=${screenshotPath}\n`,
-        );
+    if (installButton === undefined) {
+      process.stdout.write(
+        `TERMINAL_AUTOMATION_INSTALLER_WAIT_BEGIN run=${runId} timeoutMs=${installerReadbackDeferred ? 120_000 : 20_000} scope=package-installer-or-source-settings\n`,
+      );
+      try {
+        installButton = await systemUi.waitForSystemButton({
+          labels: ['Install', 'Update', 'Settings', 'Allow from this source'],
+          timeoutMs: installerReadbackDeferred ? 120_000 : 20_000,
+          allowedPackagePrefixes: installSourcePackagePrefixes,
+          expectedContext: {label: 'Allow from this source', text: appName},
+        });
+      } catch (error) {
+        if (runDirectory) {
+          const screenshotPath = path.join(runDirectory, 'installer-user-action-not-visible.png');
+          writeFileSync(screenshotPath, await connection.capture('primary'), {mode: 0o600});
+          process.stdout.write(
+            `TERMINAL_AUTOMATION_INSTALLER_FAILURE_SCREEN run=${runId} screenshot=${screenshotPath}\n`,
+          );
+        }
+        await writeNativeUpdateDiagnostics({connection, packageId, runId});
+        throw error;
       }
-      await writeNativeUpdateDiagnostics({connection, packageId, runId});
-      throw error;
+    }
+    if (installerReadbackDeferred) {
+      process.stdout.write(
+        `TERMINAL_AUTOMATION_SUPPLY_INSTALLER_UI_OBSERVED run=${runId} package=${installButton.packageName ?? 'UNKNOWN'} label=${installButton.label} appSelectorReadback=deferred-to-fresh-session\n`,
+      );
     }
     if (installButton.label === 'Settings') {
       process.stdout.write(
@@ -1892,15 +2275,17 @@ it.skipIf(
       } else {
         process.stdout.write(`TERMINAL_AUTOMATION_INSTALLER_SOURCE_SETTINGS run=${runId} state=already-enabled\n`);
       }
-      // Return to the installer through Android's task stack. Starting the app's
-      // main activity here can cover the pending system confirmation screen.
-      await systemUi.pressSystemBack();
+      // Settings may be launched in a separate task and remain foreground after
+      // Back. Re-enter the app through the managed device connection so the
+      // existing foreground lifecycle resumes this exact persisted installer
+      // confirmation; the app owner, not the runner, decides whether it is valid.
       process.stdout.write(
-        `TERMINAL_AUTOMATION_INSTALLER_SOURCE_SETTINGS run=${runId} action=returned-from-settings\n`,
+        `TERMINAL_AUTOMATION_INSTALLER_SOURCE_SETTINGS run=${runId} action=foreground-app trigger=source-permission-return\n`,
       );
-      const immersiveNoticeAcknowledged = await systemUi.acknowledgeImmersiveModeEducation();
+      await connection.launch(`${packageId}/${sample.applicationId}.MainActivity`);
+      const fullscreenEducationAcknowledged = await systemUi.acknowledgeImmersiveModeEducation();
       process.stdout.write(
-        `TERMINAL_AUTOMATION_IMMERSIVE_NOTICE run=${runId} acknowledged=${immersiveNoticeAcknowledged ? 1 : 0}\n`,
+        `TERMINAL_AUTOMATION_INSTALLER_FULLSCREEN_EDUCATION run=${runId} acknowledged=${fullscreenEducationAcknowledged ? 1 : 0}\n`,
       );
       try {
         installButton = await systemUi.waitForSystemButton({
@@ -2251,6 +2636,24 @@ it.skipIf(
     }
     let hotRequestTimeout: NodeJS.Timeout | undefined;
     try {
+      if (installerReadbackDeferred) {
+        const taskSelector = 'kernel.base.terminal-update.selectTerminalUpdateTask';
+        const updateTask = await waitForSelector(
+          connection.driver,
+          fullSession.sessionId,
+          taskSelector,
+          [],
+          value => isRecord(value) && isRecord(value.target) && value.target.ruleRef === supplyUi!.ruleRef,
+          30_000,
+        );
+        if (!isRecord(updateTask) || typeof updateTask.taskId !== 'string' || !isRecord(updateTask.target) ||
+          updateTask.target.ruleRef !== supplyUi!.ruleRef)
+          throw new Error('TERMINAL_AUTOMATION_SUPPLY_FIXED_TASK_MISSING_AFTER_FULL_RELAUNCH');
+        updateIdentity = updateTask.taskId;
+        process.stdout.write(
+          `TERMINAL_AUTOMATION_UPDATE_TARGET_ACCEPTED run=${runId} identity=${updateIdentity} phase=${typeof updateTask.phase === 'string' ? updateTask.phase : 'UNKNOWN'} source=fresh-full-session\n`,
+        );
+      }
       if (!isSupplyChainCase) {
         if (hotSourceRequested === undefined || releaseHotSourceResponse === undefined) {
           throw new Error('TERMINAL_AUTOMATION_HOT_SOURCE_GATE_NOT_READY');
@@ -2403,9 +2806,11 @@ it.skipIf(
         `TERMINAL_AUTOMATION_UPDATE_COMPATIBILITY_STAGE run=${runId} stage=external-apk-replace action=force-stop\n`,
       );
       await connection.forceStop(packageId);
-      const extractedExternalFullApk = await extractCompatibilityFullApk({
+      const extractedExternalFullApk = await extractFullPackageApk({
         artifact: externalFull,
         packageManifestName: 'compatibility-external-full-package.json',
+        zipName: `${appName}-compat-external-full.zip`,
+        outputName: `${appName}-compat-external.apk`,
       });
       await connection.install(extractedExternalFullApk);
       if (!(await connection.isInstalled(packageId)))
@@ -2715,6 +3120,8 @@ it.skipIf(
       );
     }
     expect(task).toMatchObject({target: {ruleRef: expectedRuleRef}, phase: 'succeeded'});
+    if (!isRecord(task) || typeof task.taskId !== 'string' || task.taskId.length === 0)
+      throw new Error('TERMINAL_AUTOMATION_SUPPLY_TASK_ID_INVALID');
     const status = await readSelector(
       connection.driver,
       hotSession.sessionId,
@@ -2725,6 +3132,11 @@ it.skipIf(
     if (isSupplyChainCase) {
       if (!supplyUi || !supplyTerminalRef || !supplyTerminalName)
         throw new Error('TERMINAL_AUTOMATION_SUPPLY_REPORT_CONTEXT_MISSING');
+      const recentStatusTaskMatches = isRecord(status) && status.taskId === task.taskId;
+      process.stdout.write(
+        `TERMINAL_AUTOMATION_SUPPLY run=${runId} stage=report.task-identity taskIdPresent=${typeof task.taskId === 'string' ? 1 : 0} recentStatusTaskIdPresent=${isRecord(status) && typeof status.taskId === 'string' ? 1 : 0} matches=${recentStatusTaskMatches ? 1 : 0}\n`,
+      );
+      expect(recentStatusTaskMatches, 'terminal-update task and recent-status task identity must match').toBe(true);
       const actual = await readSelector(
         connection.driver,
         hotSession.sessionId,
@@ -2801,11 +3213,156 @@ it.skipIf(
       )
         throw new Error('TERMINAL_AUTOMATION_SUPPLY_REPORT_DELIVERY_NOT_ACCEPTED');
       process.stdout.write(`TERMINAL_AUTOMATION_SUPPLY run=${runId} stage=report.delivery.accepted pending=0\n`);
+      if (isPairCase) {
+        try {
+          if (
+            peerConnection === undefined ||
+            peerSessionId === null ||
+            peerDeviceId === null ||
+            supplyStoreRef === undefined ||
+            initialDeviceId === null
+          )
+            throw new Error('TERMINAL_AUTOMATION_PAIR_CONTEXT_MISSING');
+          if (peerInitialSession === null) throw new Error('TERMINAL_AUTOMATION_PAIR_INITIAL_SESSION_MISSING');
+          const peerCurrentSession = await resolveCurrentAutomationSession(
+            peerConnection.driver,
+            peerInitialSession,
+            180_000,
+          );
+          peerSessionId = peerCurrentSession.sessionId;
+          process.stdout.write(
+            `TERMINAL_AUTOMATION_PAIR_SESSION run=${runId} role=PAIR_SLAVE initial=${peerInitialSession.sessionId} current=${peerCurrentSession.sessionId}\n`,
+          );
+          const peerHotSession =
+            peerCurrentSession.sessionId !== peerInitialSession.sessionId
+              ? peerCurrentSession
+              : await waitForAutomationSession(
+                  peerConnection.driver,
+                  value => value.appName === sample.appName && value.sessionId !== peerInitialSession!.sessionId,
+                  180_000,
+                );
+          peerSessionId = peerHotSession.sessionId;
+          process.stdout.write(
+            `TERMINAL_AUTOMATION_PAIR_HOT_SESSION run=${runId} role=PAIR_SLAVE session=${peerHotSession.sessionId}\n`,
+          );
+          const peerCandidate = await waitForSelector(
+            peerConnection.driver,
+            peerHotSession.sessionId,
+            projectTerminalUpdateCandidateSelector,
+            [packageId, supplyStoreRef],
+            value =>
+              isRecord(value) &&
+              typeof value.contextIdentity === 'string' &&
+              value.selectedSpace === 'aurora' &&
+              value.storeRef === supplyStoreRef &&
+              isRecord(value.rule) &&
+              value.rule.ruleRef === supplyUi!.ruleRef &&
+              value.rule.applicationId === packageId,
+            90_000,
+          );
+          expect(peerCandidate).toMatchObject({
+            selectedSpace: 'aurora',
+            storeRef: supplyStoreRef,
+            rule: {ruleRef: supplyUi.ruleRef, applicationId: packageId},
+          });
+          process.stdout.write(
+            `TERMINAL_AUTOMATION_PAIR_RULE_PROJECTION run=${runId} role=PAIR_SLAVE rule=matched store=matched app=matched\n`,
+          );
+          const peerTask = await waitForSelector(
+            peerConnection.driver,
+            peerHotSession.sessionId,
+            'kernel.base.terminal-update.selectTerminalUpdateTask',
+            [],
+            value =>
+              isRecord(value) &&
+              isRecord(value.target) &&
+              value.target.ruleRef === supplyUi!.ruleRef &&
+              (value.phase === 'succeeded' || value.phase === 'failed' || value.phase === 'unknown'),
+            120_000,
+          );
+          expect(peerTask).toMatchObject({target: {ruleRef: supplyUi.ruleRef}, phase: 'succeeded'});
+          if (
+            !isRecord(task) ||
+            typeof task.taskId !== 'string' ||
+            !isRecord(peerTask) ||
+            typeof peerTask.taskId !== 'string'
+          )
+            throw new Error('TERMINAL_AUTOMATION_PAIR_TASK_IDENTITY_INVALID');
+          expect(peerTask.taskId).not.toBe(task.taskId);
+          const [peerActual, peerActivation, peerTdsConnection, peerReportDelivery] = await Promise.all([
+            readSelector(
+              peerConnection.driver,
+              peerHotSession.sessionId,
+              'kernel.base.terminal-update.selectTerminalUpdateActualVersions',
+              [],
+            ),
+            readSelector(
+              peerConnection.driver,
+              peerHotSession.sessionId,
+              'kernel.base.terminal-data-client.selectActivationState',
+              [],
+            ),
+            readSelector(
+              peerConnection.driver,
+              peerHotSession.sessionId,
+              'kernel.base.terminal-data-client.selectConnectionState',
+              [],
+            ),
+            readSelector(
+              peerConnection.driver,
+              peerHotSession.sessionId,
+              'kernel.base.terminal-update.selectTerminalUpdateReportDelivery',
+              [],
+            ),
+          ]);
+          expect(peerActual).toMatchObject({
+            applicationId: packageId,
+            nativeBuildNumber: full.nativeBuildNumber,
+            bundleVersion: hot.bundleVersion,
+            runtimeVersion: hot.runtimeVersion,
+            publicationId: hot.publicationId,
+            entryKind: 'hot',
+          });
+          expect(peerActivation).toMatchObject({status: 'inactive'});
+          expect(peerTdsConnection).toMatchObject({status: 'stopped'});
+          expect(peerReportDelivery).toMatchObject({pendingCount: 0, sendPaused: false, latestDeliveryFailure: null});
+          process.stdout.write(
+            `TERMINAL_AUTOMATION_PAIR_UPDATE_READBACK run=${runId} role=PAIR_SLAVE task=independent actual=hot activation=inactive tds=stopped pendingReports=0\n`,
+          );
+          await writeUpdateStateDiagnostics(peerConnection.driver, peerHotSession.sessionId, runId);
+        } catch (error) {
+          const failureCode =
+            error instanceof Error
+              ? (error.message.match(/^(TERMINAL_AUTOMATION_[A-Z0-9_]+)/u)?.[1] ?? 'ASSERTION_FAILED')
+              : 'NON_ERROR_THROWN';
+          process.stdout.write(
+            `TERMINAL_AUTOMATION_PAIR_FAILURE run=${runId} role=PAIR_SLAVE serial=${peerConnection?.serial ?? 'unavailable'} session=${peerSessionId ?? peerInitialSession?.sessionId ?? 'unavailable'} code=${failureCode}\n`,
+          );
+          if (peerConnection !== undefined && packageId !== undefined) {
+            const diagnosticSessionId = peerSessionId ?? peerInitialSession?.sessionId;
+            if (diagnosticSessionId !== undefined) {
+              await writeUpdateStateDiagnostics(peerConnection.driver, diagnosticSessionId, runId).catch(
+                () => undefined,
+              );
+              await writeAndroidFailureDiagnostics({
+                connection: peerConnection,
+                packageId,
+                runId,
+                boundary: 'hot-session',
+                expectedSessionId: diagnosticSessionId,
+              }).catch(() => undefined);
+            }
+            await writeNativeUpdateDiagnostics({connection: peerConnection, packageId, runId}).catch(() => undefined);
+          }
+          throw error;
+        }
+      }
       try {
         await assertTerminalUpdateReportInUi({
           page: supplyUi.operationsPage,
           terminalName: supplyTerminalName,
           terminalRef: supplyTerminalRef,
+          taskId: task.taskId,
           ruleRef: supplyUi.ruleRef,
           fullArtifactRef: supplyUi.full.artifactRef,
           hotArtifactRef: supplyUi.hot.artifactRef,
@@ -2825,6 +3382,16 @@ it.skipIf(
           boundary: 'hot-session',
           expectedSessionId: hotSession.sessionId,
         });
+        if (isPairCase && peerConnection !== undefined && peerSessionId !== null) {
+          await writeUpdateStateDiagnostics(peerConnection.driver, peerSessionId, runId).catch(() => undefined);
+          await writeAndroidFailureDiagnostics({
+            connection: peerConnection,
+            packageId,
+            runId,
+            boundary: 'pair-peer-report-readback',
+            expectedSessionId: peerSessionId,
+          }).catch(() => undefined);
+        }
         throw error;
       }
     }

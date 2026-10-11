@@ -75,24 +75,54 @@ export const createJourneyFailureDiagnostics = (input: Readonly<{
   let currentStep = 'journey.start';
   let lastPush: SafePush | null = null;
   const inProgressRequestIds = new Set<string>();
-  const removeListener = input.server.onMessage(input.sessionId, message => {
-    lastPush = safePushOf(message) ?? lastPush;
-  });
+  const requestStartedAt = new Map<string, number>();
   const write = input.write ?? (line => process.stderr.write(`${line}\n`));
+  const runId = process.env.TERMINAL_AUTOMATION_RUN_ID;
+  const safeRunId = safeIdentifier(runId) ? runId : undefined;
+  const emit = (event: string, fields: Readonly<Record<string, unknown>> = {}): void => {
+    write(`TERMINAL_AUTOMATION_JOURNEY ${JSON.stringify({
+      at: new Date().toISOString(),
+      ...(safeRunId === undefined ? {} : {runId: safeRunId}),
+      event,
+      step: currentStep,
+      ...fields,
+    })}`);
+  };
+  const removeListener = input.server.onMessage(input.sessionId, message => {
+    const push = safePushOf(message);
+    if (push === undefined) return;
+    lastPush = push;
+    emit('runtime.push', {push});
+  });
 
   return Object.freeze({
     markStep: (step: string): void => {
       currentStep = safeIdentifier(step) ? step : 'journey.step.unclassified';
+      emit('step.started');
     },
     requestStarted: (requestId: string): void => {
-      if (safeIdentifier(requestId)) inProgressRequestIds.add(requestId);
+      if (safeIdentifier(requestId)) {
+        inProgressRequestIds.add(requestId);
+        requestStartedAt.set(requestId, Date.now());
+        emit('request.observer.started', {requestId});
+      }
     },
     requestFinished: (requestId: string): void => {
       inProgressRequestIds.delete(requestId);
+      const startedAt = requestStartedAt.get(requestId);
+      requestStartedAt.delete(requestId);
+      if (safeIdentifier(requestId)) {
+        emit('request.observer.finished', {
+          requestId,
+          ...(startedAt === undefined ? {} : {elapsedMs: Math.max(0, Date.now() - startedAt)}),
+        });
+      }
     },
     report: (error: unknown): void => {
       write(
         `TERMINAL_AUTOMATION_JOURNEY_FAILURE ${JSON.stringify({
+          at: new Date().toISOString(),
+          ...(safeRunId === undefined ? {} : {runId: safeRunId}),
           step: currentStep,
           failureCode: failureCodeOf(error),
           inProgressRequestIds: [...inProgressRequestIds],

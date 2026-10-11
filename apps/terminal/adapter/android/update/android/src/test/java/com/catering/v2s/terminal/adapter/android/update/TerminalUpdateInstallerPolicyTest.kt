@@ -73,6 +73,9 @@ class TerminalUpdateInstallerPolicyTest {
     assertFalse(isPendingUserInstallerAction(true, "pending-user", "callback-failed"))
     assertFalse(isPendingUserInstallerAction(true, "pending-user", "succeeded"))
     assertFalse(isPendingUserInstallerAction(true, "pending-user", "failed"))
+    assertEquals("waiting-user", pendingUserInstallerReadbackState(true, "pending-user", "unknown"))
+    assertNull(pendingUserInstallerReadbackState(false, "pending-user", "pending-user"))
+    assertNull(pendingUserInstallerReadbackState(true, "committing", "pending-user"))
   }
 
   @Test

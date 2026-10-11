@@ -9,6 +9,14 @@ export type TerminalAutomationProcessIdentity = Readonly<{
   readonly startToken: string;
 }>;
 
+export type TerminalAutomationAndroidDeviceRole =
+  'PHYSICAL_DUAL' | 'MOBILE_EMULATOR' | 'PAIR_MASTER_EMULATOR' | 'PAIR_SLAVE_EMULATOR';
+
+export type TerminalAutomationAndroidDevice = Readonly<{
+  readonly serial: string;
+  readonly role: TerminalAutomationAndroidDeviceRole;
+}>;
+
 export type TerminalAutomationManifest = Readonly<{
   readonly schemaVersion: 1;
   readonly kind: 'terminal-automation-run-manifest';
@@ -26,6 +34,7 @@ export type TerminalAutomationManifest = Readonly<{
     readonly deviceSerial?: string;
     readonly peerDeviceSerial?: string;
   }>;
+  readonly androidDevices?: readonly TerminalAutomationAndroidDevice[];
   readonly owner: TerminalAutomationProcessIdentity;
   readonly processes: readonly TerminalAutomationProcessIdentity[];
   readonly resource?: Readonly<{readonly at: string; readonly ownedTreeRssKiB: number; readonly budgetKiB: number}>;
@@ -79,6 +88,17 @@ export const createManagedRun = (
   runId: string = randomUUID(),
 ): TerminalAutomationManifest => {
   if (!safeId(runId)) throw new Error('TERMINAL_AUTOMATION_RUN_ID_INVALID');
+  if (
+    execution.phase === 'update' &&
+    execution.case === 'update.pair' &&
+    (execution.platform !== 'android' ||
+      execution.shape !== 'mobile' ||
+      execution.deviceSerial === undefined ||
+      execution.peerDeviceSerial === undefined ||
+      execution.deviceSerial === execution.peerDeviceSerial)
+  ) {
+    throw new Error('TERMINAL_AUTOMATION_UPDATE_PAIR_DEVICE_IDENTITY_INVALID');
+  }
   const root = realpathSync(repositoryRoot);
   const runtimePath = path.join(root, '.runtime');
   mkdirSync(runtimePath, {recursive: true, mode: 0o700});
@@ -119,6 +139,27 @@ export const createManagedRun = (
     throw new Error('TERMINAL_AUTOMATION_RUN_ROOT_ESCAPE');
   }
   const owner = currentProcessIdentity();
+  const androidDevices =
+    execution.platform !== 'android' || execution.deviceSerial === undefined
+      ? undefined
+      : execution.case === 'update.pair'
+        ? execution.peerDeviceSerial === undefined
+          ? undefined
+          : Object.freeze([
+              Object.freeze({serial: execution.deviceSerial, role: 'PAIR_MASTER_EMULATOR' as const}),
+              Object.freeze({serial: execution.peerDeviceSerial, role: 'PAIR_SLAVE_EMULATOR' as const}),
+            ])
+        : execution.phase === 'capabilities' && execution.shape === 'dual' && execution.peerDeviceSerial !== undefined
+          ? Object.freeze([
+              Object.freeze({serial: execution.deviceSerial, role: 'PAIR_MASTER_EMULATOR' as const}),
+              Object.freeze({serial: execution.peerDeviceSerial, role: 'PAIR_SLAVE_EMULATOR' as const}),
+            ])
+          : Object.freeze([
+              Object.freeze({
+                serial: execution.deviceSerial,
+                role: execution.shape === 'dual' ? ('PHYSICAL_DUAL' as const) : ('MOBILE_EMULATOR' as const),
+              }),
+            ]);
   const startedAt = new Date().toISOString();
   const manifest: TerminalAutomationManifest = Object.freeze({
     schemaVersion: 1,
@@ -128,6 +169,7 @@ export const createManagedRun = (
     updatedAt: startedAt,
     stage: 'CREATED',
     execution: Object.freeze({...execution}),
+    ...(androidDevices === undefined ? {} : {androidDevices}),
     owner,
     processes: Object.freeze([owner]),
     logs: Object.freeze([]),

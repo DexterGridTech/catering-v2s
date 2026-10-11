@@ -21,9 +21,10 @@ describe('parseMainSampleJourneyConfig', () => {
   it('keeps update Android build, connection, surface check, and activation on the runner-selected shape', () => {
     const source = readFileSync(new URL('../journeys/update.android.test.ts', import.meta.url), 'utf8');
     expect(source).not.toMatch(/\bshape\s*:\s*['"]mobile['"]/u);
-    expect(source.match(/parseMainSampleShape\(process\.env\.TERMINAL_AUTOMATION_SHAPE\)/gu)).toHaveLength(6);
-    expect(source).toContain('const surfaceForm = mainSampleSurfaceForm(shape)');
-    expect(source).toContain('await prepareAndroidJourneySurface(connection, parseMainSampleShape(process.env.TERMINAL_AUTOMATION_SHAPE))');
+    expect(source.match(/parseMainSampleShape\(process\.env\.TERMINAL_AUTOMATION_SHAPE\)/gu)).toHaveLength(2);
+    expect(source).toContain("const surfaceForm = isPairCase ? 'laptop' : mainSampleSurfaceForm(shape)");
+    expect(source).toContain('await prepareAndroidJourneySurface(connection, deviceShape)');
+    expect(source).toContain('await prepareAndroidJourneySurface(peerConnection, deviceShape)');
   });
 
   it('returns console journey data without platform-specific fields', () => {

@@ -32,6 +32,8 @@ export {AdminLauncher} from './components/AdminLauncher';
 export {SampleSection} from './components/sections/SampleSection';
 export {adminShellAssembly} from './parts/parts';
 export type {AdminShellAssembly} from './parts/parts';
+export {createServerConfigPanelParts} from './parts/serverConfigParts';
+export {createTerminalUpdateInstallReminderParts} from './parts/terminalUpdateInstallReminderParts';
 export type {AdminSectionComponent, AdminSectionProps, AdminSectionRenderContext} from './types/adminSection';
 export {
   ADMIN_PASSWORD_FALLBACK,

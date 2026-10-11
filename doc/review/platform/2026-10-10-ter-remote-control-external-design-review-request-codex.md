@@ -1,9 +1,11 @@
 # TER 应用内远程控制设计包外部评审交接
 
 REVIEW_TARGET=DESIGN
-REVIEW_STATUS=READY_FOR_DEXTER_CLAUDE_REVIEW
+REVIEW_STATUS=WITHDRAWN_SUPERSEDED
 
 ## 背景
+本文件为旧字节交接，已由 `doc/review/platform/2026-10-10-ter-remote-control-external-design-rereview-request-codex.md` 替代。Dexter已确认三态，正本及六工件同步完成；当前处置/SHA见 `doc/review/platform/2026-10-10-ter-remote-control-design-external-review-intake-codex.md`。下方保留历史话术，不代表当前字节或当前授权。
+
 Dexter授权编写完整设计包并独立对抗审查，强调只覆盖90%常见主流程、不增加保密或极端场景机制。六工件已完成。R1为NO-GO 0M/2S/4N，R2为NO-GO 0M/2S/3N；R2确认R1六项已关闭。作者亲自核验并最小修订R2五项，按SELF_DECIDED收口GO_WITH_UNVERIFIED_UI；修订后CURRENT_BYTES_INDEPENDENT_VERDICT=NONE，不能把作者收口当独立GO。原始两轮报告保留；外部评审不继承作者intake或此前verdict。
 
 ## 评审目标

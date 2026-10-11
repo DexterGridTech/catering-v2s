@@ -49,9 +49,13 @@
     "UpdateCall",
     "UpdateFailureCode",
     "UpdateFacts",
+    "UpdateInstallerConfirmationResult",
+    "UpdateInstallerConfirmationTrigger",
     "UpdateNetworkSnapshot",
     "UpdatePreparedArtifact",
     "UpdatePort",
+    "UpdatePresentation",
+    "UpdatePresentationListener",
     "UpdateSource",
     "LogContext",
     "LogError",
@@ -212,7 +216,17 @@
     ],
     "ScriptPort": ["execute", "getStats", "clearStats"],
     "ConnectorPort": ["call", "subscribe", "unsubscribe", "on"],
-    "UpdatePort": ["readFacts", "prepareArtifact", "applyPrepared", "readAction", "confirmBoot", "releasePrepared"],
+    "UpdatePort": [
+      "readFacts",
+      "readPresentation",
+      "subscribePresentation",
+      "prepareArtifact",
+      "applyPrepared",
+      "readAction",
+      "confirmBoot",
+      "presentInstallerConfirmation",
+      "releasePrepared"
+    ],
     "LogUploadPort": ["uploadLogsForDate"],
     "TopologyHostPort": ["start", "stop", "getStatus", "getDiagnosticsSnapshot"]
   }

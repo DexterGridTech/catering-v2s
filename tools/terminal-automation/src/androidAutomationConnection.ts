@@ -4,7 +4,7 @@ import type {Client} from '@devicefarmer/adbkit';
 import path from 'node:path';
 import {createAndroidDisplayCapture} from './androidCapture.js';
 import {createAndroidDeviceSession} from './androidDevice.js';
-import type {ManagedReverseLifecycle, ManagedServiceReverse} from './androidDevice.js';
+import type {ManagedHostForwardLifecycle, ManagedReverseLifecycle, ManagedServiceReverse} from './androidDevice.js';
 import {createAndroidInput, type AndroidSurface} from './androidInput.js';
 import {tapRegisteredAndroidInput, tapRegisteredAndroidNode} from './androidRegisteredInput.js';
 import {createAndroidSystemUi, type AndroidSystemUi} from './androidSystemUi.js';
@@ -22,6 +22,7 @@ export type AndroidAutomationConnection = Readonly<{
   readonly fixtures?: TerminalAutomationFixtureApi;
   readonly install: (apkPath: string) => Promise<void>;
   readonly servicePorts: readonly ManagedServiceReverse[];
+  readonly attachTopologyHostForward: (port: number) => Promise<void>;
   readonly launch: (component: string) => Promise<void>;
   readonly isInstalled: (packageName: string) => Promise<boolean>;
   readonly readApiLevel: () => Promise<number>;
@@ -68,7 +69,7 @@ const recordReverseOwnership = (
     serial: string;
     remote: string;
     local: string;
-    kind: 'driver' | 'managed';
+    kind: 'driver' | 'managed' | 'topology-host';
     event: 'attached' | 'released';
   }>,
 ): void => {
@@ -93,7 +94,10 @@ const recordReverseOwnership = (
     eventPath,
     `${JSON.stringify({
       at: new Date().toISOString(),
-      event: `android.reverse.${input.kind}.${input.event}`,
+      event:
+        input.kind === 'topology-host'
+          ? `android.forward.topology-host.${input.event}`
+          : `android.reverse.${input.kind}.${input.event}`,
       runId: input.runId,
       deviceSerial: input.serial,
       remote: input.remote,
@@ -124,6 +128,7 @@ export const createAndroidAutomationConnection = async (
   let hostPort = 0;
   let releaseReverse: (() => Promise<void>) | undefined;
   let releaseManagedServiceReverses: (() => Promise<void>) | undefined;
+  let releaseTopologyHostForward: (() => Promise<void>) | undefined;
   try {
     await once(driver.server, 'listening');
     serverReady = true;
@@ -166,6 +171,26 @@ export const createAndroidAutomationConnection = async (
       });
       releaseManagedServiceReverses = await device.attachManagedServicePorts(servicePorts, journal);
     }
+    const forwardJournal: ManagedHostForwardLifecycle = Object.freeze({
+      onAttached: mapping =>
+        recordReverseOwnership({
+          repositoryRoot: input.repositoryRoot,
+          runId: process.env.TERMINAL_AUTOMATION_RUN_ID ?? '',
+          serial: input.serial,
+          ...mapping,
+          kind: 'topology-host',
+          event: 'attached',
+        }),
+      onReleased: mapping =>
+        recordReverseOwnership({
+          repositoryRoot: input.repositoryRoot,
+          runId: process.env.TERMINAL_AUTOMATION_RUN_ID ?? '',
+          serial: input.serial,
+          ...mapping,
+          kind: 'topology-host',
+          event: 'released',
+        }),
+    });
     const androidInput = createAndroidInput({adbPath: input.adbPath, serial: input.serial, shape: input.shape});
     const systemUi = createAndroidSystemUi({adbPath: input.adbPath, serial: input.serial});
     const capture = createAndroidDisplayCapture({adbPath: input.adbPath, serial: input.serial, shape: input.shape});
@@ -178,6 +203,12 @@ export const createAndroidAutomationConnection = async (
       ...(fixtures === undefined ? {} : {fixtures}),
       install: device.install,
       servicePorts,
+      attachTopologyHostForward: async port => {
+        if (releaseTopologyHostForward !== undefined) {
+          fail('TERMINAL_AUTOMATION_ANDROID_TOPOLOGY_FORWARD_ALREADY_ATTACHED');
+        }
+        releaseTopologyHostForward = await device.attachTopologyHostForward(port, forwardJournal);
+      },
       launch: device.launch,
       isInstalled: device.isInstalled,
       readApiLevel: device.readApiLevel,
@@ -233,6 +264,11 @@ export const createAndroidAutomationConnection = async (
           errors.push(error);
         }
         try {
+          await releaseTopologyHostForward?.();
+        } catch (error) {
+          errors.push(error);
+        }
+        try {
           await driver.close();
         } catch (error) {
           errors.push(error);
@@ -243,6 +279,11 @@ export const createAndroidAutomationConnection = async (
     });
   } catch (error) {
     const cleanupFailures: string[] = [];
+    try {
+      await releaseTopologyHostForward?.();
+    } catch (cleanupError) {
+      cleanupFailures.push(cleanupError instanceof Error ? cleanupError.message : 'TOPOLOGY_FORWARD_RELEASE_FAILED');
+    }
     try {
       await releaseManagedServiceReverses?.();
     } catch (cleanupError) {

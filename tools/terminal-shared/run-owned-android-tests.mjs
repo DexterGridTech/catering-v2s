@@ -954,7 +954,8 @@ async function main() {
   ) {
     throw new Error(`Kotlin test source-set denominator changed unexpectedly: modules=${moduleRoots.length}`);
   }
-  const selectedModuleRoot = selectedModule === null ? null : path.join(repositoryRoot, moduleAliases.get(selectedModule));
+  const selectedModuleRoot =
+    selectedModule === null ? null : path.join(repositoryRoot, moduleAliases.get(selectedModule));
   const selectedModuleRoots =
     selectedModuleRoot === null ? moduleRoots : moduleRoots.filter(moduleRoot => moduleRoot === selectedModuleRoot);
   if (selectedModuleRoots.length !== (selectedModule === null ? moduleRoots.length : 1)) {

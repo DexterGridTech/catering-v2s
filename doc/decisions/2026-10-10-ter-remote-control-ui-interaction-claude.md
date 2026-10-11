@@ -6,7 +6,7 @@ status: PROPOSED_FOR_DEXTER_CLAUDE_REVIEW
 
 ## 1. 元数据
 JOURNEY_REFS=doc/decisions/2026-10-10-ter-remote-control-journey-claude.md；IA_REF=doc/decisions/2026-10-10-ter-remote-control-ia-claude.md；BUSINESS_SOURCE=doc/plans/platform/2026-10-10-ter-remote-control-formal-requirements-claude.md；BUSINESS_PROBLEM=远处管理员协助现场操作；BUSINESS_USER_OR_OWNER=项目管理员；CURRENT_TASK=选择终端并应用内远程控制；SUCCESS_OUTCOME=看到原画面、正常操作、结束后释放；UI_BEARING=true；SKILL_USED=cs-spec-to-plan；CONSUMER_FACE=operations-admin。
-DEXTER_WIREFRAME_REVIEW=UNSET；DEXTER_HIFI_REVIEW=NOT_REQUIRED。终端屏幕不新增 UI。
+DEXTER_WIREFRAME_REVIEW=ACCEPTED@2026-10-10；DEXTER_HIFI_REVIEW=NOT_REQUIRED。终端屏幕不新增 UI。
 
 ## 1.1 UI 详设强制声明
 | 项 | REMOTE-LIST | REMOTE-DETAIL | REMOTE-WORKSPACE |
@@ -17,7 +17,7 @@ DEXTER_WIREFRAME_REVIEW=UNSET；DEXTER_HIFI_REVIEW=NOT_REQUIRED。终端屏幕�
 | ACTOR | 项目管理员 | 有远控权的项目管理员 | 本会话发起者 |
 | BUSINESS_SCENARIO | 门店终端查询 | 查看单终端 | 在线协助现场 |
 | BUSINESS_GOAL | 识别在线终端 | 发起远控 | 看与操作，结束 |
-| USER_VISIBLE_COPY | 门店、终端、终端版本、最新升级报告状态、连接状态；未激活/离线/状态待确认/在线 | 原详情标题；操作、远程控制；终端未激活/终端离线/连接状态待确认 | 远程控制 · 〈门店名〉 / 〈终端名〉；主屏、副屏；正在连接终端；结束远程控制；关闭；重新发起 |
+| USER_VISIBLE_COPY | 门店、终端、终端版本、最新升级报告状态、连接状态；未激活/离线/在线 | 原详情标题；操作、远程控制；终端未激活/终端离线 | 远程控制 · 〈门店名〉 / 〈终端名〉；主屏、副屏；正在连接终端；结束远程控制；关闭；重新发起 |
 | TECHNICAL_BOUNDARY | PG最新连接事实 | 新PROJECT capability | session/endpoint/stream/track；不显示技术身份 |
 | FOUNDATION_PRIMITIVE | CursorPagination、usePageQuery、createRefreshSignal、testId | useDetailDrawer、adminDrawerSurfaceProps、AdminDetailActionMenu、useOverlayLock、testId | useOverlayLock、createAsyncGenerationGuard、testId；无现成全屏媒体容器，用antd Modal呈现领域内容 |
 | CONTAINER_LAYOUT | 原ProTable列与分页；只表体滚动，不加第二祖先滚动 | 原Drawer宽高，header不滚，正文单段滚动 | Modal外框100vw×100dvh、top=0、margin=0，标题/按钮固定；媒体区min-height:0独立overflow:auto；≥960px两等宽列，<960px一列；每slot视频object-fit:contain，不溢出视口 |
@@ -131,7 +131,6 @@ Modal maskClosable=false；初始焦点放标题或关闭按钮，不自动把�
 | OUT_OF_SCOPE | 此终端不在当前项目可操作范围 |
 | NOT_ACTIVATED/ACTIVATION_INVALID | 终端未激活或激活已失效 |
 | TERMINAL_OFFLINE/TDP_DISCONNECTED | 终端离线，请重新发起 |
-| CONNECTION_UNCONFIRMED | 连接状态待确认，请刷新后重试 |
 | OCCUPIED | 当前机器已经受控 |
 | IDENTITY_CONFLICT | 本次操作信息已改变，请重新发起 |
 | SERVICE_UNAVAILABLE/START_FAILED | 连接失败，请重新发起 |
@@ -147,7 +146,9 @@ Modal maskClosable=false；初始焦点放标题或关闭按钮，不自动把�
 | 输入 SESSION_ENDED/STALE_STREAM/WRONG_TARGET/INVALID_MESSAGE/OUT_OF_BOUNDS/INVALID_GESTURE/DUPLICATE | 不执行；旧输入/错目标不重发；诊断有限码，UI不逐move弹Toast |
 | 输入 INPUT_CONFLICT/GESTURE_EXPIRED | 已取消本次拖动，请重新操作（单gesture反馈，非会话失败） |
 | 输入 UNSUPPORTED_SURFACE | 当前界面不支持应用内远程控制；停止该面输入 |
-| cleanup失败（资源事实，非协议新原因） | 远程控制已结束，资源释放失败；保留可见诊断 |
+| 浏览器本地Room/track cleanup失败（资源事实，非协议新原因） | 远程控制已结束，资源释放失败；保留可见诊断；不代表已知TER释放结果 |
+
+后台仅显示本浏览器自己可观察的Room/track释放失败。TER capture/track/Window释放结果经本机selectRemoteControlStatus.cleanup及结构化日志可见，由automation在相应端点断言；不新增CBS report字段，不在ENDED后补传cleanup。
 
 ## 6. 逐操作任务合理性
 | 操作 | Journey来源 | 此时为何操作 | 是否有更短路径 | 不选替代理由 | 约束归因 | Dexter裁决必要 |
@@ -174,4 +175,4 @@ Heritage只作来源盘点；不修改冻结资产，不引入外部fallback。f
 N/A：本次ASCII低保真供Dexter确认，不另建可执行原型或假数据运行。
 
 ## 10. 看图与未验证
-DEXTER_WIREFRAME_REVIEW=UNSET；真实列表、Modal、视频映射和触摸结果全部NOT_RUN。接受需求功能不等于接受这份线框；独立静态GO不等于UI通过。
+DEXTER_WIREFRAME_REVIEW=ACCEPTED@2026-10-10；真实列表、Modal、视频映射和触摸结果全部NOT_RUN。Dexter已确认现有终端列表扩展、现有详情抽屉扩展与新全屏远控工作区三份线框；确认不代表真实UI、媒体或触摸行为通过，也不授予实施或动态运行权限。

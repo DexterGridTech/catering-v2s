@@ -31,14 +31,18 @@ export const selectTerminalUpdateInvitation = defineStateSelector(moduleName, 's
   parameters: [],
   selector: (root: StateRoot) => readState(root).invitation ?? null,
 });
-export const selectTerminalUpdateReportDelivery = defineStateSelector(moduleName, 'selectTerminalUpdateReportDelivery', {
-  parameters: [],
-  selector: (root: StateRoot) => {
-    const descriptor = readState(root).reportDescriptor;
-    return Object.freeze({
-      pendingCount: Object.keys(descriptor?.pendingReports ?? {}).length,
-      sendPaused: descriptor?.sendPaused ?? false,
-      latestDeliveryFailure: descriptor?.latestDeliveryFailure ?? null,
-    });
+export const selectTerminalUpdateReportDelivery = defineStateSelector(
+  moduleName,
+  'selectTerminalUpdateReportDelivery',
+  {
+    parameters: [],
+    selector: (root: StateRoot) => {
+      const descriptor = readState(root).reportDescriptor;
+      return Object.freeze({
+        pendingCount: Object.keys(descriptor?.pendingReports ?? {}).length,
+        sendPaused: descriptor?.sendPaused ?? false,
+        latestDeliveryFailure: descriptor?.latestDeliveryFailure ?? null,
+      });
+    },
   },
-});
+);

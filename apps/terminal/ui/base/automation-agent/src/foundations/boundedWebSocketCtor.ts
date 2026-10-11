@@ -1,7 +1,13 @@
 const maxUnacknowledgedBytes = 1_048_576;
 
 type WebSocketConstructor = {new (url: string, protocols?: string | string[]): WebSocket};
-type PendingMessage = Readonly<{data: string; bytes: number; sent: boolean; messageType: string; messageIdFamily: string}>;
+type PendingMessage = Readonly<{
+  data: string;
+  bytes: number;
+  sent: boolean;
+  messageType: string;
+  messageIdFamily: string;
+}>;
 export type BoundedWebSocketFailure = Readonly<{
   readonly reason:
     | 'NON_TEXT_MESSAGE'

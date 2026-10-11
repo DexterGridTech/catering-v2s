@@ -10,7 +10,6 @@ import {moduleName as uiState} from '@catering-v2s/kernel-base-ui-state';
 import {moduleName as staffSession} from '@catering-v2s/kernel-feature-sample-staff-session';
 import {moduleName as wallpaper} from '@catering-v2s/kernel-feature-sample-wallpaper';
 import {moduleName as adminShell} from '@catering-v2s/ui-base-admin-shell';
-import {moduleName as serverConfigPanel} from '@catering-v2s/ui-base-server-config-panel';
 import {moduleName as terminalActivation} from '@catering-v2s/ui-base-terminal-activation';
 import {moduleName as terminalDataClient} from '@catering-v2s/kernel-base-terminal-data-client';
 import {moduleName as terminalUpdate} from '@catering-v2s/kernel-base-terminal-update';
@@ -37,7 +36,6 @@ export const dependencyModuleNames = [
   staffSession,
   wallpaper,
   adminShell,
-  serverConfigPanel,
   terminalActivation,
   terminalDataClient,
   terminalUpdate,

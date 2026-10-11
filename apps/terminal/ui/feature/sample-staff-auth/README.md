@@ -55,7 +55,7 @@ void authParts
 
 包根 @catering-v2s/ui-feature-sample-staff-auth 当前公开以下符号（含类型）：
 StaffAuthAssembly、dependencyModuleNames、devDependencyModuleNames、moduleKind、moduleName、
-needToLoginStaffCommand、sampleStaffAuthAssembly。唯一 export-map 路径是 . → ./src/index.ts；包内实现深路径不是包级导入入口。
+needToLoginStaffCommand、sampleStaffAuthAssembly。唯一包导出映射为 . → ./src/index.ts；包内实现深路径不是包级导入入口。
 该清单与 terminal-invariants.json 的 publicExports / publicExportMap 及
 test/publicSurface.test.ts 对齐。
 

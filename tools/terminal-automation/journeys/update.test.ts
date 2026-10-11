@@ -20,6 +20,7 @@ import {fileURLToPath} from 'node:url';
 import {afterAll, beforeAll, expect, it} from 'vitest';
 import {chromium, type Browser, type Page} from 'playwright';
 import {createTerminalAutomationDriver, readSelector} from '../src/index.ts';
+import {projectTerminalAutomationAppEvent} from '../src/androidAppDiagnostics.js';
 import {terminalUpdateSampleConfig} from '../src/updateSample.ts';
 import type {AutomationEnvelope} from '@catering-v2s/ui-base-automation-agent/protocol';
 import type {TerminalAutomationProcessIdentity} from '../src/managedRun.ts';
@@ -36,7 +37,9 @@ const sampleConfig = terminalUpdateSampleConfig(sample);
 const require = createRequire(import.meta.url);
 const managedProcessTree = require('../../../scripts/dev/managed-process-tree.mjs') as {
   readProcessTable: () => readonly {pid: number; ppid: number; pgid: number; startToken: string}[];
-  snapshotProcessTree: (identity: TerminalAutomationProcessIdentity) => readonly {pid: number; pgid: number; startToken: string}[];
+  snapshotProcessTree: (
+    identity: TerminalAutomationProcessIdentity,
+  ) => readonly {pid: number; pgid: number; startToken: string}[];
   terminateOwnedProcessTree: (identity: TerminalAutomationProcessIdentity) => Promise<{
     status: 'PASS' | 'FAIL';
     treeReadback: readonly {pid: number; startToken: string}[];
@@ -48,7 +51,8 @@ const availablePort = async (): Promise<number> => {
   server.listen(0, '127.0.0.1');
   await once(server, 'listening');
   const address = server.address();
-  if (address === null || typeof address === 'string') throw new Error('TERMINAL_AUTOMATION_UPDATE_WEB_PORT_UNAVAILABLE');
+  if (address === null || typeof address === 'string')
+    throw new Error('TERMINAL_AUTOMATION_UPDATE_WEB_PORT_UNAVAILABLE');
   await new Promise<void>((resolve, reject) => server.close(error => (error ? reject(error) : resolve())));
   return address.port;
 };
@@ -89,18 +93,55 @@ const waitForMessage = (
   server: ReturnType<typeof createTerminalAutomationDriver>['transport'],
   sessionId: string,
   matches: (message: AutomationEnvelope) => boolean,
-): Promise<AutomationEnvelope> => new Promise((resolve, reject) => {
-  const timer = setTimeout(() => {
-    unsubscribe();
-    reject(new Error('TERMINAL_AUTOMATION_UPDATE_MESSAGE_TIMEOUT'));
-  }, 10_000);
-  const unsubscribe = server.onMessage(sessionId, message => {
-    if (!matches(message)) return;
-    clearTimeout(timer);
-    unsubscribe();
-    resolve(message);
+): Promise<AutomationEnvelope> =>
+  new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      unsubscribe();
+      reject(new Error('TERMINAL_AUTOMATION_UPDATE_MESSAGE_TIMEOUT'));
+    }, 10_000);
+    const unsubscribe = server.onMessage(sessionId, message => {
+      if (!matches(message)) return;
+      clearTimeout(timer);
+      unsubscribe();
+      resolve(message);
+    });
   });
-});
+
+const logUpdateDiagnostic = (
+  event: string,
+  data: Readonly<Record<string, string | number | boolean | null>> = {},
+): void => {
+  process.stdout.write(
+    `${JSON.stringify({
+      at: new Date().toISOString(),
+      event: `terminal-automation.update.${event}`,
+      runId: runId ?? null,
+      case: updateCase ?? null,
+      sample,
+      sessionId: ownerSession?.sessionId ?? null,
+      ...data,
+    })}\n`,
+  );
+};
+
+const readUpdateSelector = async (selectorName: string): Promise<unknown> => {
+  if (ownerDriver === undefined || ownerSession === undefined)
+    throw new Error('TERMINAL_AUTOMATION_UPDATE_WEB_NOT_READY');
+  const startedAt = Date.now();
+  logUpdateDiagnostic('selector-read-started', {selectorName});
+  try {
+    const value = await readSelector(ownerDriver.transport, ownerSession.sessionId, selectorName, []);
+    logUpdateDiagnostic('selector-read-completed', {selectorName, elapsedMs: Math.max(0, Date.now() - startedAt)});
+    return value;
+  } catch (error) {
+    logUpdateDiagnostic('selector-read-failed', {
+      selectorName,
+      elapsedMs: Math.max(0, Date.now() - startedAt),
+      errorName: error instanceof Error ? error.name : 'UnknownError',
+    });
+    throw error;
+  }
+};
 
 const testToken = `ter-update-${randomUUID()}`;
 const integrationRoot = path.join(root, 'apps/terminal/ui/integration', sampleConfig.integrationPath);
@@ -135,23 +176,47 @@ const exportSeedArtifacts = (): void => {
     for (const item of [
       {key: `${app}-full`, kind: 'FULL', source: `${app}-full.zip`},
       {key: `${app}-full-manifest`, kind: 'FULL_MANIFEST', source: 'full.json', exported: `${app}-full.json`},
-      {key: `${app}-full-package`, kind: 'FULL_PACKAGE', source: 'full-package.json', exported: `${app}-full-package.json`},
+      {
+        key: `${app}-full-package`,
+        kind: 'FULL_PACKAGE',
+        source: 'full-package.json',
+        exported: `${app}-full-package.json`,
+      },
       {key: `${app}-hot`, kind: 'HOT', source: `${app}-hot.zip`},
       {key: `${app}-hot-manifest`, kind: 'HOT_MANIFEST', source: 'hot.json', exported: `${app}-hot.json`},
     ]) {
       const source = path.join(outputDirectory, item.source);
       const destination = path.join(exportDirectory, item.exported ?? item.source);
-      if (!existsSync(source) || !statSync(source).isFile()) throw new Error(`TERMINAL_UPDATE_SEED_EXPORT_SOURCE_MISSING_${item.key}`);
+      if (!existsSync(source) || !statSync(source).isFile())
+        throw new Error(`TERMINAL_UPDATE_SEED_EXPORT_SOURCE_MISSING_${item.key}`);
       copyFileSync(source, destination, 0);
       const stat = statSync(destination);
-      files.push({key: item.key, app, kind: item.kind, path: path.basename(destination), sha256: digest(destination), byteSize: stat.size});
+      files.push({
+        key: item.key,
+        app,
+        kind: item.kind,
+        path: path.basename(destination),
+        sha256: digest(destination),
+        byteSize: stat.size,
+      });
     }
   }
   const totalBytes = files.reduce((sum, file) => sum + file.byteSize, 0);
   if (totalBytes > 1024 * 1024 * 1024) throw new Error('TERMINAL_UPDATE_SEED_EXPORT_TOTAL_BYTES_EXCEEDED');
-  const manifest = {schemaVersion: 1, kind: 'terminal-update-seed-input-manifest', sourceRunId: runId, files, totalBytes};
-  writeFileSync(path.join(exportDirectory, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`, {mode: 0o600, flag: 'wx'});
-  process.stdout.write(`TERMINAL_UPDATE_SEED_ARTIFACT_EXPORT=PASS run=${runId} files=${files.length} bytes=${totalBytes}\n`);
+  const manifest = {
+    schemaVersion: 1,
+    kind: 'terminal-update-seed-input-manifest',
+    sourceRunId: runId,
+    files,
+    totalBytes,
+  };
+  writeFileSync(path.join(exportDirectory, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`, {
+    mode: 0o600,
+    flag: 'wx',
+  });
+  process.stdout.write(
+    `TERMINAL_UPDATE_SEED_ARTIFACT_EXPORT=PASS run=${runId} files=${files.length} bytes=${totalBytes}\n`,
+  );
 };
 const extractZipEntry = (zipPath: string, entryName: string, destination: string): void => {
   mkdirSync(path.dirname(destination), {recursive: true, mode: 0o700});
@@ -367,13 +432,17 @@ it.skipIf(updateCase !== 'update.artifacts')(
 );
 
 beforeAll(async () => {
-  if (updateCase !== 'update.fixed' && updateCase !== 'update.install-result' && updateCase !== 'update.compatibility') return;
+  if (updateCase !== 'update.fixed' && updateCase !== 'update.install-result' && updateCase !== 'update.compatibility')
+    return;
   const runId = process.env.TERMINAL_AUTOMATION_RUN_ID;
   if (!runId) throw new Error('TERMINAL_AUTOMATION_RUN_ID_REQUIRED');
+  logUpdateDiagnostic('web-harness-started', {integration: sampleConfig.integrationPath});
   ownerDriver = createTerminalAutomationDriver({token: testToken, host: '127.0.0.1', port: 0});
   await once(ownerDriver.transport.server, 'listening');
   const address = ownerDriver.transport.server.address();
-  if (address === null || typeof address === 'string') throw new Error('TERMINAL_AUTOMATION_UPDATE_DRIVER_ADDRESS_UNAVAILABLE');
+  if (address === null || typeof address === 'string')
+    throw new Error('TERMINAL_AUTOMATION_UPDATE_DRIVER_ADDRESS_UNAVAILABLE');
+  logUpdateDiagnostic('driver-listening', {port: address.port});
   const webPort = await availablePort();
   const url = `http://127.0.0.1:${webPort}/`;
   ownerExpo = spawn('yarn', ['web', '--port', String(webPort)], {
@@ -393,103 +462,188 @@ beforeAll(async () => {
   await once(ownerExpo, 'spawn');
   if (ownerExpo.pid === undefined) throw new Error('TERMINAL_AUTOMATION_UPDATE_EXPO_PID_UNAVAILABLE');
   ownerExpoIdentity = readProcessIdentity(ownerExpo.pid);
-  ownerExpo.stdout?.on('data', (chunk: Buffer) => process.stdout.write(chunk.toString('utf8').replaceAll(testToken, '[REDACTED]')));
-  ownerExpo.stderr?.on('data', (chunk: Buffer) => process.stderr.write(chunk.toString('utf8').replaceAll(testToken, '[REDACTED]')));
+  logUpdateDiagnostic('expo-started', {
+    pid: ownerExpoIdentity.pid,
+    startTokenPresent: ownerExpoIdentity.startToken.length > 0,
+  });
+  ownerExpo.stdout?.on('data', (chunk: Buffer) =>
+    process.stdout.write(chunk.toString('utf8').replaceAll(testToken, '[REDACTED]')),
+  );
+  ownerExpo.stderr?.on('data', (chunk: Buffer) =>
+    process.stderr.write(chunk.toString('utf8').replaceAll(testToken, '[REDACTED]')),
+  );
   await waitForExpo(url, ownerExpo);
   ownerBrowser = await chromium.launch({headless: true});
   ownerPage = await ownerBrowser.newPage({viewport: {width: 1280, height: 720}});
+  ownerPage.on('console', message => {
+    if (!['info', 'warning', 'error'].includes(message.type())) return;
+    const firstArgument = message.args()[0];
+    if (firstArgument === undefined) return;
+    void firstArgument
+      .jsonValue()
+      .then(value => {
+        const projected = projectTerminalAutomationAppEvent(value);
+        if (projected === null) return;
+        logUpdateDiagnostic('app-owner-log', {
+          ownerCategory: projected.category,
+          ownerEvent: projected.event,
+          ownerRequestId: projected.requestId ?? null,
+          ownerDetails: JSON.stringify(projected),
+        });
+      })
+      .catch(() => {
+        logUpdateDiagnostic('app-owner-log-unavailable', {consoleType: message.type()});
+      });
+  });
   const sessionReady = ownerDriver.waitForSession(value => value.appName === sampleConfig.appName, 15_000);
   const response = await ownerPage.goto(url, {waitUntil: 'domcontentloaded', timeout: 15_000});
   if (response === null || !response.ok()) throw new Error('TERMINAL_AUTOMATION_UPDATE_EXPO_PAGE_LOAD_FAILED');
   ownerSession = await sessionReady;
   if (ownerSession.appName !== sampleConfig.appName) throw new Error('TERMINAL_AUTOMATION_UPDATE_SAMPLE_MISMATCH');
+  logUpdateDiagnostic('runtime-session-ready', {appName: ownerSession.appName});
 }, 90_000);
 
 afterAll(async () => {
-  if (updateCase !== 'update.fixed' && updateCase !== 'update.install-result' && updateCase !== 'update.compatibility') return;
+  if (updateCase !== 'update.fixed' && updateCase !== 'update.install-result' && updateCase !== 'update.compatibility')
+    return;
+  logUpdateDiagnostic('web-harness-cleanup-started');
   const cleanupErrors: string[] = [];
-  try { await ownerBrowser?.close(); } catch { cleanupErrors.push('BROWSER_CLOSE_FAILED'); }
-  try { await ownerDriver?.close(); } catch { cleanupErrors.push('DRIVER_CLOSE_FAILED'); }
+  try {
+    await ownerBrowser?.close();
+  } catch {
+    cleanupErrors.push('BROWSER_CLOSE_FAILED');
+  }
+  try {
+    await ownerDriver?.close();
+  } catch {
+    cleanupErrors.push('DRIVER_CLOSE_FAILED');
+  }
   if (ownerExpoIdentity !== undefined) {
     try {
       if (managedProcessTree.snapshotProcessTree(ownerExpoIdentity).length > 0) {
         const result = await managedProcessTree.terminateOwnedProcessTree(ownerExpoIdentity);
         if (result.status !== 'PASS' || result.treeReadback.length > 0) cleanupErrors.push('EXPO_TREE_REMAINS');
       }
-    } catch { cleanupErrors.push('EXPO_PROCESS_TREE_CLEANUP_FAILED'); }
+    } catch {
+      cleanupErrors.push('EXPO_PROCESS_TREE_CLEANUP_FAILED');
+    }
   }
-  if (cleanupErrors.length > 0) throw new Error(`TERMINAL_AUTOMATION_UPDATE_CLEANUP_${cleanupErrors.join('_')}`);
+  if (cleanupErrors.length > 0) {
+    logUpdateDiagnostic('web-harness-cleanup-failed', {cleanupErrorCount: cleanupErrors.length});
+    throw new Error(`TERMINAL_AUTOMATION_UPDATE_CLEANUP_${cleanupErrors.join('_')}`);
+  }
+  logUpdateDiagnostic('web-harness-cleanup-completed', {browserClosed: true, driverClosed: true, expoTreeAbsent: true});
 });
 
-it.skipIf(updateCase !== 'update.fixed')('fixes an authorized update target through Runtime and exposes actual facts', async () => {
-  if (ownerDriver === undefined || ownerSession === undefined) throw new Error('TERMINAL_AUTOMATION_UPDATE_WEB_NOT_READY');
-  const runtimeInfo = responseResult(await ownerDriver.transport.request(ownerSession.sessionId, 'runtime.info', null));
-  if (!isRecord(runtimeInfo) || !Array.isArray(runtimeInfo.descriptors)) throw new Error('RUNTIME_INFO_INVALID');
-  const descriptor = runtimeInfo.descriptors.find(value => isRecord(value) && value.moduleName === 'kernel.base.terminal-update');
-  if (!isRecord(descriptor) || !Array.isArray(descriptor.commandNames) || !Array.isArray(descriptor.selectorNames))
-    throw new Error('TERMINAL_UPDATE_RUNTIME_DESCRIPTOR_MISSING');
-  const selectorNames = descriptor.selectorNames;
-  expect(selectorNames).toEqual(expect.arrayContaining([
-    'kernel.base.terminal-update.selectTerminalUpdateActualVersions',
-    'kernel.base.terminal-update.selectTerminalUpdateTask',
-    'kernel.base.terminal-update.selectTerminalUpdateRecentStatus',
-  ]));
-  const commandName = descriptor.commandNames.find(value => typeof value === 'string' && value.endsWith('.accept-target'));
-  if (typeof commandName !== 'string') throw new Error('TERMINAL_UPDATE_ACCEPT_COMMAND_MISSING');
-  const selectionContext = {selectedSpace: 'development', contextIdentity: process.env.TERMINAL_AUTOMATION_RUN_ID};
-
-  const dispatch = async (context: typeof selectionContext) => {
-    const completion = waitForMessage(ownerDriver!.transport, ownerSession!.sessionId, message =>
-      eventBody(message)?.kind === 'command.result',
+it.skipIf(updateCase !== 'update.fixed')(
+  'fixes an authorized update target through Runtime and exposes actual facts',
+  async () => {
+    if (ownerDriver === undefined || ownerSession === undefined)
+      throw new Error('TERMINAL_AUTOMATION_UPDATE_WEB_NOT_READY');
+    const runtimeInfo = responseResult(
+      await ownerDriver.transport.request(ownerSession.sessionId, 'runtime.info', null),
     );
-    const accepted = responseResult(await ownerDriver!.transport.request(ownerSession!.sessionId, 'command.dispatch', {
-      commandName,
-      payload: {selectionContext: context},
-    }));
-    if (!isRecord(accepted) || typeof accepted.requestId !== 'string') throw new Error('TERMINAL_UPDATE_COMMAND_NOT_ACCEPTED');
-    const message = await completion;
-    const body = eventBody(message);
-    if (body?.requestId !== accepted.requestId || !isRecord(body.result)) throw new Error('TERMINAL_UPDATE_COMMAND_RESULT_MISMATCH');
-    return body.result;
-  };
+    if (!isRecord(runtimeInfo) || !Array.isArray(runtimeInfo.descriptors)) throw new Error('RUNTIME_INFO_INVALID');
+    const descriptor = runtimeInfo.descriptors.find(
+      value => isRecord(value) && value.moduleName === 'kernel.base.terminal-update',
+    );
+    if (!isRecord(descriptor) || !Array.isArray(descriptor.commandNames) || !Array.isArray(descriptor.selectorNames))
+      throw new Error('TERMINAL_UPDATE_RUNTIME_DESCRIPTOR_MISSING');
+    const selectorNames = descriptor.selectorNames;
+    expect(selectorNames).toEqual(
+      expect.arrayContaining([
+        'kernel.base.terminal-update.selectTerminalUpdateActualVersions',
+        'kernel.base.terminal-update.selectTerminalUpdateTask',
+        'kernel.base.terminal-update.selectTerminalUpdateRecentStatus',
+      ]),
+    );
+    const commandName = descriptor.commandNames.find(
+      value => typeof value === 'string' && value.endsWith('.request-terminal-update'),
+    );
+    if (typeof commandName !== 'string') throw new Error('TERMINAL_UPDATE_REQUEST_COMMAND_MISSING');
+    const selectionContext = {selectedSpace: 'development', contextIdentity: process.env.TERMINAL_AUTOMATION_RUN_ID};
 
-  const firstResult = await dispatch(selectionContext);
-  expect(firstResult).toMatchObject({status: 'completed'});
-  if (!isRecord(firstResult) || !Array.isArray(firstResult.actorResults) || !isRecord(firstResult.actorResults[0]))
-    throw new Error('TERMINAL_UPDATE_FIRST_ACTOR_RESULT_MISSING');
-  expect(firstResult.actorResults[0].result).toMatchObject({status: 'succeeded'});
-  const task = await readSelector(ownerDriver.transport, ownerSession.sessionId,
-    'kernel.base.terminal-update.selectTerminalUpdateTask', []);
-  if (!isRecord(task) || typeof task.taskId !== 'string') throw new Error('TERMINAL_UPDATE_TASK_SELECTOR_INVALID');
-  expect(task).toMatchObject({target: {ruleRef: `automation-${process.env.TERMINAL_AUTOMATION_RUN_ID}`}, phase: 'succeeded'});
-  const actual = await readSelector(ownerDriver.transport, ownerSession.sessionId,
-    'kernel.base.terminal-update.selectTerminalUpdateActualVersions', []);
-  expect(actual).toMatchObject({applicationId: sampleConfig.applicationId, entryKind: 'embedded'});
-  const recent = await readSelector(ownerDriver.transport, ownerSession.sessionId,
-    'kernel.base.terminal-update.selectTerminalUpdateRecentStatus', []);
-  expect(recent).toMatchObject({state: 'succeeded', taskId: task.taskId});
+    const dispatch = async (context: typeof selectionContext) => {
+      const startedAt = Date.now();
+      logUpdateDiagnostic('update-command-dispatch-started', {commandName});
+      const completion = waitForMessage(
+        ownerDriver!.transport,
+        ownerSession!.sessionId,
+        message => eventBody(message)?.kind === 'command.result',
+      );
+      const accepted = responseResult(
+        await ownerDriver!.transport.request(ownerSession!.sessionId, 'command.dispatch', {
+          commandName,
+          payload: {selectionContext: context},
+        }),
+      );
+      if (!isRecord(accepted) || typeof accepted.requestId !== 'string')
+        throw new Error('TERMINAL_UPDATE_COMMAND_NOT_ACCEPTED');
+      logUpdateDiagnostic('update-command-accepted', {commandName, requestId: accepted.requestId});
+      const message = await completion;
+      const body = eventBody(message);
+      if (body?.requestId !== accepted.requestId || !isRecord(body.result))
+        throw new Error('TERMINAL_UPDATE_COMMAND_RESULT_MISMATCH');
+      logUpdateDiagnostic('update-command-completed', {
+        commandName,
+        requestId: accepted.requestId,
+        runtimeStatus: typeof body.result.status === 'string' ? body.result.status : 'unknown',
+        elapsedMs: Math.max(0, Date.now() - startedAt),
+      });
+      return body.result;
+    };
 
-  const duplicateResult = await dispatch(selectionContext);
-  expect(duplicateResult).toMatchObject({status: 'completed'});
-  if (!isRecord(duplicateResult) || !Array.isArray(duplicateResult.actorResults) || !isRecord(duplicateResult.actorResults[0]))
-    throw new Error('TERMINAL_UPDATE_DUPLICATE_ACTOR_RESULT_MISSING');
-  expect(duplicateResult.actorResults[0].result).toMatchObject({status: 'already-fixed'});
-  const conflictResult = await dispatch({selectedSpace: 'other', contextIdentity: process.env.TERMINAL_AUTOMATION_RUN_ID});
-  expect(conflictResult).toMatchObject({status: 'completed'});
-  if (!isRecord(conflictResult) || !Array.isArray(conflictResult.actorResults) || !isRecord(conflictResult.actorResults[0]))
-    throw new Error('TERMINAL_UPDATE_CONFLICT_ACTOR_RESULT_MISSING');
-  expect(conflictResult.actorResults[0].result).toMatchObject({status: 'rejected', reason: 'IDENTITY_CONFLICT'});
-  const finalTask = await readSelector(ownerDriver.transport, ownerSession.sessionId,
-    'kernel.base.terminal-update.selectTerminalUpdateTask', []);
-  expect(finalTask).toEqual(task);
-}, 30_000);
+    const firstResult = await dispatch(selectionContext);
+    expect(firstResult).toMatchObject({status: 'completed'});
+    if (!isRecord(firstResult) || !Array.isArray(firstResult.actorResults) || !isRecord(firstResult.actorResults[0]))
+      throw new Error('TERMINAL_UPDATE_FIRST_ACTOR_RESULT_MISSING');
+    expect(firstResult.actorResults[0].result).toMatchObject({status: 'succeeded'});
+    const task = await readUpdateSelector('kernel.base.terminal-update.selectTerminalUpdateTask');
+    if (!isRecord(task) || typeof task.taskId !== 'string') throw new Error('TERMINAL_UPDATE_TASK_SELECTOR_INVALID');
+    expect(task).toMatchObject({
+      target: {ruleRef: `automation-${process.env.TERMINAL_AUTOMATION_RUN_ID}`},
+      phase: 'succeeded',
+    });
+    const actual = await readUpdateSelector('kernel.base.terminal-update.selectTerminalUpdateActualVersions');
+    expect(actual).toMatchObject({applicationId: sampleConfig.applicationId, entryKind: 'embedded'});
+    const recent = await readUpdateSelector('kernel.base.terminal-update.selectTerminalUpdateRecentStatus');
+    expect(recent).toMatchObject({state: 'succeeded', taskId: task.taskId});
+
+    const duplicateResult = await dispatch(selectionContext);
+    expect(duplicateResult).toMatchObject({status: 'completed'});
+    if (
+      !isRecord(duplicateResult) ||
+      !Array.isArray(duplicateResult.actorResults) ||
+      !isRecord(duplicateResult.actorResults[0])
+    )
+      throw new Error('TERMINAL_UPDATE_DUPLICATE_ACTOR_RESULT_MISSING');
+    expect(duplicateResult.actorResults[0].result).toMatchObject({status: 'already-fixed'});
+    const conflictResult = await dispatch({
+      selectedSpace: 'other',
+      contextIdentity: process.env.TERMINAL_AUTOMATION_RUN_ID,
+    });
+    expect(conflictResult).toMatchObject({status: 'completed'});
+    if (
+      !isRecord(conflictResult) ||
+      !Array.isArray(conflictResult.actorResults) ||
+      !isRecord(conflictResult.actorResults[0])
+    )
+      throw new Error('TERMINAL_UPDATE_CONFLICT_ACTOR_RESULT_MISSING');
+    expect(conflictResult.actorResults[0].result).toMatchObject({status: 'rejected', reason: 'IDENTITY_CONFLICT'});
+    const finalTask = await readUpdateSelector('kernel.base.terminal-update.selectTerminalUpdateTask');
+    expect(finalTask).toEqual(task);
+  },
+  30_000,
+);
 
 it.skipIf(updateCase !== 'update.install-result')(
   're-invites a fixed FULL after a confirmed installer cancellation without duplicating a pending action',
   async () => {
     if (ownerDriver === undefined || ownerSession === undefined)
       throw new Error('TERMINAL_AUTOMATION_UPDATE_WEB_NOT_READY');
-    const runtimeInfo = responseResult(await ownerDriver.transport.request(ownerSession.sessionId, 'runtime.info', null));
+    const runtimeInfo = responseResult(
+      await ownerDriver.transport.request(ownerSession.sessionId, 'runtime.info', null),
+    );
     if (!isRecord(runtimeInfo) || !Array.isArray(runtimeInfo.descriptors)) throw new Error('RUNTIME_INFO_INVALID');
     const descriptor = runtimeInfo.descriptors.find(
       value => isRecord(value) && value.moduleName === 'kernel.base.terminal-update',
@@ -497,37 +651,48 @@ it.skipIf(updateCase !== 'update.install-result')(
     if (!isRecord(descriptor) || !Array.isArray(descriptor.commandNames))
       throw new Error('TERMINAL_UPDATE_RUNTIME_DESCRIPTOR_MISSING');
     const commandName = descriptor.commandNames.find(
-      value => typeof value === 'string' && value.endsWith('.accept-target'),
+      value => typeof value === 'string' && value.endsWith('.request-terminal-update'),
     );
-    if (typeof commandName !== 'string') throw new Error('TERMINAL_UPDATE_ACCEPT_COMMAND_MISSING');
+    if (typeof commandName !== 'string') throw new Error('TERMINAL_UPDATE_REQUEST_COMMAND_MISSING');
     const selectionContext = {selectedSpace: 'development', contextIdentity: process.env.TERMINAL_AUTOMATION_RUN_ID};
     const dispatch = async () => {
-      const completion = waitForMessage(ownerDriver!.transport, ownerSession!.sessionId, message =>
-        eventBody(message)?.kind === 'command.result',
+      const startedAt = Date.now();
+      logUpdateDiagnostic('install-result-command-dispatch-started', {commandName});
+      const completion = waitForMessage(
+        ownerDriver!.transport,
+        ownerSession!.sessionId,
+        message => eventBody(message)?.kind === 'command.result',
       );
-      const accepted = responseResult(await ownerDriver!.transport.request(ownerSession!.sessionId, 'command.dispatch', {
-        commandName,
-        payload: {selectionContext},
-      }));
+      const accepted = responseResult(
+        await ownerDriver!.transport.request(ownerSession!.sessionId, 'command.dispatch', {
+          commandName,
+          payload: {selectionContext},
+        }),
+      );
       if (!isRecord(accepted) || typeof accepted.requestId !== 'string')
         throw new Error('TERMINAL_UPDATE_COMMAND_NOT_ACCEPTED');
+      logUpdateDiagnostic('install-result-command-accepted', {commandName, requestId: accepted.requestId});
       const message = await completion;
       const body = eventBody(message);
       if (body?.requestId !== accepted.requestId || !isRecord(body.result))
         throw new Error('TERMINAL_UPDATE_COMMAND_RESULT_MISMATCH');
       if (!Array.isArray(body.result.actorResults) || !isRecord(body.result.actorResults[0]))
         throw new Error('TERMINAL_UPDATE_ACTOR_RESULT_MISSING');
+      logUpdateDiagnostic('install-result-command-completed', {
+        commandName,
+        requestId: accepted.requestId,
+        actorStatus:
+          isRecord(body.result.actorResults[0].result) && typeof body.result.actorResults[0].result.status === 'string'
+            ? body.result.actorResults[0].result.status
+            : 'unknown',
+        elapsedMs: Math.max(0, Date.now() - startedAt),
+      });
       return body.result.actorResults[0].result;
     };
 
     const first = await dispatch();
     expect(first).toMatchObject({status: 'waiting-user', actionId: expect.any(String)});
-    const firstTask = await readSelector(
-      ownerDriver.transport,
-      ownerSession.sessionId,
-      'kernel.base.terminal-update.selectTerminalUpdateTask',
-      [],
-    );
+    const firstTask = await readUpdateSelector('kernel.base.terminal-update.selectTerminalUpdateTask');
     if (!isRecord(firstTask) || typeof firstTask.actionId !== 'string')
       throw new Error('TERMINAL_UPDATE_FIRST_ACTION_NOT_PERSISTED');
     expect(firstTask).toMatchObject({
@@ -537,12 +702,7 @@ it.skipIf(updateCase !== 'update.install-result')(
 
     const retried = await dispatch();
     expect(retried).toMatchObject({status: 'waiting-user', actionId: expect.any(String)});
-    const retriedTask = await readSelector(
-      ownerDriver.transport,
-      ownerSession.sessionId,
-      'kernel.base.terminal-update.selectTerminalUpdateTask',
-      [],
-    );
+    const retriedTask = await readUpdateSelector('kernel.base.terminal-update.selectTerminalUpdateTask');
     if (!isRecord(retriedTask) || typeof retriedTask.actionId !== 'string')
       throw new Error('TERMINAL_UPDATE_REINVITED_ACTION_NOT_PERSISTED');
     expect(retriedTask).toMatchObject({
@@ -553,12 +713,7 @@ it.skipIf(updateCase !== 'update.install-result')(
     expect(retriedTask.actionId).not.toBe(firstTask.actionId);
 
     expect(await dispatch()).toMatchObject({status: 'already-fixed'});
-    expect(await readSelector(
-      ownerDriver.transport,
-      ownerSession.sessionId,
-      'kernel.base.terminal-update.selectTerminalUpdateTask',
-      [],
-    )).toEqual(retriedTask);
+    expect(await readUpdateSelector('kernel.base.terminal-update.selectTerminalUpdateTask')).toEqual(retriedTask);
   },
   30_000,
 );
@@ -568,15 +723,12 @@ it.skipIf(updateCase !== 'update.compatibility')(
   async () => {
     if (ownerDriver === undefined || ownerSession === undefined)
       throw new Error('TERMINAL_AUTOMATION_UPDATE_WEB_NOT_READY');
-    const before = await readSelector(
-      ownerDriver.transport,
-      ownerSession.sessionId,
-      'kernel.base.terminal-update.selectTerminalUpdateActualVersions',
-      [],
-    );
+    const before = await readUpdateSelector('kernel.base.terminal-update.selectTerminalUpdateActualVersions');
     expect(before).toMatchObject({nativeBuildNumber: 1, bundleVersion: '1.0.5', entryKind: 'hot'});
 
-    const runtimeInfo = responseResult(await ownerDriver.transport.request(ownerSession.sessionId, 'runtime.info', null));
+    const runtimeInfo = responseResult(
+      await ownerDriver.transport.request(ownerSession.sessionId, 'runtime.info', null),
+    );
     if (!isRecord(runtimeInfo) || !Array.isArray(runtimeInfo.descriptors)) throw new Error('RUNTIME_INFO_INVALID');
     const descriptor = runtimeInfo.descriptors.find(
       value => isRecord(value) && value.moduleName === 'kernel.base.terminal-update',
@@ -584,32 +736,43 @@ it.skipIf(updateCase !== 'update.compatibility')(
     if (!isRecord(descriptor) || !Array.isArray(descriptor.commandNames))
       throw new Error('TERMINAL_UPDATE_RUNTIME_DESCRIPTOR_MISSING');
     const commandName = descriptor.commandNames.find(
-      value => typeof value === 'string' && value.endsWith('.accept-target'),
+      value => typeof value === 'string' && value.endsWith('.request-terminal-update'),
     );
-    if (typeof commandName !== 'string') throw new Error('TERMINAL_UPDATE_ACCEPT_COMMAND_MISSING');
+    if (typeof commandName !== 'string') throw new Error('TERMINAL_UPDATE_REQUEST_COMMAND_MISSING');
 
-    const completion = waitForMessage(ownerDriver.transport, ownerSession.sessionId, message =>
-      eventBody(message)?.kind === 'command.result',
-    );
-    const accepted = responseResult(await ownerDriver.transport.request(ownerSession.sessionId, 'command.dispatch', {
-      commandName,
-      payload: {selectionContext: {selectedSpace: 'development', contextIdentity: runId}},
-    }));
-    if (!isRecord(accepted) || typeof accepted.requestId !== 'string')
-      throw new Error('TERMINAL_UPDATE_COMMAND_NOT_ACCEPTED');
-    const message = await completion;
-    const body = eventBody(message);
-    if (body?.requestId !== accepted.requestId || !isRecord(body.result) || !Array.isArray(body.result.actorResults) ||
-      !isRecord(body.result.actorResults[0]) || !isRecord(body.result.actorResults[0].result))
-      throw new Error('TERMINAL_UPDATE_COMMAND_RESULT_MISMATCH');
-    expect(body.result.actorResults[0].result).toMatchObject({status: 'applying'});
-
-    const task = await readSelector(
+    logUpdateDiagnostic('compatibility-command-dispatch-started', {commandName});
+    const completion = waitForMessage(
       ownerDriver.transport,
       ownerSession.sessionId,
-      'kernel.base.terminal-update.selectTerminalUpdateTask',
-      [],
+      message => eventBody(message)?.kind === 'command.result',
     );
+    const accepted = responseResult(
+      await ownerDriver.transport.request(ownerSession.sessionId, 'command.dispatch', {
+        commandName,
+        payload: {selectionContext: {selectedSpace: 'development', contextIdentity: runId}},
+      }),
+    );
+    if (!isRecord(accepted) || typeof accepted.requestId !== 'string')
+      throw new Error('TERMINAL_UPDATE_COMMAND_NOT_ACCEPTED');
+    logUpdateDiagnostic('compatibility-command-accepted', {commandName, requestId: accepted.requestId});
+    const message = await completion;
+    const body = eventBody(message);
+    if (
+      body?.requestId !== accepted.requestId ||
+      !isRecord(body.result) ||
+      !Array.isArray(body.result.actorResults) ||
+      !isRecord(body.result.actorResults[0]) ||
+      !isRecord(body.result.actorResults[0].result)
+    )
+      throw new Error('TERMINAL_UPDATE_COMMAND_RESULT_MISMATCH');
+    expect(body.result.actorResults[0].result).toMatchObject({status: 'applying'});
+    logUpdateDiagnostic('compatibility-command-completed', {
+      commandName,
+      requestId: accepted.requestId,
+      actorStatus: 'applying',
+    });
+
+    const task = await readUpdateSelector('kernel.base.terminal-update.selectTerminalUpdateTask');
     expect(task).toMatchObject({
       phase: 'applying-full',
       target: {
@@ -617,12 +780,7 @@ it.skipIf(updateCase !== 'update.compatibility')(
         hot: {artifact: {nativeBuildNumber: 2, bundleVersion: '1.0.6'}},
       },
     });
-    const after = await readSelector(
-      ownerDriver.transport,
-      ownerSession.sessionId,
-      'kernel.base.terminal-update.selectTerminalUpdateActualVersions',
-      [],
-    );
+    const after = await readUpdateSelector('kernel.base.terminal-update.selectTerminalUpdateActualVersions');
     expect(after).toMatchObject({nativeBuildNumber: 1, bundleVersion: '1.0.5', entryKind: 'hot'});
     process.stdout.write(`TERMINAL_AUTOMATION_UPDATE_CASE_ASSERTIONS_PASS case=update.compatibility run=${runId}\n`);
   },

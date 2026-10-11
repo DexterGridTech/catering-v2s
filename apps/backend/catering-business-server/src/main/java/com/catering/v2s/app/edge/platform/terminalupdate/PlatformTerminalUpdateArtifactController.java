@@ -19,6 +19,8 @@ import com.catering.v2s.terminalupdate.application.TerminalUpdateArtifactParser;
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -37,6 +39,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/api/platform/group-workspaces/{groupWorkspaceKey}")
 public final class PlatformTerminalUpdateArtifactController {
+    private static final Logger log = LoggerFactory.getLogger(PlatformTerminalUpdateArtifactController.class);
     private static final String USAGE = "TERMINAL_UPDATE_ARTIFACT";
     private static final tools.jackson.databind.ObjectMapper JSON = new tools.jackson.databind.ObjectMapper();
 
@@ -67,16 +70,55 @@ public final class PlatformTerminalUpdateArtifactController {
         requireIdempotencyKey(idempotencyKey);
         if (!USAGE.equals(usage) || file == null || file.isEmpty() || file.getOriginalFilename() == null)
             throw new PlatformTerminalUpdateRequestInvalidException();
+        String diagnosticRequestId = safeRequestId(request.requestId());
+        long startedAt = System.nanoTime();
+        diagnostic(diagnosticRequestId, "REQUEST_RECEIVED", "SUCCEEDED", 0, file.getSize(), null, false);
         var workspace = sessions.requireRead(request).requireEnabledSelectedWorkspace(workspaces, groupWorkspaceKey);
-        var result = stageOperation.execute(workspace.workspaceUuid(), groupWorkspaceKey, file.getOriginalFilename(),
-                sha256, file.getSize(), file.getInputStream(), idempotencyKey, sessions.requireActor(request));
-        return ResponseEntity.status(HttpStatus.CREATED).body(new TerminalUpdateStageResult(
-                result.stageRef(), result.stageBindGrant(), result.expiresAtEpochMillis(), result.fileName(),
-                result.sha256(), result.byteSize(), result.candidateKind(), result.applicationId(), result.platform(),
-                result.nativeVersion(), result.nativeBuildNumber(), result.bundleVersion(), result.runtimeVersion(),
-                result.publicationId(), result.apkSha256(), result.minimumFull() == null
-                        ? tools.jackson.databind.node.NullNode.getInstance()
-                        : JSON.valueToTree(result.minimumFull())));
+        try {
+            var result = stageOperation.execute(workspace.workspaceUuid(), groupWorkspaceKey, file.getOriginalFilename(),
+                    sha256, file.getSize(), file.getInputStream(), idempotencyKey, diagnosticRequestId,
+                    sessions.requireActor(request));
+            diagnostic(diagnosticRequestId, "HTTP_STAGE_COMPLETE", "SUCCEEDED", elapsedMillis(startedAt),
+                    file.getSize(), null, false);
+            return ResponseEntity.status(HttpStatus.CREATED).body(new TerminalUpdateStageResult(
+                    result.stageRef(), result.stageBindGrant(), result.expiresAtEpochMillis(), result.fileName(),
+                    result.sha256(), result.byteSize(), result.candidateKind(), result.applicationId(), result.platform(),
+                    result.nativeVersion(), result.nativeBuildNumber(), result.bundleVersion(), result.runtimeVersion(),
+                    result.publicationId(), result.apkSha256(), result.minimumFull() == null
+                            ? tools.jackson.databind.node.NullNode.getInstance()
+                            : JSON.valueToTree(result.minimumFull())));
+        } catch (IOException failure) {
+            diagnostic(diagnosticRequestId, "HTTP_STAGE_COMPLETE", "FAILED", elapsedMillis(startedAt),
+                    file.getSize(), failure.getClass().getSimpleName(), true);
+            throw failure;
+        } catch (RuntimeException failure) {
+            diagnostic(diagnosticRequestId, "HTTP_STAGE_COMPLETE", "FAILED", elapsedMillis(startedAt),
+                    file.getSize(), failure.getClass().getSimpleName(), true);
+            throw failure;
+        }
+    }
+
+    private static void diagnostic(
+            String requestId, String stage, String outcome, long elapsedMs,
+            long byteSize, String failureType, boolean warning) {
+        if (requestId == null) return;
+        var event = (warning ? log.atWarn() : log.atInfo())
+                .addKeyValue("event", "TERMINAL_UPDATE_ARTIFACT_STAGE")
+                .addKeyValue("requestId", requestId)
+                .addKeyValue("stage", stage)
+                .addKeyValue("outcome", outcome)
+                .addKeyValue("elapsedMs", elapsedMs)
+                .addKeyValue("byteSize", byteSize);
+        if (failureType != null) event.addKeyValue("failureType", failureType.replaceAll("[^A-Za-z0-9_.:-]", "_"));
+        event.log("terminal update artifact stage {} {}", stage, outcome);
+    }
+
+    private static String safeRequestId(String value) {
+        return value != null && value.matches("[A-Za-z0-9_.:-]{1,128}") ? value : null;
+    }
+
+    private static long elapsedMillis(long startedAtNanos) {
+        return Math.max(0, (System.nanoTime() - startedAtNanos) / 1_000_000);
     }
 
     @PostMapping("/terminal-update-artifacts")

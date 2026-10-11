@@ -119,7 +119,8 @@ class PlatformAssetServiceTest {
                 sha256(zip),
                 zip.length,
                 new ByteArrayInputStream(zip),
-                "terminal-update-package-stage-001");
+                "terminal-update-package-stage-001",
+                "asset-stage-request-001");
         var staged = assets.stageTerminalUpdatePackage(
                 workspaceId,
                 "asset-flow",
@@ -127,7 +128,8 @@ class PlatformAssetServiceTest {
                 sha256(zip),
                 zip.length,
                 new ByteArrayInputStream(zip),
-                "terminal-update-package-stage-001");
+                "terminal-update-package-stage-001",
+                "asset-stage-request-001");
 
         assertEquals(firstStage.assetRef(), staged.assetRef());
         assertEquals("release.zip", staged.fileName());
@@ -141,7 +143,8 @@ class PlatformAssetServiceTest {
                         sha256(zip),
                         zip.length,
                         new ByteArrayInputStream(zip),
-                        "terminal-update-package-stage-001"));
+                        "terminal-update-package-stage-001",
+                        "asset-stage-request-001"));
         assertThrows(PlatformAssetService.AssetClaimRejectedException.class, () -> assets.openTerminalUpdatePackage(
                 secondWorkspaceId, "asset-flow-b", staged.assetRef(), true));
         try (var content = assets.openTerminalUpdatePackage(workspaceId, "asset-flow", staged.assetRef(), true)) {

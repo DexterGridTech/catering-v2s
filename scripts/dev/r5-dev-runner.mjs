@@ -1053,6 +1053,108 @@ function resolveManagedAcceptanceManifest(manifestPath, runId) {
   return {actualPath, manifest, database, host};
 }
 
+const managedDiagnosticEvents = Object.freeze(new Set([
+  'TERMINAL_DATA_READ_COMPLETED',
+  'TERMINAL_DATA_READ_DEPENDENCY_UNAVAILABLE',
+  'TERMINAL_UPDATE_RULE_SNAPSHOT_READ',
+  'TERMINAL_UPDATE_DOWNLOAD_GRANT_ISSUED',
+  'TERMINAL_UPDATE_DOWNLOAD_STREAM_STARTED',
+  'TERMINAL_UPDATE_DOWNLOAD_STREAMED',
+  'TERMINAL_UPDATE_DOWNLOAD_STREAM_FAILED',
+  'TERMINAL_UPDATE_REPORT_ACCEPTED',
+  'TERMINAL_UPDATE_ARTIFACT_STAGE',
+]));
+const managedDiagnosticFields = Object.freeze([
+  'operationId', 'requestId', 'correlationId', 'terminalRef', 'storeRef', 'projectRef', 'artifactRef',
+  'taskId', 'reportId', 'reportSequence', 'generation', 'elapsedMs', 'byteSize', 'itemCount', 'outcome',
+  'status', 'stage', 'reason', 'failureType', 'errorType', 'closeReason', 'topicKey', 'nodeId', 'sessionId',
+  'connectionId', 'sequence', 'disposition', 'count', 'present', 'notificationSent',
+]);
+
+/** Keep only named owner events and scalar identifiers; raw server lines and request bodies are never returned. */
+export function projectManagedDevDiagnosticEvents(source, text) {
+  if (!['cbs', 'tds'].includes(source) || typeof text !== 'string') {
+    fail('TERMINAL_ACCEPTANCE_MANAGED_DIAGNOSTIC_INPUT_INVALID');
+  }
+  const projected = [];
+  for (const line of text.split(/\r?\n/u)) {
+    const pairs = new Map();
+    for (const match of line.matchAll(/(?:^|\s)([A-Za-z][A-Za-z0-9]*)=(?:"([^"\\\r\n]{1,160})"|([^\s]{1,160}))/gu)) {
+      pairs.set(match[1], match[2] ?? match[3]);
+    }
+    const event = pairs.get('event');
+    const accepted = typeof event === 'string' && (source === 'cbs'
+      ? managedDiagnosticEvents.has(event)
+      : /^tds_[a-z0-9_]{1,100}$/u.test(event));
+    if (!accepted) continue;
+    const fields = {};
+    for (const key of managedDiagnosticFields) {
+      const value = pairs.get(key);
+      if (typeof value !== 'string' || !/^[A-Za-z0-9_.:-]{1,160}$/u.test(value)) continue;
+      fields[key] = value;
+    }
+    projected.push(Object.freeze({source, event, ...fields}));
+  }
+  return Object.freeze(projected);
+}
+
+function readBoundedRemoteDiagnosticLog(host, control, maxBytes) {
+  if (!Number.isInteger(maxBytes) || maxBytes < 1024 || maxBytes > 512 * 1024) {
+    fail('TERMINAL_ACCEPTANCE_MANAGED_DIAGNOSTIC_BYTE_LIMIT_INVALID');
+  }
+  if (typeof control.logPath !== 'string' || !control.logPath.startsWith(`${control.remoteRoot}/`)) {
+    fail('TERMINAL_ACCEPTANCE_MANAGED_DIAGNOSTIC_PATH_INVALID');
+  }
+  const script = [
+    'set -euo pipefail',
+    `root=${quote(control.remoteRoot)}`,
+    `log_file=${quote(control.logPath)}`,
+    `expected_boot_id=${quote(control.bootId)}`,
+    `pid=${control.pid}`,
+    `expected_pgid=${control.pgid}`,
+    `expected_start_ticks=${control.processStartTicks}`,
+    `expected_command_sha256=${quote(control.commandSha256)}`,
+    `max_bytes=${maxBytes}`,
+    'case "$root" in /tmp/r5-dev-[0-9]*-[0-9]*-[0-9a-f-]*) ;; *) exit 64 ;; esac',
+    'test "$(cat /proc/sys/kernel/random/boot_id)" = "$expected_boot_id"',
+    'test -r "/proc/$pid/stat"',
+    'actual_pgid=$(ps -o pgid= -p "$pid" | tr -d " ")',
+    'actual_start_ticks=$(awk \'{print $22}\' "/proc/$pid/stat")',
+    'actual_command_line=$(tr "\\0" " " < "/proc/$pid/cmdline" | sed "s/[[:space:]]*$//")',
+    'actual_command_sha256=$(printf "%s" "$actual_command_line" | sha256sum | awk \'{print $1}\')',
+    'test "$actual_pgid" = "$expected_pgid" -a "$actual_start_ticks" = "$expected_start_ticks" -a "$actual_command_sha256" = "$expected_command_sha256"',
+    'test -f "$log_file" -a ! -L "$log_file"',
+    'tail -c "$max_bytes" "$log_file"',
+  ].join('\n');
+  const result = remoteResult(host, script);
+  if (result.error || result.status !== 0) fail('TERMINAL_ACCEPTANCE_MANAGED_DIAGNOSTIC_READ_FAILED');
+  return result.stdout;
+}
+
+/** Reads current CBS/TDS logs only from the identity-verified active DEV run, bounded and immediately projected. */
+export function readManagedDevDiagnosticEvents({manifestPath, runId, maxBytesPerService = 256 * 1024} = {}) {
+  const resolved = resolveManagedAcceptanceManifest(manifestPath ?? manifestPathDefault(), runId);
+  const manifest = resolved.manifest;
+  const java = manifest.remoteJava;
+  const javaReadiness = remoteJavaReadiness(resolved.host, java);
+  if (!remoteIdentityMatches(java, javaReadiness) || javaReadiness.readyMarkerSeen !== true || javaReadiness.listenerReady !== true) {
+    fail('TERMINAL_ACCEPTANCE_MANAGED_DIAGNOSTIC_JAVA_IDENTITY_NOT_READY');
+  }
+  const sources = [{source: 'cbs', control: java}];
+  for (const node of manifest.remoteTdsNodes) {
+    const readiness = remoteTdsReadiness(resolved.host, node);
+    if (!remoteTdsIdentityMatches(node, readiness) || readiness.readyMarkerSeen !== true || readiness.listenerReady !== true) {
+      fail('TERMINAL_ACCEPTANCE_MANAGED_DIAGNOSTIC_TDS_IDENTITY_NOT_READY');
+    }
+    sources.push({source: `tds-${node.instanceName}`, control: node});
+  }
+  return Object.freeze(sources.map(({source, control}) => {
+    const rawTail = readBoundedRemoteDiagnosticLog(resolved.host, control, maxBytesPerService);
+    const projected = projectManagedDevDiagnosticEvents(source === 'cbs' ? 'cbs' : 'tds', rawTail);
+    return Object.freeze({source, status: 'READ', tailBytes: Buffer.byteLength(rawTail, 'utf8'), eventCount: projected.length, events: projected});
+  }));
+}
+
 export const TERMINAL_ACCEPTANCE_DEV_ACTIONS = Object.freeze([
   'drain-stop-a',
   'drain-force-stop-b',

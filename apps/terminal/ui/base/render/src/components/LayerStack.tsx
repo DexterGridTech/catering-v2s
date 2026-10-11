@@ -1,8 +1,10 @@
 import {useCallback, useEffect, useMemo, useRef} from 'react';
 import {Animated, BackHandler, Platform, Pressable, StyleSheet, View} from 'react-native';
 import {closeLayerCommand, selectLayers} from '@catering-v2s/kernel-base-ui-state';
-import {selectDisplayRole} from '@catering-v2s/kernel-base-display-context';
+import {resolveWorkspace, selectDisplayRole} from '@catering-v2s/kernel-base-display-context';
 import {selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
+import type {DisplayMode} from '@catering-v2s/kernel-base-ui-state';
+import type {WorkspaceKey} from '@catering-v2s/kernel-base-state';
 import {useRenderContext} from '../contexts/RenderContext';
 import {useSurfaceContext} from '../contexts/SurfaceContext';
 import {useSurfaceFocusBoundary} from '../contexts/SurfaceFocusBoundaryContext';
@@ -22,7 +24,15 @@ type Layer = Readonly<{
   readonly partKey: string;
   readonly props?: unknown;
   readonly openedAt: number;
+  readonly renderDisplayMode?: DisplayMode;
+  readonly renderWorkspace?: WorkspaceKey;
 }>;
+
+const localWorkspaceForRoot = (root: Parameters<typeof selectLayers>[0]): WorkspaceKey => {
+  const instanceMode = selectRuntimeInstanceMode(root);
+  const displayRole = selectDisplayRole(root);
+  return instanceMode === 'SLAVE' && displayRole === 'VICE' ? 'BRANCH' : resolveWorkspace({instanceMode, displayRole});
+};
 
 const styles = StyleSheet.create({
   stack: {
@@ -74,6 +84,15 @@ const isAdminLayer = (
   return entry !== undefined && rendererCatalog.tierOf(entry.rendererKey) === 'admin';
 };
 
+const isLocalPrimaryLayer = (
+  layer: Layer,
+  uiCatalog: Parameters<typeof resolvePart>[0]['uiCatalog'],
+  rendererCatalog: Parameters<typeof resolvePart>[0]['rendererCatalog'],
+): boolean => {
+  const entry = uiCatalog.byPartKey[layer.partKey];
+  return entry !== undefined && rendererCatalog.placementScopeOf(entry.rendererKey) === 'local-primary';
+};
+
 const compareStrings = (left: string, right: string): number => (left === right ? 0 : left < right ? -1 : 1);
 
 const compareLayers = (
@@ -105,7 +124,7 @@ const layerGuardOf = (
 const ResolvedLayer = (input: Parameters<typeof resolvePart>[0]) => resolvePart(input);
 
 export const LayerStack = () => {
-  const {displayMode} = useSurfaceContext();
+  const {displayMode, isHostPrimaryDisplay} = useSurfaceContext();
   const presentationOffsetY = useSurfacePresentationOffset();
   const notifyFocusBoundary = useSurfaceFocusBoundary();
   const {
@@ -121,30 +140,40 @@ export const LayerStack = () => {
   const dispatchCommand = useDispatchCommand();
   const runtimeStatus = useRenderStatus();
   const catalogContext = useUiCatalogContext(displayMode);
+  const localPrimaryWorkspace = useUiStateSelector(localWorkspaceForRoot);
+  const localPrimaryCatalogContext = useUiCatalogContext('PRIMARY', localPrimaryWorkspace);
   const layerSelector = useMemo(
     () => (root: Parameters<typeof selectLayers>[0]) => {
-      const currentLayers = selectLayers(root, displayMode);
-      if (selectRuntimeInstanceMode(root) !== 'SLAVE' || selectDisplayRole(root) !== 'VICE') {
-        return currentLayers as readonly Layer[];
-      }
-      const localAdminLayers = selectLayers(root, displayMode, 'BRANCH').filter(layer =>
-        isAdminLayer(layer as Layer, uiCatalog, rendererCatalog),
+      const currentLayers = selectLayers(root, displayMode).filter(
+        layer => !isLocalPrimaryLayer(layer as Layer, uiCatalog, rendererCatalog),
       );
-      const projectedBusinessLayers = currentLayers.filter(
-        layer => !isAdminLayer(layer as Layer, uiCatalog, rendererCatalog),
-      );
-      return [...projectedBusinessLayers, ...localAdminLayers] as readonly Layer[];
+      const isViceSlave = selectRuntimeInstanceMode(root) === 'SLAVE' && selectDisplayRole(root) === 'VICE';
+      const localAdminLayers = isViceSlave
+        ? selectLayers(root, displayMode, 'BRANCH').filter(layer =>
+            isAdminLayer(layer as Layer, uiCatalog, rendererCatalog),
+          )
+        : [];
+      const projectedBusinessLayers = isViceSlave
+        ? currentLayers.filter(layer => !isAdminLayer(layer as Layer, uiCatalog, rendererCatalog))
+        : currentLayers;
+      if (!isHostPrimaryDisplay) return [...projectedBusinessLayers, ...localAdminLayers] as readonly Layer[];
+      const workspace = localWorkspaceForRoot(root);
+      const localPrimaryLayers = selectLayers(root, 'PRIMARY', workspace)
+        .filter(layer => isLocalPrimaryLayer(layer as Layer, uiCatalog, rendererCatalog))
+        .map(layer => ({...layer, renderDisplayMode: 'PRIMARY' as const, renderWorkspace: workspace}));
+      return [...projectedBusinessLayers, ...localAdminLayers, ...localPrimaryLayers] as readonly Layer[];
     },
-    [displayMode, rendererCatalog, uiCatalog],
+    [displayMode, isHostPrimaryDisplay, rendererCatalog, uiCatalog],
   );
   const selectedLayers = useUiStateSelector(layerSelector);
   const interlockSelector = selectBusinessInterlockActive ?? alwaysInactiveInterlock;
   const businessInterlockActive = useUiStateSelector(interlockSelector) ?? false;
   const layers = (selectedLayers ?? []).filter(layer => {
     const entry = uiCatalog.byPartKey[layer.partKey];
-    return (
-      entry === undefined || catalogContext === undefined || isUiCatalogEntryAvailable(entry, null, catalogContext)
-    );
+    if (entry === undefined) return true;
+    const localPrimary = isLocalPrimaryLayer(layer, uiCatalog, rendererCatalog);
+    const context = localPrimary ? localPrimaryCatalogContext : catalogContext;
+    return context === undefined || isUiCatalogEntryAvailable(entry, null, context);
   });
   const orderedLayers = [...layers].sort((left, right) => compareLayers({left, right, uiCatalog, rendererCatalog}));
   const layerSignature = [
@@ -152,7 +181,11 @@ export const LayerStack = () => {
     ...(businessInterlockActive ? [BUSINESS_INTERLOCK_FOCUS_MARKER] : []),
   ].join('\u0000');
   const adminLayers = orderedLayers.filter(layer => isAdminLayer(layer, uiCatalog, rendererCatalog));
-  const businessLayers = orderedLayers.filter(layer => !isAdminLayer(layer, uiCatalog, rendererCatalog));
+  const localPrimaryLayers = orderedLayers.filter(layer => isLocalPrimaryLayer(layer, uiCatalog, rendererCatalog));
+  const businessLayers = orderedLayers.filter(
+    layer =>
+      !isAdminLayer(layer, uiCatalog, rendererCatalog) && !isLocalPrimaryLayer(layer, uiCatalog, rendererCatalog),
+  );
   const topLayer = orderedLayers.at(-1);
   const topLayerId = topLayer?.layerId ?? null;
   const previousLayerSignature = useRef('');
@@ -186,14 +219,24 @@ export const LayerStack = () => {
   const topGuard =
     topLayer === undefined ? ('dismissible' as const) : layerGuardOf(topLayer, uiCatalog, rendererCatalog);
   const topLayerDismissal = topLayer === undefined ? undefined : layerDismissals?.[topLayer.partKey];
+  const topLayerDisplayMode = topLayer?.renderDisplayMode ?? displayMode;
+  const topLayerWorkspace = topLayer?.renderWorkspace;
 
   const renderLayer = (layer: Layer) => (
     <View
       key={layer.layerId}
       testID={renderTestIds.layer(layer.layerId)}
-      accessibilityElementsHidden={businessInterlockActive && !isAdminLayer(layer, uiCatalog, rendererCatalog)}
+      accessibilityElementsHidden={
+        businessInterlockActive &&
+        !isAdminLayer(layer, uiCatalog, rendererCatalog) &&
+        !isLocalPrimaryLayer(layer, uiCatalog, rendererCatalog)
+      }
       importantForAccessibility={
-        businessInterlockActive && !isAdminLayer(layer, uiCatalog, rendererCatalog) ? 'no-hide-descendants' : 'auto'
+        businessInterlockActive &&
+        !isAdminLayer(layer, uiCatalog, rendererCatalog) &&
+        !isLocalPrimaryLayer(layer, uiCatalog, rendererCatalog)
+          ? 'no-hide-descendants'
+          : 'auto'
       }
       pointerEvents="box-none"
       style={styles.layer}
@@ -202,9 +245,11 @@ export const LayerStack = () => {
         <SystemFailureBoundary ownerId={`layer:${layer.layerId}`}>
           <ResolvedLayer
             placement={layer}
-            displayMode={displayMode}
+            displayMode={layer.renderDisplayMode ?? displayMode}
             containerKey={null}
-            catalogContext={catalogContext!}
+            catalogContext={
+              (isLocalPrimaryLayer(layer, uiCatalog, rendererCatalog) ? localPrimaryCatalogContext : catalogContext)!
+            }
             uiCatalog={uiCatalog}
             rendererCatalog={rendererCatalog}
             reportPartDiagnostic={reportPartDiagnostic}
@@ -223,7 +268,7 @@ export const LayerStack = () => {
         void Promise.resolve(
           topLayerDismissal({
             dispatchCommand,
-            displayMode,
+            displayMode: topLayerDisplayMode,
             layerId: topLayer.layerId,
           }),
         ).catch(() => undefined);
@@ -236,9 +281,13 @@ export const LayerStack = () => {
     void dispatchWithRequestId({
       dispatchCommand,
       definition: closeLayerCommand,
-      payload: {displayMode, layerId: topLayer.layerId},
+      payload: {
+        displayMode: topLayerDisplayMode,
+        layerId: topLayer.layerId,
+        ...(topLayerWorkspace === undefined ? {} : {workspace: topLayerWorkspace}),
+      },
     }).catch(() => undefined);
-  }, [dispatchCommand, displayMode, topGuard, topLayer, topLayerDismissal]);
+  }, [dispatchCommand, topGuard, topLayer, topLayerDisplayMode, topLayerDismissal, topLayerWorkspace]);
 
   useEffect(() => {
     if (Platform.OS === 'web' || typeof BackHandler?.addEventListener !== 'function') return undefined;
@@ -272,6 +321,7 @@ export const LayerStack = () => {
       ) : null}
       {businessLayers.map(renderLayer)}
       {businessInterlockActive ? renderBusinessInterlock?.() : null}
+      {localPrimaryLayers.map(renderLayer)}
       {adminLayers.map(renderLayer)}
     </View>
   );

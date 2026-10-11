@@ -10,6 +10,7 @@ import {
 } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {describe, expect, it} from 'vitest';
 import {
   cleanupManagedRunArtifacts,
@@ -24,6 +25,7 @@ import {
   updateRequiresManagedDev,
   updateCaseImplemented,
   updateScenarioAssertionsObserved,
+  assertManagedDevDiagnosticSourcesReadable,
 } from '../src/runner.ts';
 import journeyConfig from '../vitest.journeys.config.ts';
 import unitConfig from '../vitest.config.ts';
@@ -174,7 +176,7 @@ describe('run-owned generated artifact cleanup', () => {
       const fullStagingApk = path.join(runDirectory, 'update/sample-terminal/full-staging/sample-terminal.apk');
       const extractedCompatibilityApk = path.join(
         runDirectory,
-        'update/sample-terminal/sample-terminal-compat-external.apk',
+        'update/sample-terminal/full-staging/sample-terminal-compat-external.apk',
       );
       const metadata = path.join(runDirectory, 'update/sample-terminal/install.json');
       const fullPackageMetadata = path.join(runDirectory, 'update/sample-terminal/full-package.json');
@@ -565,14 +567,20 @@ describe('managed DEV administration origins', () => {
       'stale PID',
       (value: ReturnType<typeof manifest>) => ({
         ...value,
-        readiness: {...value.readiness, vite: {...value.readiness.vite, 'operations-admin': {pid: 999, startToken: 'o-start'}}},
+        readiness: {
+          ...value.readiness,
+          vite: {...value.readiness.vite, 'operations-admin': {pid: 999, startToken: 'o-start'}},
+        },
       }),
     ],
     [
       'stale start token',
       (value: ReturnType<typeof manifest>) => ({
         ...value,
-        readiness: {...value.readiness, vite: {...value.readiness.vite, 'platform-admin': {pid: 101, startToken: 'old'}}},
+        readiness: {
+          ...value.readiness,
+          vite: {...value.readiness.vite, 'platform-admin': {pid: 101, startToken: 'old'}},
+        },
       }),
     ],
   ])('fails closed for %s', (_label, mutate) => {
@@ -581,6 +589,50 @@ describe('managed DEV administration origins', () => {
 });
 
 describe('resolveAutomationSuite', () => {
+  it('keeps every registered suite path present, including the paired update entry', () => {
+    const driverRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+    const executions = [
+      ...(['web', 'android'] as const).flatMap(platform =>
+        (['feasibility', 'capabilities', 'journey', 'skill', 'f4'] as const).map(phase => ({
+          phase,
+          platform,
+          shape: 'mobile',
+        })),
+      ),
+      {phase: 'update', platform: 'web', shape: 'mobile'},
+      {phase: 'update', platform: 'android', shape: 'mobile'},
+      {phase: 'update', platform: 'android', shape: 'mobile', case: 'update.pair'},
+    ] as const;
+    const suites = new Set(executions.map(execution => resolveAutomationSuite(execution)));
+    for (const suite of suites) expect(existsSync(path.join(driverRoot, suite)), suite).toBe(true);
+  });
+
+  it('requires identity-verified CBS and TDS diagnostic sources before an update run', () => {
+    expect(() =>
+      assertManagedDevDiagnosticSourcesReadable([
+        {source: 'cbs', status: 'READ'},
+        {source: 'tds-main', status: 'READ'},
+      ]),
+    ).not.toThrow();
+    for (const sources of [
+      [{source: 'tds-main', status: 'READ'}],
+      [{source: 'cbs', status: 'READ'}],
+      [
+        {source: 'cbs', status: 'READ'},
+        {source: 'tds-main', status: 'LOG_NOT_AVAILABLE'},
+      ],
+      [
+        {source: 'cbs', status: 'READ'},
+        {source: 'cbs', status: 'READ'},
+        {source: 'tds-main', status: 'READ'},
+      ],
+    ]) {
+      expect(() => assertManagedDevDiagnosticSourcesReadable(sources)).toThrow(
+        'TERMINAL_AUTOMATION_MANAGED_DIAGNOSTICS_PREFLIGHT_INCOMPLETE',
+      );
+    }
+  });
+
   it('registers update cases in the current driver and requires DEV only for business-backed cases', () => {
     const web = parseAutomationRunArguments([
       '--phase',
@@ -669,21 +721,75 @@ describe('resolveAutomationSuite', () => {
     ]);
     expect(updateRequiresManagedDev(supplyChain)).toBe(true);
     expect(updateCaseImplemented(supplyChain)).toBe(true);
+    const wallpaperSupplyChain = parseAutomationRunArguments([
+      '--phase',
+      'update',
+      '--platform',
+      'android',
+      '--shape',
+      'mobile',
+      '--case',
+      'update.supply-chain',
+      '--sample',
+      'wallpaper',
+      '--device-serial',
+      'managed-wallpaper-device-01',
+    ]);
+    expect(updateRequiresManagedDev(wallpaperSupplyChain)).toBe(true);
+    expect(updateCaseImplemented(wallpaperSupplyChain)).toBe(true);
     expect(() =>
       parseAutomationRunArguments([
-        '--phase', 'update', '--platform', 'android', '--shape', 'mobile',
-        '--case', 'update.supply-chain', '--sample', 'console', '--device-serial', 'managed-device-01',
+        '--phase',
+        'update',
+        '--platform',
+        'android',
+        '--shape',
+        'mobile',
+        '--case',
+        'update.supply-chain',
+        '--sample',
+        'console',
+        '--device-serial',
+        'managed-device-01',
       ]),
-    ).toThrow('TERMINAL_AUTOMATION_UPDATE_SUPPLY_CHAIN_REQUIRES_ANDROID_DUAL');
-    expect(updateCaseImplemented({
-      phase: 'update', platform: 'android', shape: 'mobile', case: 'update.supply-chain',
-    })).toBe(false);
+    ).toThrow('TERMINAL_AUTOMATION_UPDATE_SUPPLY_CHAIN_SAMPLE_SHAPE_INVALID');
+    expect(
+      updateCaseImplemented({
+        phase: 'update',
+        platform: 'android',
+        shape: 'mobile',
+        case: 'update.supply-chain',
+        sample: 'console',
+      }),
+    ).toBe(false);
     expect(() =>
       parseAutomationRunArguments([
-        '--phase', 'update', '--platform', 'web', '--shape', 'mobile',
-        '--case', 'update.supply-chain',
+        '--phase',
+        'update',
+        '--platform',
+        'web',
+        '--shape',
+        'mobile',
+        '--case',
+        'update.supply-chain',
       ]),
-    ).toThrow('TERMINAL_AUTOMATION_UPDATE_SUPPLY_CHAIN_REQUIRES_ANDROID_DUAL');
+    ).toThrow('TERMINAL_AUTOMATION_UPDATE_SUPPLY_CHAIN_SAMPLE_SHAPE_INVALID');
+    expect(() =>
+      parseAutomationRunArguments([
+        '--phase',
+        'update',
+        '--platform',
+        'android',
+        '--shape',
+        'dual',
+        '--case',
+        'update.supply-chain',
+        '--sample',
+        'wallpaper',
+        '--device-serial',
+        'managed-device-01',
+      ]),
+    ).toThrow('TERMINAL_AUTOMATION_UPDATE_SUPPLY_CHAIN_SAMPLE_SHAPE_INVALID');
     expect(updateRequiresManagedDev(bootGuard)).toBe(true);
     expect(() =>
       parseAutomationRunArguments([
@@ -697,6 +803,31 @@ describe('resolveAutomationSuite', () => {
         'update.unknown',
       ]),
     ).toThrow('TERMINAL_AUTOMATION_UPDATE_CASE_INVALID');
+  });
+
+  it('rejects Stage C acceptance-row labels as CLI cases unless they have a real journey source', () => {
+    for (const caseName of [
+      'update.project-data',
+      'update.auto-selection',
+      'update.idle',
+      'update.install-reminder',
+      'update.shared-credential',
+      'update.grant',
+      'update.report',
+    ]) {
+      expect(() =>
+        parseAutomationRunArguments([
+          '--phase',
+          'update',
+          '--platform',
+          'web',
+          '--shape',
+          'mobile',
+          '--case',
+          caseName,
+        ]),
+      ).toThrow('TERMINAL_AUTOMATION_UPDATE_CASE_INVALID');
+    }
   });
 
   it('fails closed when a registered update case has no executable test on the selected platform', () => {
@@ -775,9 +906,9 @@ describe('resolveAutomationSuite', () => {
     expect(updateCaseImplemented({phase: 'update', platform: 'android', shape: 'dual', case: 'update.full-hot'})).toBe(
       true,
     );
-    expect(updateCaseImplemented({phase: 'update', platform: 'web', shape: 'mobile', case: 'update.supply-chain'})).toBe(
-      false,
-    );
+    expect(
+      updateCaseImplemented({phase: 'update', platform: 'web', shape: 'mobile', case: 'update.supply-chain'}),
+    ).toBe(false);
     expect(
       updateCaseImplemented({phase: 'update', platform: 'android', shape: 'dual', case: 'update.supply-chain'}),
     ).toBe(true);
@@ -918,6 +1049,36 @@ describe('resolveAutomationSuite', () => {
     });
     expect(() => parseAutomationRunArguments([...args, '--peer-device-serial', 'emulator-5554'])).toThrow(
       'TERMINAL_AUTOMATION_ANDROID_DEVICE_SERIALS_MUST_DIFFER',
+    );
+  });
+
+  it('requires two explicit, distinct Android serials for update pairing and routes to its pair suite', () => {
+    const args = [
+      '--phase',
+      'update',
+      '--platform',
+      'android',
+      '--shape',
+      'mobile',
+      '--case',
+      'update.pair',
+      '--sample',
+      'console',
+      '--device-serial',
+      'emulator-5554',
+    ];
+    expect(() => parseAutomationRunArguments(args)).toThrow('TERMINAL_AUTOMATION_ANDROID_PEER_DEVICE_SERIAL_REQUIRED');
+    expect(parseAutomationRunArguments([...args, '--peer-device-serial', 'emulator-5556'])).toMatchObject({
+      case: 'update.pair',
+      sample: 'console',
+      deviceSerial: 'emulator-5554',
+      peerDeviceSerial: 'emulator-5556',
+    });
+    expect(() => parseAutomationRunArguments([...args, '--peer-device-serial', 'emulator-5554'])).toThrow(
+      'TERMINAL_AUTOMATION_ANDROID_DEVICE_SERIALS_MUST_DIFFER',
+    );
+    expect(resolveAutomationSuite({phase: 'update', platform: 'android', shape: 'mobile', case: 'update.pair'})).toBe(
+      'journeys/update.pair.android.test.ts',
     );
   });
 

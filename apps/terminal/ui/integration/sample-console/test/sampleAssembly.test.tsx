@@ -1178,7 +1178,7 @@ describe('sample-console real assembly', () => {
       'terminal.activation.admin.status',
     ]);
     expect(definedParts.slice(0, featureParts.length)).toEqual(featureParts);
-    expect(definedParts).toHaveLength(featureParts.length + 7);
+    expect(definedParts).toHaveLength(featureParts.length + 9);
     expect(
       definedParts.slice(featureParts.length + 5).map(({catalogEntry, rendererBinding}) => ({
         partKey: catalogEntry.partKey,
@@ -1204,6 +1204,30 @@ describe('sample-console real assembly', () => {
         surfaceForm: ['mobile', 'laptop'],
         layerTier: 'standard',
         layerGuard: 'dismissible',
+      },
+      {
+        partKey: 'terminal.update.install-reminder',
+        rendererKey: 'terminal.update.install-reminder.laptop',
+        containerKeys: [],
+        displayModes: ['PRIMARY'],
+        workspaces: ['MAIN', 'BRANCH'],
+        instanceModes: ['MASTER', 'SLAVE'],
+        title: '安装终端更新',
+        surfaceForm: ['laptop'],
+        layerTier: 'alert',
+        layerGuard: 'decisive',
+      },
+      {
+        partKey: 'terminal.update.install-reminder',
+        rendererKey: 'terminal.update.install-reminder.mobile',
+        containerKeys: [],
+        displayModes: ['PRIMARY'],
+        workspaces: ['MAIN', 'BRANCH'],
+        instanceModes: ['MASTER', 'SLAVE'],
+        title: '安装终端更新',
+        surfaceForm: ['mobile'],
+        layerTier: 'alert',
+        layerGuard: 'decisive',
       },
       {
         partKey: 'sample.console.admin-test',

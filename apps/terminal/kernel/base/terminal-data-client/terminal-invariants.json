@@ -6,6 +6,20 @@
     "lint": {"kind": "OWNED", "owner": "@catering-v2s/kernel-base-terminal-data-client", "runner": "eslint"},
     "clean": {"kind": "ABSENT"}
   },
+  "tr01Exceptions": [
+    {
+      "sourceFile": "src/features/actors/terminalDataClientActor.ts",
+      "declarationId": "reconcileCredentialReadiness",
+      "dispatchExpression": "context.dispatchAction",
+      "reasonCategory": "terminal-data-client-slave-inactive-status-normalization"
+    },
+    {
+      "sourceFile": "src/features/actors/terminalDataClientActor.ts",
+      "declarationId": "reconcileCredentialReadiness",
+      "dispatchExpression": "context.dispatchAction",
+      "reasonCategory": "terminal-data-client-credential-readiness-mark"
+    }
+  ],
   "publicExports": [
     "JsonValue",
     "TerminalActivationCancellationResult",

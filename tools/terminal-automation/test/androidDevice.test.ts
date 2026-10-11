@@ -4,7 +4,11 @@ import path from 'node:path';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import type {Client, DeviceClient} from '@devicefarmer/adbkit';
 import {collectAndroidRuntimeFailureDiagnostics} from '../src/androidAppDiagnostics.js';
-import {createAndroidDeviceSession, managedDevServiceReverses} from '../src/androidDevice.js';
+import {
+  createAndroidDeviceSession,
+  managedDevServiceReverses,
+  parseAndroidHostForwardList,
+} from '../src/androidDevice.js';
 
 const roots: string[] = [];
 
@@ -47,6 +51,110 @@ const repository = (): Readonly<{readonly root: string; readonly apk: string}> =
 };
 
 describe('createAndroidDeviceSession', () => {
+  it('creates and releases only the exact host topology forward after list readback', async () => {
+    const repo = repository();
+    let forwardList = '';
+    const commands: string[][] = [];
+    const session = await createAndroidDeviceSession({
+      client: createClient({}).client,
+      serial: 'emulator-5554',
+      repositoryRoot: repo.root,
+      adbPath: '/usr/bin/adb',
+      runTextCommand: async (_adb, args) => {
+        if (args.join(' ') === 'forward --list') return forwardList;
+        throw new Error('UNEXPECTED_ADB_READ');
+      },
+      runCommand: async (_adb, args) => {
+        commands.push([...args]);
+        if (args.includes('forward') && args.includes('--no-rebind')) {
+          forwardList = 'emulator-5554 tcp:43172 tcp:43172\n';
+          return;
+        }
+        if (args.includes('forward') && args.includes('--remove')) forwardList = '';
+      },
+    });
+    const lifecycle: Array<string> = [];
+    const release = await session.attachTopologyHostForward(43172, {
+      onAttached: mapping => lifecycle.push(`attached:${mapping.local}:${mapping.remote}`),
+      onReleased: mapping => lifecycle.push(`released:${mapping.local}:${mapping.remote}`),
+    });
+    expect(commands).toEqual([['-s', 'emulator-5554', 'forward', '--no-rebind', 'tcp:43172', 'tcp:43172']]);
+    expect(parseAndroidHostForwardList(forwardList)).toEqual([
+      {serial: 'emulator-5554', local: 'tcp:43172', remote: 'tcp:43172'},
+    ]);
+    await release();
+    expect(commands[1]).toEqual(['-s', 'emulator-5554', 'forward', '--remove', 'tcp:43172']);
+    expect(forwardList).toBe('');
+    expect(lifecycle).toEqual(['attached:tcp:43172:tcp:43172', 'released:tcp:43172:tcp:43172']);
+  });
+
+  it('fails closed on occupied or changed host forward identity', async () => {
+    const repo = repository();
+    let forwardList = 'other-emulator tcp:43172 tcp:43172\n';
+    const commands: string[][] = [];
+    const session = await createAndroidDeviceSession({
+      client: createClient({}).client,
+      serial: 'emulator-5554',
+      repositoryRoot: repo.root,
+      adbPath: '/usr/bin/adb',
+      runTextCommand: async () => forwardList,
+      runCommand: async (_adb, args) => {
+        commands.push([...args]);
+      },
+    });
+    await expect(session.attachTopologyHostForward(43172)).rejects.toThrow(
+      'TERMINAL_AUTOMATION_ANDROID_HOST_FORWARD_PORT_OCCUPIED',
+    );
+    expect(commands).toEqual([]);
+
+    forwardList = '';
+    const ownedSession = await createAndroidDeviceSession({
+      client: createClient({}).client,
+      serial: 'emulator-5554',
+      repositoryRoot: repo.root,
+      adbPath: '/usr/bin/adb',
+      runTextCommand: async () => forwardList,
+      runCommand: async (_adb, args) => {
+        commands.push([...args]);
+        if (args.includes('--no-rebind')) forwardList = 'emulator-5554 tcp:43172 tcp:43172\n';
+        if (args.includes('--remove')) forwardList = 'emulator-5554 tcp:43172 tcp:43173\n';
+      },
+    });
+    const release = await ownedSession.attachTopologyHostForward(43172);
+    forwardList = 'emulator-5554 tcp:43172 tcp:43173\n';
+    await expect(release()).rejects.toThrow('TERMINAL_AUTOMATION_ANDROID_HOST_FORWARD_OWNERSHIP_CHANGED');
+    expect(commands.filter(args => args.includes('--remove'))).toHaveLength(0);
+    expect(forwardList).toContain('tcp:43173');
+  });
+
+  it('reports cleanup readback failure when a removed host forward reappears with a different mapping', async () => {
+    const repo = repository();
+    let forwardList = '';
+    const commands: string[][] = [];
+    const session = await createAndroidDeviceSession({
+      client: createClient({}).client,
+      serial: 'emulator-5554',
+      repositoryRoot: repo.root,
+      adbPath: '/usr/bin/adb',
+      runTextCommand: async () => forwardList,
+      runCommand: async (_adb, args) => {
+        commands.push([...args]);
+        if (args.includes('--no-rebind')) forwardList = 'emulator-5554 tcp:43172 tcp:43172\n';
+        if (args.includes('--remove')) forwardList = 'emulator-5554 tcp:43172 tcp:43173\n';
+      },
+    });
+    const release = await session.attachTopologyHostForward(43172);
+    await expect(release()).rejects.toThrow('TERMINAL_AUTOMATION_ANDROID_HOST_FORWARD_CLEANUP_READBACK_FAILED');
+    expect(commands.filter(args => args.includes('--remove'))).toHaveLength(1);
+    expect(forwardList).toContain('tcp:43173');
+  });
+
+  it('rejects malformed ADB host-forward list rows', () => {
+    expect(() => parseAndroidHostForwardList('emulator-5554 tcp:43172 tcp:70000')).toThrow(
+      'TERMINAL_AUTOMATION_ANDROID_FORWARD_LIST_INVALID',
+    );
+  });
+
   it('reads only structured Runtime failure identifiers from the selected app process', async () => {
     const repo = repository();
     const context = createClient({});
@@ -612,6 +720,34 @@ describe('createAndroidDeviceSession', () => {
     await release();
     expect(context.reverses).toEqual([]);
     expect(runCommand).toHaveBeenCalledTimes(3);
+  });
+
+  it('binds and releases only the business reverse for a paired slave device', async () => {
+    const context = createClient({deviceId: 'emulator-5556'});
+    const runCommand = vi.fn(async (_adbPath: string, args: readonly string[]) => {
+      if (args[3] === '--remove') {
+        const index = context.reverses.findIndex(value => value.remote === args[4]);
+        if (index >= 0) context.reverses.splice(index, 1);
+      }
+    });
+    const session = await createAndroidDeviceSession({
+      client: context.client,
+      serial: 'emulator-5556',
+      repositoryRoot: tmpdir(),
+      adbPath: '/usr/bin/adb',
+      runCommand,
+    });
+    const release = await session.attachManagedServicePorts([{remotePort: 28_080, localPort: 28_080}]);
+    expect(context.reverses).toEqual([{remote: 'tcp:28080', local: 'tcp:28080'}]);
+    await release();
+    expect(context.reverses).toEqual([]);
+    expect(runCommand).toHaveBeenCalledExactlyOnceWith('/usr/bin/adb', [
+      '-s',
+      'emulator-5556',
+      'reverse',
+      '--remove',
+      'tcp:28080',
+    ]);
   });
 
   it('rejects an existing service reverse without overwriting it', async () => {

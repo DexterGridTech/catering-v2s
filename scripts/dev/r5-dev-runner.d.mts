@@ -1,10 +1,5 @@
 export type TerminalAcceptanceDevAction =
-  | 'drain-stop-a'
-  | 'drain-force-stop-b'
-  | 'restart-a'
-  | 'restart-b'
-  | 'ensure-ready-a'
-  | 'ensure-ready-b';
+  'drain-stop-a' | 'drain-force-stop-b' | 'restart-a' | 'restart-b' | 'ensure-ready-a' | 'ensure-ready-b';
 
 export type ManagedTdsLatestState = Readonly<{
   group_workspace_key: string;
@@ -19,24 +14,46 @@ export type ManagedTdsLatestState = Readonly<{
   close_reason: string | null;
 }>;
 
-export function executeManagedTerminalDevAction(input: Readonly<{
-  manifestPath: string;
-  runId: string;
-  action: TerminalAcceptanceDevAction;
-}>): Promise<Readonly<Record<string, unknown>>>;
+export type ManagedDevDiagnosticSource = Readonly<{
+  source: string;
+  status: 'READ';
+  tailBytes: number;
+  eventCount: number;
+  events: readonly Readonly<Record<string, string>>[];
+}>;
 
-export function readManagedTdsLatestState(input: Readonly<{
-  manifestPath: string;
-  runId: string;
-  terminalRef: string;
-}>): ManagedTdsLatestState | null;
+export function readManagedDevDiagnosticEvents(
+  input: Readonly<{
+    manifestPath?: string;
+    runId: string;
+    maxBytesPerService?: number;
+  }>,
+): readonly ManagedDevDiagnosticSource[];
 
-export function readManagedTerminalBindingByName(input: Readonly<{
-  manifestPath?: string;
-  runId: string;
-  groupWorkspaceKey: string;
-  terminalNames: readonly string[];
-}>): readonly Readonly<{
+export function executeManagedTerminalDevAction(
+  input: Readonly<{
+    manifestPath: string;
+    runId: string;
+    action: TerminalAcceptanceDevAction;
+  }>,
+): Promise<Readonly<Record<string, unknown>>>;
+
+export function readManagedTdsLatestState(
+  input: Readonly<{
+    manifestPath: string;
+    runId: string;
+    terminalRef: string;
+  }>,
+): ManagedTdsLatestState | null;
+
+export function readManagedTerminalBindingByName(
+  input: Readonly<{
+    manifestPath?: string;
+    runId: string;
+    groupWorkspaceKey: string;
+    terminalNames: readonly string[];
+  }>,
+): readonly Readonly<{
   name: string;
   terminalRef: string;
   storeRef: string;

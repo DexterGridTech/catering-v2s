@@ -7,7 +7,10 @@ import {
   type CommandDefinition,
 } from '@catering-v2s/kernel-base-runtime';
 import {selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
-import type {RuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
+import {
+  completeTopologySlaveUnpairStateClearCommand,
+  requestTopologySlaveUnpairStateClearCommand,
+} from '@catering-v2s/kernel-base-topology';
 import type {PersistenceOperationResult, StateJsonValue, StateRoot} from '@catering-v2s/kernel-base-state';
 import {
   createTerminalApiClient,
@@ -39,7 +42,6 @@ import type {
   TerminalTopicSubscription,
   TerminalUpdateDownloadGrantPayload,
   TerminalUpdateReportPayload,
-  ClearSharedTerminalCredentialPayload,
 } from '../../types/client';
 import {
   selectActivationState,
@@ -73,7 +75,6 @@ import {
   submitTerminalUpdateReportCommand,
   terminalDataHeartbeatCommand,
   reconcileTerminalCredentialReadinessCommand,
-  clearSharedTerminalCredentialCommand,
 } from '../commands/terminalDataClientCommands';
 
 const profileId = 'terminal-data-client';
@@ -138,7 +139,8 @@ const reconcileCredentialReadiness = async (
     before.credentialReadyRevision === credentialRevision &&
     before.credentialReadyInstanceMode === instanceMode &&
     (instanceMode === 'MASTER' ? before.activationStatus === 'active' : before.activationStatus === 'inactive')
-  ) return 'ready';
+  )
+    return 'ready';
   if (instanceMode === 'SLAVE' && before.activationStatus !== 'inactive') {
     context.dispatchAction(terminalDataClientActions.setActivationStatus('inactive'));
   }
@@ -153,10 +155,9 @@ const reconcileCredentialReadiness = async (
     after.credential !== credential ||
     after.credentialRevision !== credentialRevision ||
     selectRuntimeInstanceMode(afterState) !== instanceMode
-  ) return 'stale';
-  context.dispatchAction(
-    terminalDataClientActions.markCredentialReady({credentialRevision, instanceMode}),
-  );
+  )
+    return 'stale';
+  context.dispatchAction(terminalDataClientActions.markCredentialReady({credentialRevision, instanceMode}));
   return 'ready';
 };
 const sameStatusProjection = (
@@ -975,41 +976,83 @@ export const createTerminalDataClientActor = (
       }
       return Object.freeze({status});
     }),
-    onCommand(clearSharedTerminalCredentialCommand, async context => {
+    onCommand(requestTopologySlaveUnpairStateClearCommand, async context => {
       const state = readState(context.getState());
       const mode = selectRuntimeInstanceMode(context.getState());
-      if (mode !== 'SLAVE') return Object.freeze({status: 'rejected', reason: 'SLAVE_ROLE_REQUIRED'});
-      const expected = context.command.payload as ClearSharedTerminalCredentialPayload;
-      const credential = state.credential;
-      if (credential !== null && (
-        expected?.groupWorkspaceKey !== credential.groupWorkspaceKey ||
-        expected?.terminalRef !== credential.terminalRef ||
-        expected?.storeRef !== credential.storeRef ||
-        expected?.bindingGeneration !== credential.bindingGeneration
-      )) return Object.freeze({status: 'stale-credential'});
-      if (credential !== null) context.dispatchAction(terminalDataClientActions.replaceCredential(null));
+      if (mode !== 'SLAVE') throw new Error('TDC unpair state clear requires SLAVE role');
+      context.dispatchAction(terminalDataClientActions.clearLocalStateForUnpair());
+      context.dispatchAction(terminalClientStatusProjectionActions.clearProjection());
       try {
         await flush(context);
       } catch {
         context.platformPorts.logger
-          .scope({moduleName, layer: 'kernel', subsystem: 'terminal-data-client', component: 'credential-readiness'})
+          .scope({moduleName, layer: 'kernel', subsystem: 'terminal-data-client', component: 'unpair-state'})
           .error({
-            category: 'terminal.credential.unpair',
-            event: 'shared-credential-clear-persistence-failed',
-            message: 'Shared terminal credential was cleared locally but could not be persisted before topology transition',
+            category: 'terminal.tdc.unpair-state',
+            event: 'slave-state-clear-persistence-failed',
+            message: 'Slave terminal data client state could not be persisted before topology transition',
             context: {commandId: context.command.commandId},
             data: {instanceMode: mode},
           });
-        return Object.freeze({status: 'persistence-failed'});
+        throw new Error('TDC unpair state clear persistence failed');
       }
-      const after = readState(context.getState());
+      const afterState = context.getState();
+      const after = readState(afterState);
+      const projection = readStatusProjection(afterState).projection;
       if (
+        selectRuntimeInstanceMode(afterState) !== 'SLAVE' ||
         after.credential !== null ||
-        after.credentialRevision !== state.credentialRevision + (credential === null ? 0 : 1)
+        after.credentialRevision !== state.credentialRevision + 1 ||
+        after.credentialReadyRevision !== null ||
+        after.credentialReadyInstanceMode !== null ||
+        Object.keys(after.pendingActivations).length > 0 ||
+        after.activationStatus !== 'inactive' ||
+        after.connection.status !== 'stopped' ||
+        after.connection.addressName !== null ||
+        after.connection.nodeId !== null ||
+        after.connection.sessionId !== null ||
+        after.connection.lastCloseReason !== null ||
+        after.heartbeatIntervalMs !== null ||
+        after.nextPingSequence !== 1 ||
+        after.lastRttMs !== 0 ||
+        after.latencySamples.length > 0 ||
+        Object.keys(after.topicSubscriptions).length > 0 ||
+        Object.keys(after.acceptedTopicTimes).length > 0 ||
+        Object.keys(after.remoteOperations).length > 0 ||
+        projection.available ||
+        projection.sourceNodeId !== null ||
+        projection.activation !== null ||
+        projection.connection !== null ||
+        projection.lastRttMs !== null
       ) {
-        return Object.freeze({status: 'stale-credential'});
+        context.platformPorts.logger
+          .scope({moduleName, layer: 'kernel', subsystem: 'terminal-data-client', component: 'unpair-state'})
+          .error({
+            category: 'terminal.tdc.unpair-state',
+            event: 'slave-state-clear-readback-failed',
+            message: 'Slave terminal data client state clear did not pass owner readback',
+            context: {commandId: context.command.commandId},
+            data: {instanceMode: selectRuntimeInstanceMode(afterState)},
+          });
+        throw new Error('TDC unpair state clear readback failed');
       }
-      return Object.freeze({status: credential === null ? 'already-clear' : 'cleared'});
+      const completion = await context.dispatchCommand(
+        completeTopologySlaveUnpairStateClearCommand,
+        context.command.payload,
+      );
+      if (completion.status !== 'completed') {
+        context.platformPorts.logger
+          .scope({moduleName, layer: 'kernel', subsystem: 'terminal-data-client', component: 'unpair-state'})
+          .error({
+            category: 'terminal.tdc.unpair-state',
+            event: 'topology-unpair-completion-failed',
+            message: 'Topology did not accept the durable TDC state clear completion',
+            context: {commandId: context.command.commandId},
+            data: {dispatchStatus: completion.status},
+          });
+        throw new Error('Topology unpair completion failed');
+      }
+      return Object.freeze({status: 'cleared'});
     }),
     onCommand(initializeTerminalDataClientCommand, async context => {
       const readiness = await reconcileCredentialReadiness(context);
@@ -1116,10 +1159,15 @@ export const createTerminalDataClientActor = (
         return Object.freeze({kind: 'failure', category: 'not-delivered', code: 'INVALID_TERMINAL_READ'});
       }
       const startedAt = dependencies.now();
+      const logContext = {
+        commandId: context.command.commandId,
+        ...(context.command.requestId == null ? {} : {requestId: context.command.requestId}),
+      };
       context.platformPorts.logger.info({
         category: 'terminal.data.read',
         event: 'terminal-read-http.begin',
         message: 'Calling the generated terminal data HTTP operation',
+        context: logContext,
         data: {
           operationId: payload.operationId,
           pathParameterCount: Object.keys(pathParameters).length,
@@ -1136,6 +1184,7 @@ export const createTerminalDataClientActor = (
           category: 'terminal.data.read',
           event: 'terminal-read-http.response',
           message: 'Generated terminal data HTTP operation returned a classified response',
+          context: logContext,
           data: {
             operationId: payload.operationId,
             elapsedMs: Math.max(0, dependencies.now() - startedAt),
@@ -1151,6 +1200,7 @@ export const createTerminalDataClientActor = (
           category: 'terminal.data.read',
           event: 'terminal-read-response-accept.begin',
           message: 'Applying the classified business response to topic state',
+          context: logContext,
           data: {operationId: payload.operationId, resultKind: result.kind},
         });
         await terminalClient.acceptBusinessResponse(
@@ -1162,6 +1212,7 @@ export const createTerminalDataClientActor = (
           category: 'terminal.data.read',
           event: 'terminal-read-response-accept.completed',
           message: 'Applied the classified business response to topic state',
+          context: logContext,
           data: {operationId: payload.operationId},
         });
         context.platformPorts.logger
@@ -1170,7 +1221,7 @@ export const createTerminalDataClientActor = (
             category: 'terminal.data.read',
             event: 'terminal-read-completed',
             message: 'Generated terminal data read returned a classified result',
-            context: {commandId: context.command.commandId},
+            context: logContext,
             data: {
               operationId: payload.operationId,
               elapsedMs: Math.max(0, dependencies.now() - startedAt),
@@ -1191,7 +1242,7 @@ export const createTerminalDataClientActor = (
             category: 'terminal.data.read',
             event: 'terminal-read-threw',
             message: 'Generated terminal data read threw before returning a result',
-            context: {commandId: context.command.commandId},
+            context: logContext,
             data: {operationId: payload.operationId, elapsedMs: Math.max(0, dependencies.now() - startedAt)},
             error: {
               name: error instanceof Error ? error.name : 'UnknownError',
@@ -1203,11 +1254,14 @@ export const createTerminalDataClientActor = (
       }
     }),
     onCommand(requestTerminalUpdateDownloadGrantCommand, async context => {
-      const state = readState(context.getState());
+      const initialRoot = context.getState();
+      const state = readState(initialRoot);
       const payload = context.command.payload as TerminalUpdateDownloadGrantPayload;
-      if (!credentialReadyForCurrentMode(context.getState(), state))
+      if (!credentialReadyForCurrentMode(initialRoot, state))
         return Object.freeze({kind: 'failure', category: 'not-delivered', code: 'TERMINAL_NOT_ACTIVE'});
       const credential = state.credential;
+      const credentialRevision = state.credentialRevision;
+      const instanceMode = selectRuntimeInstanceMode(initialRoot);
       if (!isCanonicalUuid(payload?.artifactRef))
         return Object.freeze({
           kind: 'failure',
@@ -1215,6 +1269,10 @@ export const createTerminalDataClientActor = (
           code: 'INVALID_TERMINAL_UPDATE_ARTIFACT_REF',
         });
       const startedAt = dependencies.now();
+      const logContext = {
+        commandId: context.command.commandId,
+        ...(context.command.requestId == null ? {} : {requestId: context.command.requestId}),
+      };
       const result = await terminalClient.client.issueTerminalUpdateArtifactDownloadGrant({
         pathParameters: {artifactRef: payload.artifactRef},
         queryParameters: {},
@@ -1223,6 +1281,15 @@ export const createTerminalDataClientActor = (
           'X-Terminal-Ref': credential.terminalRef,
         },
       });
+      const afterRoot = context.getState();
+      const after = readState(afterRoot);
+      if (
+        after.credential !== credential ||
+        after.credentialRevision !== credentialRevision ||
+        selectRuntimeInstanceMode(afterRoot) !== instanceMode ||
+        !credentialReadyForCurrentMode(afterRoot, after)
+      )
+        return Object.freeze({kind: 'failure', category: 'not-delivered', code: 'TERMINAL_CREDENTIAL_CHANGED'});
       await terminalClient.acceptBusinessResponse(profileId, dependencies.businessServerName, result);
       context.platformPorts.logger
         .scope({moduleName, layer: 'kernel', subsystem: 'terminal-data-client', component: 'http-update'})
@@ -1230,7 +1297,7 @@ export const createTerminalDataClientActor = (
           category: 'terminal.update.download-grant',
           event: 'download-grant-completed',
           message: 'Generated terminal download-grant request returned a classified result',
-          context: {commandId: context.command.commandId},
+          context: logContext,
           data: {
             elapsedMs: Math.max(0, dependencies.now() - startedAt),
             resultKind: result.kind,
@@ -1254,7 +1321,10 @@ export const createTerminalDataClientActor = (
             category: 'terminal.update.report',
             event: 'report-submit-rejected',
             message: 'Skipped a report because the terminal binding is not active on this host',
-            context: {commandId: context.command.commandId},
+            context: {
+              commandId: context.command.commandId,
+              ...(context.command.requestId == null ? {} : {requestId: context.command.requestId}),
+            },
             data: {code: 'TERMINAL_NOT_ACTIVE'},
           });
         return Object.freeze({kind: 'failure', category: 'not-delivered', code: 'TERMINAL_NOT_ACTIVE'});
@@ -1272,12 +1342,19 @@ export const createTerminalDataClientActor = (
             category: 'terminal.update.report',
             event: 'report-submit-rejected',
             message: 'Skipped a report whose identity or sequence does not match the generated HTTP contract',
-            context: {commandId: context.command.commandId},
+            context: {
+              commandId: context.command.commandId,
+              ...(context.command.requestId == null ? {} : {requestId: context.command.requestId}),
+            },
             data: {code: 'INVALID_TERMINAL_UPDATE_REPORT'},
           });
         return Object.freeze({kind: 'failure', category: 'not-delivered', code: 'INVALID_TERMINAL_UPDATE_REPORT'});
       }
       const startedAt = dependencies.now();
+      const logContext = {
+        commandId: context.command.commandId,
+        ...(context.command.requestId == null ? {} : {requestId: context.command.requestId}),
+      };
       const result = await terminalClient.client.submitTerminalUpdateReport({
         pathParameters: {},
         queryParameters: {},
@@ -1295,13 +1372,22 @@ export const createTerminalDataClientActor = (
           category: 'terminal.update.report',
           event: 'report-submit-completed',
           message: 'Generated terminal update-report request returned a classified result',
-          context: {commandId: context.command.commandId},
+          context: logContext,
           data: {
             reportSequence: payload.body.reportSequence,
             reportState: payload.body.recent.state,
             reportReason: payload.body.recent.reason,
+            taskIdPresent: payload.body.taskId !== null,
             elapsedMs: Math.max(0, dependencies.now() - startedAt),
             resultKind: result.kind,
+            ...(result.kind === 'success'
+              ? {
+                  receiptTaskIdPresent: result.body.taskId !== null,
+                  receiptTaskMatchesPayload: result.body.taskId === payload.body.taskId,
+                  receiptSequenceMatchesPayload: result.body.acceptedSequence === payload.body.reportSequence,
+                  receiptOutcome: result.body.outcome,
+                }
+              : {}),
             ...(result.kind === 'success'
               ? {status: result.status}
               : result.kind === 'business-rejection'
@@ -1507,7 +1593,8 @@ export const createTerminalDataClientActor = (
           postFlushClient.credential !== savedCredential ||
           postFlushClient.credentialRevision !== savedRevision ||
           selectRuntimeInstanceMode(postFlushState) !== 'MASTER'
-        ) return Object.freeze({status: 'rejected', reason: 'ACTIVATION_RESULT_STALE'});
+        )
+          return Object.freeze({status: 'rejected', reason: 'ACTIVATION_RESULT_STALE'});
         context.dispatchAction(
           terminalDataClientActions.markCredentialReady({credentialRevision: savedRevision, instanceMode: 'MASTER'}),
         );

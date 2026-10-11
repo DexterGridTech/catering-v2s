@@ -14,7 +14,6 @@ import type {
   RemoteOperationFact,
   TerminalUpdateDownloadGrantPayload,
   TerminalUpdateReportPayload,
-  ClearSharedTerminalCredentialPayload,
 } from '../../types/client';
 
 export const activateTerminalCommand = defineCommand<ActivateTerminalPayload>(moduleName, {
@@ -129,13 +128,6 @@ export const initializeTerminalDataClientCommand = defineCommand<Readonly<{}>>(m
 export const reconcileTerminalCredentialReadinessCommand = defineCommand<Readonly<{}>>(moduleName, {
   name: 'reconcile-credential-readiness',
   visibility: 'internal',
-  allowNoActor: false,
-  allowReentry: false,
-  defaultTarget: 'local',
-});
-export const clearSharedTerminalCredentialCommand = defineCommand<ClearSharedTerminalCredentialPayload>(moduleName, {
-  name: 'clear-shared-terminal-credential',
-  visibility: 'public',
   allowNoActor: false,
   allowReentry: false,
   defaultTarget: 'local',

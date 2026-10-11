@@ -232,12 +232,16 @@ const updateLoadReadiness = (
 ): void => {
   const current = selectStoreBasicState(context.getState()).loadReadiness;
   const same = current.runtimeId === context.runtimeId && sameBinding(current.binding, binding);
-  context.dispatchAction(storeBasicActions.setLoadReadiness(Object.freeze({
-    runtimeId: context.runtimeId,
-    binding,
-    storeStatus: same ? current.storeStatus : 'idle',
-    ...patch,
-  })));
+  context.dispatchAction(
+    storeBasicActions.setLoadReadiness(
+      Object.freeze({
+        runtimeId: context.runtimeId,
+        binding,
+        storeStatus: same ? current.storeStatus : 'idle',
+        ...patch,
+      }),
+    ),
+  );
 };
 const withBinding = async (context: ActorExecutionContext, binding: StoreBasicBinding): Promise<boolean> => {
   if (selectRuntimeInstanceMode(context.getState()) !== 'MASTER' || !sameBinding(currentBinding(context), binding))
@@ -328,7 +332,9 @@ export const createStoreBasicActors = (): readonly ActorDefinition[] => {
     if (activeInitialLoads.has(key)) return {status: 'already-loading'};
     if (completedStoreLoads.has(key)) {
       const readiness = selectStoreBasicState(context.getState()).loadReadiness;
-      const storeReady = readiness.runtimeId === context.runtimeId && sameBinding(readiness.binding, binding) &&
+      const storeReady =
+        readiness.runtimeId === context.runtimeId &&
+        sameBinding(readiness.binding, binding) &&
         readiness.storeStatus === 'flushed';
       if (!storeReady) {
         completedStoreLoads.delete(key);
@@ -431,6 +437,25 @@ export const createStoreBasicActors = (): readonly ActorDefinition[] => {
     }
   };
 
+  const subscribeContractDetails = async (
+    context: ActorExecutionContext,
+    binding: StoreBasicBinding,
+    contracts: TerminalStoreActiveContractsRead['items'],
+  ): Promise<boolean> => {
+    for (const contract of contracts) {
+      if (!checkCurrentMasterBinding(context, binding)) return false;
+      await subscribe({
+        context,
+        binding,
+        isLatest: () => checkCurrentMasterBinding(context, binding),
+        topicKey: 'CONTRACT',
+        ownerRef: contract.id,
+        initialTimeEpochMillis: contract.updatedAt,
+      });
+    }
+    return true;
+  };
+
   const loadActiveContracts = async (
     context: ActorExecutionContext,
     binding: StoreBasicBinding,
@@ -441,53 +466,45 @@ export const createStoreBasicActors = (): readonly ActorDefinition[] => {
     if (activeContractLoads.has(key)) return {status: 'already-loading'};
     activeContractLoads.add(key);
     try {
-    const contractsResult = await readOperation(context, {
-      operationId: 'terminalReadStoreActiveContracts',
-      pathParameters: {storeRef: binding.storeRef},
-    });
-    if (!checkCurrentMasterBinding(context, binding)) return {status: 'stale-binding'};
-    if (contractsResult?.kind === 'success') {
-      const value = contractsResult.body as TerminalStoreActiveContractsRead;
-      context.dispatchAction(
-        storeBasicActions.setActiveContracts({
-          value: value.items,
-          updatedAtEpochMillis: value.collectionUpdatedAtEpochMillis,
-        }),
-      );
-      setLoaded(context, 'VALID_CONTRACT_COLLECTION');
-      setLoaded(context, 'CONTRACT');
-      await flush(context);
-      if (!checkCurrentMasterBinding(context, binding)) return {status: 'stale-binding'};
-      await subscribe({
-        context,
-        binding,
-        isLatest: () => checkCurrentMasterBinding(context, binding),
-        topicKey: 'VALID_CONTRACT_COLLECTION',
-        ownerRef: binding.storeRef,
-        initialTimeEpochMillis: value.collectionUpdatedAtEpochMillis,
+      const contractsResult = await readOperation(context, {
+        operationId: 'terminalReadStoreActiveContracts',
+        pathParameters: {storeRef: binding.storeRef},
       });
-      for (const contract of value.items) {
+      if (!checkCurrentMasterBinding(context, binding)) return {status: 'stale-binding'};
+      if (contractsResult?.kind === 'success') {
+        const value = contractsResult.body as TerminalStoreActiveContractsRead;
+        context.dispatchAction(
+          storeBasicActions.setActiveContracts({
+            value: value.items,
+            updatedAtEpochMillis: value.collectionUpdatedAtEpochMillis,
+          }),
+        );
+        setLoaded(context, 'VALID_CONTRACT_COLLECTION');
+        setLoaded(context, 'CONTRACT');
+        await flush(context);
         if (!checkCurrentMasterBinding(context, binding)) return {status: 'stale-binding'};
         await subscribe({
           context,
           binding,
           isLatest: () => checkCurrentMasterBinding(context, binding),
-          topicKey: 'CONTRACT',
-          ownerRef: contract.id,
-          initialTimeEpochMillis: contract.updatedAt,
+          topicKey: 'VALID_CONTRACT_COLLECTION',
+          ownerRef: binding.storeRef,
+          initialTimeEpochMillis: value.collectionUpdatedAtEpochMillis,
         });
+        if (!(await subscribeContractDetails(context, binding, value.items))) return {status: 'stale-binding'};
+        if (checkCurrentMasterBinding(context, binding)) completedContractLoads.add(key);
+        return {status: 'contracts-loaded'};
+      } else {
+        if (!checkCurrentMasterBinding(context, binding)) return {status: 'stale-binding'};
+        currentTopicStatus(
+          context,
+          'VALID_CONTRACT_COLLECTION',
+          contractsResult?.kind === 'business-rejection'
+            ? contractsResult.errorCode
+            : 'CONTRACT_COLLECTION_READ_FAILED',
+        );
+        return {status: 'contract-read-failed'};
       }
-      if (checkCurrentMasterBinding(context, binding)) completedContractLoads.add(key);
-      return {status: 'contracts-loaded'};
-    } else {
-      if (!checkCurrentMasterBinding(context, binding)) return {status: 'stale-binding'};
-      currentTopicStatus(
-        context,
-        'VALID_CONTRACT_COLLECTION',
-        contractsResult?.kind === 'business-rejection' ? contractsResult.errorCode : 'CONTRACT_COLLECTION_READ_FAILED',
-      );
-      return {status: 'contract-read-failed'};
-    }
     } finally {
       activeContractLoads.delete(key);
     }
@@ -623,7 +640,10 @@ export const createStoreBasicActors = (): readonly ActorDefinition[] => {
       {binding},
       {requestId: childRequestId(context)},
     );
-    const [contractsResult, servicePointsResult] = await Promise.all([loadActiveContracts(context, binding), servicePoints]);
+    const [contractsResult, servicePointsResult] = await Promise.all([
+      loadActiveContracts(context, binding),
+      servicePoints,
+    ]);
     return Object.freeze({
       status: 'store-followups-settled',
       contracts: contractsResult,

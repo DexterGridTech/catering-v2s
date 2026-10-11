@@ -1,6 +1,6 @@
 import type {ComponentType} from 'react';
 import type {UiCatalogEntry} from '@catering-v2s/kernel-base-ui-state';
-import type {LayerGuard, LayerTier, RendererBinding} from '../types/catalog';
+import type {LayerGuard, LayerTier, RendererBinding, RendererPlacementScope} from '../types/catalog';
 
 type RenderComponentProps = object;
 
@@ -22,6 +22,7 @@ type DefinePartInput<TProps extends RenderComponentProps> = Readonly<
     readonly component: ComponentType<TProps>;
     readonly layerTier?: LayerTier;
     readonly layerGuard?: LayerGuard;
+    readonly placementScope?: RendererPlacementScope;
   }
 >;
 
@@ -38,6 +39,7 @@ type DefinePartPairInput<TProps extends RenderComponentProps> = Readonly<
     }>;
     readonly layerTier?: LayerTier;
     readonly layerGuard?: LayerGuard;
+    readonly placementScope?: RendererPlacementScope;
   }
 >;
 
@@ -70,11 +72,25 @@ const requireLayerGuard = <TProps extends RenderComponentProps>(input: DefinePar
   return layerGuard;
 };
 
+const requirePlacementScope = <TProps extends RenderComponentProps>(
+  input: DefinePartInput<TProps>,
+): RendererPlacementScope => {
+  if (hasOwn(input, 'placementScope') && input.placementScope === undefined) {
+    throw new Error('[ui-base-render] placementScope must not be explicitly undefined');
+  }
+  const placementScope = input.placementScope ?? 'workspace';
+  if (placementScope !== 'workspace' && placementScope !== 'local-primary') {
+    throw new Error('[ui-base-render] placementScope is invalid');
+  }
+  return placementScope;
+};
+
 export const definePart = <TProps extends RenderComponentProps>(
   input: DefinePartInput<TProps>,
 ): DefinedPart<TProps> => {
   const layerTier = requireLayerTier(input);
   const layerGuard = requireLayerGuard(input);
+  const placementScope = requirePlacementScope(input);
   const catalogEntry: UiCatalogEntry = Object.freeze({
     partKey: input.partKey,
     rendererKey: input.rendererKey,
@@ -91,6 +107,7 @@ export const definePart = <TProps extends RenderComponentProps>(
     component: input.component,
     layerTier,
     layerGuard,
+    placementScope,
   });
   return Object.freeze({catalogEntry, rendererBinding});
 };

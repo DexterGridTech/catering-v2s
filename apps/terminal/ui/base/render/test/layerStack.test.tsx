@@ -131,9 +131,92 @@ const surfaceWithAdminEntry = (children: ReactElement) =>
     children,
   );
 
+const physicalSurfaceHost = (input: Readonly<{displayIndex: 0 | 1; isPrimary: boolean}>) => {
+  const identity = Object.freeze({
+    surfaceKey: input.displayIndex === 0 ? ('PRIMARY' as const) : ('SECONDARY' as const),
+    displayIndex: input.displayIndex,
+    surfaceForm: 'laptop' as const,
+    displayMode: 'SECONDARY' as const,
+  });
+  const snapshot = Object.freeze({
+    stableHostLogicalSize: Object.freeze({width: 1280, height: 720}),
+    isHostPrimaryDisplay: input.isPrimary,
+    surfaceIdentity: identity,
+  });
+  return Object.freeze({
+    getSnapshot: () => snapshot,
+    subscribe: (_listener: (snapshot: never) => void) => () => undefined,
+    getAvailability: () => 'ready' as const,
+    getSurfaceIdentity: () => identity,
+  });
+};
+
 const mount = (element: ReactElement): Promise<RenderResult> => render(element);
 
 describe('LayerStack filtered hydration behavior', () => {
+  it('keeps a local-primary reminder above the business interlock on a VICE physical primary', async () => {
+    const source = createSource();
+    const reminder = definePart({
+      partKey: 'sample.local-primary-reminder',
+      rendererKey: 'sample.local-primary-reminder.renderer',
+      containerKeys: [],
+      displayModes: ['PRIMARY'] as const,
+      workspaces: ['BRANCH'] as const,
+      instanceModes: ['SLAVE'] as const,
+      surfaceForm: ['laptop'] as const,
+      title: 'Local reminder',
+      description: 'A local-primary reminder',
+      layerTier: 'alert',
+      placementScope: 'local-primary',
+      component: () => createElement(Text, {testID: 'local-primary-reminder'}, 'reminder'),
+    });
+    source.setRoot(
+      Object.freeze({
+        'kernel.base.runtime.instance-mode': Object.freeze({instanceMode: 'SLAVE'}),
+        'kernel.base.display-context.display-role': Object.freeze({displayRole: 'VICE'}),
+        'kernel.base.ui-state.content.MAIN': Object.freeze({
+          contentSets: {PRIMARY: {containers: {}, layers: []}, SECONDARY: {containers: {}, layers: []}},
+        }),
+        'kernel.base.ui-state.content.BRANCH': Object.freeze({
+          contentSets: {
+            PRIMARY: {
+              containers: {},
+              layers: [{layerId: 'reminder', partKey: reminder.catalogEntry.partKey, openedAt: 1}],
+            },
+            SECONDARY: {containers: {}, layers: []},
+          },
+        }),
+      }) as RuntimeStateRoot,
+    );
+
+    const renderer = await mount(
+      createElement(
+        RenderProvider,
+        {
+          ...unusedRenderProviderBindings,
+          stateSource: source.stateSource,
+          uiCatalog: createUiCatalog([reminder.catalogEntry]),
+          rendererCatalog: createRendererCatalog([reminder.rendererBinding]),
+          logger: createLogger(),
+          selectSurfaceForm: () => 'laptop' as const,
+          selectBusinessInterlockActive: () => true,
+          renderBusinessInterlock: () => createElement(View, {testID: 'business-interlock'}),
+        },
+        createElement(SurfaceRoot, {
+          displayMode: 'SECONDARY',
+          containerKey: 'main',
+          surfaceHostSource: physicalSurfaceHost({displayIndex: 0, isPrimary: true}),
+        }),
+      ),
+    );
+
+    expect(renderer.getByTestId('local-primary-reminder')).toBeDefined();
+    expect(renderer.getAllByTestId(/business-interlock|local-primary-reminder/).map(node => node.props.testID)).toEqual(
+      ['business-interlock', 'local-primary-reminder'],
+    );
+    await renderer.unmount();
+  });
+
   it('renders VICE projected business layers with only the local BRANCH admin layer', async () => {
     const source = createSource();
     const business = definePart({
@@ -233,7 +316,10 @@ describe('LayerStack filtered hydration behavior', () => {
     );
     expect(selectLayers(source.stateSource.getState(), 'PRIMARY')).toHaveLength(2);
     const uiCatalog = createUiCatalog([businessPart.catalogEntry, adminPart.catalogEntry]);
-    const catalogContext = createCatalogContext(source.stateSource.getState(), 'PRIMARY', 'laptop');
+    const catalogContext = createCatalogContext(source.stateSource.getState(), {
+      displayMode: 'PRIMARY',
+      surfaceForm: 'laptop',
+    });
     expect(isUiCatalogEntryAvailable(businessPart.catalogEntry, null, catalogContext)).toBe(true);
     expect(isUiCatalogEntryAvailable(adminPart.catalogEntry, null, catalogContext)).toBe(true);
     const catalog = createRendererCatalog([businessPart.rendererBinding, adminPart.rendererBinding]);
@@ -376,6 +462,7 @@ describe('LayerStack filtered hydration behavior', () => {
       },
       tierOf: catalog.tierOf,
       guardOf: catalog.guardOf,
+      placementScopeOf: catalog.placementScopeOf,
     };
 
     const renderer = await mount(
@@ -420,6 +507,7 @@ describe('LayerStack filtered hydration behavior', () => {
         throw new Error('LayerStack comparator failure');
       },
       guardOf: catalog.guardOf,
+      placementScopeOf: catalog.placementScopeOf,
     };
 
     const renderer = await mount(

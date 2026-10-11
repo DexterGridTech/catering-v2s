@@ -454,7 +454,7 @@ export const createAndroidSystemUi = (input: Readonly<{
     labels: readonly string[], timeoutMs: number, signal?: AbortSignal, allowedPackagePrefixes?: readonly string[],
     expectedContext?: Readonly<{readonly label: string; readonly text: string}>,
   ): Promise<AndroidSystemUiButton> => {
-    if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 60_000) {
+    if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 120_000) {
       throw new Error('TERMINAL_AUTOMATION_ANDROID_SYSTEM_UI_TIMEOUT_INVALID');
     }
     if (signal?.aborted) throw new Error('TERMINAL_AUTOMATION_ANDROID_SYSTEM_UI_WAIT_CANCELLED');

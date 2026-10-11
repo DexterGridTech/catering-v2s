@@ -19,7 +19,7 @@
 - `src/application/terminalSurfaces.ts`：读取本包 `package.json` 的固定逻辑 surface 配置并导出 typed 常量。
 - `theme/`：本应用的 NativeWind/Tailwind 语义色 token；主题属于 integration app，不抽到共享包。
 - `app.json` 与 `assets/favicon.png`：仅供本包 Expo Web 预览消费的浏览器标题图标配置；不声明
-  App application icon，也不改变 App 内 UI 图标。
+  App 应用图标，也不改变 App 内 UI 图标。
 - `test-expo/App.tsx`：把本包的 assembly、surface 配置与运行时状态 reader 注入通用宿主的薄入口。
 - `test/`：Vitest focused test，包含 `.ts` 与 `.tsx`，跨包组装走真实调用链。
 
@@ -32,7 +32,7 @@ SurfaceForm、SurfaceOrientation、SurfaceSize、TerminalSurfaces、createSample
 createSampleConsoleModule、createSampleDefinedParts、createSurfaceForDisplayIndex、
 dependencyModuleNames、devDependencyModuleNames、moduleKind、moduleName、
 getSurfaceDeclarations、readTerminalSurfaces、surfaceFormForOrientation、terminalSurfaces。
-export map 另提供 @catering-v2s/ui-integration-sample-console/theme/global.css →
+导出映射另提供 @catering-v2s/ui-integration-sample-console/theme/global.css →
 ./theme/global.css，供 Android 宿主与 Metro 读取本包主题。清单与 terminal-invariants.json
 及 test/publicSurface.test.ts 对齐。
 

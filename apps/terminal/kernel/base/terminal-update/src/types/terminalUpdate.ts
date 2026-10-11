@@ -12,8 +12,10 @@ export interface UpdateArtifactSource {
   readonly expectedSha256: string;
   /** Required for registered FULL snapshot identities; null for HOT and optional only in local fixtures. */
   readonly apkSha256?: string | null;
-  readonly artifact: Pick<TerminalUpdateArtifact,
-    'applicationId' | 'nativeVersion' | 'nativeBuildNumber' | 'bundleVersion' | 'runtimeVersion' | 'publicationId'>;
+  readonly artifact: Pick<
+    TerminalUpdateArtifact,
+    'applicationId' | 'nativeVersion' | 'nativeBuildNumber' | 'bundleVersion' | 'runtimeVersion' | 'publicationId'
+  >;
   /** Full immutable manifest is only carried by local test fixtures; CBS targets fetch it with the one-attempt grant. */
   readonly manifest?: TerminalUpdateArtifact;
   /** CBS-owned artifact identity; present for private registered content, absent for local fixtures. */
@@ -64,7 +66,17 @@ export interface TerminalUpdateTask {
 
 export interface TerminalUpdateRecentStatus {
   readonly taskId: string | null;
-  readonly state: 'idle' | 'fixed' | 'preparing' | 'applying' | 'waiting-idle' | 'waiting-user' | 'unknown' | 'succeeded' | 'failed';
+  readonly state:
+    | 'idle'
+    | 'fixed'
+    | 'preparing'
+    | 'applying'
+    | 'waiting-idle'
+    | 'waiting-user'
+    | 'admission-rejected'
+    | 'unknown'
+    | 'succeeded'
+    | 'failed';
   readonly reason: string | null;
   readonly changedAt: TimestampMs;
   readonly applicationId?: string | null;

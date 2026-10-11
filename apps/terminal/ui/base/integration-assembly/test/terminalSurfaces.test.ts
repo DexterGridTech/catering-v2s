@@ -194,9 +194,11 @@ describe('shared terminal surface declarations', () => {
       readonly children: ReactElement<Record<string, unknown>>;
     }>;
     const secondaryProvider = secondaryElementProps.children;
-    const secondaryInteraction = (secondaryProvider.props as Readonly<{
-      readonly onLocalInteraction: () => Promise<void>;
-    }>).onLocalInteraction;
+    const secondaryInteraction = (
+      secondaryProvider.props as Readonly<{
+        readonly onLocalInteraction: () => Promise<void>;
+      }>
+    ).onLocalInteraction;
     await renderProviderProps.onLocalInteraction();
     await secondaryInteraction();
     expect(assembly.runtime.evaluateSelector('kernel.base.runtime.selectLastLocalInteraction', [])).toMatchObject({

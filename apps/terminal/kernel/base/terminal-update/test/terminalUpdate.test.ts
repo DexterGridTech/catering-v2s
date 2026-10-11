@@ -23,12 +23,14 @@ import {
   type RuntimeModule,
 } from '@catering-v2s/kernel-base-runtime';
 import {releaseRuntimeForTestAsync} from '@catering-v2s/kernel-base-runtime/testing';
+import {runtimeInstanceModeSliceName} from '../../runtime/src/features/slices/runtimeInstanceMode';
 import {moduleName as contractsModuleName} from '@catering-v2s/kernel-base-contracts';
 import {
   moduleName as platformPortsModuleName,
   type UpdateAction,
   type UpdateActualVersions,
   type UpdateFacts,
+  type UpdatePresentation,
   type UpdatePort,
 } from '@catering-v2s/kernel-base-platform-ports';
 import {moduleName as stateModuleName} from '@catering-v2s/kernel-base-state';
@@ -40,6 +42,7 @@ import {
   deferTerminalUpdateInstallCommand,
   createTerminalUpdateModule,
   reconcileTerminalUpdateCommand,
+  selectTerminalUpdateActualVersions,
   selectTerminalUpdateInvitation,
   selectTerminalUpdateRecentStatus,
   selectTerminalUpdateTask,
@@ -71,7 +74,7 @@ import {
   terminalUpdateSliceName,
 } from '../src/features/slices/terminalUpdate';
 import {createTerminalUpdateActor} from '../src/features/actors/terminalUpdateActor';
-import type {TerminalUpdateState, TerminalUpdateContextFacts} from '../src/types/terminalUpdate';
+import type {TerminalUpdateState, TerminalUpdateContextFacts, TerminalUpdateTask} from '../src/types/terminalUpdate';
 import {createPersistenceFieldKey, createPersistenceNamespacePrefix} from '../../state/src/foundations/keyspace';
 
 const ok = <TValue>(value: TValue): PortResult<TValue> => ({status: 'succeeded', value, completedAt: 1 as TimestampMs});
@@ -179,6 +182,10 @@ const createTestTerminalUpdateActor = (
     port: {...unavailableUpdatePort, ...input.port},
     createProtocolUuid: createTestProtocolUuid,
   });
+
+const masterRuntimeModeState = Object.freeze({
+  [runtimeInstanceModeSliceName]: Object.freeze({instanceMode: 'MASTER' as const}),
+});
 
 const createFixture = (
   input: Readonly<{
@@ -329,8 +336,229 @@ const createStorage = (input: Readonly<{failWrite?: (key: string) => boolean; fa
   };
 };
 
-describe('terminal-update report delivery', () => {
+describe('terminal-update admission reporting', () => {
+  it('exposes incompatible, downgrade, and previously failed candidates as taskless reports', async () => {
+    const incompatibleTarget: FixedUpdateTarget = Object.freeze({
+      ...target,
+      applicationId: 'com.example.other',
+      full: Object.freeze({
+        ...target.full!,
+        artifact: Object.freeze({...target.full!.artifact, applicationId: 'com.example.other'}),
+      }),
+      hot: Object.freeze({
+        ...target.hot!,
+        artifact: Object.freeze({...target.hot!.artifact, applicationId: 'com.example.other'}),
+      }),
+    });
+    const downgradeArtifact = Object.freeze({
+      ...artifact,
+      nativeBuildNumber: 2,
+      bundleVersion: '1.0.4',
+      publicationId: 'a'.repeat(64),
+    });
+    const downgradeTarget: FixedUpdateTarget = Object.freeze({
+      ...target,
+      policy: Object.freeze({...target.policy, hotStrategy: null, mSeconds: null}),
+      full: Object.freeze({
+        sourceRef: 'artifact:downgrade',
+        expectedSha256: downgradeArtifact.publicationId,
+        artifact: downgradeArtifact,
+      }),
+      hot: null,
+    });
+    const failedArtifact = Object.freeze({...artifact, nativeBuildNumber: 2, publicationId: '9'.repeat(64)});
+    const failedArtifactTarget: FixedUpdateTarget = Object.freeze({
+      ...target,
+      policy: Object.freeze({...target.policy, hotStrategy: null, mSeconds: null}),
+      full: Object.freeze({
+        sourceRef: 'artifact:failed',
+        expectedSha256: failedArtifact.publicationId,
+        artifact: failedArtifact,
+      }),
+      hot: null,
+    });
+    const fullRuntimeMismatchTarget: FixedUpdateTarget = Object.freeze({
+      ...target,
+      full: Object.freeze({
+        ...target.full!,
+        artifact: Object.freeze({...target.full!.artifact, runtimeVersion: '2'}),
+      }),
+      hot: null,
+      policy: Object.freeze({...target.policy, hotStrategy: null, mSeconds: null}),
+    });
+    const hotRuntimeMismatchTarget: FixedUpdateTarget = Object.freeze({
+      ...target,
+      hot: Object.freeze({
+        ...target.hot!,
+        artifact: Object.freeze({...target.hot!.artifact, runtimeVersion: '2'}),
+      }),
+    });
+    const fullIdentityConflictTarget: FixedUpdateTarget = Object.freeze({
+      ...target,
+      full: Object.freeze({
+        ...target.full!,
+        artifact: Object.freeze({...target.full!.artifact, publicationId: 'e'.repeat(64)}),
+      }),
+    });
+    const hotIdentityConflictTarget: FixedUpdateTarget = Object.freeze({
+      ...target,
+      hot: Object.freeze({
+        ...target.hot!,
+        artifact: Object.freeze({...target.hot!.artifact, publicationId: 'f'.repeat(64)}),
+      }),
+    });
+    const cases = [
+      {
+        target: incompatibleTarget,
+        actual: facts,
+        failedArtifactIds: [],
+        reason: 'APPLICATION_ID_MISMATCH',
+        reportReason: 'INCOMPATIBLE',
+      },
+      {
+        target: downgradeTarget,
+        actual: Object.freeze({...facts, actual: Object.freeze({...facts.actual!, bundleVersion: '1.0.5'})}),
+        failedArtifactIds: [],
+        reason: 'FULL_ONLY_VERSION_DOWNGRADE',
+        reportReason: 'WOULD_DOWNGRADE',
+      },
+      {
+        target: failedArtifactTarget,
+        actual: facts,
+        failedArtifactIds: [failedArtifact.publicationId],
+        reason: 'FAILED_ARTIFACT_REENTRY_FORBIDDEN',
+        reportReason: 'FAILED_ARTIFACT',
+      },
+      {
+        target: fullRuntimeMismatchTarget,
+        actual: Object.freeze({...facts, actual: Object.freeze({...facts.actual!, nativeBuildNumber: 2})}),
+        failedArtifactIds: [],
+        reason: 'FULL_RUNTIME_MISMATCH',
+        reportReason: 'INCOMPATIBLE',
+      },
+      {
+        target: hotRuntimeMismatchTarget,
+        actual: facts,
+        failedArtifactIds: [],
+        reason: 'HOT_RUNTIME_MISMATCH',
+        reportReason: 'INCOMPATIBLE',
+      },
+      {
+        target: fullIdentityConflictTarget,
+        actual: facts,
+        failedArtifactIds: [],
+        reason: 'FULL_IDENTITY_CONFLICT',
+        reportReason: 'INCOMPATIBLE',
+      },
+      {
+        target: hotIdentityConflictTarget,
+        actual: facts,
+        failedArtifactIds: [],
+        reason: 'HOT_IDENTITY_CONFLICT',
+        reportReason: 'INCOMPATIBLE',
+      },
+    ] as const;
 
+    for (const scenario of cases) {
+      const terminalRef = '00000000-0000-4000-8000-000000000071';
+      const storeRef = '00000000-0000-4000-8000-000000000072';
+      const bindingGeneration = 3;
+      let clientState = terminalDataClientReducer(undefined, {type: 'test/init'});
+      clientState = terminalDataClientReducer(
+        clientState,
+        terminalDataClientActions.replaceCredential({
+          groupWorkspaceKey: 'development',
+          terminalRef,
+          storeRef,
+          deviceId: 'fixture-device',
+          bindingGeneration,
+          credentialSecret: 'S'.repeat(43),
+        }),
+      );
+      let updateState: TerminalUpdateState = {
+        currentTask: null,
+        recentStatus: {
+          taskId: null,
+          state: 'idle',
+          reason: null,
+          changedAt: 0 as TimestampMs,
+          applicationId: null,
+          ruleRef: null,
+          fullArtifactRef: null,
+          hotArtifactRef: null,
+        },
+        failedArtifactIds: scenario.failedArtifactIds,
+        actualVersions: null,
+        reportDescriptor: {
+          bindingIdentity: `${terminalRef}:${bindingGeneration}`,
+          contextIdentity: null,
+          nextReportSequence: 1,
+          pendingReports: {},
+          sendPaused: false,
+          latestDeliveryFailure: null,
+        },
+      };
+      const actor = createTestTerminalUpdateActor({
+        port: {readFacts: async () => ok(scenario.actual)} as unknown as UpdatePort,
+        readCurrentTarget: () => scenario.target,
+      });
+      const handler = actor.handlers.find(item => item.commandName === requestTerminalUpdateCommand.commandName);
+      if (handler === undefined) throw new Error('terminal update admission handler missing');
+      const context = {
+        runtimeId: 'terminal-update-admission-report-test',
+        command: {
+          commandName: requestTerminalUpdateCommand.commandName,
+          commandId: `admission-${scenario.reason}`,
+          requestId: null,
+          payload: createRequestTerminalUpdatePayload(scenario.target),
+        },
+        actor: {actorKey: 'update-owner', moduleName: 'kernel.base.terminal-update', actorName: 'update-owner'},
+        platformPorts: {logger: {info: () => undefined, warn: () => undefined, error: () => undefined}},
+        getState: () => ({
+          ...masterRuntimeModeState,
+          [terminalDataClientSliceName]: clientState,
+          [terminalUpdateSliceName]: updateState,
+        }),
+        dispatchAction: (action: unknown) => {
+          const value = action as {type: string; payload: unknown};
+          if (value.type === terminalUpdateActions.replaceActualVersions.type)
+            updateState = {...updateState, actualVersions: value.payload as UpdateActualVersions};
+          if (value.type === terminalUpdateActions.replaceTask.type)
+            updateState = {...updateState, currentTask: value.payload as TerminalUpdateState['currentTask']};
+          if (value.type === terminalUpdateActions.replaceRecentStatus.type)
+            updateState = {...updateState, recentStatus: value.payload as TerminalUpdateState['recentStatus']};
+          if (value.type === terminalUpdateActions.replaceReportDescriptor.type)
+            updateState = {...updateState, reportDescriptor: value.payload as TerminalUpdateState['reportDescriptor']};
+        },
+        flushPersistence: async () => ({status: 'succeeded'}),
+        dispatchCommand: async () => ({status: 'rejected'}),
+      } as never;
+
+      await expect(handler.handle(context)).resolves.toMatchObject({status: 'rejected', reason: scenario.reason});
+      expect(updateState.currentTask).toBeNull();
+      expect(updateState.recentStatus).toMatchObject({
+        state: 'admission-rejected',
+        reason: scenario.reason,
+        applicationId: scenario.target.applicationId,
+        ruleRef: scenario.target.ruleRef,
+      });
+      expect(updateState.reportDescriptor.pendingReports.observation?.body).toMatchObject({
+        taskId: null,
+        actual: {applicationId: facts.actual?.applicationId},
+        recent: {
+          state: 'ADMISSION_REJECTED',
+          reason: scenario.reportReason,
+          ruleRef: scenario.target.ruleRef,
+          fullArtifactRef: scenario.target.full?.artifactRef ?? null,
+          hotArtifactRef: scenario.target.hot?.artifactRef ?? null,
+        },
+      });
+      expect(updateState.reportDescriptor.nextReportSequence).toBe(2);
+    }
+  });
+});
+
+describe('terminal-update report delivery', () => {
   it('restores the pending report when a successful receipt cannot be flushed locally', async () => {
     const terminalRef = '00000000-0000-4000-8000-000000000011';
     const storeRef = '00000000-0000-4000-8000-000000000012';
@@ -420,6 +648,7 @@ describe('terminal-update report delivery', () => {
       actor: {actorKey: 'update-owner', moduleName: 'kernel.base.terminal-update', actorName: 'update-owner'},
       platformPorts: {logger: {info: () => undefined, warn: () => undefined, error: () => undefined}},
       getState: () => ({
+        ...masterRuntimeModeState,
         [terminalDataClientSliceName]: clientState,
         [terminalUpdateSliceName]: updateState,
       }),
@@ -538,7 +767,11 @@ describe('terminal-update report delivery', () => {
       },
       actor: {actorKey: 'update-owner', moduleName: 'kernel.base.terminal-update', actorName: 'update-owner'},
       platformPorts: {logger: {info: () => undefined, warn: () => undefined, error: () => undefined}},
-      getState: () => ({[terminalDataClientSliceName]: clientState, [terminalUpdateSliceName]: updateState}),
+      getState: () => ({
+        ...masterRuntimeModeState,
+        [terminalDataClientSliceName]: clientState,
+        [terminalUpdateSliceName]: updateState,
+      }),
       dispatchAction: (action: unknown) => {
         const value = action as {type: string; payload: unknown};
         if (value.type === terminalUpdateActions.replaceReportDescriptor.type)
@@ -694,7 +927,11 @@ describe('terminal-update report delivery', () => {
       },
       actor: {actorKey: actor.actorKey, moduleName: actor.moduleName, actorName: actor.actorName},
       platformPorts: {logger: {info: () => undefined, warn: () => undefined, error: () => undefined}},
-      getState: () => ({[terminalDataClientSliceName]: clientState, [terminalUpdateSliceName]: updateState}),
+      getState: () => ({
+        ...masterRuntimeModeState,
+        [terminalDataClientSliceName]: clientState,
+        [terminalUpdateSliceName]: updateState,
+      }),
       dispatchAction: (action: unknown) => {
         const value = action as {type: string; payload: unknown};
         if (value.type === terminalUpdateActions.replaceReportDescriptor.type)
@@ -877,7 +1114,11 @@ describe('terminal-update report delivery', () => {
         },
         actor: {actorKey: 'update-owner', moduleName: 'kernel.base.terminal-update', actorName: 'update-owner'},
         platformPorts: {logger: {info: () => undefined, warn: () => undefined, error: () => undefined}},
-        getState: () => ({[terminalDataClientSliceName]: clientState, [terminalUpdateSliceName]: updateState}),
+        getState: () => ({
+          ...masterRuntimeModeState,
+          [terminalDataClientSliceName]: clientState,
+          [terminalUpdateSliceName]: updateState,
+        }),
         dispatchAction: (action: unknown) => {
           const value = action as {type: string; payload: unknown};
           if (value.type === terminalUpdateActions.replaceReportDescriptor.type)
@@ -976,6 +1217,18 @@ describe('terminal-update local owner', () => {
     await Promise.all(runtimes.splice(0).map(runtime => releaseRuntimeForTestAsync(runtime)));
   });
 
+  it('registers the report-delivery selector on the Runtime public read path', async () => {
+    const runtime = createFixture();
+    runtimes.push(runtime);
+    await runtime.start();
+
+    expect(runtime.evaluateSelector('kernel.base.terminal-update.selectTerminalUpdateReportDelivery', [])).toEqual({
+      pendingCount: 0,
+      sendPaused: false,
+      latestDeliveryFailure: null,
+    });
+  });
+
   it('surfaces a presentation unsubscribe failure through Runtime cleanup', async () => {
     const unsubscribePresentation = vi.fn(() => {
       throw new Error('fixture unsubscribe failure');
@@ -1064,7 +1317,11 @@ describe('terminal-update local owner', () => {
       },
       actor: {actorKey: 'update-owner', moduleName: 'kernel.base.terminal-update', actorName: 'update-owner'},
       platformPorts: {logger: {info: () => undefined, warn: () => undefined, error: () => undefined}},
-      getState: () => ({[terminalDataClientSliceName]: clientState, [terminalUpdateSliceName]: updateState}),
+      getState: () => ({
+        ...masterRuntimeModeState,
+        [terminalDataClientSliceName]: clientState,
+        [terminalUpdateSliceName]: updateState,
+      }),
       dispatchAction: (action: unknown) => {
         const value = action as {type: string; payload: unknown};
         if (value.type === terminalUpdateActions.replaceActualVersions.type)
@@ -1534,7 +1791,10 @@ describe('terminal-update local owner', () => {
       {requestId: createRequestId()},
     );
     expect(result.status).toBe('completed');
-    expect(selectTerminalUpdateTask(runtime.getState())).toMatchObject({target: hotCandidateTarget, phase: 'succeeded'});
+    expect(selectTerminalUpdateTask(runtime.getState())).toMatchObject({
+      target: hotCandidateTarget,
+      phase: 'succeeded',
+    });
     expect(selectTerminalUpdateRecentStatus(runtime.getState()).state).toBe('succeeded');
   });
 
@@ -1583,6 +1843,121 @@ describe('terminal-update local owner', () => {
     expect(selectTerminalUpdateTask(runtime.getState())).toBeNull();
     expect(prepareArtifact).not.toHaveBeenCalled();
   });
+
+  it.each([
+    {instanceMode: 'SLAVE' as const, activationStatus: 'inactive' as const, accepted: true},
+    {instanceMode: 'MASTER' as const, activationStatus: 'cancelling' as const, accepted: false},
+  ])(
+    'revalidates update binding identity for $instanceMode without treating a shared SLAVE credential as active',
+    async scenario => {
+      const terminalRef = '00000000-0000-4000-8000-000000000081';
+      const storeRef = '00000000-0000-4000-8000-000000000082';
+      const projectRef = '00000000-0000-4000-8000-000000000083';
+      const bindingGeneration = 5;
+      const contextFacts: TerminalUpdateContextFacts = Object.freeze({
+        terminalRef,
+        bindingGeneration,
+        selectedSpace: 'development',
+        storeRef,
+        projectRef,
+        projectUpdatedAtEpochMillis: 23,
+      });
+      const contextIdentity = `${terminalRef}:${bindingGeneration}:development:${storeRef}:${projectRef}:23`;
+      const candidate: FixedUpdateTarget = Object.freeze({
+        ...hotCandidateTarget,
+        selectionContext: Object.freeze({...hotCandidateTarget.selectionContext, contextIdentity}),
+      });
+      let clientState = terminalDataClientReducer(undefined, {type: 'test/init'});
+      clientState = terminalDataClientReducer(
+        clientState,
+        terminalDataClientActions.replaceCredential({
+          groupWorkspaceKey: 'development',
+          terminalRef,
+          storeRef,
+          deviceId: 'fixture-device',
+          bindingGeneration,
+          credentialSecret: 'S'.repeat(43),
+        }),
+      );
+      clientState = terminalDataClientReducer(
+        clientState,
+        terminalDataClientActions.setActivationStatus(scenario.activationStatus),
+      );
+      let updateState: TerminalUpdateState = {
+        currentTask: null,
+        recentStatus: {
+          taskId: null,
+          state: 'idle',
+          reason: null,
+          changedAt: 0 as TimestampMs,
+          applicationId: null,
+          ruleRef: null,
+          fullArtifactRef: null,
+          hotArtifactRef: null,
+        },
+        failedArtifactIds: [],
+        actualVersions: null,
+        reportDescriptor: {
+          bindingIdentity: null,
+          contextIdentity: null,
+          nextReportSequence: 1,
+          pendingReports: {},
+          sendPaused: false,
+          latestDeliveryFailure: null,
+        },
+      };
+      const fixedCandidates: TerminalUpdateTask[] = [];
+      const actor = createTestTerminalUpdateActor({
+        port: {readFacts: async () => ok(facts)} as unknown as UpdatePort,
+        readCurrentTarget: () => candidate,
+        readTerminalUpdateContextFacts: () => contextFacts,
+      });
+      const handler = actor.handlers.find(item => item.commandName === requestTerminalUpdateCommand.commandName);
+      if (handler === undefined) throw new Error('terminal update request handler missing');
+      const context = {
+        runtimeId: `terminal-update-${scenario.instanceMode.toLowerCase()}-binding-test`,
+        command: {
+          commandName: requestTerminalUpdateCommand.commandName,
+          commandId: `binding-${scenario.instanceMode.toLowerCase()}`,
+          requestId: null,
+          payload: createRequestTerminalUpdatePayload(candidate),
+        },
+        actor: {actorKey: 'update-owner', moduleName: 'kernel.base.terminal-update', actorName: 'update-owner'},
+        platformPorts: {logger: {info: () => undefined, warn: () => undefined, error: () => undefined}},
+        getState: () => ({
+          [runtimeInstanceModeSliceName]: Object.freeze({instanceMode: scenario.instanceMode}),
+          [terminalDataClientSliceName]: clientState,
+          [terminalUpdateSliceName]: updateState,
+        }),
+        dispatchAction: (action: unknown) => {
+          const value = action as {type: string; payload: unknown};
+          if (value.type === terminalUpdateActions.replaceActualVersions.type)
+            updateState = {...updateState, actualVersions: value.payload as UpdateActualVersions};
+          if (value.type === terminalUpdateActions.replaceTask.type) {
+            updateState = {...updateState, currentTask: value.payload as TerminalUpdateState['currentTask']};
+            if (value.payload !== null && (value.payload as TerminalUpdateTask).phase === 'fixed')
+              fixedCandidates.push(value.payload as TerminalUpdateTask);
+          }
+          if (value.type === terminalUpdateActions.replaceRecentStatus.type)
+            updateState = {...updateState, recentStatus: value.payload as TerminalUpdateState['recentStatus']};
+          if (value.type === terminalUpdateActions.replaceReportDescriptor.type)
+            updateState = {...updateState, reportDescriptor: value.payload as TerminalUpdateState['reportDescriptor']};
+        },
+        flushPersistence: async () => ({status: 'succeeded'}),
+        dispatchCommand: async () => ({status: 'rejected'}),
+      } as never;
+
+      const result = await handler.handle(context);
+
+      if (scenario.accepted) {
+        expect(fixedCandidates.length).toBeGreaterThan(0);
+        expect(fixedCandidates.every(item => JSON.stringify(item.target) === JSON.stringify(candidate))).toBe(true);
+      } else {
+        expect(result).toMatchObject({status: 'rejected', reason: 'TARGET_CHANGED'});
+        expect(fixedCandidates).toHaveLength(0);
+      }
+    },
+  );
 
   it('rechecks a target after native readback and does not fix a candidate that was withdrawn', async () => {
     let targetReadCount = 0;
@@ -1670,7 +2045,10 @@ describe('terminal-update local owner', () => {
       {requestId: createRequestId()},
     );
     expect(retried.status).toBe('completed');
-    expect(selectTerminalUpdateTask(runtime.getState())).toMatchObject({target: hotCandidateTarget, phase: 'succeeded'});
+    expect(selectTerminalUpdateTask(runtime.getState())).toMatchObject({
+      target: hotCandidateTarget,
+      phase: 'succeeded',
+    });
     expect(selectTerminalUpdateRecentStatus(runtime.getState()).state).toBe('succeeded');
     expect(readFactsCount).toBe(startupReadFactsCount + 3);
   });
@@ -2172,7 +2550,10 @@ describe('terminal-update local owner', () => {
     pending[1]!(hotCandidateTarget);
     await second;
 
-    expect(selectTerminalUpdateTask(runtime.getState())).toMatchObject({target: hotCandidateTarget, phase: 'applying-hot'});
+    expect(selectTerminalUpdateTask(runtime.getState())).toMatchObject({
+      target: hotCandidateTarget,
+      phase: 'applying-hot',
+    });
     expect(selectTerminalUpdateRecentStatus(runtime.getState()).state).toBe('applying');
     expect(prepareArtifact).toHaveBeenCalledOnce();
   });
@@ -2289,11 +2670,9 @@ describe('terminal-update local owner', () => {
     runtimes.push(runtime);
     await runtime.start();
 
-    await runtime.dispatchCommand(
-      requestTerminalUpdateCommand,
-      createRequestTerminalUpdatePayload(fixedTarget),
-      {requestId: createRequestId()},
-    );
+    await runtime.dispatchCommand(requestTerminalUpdateCommand, createRequestTerminalUpdatePayload(fixedTarget), {
+      requestId: createRequestId(),
+    });
 
     expect(selectedKind).toBe('hot');
     expect(selectTerminalUpdateTask(runtime.getState())).toMatchObject({actionKind: 'hot'});
@@ -2362,11 +2741,9 @@ describe('terminal-update local owner', () => {
     const runtime = createFixture({readTarget: async () => fixedTarget, port});
     runtimes.push(runtime);
     await runtime.start();
-    await runtime.dispatchCommand(
-      requestTerminalUpdateCommand,
-      createRequestTerminalUpdatePayload(fixedTarget),
-      {requestId: createRequestId()},
-    );
+    await runtime.dispatchCommand(requestTerminalUpdateCommand, createRequestTerminalUpdatePayload(fixedTarget), {
+      requestId: createRequestId(),
+    });
     const pendingFull = selectTerminalUpdateTask(runtime.getState());
     expect(pendingFull).toMatchObject({phase: 'unknown', actionKind: 'full', actionId: expect.any(String)});
     action = Object.freeze({...action!, state: 'succeeded', reason: null, bootId: 'full-boot'});
@@ -2449,11 +2826,9 @@ describe('terminal-update local owner', () => {
     await runtime.start();
 
     const accept = () =>
-      runtime.dispatchCommand(
-        requestTerminalUpdateCommand,
-        createRequestTerminalUpdatePayload(fixedTarget),
-        {requestId: createRequestId()},
-      );
+      runtime.dispatchCommand(requestTerminalUpdateCommand, createRequestTerminalUpdatePayload(fixedTarget), {
+        requestId: createRequestId(),
+      });
     const first = await accept();
     expect(first.actorResults[0]?.result).toMatchObject({status: 'unknown', reason: 'INSTALLER_AWAITING_READBACK'});
     const firstTask = selectTerminalUpdateTask(runtime.getState());
@@ -2541,11 +2916,9 @@ describe('terminal-update local owner', () => {
     runtimes.push(runtime);
     await runtime.start();
 
-    await runtime.dispatchCommand(
-      requestTerminalUpdateCommand,
-      createRequestTerminalUpdatePayload(fixedTarget),
-      {requestId: createRequestId()},
-    );
+    await runtime.dispatchCommand(requestTerminalUpdateCommand, createRequestTerminalUpdatePayload(fixedTarget), {
+      requestId: createRequestId(),
+    });
     const before = selectTerminalUpdateTask(runtime.getState());
     const result = await runtime.dispatchCommand(
       requestTerminalUpdateCommand,
@@ -2870,13 +3243,24 @@ describe('terminal-update local owner', () => {
     expect(selectTerminalUpdateTask(runtime.getState())).toBeNull();
   });
 
-  it('rejects a HOT grant whose minimum FULL identity differs from the fixed target', async () => {
+  it('defers a fixed HOT task until its context is ready, then checks the grant against its fixed FULL identity', async () => {
     const fullApkSha256 = 'a'.repeat(64);
     const fullPublicationId = 'b'.repeat(64);
     const hotPublicationId = 'c'.repeat(64);
+    const grantTerminalRef = '00000000-0000-4000-8000-000000000031';
+    const grantStoreRef = '00000000-0000-4000-8000-000000000032';
+    const grantBindingGeneration = 3;
+    const grantContextFacts: TerminalUpdateContextFacts = Object.freeze({
+      terminalRef: grantTerminalRef,
+      bindingGeneration: grantBindingGeneration,
+      selectedSpace: 'development',
+      storeRef: grantStoreRef,
+      projectRef: '00000000-0000-4000-8000-000000000033',
+      projectUpdatedAtEpochMillis: 10,
+    });
     const selectionContext = Object.freeze({
       selectedSpace: 'development',
-      contextIdentity: 'context',
+      contextIdentity: `${grantTerminalRef}:${grantBindingGeneration}:development:${grantStoreRef}:${grantContextFacts.projectRef}:10`,
       ruleRef: target.ruleRef,
     });
     const fixedTarget: FixedUpdateTarget = Object.freeze({
@@ -2897,6 +3281,9 @@ describe('terminal-update local owner', () => {
       selectionContext,
     });
     const prepareArtifact = vi.fn(async () => ok({preparedId: 'unexpected', artifact}));
+    let currentGrantContextFacts: TerminalUpdateContextFacts | null = null;
+    let grantRequestCount = 0;
+    const loggedEvents: string[] = [];
     let updateState = {
       currentTask: null,
       recentStatus: Object.freeze({taskId: null, state: 'idle' as const, reason: null, changedAt: 0 as TimestampMs}),
@@ -2911,7 +3298,18 @@ describe('terminal-update local owner', () => {
         latestDeliveryFailure: null,
       }),
     } as TerminalUpdateState;
-    const clientState = terminalDataClientReducer(undefined, {type: 'test/init'});
+    let clientState = terminalDataClientReducer(undefined, {type: 'test/init'});
+    clientState = terminalDataClientReducer(
+      clientState,
+      terminalDataClientActions.replaceCredential({
+        groupWorkspaceKey: 'development',
+        terminalRef: grantTerminalRef,
+        storeRef: grantStoreRef,
+        deviceId: 'fixture-device',
+        bindingGeneration: grantBindingGeneration,
+        credentialSecret: 'S'.repeat(43),
+      }),
+    );
     const actor = createTestTerminalUpdateActor({
       port: {
         readFacts: async () =>
@@ -2937,20 +3335,23 @@ describe('terminal-update local owner', () => {
       },
       sourceProvider: {readTarget: async () => fixedTarget, resolveSourcePath: () => '/unused'},
       readNetworkSnapshot: () => Object.freeze({addresses: Object.freeze([])}),
+      readTerminalUpdateContextFacts: () => currentGrantContextFacts,
     });
     const handler = actor.handlers.find(item => item.commandName === requestTerminalUpdateCommand.commandName);
     if (handler === undefined) throw new Error('accept target handler missing');
-    const context = {
+    const makeContext = (payload: ReturnType<typeof createRequestTerminalUpdatePayload>) => ({
       runtimeId: 'grant-minimum-full-test',
-      command: {
-        commandName: requestTerminalUpdateCommand.commandName,
-        commandId: 'accept',
-        requestId: null,
-        payload: createRequestTerminalUpdatePayload(fixedTarget),
-      },
+      command: {commandName: requestTerminalUpdateCommand.commandName, commandId: 'accept', requestId: null, payload},
       actor: {actorKey: actor.actorKey, moduleName: actor.moduleName, actorName: actor.actorName},
-      platformPorts: {logger: {info: () => undefined, warn: () => undefined, error: () => undefined}},
+      platformPorts: {
+        logger: {
+          info: (entry: {event?: string}) => loggedEvents.push(entry.event ?? ''),
+          warn: () => undefined,
+          error: () => undefined,
+        },
+      },
       getState: () => ({
+        ...masterRuntimeModeState,
         [terminalDataClientSliceName]: clientState,
         [terminalUpdateSliceName]: updateState,
       }),
@@ -2966,9 +3367,11 @@ describe('terminal-update local owner', () => {
           updateState = {...updateState, actualVersions: value.payload as TerminalUpdateState['actualVersions']};
       },
       flushPersistence: async () => ({status: 'succeeded'}),
-      dispatchCommand: async (command: {commandName: string}) =>
-        command.commandName === requestTerminalUpdateDownloadGrantCommand.commandName
-          ? ({
+      dispatchCommand: async (command: {commandName: string}) => {
+        if (command.commandName !== requestTerminalUpdateDownloadGrantCommand.commandName)
+          return {status: 'rejected', actorResults: []} as never;
+        grantRequestCount += 1;
+        return ({
               status: 'completed',
               actorResults: [
                 {
@@ -2998,14 +3401,25 @@ describe('terminal-update local owner', () => {
                   },
                 },
               ],
-            } as never)
-          : ({status: 'rejected', actorResults: []} as never),
-    } as never;
+            } as never);
+      },
+    } as never);
 
-    await expect(handler.handle(context)).resolves.toMatchObject({
+    await expect(handler.handle(makeContext(createRequestTerminalUpdatePayload(fixedTarget)))).resolves.toMatchObject({
+      status: 'deferred',
+      reason: 'UPDATE_CONTEXT_NOT_READY',
+    });
+    expect(updateState.currentTask).toMatchObject({phase: 'fixed', actionId: null, target: fixedTarget});
+    expect(grantRequestCount).toBe(0);
+    expect(prepareArtifact).not.toHaveBeenCalled();
+    expect(loggedEvents).toContain('fixed-task-context-not-ready');
+
+    currentGrantContextFacts = grantContextFacts;
+    await expect(handler.handle(makeContext(createRequestTerminalUpdatePayload(null)))).resolves.toMatchObject({
       status: 'failed',
       reason: 'DOWNLOAD_ARTIFACT_IDENTITY_MISMATCH',
     });
+    expect(grantRequestCount).toBe(1);
     expect(prepareArtifact).not.toHaveBeenCalled();
     expect(updateState.currentTask).toMatchObject({
       phase: 'failed',
@@ -3263,11 +3677,9 @@ describe('terminal-update local owner', () => {
     runtimes.push(runtime);
     await runtime.start();
 
-    await runtime.dispatchCommand(
-      requestTerminalUpdateCommand,
-      createRequestTerminalUpdatePayload(fullOnlyTarget),
-      {requestId: createRequestId()},
-    );
+    await runtime.dispatchCommand(requestTerminalUpdateCommand, createRequestTerminalUpdatePayload(fullOnlyTarget), {
+      requestId: createRequestId(),
+    });
     expect(runtime.getState()['kernel.base.terminal-update.state']).toMatchObject({failedArtifactIds: []});
 
     actionState = 'waiting-user';
@@ -3482,11 +3894,9 @@ describe('terminal-update local owner', () => {
     runtimes.push(runtime);
     await runtime.start();
 
-    await runtime.dispatchCommand(
-      requestTerminalUpdateCommand,
-      createRequestTerminalUpdatePayload(hotOnlyTarget),
-      {requestId: createRequestId()},
-    );
+    await runtime.dispatchCommand(requestTerminalUpdateCommand, createRequestTerminalUpdatePayload(hotOnlyTarget), {
+      requestId: createRequestId(),
+    });
     const applying = selectTerminalUpdateTask(runtime.getState());
     expect(applying).toMatchObject({phase: 'applying-hot', actionId: expect.any(String)});
 
@@ -3559,13 +3969,15 @@ describe('terminal-update local owner', () => {
         ok({preparedId: 'prepared-idle-hot', artifact: input.artifact}),
       );
       const applyPrepared = vi.fn(async (input: Parameters<UpdatePort['applyPrepared']>[0]) =>
-        ok(Object.freeze({
-          ...noAction,
-          taskId: input.taskId,
-          actionId: input.actionId,
-          publicationId: newerHotArtifact.publicationId,
-          state: 'accepted' as const,
-        })),
+        ok(
+          Object.freeze({
+            ...noAction,
+            taskId: input.taskId,
+            actionId: input.actionId,
+            publicationId: newerHotArtifact.publicationId,
+            state: 'accepted' as const,
+          }),
+        ),
       );
       const runtime = createFixture({
         readTarget: async () => idleTarget,
@@ -3608,12 +4020,14 @@ describe('terminal-update local owner', () => {
 
       await vi.advanceTimersByTimeAsync(1);
       await vi.waitFor(() => expect(applyPrepared).toHaveBeenCalledOnce());
-      expect(applyPrepared).toHaveBeenCalledWith(expect.objectContaining({
-        taskId: expect.any(String),
-        actionId: expect.any(String),
-        preparedId: 'prepared-idle-hot',
-        kind: 'hot',
-      }));
+      expect(applyPrepared).toHaveBeenCalledWith(
+        expect.objectContaining({
+          taskId: expect.any(String),
+          actionId: expect.any(String),
+          preparedId: 'prepared-idle-hot',
+          kind: 'hot',
+        }),
+      );
       expect(selectTerminalUpdateTask(runtime.getState())).toMatchObject({phase: 'applying-hot'});
     } finally {
       vi.useRealTimers();
@@ -3651,9 +4065,7 @@ describe('terminal-update local owner', () => {
         });
         return ok(currentAction);
       });
-      const presentInstallerConfirmation = vi.fn(async () =>
-        ok({status: 'presented' as const, reason: null}),
-      );
+      const presentInstallerConfirmation = vi.fn(async () => ok({status: 'presented' as const, reason: null}));
       const runtime = createFixture({
         readTarget: async () => fullTarget,
         port: {
@@ -3699,13 +4111,302 @@ describe('terminal-update local owner', () => {
       await vi.waitFor(() => expect(selectTerminalUpdateInvitation(runtime.getState())).not.toBeNull());
 
       await runtime.dispatchCommand(confirmTerminalUpdateInstallCommand, decision, {requestId: createRequestId()});
-      expect(presentInstallerConfirmation).toHaveBeenCalledWith(expect.objectContaining({
-        taskId: task?.taskId,
-        actionId: task?.actionId,
-        publicationId: fullArtifact.publicationId,
-        trigger: 'user-confirm',
-      }));
+      expect(presentInstallerConfirmation).toHaveBeenCalledWith(
+        expect.objectContaining({
+          taskId: task?.taskId,
+          actionId: task?.actionId,
+          publicationId: fullArtifact.publicationId,
+          trigger: 'user-confirm',
+        }),
+      );
       expect(applyPrepared).toHaveBeenCalledOnce();
+      expect(selectTerminalUpdateInvitation(runtime.getState())).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('restores the exact pending FULL confirmation after returning from source settings', async () => {
+    const fullArtifact = Object.freeze({
+      ...artifact,
+      nativeVersion: '1.1.0',
+      nativeBuildNumber: 2,
+      publicationId: 'd'.repeat(64),
+    });
+    const fullTarget: FixedUpdateTarget = Object.freeze({
+      ...target,
+      full: Object.freeze({
+        sourceRef: 'artifact:permission-return',
+        expectedSha256: fullArtifact.publicationId,
+        artifact: fullArtifact,
+      }),
+      hot: null,
+      policy: Object.freeze({...target.policy, nSeconds: 300, hotStrategy: null, mSeconds: null}),
+    });
+    let currentAction: UpdateAction = noAction;
+    let currentFacts = facts;
+    let presentationListener: ((presentation: UpdatePresentation) => void) | null = null;
+    const applyPrepared = vi.fn(async (input: Parameters<UpdatePort['applyPrepared']>[0]) => {
+      currentAction = Object.freeze({
+        ...noAction,
+        taskId: input.taskId,
+        actionId: input.actionId,
+        publicationId: fullArtifact.publicationId,
+        state: 'waiting-user',
+      });
+      return ok(currentAction);
+    });
+    const presentInstallerConfirmation = vi.fn(async () => ok({status: 'presented' as const, reason: null}));
+    const runtime = createFixture({
+      readTarget: async () => fullTarget,
+      port: {
+        readPresentation: async () => ok('foreground' as const),
+        subscribePresentation: listener => {
+          presentationListener = listener;
+          return () => undefined;
+        },
+        readFacts: async () => ok(currentFacts),
+        prepareArtifact: async input => ok({preparedId: 'prepared-full-permission-return', artifact: input.artifact}),
+        applyPrepared,
+        readAction: async () => ok(currentAction),
+        presentInstallerConfirmation,
+      },
+    });
+    runtimes.push(runtime);
+    await runtime.start();
+
+    const accepted = await runtime.dispatchCommand(
+      requestTerminalUpdateCommand,
+      createRequestTerminalUpdatePayload(fullTarget),
+      {requestId: createRequestId()},
+    );
+    expect(accepted.actorResults[0]?.result).toMatchObject({status: 'waiting-user'});
+    const task = selectTerminalUpdateTask(runtime.getState());
+    expect(task).toMatchObject({phase: 'waiting-user', actionKind: 'full'});
+    expect(presentationListener).not.toBeNull();
+
+    currentFacts = Object.freeze({
+      ...facts,
+      actual: Object.freeze({...facts.actual!, bootId: 'permission-return-next-boot'}),
+    });
+    presentationListener!('background');
+    presentationListener!('foreground');
+    await vi.waitFor(() => expect(presentInstallerConfirmation).toHaveBeenCalledOnce());
+
+    expect(presentInstallerConfirmation).toHaveBeenCalledWith({
+      timeoutMs: 10_000,
+      taskId: task?.taskId,
+      actionId: task?.actionId,
+      publicationId: fullArtifact.publicationId,
+      trigger: 'source-permission-return',
+    });
+    expect(applyPrepared).toHaveBeenCalledOnce();
+    expect(selectTerminalUpdateTask(runtime.getState())).toMatchObject({
+      taskId: task?.taskId,
+      actionId: task?.actionId,
+      phase: 'waiting-user',
+      bootId: facts.actual?.bootId,
+    });
+    expect(selectTerminalUpdateActualVersions(runtime.getState())?.bootId).toBe('permission-return-next-boot');
+  });
+
+  it('re-invites the exact pending FULL action after a new boot without changing execution boot until reapply', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(2_000_000);
+    const persistence = createStorage();
+    const persistenceKey = `terminal-update-full-new-boot-${createRequestId()}`;
+    try {
+      const fullArtifact = Object.freeze({
+        ...artifact,
+        nativeVersion: '1.1.0',
+        nativeBuildNumber: 2,
+        publicationId: 'd'.repeat(64),
+      });
+      const fullTarget: FixedUpdateTarget = Object.freeze({
+        ...target,
+        full: Object.freeze({
+          sourceRef: 'artifact:pending-full-new-boot',
+          expectedSha256: fullArtifact.publicationId,
+          artifact: fullArtifact,
+        }),
+        hot: null,
+        policy: Object.freeze({...target.policy, nSeconds: 60, hotStrategy: null, mSeconds: null}),
+      });
+      let currentFacts = facts;
+      let currentAction: UpdateAction = noAction;
+      const applyPrepared = vi.fn(async (input: Parameters<UpdatePort['applyPrepared']>[0]) => {
+        currentAction = Object.freeze({
+          ...noAction,
+          taskId: input.taskId,
+          actionId: input.actionId,
+          publicationId: fullArtifact.publicationId,
+          state: 'waiting-user',
+        });
+        return ok(currentAction);
+      });
+      const port: Partial<UpdatePort> = {
+        readPresentation: async () => ok('foreground' as const),
+        readFacts: async () => ok(currentFacts),
+        prepareArtifact: async input => ok({preparedId: 'prepared-full-new-boot', artifact: input.artifact}),
+        applyPrepared,
+        readAction: async () => ok(currentAction),
+      };
+      const firstRuntime = createFixture({
+        persistKv: persistence,
+        persistenceKey,
+        readTarget: async () => fullTarget,
+        port,
+      });
+      runtimes.push(firstRuntime);
+      await firstRuntime.start();
+
+      const accepted = await firstRuntime.dispatchCommand(
+        requestTerminalUpdateCommand,
+        createRequestTerminalUpdatePayload(fullTarget),
+        {requestId: createRequestId()},
+      );
+      expect(accepted.actorResults[0]?.result).toMatchObject({status: 'waiting-user'});
+      const originalTask = selectTerminalUpdateTask(firstRuntime.getState());
+      expect(originalTask).toMatchObject({phase: 'waiting-user', bootId: facts.actual?.bootId});
+      expect(applyPrepared).toHaveBeenCalledOnce();
+
+      await releaseRuntimeForTestAsync(firstRuntime);
+      runtimes.splice(runtimes.indexOf(firstRuntime), 1);
+      currentFacts = Object.freeze({
+        ...facts,
+        actual: Object.freeze({...facts.actual!, bootId: 'pending-full-next-boot'}),
+      });
+
+      const secondRuntime = createFixture({
+        persistKv: persistence,
+        persistenceKey,
+        readTarget: async () => fullTarget,
+        port,
+      });
+      runtimes.push(secondRuntime);
+      await secondRuntime.start();
+
+      expect(selectTerminalUpdateTask(secondRuntime.getState())).toMatchObject({
+        taskId: originalTask?.taskId,
+        actionId: originalTask?.actionId,
+        phase: 'waiting-user',
+        bootId: facts.actual?.bootId,
+      });
+      await vi.advanceTimersByTimeAsync(60_000);
+      await vi.waitFor(() => {
+        expect(selectTerminalUpdateInvitation(secondRuntime.getState())).toEqual({
+          taskId: originalTask?.taskId,
+          actionId: originalTask?.actionId,
+          bootId: currentFacts.actual?.bootId,
+        });
+      });
+      expect(applyPrepared).toHaveBeenCalledOnce();
+
+      currentAction = Object.freeze({...currentAction, state: 'user-cancelled'});
+      const confirmed = await secondRuntime.dispatchCommand(
+        confirmTerminalUpdateInstallCommand,
+        {
+          taskId: originalTask!.taskId,
+          actionId: originalTask!.actionId,
+          bootId: currentFacts.actual!.bootId,
+        },
+        {requestId: createRequestId()},
+      );
+      expect(confirmed.actorResults[0]?.result).toMatchObject({status: 'waiting-user'});
+      expect(applyPrepared).toHaveBeenCalledTimes(2);
+      expect(applyPrepared.mock.calls[1]?.[0]).toMatchObject({
+        taskId: originalTask?.taskId,
+        preparedId: 'prepared-full-new-boot',
+      });
+      expect(selectTerminalUpdateTask(secondRuntime.getState())).toMatchObject({
+        taskId: originalTask?.taskId,
+        bootId: currentFacts.actual?.bootId,
+        phase: 'waiting-user',
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('does not overlap or repeatedly retry a FULL reminder after its persistence fails', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(2_000_000);
+    try {
+      let failReminderWrite = false;
+      const persistence = createStorage({
+        failWrite: () => failReminderWrite,
+        failWriteCount: 3,
+      });
+      const fullArtifact = Object.freeze({
+        ...artifact,
+        nativeVersion: '1.1.0',
+        nativeBuildNumber: 2,
+        publicationId: 'd'.repeat(64),
+      });
+      const fullTarget: FixedUpdateTarget = Object.freeze({
+        ...target,
+        full: Object.freeze({
+          sourceRef: 'artifact:reminder-persistence-failure',
+          expectedSha256: fullArtifact.publicationId,
+          artifact: fullArtifact,
+        }),
+        hot: null,
+        policy: Object.freeze({...target.policy, nSeconds: 60, hotStrategy: null, mSeconds: null}),
+      });
+      let currentAction: UpdateAction = noAction;
+      const readAction = vi.fn(async () => ok(currentAction));
+      let releaseReadAction!: (value: Awaited<ReturnType<typeof readAction>>) => void;
+      const applyPrepared = vi.fn(async (input: Parameters<UpdatePort['applyPrepared']>[0]) => {
+        currentAction = Object.freeze({
+          ...noAction,
+          taskId: input.taskId,
+          actionId: input.actionId,
+          publicationId: fullArtifact.publicationId,
+          state: 'waiting-user',
+        });
+        return ok(currentAction);
+      });
+      const runtime = createFixture({
+        persistKv: persistence,
+        readTarget: async () => fullTarget,
+        port: {
+          readPresentation: async () => ok('foreground' as const),
+          readFacts: async () => ok(facts),
+          prepareArtifact: async input => ok({preparedId: 'prepared-full-reminder-failure', artifact: input.artifact}),
+          applyPrepared,
+          readAction,
+        },
+      });
+      runtimes.push(runtime);
+      await runtime.start();
+
+      const accepted = await runtime.dispatchCommand(
+        requestTerminalUpdateCommand,
+        createRequestTerminalUpdatePayload(fullTarget),
+        {requestId: createRequestId()},
+      );
+      expect(accepted.actorResults[0]?.result).toMatchObject({status: 'waiting-user'});
+      readAction.mockClear();
+      readAction.mockImplementationOnce(
+        () =>
+          new Promise(resolve => {
+            releaseReadAction = resolve;
+          }),
+      );
+      failReminderWrite = true;
+
+      await vi.advanceTimersByTimeAsync(60_000);
+      await vi.waitFor(() => expect(readAction).toHaveBeenCalledOnce());
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(readAction).toHaveBeenCalledOnce();
+
+      releaseReadAction(ok(currentAction));
+      await vi.waitFor(() => expect(persistence.failedWriteKeys).toHaveLength(3));
+      await vi.advanceTimersByTimeAsync(1);
+
+      expect(readAction).toHaveBeenCalledOnce();
+      expect(persistence.failedWriteKeys).toHaveLength(3);
+      expect(selectTerminalUpdateTask(runtime.getState())).toMatchObject({phase: 'waiting-user'});
       expect(selectTerminalUpdateInvitation(runtime.getState())).toBeNull();
     } finally {
       vi.useRealTimers();
@@ -3793,9 +4494,8 @@ describe('terminal-update local owner', () => {
     stateRuntime.getStore().dispatch({type: 'test-other/enable'});
     expect((await stateRuntime.flushPersistence()).status).toBe('succeeded');
 
-    const retainedKeys = ['currentTask', 'recentStatus', 'failedArtifactIds', 'reportDescriptor'].map(
-      storageKey =>
-        createPersistenceFieldKey({persistenceKey: namespace, sliceName: terminalUpdateRegistration.name, storageKey}),
+    const retainedKeys = ['currentTask', 'recentStatus', 'failedArtifactIds', 'reportDescriptor'].map(storageKey =>
+      createPersistenceFieldKey({persistenceKey: namespace, sliceName: terminalUpdateRegistration.name, storageKey}),
     );
     const protectedCredentialKey = createPersistenceFieldKey({
       persistenceKey: namespace,

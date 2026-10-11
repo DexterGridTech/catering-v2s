@@ -16,7 +16,6 @@ import {
 import {
   createAppError,
   createEnvelopeId,
-  createRequestId,
   topologyTransportConfig,
   serializeTopologyWireMessage,
 } from '@catering-v2s/kernel-base-contracts';
@@ -35,6 +34,8 @@ import {
   reconcileTopologyHostCommand,
   reconcileTopologyPeerCommand,
   refreshTopologyDisplayCommand,
+  requestTopologySlaveUnpairStateClearCommand,
+  completeTopologySlaveUnpairStateClearCommand,
   setTopologyHostEnabledCommand,
   topologyDisplayChangedCommand,
   topologyHostEventCommand,
@@ -52,10 +53,6 @@ type TopologyActorInput = Readonly<{
   readonly peerChannel?: TopologyPeerChannel;
   readonly moduleName?: string;
   readonly canPair?: (state: import('@catering-v2s/kernel-base-state').StateRoot) => boolean;
-  readonly beforeSlaveCredentialTransition?: (
-    context: ActorExecutionContext,
-    transition: 'unpair' | 'peer-unpaired',
-  ) => Promise<void>;
 }>;
 
 const topologyCallTimeoutMs = topologyTransportConfig.callTimeoutMs;
@@ -431,15 +428,97 @@ const repairPairState = async (context: ActorExecutionContext): Promise<boolean>
   return repaired;
 };
 
-const resetSlaveRuntime = async (context: ActorExecutionContext) => {
-  const result = await context.platformPorts.appControl.resetRuntime({
-    requestId: context.command.requestId ?? createRequestId(),
-    timeoutMs: topologyCallTimeoutMs,
+const completeLocalUnpair = async (
+  context: ActorExecutionContext,
+  input: TopologyActorInput,
+  initialInstanceMode: ReturnType<typeof selectRuntimeInstanceMode>,
+): Promise<null> => {
+  const current = selectTopologyState(context.getState());
+  const shouldNotifyPeer = initialInstanceMode === 'MASTER' || initialInstanceMode === 'SLAVE';
+  let peerNoticeSent = false;
+  unpairingLog(context, 'started', {
+    instanceMode: selectRuntimeInstanceMode(context.getState()),
+    displayRole: selectDisplayRole(context.getState()),
+    hasLocator: current.masterLocator !== null,
+    hasPeerIdentity: current.peerIdentity !== null,
+    peerReachable: current.peerReachable,
   });
-  if (result.status !== 'accepted') {
-    throw new Error(`Topology slave runtime reset did not complete: ${result.status}`);
+  try {
+    const shouldStopMasterHost =
+      initialInstanceMode === 'MASTER' && (current.hostDesired || current.hostActual !== 'stopped');
+    if (selectDisplayRole(context.getState()) !== 'CHIEF') {
+      await dispatchCompleted({
+        context,
+        definition: switchDisplayRoleCommand,
+        payload: Object.freeze({displayRole: 'CHIEF' as const}),
+        label: 'Topology display role unpair',
+      });
+      unpairingLog(context, 'display-role-completed', {displayRole: selectDisplayRole(context.getState())});
+    }
+    if (selectRuntimeInstanceMode(context.getState()) !== 'MASTER') {
+      await dispatchCompleted({
+        context,
+        definition: switchInstanceModeCommand,
+        payload: Object.freeze({instanceMode: 'MASTER' as const}),
+        label: 'Topology instance mode unpair',
+        routeContext: primaryRouteContext(context),
+      });
+      unpairingLog(context, 'instance-mode-completed', {
+        instanceMode: selectRuntimeInstanceMode(context.getState()),
+      });
+    }
+    // Stop a MASTER host only after the peer has received the authoritative
+    // unpair notice; stopping the host closes the peer transport.
+    if (shouldStopMasterHost) {
+      await sendExplicitUnpairNotice(context, input.peerChannel, shouldNotifyPeer);
+      peerNoticeSent = true;
+      context.dispatchAction(topologyActions.setHostDesired(false));
+      await dispatchCompleted({
+        context,
+        definition: reconcileTopologyHostCommand,
+        payload: Object.freeze({}),
+        label: 'Topology host stop for unpair',
+      });
+      const hostAfterStop = selectTopologyState(context.getState());
+      if (hostAfterStop.hostActual !== 'stopped') {
+        throw createTopologyFailure({
+          context,
+          code: 'TOPOLOGY_HOST_FAILED',
+          message: 'Topology host did not stop during unpair',
+        });
+      }
+      unpairingLog(context, 'host-stop-completed', {
+        hostDesired: hostAfterStop.hostDesired,
+        hostActual: hostAfterStop.hostActual,
+      });
+    }
+    context.dispatchAction(topologyActions.clearMasterLocator());
+    context.dispatchAction(topologyActions.setRepairPending(false));
+    if (!(await flushUnpairPersistence(context))) {
+      throw createTopologyFailure({
+        context,
+        code: 'TOPOLOGY_UNAVAILABLE',
+        message: 'Topology unpair persistence did not complete',
+      });
+    }
+    if (!peerNoticeSent) await sendExplicitUnpairNotice(context, input.peerChannel, shouldNotifyPeer);
+    await input.peerChannel?.close('TOPOLOGY_UNPAIRED');
+    unpairingLog(context, 'completed', {
+      hasLocator: selectTopologyState(context.getState()).masterLocator !== null,
+      hasPeerIdentity: selectTopologyState(context.getState()).peerIdentity !== null,
+      peerReachable: selectTopologyState(context.getState()).peerReachable,
+    });
+    return null;
+  } catch (error) {
+    context.dispatchAction(topologyActions.setRepairPending(true));
+    unpairingLog(context, 'failed', {
+      errorType: error instanceof Error ? error.name : typeof error,
+      instanceMode: selectRuntimeInstanceMode(context.getState()),
+      displayRole: selectDisplayRole(context.getState()),
+      hasLocator: selectTopologyState(context.getState()).masterLocator !== null,
+    });
+    throw error;
   }
-  return result;
 };
 
 export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefinition =>
@@ -567,9 +646,8 @@ export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefini
         if (persistence.status !== 'succeeded')
           throw new Error(`Topology pairing persistence did not complete: ${persistence.status}`);
         pairingLog(context, 'persistence-completed', {status: persistence.status, failureCount: 0});
-        phase = 'runtime-reset';
-        const reset = await resetSlaveRuntime(context);
-        pairingLog(context, 'runtime-reset-accepted', {status: reset.status});
+        context.dispatchAction(topologyActions.setRepairPending(false));
+        pairingLog(context, 'state-sync-enabled', {instanceMode: selectRuntimeInstanceMode(context.getState())});
         return null;
       } catch (error) {
         pairingLog(context, 'failed', {
@@ -588,110 +666,54 @@ export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefini
       }
     }),
     onCommand(unpairTopologyCommand, async context => {
-      const current = selectTopologyState(context.getState());
       const currentFacts = selectTopologyFacts(context.getState());
       if (currentFacts === undefined || !currentFacts.paired) {
         throw createTopologyFailure({context, code: 'TOPOLOGY_NOT_PAIRED', message: 'Topology is not paired'});
       }
       const initialInstanceMode = selectRuntimeInstanceMode(context.getState());
-      if (initialInstanceMode === 'SLAVE') {
-        await input.beforeSlaveCredentialTransition?.(context, 'unpair');
-      }
       context.dispatchAction(topologyActions.setRepairPending(true));
-      // Both roles expose the same public unpair command. Capture the mode
-      // before the slave path is normalized to MASTER so the remote peer also
-      // receives the authoritative unpair notice.
-      const shouldNotifyPeer = initialInstanceMode === 'MASTER' || initialInstanceMode === 'SLAVE';
-      let peerNoticeSent = false;
-      unpairingLog(context, 'started', {
-        instanceMode: selectRuntimeInstanceMode(context.getState()),
-        displayRole: selectDisplayRole(context.getState()),
-        hasLocator: current.masterLocator !== null,
-        hasPeerIdentity: current.peerIdentity !== null,
-        peerReachable: current.peerReachable,
-      });
-      try {
-        const shouldStopMasterHost =
-          initialInstanceMode === 'MASTER' && (current.hostDesired || current.hostActual !== 'stopped');
-        if (selectDisplayRole(context.getState()) !== 'CHIEF') {
+      if (initialInstanceMode === 'SLAVE') {
+        try {
           await dispatchCompleted({
             context,
-            definition: switchDisplayRoleCommand,
-            payload: Object.freeze({displayRole: 'CHIEF' as const}),
-            label: 'Topology display role unpair',
+            definition: requestTopologySlaveUnpairStateClearCommand,
+            payload: Object.freeze({transition: 'local-unpair' as const}),
+            label: 'Topology slave TDC state clear',
           });
-          unpairingLog(context, 'display-role-completed', {displayRole: selectDisplayRole(context.getState())});
-        }
-        if (selectRuntimeInstanceMode(context.getState()) !== 'MASTER') {
-          await dispatchCompleted({
-            context,
-            definition: switchInstanceModeCommand,
-            payload: Object.freeze({instanceMode: 'MASTER' as const}),
-            label: 'Topology instance mode unpair',
-            routeContext: primaryRouteContext(context),
-          });
-          unpairingLog(context, 'instance-mode-completed', {
+          return null;
+        } catch (error) {
+          context.dispatchAction(topologyActions.setRepairPending(true));
+          unpairingLog(context, 'failed', {
+            phase: 'slave-state-clear',
+            errorType: error instanceof Error ? error.name : typeof error,
             instanceMode: selectRuntimeInstanceMode(context.getState()),
+            hasLocator: selectTopologyState(context.getState()).masterLocator !== null,
           });
+          throw error;
         }
-        // Stopping the MASTER host closes the active peer transport. Deliver the
-        // authoritative unpair notice before that owner lifecycle transition;
-        // otherwise the peer remains configured and reconnects indefinitely.
-        if (shouldStopMasterHost) {
-          await sendExplicitUnpairNotice(context, input.peerChannel, shouldNotifyPeer);
-          peerNoticeSent = true;
-          // An unpaired MASTER must not remain in the unsupported cross-product
-          // of role-choice plus an already-running host. Stop the owner-managed
-          // host lifecycle before clearing pairing facts so the command's
-          // successful readback can actually reach the approved role-choice
-          // frame. A failed stop leaves pairing facts intact for recovery.
-          context.dispatchAction(topologyActions.setHostDesired(false));
-          await dispatchCompleted({
-            context,
-            definition: reconcileTopologyHostCommand,
-            payload: Object.freeze({}),
-            label: 'Topology host stop for unpair',
-          });
-          const hostAfterStop = selectTopologyState(context.getState());
-          if (hostAfterStop.hostActual !== 'stopped') {
-            throw createTopologyFailure({
-              context,
-              code: 'TOPOLOGY_HOST_FAILED',
-              message: 'Topology host did not stop during unpair',
-            });
-          }
-          unpairingLog(context, 'host-stop-completed', {
-            hostDesired: hostAfterStop.hostDesired,
-            hostActual: hostAfterStop.hostActual,
-          });
-        }
-        context.dispatchAction(topologyActions.clearMasterLocator());
-        context.dispatchAction(topologyActions.setRepairPending(false));
-        if (!(await flushUnpairPersistence(context))) {
-          throw createTopologyFailure({
-            context,
-            code: 'TOPOLOGY_UNAVAILABLE',
-            message: 'Topology unpair persistence did not complete',
-          });
-        }
-        if (!peerNoticeSent) await sendExplicitUnpairNotice(context, input.peerChannel, shouldNotifyPeer);
-        await input.peerChannel?.close('TOPOLOGY_UNPAIRED');
-        unpairingLog(context, 'completed', {
-          hasLocator: selectTopologyState(context.getState()).masterLocator !== null,
-          hasPeerIdentity: selectTopologyState(context.getState()).peerIdentity !== null,
-          peerReachable: selectTopologyState(context.getState()).peerReachable,
-        });
-        return null;
-      } catch (error) {
-        context.dispatchAction(topologyActions.setRepairPending(true));
-        unpairingLog(context, 'failed', {
-          errorType: error instanceof Error ? error.name : typeof error,
-          instanceMode: selectRuntimeInstanceMode(context.getState()),
-          displayRole: selectDisplayRole(context.getState()),
-          hasLocator: selectTopologyState(context.getState()).masterLocator !== null,
-        });
-        throw error;
       }
+      return completeLocalUnpair(context, input, initialInstanceMode);
+    }),
+    onCommand(completeTopologySlaveUnpairStateClearCommand, async context => {
+      if (selectRuntimeInstanceMode(context.getState()) !== 'SLAVE') {
+        throw createTopologyFailure({
+          context,
+          code: 'TOPOLOGY_PROTOCOL_REJECTED',
+          message: 'Slave unpair completion requires the SLAVE role',
+        });
+      }
+      const {transition} = context.command.payload;
+      if (transition === 'local-unpair') return completeLocalUnpair(context, input, 'SLAVE');
+      if (transition === 'peer-unpaired') {
+        const resolution = await resolvePeerClose({context, instanceMode: 'SLAVE'});
+        for (const action of resolution.actions) context.dispatchAction(action);
+        return null;
+      }
+      throw createTopologyFailure({
+        context,
+        code: 'TOPOLOGY_PROTOCOL_REJECTED',
+        message: 'Slave unpair completion transition is invalid',
+      });
     }),
     onCommand(setTopologyHostEnabledCommand, async context => {
       context.dispatchAction(topologyActions.setHostDesired(context.command.payload.enabled));
@@ -699,10 +721,7 @@ export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefini
     }),
     onCommand(topologyHostEventCommand, async context => {
       const event = context.command.payload;
-      const clearSlaveCredentialBeforeUnpair =
-        (event.event === 'close' || event.event === 'error' || event.event === 'peer-unreachable') &&
-        event.reason === 'TOPOLOGY_UNPAIRED' &&
-        selectRuntimeInstanceMode(context.getState()) === 'SLAVE';
+      let peerCloseResolution: PeerCloseResolution | null = null;
       if (event.event === 'state-transfer-failed' && event.payloadFailure !== undefined) {
         context.dispatchAction(topologyActions.setPayloadFailure(event.payloadFailure));
         return null;
@@ -755,15 +774,22 @@ export const createTopologyActor = (input: TopologyActorInput = {}): ActorDefini
         context.dispatchAction(topologyActions.bumpPeerConnectionRevision());
         if (event.reason === 'TOPOLOGY_UNPAIRED') {
           const instanceMode = selectRuntimeInstanceMode(context.getState());
-          if (clearSlaveCredentialBeforeUnpair) {
-            await input.beforeSlaveCredentialTransition?.(context, 'peer-unpaired');
+          if (instanceMode === 'SLAVE') {
+            context.dispatchAction(topologyActions.setRepairPending(true));
+            await dispatchCompleted({
+              context,
+              definition: requestTopologySlaveUnpairStateClearCommand,
+              payload: Object.freeze({transition: 'peer-unpaired' as const}),
+              label: 'Peer unpair slave TDC state clear',
+            });
+          } else {
+            // A transient close preserves facts; only an explicit unpair notice
+            // resolves the role-specific owner boundary.
+            peerCloseResolution = await resolvePeerClose({context, instanceMode});
           }
-          // A transient close preserves facts; an explicit unpair notice resolves
-          // the role-specific owner boundary through one typed transition.
-          const peerCloseResolution = await resolvePeerClose({context, instanceMode});
-          for (const action of peerCloseResolution.actions) context.dispatchAction(action);
         }
       }
+      for (const action of peerCloseResolution?.actions ?? []) context.dispatchAction(action);
       return null;
     }),
     onCommand(refreshTopologyDisplayCommand, async context => {

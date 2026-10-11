@@ -14,6 +14,21 @@ describe('Android system UI installer controls', () => {
     });
   });
 
+  it('allows one bounded two-minute wait for a native installer handoff', async () => {
+    const ui = createAndroidSystemUi({
+      adbPath: '/sdk/platform-tools/adb',
+      serial: 'emulator-5554',
+      runTextCommand: async () => xml(
+        '<node package="com.android.packageinstaller" text="Install" enabled="true" clickable="true" bounds="[2,4][22,34]" />',
+      ),
+    });
+    await expect(ui.waitForButton(['Install'], 120_000, undefined, ['com.android.packageinstaller']))
+      .resolves.toMatchObject({label: 'Install', packageName: 'com.android.packageinstaller'});
+    await expect(ui.waitForButton(['Install'], 120_001)).rejects.toThrow(
+      'TERMINAL_AUTOMATION_ANDROID_SYSTEM_UI_TIMEOUT_INVALID',
+    );
+  });
+
   it('selects a same-labeled system control only from the expected package', () => {
     const hierarchy = xml(
       '<node package="com.anonymous.sampleterminal" text="Settings" enabled="true" clickable="true" bounds="[1,2][21,32]" />' +

@@ -951,6 +951,7 @@
               "DOWNLOADING",
               "VERIFYING",
               "WAITING_IDLE",
+              "ADMISSION_REJECTED",
               "INSTALLING",
               "APPLYING_HOT",
               "SUCCEEDED",
@@ -968,6 +969,9 @@
               "HASH_MISMATCH",
               "PREPARE_FAILED",
               "INSTALLER_CANCELLED",
+              "INCOMPATIBLE",
+              "WOULD_DOWNGRADE",
+              "FAILED_ARTIFACT",
               "INSTALL_FAILED",
               "HOT_APPLY_FAILED",
               "UNKNOWN"

@@ -21,6 +21,7 @@ reviewCycleId: TER_REMOTE_CONTROL_REQUIREMENTS_2026-10-10
 ### 0.2 来源与优先级
 
 - 原话、仓内源码导航及上游研究：`doc/plans/platform/2026-10-10-ter-remote-control-requirements-discussion-claude.md`，尤其 §1、§14。
+- Dexter 2026-10-10追加裁决：“同意同步正式需求，删除‘状态待确认’，统一为未激活、离线、在线三态。”本次同步R-01、R-02与R-20，不授权实施或动态运行。
 - 本文是本专项正式需求稿；讨论稿保留历史推演。Dexter 后续明确裁决优先于本文。需求与当前源码不一致时，源码只是待改输入，不能反向取消需求。
 - 治理：`AGENTS.md`、`PLATFORM-BLUEPRINT.md`、`doc/platform/README.md`、`scripts/README.md`；TER、前端、后台与第三方规范仍各有唯一正本。
 - 项目语料适用集团空间、组织关系、项目授权范围、角色与终端的已有含义：`project-memory/decisions/confirmed-business-language-corpus.md` 的 G-01、G-03、G-05A、G-07。LiveKit participant 不是新增业务人员/终端/组织实体，不能从媒体身份反推业务授权。
@@ -89,10 +90,9 @@ reviewCycleId: TER_REMOTE_CONTROL_REQUIREMENTS_2026-10-10
 
 | 代码 | 显示 | 判定 |
 | --- | --- | --- |
-| NOT_ACTIVATED | 未激活 | 当前没有有效 binding |
-| OFFLINE | 离线 | 当前 binding 没有会话，或该会话已有断开事实 |
-| UNCONFIRMED | 状态待确认 | 当前 binding 与已知连接身份冲突，无法确认属于当前终端 |
-| ONLINE | 在线 | 当前有效 binding 对应 PG 当前会话，且没有断开事实 |
+| NOT_ACTIVATED | 未激活 | 当前没有有效 ACTIVE binding |
+| OFFLINE | 离线 | 当前有有效 ACTIVE binding，但同 scope latest_state 无行，或 disconnected_at_epoch_millis 非空 |
+| ONLINE | 在线 | 当前有有效 ACTIVE binding，且同 scope latest_state 存在、disconnected_at_epoch_millis 为空 |
 
 连接权威为 PG latest-state，不是 Doris 历史或版本报告。列表与发起准入复用现有 terminal-control 的有效 binding 与未断开会话判定；TDS 已负责心跳超时关闭与断开写入。本期不增加心跳参数列、跨节点配置查询或另一套 freshness 算法。节点异常退出尚未写断开时，列表可能暂时仍显示在线；点击后按现有在线投递和30s启动期限得到失败结果，不承诺实时在线证明。
 
@@ -100,7 +100,7 @@ reviewCycleId: TER_REMOTE_CONTROL_REQUIREMENTS_2026-10-10
 
 ### R-02 入口与工作区
 
-终端详情 Drawer 右上角使用现有 `AdminDetailActionMenu`：“操作→远程控制”。没有远控权限不提供可执行动作；已知 NOT_ACTIVATED/OFFLINE/UNCONFIRMED 时不可用并解释原因。ONLINE 时允许点击，CBS 再核验。占用不进入列表或 Drawer 常驻字段，不提前按占用禁用。
+终端详情 Drawer 右上角使用现有 `AdminDetailActionMenu`：“操作→远程控制”。没有远控权限不提供可执行动作；已知 NOT_ACTIVATED/OFFLINE 时不可用并解释原因。ONLINE 时允许点击，CBS 再核验。占用不进入列表或 Drawer 常驻字段，不提前按占用禁用。
 
 管理员点击时若已占用，显示“当前机器已经受控”。不展示占用者个人资料，不排队、不抢占、不转移会话。
 
@@ -364,7 +364,7 @@ CBS session state闭集`STARTING|ACTIVE|ENDED`；ENDED包含成功结束和失�
 
 | 类别 | 有限码 | 用户/协议语义 |
 | --- | --- | --- |
-| 发起/授权拒绝 | PERMISSION_DENIED、OUT_OF_SCOPE、NOT_ACTIVATED、TERMINAL_OFFLINE、CONNECTION_UNCONFIRMED、OCCUPIED、IDENTITY_CONFLICT、SERVICE_UNAVAILABLE、UNSUPPORTED_TERMINAL、NOT_READY | 不授控制权；NOT_READY仅限启动时描述尚未就绪；OCCUPIED仅点击后显示规定文案；其他按真实Problem显示，不输出秘密 |
+| 发起/授权拒绝 | PERMISSION_DENIED、OUT_OF_SCOPE、NOT_ACTIVATED、TERMINAL_OFFLINE、OCCUPIED、IDENTITY_CONFLICT、SERVICE_UNAVAILABLE、UNSUPPORTED_TERMINAL、NOT_READY | 不授控制权；NOT_READY仅限启动时描述尚未就绪；OCCUPIED仅点击后显示规定文案；其他按真实Problem显示，不输出秘密 |
 | 会话结束 | ADMIN_ENDED、WORKSPACE_CLOSED、START_TIMEOUT、START_FAILED、CONTROLLER_DISCONNECTED、SCREEN_DISCONNECTED、PAIR_DISCONNECTED、TDP_DISCONNECTED、ACTIVATION_INVALID、AUTHORIZATION_INVALID、CONFIG_CHANGED、APP_RESTARTED、LEASE_EXPIRED、CAPTURE_FAILED、INPUT_RESULT_UNKNOWN、INPUT_UNAVAILABLE、UNSUPPORTED_PROTOCOL | 全会话禁输入/释放；断连类手动新发起，不能重试旧触摸 |
 | 输入拒绝/取消 | NOT_READY、SESSION_ENDED、STALE_STREAM、WRONG_TARGET、INVALID_MESSAGE、OUT_OF_BOUNDS、INVALID_GESTURE、DUPLICATE、INPUT_CONFLICT、GESTURE_EXPIRED、UNSUPPORTED_SURFACE | 不分发该输入；冲突/越界/手势过期只取消该手势，不永久禁正常输入；当前面不可用时禁该面输入并说明 |
 
@@ -380,7 +380,7 @@ selector至少提供本机session/phase、各screen就绪与stream事实、最�
 
 | ID | 场景/动作 | 业务与边界断言 |
 | --- | --- | --- |
-| V-01 | 项目列表：未激活、已断开、身份冲突、当前未断开会话 | 四类状态/时间正确；列表与现有在线投递判定一致；保持原查询范围/分页，无逐行N+1；只ONLINE可点击 |
+| V-01 | 项目列表：未激活、ACTIVE 未建连或已断开、当前未断开会话 | 三类状态/时间正确；列表与现有在线投递判定一致；保持原查询范围/分页，无逐行N+1；只ONLINE可点击 |
 | V-02 | 权限/scope与重放 | 没权限/他项目/权限已撤销拒绝；同requestId只回原session；并发不同requestId仅一成功 |
 | V-03 | 在线发起与画面就绪 | 主机selector登记→冻结description→定向grant/peer→本机准备→SCREEN_READY→browser全部画面可显示；browser晚入房可由KEEPALIVE取得声明；CBS不预知副机；READY到达倒序不丢首个操作；command成功未被误当画面ready |
 | V-04 | mobile、laptop单屏 | 点击按钮、滚动列表、虚拟键盘真实产生现有业务结果，本地页面无远控提示/跳转 |

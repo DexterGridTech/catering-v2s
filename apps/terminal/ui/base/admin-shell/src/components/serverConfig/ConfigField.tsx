@@ -1,6 +1,6 @@
 import {useInputField} from '@catering-v2s/ui-base-input';
 import {deriveTestId, PrimitiveInput, PrimitiveLabel, testIdProps, type TestId} from '@catering-v2s/ui-base-primitives';
-import {ADMIN_CONSOLE_FOCUS_SCOPE_ID} from '@catering-v2s/ui-base-admin-shell';
+import {ADMIN_CONSOLE_FOCUS_SCOPE_ID} from '../../foundations/adminIdentity';
 
 export type ConfigFieldProps = Readonly<{
   readonly fieldId: string;

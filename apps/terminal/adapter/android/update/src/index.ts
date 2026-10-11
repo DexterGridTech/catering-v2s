@@ -129,12 +129,13 @@ export const createAndroidUpdatePort = (): UpdatePort =>
     readAction: async (input: UpdateCall & Readonly<{taskId: string; actionId: string}>) =>
       invoke('readAction', () => native().readAction(input.taskId, input.actionId)),
     presentInstallerConfirmation: async (
-      input: UpdateCall & Readonly<{
-        taskId: string;
-        actionId: string;
-        publicationId: string;
-        trigger: UpdateInstallerConfirmationTrigger;
-      }>,
+      input: UpdateCall &
+        Readonly<{
+          taskId: string;
+          actionId: string;
+          publicationId: string;
+          trigger: UpdateInstallerConfirmationTrigger;
+        }>,
     ) =>
       invoke('presentInstallerConfirmation', () =>
         native().presentInstallerConfirmation(input.taskId, input.actionId, input.publicationId, input.trigger),

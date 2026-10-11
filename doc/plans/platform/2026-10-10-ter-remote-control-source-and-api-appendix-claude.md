@@ -91,7 +91,7 @@ O=/api/operations/group-workspaces/{groupWorkspaceKey}；T=/api/terminal/group-w
 下表增补均是**完整增补集合**；最终合同=基础集∪该行增补。缩写RC_=TERMINAL_CONTROL_REMOTE_，仅为表格显示简写；canonical/code实际使用完整前缀。
 | operationId | errorSetRef | operationErrorAugmentations（完整集合） |
 | --- | --- | --- |
-| startOperationsTerminalRemoteControl | OWNER_COMMAND | PLATFORM_DEPENDENCY_UNAVAILABLE、RC_NOT_ACTIVATED、RC_TERMINAL_OFFLINE、RC_CONNECTION_UNCONFIRMED、RC_OCCUPIED、RC_IDENTITY_CONFLICT |
+| startOperationsTerminalRemoteControl | OWNER_COMMAND | PLATFORM_DEPENDENCY_UNAVAILABLE、RC_NOT_ACTIVATED、RC_TERMINAL_OFFLINE、RC_OCCUPIED、RC_IDENTITY_CONFLICT |
 | getOperationsTerminalRemoteControl | AUTHZ_READ | PLATFORM_COMMON_VALIDATION_FAILED、PLATFORM_DEPENDENCY_UNAVAILABLE |
 | issueOperationsRemoteControlGrant | OWNER_COMMAND | PLATFORM_DEPENDENCY_UNAVAILABLE、RC_NOT_READY、RC_IDENTITY_CONFLICT、RC_SESSION_ENDED |
 | endOperationsTerminalRemoteControl | OWNER_COMMAND | PLATFORM_DEPENDENCY_UNAVAILABLE、RC_IDENTITY_CONFLICT |
@@ -115,13 +115,12 @@ O=/api/operations/group-workspaces/{groupWorkspaceKey}；T=/api/terminal/group-w
 | TERMINAL_BINDING_CREDENTIAL_INVALID | 403 | 凭证/binding失效；ACTIVATION_INVALID，不清TDC凭证、不把副机物理deviceId另当认证条件 |
 | RC_NOT_ACTIVATED | 409 | start当前terminal未激活；NOT_ACTIVATED |
 | RC_TERMINAL_OFFLINE | 409 | start绑定有效但PG权威会话离线；TERMINAL_OFFLINE |
-| RC_CONNECTION_UNCONFIRMED | 409 | start当前PG在线身份无法完整确认；CONNECTION_UNCONFIRMED |
 | RC_OCCUPIED | 409 | 已满足前述资格而仍有未到期另一session；OCCUPIED，只点击后提示 |
 | RC_IDENTITY_CONFLICT | 409 | path/body、固定binding/启动TDP目标或登记description/peer已改变；IDENTITY_CONFLICT；格式错误用422，二者不混 |
 | RC_NOT_READY | 409 | grant尚无完整registered描述，或register存在本次仍在准备且不可取grant的owner前提；NOT_READY。仅STARTING内沿原30s有界读回，不创建新session |
 | RC_SESSION_ENDED | 410 | grant/register/ACTIVE续约请求遇已结束或过期session；返回公开终态原因，停止；end及等值ENDED报告仍幂等成功 |
 
-判定顺序：先既有协议/格式校验（不读业务事实），再认证和context/页面/role或credential；scope不成立先403，不泄露存在性；scope内不存在404；三运营POST live写授权始终先于receipt/replay。start在锁内依次核当前激活→PG离线/未确认→同request等值回读/正文冲突→回收过期事实→另一有效占用；receipt仍须核当前资格，不借重放恢复失效控制。其他写op先session归属/发起者→固定身份→终态/期限→状态和ready前提→实际写回。GET不触发上述写回。依赖读取失败用503，提交是否完成不可判才用500 RESULT_UNKNOWN，不承诺DB不可写时能写失败记录。R20会话reason和Data输入reason是各自闭集，不把它们全部增补到每个HTTP operation。
+判定顺序：先既有协议/格式校验（不读业务事实），再认证和context/页面/role或credential；scope不成立先403，不泄露存在性；scope内不存在404；三运营POST live写授权始终先于receipt/replay。start在锁内依次核当前激活→PG离线→同request等值回读/正文冲突→回收过期事实→另一有效占用；receipt仍须核当前资格，不借重放恢复失效控制。其他写op先session归属/发起者→固定身份→终态/期限→状态和ready前提→实际写回。GET不触发上述写回。依赖读取失败用503，提交是否完成不可判才用500 RESULT_UNKNOWN，不承诺DB不可写时能写失败记录。R20会话reason和Data输入reason是各自闭集，不把它们全部增补到每个HTTP operation。
 
 所有grant response Cache-Control:no-store；token仅短期运行输入，不新增加密/私密channel。授权TTL初始60s（两倍启动30s，充分覆盖常见首次join，不提供长期重连）；准确SDK seconds/Instant方法在CP01官方tag确认。expires不证明已撤权；本session独占lease独立30s。token不续签自动恢复，断连手动新session。
 operation预算：先列授权、读current、锁、幂等、session/audit、invokeOnline每事件SQL与事务数，复用既有interceptor。CP01针对当前解析来源填写catalog预算依据；不为降预算删live grant/锁/readback。存在合理超限时仅按AGENTS允许的operation-scoped决策，不设置新的全域条数上限或把budget未测说成PASS。
@@ -167,7 +166,7 @@ UI owning source缩写：P=`apps/frontend/operations-admin/src/features/terminal
 | online.querySubmit | 查询 | P | terminalUpdateTestIds.reportQuerySubmit | Button | native | B.querySubmit / D.queryTerminal | 显式提交；目标terminalRef唯一 | OPEN |
 | online.queryReset | 重置 | P | terminalUpdateTestIds.reportQueryReset（计划迁入） | Button | native | B.queryReset | 原查询清理/刷新相同 | OPEN |
 | online.previous/next | 原列表翻页 | P/CursorPagination | reportPagination派生-previous/-next | 两个Button | native；不是分页wrapper | B.previous/B.next | 51行fixture实际cursor上下页不重复 | OPEN |
-| online.openTerminal | 原终端名称 | P | terminalUpdateTestIds.reportOpen(terminalRef) | 原Button | native稳定UUID | B.openTerminal / D.openTerminal | latest detail身份/四态一致 | OPEN |
+| online.openTerminal | 原终端名称 | P | terminalUpdateTestIds.reportOpen(terminalRef) | 原Button | native稳定UUID | B.openTerminal / D.openTerminal | latest detail身份/三态一致 | OPEN |
 | start.openActions | 操作 | P | remoteControlTestIds.detailActions(terminalRef) | AdminDetailActionMenu触发Button | native | B.openActions / D.start | header菜单真实打开，不借ruleDetailActions | OPEN |
 | start.remoteControl | 远程控制 | P/AdminDetailActionLabel | remoteControlTestIds.start(terminalRef) | 可见菜单label span | COMPOSITE_OPTION_ANCHOR；明确同一菜单动作 | B.start / D.start | 无权/不可用禁用；有权POST真实目标 | OPEN |
 | input.main.down/move/up/cancel | 主屏视频单指 | V | remoteControlTestIds.screen('main') | 真实video输入接缝 | native或上述具名紧贴输入层，focused先定一种 | B.main / D.pointer('main') | 内容矩形去黑边、同gesture目标/结果；真实媒体限DEV/device | OPEN |
@@ -175,7 +174,7 @@ UI owning source缩写：P=`apps/frontend/operations-admin/src/features/terminal
 | end.endSession | 结束远程控制 | W | remoteControlTestIds.end | Button | native | B.end / D.end | 本地先禁输入，CBS当前session结束 | OPEN |
 | end.closeWorkspace | 关闭 | W | remoteControlTestIds.close | 显式Button；Modal默认closeIcon关闭，键盘onCancel同一个owner | native | B.close / D.close | 关闭/CANCEL/cleanup一次且先关原Drawer再开Modal；overlay上限1，退出焦点归当前列表reportOpen(terminalRef)，失效时归当前Tab reportQuerySubmit，离页交router；不聚焦已销毁菜单 | OPEN |
 | end.restart | 重新发起 | W | remoteControlTestIds.restart | ENDED区Button | native | B.restart / D.restart | 新requestId/session，非重连旧Room | OPEN |
-| online.connection/status.workspace | 状态观察 | P/W | onlineStatus(terminalRef)/status/workArea | 具名Tag/状态文本/容器 | observation-only，不作为动作locator | B.connection/B.status/B.workspace | 中文/四态/STARTING/ENDED各oracle | OPEN |
+| online.connection/status.workspace | 状态观察 | P/W | onlineStatus(terminalRef)/status/workArea | 具名Tag/状态文本/容器 | observation-only，不作为动作locator | B.connection/B.status/B.workspace | 中文/三态/STARTING/ENDED各oracle | OPEN |
 
 门店和版本等原筛选字段不在本批自动化新增动作中，仍是既有业务控件；remote.online只操作queryText/submit/reset/翻页/终端入口。本批不以Select宿主wrapper假装真实input，不增加通用CSS兜底。context/login是共享fixture合法HTTP前提，不伪称上述UI动作；错scope/撤权通过backend-acceptance及fixture HTTP，真正页面切换结束由组件focused与现有shell接缝证明。若未来增加该UI动作，先补真实节点表再写binding，不能隐式扩大场景。
 
@@ -225,7 +224,7 @@ Compose使用官方VM生成路线的单实例形态；具体服务/版本/Redis�
 | terminalRemoteControl.end | 已ACTIVE/ENDED | endPOST两次 | 单ENDED事实、一次end审计、nextstart可占用；不误end后继session |
 | terminalRemoteControl.register | credential A/失效binding/同App拓扑 | terminalregisterPOST | 1/2grants准确，不返回TER URL；同描述幂等、换peer拒绝；认证错误无session改写 |
 | terminalRemoteControl.status | MASTER当前session/oldsequence/expired | reportPOST ACTIVE/renew/ENDED | 全slot才ACTIVE；lease返回毫秒；过期不复活、状态倒退拒绝、旧请求不改新会话 |
-| terminalRemoteControl.online | 51个enabled终端+四态不同绑定 | 原versionpage/detail GET | 排除disabled store/terminal；原分页/version条件成立；四态准确，DB集合读取不N+1 |
+| terminalRemoteControl.online | 51个enabled终端+三态不同绑定 | 原versionpage/detail GET | 排除disabled store/terminal；原分页/version条件成立；三态准确，DB集合读取不N+1 |
 | terminalRemoteControl.audit | start/end合法事实 | 标准audit-historyGET | owner entity/actions/actor/时间，无token/pointer/媒体；只读scope成立 |
 
 共享场景清单是上述remote.*能力名加详设§11a细分；TestId/控件操作来源本附件§4。backend聚焦用 `scripts/test/backend-acceptance --operation <对应generated operationId>`（实施注册后）；完整本批select集合由现有runner闭集扩展，不新增测试平台，不盲跑全仓不相关suite。
@@ -235,5 +234,5 @@ Compose使用官方VM生成路线的单实例形态；具体服务/版本/Redis�
 按90%主流程做交叉覆盖，而非两个App×四拓扑笛卡尔积：console真机laptop dual；wallpaper mobile VM；console laptop single VM/单屏设备；console同App双VM pair；wallpaper同App双VM pair，共5个设备run。四拓扑均真实覆盖、两个App均真实运行且各自pair均验证；未跑App×拓扑组合标NOT_COVERED，不能从交叉覆盖声称全矩阵PASS。每case只增加证明需求必要的断连/输入反例，不搞全组合故障爆炸。同Apppair两端屏业务与currentstate确认；不同App拒绝沿既有static/focused，不新造业务。
 所有设备 explicit serial，不依赖adb列表顺序；paired使用两个不同serial，manifest分别标MASTER/SLAVE，single/dual/handheld明确。一次一个受管run复用seed终端；冲突时REQUIRE_INACTIVE，只有本driver manifest deviceId与绑定读回相同才取消；日志/manifest不落原值秘密。
 计划新增CLI（当前不可运行）：`scripts/test/terminal-automation.mjs --phase remote --platform web|android --remote-topology mobile-single|laptop-single|laptop-dual|laptop-paired --sample console|wallpaper --case remote.main`；Android另传`--device-serial`，paired再传`--peer-device-serial`。remote phase不接受旧shape来猜拓扑；扩展runner execution union/phaseSuite/预算/kind/tests，旧phase完全保留约束。对应remote.main一次执行共享场景适用成员；red/failure用独立fixture但同managedentry。
-browser端真实operations UI click与video pointer由现有浏览器L2能力承担（复用browser-l2生命周期和Playwright库，不另造浏览器runner）；TER状态观察/本地交互用最新automation driver，不能用agent.sendCommand替代远控POINTER。remoteControlTestSession只组合当前两个受管能力，不拥有第二process/cleanup账本；父run登记children identities/logs/readiness与末尾归一business/cleanup。
+隔离后台L2使用现有browser-l2 runtime及其隔离数据库/资产/TDS生命周期。DEV/设备主run不调用browser-l2 runtime：由terminal-automation父run通过Playwright库创建并回收browser/context，复用附件§4b同一组binding，只借用已受管DEV的Vite/tunnel。沿用terminalUpdateSupplyUi.ts的chromium.launch接缝，不新造浏览器runner、不嵌套启动第二套后端栈。TER状态观察/本地交互用最新automation driver，不能用agent.sendCommand替代远控POINTER。remoteControlTestSession只组合这些既有能力，browser/context及设备子资源登记在同一个父run的owned identities/logs/readiness/cleanup中，不拥有第二资源账本；失败也须回收自己创建的browser/context，不停止借用的DEV服务。
 为了原生媒体的DEV多端Journey，未来明确受管DEV/device授权可使用已启动DEV＋media resident＋本机operations Vite，而不能冒充每run隔离browser L2。UI权限/布局L2仍按隔离数据库/资产/TDS/LiveKit资源运行，current-byte真实设备用户Journey另标DEV/device；两者标签不可混用。需要新runner支持时CP05先接线/红例，不能用手工常驻服务替代。

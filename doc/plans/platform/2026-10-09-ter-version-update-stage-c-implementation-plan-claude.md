@@ -44,6 +44,8 @@ RECALL：需求R01/06/07/09、Dexter2026-10-10职责裁决、A当前比较/boot/
 
 focused：用真实Runtime dispatcher同时安装store/project handlers，将组织HTTP保持未settle，确认store loaded listener内合同/服务点已启动且可保存；不要求广播聚合提前完成。门店HTTP或flush失败时组织/规则和合同/服务点首查均零；具体门店身份不符、hydrated旧值无资格；晚装重发相同command不重复门店首查、不递归、已完成下游不重复；重启/flush失败/分页hash/具体通知接受/旧scope隔离。store不再加载组织；旧字段不hydrate、fixed任务保持；两assembly单向依赖与selector/command调用。原规则 HTTP/topic 测试随已修正的生产分页链搬到 projectBasic.test.ts，update test 保执行/command准入；不同 context 同 binding 序号连续、自然初次观察与 HTTP 处置测试仍留 base/update。B 当前公开 accept 的 selectionContext 为 selectedSpace/contextIdentity/ruleRef；新增 requestTerminalUpdateCommand 是 C 差量，必须委托该固定执行核，旧规则转换链搬移后删除，不长期维持两个生产接受入口。选择/同time/JS整数/更高APK不兼容/同JS异pub/空集合zeroport、实际embedded vsHOTpub；旧taskpolicy缺失failclosed；typed契约所有consumer。新增CBS focused：无deviceId认证头有效credential通过，不同device信息不改变CBS鉴权；TDS正确设备通过、错误设备拒绝、缺失/非法device字段仍按原协议拒绝；两用途错secret、旧generation/撤销/错secret拒绝；cancel无device body且锁/审计/通知保留，activate真实device输入；13项catalog/两个具名认证用途及TDS现有consumer一致。完整CP独立三维MATCHED。
 
+生成/预算门边界：CP-01 对 `edge-codegen` 使用 `V2S_BACKEND_PERFORMANCE_PROJECTION_MODE=IDENTITY_ONLY` 的 `--check` 证明 operation identity 与生成字节一致；该模式不证明数据库操作预算。当前默认模式已知以 `BUDGET_PROJECTION_OPERATION_MISSING:stagePlatformTerminalUpdateArtifact` 失败，不能写成默认门 PASS。阶段 C 不新增 CBS operation identity，CP-06 也只要求本批相关门、未要求全仓默认 `scripts/verify`，因此本批不把这个既存默认预算门或 calibration 塞进 CP-05；保持其 `NOT_RUN/OPEN`，不得用手填预算或占位值消红。若后续任务明确要求默认预算门，再按当时获准范围和既有测量规范处理。
+
 ## 4. CP-02：本机点击与生命周期
 
 RECALL：需求R07/12、C§8.3/5、Runtime资源、SurfaceRoot/实际keyboardportal、TR11、RN0.86.3/RNW0.21.2版本源码。
@@ -59,13 +61,13 @@ focused：内容/admin/keyboard/SECONDARY原业务结果＋clickrevision；初�
 
 RECALL：需求R09～14、C§8.1～5、A owner/native installed/session/boot、B N/M单位/报告reason。
 
-1. project-basic常驻桥根据自身ready规则、当前资格及update公开actual/task selector发本包evaluate command；feature actor选最新适用候选，发update公开local requestTerminalUpdateCommand。update actor实际readback/比较，candidateawait后重读scope/hash/boot/role资格，返回no-update/rejected/fixed；一条候选、不复制完整业务列表，固定后不重选。base不自建规则observer/HTTP，assembly不以effect执行更新。两包运行态identity去重，task释放/newboot可触发feature本机检查；副机同样本机local command。
+1. project-basic常驻桥根据自身ready规则、当前资格及update公开actual/task selector发本包evaluate command；feature actor选最新适用候选，发update公开local requestTerminalUpdateCommand。若existing task是fixed且无action，feature只发`target=null`请求update owner续接原task，不重选规则或改固定target；remote grant上下文尚未ready时owner保留fixed，project-ready变化后由同一command恢复。update actor实际readback/比较，candidate await后重读scope/hash/boot/role资格，返回no-update/rejected/fixed；一条候选、不复制完整业务列表，固定后不重选。base不自建规则observer/HTTP，assembly不以effect执行更新。两包运行态identity去重，task释放/newboot可触发feature本机检查；副机同样本机local command。
 2. 接既有accept/fixed task执行核；补policy阶段 waiting-idle/prepared/邀请必要观察，不新任务账本。直接复用 currentTask.bootId 为执行 boot，不新增字段；本 boot 首次 prepare/apply 前更新并 flush，覆盖 prepared 直接 apply 和跨 boot 续接；删除 selected=null 成功与 action 结果确认时的覆写；reconcile 的 FULL→HOT fixed 仅恢复任务，由 executeNextArtifact 的首次执行接缝更新时间。当前锚点见详设 §8.2（L1045–1052、L1308–1316、L1347–1352），实施以符号重开。详设 §8.2 全部五写点/两读点逐项回读；仅执行前更新，确认旧结果不占新 boot，S1 FULL→S2 HOT→S3 可选新规则；续接优先。
 3. HOT准备完IMMEDIATE直接flush/apply，IDLE本机lastclick＋M单deadline；timer identity/点击同刻/提交前revision双读；后台resume仅重算。
 4. FULL初次立即沿A apply，native决定silent/系统确认；waiting-userN调度local邀请；稍后/取消继续等待，known pending-user 且 exact confirmation 可恢复时 N 后允许再邀请，恢复同 session 零 commit；正在安装/显示则不重复，UNKNOWN 仅回读；endednotinstalled 回 waiting 后用户确认才新 action。旧 native foreground 自主呈现统一归 owner 调度，避免双源。
 5. confirm/defer公开localcommands核task/action/boot；flushfailurezeronative；等待不会超时变failed或开启第二规则。
 
-focused：完整FULL→newboot→fixedHOTidle→S3确认并允许新规则、同执行boot二次accept拒；newrule/disable/role/断链不改target；foreground/sysui/N同一action；M点击/flush/late events。Kotlinfocused必要时未来通过受管入口，不在当前文档会话跑。完整CP MATCHED。
+focused：完整FULL→newboot→fixedHOTidle→S3确认并允许新规则、同执行boot二次accept拒；FULL waiting-user 跨 boot 读回同一 action 后以当前 actual.bootId 恢复邀请，稍后/确认原 action 不改 task.bootId，只有已取消安装并以新 actionId 再提交前才写新执行 boot 并 flush；newrule/disable/role/断链不改target；foreground/sysui/N同一action；M点击/flush/late events。Kotlinfocused必要时未来通过受管入口，不在当前文档会话跑。完整CP MATCHED。
 
 ## 6. CP-04：同App凭证/业务投影与直接CBS下载
 
@@ -74,11 +76,11 @@ RECALL：本会话共享凭证/CBS仅凭证裁决、详设§8.6/12.1、原副机
 1. project-basic两个业务record和当前资格/tombstone保持；update全isolated，本机task/actual/failed/report不覆盖。BRANCH新candidate依当前connection业务projection，不作为普通HTTP资格。原store组织读取换project-basic。
 2. 原TDC slice的credential改plain＋master-to-slave单record；六字段或null、完整key/值验证、updatedAt=0/既有connection-revision控制顺序。不复制active/TDS/topic/remoteOperations、不增加credential store；SLAVE保持inactive/stopped。复用state engine旧protected同key→plain成功→删旧，不新造迁移层。
 3. TDC模块先订阅再检查，owner command等待flush并重核完整credential/role identity后才HTTP；MASTER仅发布已保存值。保存失败阻断新值/typed失败可见，reload恢复已保存SLAVE凭证资格而不connect。initial required projection接线纳入credential，普通HTTP不得要求MAIN在线。
-4. 十类普通CBS HTTP允许两端，activate/cancel/report/TDS仅MASTER。显式unpair/换MAIN/TOPOLOGY_UNPAIRED经composition解绑前TDC clear command清凭证并flush，成功才角色转换/接新MAIN；失败不推进，旧connection apply失效。瞬断不清，零新root reset；副机admin取消激活只读不变。
-5. 各机update调用本机TDC grant；删requestPeerTerminalUpdateSourceCommand caller/handler/exports/tests及compact摘要，不留fallback。CBS短期download grant/content复核保留。grant只attempt，发起/返回核任务/工件/来源空间及credential/network配置；瞬断不阻fixed请求，解绑后零旧凭证请求，报告仅MAIN。
+4. 配对不调用 `appControl.resetRuntime`：角色切换后复用Topology已有 `master-to-slave` state-sync，权威覆盖已声明共享slice；local-only state留在本机。十类普通CBS HTTP允许两端，activate/cancel/report/TDS仅MASTER。SLAVE显式unpair/换MAIN/收到 `TOPOLOGY_UNPAIRED` 时，Topology actor 发 `requestTopologySlaveUnpairStateClearCommand`；TDC actor 清空并flush本机 `terminalDataClient` 与 `terminalClientStatusProjection` 两个 TDC-owned slices，成功后发 `completeTopologySlaveUnpairStateClearCommand`，Topology 收到后才继续角色转换/接新MAIN。TDC flush/readback失败或完成command失败均不推进。该流程不调用root reset，也不清terminal-update isolated slice及其固定更新任务；任务继续本机执行，解绑后的CBS报告可失败且不阻塞任务。普通瞬断不清；副机admin取消激活只读不变。
+5. 各机update调用本机TDC grant；删requestPeerTerminalUpdateSourceCommand caller/handler/exports/tests及compact摘要，不留fallback。CBS短期download grant/content复核保留。grant只attempt：TDC 在授权 HTTP 前后复核本机credential/角色；update owner 在返回后复核task/action、来源空间/store/project及network配置。CBS在内容请求时复核当前binding/scope，grant后解绑由CBS拒绝内容读取；不增加跨owner凭证快照或本地grant撤销机制。瞬断不阻fixed请求，解绑后后续普通请求不使用旧凭证，报告仅MAIN。
 6. 完整HTTP manifest沿原Preparer：FULL apk.path/hash/cert及ZIP摘要→extractFull/validateFull，HOT publication/entry/files。无peer summary新分支/格式/loader/下载器，安装后boot metadata路径保留。
 
-focused：双Runtime只一credential entry且无其他TDC字段；null/非法/旧revision；MASTER flush前零发布/HTTP，SLAVE保存失败零HTTP；plain成功才删旧key、失败保旧；reload SLAVEinactive/stopped但直读/下载，MASTER停机零peer grant；显式解绑/换主机/旧connection迟到不带借用凭证升MASTER；13项caller/不伪active，MASTER取消后CBS拒旧binding，不声称离线即时清除。业务tombstone禁止新candidate但保fixed，本机task/actual/report保持；同App/不同App及普通FULL/HOT原测试复用，不加恶意归档专项。完整CP fresh三维MATCHED。
+focused：双Runtime只一credential entry且无其他TDC字段；null/非法/旧revision；MASTER flush前零发布/HTTP，SLAVE保存失败零HTTP；plain成功才删旧key、失败保旧；reload SLAVEinactive/stopped但直读/下载，MASTER停机零peer grant；绑定不触发root reset，现有state-sync只权威覆盖声明为master-to-slave的共享slice；Topology发清理请求后，TDC清空两个TDC-owned slices（含credential、remoteOperations、topic/cursor、状态投影）并flush，再发完成command；flush失败不发完成command、不转换角色，完成command收到后才继续；不清terminal-update固定任务；解绑后TDC不再带旧凭证请求，任务本机执行不受阻；旧connection迟到不带借用凭证升MASTER；13项caller/不伪active，MASTER取消后CBS拒旧binding，不声称离线即时清除。业务tombstone禁止新candidate但保fixed，本机task/actual/report保持；同App/不同App及普通FULL/HOT原测试复用，不加恶意归档专项。完整CP fresh三维MATCHED。
 
 ## 7. CP-05：呈现与唯一自动化场景源码
 
@@ -87,7 +89,7 @@ RECALL：C Journey/IA/UI、§3a、primitives/ui-state/render LayerStack、automa
 1. IA内容已确认；实施若改变该内容需重新交Dexter。UI只用existingprimitive/local placement 与 update selector/command；复用 alert tier，仅新增 local-primary scope，ephemeral 层沿原 serializeLayer 不持久/不 sync。BRANCHlocal update layer不被MAIN投影或businessmask隐藏；localadmin优先可恢复。
 2. TestIds统一附件§5，品牌类型不cast，实际Button/Text节点；两个Appresponsive一致。
 3. 先做控件focused/TestId及fresh前置复核，之后才写脚本；任何UI/control change准入重新BLOCKED。
-4. 扩唯一runner的C显式case/suite、Web/Android共享businessJourney、pair双session能力；peerDeviceSerial已有字段但当前只capabilities允许，明确扩到update.pair，未实现拒绝。不要复活tools/terminal-topology/run-dual-device或旧display/keyboardrunner。按详设 §10b.6.1 扩现有 androidDevice/connection/cleanupRecovery：MASTER 同 topology 固定端口 forward，SLAVE 裸10.0.2.2沿原 pairByHost；不在副机 topology port 建 reverse，避免配对前本机 host 冲突；setup/HTTP/HELLO/映射占用先 focused，不能绕过准入。pair 用既有单 display 映射但 application surfaceForm=laptop，普通 mobile 仍 mobile；显式 serial 和四种 deviceRole 写 manifest。
+4. 唯一runner仅登记有真实执行源码的阶段 C 顶层 case：`update.supply-chain`（Android console/dual 与 Android wallpaper/mobile 两个已批准主链形态）及 `update.pair`（双 session 配对主链）；详设 §11 的细分验收行不是 CLI case，按其映射由这两条主链和具名 owner focused tests 承接。runner.test 对细分行 ID 作为 `--case` 输入明确断言参数拒绝，不能出现 accepted-but-unimplemented；同时正向验证两种 supply-chain 形态、拒绝其余形态。peerDeviceSerial已有字段但当前只capabilities允许，明确扩到update.pair。不要复活tools/terminal-topology/run-dual-device或旧display/keyboardrunner。按详设 §10b.6.1 扩现有 androidDevice/connection/cleanupRecovery：MASTER 同 topology 固定端口 forward，SLAVE 裸10.0.2.2沿原 pairByHost；不在副机 topology port 建 reverse，避免配对前本机 host 冲突；setup/HTTP/HELLO/映射占用先 focused，不能绕过准入。pair 用既有单 display 映射但 application surfaceForm=laptop，普通 mobile 仍 mobile；显式 serial 和四种 deviceRole 写 manifest。
 5. 管理动作复用 B §15.2a 已有 `terminal-automation` → `update.supply-chain` 同父run与 `terminalUpdateSupplyUi.ts` helper，不另起后台入口或第二managed run。后台各自session/role通过Playwright完成上传解析保存、规则新建启用、报告页detail/history；TER React操作走agent，安装系统UI仅driver窄例外。父run统一拥有并回收新建browser/context/session、设备/reverse/forward/安装/绑定；只借用DEV-owned Vite/tunnel。CP-01先重开B最终argv/fixture/资源交接，CP-05沿同入口加入自动eval断言；selector/request观察动作前无空窗。
 6. run资源预算profile/run根/health/format登记随新入口在本CP完成，不等CP-06；manifest扩两设备/APP/context非秘密身份、forward/reverse 的 local/remote/serial/runId 和 cleanup，setup 即登记、预算/首败统一；清理先两端 session及本 run reverse 后 MASTER forward，只删精确匹配本 run，红例证明未知映射不删和部分 setup 失败也清理，以ownedserial/device/PID/starttoken控制。
 
@@ -99,11 +101,17 @@ RECALL：C§10b/11/11a、scriptsREADME、实施模板6c、Bseed/API/canonicalsco
 
 1. 与当前seed契约按key核fixture，无新独立终端/复制activationcode；报告主体任务历史合法保留，主机才激活；pair两设备共享组织和同一TDC credential，副机无TDS连接/独立激活/报告。
 2. 合法fixture准备/回收表逐case填写，normalN5/M10分钟、边界只focusedfixture；真实至少1分钟，禁止临时M0。
-3. final类型/ownedtests/相关静态机械门和native编译核对：仅本批受影响类型/生成/框架/TestId/代码布局/资源脚本；不跑无关全仓verify或重复不变proof。rootverify若后续明确要求才执行，其结果单列不得假PASS。
+3. final类型/ownedtests/相关静态机械门和native编译核对：仅本批受影响类型/生成/框架/TestId/代码布局/资源脚本；不跑无关全仓verify或重复不变proof。CP-01 的 `IDENTITY_ONLY` codegen check 仅证明身份/生成字节，不代表默认预算门通过；默认模式当前已知缺 `stagePlatformTerminalUpdateArtifact` 的 budget projection。本批不在 CP-05 引入该既存 operation 的 calibration；默认预算门保持 `NOT_RUN/OPEN`。root verify 若后续明确要求才执行，其结果单列不得假 PASS。
 4. 场景/testid/source/seed/contracts/API/driver/readme/skill原子读回；检查project-basic是唯一组织/规则owner、旧store/update字段/订阅/selector删除、feature公开command→update actor且零base反向import；源未变化不重复旧CP独立对账。
 5. 清理构建临时产物/formatter结果归当前ownedrun，读取日志首败。当前CPfocused不依赖后续完整DEV/device验收。
 
 完整CP独立MATCHED。随后另开全批6b独立三维，不能把六个CP结论汇总代替它。
+
+## 8a. TEST_CHAIN_PREFLIGHT（第一次动态验收之前）
+
+先按详设 §8.8 接通并 focused 检查同一受管 run 的入口/manifest、suite stdout/stderr、automation WebSocket command/selector trace、TER Runtime/native 日志、受管 DEV CBS/TDS owner 日志、业务 readback 与资源 cleanup。日志只留安全摘要；后端日志按当前 DEV manifest 复核 host、boot、PID/start ticks、command digest 与 readiness 后有限读取并白名单投影。第一条 update 场景启动前，runner 必须先对 CBS 与所有 manifest 登记的 TDS 节点完成身份绑定读回，所有预检来源均为 `READ` 才允许启动 suite；任何来源不可读时记录 `LOG_NOT_AVAILABLE` 并以 preflight 失败退出。运行结束后逐源再次记录 `READ` 或 `LOG_NOT_AVAILABLE`；读回失败单列 diagnostics `FAIL`，不得改写 business/cleanup，但 runner 整体退出非零。
+
+日志改动与其 focused proof 全部完成后，动态验收前依次完成两轮 fresh 独立只读证伪审查：第一轮沿完整实际调用链查参数/身份/权限、时序、fixture/oracle、诊断覆盖及 cleanup；主 agent 核验并修复确认 finding。第二轮由新 reviewer 核验修复并扫描同根遗漏。未关闭的源码级低级错误、脱敏问题或日志断点仍需最小修复和受影响范围只读复核；不能以轮数完成代替关闭。两轮都不是CP/6b或实施交付review，不改变授权，也不启动环境。完成后才可开始第一个动态场景。
 
 ## 9. 动态前整体准入（按当前授权执行）
 
@@ -115,7 +123,7 @@ RECALL：C§10b/11/11a、scriptsREADME、实施模板6c、Bseed/API/canonicalsco
 ## 10. 整体验证顺序与真实链路
 
 1. 相关types/compile/ownedfocused为最低证据；不把它当Web/native/DEV通过。已有A/B无影响源码proof复用时记录原source/run/scope而非假本轮新PASS。
-2. **TR-16**：非adapter project-basic业务读取/topic更新→公开update command、自动选择/点击/N-M策略/报告策略先两integration ExpoWeb同§11场景通过；update.pair 只 F（双 Runtime codec/投影 apply）→双虚拟机 P＋H，TR-16 adapter 例外：Web topologyHost unavailable，不新造 Web topology 模拟。Web测试port仅automation构建；actual/install/Hermes均不以Web模拟证明。
+2. **TR-16**：两 integration 主 Journey 先各跑 Expo Web；console 主 Journey 同时执行既有 TDP CBS→store-basic selector 数据变化证明，随后在 Android console run 重复同一业务观察；wallpaper 主 Journey 单独验证壁纸选择与确认。非adapter project-basic业务读取/topic更新→公开update command、自动选择/点击/N-M策略/报告策略使用现有 Web journey 与 owner focused tests，不为每个 §11 验收行新增 CLI case。阶段 C 顶层更新 case 只有 `update.supply-chain` 与 `update.pair`；前者验证 Android 供给到报告主链，后者只做 F（双 Runtime codec/投影 apply）→双虚拟机 P＋H。TR-16 adapter 例外：Web topologyHost unavailable，不新造 Web topology 模拟。Web测试port仅automation构建；actual/install/Hermes均不以Web模拟证明。
 3. 有新增/改HTTP行为才跑受管backend-acceptance的精确update相关场景；未改BHTTP可引用适用范围并在真实供给链做当前readback。CBSJava/PG/assets远端，本机仅允许的Vite/browser/TERdriver，禁止本机Java/PGtunnel。
 4. 同DEV end-to-end：两App实际build产物→运维真实上传/解析→保存→运营PROJECT有capability新建启用规则→TDC真实topic→project-basic HTTP完整snapshot/flush→feature发update公开command→update actor固定/执行（不可fixtureaccept代替）→console 真机双屏 actual FULL/HOT（wallpaper mobile 虚拟机核同主流程）→运营报告/任务历史。同父run补项目/大区/集团资料更新子断言，用现有合法后台操作/权限及seed实体，不新增移店/移区场景；主机project-basic selector更新，副机投影selector一致，store合同/服务点及本机task不被覆盖。后台actor各自session；TERinstaller设置由系统用户权限，不用后台admin冒充。
 5. 设备同清单按交叉覆盖，依次 console 真机双屏 1 run→wallpaper mobile 安卓虚拟机 1 run→console 同 App 双安卓虚拟机 1 run→wallpaper 同 App 双安卓虚拟机 1 run，共 4 个设备 run；两 integration Web 各 1 执行计划在前，13c 在后。pair 测同 App 不同版本、两个显式 serial/本机 Runtime 独立/N-M/admin恢复、MAINonly HTTP报告；副机plain共享凭证本机直连CBS、不依赖主机在线；不同 App 拒绝仅静态＋既有 focused，不进设备分母。优先共用最小功能清单，原生差异才扩；不为C重跑A未改loader全部极端输入。
@@ -133,6 +141,5 @@ RECALL：C§10b/11/11a、scriptsREADME、实施模板6c、Bseed/API/canonicalsco
 ## 12. 完成条件
 
 共享凭证/CBS鉴权已由Dexter纳入阶段C CP-01/04；两轮DESIGN cycle已关闭且不重开。按当前授权同步需求/规范、完成契约与源码、所有CP focused proof与阶段对账、全批6b、适用Expo Web及四个设备run、13c和fresh整批IMPLEMENTATION review；按授权边界不做reset/seed、L2、UAT或生产部署。每项未运行证据保持NOT_RUN，所有业务与cleanup分别关闭后交Dexter和Claude review。
-
 
 本轮文档任务：仅修订六份工件及设计处置记录；保留旧C R1～R4 和外部旧 SHA verdict，不重开旧cycle。2026-10-10 project-basic实质追加范围使用TER-UPDATE-C-PROJECT-BASIC-OWNERSHIP-2026-10-10限定cycle，最多两轮；不是旧周期重置。归属及command→actor链纳入相应CP，历史五项N/执行面裁决保持；新SHA与未验证项明确。真实UI未验证与A/B未验收保持OPEN，不把作者修订称独立GO或实施授权。未来实施任务须目标/适用场景business及cleanup关闭、交付review，不以阶段性PASS结束。

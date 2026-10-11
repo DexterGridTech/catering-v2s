@@ -77,12 +77,68 @@ const safeBrowserError = (message: string): string =>
     .replace(/\s+/gu, ' ')
     .slice(0, 200);
 
-const isPlatformSessionRequest = (request: Request): boolean => {
+const supplyApiOperation = (request: Request): string | undefined => {
+  let pathname: string;
   try {
-    return new URL(request.url()).pathname === '/api/platform/auth/session';
+    pathname = new URL(request.url()).pathname;
   } catch {
-    return false;
+    return 'admin-api.invalid-url';
   }
+  if (!pathname.startsWith('/api/')) return undefined;
+  if (pathname.endsWith('/auth/session')) return 'admin-api.session';
+  if (pathname.endsWith('/terminal-update-artifact-stages')) return 'artifact.parse';
+  if (pathname.endsWith('/terminal-update-artifacts')) return 'artifact.register';
+  if (/\/terminal-update-rules\/[^/]+\/stores$/u.test(pathname)) return 'rule.stores';
+  if (/\/terminal-update-rules\/[^/]+\/status$/u.test(pathname)) return 'rule.status';
+  if (pathname.endsWith('/terminal-update-rules')) return 'rule.create';
+  if (/\/terminal-update-rules\/[^/]+$/u.test(pathname)) return 'rule.detail';
+  if (/\/terminal-versions\/[^/]+\/update-reports$/u.test(pathname)) return 'report.history';
+  if (/\/terminal-versions\/[^/]+$/u.test(pathname)) return 'version.detail';
+  return 'admin-api.other';
+};
+
+const attachSupplyPageDiagnostics = (page: Page, runId: string, surface: 'platform' | 'operations'): void => {
+  const requestSequence = new WeakMap<Request, number>();
+  let nextRequestSequence = 0;
+  const startedAt = new WeakMap<Request, number>();
+  page.on('request', request => {
+    const operation = supplyApiOperation(request);
+    if (operation === undefined) return;
+    const requestId = ++nextRequestSequence;
+    requestSequence.set(request, requestId);
+    startedAt.set(request, Date.now());
+    supplyLog(
+      runId,
+      `${surface}.http.started`,
+      `request=${requestId} method=${request.method()} operation=${operation}`,
+    );
+  });
+  page.on('response', response => {
+    const request = response.request();
+    const requestId = requestSequence.get(request);
+    if (requestId === undefined) return;
+    const operation = supplyApiOperation(request) ?? 'admin-api.other';
+    const start = startedAt.get(request);
+    supplyLog(
+      runId,
+      `${surface}.http.completed`,
+      `request=${requestId} method=${request.method()} operation=${operation} status=${response.status()} elapsedMs=${start === undefined ? 'unknown' : Date.now() - start}`,
+    );
+  });
+  page.on('requestfailed', request => {
+    const requestId = requestSequence.get(request);
+    if (requestId === undefined) return;
+    const operation = supplyApiOperation(request) ?? 'admin-api.other';
+    const start = startedAt.get(request);
+    supplyLog(
+      runId,
+      `${surface}.http.failed`,
+      `request=${requestId} method=${request.method()} operation=${operation} elapsedMs=${start === undefined ? 'unknown' : Date.now() - start} reason=${safeBrowserError(request.failure()?.errorText ?? 'UNKNOWN')}`,
+    );
+  });
+  page.on('pageerror', error => {
+    supplyLog(runId, `${surface}.page.error`, `name=${error.name} message=${safeBrowserError(error.message)}`);
+  });
 };
 
 const clickOptionByTestId = async (page: Page, controlTestId: string, optionTestId: string): Promise<void> => {
@@ -160,7 +216,13 @@ const waitForPage = async (page: Page, testId: string): Promise<void> => {
           recoveringSession: document.body.innerText.includes('正在恢复平台会话'),
         };
       })
-      .catch(() => ({path: 'unavailable', readyState: 'unavailable', loginVisible: false, workspaceVisible: false, recoveringSession: false}));
+      .catch(() => ({
+        path: 'unavailable',
+        readyState: 'unavailable',
+        loginVisible: false,
+        workspaceVisible: false,
+        recoveringSession: false,
+      }));
     throw new Error(`TERMINAL_UPDATE_SUPPLY_PAGE_NOT_VISIBLE:${testId}:${JSON.stringify(state)}`);
   }
 };
@@ -350,34 +412,7 @@ export const createTerminalUpdateSupplyUi = async (
   try {
     const context = await browser.newContext();
     const platformPage = await context.newPage();
-    const sessionRequestStartedAt = new WeakMap<Request, number>();
-    platformPage.on('request', request => {
-      if (!isPlatformSessionRequest(request)) return;
-      sessionRequestStartedAt.set(request, Date.now());
-      supplyLog(input.runId, 'platform.session.request', `method=${request.method()}`);
-    });
-    platformPage.on('response', response => {
-      const request = response.request();
-      if (!isPlatformSessionRequest(request)) return;
-      const startedAt = sessionRequestStartedAt.get(request);
-      supplyLog(
-        input.runId,
-        'platform.session.response',
-        `status=${response.status()} elapsedMs=${startedAt === undefined ? 'unknown' : Date.now() - startedAt}`,
-      );
-    });
-    platformPage.on('requestfailed', request => {
-      if (!isPlatformSessionRequest(request)) return;
-      const startedAt = sessionRequestStartedAt.get(request);
-      supplyLog(
-        input.runId,
-        'platform.session.request.failed',
-        `elapsedMs=${startedAt === undefined ? 'unknown' : Date.now() - startedAt} reason=${safeBrowserError(request.failure()?.errorText ?? 'UNKNOWN')}`,
-      );
-    });
-    platformPage.on('pageerror', error => {
-      supplyLog(input.runId, 'platform.page.error', `name=${error.name} message=${safeBrowserError(error.message)}`);
-    });
+    attachSupplyPageDiagnostics(platformPage, input.runId, 'platform');
     await platformPage.goto(new URL('/platform/login', input.platformOrigin).toString());
     await waitForPage(platformPage, 'platform-login-name');
     await platformPage.getByTestId('platform-login-name').fill('root');
@@ -416,6 +451,7 @@ export const createTerminalUpdateSupplyUi = async (
     supplyLog(input.runId, 'artifact.chain.verified', `full=${full.artifactRef} hot=${hot.artifactRef}`);
 
     const operationsPage = await context.newPage();
+    attachSupplyPageDiagnostics(operationsPage, input.runId, 'operations');
     await operationsPage.goto(new URL('/operations/aurora/login', input.operationsOrigin).toString());
     await operationsPage.getByTestId('operations-login-name').fill('r5-account-multi-role');
     await operationsPage.getByTestId('operations-login-password').fill(input.operationsPassword);
@@ -709,6 +745,7 @@ export const assertTerminalUpdateReportInUi = async (
     page: Page;
     terminalName: string;
     terminalRef: string;
+    taskId: string;
     ruleRef: string;
     fullArtifactRef: string;
     hotArtifactRef: string;
@@ -750,7 +787,112 @@ export const assertTerminalUpdateReportInUi = async (
   );
   await assertText(page, operationsIds.reportRow(input.terminalRef), /更新已完成/u);
   await assertText(page, operationsIds.reportRow(input.terminalRef), canonicalDatePattern);
+  const historyResponsePromise = page.waitForResponse(response => {
+    if (response.request().method() !== 'GET') return false;
+    try {
+      return new URL(response.url()).pathname.endsWith(
+        `/terminal-versions/${input.terminalRef}/update-reports`,
+      );
+    } catch {
+      return false;
+    }
+  }, {timeout: 60_000});
   await page.getByTestId(operationsIds.reportOpen(input.terminalRef)).click();
+  const historyResponse = await historyResponsePromise;
+  if (!historyResponse.ok())
+    throw new Error(`TERMINAL_UPDATE_SUPPLY_REPORT_HISTORY_HTTP_FAILURE:${historyResponse.status()}`);
+  const readHistoryPage = async (
+    response: import('playwright').Response,
+  ): Promise<Readonly<{items: unknown[]; nextCursor: string | null}>> => {
+    const payload: unknown = await response.json().catch(() => undefined);
+    if (
+      !isRecord(payload) ||
+      !Array.isArray(payload.items) ||
+      (payload.nextCursor !== null && typeof payload.nextCursor !== 'string')
+    )
+      throw new Error('TERMINAL_UPDATE_SUPPLY_REPORT_HISTORY_RESPONSE_INVALID');
+    return {items: payload.items, nextCursor: payload.nextCursor};
+  };
+  const history = page.getByTestId(operationsIds.reportHistory);
+  const rows = history.locator('tbody tr');
+  await history.waitFor({state: 'visible'});
+  await expect(rows.first()).toBeVisible({timeout: 60_000});
+
+  let historyPageNumber = 1;
+  let historyPage = await readHistoryPage(historyResponse);
+  let taskIndex = historyPage.items.findIndex(item => isRecord(item) && item.taskId === input.taskId);
+  const matchingReportFacts = (item: unknown): boolean => {
+    if (!isRecord(item) || !isRecord(item.recent) || !isRecord(item.actual)) return false;
+    return (
+      item.recent.state === 'SUCCEEDED' &&
+      item.recent.reason === 'NONE' &&
+      item.recent.ruleRef === input.ruleRef &&
+      item.recent.fullArtifactRef === input.fullArtifactRef &&
+      item.recent.hotArtifactRef === input.hotArtifactRef &&
+      item.actual.apkVersion === input.apkVersion &&
+      item.actual.jsVersion === input.jsVersion &&
+      item.actual.runtimeVersion === input.runtimeVersion
+    );
+  };
+  let matchingFactsCount = historyPage.items.filter(matchingReportFacts).length;
+  const requestedCursors = new Set<string>();
+  const logHistoryPage = (): void => {
+    supplyLog(
+      input.runId,
+      'report.history.readback',
+      `page=${historyPageNumber} items=${historyPage.items.length} taskIdPresent=${historyPage.items.filter(item => isRecord(item) && typeof item.taskId === 'string').length} taskMatches=${taskIndex >= 0 ? 1 : 0} matchingBusinessFacts=${matchingFactsCount} nextCursorPresent=${historyPage.nextCursor === null ? 0 : 1}`,
+    );
+  };
+  logHistoryPage();
+  while (taskIndex < 0 && historyPage.nextCursor !== null) {
+    const cursor = historyPage.nextCursor;
+    if (requestedCursors.has(cursor))
+      throw new Error('TERMINAL_UPDATE_SUPPLY_REPORT_HISTORY_CURSOR_REPEATED');
+    requestedCursors.add(cursor);
+    const nextPageNumber = historyPageNumber + 1;
+    const nextHistoryResponsePromise = page.waitForResponse(response => {
+      if (response.request().method() !== 'GET') return false;
+      try {
+        const url = new URL(response.url());
+        return (
+          url.pathname.endsWith(`/terminal-versions/${input.terminalRef}/update-reports`) &&
+          url.searchParams.get('cursor') === cursor
+        );
+      } catch {
+        return false;
+      }
+    }, {timeout: 60_000});
+    await page.getByTestId(`${operationsIds.reportHistoryPagination}-next`).click();
+    const nextHistoryResponse = await nextHistoryResponsePromise;
+    if (!nextHistoryResponse.ok())
+      throw new Error(`TERMINAL_UPDATE_SUPPLY_REPORT_HISTORY_HTTP_FAILURE:${nextHistoryResponse.status()}`);
+    historyPage = await readHistoryPage(nextHistoryResponse);
+    historyPageNumber = nextPageNumber;
+    taskIndex = historyPage.items.findIndex(item => isRecord(item) && item.taskId === input.taskId);
+    matchingFactsCount = historyPage.items.filter(matchingReportFacts).length;
+    await expect(page.getByTestId(operationsIds.reportHistoryPagination)).toContainText(`第 ${historyPageNumber} 页`);
+    logHistoryPage();
+  }
+  if (taskIndex < 0)
+    throw new Error(
+      `TERMINAL_UPDATE_SUPPLY_REPORT_HISTORY_TASK_ID_MISMATCH:pages=${historyPageNumber}:matches=0:businessFacts=${matchingFactsCount}`,
+    );
+  const taskItem = historyPage.items[taskIndex];
+  if (!isRecord(taskItem)) throw new Error('TERMINAL_UPDATE_SUPPLY_REPORT_HISTORY_TASK_INVALID');
+  expect(taskItem).toMatchObject({
+    recent: {
+      state: 'SUCCEEDED',
+      reason: 'NONE',
+      ruleRef: input.ruleRef,
+      fullArtifactRef: input.fullArtifactRef,
+      hotArtifactRef: input.hotArtifactRef,
+    },
+    actual: {
+      apkVersion: input.apkVersion,
+      jsVersion: input.jsVersion,
+      runtimeVersion: input.runtimeVersion,
+    },
+  });
   await page.getByTestId(operationsIds.reportDetail).waitFor({state: 'visible'});
   await assertText(
     page,
@@ -781,23 +923,24 @@ export const assertTerminalUpdateReportInUi = async (
   await assertText(page, operationsIds.reportDetail, /最近状态\s*更新已完成/u);
   await assertText(page, operationsIds.reportDetail, /最近原因\s*无/u);
   await assertText(page, operationsIds.reportDetail, new RegExp(`状态发生时间\\s*${canonicalDatePattern.source}`, 'u'));
-  await assertText(page, operationsIds.reportDetail, new RegExp(`服务端接收时间\\s*${canonicalDatePattern.source}`, 'u'));
-  const history = page.getByTestId(operationsIds.reportHistory);
-  await history.waitFor({state: 'visible'});
-  const rows = history.locator('tbody tr');
-  try {
-    await expect(rows).toHaveCount(1, {timeout: 5_000});
-  } catch {
-    throw new Error('TERMINAL_UPDATE_SUPPLY_REPORT_HISTORY_COUNT_MISMATCH');
-  }
-  await assertText(page, operationsIds.reportHistory, new RegExp(escaped(input.ruleTargetTitle), 'u'));
-  await assertText(page, operationsIds.reportHistory, new RegExp(escaped(input.fullArtifactTitle), 'u'));
-  await assertText(page, operationsIds.reportHistory, new RegExp(escaped(input.hotArtifactTitle), 'u'));
-  await expect(history).not.toContainText(input.ruleRef);
-  await expect(history).not.toContainText(input.fullArtifactRef);
-  await expect(history).not.toContainText(input.hotArtifactRef);
-  await assertText(page, operationsIds.reportHistory, /更新已完成/u);
-  await assertText(page, operationsIds.reportHistory, /无/u);
-  await assertText(page, operationsIds.reportHistory, canonicalDatePattern);
-  process.stdout.write(`TERMINAL_AUTOMATION_SUPPLY_REPORT_READBACK run=${input.runId} terminal=matched history=1\n`);
+  await assertText(
+    page,
+    operationsIds.reportDetail,
+    new RegExp(`服务端接收时间\\s*${canonicalDatePattern.source}`, 'u'),
+  );
+  const visibleHistoryRows = await rows.count();
+  const taskRow = rows.nth(taskIndex);
+  // The API taskId is the exact business identity. Visible titles are display values and may repeat.
+  await expect(taskRow).toContainText(new RegExp(escaped(input.ruleTargetTitle), 'u'));
+  await expect(taskRow).toContainText(new RegExp(escaped(input.fullArtifactTitle), 'u'));
+  await expect(taskRow).toContainText(new RegExp(escaped(input.hotArtifactTitle), 'u'));
+  await expect(taskRow).not.toContainText(input.ruleRef);
+  await expect(taskRow).not.toContainText(input.fullArtifactRef);
+  await expect(taskRow).not.toContainText(input.hotArtifactRef);
+  await expect(taskRow).toContainText(/更新已完成/u);
+  await expect(taskRow).toContainText(/无/u);
+  await expect(taskRow).toContainText(canonicalDatePattern);
+  process.stdout.write(
+    `TERMINAL_AUTOMATION_SUPPLY_REPORT_READBACK run=${input.runId} terminal=matched taskId=${input.taskId} historyPage=${historyPageNumber} currentTaskMatches=1 visibleHistoryRows=${visibleHistoryRows}\n`,
+  );
 };

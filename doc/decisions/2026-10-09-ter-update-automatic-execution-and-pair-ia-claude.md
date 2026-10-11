@@ -39,7 +39,7 @@ DEXTER_IA_REVIEW=ACCEPTED@2026-10-09；DEXTER_WIREFRAME_REVIEW=ACCEPTED_IA_CONTE
 
 ## 3. 权限、来源与资源模型
 
-TER 无管理后台 capability。安装用户授权由 Android 系统决定；本机提示的可见资格不是授予静默安装权限。CBS查询/下载以同一有效terminal credential认证，不按deviceId匹配；项目/门店/工件scope及CBS短期download grant保留。TDC只credential同App投影，两端plain持久；副机本机TDC/network直连CBS，普通断链无需MAIN在线，无新CBS对象。激活/取消/报告/TDS仍MASTER-only，副机admin取消激活只读，显式解绑先TDC清凭证再角色切换。
+TER 无管理后台 capability。安装用户授权由 Android 系统决定；本机提示的可见资格不是授予静默安装权限。CBS查询/下载以同一有效terminal credential认证，不按deviceId匹配；项目/门店/工件scope及CBS短期download grant保留。TDC只credential同App投影，两端plain持久；副机本机TDC/network直连CBS，普通断链无需MAIN在线，无新CBS对象。激活/取消/报告/TDS仍MASTER-only，副机admin取消激活只读。配对后由现有Topology state-sync权威覆盖已声明共享slice，不调用root reset；local-only state保持本机。显式解绑时Topology发 `requestTopologySlaveUnpairStateClearCommand`，TDC actor清空并flush副机本机的两个TDC-owned slices，成功后发 `completeTopologySlaveUnpairStateClearCommand`，Topology收到后再继续角色切换；不调用root reset、不清terminal-update固定任务，解绑后的CBS报告失败不阻塞本机更新。
 
 提示跟随本机 fixed task，而非 MAIN UI 投影。副机在充电显示 LMS 时，该机器物理 PRIMARY 仍承载它自己的升级邀请，不能沿 MAIN 的业务层投影显示主机更新。既有 admin 恢复入口始终可用。
 

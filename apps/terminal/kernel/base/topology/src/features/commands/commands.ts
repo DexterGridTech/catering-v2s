@@ -25,6 +25,21 @@ export const unpairTopologyCommand = defineCommand<EmptyTopologyPayload>(moduleN
   visibility: 'public',
 });
 
+export type TopologySlaveUnpairTransition = 'local-unpair' | 'peer-unpaired';
+export type TopologySlaveUnpairTransitionPayload = Readonly<{readonly transition: TopologySlaveUnpairTransition}>;
+
+/** Requests the TDC owner to persistently clear this SLAVE's shared terminal state before topology changes role. */
+export const requestTopologySlaveUnpairStateClearCommand = defineCommand<TopologySlaveUnpairTransitionPayload>(
+  moduleName,
+  {name: 'request-slave-unpair-state-clear', visibility: 'internal'},
+);
+
+/** Emitted by TDC only after its shared local state has been cleared and persisted. */
+export const completeTopologySlaveUnpairStateClearCommand = defineCommand<TopologySlaveUnpairTransitionPayload>(
+  moduleName,
+  {name: 'complete-slave-unpair-state-clear', visibility: 'internal'},
+);
+
 export const setTopologyHostEnabledCommand = defineCommand<Readonly<{readonly enabled: boolean}>>(moduleName, {
   name: 'enable-host',
   visibility: 'public',

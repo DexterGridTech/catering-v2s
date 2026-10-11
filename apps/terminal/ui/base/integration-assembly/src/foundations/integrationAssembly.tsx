@@ -762,7 +762,6 @@ export const createIntegrationAssembly = async <TReadyPayload extends StateJsonV
 
   const reportedSurfaceModes = new Set<DisplayMode>();
   const createSurface = (surface: IntegrationSurfaceCreationInput): ReactElement => {
-    const interactionRuntimeIdentity = runtimeRequired().runtimeId;
     const declaredSize =
       surface.displayMode === 'PRIMARY' ? input.surfaceDeclarations.PRIMARY : input.surfaceDeclarations.SECONDARY;
     if (declaredSize === undefined) {
@@ -789,9 +788,12 @@ export const createIntegrationAssembly = async <TReadyPayload extends StateJsonV
       });
     }
     const onLocalInteraction: NonNullable<RenderProviderProps['onLocalInteraction']> = async () => {
-      const result = await runtimeRequired().dispatchCommand(recordLocalInteractionCommand, {
-        runtimeIdentity: interactionRuntimeIdentity,
-      }, {requestId: createRequestId()});
+      const activeRuntime = runtimeRequired();
+      const result = await activeRuntime.dispatchCommand(
+        recordLocalInteractionCommand,
+        {runtimeIdentity: activeRuntime.runtimeId},
+        {requestId: createRequestId()},
+      );
       if (result.status !== 'completed') {
         input.platformPorts.logger.warn({
           category: 'runtime.local-interaction',

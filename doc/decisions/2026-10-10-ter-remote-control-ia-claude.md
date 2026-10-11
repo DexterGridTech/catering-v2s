@@ -6,7 +6,7 @@ status: PROPOSED_FOR_DEXTER_CLAUDE_REVIEW
 
 ## 1. 元数据
 IA_SCOPE=REMOTE-LIST,REMOTE-DETAIL,REMOTE-WORKSPACE；BUSINESS_SOURCE=doc/plans/platform/2026-10-10-ter-remote-control-formal-requirements-claude.md；JOURNEY_REFS=doc/decisions/2026-10-10-ter-remote-control-journey-claude.md；UI_INTERACTION_REF=doc/decisions/2026-10-10-ter-remote-control-ui-interaction-claude.md；IMPLEMENTATION_DESIGN_REF=doc/plans/platform/2026-10-10-ter-remote-control-implementation-design-claude.md。
-DEXTER_WIREFRAME_REVIEW=UNSET；IMPLEMENTATION_AUTHORITY=false。三项为既有内容 Tab、既有 Drawer、一个新 Modal 的交互面。
+DEXTER_WIREFRAME_REVIEW=ACCEPTED@2026-10-10；IMPLEMENTATION_AUTHORITY=false。三项为既有内容 Tab、既有 Drawer、一个新 Modal 的交互面。
 
 ## 2. 维度
 ### 2.1 可见维度
@@ -16,7 +16,7 @@ DEXTER_WIREFRAME_REVIEW=UNSET；IMPLEMENTATION_AUTHORITY=false。三项为既有
 | actorAndScenario | 当前项目管理员查询门店终端 | 有远控权限的管理员 | 发起会话的同一管理员/Tab |
 | entryAndSurface | 原项目终端版本页右侧终端更新状态 Tab | 原终端可点击名称打开 Drawer | Drawer“操作→远程控制”打开全屏 Modal |
 | controlType | ProTable、既有查询/分页，新增连接状态 Tag | AdminDetailActionMenu 一项动作；原报告/历史不动 | Modal、两个 VideoTrack 容器、状态文本、结束/关闭/重新发起 Button |
-| validationAndError | 四种状态带文字；读取失败禁旧动作 | 非在线禁用给理由；点击 CBS 拒绝显示准确提示 | STARTING 无输入；ACTIVE 全部画面就绪才能输入；ENDED 显示原因 |
+| validationAndError | 三种状态带文字；读取失败禁旧动作 | 非在线禁用给理由；点击 CBS 拒绝显示准确提示 | STARTING 无输入；ACTIVE 全部画面就绪才能输入；ENDED 显示原因 |
 | accessibilityAndTestId | 状态不只颜色；沿用终端名称入口 | 菜单键盘可达；禁用理由可阅读 | 每屏 label；结束与关闭键盘可达；焦点圈；指针区域不模拟按钮 |
 | emptyLoadingErrorStates | 复用既有空态/加载/错误；不另建空表 | 上下文变化清旧详情；失败不保留可执行旧目标 | 连接中显示占位；没有全屏就绪不输入；失败保留结束文字，不保留可点旧帧 |
 | containerBehaviorUnderLoad | 原列宽与分页，不客户端 slice；长状态换行 | 原 adminDrawerSurfaceProps，正文单段滚动 | 满视口；标题/按钮不滚；中间媒体区唯一滚动；窄窗上下排列；视频黑边不接收DOWN |
@@ -41,16 +41,16 @@ Modal maskClosable=false；初始焦点放标题或关闭按钮，不自动把�
 唯一远控权属于本 session controllerIdentity，而非“同管理员所有 Tab”。HTTP 权限仍是服务端事实。浏览器不 mirror 终端业务 state，媒体/描述只保留当前会话内存。列表连接事实时间为 observedAt/evaluatedAt，不称“绝对实时”。
 
 ## 4. 错误语义与界面映射
-拒绝、结束、输入原因闭集取需求 R-20；全量中文映射见交互 §5，不另造 error enum。授权拒绝用现有 typed problem 呈现；占用点击后显示“当前机器已经受控”。启动失败显示“连接失败，请重新发起”；断连显示“连接已断开，请重新发起”。释放失败保留“远程控制已结束，资源释放失败”，不能以关闭 Modal 掩盖。
+拒绝、结束、输入原因闭集取需求 R-20；全量中文映射见交互 §5，不另造 error enum。授权拒绝用现有 typed problem 呈现；占用点击后显示“当前机器已经受控”。启动失败显示“连接失败，请重新发起”；断连显示“连接已断开，请重新发起”。后台“远程控制已结束，资源释放失败”只指浏览器本地Room/track清理失败，不能以关闭Modal掩盖。TER capture/track/Window等释放结果由本机selectRemoteControlStatus.cleanup和结构化日志观察，automation按各端点断言；不回传CBS，不为此给status/report增字段或在ENDED后追加cleanup上报。
 
 ## 5. 交叉对账
 | 事实 | IA | 交互 | 详设 |
 | --- | --- | --- | --- |
-| 在线 | 原项目终端报告 Tab，加四态 | LIST 文案 | PG 集合读取，不加超时公式 |
+| 在线 | 原项目终端报告 Tab，加三态 | LIST 文案 | PG 集合读取，不加超时公式 |
 | 权限 | PROJECT 范围 CONTROL_PROJECT_TERMINAL | DETAIL 动作可见/禁用 | 3运营POST每次写grant；1GET按原read scope＋本session发起者，不附写capability |
 | 两屏 | 冻结描述main/secondary，不按到达顺序 | WORKSPACE 两媒体槽 | stream/endpoint/trackSid 校验 |
 | 结束 | 无自动恢复，先禁输入 | 原位结束原因与手动再发起 | 三方清理+MASTER有限lease |
 | 刷新 | 当前终端列表和详情 | 不刷规则 Tab | 用原刷新生命周期及请求代次 |
 
 ## 6. 完成判定
-模板槽位已填写，仅静态文档完成；DEXTER_WIREFRAME_REVIEW=UNSET，T-01～T-04 OPEN，所有实现和运行 NOT_RUN。未以设计表格代替独立审查或 UI 接受。
+模板槽位已填写，仅静态文档完成；DEXTER_WIREFRAME_REVIEW=ACCEPTED@2026-10-10，T-01～T-04 OPEN，所有实现和运行 NOT_RUN。未以设计表格代替独立审查或 UI 接受。

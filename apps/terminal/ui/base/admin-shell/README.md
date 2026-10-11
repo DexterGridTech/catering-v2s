@@ -45,3 +45,13 @@ suspend/restore 接缝清除焦点与键盘；关层不会隐式恢复先前字�
 登录口令使用 `@catering-v2s/ui-base-input` 的共享 `InputSurfaceFrame` 键盘覆盖层；键盘不嵌入登录卡片，
 卡片与页面保持完整布局尺寸，由 surface presentation 与焦点避让机制统一处理。接入示例、provider 边界和
 禁止事项以 `apps/terminal/ui/base/input/README.md` 为准，不要在本包或业务包直接拼接 `VirtualKeyboard`。
+
+## 本地服务配置与更新提醒
+
+本包同时承载服务配置面板和终端更新安装提醒，避免为两个管理界面再维护独立 UI 包。
+
+- 服务配置面板接收 composition 注入的不可变默认值，只读 `server-config` selector，并通过其 command 保存、清除或恢复配置；它不持有配置事实。`addresses[].baseUrl` 是完整服务 URL 前缀。代理密码不回显；SLAVE 在主机配置投影就绪前保持待同步，并且只读。
+- 更新提醒只读取 `terminal-update` owner 的邀请、任务和实际版本 selector；“稍后/安装”分别调用 owner command。是否提醒、当前目标、时限与安装状态仍由 `terminal-update` 判定和持有，本包不创建更新计时器、不访问网络或原生安装 API。
+- 两套 integration assembly 将相应 parts 与 `adminShellAssembly` 放入各自现有目录。渲染位置遵循 render 的 `local-primary` 规则；新增 App 时无需创建新的提醒或服务配置包。
+
+本包 focused proof 与类型检查使用 `yarn test` 和 `yarn typecheck`；local-primary 放置行为由 `ui-base-render` 包自身的 focused test 验证。

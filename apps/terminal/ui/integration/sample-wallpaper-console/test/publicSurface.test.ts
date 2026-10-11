@@ -54,8 +54,7 @@ const moduleSpecifiers = (filePath: string): readonly string[] => {
   return values;
 };
 
-const isTerminalUpdateTestFixture = (specifier: string): boolean =>
-  terminalUpdateFixtureSpecifier.test(specifier);
+const isTerminalUpdateTestFixture = (specifier: string): boolean => terminalUpdateFixtureSpecifier.test(specifier);
 
 const productionSourceRoots = (): readonly string[] => {
   const consoleIntegrationRoot = fileURLToPath(new URL('../../sample-console/', import.meta.url));
@@ -188,11 +187,9 @@ describe('sample2 integration public surface', () => {
     const fixtureSpecifier = '@catering-v2s/kernel-base-terminal-update/testing';
     const [productionPath] = productionSourceRoots();
     expect(productionPath).toBeDefined();
-    expect(
-      fixtureImportViolations([
-        {filePath: productionPath, moduleSpecifiers: [fixtureSpecifier]},
-      ]),
-    ).toEqual([{filePath: productionPath, moduleSpecifiers: [fixtureSpecifier]}]);
+    expect(fixtureImportViolations([{filePath: productionPath, moduleSpecifiers: [fixtureSpecifier]}])).toEqual([
+      {filePath: productionPath, moduleSpecifiers: [fixtureSpecifier]},
+    ]);
     expect(isTerminalUpdateTestFixture(`${packageName}/test-expo/TerminalUpdateAssetLoadProbe`)).toBe(false);
   });
 

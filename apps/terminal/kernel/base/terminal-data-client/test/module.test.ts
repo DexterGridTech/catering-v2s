@@ -49,11 +49,20 @@ describe('terminal-data-client package identity', () => {
       'kernel.base.runtime',
       'kernel.base.state',
       'kernel.base.transport',
+      'kernel.base.topology',
     ]);
     expect(dependencyModuleNames).not.toContain('kernel.base.server-config');
-    expect(runtimeModuleDependencyNames).toEqual(['kernel.base.runtime', 'kernel.base.transport']);
+    expect(runtimeModuleDependencyNames).toEqual([
+      'kernel.base.runtime',
+      'kernel.base.transport',
+      'kernel.base.topology',
+    ]);
     const module = createTerminalDataClientModule(createDependencies());
-    expect(module.dependencies).toEqual([{moduleName: 'kernel.base.runtime'}, {moduleName: 'kernel.base.transport'}]);
+    expect(module.dependencies).toEqual([
+      {moduleName: 'kernel.base.runtime'},
+      {moduleName: 'kernel.base.transport'},
+      {moduleName: 'kernel.base.topology'},
+    ]);
     expect(module.commands?.map(command => command.name)).toEqual([
       `${moduleName}.activate-terminal`,
       `${moduleName}.activation-succeeded`,
@@ -71,7 +80,6 @@ describe('terminal-data-client package identity', () => {
       `${moduleName}.topic-changed`,
       `${moduleName}.initialize-terminal-data-client`,
       `${moduleName}.reconcile-credential-readiness`,
-      `${moduleName}.clear-shared-terminal-credential`,
       `${moduleName}.refresh-status-projection`,
       `${moduleName}.transport-event`,
       `${moduleName}.heartbeat-tick`,

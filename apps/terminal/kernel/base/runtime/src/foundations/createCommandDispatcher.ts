@@ -693,10 +693,10 @@ export const createCommandDispatcher = (input: DispatcherInput) => {
 
       if (parentCommandId === null) {
         const resetKey = String(commandId);
-        const pendingReason = pendingResetByRoot.get(resetKey);
-        if (pendingResetByRoot.has(resetKey)) {
+        const pendingReset = pendingResetByRoot.get(resetKey);
+        if (pendingReset !== undefined) {
           resetStarted = true;
-          await input.performReset?.(pendingReason, commandId);
+          await input.performReset?.(pendingReset, commandId);
         }
       }
       return result;

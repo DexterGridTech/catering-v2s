@@ -17,10 +17,7 @@ import {sampleMemberDeskAssembly} from '@catering-v2s/ui-feature-sample-member-d
 import {sampleStaffAuthAssembly} from '@catering-v2s/ui-feature-sample-staff-auth';
 import {createSampleMemberRegistryModule} from '@catering-v2s/kernel-feature-sample-member-registry';
 import {createSampleStaffSessionModule} from '@catering-v2s/kernel-feature-sample-staff-session';
-import {
-  createStoreBasicModule,
-  selectStoreBasicBinding,
-} from '@catering-v2s/kernel-feature-store-basic';
+import {createStoreBasicModule, selectStoreBasicBinding} from '@catering-v2s/kernel-feature-store-basic';
 import {
   createProjectBasicModule,
   fixedTargetFromProjectCandidate,
@@ -44,15 +41,18 @@ import {
   type TransportNetworkSnapshot,
   type TopologyPeerChannel,
 } from '@catering-v2s/kernel-base-transport';
-import {ADMIN_SECTION_CONTAINER_KEY, SampleSection} from '@catering-v2s/ui-base-admin-shell';
+import {
+  ADMIN_SECTION_CONTAINER_KEY,
+  SampleSection,
+  createServerConfigPanelParts,
+  createTerminalUpdateInstallReminderParts,
+} from '@catering-v2s/ui-base-admin-shell';
 import {
   createCredentialSecret,
   createTerminalActivationModule,
   createTerminalActivationParts,
 } from '@catering-v2s/ui-base-terminal-activation';
-import {createServerConfigPanelParts} from '@catering-v2s/ui-base-server-config-panel';
 import {
-  clearSharedTerminalCredentialCommand,
   createTerminalDataClientModule,
   selectActivationState,
   selectConnectionState,
@@ -97,6 +97,7 @@ export const createSampleDefinedParts = (
     ...baseParts,
     ...createTerminalActivationParts(serverSpaces),
     ...createServerConfigPanelParts(serverSpaces),
+    ...createTerminalUpdateInstallReminderParts(),
     ...(includeSampleAdminSection ? [sampleAdminTestPart] : []),
   ]);
 };
@@ -223,31 +224,6 @@ export async function createSampleAssembly(input: SampleAssemblyInput): Promise<
               activation.status === 'inactive' &&
               (connection.status === 'stopped' || connection.status === 'disconnected')
             );
-          },
-          beforeSlaveCredentialTransition: async (context, transition) => {
-            const activation = selectActivationState(context.getState());
-            const dispatched = await context.dispatchCommand(clearSharedTerminalCredentialCommand, {
-              groupWorkspaceKey: activation.groupWorkspaceKey,
-              terminalRef: activation.terminalRef,
-              storeRef: activation.storeRef,
-              bindingGeneration: activation.bindingGeneration,
-            });
-            const actorResult = dispatched.status === 'completed' ? dispatched.actorResults[0] : undefined;
-            const outcome = actorResult?.result as Readonly<{status?: string}> | undefined;
-            if (
-              dispatched.status !== 'completed' ||
-              actorResult?.status !== 'completed' ||
-              (outcome?.status !== 'cleared' && outcome?.status !== 'already-clear')
-            ) {
-              context.platformPorts.logger.error({
-                category: 'terminal.topology.credential',
-                event: 'slave-credential-transition-blocked',
-                message: 'Topology transition was blocked because the shared credential was not durably cleared',
-                context: {commandId: context.command.commandId},
-                data: {transition, dispatchStatus: dispatched.status, outcome: outcome?.status ?? 'unavailable'},
-              });
-              throw new Error(`Shared terminal credential clear failed before ${transition}`);
-            }
           },
           stateSyncSlices: selectStateSyncSlices([
             ...(uiStateModule.stateSlices ?? []),

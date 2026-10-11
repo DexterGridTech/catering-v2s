@@ -10,6 +10,11 @@
     "typecheck": "tsc --project tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@catering-v2s/kernel-base-contracts": "workspace:*",
+    "@catering-v2s/kernel-base-server-config": "workspace:*",
+    "@catering-v2s/kernel-base-topology": "workspace:*",
+    "@catering-v2s/kernel-feature-project-basic": "workspace:*",
+    "@catering-v2s/kernel-feature-store-basic": "workspace:*",
     "@catering-v2s/ui-base-admin-shell": "workspace:*",
     "@catering-v2s/ui-base-automation-agent": "workspace:*",
     "@catering-v2s/ui-feature-sample-member-desk": "workspace:*",

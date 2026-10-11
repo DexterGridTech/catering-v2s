@@ -45,6 +45,7 @@ describe('renderer catalog boundaries', () => {
       'component',
       'layerGuard',
       'layerTier',
+      'placementScope',
       'rendererKey',
     ]);
     expect(Object.prototype.hasOwnProperty.call(defined.catalogEntry, 'component')).toBe(false);
@@ -53,6 +54,16 @@ describe('renderer catalog boundaries', () => {
     expect(Object.prototype.hasOwnProperty.call(defined.rendererBinding, 'description')).toBe(false);
     expect(defined.rendererBinding.layerTier).toBe('standard');
     expect(defined.rendererBinding.layerGuard).toBe('dismissible');
+    expect(defined.rendererBinding.placementScope).toBe('workspace');
+    expect(rendererCatalog.placementScopeOf('catalog-renderer')).toBe('workspace');
+  });
+
+  it('supports local-primary renderer placement and rejects unknown placement scopes', () => {
+    const localPrimary = definePart({...partInput(), placementScope: 'local-primary'});
+    const catalog = createRendererCatalog([localPrimary.rendererBinding]);
+
+    expect(catalog.placementScopeOf('catalog-renderer')).toBe('local-primary');
+    expect(() => definePart({...partInput(), placementScope: 'global' as never})).toThrow(/placementScope/);
   });
 
   it('rejects duplicate renderer keys and exposes no mutation entry point', () => {
@@ -207,7 +218,13 @@ describe('renderer catalog boundaries', () => {
     expect(() => {
       createRendererCatalog([
         // @ts-expect-error A renderer binding must use the named React component boundary.
-        {rendererKey: 'invalid-renderer', component: 42, layerTier: 'standard', layerGuard: 'dismissible'},
+        {
+          rendererKey: 'invalid-renderer',
+          component: 42,
+          layerTier: 'standard',
+          layerGuard: 'dismissible',
+          placementScope: 'workspace',
+        },
       ]);
     }).toThrow(/component/);
   });

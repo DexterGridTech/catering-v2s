@@ -11,7 +11,9 @@ afterEach(async () => {
   for (const connection of activeServers.splice(0)) await connection.close();
 });
 
-const fakeAdb = (input: Readonly<{readonly initialReverse?: {remote: string; local: string}}>) => {
+const fakeAdb = (
+  input: Readonly<{readonly initialReverse?: {remote: string; local: string}; readonly deviceId?: string}>,
+) => {
   const reverses = input.initialReverse ? [input.initialReverse] : [];
   const device = {
     listReverses: vi.fn(async () => reverses.map(value => ({...value}))),
@@ -21,7 +23,7 @@ const fakeAdb = (input: Readonly<{readonly initialReverse?: {remote: string; loc
     }),
   };
   const client = {
-    listDevices: vi.fn(async () => [{id: 'emulator-5554', type: 'emulator'}]),
+    listDevices: vi.fn(async () => [{id: input.deviceId ?? 'emulator-5554', type: 'emulator'}]),
     getDevice: vi.fn(() => device),
   };
   return {client: client as unknown as Client, device: device as unknown as DeviceClient, reverses};
@@ -109,6 +111,99 @@ describe('createAndroidAutomationConnection', () => {
         expect(event).toMatchObject({runId, deviceSerial: 'emulator-5554'});
         expect(event.local).toMatch(/^tcp:[1-9][0-9]{0,4}$/u);
       }
+    } finally {
+      if (oldRunId === undefined) delete process.env.TERMINAL_AUTOMATION_RUN_ID;
+      else process.env.TERMINAL_AUTOMATION_RUN_ID = oldRunId;
+      if (oldRunDirectory === undefined) delete process.env.TERMINAL_AUTOMATION_RUN_DIRECTORY;
+      else process.env.TERMINAL_AUTOMATION_RUN_DIRECTORY = oldRunDirectory;
+      rmSync(runDirectory, {recursive: true, force: true});
+    }
+  });
+
+  it('owns only the CBS reverse on the paired slave and releases it with the driver reverse', async () => {
+    const adb = fakeAdb({deviceId: 'emulator-5556'});
+    const commands: string[][] = [];
+    const runCommand = vi.fn(async (_adbPath: string, args: readonly string[]) => {
+      commands.push([...args]);
+      if (args[3] === '--remove') {
+        const index = adb.reverses.findIndex(value => value.remote === args[4]);
+        if (index >= 0) adb.reverses.splice(index, 1);
+      }
+    });
+    const connection = await createAndroidAutomationConnection({
+      client: adb.client,
+      serial: 'emulator-5556',
+      repositoryRoot: process.cwd(),
+      adbPath: '/usr/bin/adb',
+      shape: 'mobile',
+      token: 'managed-driver-token',
+      managedServicePorts: [{remotePort: 28_080, localPort: 18_080}],
+      runCommand,
+    });
+    activeServers.push(connection);
+
+    expect(connection.servicePorts).toEqual([{remotePort: 28_080, localPort: 18_080}]);
+    expect(adb.reverses).toContainEqual({remote: 'tcp:28080', local: 'tcp:18080'});
+    expect(adb.reverses.some(value => value.remote === 'tcp:28180' || value.remote === 'tcp:28181')).toBe(false);
+    await connection.close();
+    expect(adb.reverses).toEqual([]);
+    expect(commands).toContainEqual(['-s', 'emulator-5556', 'reverse', '--remove', 'tcp:28080']);
+    expect(commands).toContainEqual(['-s', 'emulator-5556', 'reverse', '--remove', 'tcp:19090']);
+  });
+
+  it('journals topology host forward ownership and exact release for the selected MASTER device', async () => {
+    const runId = randomUUID();
+    const runDirectory = path.join(process.cwd(), '.runtime/terminal-automation', runId);
+    mkdirSync(runDirectory, {recursive: true});
+    writeFileSync(path.join(runDirectory, 'events.jsonl'), '');
+    const oldRunId = process.env.TERMINAL_AUTOMATION_RUN_ID;
+    const oldRunDirectory = process.env.TERMINAL_AUTOMATION_RUN_DIRECTORY;
+    process.env.TERMINAL_AUTOMATION_RUN_ID = runId;
+    process.env.TERMINAL_AUTOMATION_RUN_DIRECTORY = runDirectory;
+    try {
+      const adb = fakeAdb({});
+      let forwards = '';
+      const runCommand = vi.fn(async (_adbPath: string, args: readonly string[]) => {
+        if (args.includes('--no-rebind')) forwards = 'emulator-5554 tcp:43172 tcp:43172\n';
+        if (args.includes('forward') && args.includes('--remove')) forwards = '';
+        if (args[3] === '--remove' && args[2] === 'reverse') adb.reverses.splice(0);
+      });
+      const connection = await createAndroidAutomationConnection({
+        client: adb.client,
+        serial: 'emulator-5554',
+        repositoryRoot: process.cwd(),
+        adbPath: '/usr/bin/adb',
+        shape: 'mobile',
+        token: 'managed-driver-token',
+        runCommand,
+        runTextCommand: async (_adbPath, args) => {
+          if (args.join(' ') === 'forward --list') return forwards;
+          throw new Error('UNEXPECTED_ADB_READ');
+        },
+      });
+      await connection.attachTopologyHostForward(43172);
+      await connection.close();
+      const events = readFileSync(path.join(runDirectory, 'events.jsonl'), 'utf8')
+        .trim()
+        .split('\n')
+        .map(line => JSON.parse(line));
+      expect(events.filter(event => event.event.startsWith('android.forward.topology-host.'))).toEqual([
+        expect.objectContaining({
+          event: 'android.forward.topology-host.attached',
+          runId,
+          deviceSerial: 'emulator-5554',
+          local: 'tcp:43172',
+          remote: 'tcp:43172',
+        }),
+        expect.objectContaining({
+          event: 'android.forward.topology-host.released',
+          runId,
+          deviceSerial: 'emulator-5554',
+          local: 'tcp:43172',
+          remote: 'tcp:43172',
+        }),
+      ]);
+      expect(forwards).toBe('');
     } finally {
       if (oldRunId === undefined) delete process.env.TERMINAL_AUTOMATION_RUN_ID;
       else process.env.TERMINAL_AUTOMATION_RUN_ID = oldRunId;

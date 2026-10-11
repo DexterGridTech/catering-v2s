@@ -7,7 +7,7 @@ import {
 import {selectRuntimeInstanceMode, type RuntimeModuleContext} from '@catering-v2s/kernel-base-runtime';
 import type {TopologySession} from '@catering-v2s/kernel-base-transport';
 import type {StateRoot, SyncStateDiff} from '@catering-v2s/kernel-base-state';
-import {topologySliceName} from '../selectors/selectTopologyState';
+import {selectTopologyState, topologySliceName} from '../selectors/selectTopologyState';
 import type {TopologyPeerLog} from './topologyModuleTypes';
 
 type TopologySyncDirection = TopologyStateFullMessage['direction'];
@@ -288,6 +288,15 @@ export const createTopologyStateSyncController = (
       return;
     }
     const state = stateAt(context);
+    if (selectTopologyState(state).repairPending) {
+      input.log(
+        context,
+        'state-full-ignored',
+        {reason: 'repair-pending', sliceName: message.sliceName},
+        sourceConnectionId,
+      );
+      return;
+    }
     const declaration = declarationByName.get(message.sliceName);
     const expectedDirection = incomingDirectionFor(state);
     if (

@@ -16,9 +16,19 @@ describe('terminal update Expo automation fixture', () => {
     if (facts.value.actual === null) throw new Error('AUTOMATION_FIXTURE_ACTUAL_FACTS_MISSING');
     expect(facts.value.actual.applicationId).toBe('com.example.terminal');
 
-    const target = await fixture.sourceProvider.readTarget({selectedSpace: 'development', contextIdentity: 'fixture-run', ruleRef: 'automation-fixture-run'});
+    const target = await fixture.sourceProvider.readTarget({
+      selectedSpace: 'development',
+      contextIdentity: 'fixture-run',
+      ruleRef: 'automation-fixture-run',
+    });
     expect(target?.applicationId).toBe('com.example.terminal');
-    expect(await fixture.sourceProvider.readTarget({selectedSpace: 'development', contextIdentity: 'other-run', ruleRef: 'automation-fixture-run'})).toBeNull();
+    expect(
+      await fixture.sourceProvider.readTarget({
+        selectedSpace: 'development',
+        contextIdentity: 'other-run',
+        ruleRef: 'automation-fixture-run',
+      }),
+    ).toBeNull();
     expect(target?.full?.artifact.nativeBuildNumber).toBe(2);
 
     const prepared = await fixture.port.prepareArtifact({
@@ -42,7 +52,11 @@ describe('terminal update Expo automation fixture', () => {
     expect(action.status).toBe('succeeded');
     if (action.status !== 'succeeded') throw new Error('AUTOMATION_FIXTURE_APPLY_FAILED');
     expect(action.value.state).toBe('waiting-user');
-    const readback = await fixture.port.readAction({actionId: 'fixture-action', taskId: 'fixture-task', timeoutMs: 1_000});
+    const readback = await fixture.port.readAction({
+      actionId: 'fixture-action',
+      taskId: 'fixture-task',
+      timeoutMs: 1_000,
+    });
     expect(readback.status).toBe('succeeded');
     if (readback.status !== 'succeeded' || readback.value === null)
       throw new Error('AUTOMATION_FIXTURE_ACTION_READBACK_FAILED');
@@ -61,6 +75,10 @@ describe('terminal update Expo automation fixture', () => {
     if (facts.status !== 'succeeded') throw new Error('AUTOMATION_FIXTURE_FACTS_NOT_AVAILABLE');
     expect(facts.value.actual).not.toBeNull();
     if (facts.value.actual === null) throw new Error('AUTOMATION_FIXTURE_ACTUAL_FACTS_MISSING');
-    expect(facts.value.actual).toMatchObject({applicationId: 'com.example.wallpaper', bundleVersion: '1.0.5', entryKind: 'hot'});
+    expect(facts.value.actual).toMatchObject({
+      applicationId: 'com.example.wallpaper',
+      bundleVersion: '1.0.5',
+      entryKind: 'hot',
+    });
   });
 });

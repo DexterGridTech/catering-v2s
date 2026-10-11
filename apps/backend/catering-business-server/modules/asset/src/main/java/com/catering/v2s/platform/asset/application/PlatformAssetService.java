@@ -125,7 +125,8 @@ public class PlatformAssetService
             String expectedSha256,
             long declaredSizeBytes,
             InputStream content,
-            String idempotencyKey) {
+            String idempotencyKey,
+            String requestId) {
         if (workspaceUuid == null || groupWorkspaceKey == null || groupWorkspaceKey.isBlank()
                 || fileName == null || !fileName.toLowerCase(java.util.Locale.ROOT).endsWith(".zip")
                 || expectedSha256 == null || !expectedSha256.matches("[a-f0-9]{64}")
@@ -143,7 +144,8 @@ public class PlatformAssetService
                 expectedSha256,
                 null,
                 true,
-                fileName);
+                fileName,
+                safeRequestId(requestId));
         return new TerminalUpdateAssetStorage.StagedPackage(
                 staged.stage().assetRef(),
                 staged.stage().bindGrant(),
@@ -458,6 +460,23 @@ public class PlatformAssetService
             SalesMenuAssetTarget salesMenuTarget,
             boolean privatePackage,
             String fileName) {
+        return stageContentResult(usage, contentType, declaredSizeBytes, content, idempotencyKey, workspaceUuid,
+                groupWorkspaceKey, expectedDigest, salesMenuTarget, privatePackage, fileName, null);
+    }
+
+    private StageResult stageContentResult(
+            String usage,
+            String contentType,
+            long declaredSizeBytes,
+            InputStream content,
+            String idempotencyKey,
+            UUID workspaceUuid,
+            String groupWorkspaceKey,
+            String expectedDigest,
+            SalesMenuAssetTarget salesMenuTarget,
+            boolean privatePackage,
+            String fileName,
+            String diagnosticRequestId) {
         if (!(privatePackage ? validTerminalPackageContent(usage, contentType, fileName)
                         : validUsageContentType(usage, contentType))
                 || content == null
@@ -469,9 +488,13 @@ public class PlatformAssetService
         if (TransactionSynchronizationManager.isActualTransactionActive()) {
             throw new AssetInvariantViolationException("owner.stage-storage-transaction");
         }
-        MaterializedContent materialized = privatePackage
-                ? materializeTerminalUpdatePackage(declaredSizeBytes, content)
-                : materializeAndValidate(usage, contentType, declaredSizeBytes, content);
+        MaterializedContent materialized = runTerminalUpdateStage(
+                diagnosticRequestId,
+                "UPLOAD_MATERIALIZATION",
+                declaredSizeBytes,
+                () -> privatePackage
+                        ? materializeTerminalUpdatePackage(declaredSizeBytes, content)
+                        : materializeAndValidate(usage, contentType, declaredSizeBytes, content));
         if (expectedDigest != null && !expectedDigest.equals(materialized.sha256())) {
             deleteQuietly(materialized.path());
             throw new AssetInputInvalidException();
@@ -501,9 +524,13 @@ public class PlatformAssetService
         // DataSourceTransactionManager transaction does not return that connection to its pool.
         boolean uploadedByThisAttempt = false;
         try {
-            uploadedByThisAttempt = ensurePhysicalObject(objectKey, contentType, materialized, privatePackage);
-            return new TransactionTemplate(transactions)
-                    .execute(status -> writeStagedContent(
+            uploadedByThisAttempt = ensurePhysicalObject(
+                    objectKey, contentType, materialized, privatePackage, diagnosticRequestId);
+            return runTerminalUpdateStage(
+                    diagnosticRequestId,
+                    "METADATA_WRITE",
+                    declaredSizeBytes,
+                    () -> new TransactionTemplate(transactions).execute(status -> writeStagedContent(
                             usage,
                             contentType,
                             idempotencyKey,
@@ -519,7 +546,7 @@ public class PlatformAssetService
                             grant,
                             now,
                             expires,
-                            salesMenuTarget));
+                            salesMenuTarget)));
         } catch (RuntimeException failure) {
             scheduleUnreferencedUploadCleanup(bucketName, objectKey, uploadedByThisAttempt, privatePackage);
             throw failure;
@@ -1409,15 +1436,26 @@ public class PlatformAssetService
 
     /** Object storage can block; suspend any database transaction and its connection while it runs. */
     private boolean ensurePhysicalObject(
-            String objectKey, String contentType, MaterializedContent materialized, boolean privatePackage) {
+            String objectKey,
+            String contentType,
+            MaterializedContent materialized,
+            boolean privatePackage,
+            String diagnosticRequestId) {
         try (InputStream upload = Files.newInputStream(materialized.path())) {
-            boolean exists = privatePackage
-                    ? storageValue("private-object.stat", () -> privateObjects.privateExists(objectKey))
-                    : storageValue("object.stat", () -> objects.exists(objectKey));
+            boolean exists = runTerminalUpdateStage(
+                    diagnosticRequestId,
+                    "PRIVATE_OBJECT_STAT",
+                    materialized.sizeBytes(),
+                    () -> privatePackage
+                            ? storageValue("private-object.stat", () -> privateObjects.privateExists(objectKey))
+                            : storageValue("object.stat", () -> objects.exists(objectKey)));
             if (exists) return false;
             if (privatePackage) {
-                storageAction("private-object.put", () -> privateObjects.putPrivate(
-                        objectKey, materialized.sizeBytes(), upload));
+                runTerminalUpdateStage(diagnosticRequestId, "PRIVATE_OBJECT_PUT", materialized.sizeBytes(), () -> {
+                    storageAction("private-object.put", () -> privateObjects.putPrivate(
+                            objectKey, materialized.sizeBytes(), upload));
+                    return Boolean.TRUE;
+                });
             } else {
                 storageAction("object.put", () -> objects.put(
                         objectKey, contentType, materialized.sizeBytes(), upload));
@@ -1426,6 +1464,49 @@ public class PlatformAssetService
         } catch (IOException failure) {
             throw new AssetStorageUnavailableException("local.upload-read", failure);
         }
+    }
+
+    private <T> T runTerminalUpdateStage(
+            String requestId, String stage, long byteSize, Supplier<T> action) {
+        if (requestId == null) return action.get();
+        long startedAt = System.nanoTime();
+        terminalUpdateDiagnostic(requestId, stage, "STARTED", 0, byteSize, null, false);
+        try {
+            T value = action.get();
+            terminalUpdateDiagnostic(requestId, stage, "SUCCEEDED", elapsedMillis(startedAt), byteSize, null, false);
+            return value;
+        } catch (RuntimeException failure) {
+            terminalUpdateDiagnostic(requestId, stage, "FAILED", elapsedMillis(startedAt), byteSize,
+                    failure.getClass().getSimpleName(), true);
+            throw failure;
+        }
+    }
+
+    private static void terminalUpdateDiagnostic(
+            String requestId,
+            String stage,
+            String outcome,
+            long elapsedMs,
+            long byteSize,
+            String failureType,
+            boolean warning) {
+        var event = (warning ? log.atWarn() : log.atInfo())
+                .addKeyValue("event", "TERMINAL_UPDATE_ARTIFACT_STAGE")
+                .addKeyValue("requestId", requestId)
+                .addKeyValue("stage", stage)
+                .addKeyValue("outcome", outcome)
+                .addKeyValue("elapsedMs", elapsedMs)
+                .addKeyValue("byteSize", byteSize);
+        if (failureType != null) event.addKeyValue("failureType", failureType.replaceAll("[^A-Za-z0-9_.:-]", "_"));
+        event.log("terminal update artifact stage {} {}", stage, outcome);
+    }
+
+    private static String safeRequestId(String value) {
+        return value != null && value.matches("[A-Za-z0-9_.:-]{1,128}") ? value : null;
+    }
+
+    private static long elapsedMillis(long startedAtNanos) {
+        return Math.max(0, (System.nanoTime() - startedAtNanos) / 1_000_000);
     }
 
     private static boolean isImage(String contentType) {

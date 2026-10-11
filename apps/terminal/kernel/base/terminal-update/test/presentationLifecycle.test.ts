@@ -70,23 +70,23 @@ describe('terminal-update presentation lifecycle', () => {
 
     listener?.('foreground');
     await Promise.resolve();
-    expect(
-      dispatched.filter(item => item.commandName === updatePresentationChangedCommand.commandName),
-    ).toHaveLength(2);
+    expect(dispatched.filter(item => item.commandName === updatePresentationChangedCommand.commandName)).toHaveLength(
+      2,
+    );
 
     listener?.('background');
     await vi.waitFor(() => {
-      expect(
-        dispatched.filter(item => item.commandName === updatePresentationChangedCommand.commandName),
-      ).toHaveLength(3);
+      expect(dispatched.filter(item => item.commandName === updatePresentationChangedCommand.commandName)).toHaveLength(
+        3,
+      );
     });
 
     for (const release of cleanups.reverse()) release();
     listener?.('unknown');
     await Promise.resolve();
     expect(order).toEqual(['subscribe', 'read', 'unsubscribe']);
-    expect(
-      dispatched.filter(item => item.commandName === updatePresentationChangedCommand.commandName),
-    ).toHaveLength(3);
+    expect(dispatched.filter(item => item.commandName === updatePresentationChangedCommand.commandName)).toHaveLength(
+      3,
+    );
   });
 });

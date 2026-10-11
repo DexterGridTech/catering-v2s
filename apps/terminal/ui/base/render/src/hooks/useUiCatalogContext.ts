@@ -1,5 +1,6 @@
 import {useMemo} from 'react';
 import type {DisplayMode, UiCatalogContext} from '@catering-v2s/kernel-base-ui-state';
+import type {WorkspaceKey} from '@catering-v2s/kernel-base-state';
 import {useRenderContext} from '../contexts/RenderContext';
 import {createCatalogContext} from '../foundations/createCatalogContext';
 import {useUiStateSelector} from './useUiStateSelector';
@@ -21,11 +22,15 @@ export const areUiCatalogContextsEqual = (
   );
 };
 
-export const useUiCatalogContext = (displayMode: DisplayMode): UiCatalogContext | undefined => {
+export const useUiCatalogContext = (
+  displayMode: DisplayMode,
+  workspaceOverride?: WorkspaceKey,
+): UiCatalogContext | undefined => {
   const {selectSurfaceForm} = useRenderContext();
   const selector = useMemo(
-    () => (root: RuntimeStateRoot) => createCatalogContext(root, displayMode, selectSurfaceForm(root)),
-    [displayMode, selectSurfaceForm],
+    () => (root: RuntimeStateRoot) =>
+      createCatalogContext(root, {displayMode, surfaceForm: selectSurfaceForm(root), workspaceOverride}),
+    [displayMode, selectSurfaceForm, workspaceOverride],
   );
   return useUiStateSelector(selector, areUiCatalogContextsEqual);
 };

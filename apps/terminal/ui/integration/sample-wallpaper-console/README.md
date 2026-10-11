@@ -25,7 +25,7 @@
   副屏 waiting/welcome 两个透明、laptop-only 的 section part；不创建 mobile 对应实现。
 - `theme/`：本应用的 19 个语义 token；action 使用红色，error 仍是错误语义。
 - `app.json` 与 `assets/favicon.png`：仅供本包 Expo Web 预览消费的浏览器标题图标配置；不声明
-  App application icon，也不改变 App 内 UI 图标。
+  App 应用图标，也不改变 App 内 UI 图标。
 - `test-expo/App.tsx`：仅把本包 assembly 接入通用 TER dev-host；不是生产 runtime 的第二入口。
 
 公共导出包括 `createSampleWallpaperConsoleAssembly`、`createSurfaceForDisplayIndex`、
@@ -42,7 +42,7 @@ createSampleWallpaperConsoleAssembly、createSampleWallpaperConsoleModule、
 createSurfaceForDisplayIndex、dependencyModuleNames、devDependencyModuleNames、
 getSurfaceDeclarations、moduleKind、moduleName、parts、readTerminalSurfaces、
 startupReadyCommand、surfaceFormForOrientation、terminalSurfaces、waitingPart、welcomePart。
-包主入口 . → ./src/index.ts；export map 另提供 @catering-v2s/ui-integration-sample-wallpaper-console/theme/global.css →
+包主入口 . → ./src/index.ts；导出映射另提供 @catering-v2s/ui-integration-sample-wallpaper-console/theme/global.css →
 ./theme/global.css，供 Android 宿主与 Metro 读取本包主题。该集合与 terminal-invariants.json
 及 test/publicSurface.test.ts 对齐。
 

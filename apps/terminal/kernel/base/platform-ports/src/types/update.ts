@@ -102,12 +102,13 @@ export interface UpdatePort {
   ): Promise<PortResult<UpdateAction | null>>;
   /** Launches only the exact, still-pending PackageInstaller confirmation; it never creates or commits a session. */
   presentInstallerConfirmation(
-    input: UpdateCall & Readonly<{
-      taskId: string;
-      actionId: string;
-      publicationId: string;
-      trigger: UpdateInstallerConfirmationTrigger;
-    }>,
+    input: UpdateCall &
+      Readonly<{
+        taskId: string;
+        actionId: string;
+        publicationId: string;
+        trigger: UpdateInstallerConfirmationTrigger;
+      }>,
   ): Promise<PortResult<UpdateInstallerConfirmationResult>>;
   confirmBoot(
     input: UpdateCall & Readonly<{bootToken: string; publicationId: string}>,

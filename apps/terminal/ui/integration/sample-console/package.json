@@ -95,7 +95,6 @@
     "@catering-v2s/ui-base-input": "workspace:*",
     "@catering-v2s/ui-base-integration-assembly": "workspace:*",
     "@catering-v2s/ui-base-render": "workspace:*",
-    "@catering-v2s/ui-base-server-config-panel": "workspace:*",
     "@catering-v2s/ui-base-terminal-activation": "workspace:*",
     "@catering-v2s/ui-feature-sample-member-desk": "workspace:*",
     "@catering-v2s/ui-feature-sample-staff-auth": "workspace:*",

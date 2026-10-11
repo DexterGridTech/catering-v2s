@@ -48,3 +48,33 @@ Reviewer 独立检查当前需求/裁决、阶段 C 详设与计划及 IA、适�
 ## 证据边界
 
 本记录关闭 CP-04 阶段静态三维对账，不是整批 6b 或 REVIEW_TARGET=IMPLEMENTATION verdict。Web、设备、CBS/TDS 真实环境、所有动态场景与 cleanup 仍 NOT_RUN。当前字节上的最新运行是上述 topology package test；最后一次通过也是该命令，针对当前 CP-04 字节。其他 integration package proof 是先前结果且相应字节未变，不升级为本次动态 PASS。
+
+## 2026-10-11 unpair A/B 与 no-reset 差量复核
+
+```text
+REVIEW_TARGET=CP_STAGE_RECONCILIATION_DELTA
+CP=CP-04
+RESULT=MATCHED
+OPEN=0
+REVIEWER_KIND=FRESH_INDEPENDENT_SUBAGENT
+REVIEWER=/root/stagec_cp04_reconcile_fresh
+SCOPE=本轮新增的 topology→TDC state-clear request / TDC→topology completion handshake、pair state-sync/no-reset、相关依赖/invariant/test 与 assembly 接缝
+TESTS_RUN=NONE
+DYNAMIC=NOT_RUN
+```
+
+fresh reviewer 对当前变化范围做了三维独立静态核对，结论 `MATCHED`。正式需求/最新裁决、详设/IA/计划及 terminal-coding standard/TR-09 均与实现一致：Topology 的 SLAVE unpair 先发 internal request；TDC actor 清除自己拥有的 credential、topic/cursor/remote-operation state 及 status projection，flush 并读回成功后发 completion；Topology 收到 completion 才推进角色转换。clear/flush/readback 失败不会继续转换。pairing 不调用 root reset，复用既有声明式 master-to-slave state-sync；local-only state 保留。ordinary disconnect 保留 credential；terminal-update 的 fixed task 保留；integrations 只做 assembly/composition，不持有 unpair 业务逻辑。
+
+重点源码/测试锚点：
+
+- `apps/terminal/kernel/base/topology/src/features/commands/commands.ts:31-40`：两个 internal request/completion command。
+- `apps/terminal/kernel/base/topology/src/features/actors/actors.ts:668-707`：SLAVE unpair 请求后等待 completion，失败保留修复状态。
+- `apps/terminal/kernel/base/terminal-data-client/src/features/actors/terminalDataClientActor.ts:979-1055`：TDC 清理、flush、readback 与 completion command。
+- `apps/terminal/kernel/base/topology/src/application/createTopologyStateSyncController.ts:150-172,274-360`：按声明 slice 与方向处理 state-sync。
+- `apps/terminal/kernel/base/topology/test/topology.test.ts:1211-1282,1497-1568,2622-2661,2689-2697`：清理失败阻断转换、成功后重配对、pair 不触发 root reset、瞬断保留配对事实。
+- `apps/terminal/kernel/base/terminal-data-client/test/terminalDataClientActor.test.ts:731-887`：TDC state 清空与持久化后才 completion，且不请求 app reset。
+- 两个 integration assembly 仅 compose slice/公开依赖：`apps/terminal/ui/integration/sample-console/src/assembly/assembly.tsx:212-235`、`apps/terminal/ui/integration/sample-wallpaper-console/src/assembly/assembly.tsx:200-222`。
+
+**差量结论：MATCHED，OPEN=0。** 原报告的 credential/plain sync、CBS HTTP、generated operation 与 role gate 结果未受本次差量影响，按原 CP-04 MATCHED 记录复用；本轮不把源代码核验提升为测试执行结果。Reviewer checklist 记录：已读当前规范/需求/计划、全部 memory kernel 与 deterministic-context-only、six-dimensional recall（一次通用 route 成功，terminal-specific route 因验证失败关闭并直接回读适用原文）、Topology/TDC/update/state-sync/两 assembly owning sources 和测试；先独立判断，后读此前报告比较。未运行测试、typecheck、build、Web、Android 或动态环境。
+
+本轮 latest evidence 仍是前述 topology package test；新增 independent reconciliation 是静态证据，不是运行。Expo Web、DEV、Android、双机及业务/cleanup 仍 `NOT_RUN`；全批 6b 与 13c 尚未完成。

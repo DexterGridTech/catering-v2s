@@ -87,11 +87,9 @@ export const createStoreBasicModule = (): RuntimeModule => {
         });
     },
     onApplicationReset: async (context: RuntimeModuleContext) => {
-      const result = await context.dispatchCommand(
-        initializeStoreBasicCommand,
-        Object.freeze({}),
-        {requestId: createRequestId()},
-      );
+      const result = await context.dispatchCommand(initializeStoreBasicCommand, Object.freeze({}), {
+        requestId: createRequestId(),
+      });
       if (result.status !== 'completed') {
         context.platformPorts.logger
           .scope({moduleName, layer: 'kernel', subsystem: 'store-basic', component: 'reset'})

@@ -6,8 +6,16 @@ import type {TerminalUpdateRecentStatus, TerminalUpdateState, TerminalUpdateTask
 export const terminalUpdateSliceName = `${moduleName}.state` as const;
 const initialState: TerminalUpdateState = Object.freeze({
   currentTask: null,
-  recentStatus: Object.freeze({taskId: null, state: 'idle', reason: null, changedAt: 0 as never,
-    applicationId: null, ruleRef: null, fullArtifactRef: null, hotArtifactRef: null}),
+  recentStatus: Object.freeze({
+    taskId: null,
+    state: 'idle',
+    reason: null,
+    changedAt: 0 as never,
+    applicationId: null,
+    ruleRef: null,
+    fullArtifactRef: null,
+    hotArtifactRef: null,
+  }),
   failedArtifactIds: Object.freeze([]),
   actualVersions: null,
   invitation: null,
@@ -42,10 +50,10 @@ const definition = createSlice({
       state,
       action: PayloadAction<TerminalUpdateState['actualVersions']>,
     ): TerminalUpdateState => ({...state, actualVersions: action.payload}),
-    replaceInvitation: (
-      state,
-      action: PayloadAction<TerminalUpdateState['invitation']>,
-    ): TerminalUpdateState => ({...state, invitation: action.payload ?? null}),
+    replaceInvitation: (state, action: PayloadAction<TerminalUpdateState['invitation']>): TerminalUpdateState => ({
+      ...state,
+      invitation: action.payload ?? null,
+    }),
     replaceReportDescriptor: (
       state,
       action: PayloadAction<TerminalUpdateState['reportDescriptor']>,

@@ -17,16 +17,24 @@ describe('Runtime local interaction', () => {
     expect(baseline.lastClickAt).toBeGreaterThan(0);
     expect(baseline.revision).toBe(0);
 
-    const accepted = await first.dispatchCommand(recordLocalInteractionCommand, {
-      runtimeIdentity: first.runtimeId,
-    }, {requestId: createRequestId()});
+    const accepted = await first.dispatchCommand(
+      recordLocalInteractionCommand,
+      {
+        runtimeIdentity: first.runtimeId,
+      },
+      {requestId: createRequestId()},
+    );
     expect(accepted.status).toBe('completed');
     expect(first.evaluateSelector(selectorName, [])).toMatchObject({revision: 1});
     expect(second.evaluateSelector(selectorName, [])).toMatchObject({revision: 0});
 
-    const stale = await first.dispatchCommand(recordLocalInteractionCommand, {
-      runtimeIdentity: second.runtimeId,
-    }, {requestId: createRequestId()});
+    const stale = await first.dispatchCommand(
+      recordLocalInteractionCommand,
+      {
+        runtimeIdentity: second.runtimeId,
+      },
+      {requestId: createRequestId()},
+    );
     expect(stale.status).toBe('completed');
     expect(first.evaluateSelector(selectorName, [])).toMatchObject({revision: 1});
   });

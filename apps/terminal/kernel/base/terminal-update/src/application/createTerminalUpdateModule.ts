@@ -1,4 +1,8 @@
-import {selectLastLocalInteraction, type RuntimeModule, type RuntimeModuleContext} from '@catering-v2s/kernel-base-runtime';
+import {
+  selectLastLocalInteraction,
+  type RuntimeModule,
+  type RuntimeModuleContext,
+} from '@catering-v2s/kernel-base-runtime';
 import type {UpdatePort} from '@catering-v2s/kernel-base-platform-ports';
 import {runtimeModuleDependencyNames} from '../dependencies';
 import {moduleKind, moduleName} from '../moduleName';
@@ -18,6 +22,7 @@ import {
   selectTerminalUpdateActualVersions,
   selectTerminalUpdateInvitation,
   selectTerminalUpdateRecentStatus,
+  selectTerminalUpdateReportDelivery,
   selectTerminalUpdateTask,
 } from '../selectors/selectors';
 import type {
@@ -39,7 +44,9 @@ export const createTerminalUpdateModule = (
     createProtocolUuid: () => string;
     sourceProvider?: UpdateTargetSourceProvider;
     readNetworkSnapshot?: UpdateNetworkSnapshotReader;
-    readTerminalUpdateContextFacts?: (state: ReturnType<RuntimeModuleContext['getState']>) => TerminalUpdateContextFacts | null;
+    readTerminalUpdateContextFacts?: (
+      state: ReturnType<RuntimeModuleContext['getState']>,
+    ) => TerminalUpdateContextFacts | null;
     readCurrentTarget?: CurrentUpdateTargetReader;
   }>,
 ): RuntimeModule => {
@@ -72,6 +79,7 @@ export const createTerminalUpdateModule = (
       selectTerminalUpdateInvitation,
       selectTerminalUpdateTask,
       selectTerminalUpdateRecentStatus,
+      selectTerminalUpdateReportDelivery,
     ],
     actors: [{name: actor.actorName}],
     actorDefinitions: [actor],
@@ -86,15 +94,17 @@ export const createTerminalUpdateModule = (
       let presentationDispatch = Promise.resolve();
       let deadlineTimer: ReturnType<typeof setTimeout> | null = null;
       let deadlineGeneration = 0;
+      let deadlineDispatchInFlight = false;
+      let lastDispatchedDeadlineKey: string | null = null;
       const scheduleDeadline = () => {
         if (deadlineTimer !== null) clearTimeout(deadlineTimer);
         deadlineTimer = null;
         const generation = ++deadlineGeneration;
-        if (disposed || currentPresentation !== 'foreground') return;
+        if (disposed || currentPresentation !== 'foreground' || deadlineDispatchInFlight) return;
         const state = context.getState();
         const task = selectTerminalUpdateTask(state);
         const actual = selectTerminalUpdateActualVersions(state);
-        if (task === null || actual === null || (task.phase === 'waiting-user' && task.bootId !== actual.bootId)) return;
+        if (task === null || actual === null) return;
         const interaction = selectLastLocalInteraction(state);
         let kind: 'hot-idle' | 'full-reminder' | null = null;
         let deadlineAt: number | null = null;
@@ -116,7 +126,8 @@ export const createTerminalUpdateModule = (
           task.target.full !== null
         ) {
           const recent = selectTerminalUpdateRecentStatus(state);
-          const lastInviteAt = task.lastInviteAt ??
+          const lastInviteAt =
+            task.lastInviteAt ??
             (recent.taskId === task.taskId && recent.state === 'waiting-user' ? recent.changedAt : null);
           if (lastInviteAt !== null) {
             kind = 'full-reminder';
@@ -132,30 +143,50 @@ export const createTerminalUpdateModule = (
           deadlineAt,
           scheduleGeneration: generation,
         });
-        deadlineTimer = setTimeout(() => {
-          deadlineTimer = null;
-          if (disposed || generation !== deadlineGeneration) return;
-          void context.dispatchCommand(terminalUpdateDeadlineCommand, payload)
-            .then(result => {
-              if (result.status !== 'completed') {
-                context.platformPorts.logger.warn({
+        const deadlineKey = JSON.stringify([
+          payload.taskId,
+          payload.bootId,
+          payload.kind,
+          payload.interactionRevision,
+          payload.deadlineAt,
+          task.phase,
+          task.actionId,
+          task.preparedId,
+        ]);
+        if (deadlineKey === lastDispatchedDeadlineKey) return;
+        deadlineTimer = setTimeout(
+          () => {
+            deadlineTimer = null;
+            if (disposed || generation !== deadlineGeneration) return;
+            deadlineDispatchInFlight = true;
+            lastDispatchedDeadlineKey = deadlineKey;
+            void Promise.resolve()
+              .then(() => context.dispatchCommand(terminalUpdateDeadlineCommand, payload))
+              .then(result => {
+                if (result.status !== 'completed') {
+                  context.platformPorts.logger.warn({
+                    category: 'terminal-update.deadline',
+                    event: 'terminal-update.deadline.dispatch-incomplete',
+                    message: 'The scheduled terminal update deadline did not complete',
+                    data: {kind, status: result.status},
+                  });
+                }
+              })
+              .catch(error => {
+                context.platformPorts.logger.error({
                   category: 'terminal-update.deadline',
-                  event: 'terminal-update.deadline.dispatch-incomplete',
-                  message: 'The scheduled terminal update deadline did not complete',
-                  data: {kind, status: result.status},
+                  event: 'terminal-update.deadline.dispatch-failed',
+                  message: 'The scheduled terminal update deadline failed',
+                  data: {kind, errorName: error instanceof Error ? error.name : 'UnknownError'},
                 });
-              }
-            })
-            .catch(error => {
-              context.platformPorts.logger.error({
-                category: 'terminal-update.deadline',
-                event: 'terminal-update.deadline.dispatch-failed',
-                message: 'The scheduled terminal update deadline failed',
-                data: {kind, errorName: error instanceof Error ? error.name : 'UnknownError'},
+              })
+              .finally(() => {
+                deadlineDispatchInFlight = false;
+                scheduleDeadline();
               });
-            })
-            .finally(scheduleDeadline);
-        }, Math.max(0, deadlineAt - Date.now()));
+          },
+          Math.max(0, deadlineAt - Date.now()),
+        );
       };
       const publishPresentation = (presentation: UpdatePresentation): Promise<void> => {
         if (disposed) return Promise.resolve();

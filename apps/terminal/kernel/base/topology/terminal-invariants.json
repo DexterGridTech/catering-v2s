@@ -12,6 +12,8 @@
     "TopologyDisplayChangedPayload",
     "TopologyEligibilityInput",
     "TopologyState",
+    "TopologySlaveUnpairTransition",
+    "TopologySlaveUnpairTransitionPayload",
     "areTopologyFactsEqual",
     "createTopologyAdminCapability",
     "createTopologyModule",
@@ -22,6 +24,8 @@
     "moduleKind",
     "moduleName",
     "pairByHostTopologyCommand",
+    "requestTopologySlaveUnpairStateClearCommand",
+    "completeTopologySlaveUnpairStateClearCommand",
     "reconcileTopologyHostCommand",
     "reconcileTopologyPeerCommand",
     "refreshTopologyDisplayCommand",
@@ -36,5 +40,31 @@
     "topologyReasonMessages",
     "topologySliceName",
     "unpairTopologyCommand"
+  ],
+  "tr01Exceptions": [
+    {
+      "sourceFile": "src/features/actors/actors.ts",
+      "declarationId": "completeLocalUnpair",
+      "dispatchExpression": "context.dispatchAction",
+      "reasonCategory": "unpair-clear-locator"
+    },
+    {
+      "sourceFile": "src/features/actors/actors.ts",
+      "declarationId": "completeLocalUnpair",
+      "dispatchExpression": "context.dispatchAction",
+      "reasonCategory": "unpair-clear-repair-pending"
+    },
+    {
+      "sourceFile": "src/features/actors/actors.ts",
+      "declarationId": "completeLocalUnpair",
+      "dispatchExpression": "context.dispatchAction",
+      "reasonCategory": "unpair-failure-repair-pending"
+    },
+    {
+      "sourceFile": "src/features/actors/actors.ts",
+      "declarationId": "completeLocalUnpair",
+      "dispatchExpression": "context.dispatchAction",
+      "reasonCategory": "unpair-stop-host"
+    }
   ]
 }

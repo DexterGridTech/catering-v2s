@@ -96,6 +96,54 @@ const topologyTestIds = Object.freeze({
   }),
 });
 
+const serverConfigTestIds = Object.freeze({
+  section: adminTestId('server-config:section'),
+  title: adminTestId('server-config:title'),
+  scroll: adminTestId('server-config:scroll'),
+  readStatus: adminTestId('server-config:read.status'),
+  readSpace: adminTestId('server-config:read.space'),
+  space: adminTestId('server-config:space'),
+  readService: adminTestId('server-config:read.service'),
+  service: adminTestId('server-config:service'),
+  addresses: adminTestId('server-config:addresses'),
+  addressCard: (number: number) => adminTestId(`server-config:address.${number}.card`),
+  addressField: (number: number, field: 'name' | 'url' | 'timeout') =>
+    adminTestId(`server-config:address.${number}.${field}`),
+  readAddress: (number: number) => adminTestId(`server-config:read.address.${number}`),
+  removeAddress: (number: number) => adminTestId(`server-config:address.${number}.remove`),
+  addAddress: adminTestId('server-config:address.add'),
+  effectiveAddress: (number: number) => adminTestId(`server-config:effective.address.${number}`),
+  effectiveProxy: adminTestId('server-config:effective.proxy'),
+  proxyEnabled: adminTestId('server-config:proxy.enabled'),
+  proxyEnabledLabel: adminTestId('server-config:proxy.enabled.label'),
+  proxyFields: adminTestId('server-config:proxy.fields'),
+  proxyHost: adminTestId('server-config:proxy.host'),
+  proxyPort: adminTestId('server-config:proxy.port'),
+  proxyUser: adminTestId('server-config:proxy.user'),
+  proxyPassword: adminTestId('server-config:proxy.password'),
+  proxyPasswordConfigured: adminTestId('server-config:proxy.password-configured'),
+  readProxy: adminTestId('server-config:read.proxy'),
+  actions: adminTestId('server-config:actions'),
+  save: adminTestId('server-config:save'),
+  clear: adminTestId('server-config:clear'),
+  restore: adminTestId('server-config:restore'),
+  result: adminTestId('server-config:result'),
+});
+
+const installReminderTestIds = Object.freeze({
+  root: adminTestId('update.install-reminder'),
+  title: adminTestId('update.install-reminder:title'),
+  message: adminTestId('update.install-reminder:message'),
+  versions: adminTestId('update.install-reminder:versions'),
+  currentVersion: adminTestId('update.install-reminder:version:current'),
+  targetVersion: adminTestId('update.install-reminder:version:target'),
+  reminder: adminTestId('update.install-reminder:reminder'),
+  actions: adminTestId('update.install-reminder:actions'),
+  deferInstall: adminTestId('update.install-reminder:defer'),
+  confirmInstall: adminTestId('update.install-reminder:confirm'),
+  feedback: adminTestId('update.install-reminder:feedback'),
+});
+
 export const adminTestIds = Object.freeze({
   launcher: adminTestId('terminal.admin:launcher'),
   login: adminTestId('terminal.admin:login'),
@@ -121,6 +169,8 @@ export const adminTestIds = Object.freeze({
   ports: portsTestIds,
   runtime: runtimeTestIds,
   topology: topologyTestIds,
+  serverConfig: serverConfigTestIds,
+  installReminder: installReminderTestIds,
   node: adminTestId,
   child: (parent: TestId, element: string, key?: string): TestId => deriveTestId(parent, element, key)!,
   section: (partKey: string): TestId => {
