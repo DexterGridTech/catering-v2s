@@ -72,6 +72,29 @@ export const subscribeSelector = async (
     }
   });
   let subscribed = false;
+  const releaseSubscription = async (): Promise<void> => {
+    if (!subscribed) return;
+    // The Runtime releases all selector subscriptions when the driver session
+    // is disposed. Do not let an unsubscribe request on a dead socket replace
+    // the observation's original failure.
+    if (server.getSession(sessionId) === null) {
+      subscribed = false;
+      return;
+    }
+    try {
+      const released = await responseResult(server, sessionId, 'selector.unsubscribe', {subscriptionId});
+      if (!isRecord(released) || released.released !== true) {
+        throw new Error('TERMINAL_AUTOMATION_SELECTOR_UNSUBSCRIBE_FAILED');
+      }
+      subscribed = false;
+    } catch (error) {
+      if (server.getSession(sessionId) === null) {
+        subscribed = false;
+        return;
+      }
+      throw error;
+    }
+  };
   try {
     const accepted = await responseResult(server, sessionId, 'selector.subscribe', {
       subscriptionId,
@@ -113,19 +136,12 @@ export const subscribeSelector = async (
         if (closed) return;
         closed = true;
         removeListener();
-        if (!subscribed) return;
-        const released = await responseResult(server, sessionId, 'selector.unsubscribe', {subscriptionId});
-        if (!isRecord(released) || released.released !== true) {
-          throw new Error('TERMINAL_AUTOMATION_SELECTOR_UNSUBSCRIBE_FAILED');
-        }
-        subscribed = false;
+        await releaseSubscription();
       },
     });
   } catch (error) {
     removeListener();
-    if (subscribed) {
-      await responseResult(server, sessionId, 'selector.unsubscribe', {subscriptionId});
-    }
+    await releaseSubscription();
     throw error;
   }
 };

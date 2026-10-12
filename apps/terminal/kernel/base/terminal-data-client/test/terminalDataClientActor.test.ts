@@ -469,7 +469,8 @@ describe('terminal-data-client activation command actor', () => {
         requestId: 'edge-register-request',
         correlationId: 'edge-register-correlation',
         body: {errorCode: 'INTERNAL_ERROR', detail: 'private-response-body'},
-      });
+      })
+      .mockRejectedValueOnce(new Error('fixture HTTP exception'));
     const actorRuntime = createTerminalDataClientActor({
       transport: {
         start: vi.fn(),
@@ -553,6 +554,14 @@ describe('terminal-data-client activation command actor', () => {
         }),
       ),
     ).resolves.toEqual({kind: 'failure', category: 'delivered-failure', code: 'HTTP_DELIVERED_FAILURE', status: 500});
+    await expect(
+      handlerFor(reportTerminalRemoteControlCommand.commandName).handle(
+        contextFor(reportTerminalRemoteControlCommand.commandName, 'report-failed', {
+          sessionId,
+          body: {sessionId, state: 'ACTIVE', reason: null, readyScreens: []},
+        }),
+      ),
+    ).rejects.toThrow('fixture HTTP exception');
 
     expect(executeHttp).toHaveBeenNthCalledWith(
       1,
@@ -588,7 +597,31 @@ describe('terminal-data-client activation command actor', () => {
         correlationId: 'edge-register-correlation',
       }),
     }));
+    expect(diagnostics.events).toContainEqual(expect.objectContaining({
+      category: 'terminal.remote-control.report',
+      event: 'report-command-received',
+      context: expect.objectContaining({commandId: 'report', requestId: 'report'}),
+      data: expect.objectContaining({sessionId, state: 'ACTIVE', readyScreenCount: 0}),
+    }));
+    expect(diagnostics.events).toContainEqual(expect.objectContaining({
+      category: 'terminal.remote-control.report',
+      event: 'report-http-started',
+      data: expect.objectContaining({sessionId, state: 'ACTIVE', readyScreenCount: 0}),
+    }));
+    expect(diagnostics.events).toContainEqual(expect.objectContaining({
+      category: 'terminal.remote-control.report',
+      event: 'report-completed',
+      data: expect.objectContaining({sessionId, state: 'ACTIVE', resultKind: 'success'}),
+    }));
+    expect(diagnostics.events).toContainEqual(expect.objectContaining({
+      category: 'terminal.remote-control.report',
+      event: 'report-http-threw',
+      context: expect.objectContaining({commandId: 'report-failed', requestId: 'report-failed'}),
+      data: expect.objectContaining({sessionId, state: 'ACTIVE', errorName: 'Error'}),
+    }));
+    expect(JSON.stringify(diagnostics.events)).not.toContain(secret);
     expect(JSON.stringify(diagnostics.events)).not.toContain('private-response-body');
+    expect(JSON.stringify(diagnostics.events)).not.toContain('fixture HTTP exception');
     actorRuntime.dispose();
   });
 

@@ -3,7 +3,14 @@ import {testId} from './testIds';
 import {act, render, type RenderResult} from '@testing-library/react-native';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {StyleSheet, View} from 'react-native';
-import {PrimitiveInput, PrimitivePinInput, type PrimitiveInputHandle} from '@catering-v2s/ui-base-primitives';
+import {
+  AutomationNodeProvider,
+  AutomationSurfaceProvider,
+  PrimitiveInput,
+  PrimitivePinInput,
+  type AutomationNodeSink,
+  type PrimitiveInputHandle,
+} from '@catering-v2s/ui-base-primitives';
 import {useSurfacePresentationOffset} from '@catering-v2s/ui-base-render';
 import {InputSurfaceFrame} from '../src/components/InputSurfaceFrame';
 import {useInputFieldKeyboardState, useInputKeyboardState, useInputScrollAncestor} from '../src/contexts/context';
@@ -216,6 +223,37 @@ const mountNativeLessPin = async (pinRoot: unknown) => {
 afterEach(resetNativeTestRefFactory);
 
 describe('InputSurfaceFrame measured frame owner', () => {
+  it('registers the full input frame as a measured automation surface node', async () => {
+    const registered: Array<{testID: string; role: string; surface: unknown}> = [];
+    const updates: Array<{layout?: unknown}> = [];
+    const sink: AutomationNodeSink = {
+      register: node => registered.push({testID: node.testID, role: node.role, surface: node.surface}),
+      update: (_nodeInstanceId, update) => updates.push(update),
+      unregister: () => undefined,
+      invalidateSurface: () => undefined,
+      interaction: () => undefined,
+    };
+    const frameHost = {};
+    const scope = {surface: 'PRIMARY' as const, displayIndex: 0, layoutRevision: 3};
+    const renderer = await renderWithTestRefs(
+      <AutomationNodeProvider sink={sink}>
+        <AutomationSurfaceProvider scope={scope}>
+          <InputSurfaceFrame />
+        </AutomationSurfaceProvider>
+      </AutomationNodeProvider>,
+      (hostName, props) =>
+        hostName === 'View' && props.testID === testId(inputTestIds.surfaceFrame) ? frameHost : {},
+    );
+
+    expect(registered).toEqual([{testID: testId(inputTestIds.surfaceFrame), role: 'container', surface: scope}]);
+    await act(async () => {
+      getNode(renderer, inputTestIds.node('surface-frame')).props.onLayout({
+        nativeEvent: {layout: {x: 0, y: 0, width: 1280, height: 720}},
+      });
+    });
+    expect(updates).toEqual([{layout: {x: 0, y: 0, width: 1280, height: 720}}]);
+  });
+
   it('starts unmeasured, reports the actual pointer frame, and deduplicates equal layouts', async () => {
     const measurements: Array<{width: number; height: number; ready: boolean; orientation: string}> = [];
     let field: InputFieldResult | undefined;

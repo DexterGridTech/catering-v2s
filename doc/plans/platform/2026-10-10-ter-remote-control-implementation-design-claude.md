@@ -60,7 +60,7 @@ CP内部focused与最小可行性proof不等于整体验收。全CP退出后单�
 | 新owner审计三件套 | audit-model AuditEventWriter、audit-read | start/end经标准audit-history回读一次 | 不是新owner；terminal-control补自有audit表/writer/read/entity enum | REMOTE_CONTROL_SESSION start/end |
 | 幂等键/重放 | 前端§3-G；既有receipt形态 | 同request同target返回原session；不同target冲突 | 独占unique+request unique，auth先于重放 | start/terminalRegister/end |
 | 生成物不得手搓字符串 | canonical/catalog→materialize→codegen | generatedroute/error/cap/DTO与输入一致 | remote数据协议唯一JSON输入 | CBS/TDC/operations/codec |
-| 日志/脱敏 | SafeLogger/LoggerPort/受管日志 | 只session/stream/phase/finitecode/count，不记录JWT/触摸payload | 外部SDK调试日志默认关闭或按既有sink脱敏 | CBS/TER/driver/Compose |
+| 运行诊断日志 | SafeLogger/LoggerPort/受管日志 | 业务结构化日志记录run/session/stream/window/track/phase/finitecode/count；异常message/stack与网络endpoint/candidate地址在当前run内原样保留并限长 | 外部SDK调试日志默认关闭；automation捕获的Android fatal stack依观测规范原样保留于本run诊断日志；不把其内容复制到业务结构化日志、协议、UI或audit | CBS/TER/driver/Compose |
 | 迁移回填/可逆 | 单Flyway history | 新空session/audit表；旧业务行不伪造ONLINE | 无历史媒体回填；只新增 | CP-02migration |
 | 前端共享行为 | useDetailDrawer/AdminDetailActionMenu/useOverlayLock/createAsyncGenerationGuard | 无app-local第二Drawer lifecycle或context lock | 新Modal媒体内容为本域，不泛化foundation | LIST/DETAIL/WORKSPACE |
 | 管理后台交互一致性 | frontend-coding-standard §3-K-1..10 | 动作在详情菜单，状态文字、闭合焦点和全屏布局 | 需求R02承载例外，具体线框ACCEPTED@2026-10-10 | 3screen |
@@ -81,15 +81,17 @@ Modal maskClosable=false；初始焦点放标题或关闭按钮，不自动把�
 | 受管入口、资源/fixture与权限前提 | automation runner/managedRun、remoteControlTestSession、browser-l2、r5-livekit-resident；沿原run-scoped日志 | run/phase、owned host/process/container/device identity、fixture符号key、权限角色、准入结果、子步骤关联/耗时 | 配置/串行/显式serial/资源门/激活与PROJECT scope可静态核对；不写账号/activationCode/credential |
 | 运营UI→六HTTP与原列表读取 | admin-ui-foundation logger/observed HTTP；remote feature client/session与原page装配 | request/operation/session代次、按钮动作阶段、status/errorCode、旧响应拒收、Drawer关闭与Modal打开/退出 | 明确请求目标、错误合同、testId真实节点、context隔离、焦点；不落raw body/token/pointer |
 | CBS auth→owner锁/事务→TDP投递 | platform-foundation correlation/context与安全logger；application operation、remote owner/persistence/LiveKit adapter | 授权/资格结果、锁内分支、session transition、目标TDP identity、online_operation关联、提交/签发成功失败与耗时 | 正常、拒绝、重放、占用、未知结果和依赖不可用可区分；audit不能替代日志 |
-| TDS/TDC→remote actor/peer→Android port | 原TDS logger/TDC LoggerPort、remote actor、topology既有logger、adapter SDK事件到安全sink | command/request/session/endpoint/stream、MASTER/peer接纳、generated HTTP status、await后代次、Room状态、Window/track建成或释放 | 不复制凭证/不把副机接TDS；迟到事件只操作自身资源；SDK raw调试输出不得直出 |
-| 媒体与Data→普通输入→原业务结果 | remote protocol/port、RemoteWindowCapture/RemoteTouchDispatcher；原feature logger；driver selector观察 | 首帧/SCREEN_READY、有限type/seq/关联状态、gesture开始/取消/拒绝/结果、业务request关联和oracle成败 | 无须每帧/每MOVE日志；只汇总计数和失败，native坐标/原payload不落盘；DISPATCHED不当business PASS |
+| TDS/TDC→remote actor/peer→Android port | 原TDS logger/TDC LoggerPort、remote actor、topology既有logger、adapter SDK事件到安全sink | command/request/session/endpoint/stream、MASTER/peer接纳、generated HTTP status、await后代次、Room状态、Window/track建成或释放；automation 按事件读取有限 native `event/surfaceKey/windowIdentity/streamId/trackId/generation/reason/result/action/尺寸/帧计数` | 不复制凭证/不把副机接TDS；迟到事件只操作自身资源；SDK raw调试输出不得直出；不记录原始触摸payload |
+| 媒体与Data→普通输入→原业务结果 | remote protocol/port、RemoteWindowCapture/RemoteTouchDispatcher；原feature logger；driver selector观察 | 首帧/SCREEN_READY、video `readyState/networkState/videoWidth/videoHeight` 与 track 存活、LiveKit信令WS连接/收发帧数与失败详情、浏览器 ICE 状态/候选类型协议地址端口/收发 bytes/RTT、视频 RTP 包/字节/解码帧计数、有限type/seq/关联状态、gesture开始/取消/拒绝/结果、业务request关联和oracle成败 | 无须每帧/每MOVE日志；只汇总计数和失败，native坐标/原始触摸payload不落盘；异常message/stack在当前run日志中原样保留并限长；DISPATCHED不当business PASS |
 | 全端结束/cleanup与读回 | workspace/actor/port、SDK资源关闭、managed owned cleanup | 禁输入/CANCEL、track/capture/Room/unsubscribe/timer和owned映射的逐类结束结果、CBS ENDED、business与cleanup分别判定 | 首败仍继续必要diagnostic/cleanup；未知资源不删除，释放失败不被退出/ENDED覆盖 |
 
 第一轮沿受管入口→实际UI/HTTP→CBS/PG/TDP→TDC/peer/native→业务oracle→cleanup检查上述全链及fixture。主agent逐条核实最小修复后，新的fresh第二轮核验修复、同根遗漏和诊断充分性；与全CP/6b复核可以共享同字节材料，但不能用设计报告或空日志计划替代源码审查。CP-01 T proof在启动前先完成其有限真实链路的这两轮；完整链路具备后、整体动态前补核新增部分。相关字节未变且已覆盖的部分不重复对账。
 首败读实际日志确定first failure/last known good/broken boundary，下一次先验证改变的具体假设，不能反复全量重跑或加timeout/等待。缺口未闭合停动态，不停可继续的源码诊断/修复；不增加第二runner、通用恢复框架或日志平台。
 
+本节“不记录JWT/credential/raw body/raw触摸payload”仅约束业务结构化日志、协议、UI和audit字段；它不要求对当前运行的Android系统 fatal stack做字段级删改。automation driver 将所选应用的 fatal stack 原样保留在本run诊断日志，遵循 `doc/decisions/2026-07-29-v2s-observability-and-acceptance-standard.md` §5（2026-10-12 Dexter补充）；该原始诊断不得复制进业务结构化事件或业务持久化。
+
 ## 3a. L2控件分母与控制面全集
-UI_DESIGN_REVIEW=OPEN；TESTID_REVIEW=OPEN；L2_SCRIPT_ADMISSION=BLOCKED。静态动作/节点计划已列，真实UI、binding与focused均NOT_RUN，不能标MATCHED。以下是业务case清单；逐动作九列表、控件roster及精确控制面在本节和附件§4/§4b，是已有模板要求，不建新台账或扫描门。
+UI_DESIGN_REVIEW=PASS（2026-10-12当前源码独立静态复核）；TESTID_REVIEW=PASS（真实动作节点与唯一常量源已逐项核对）；L2_SCRIPT_ADMISSION=BLOCKED。前两项只证明当前UI/TestId静态前置，不代表浏览器交互、L2 binding、focused 或动态验证通过；这些仍为 NOT_RUN。表内 `OPEN` 专指尚缺的 Browser-L2 binding/spec 与浏览器证明，不再表示TestId节点缺失。以下是业务case清单；逐动作九列表、控件roster及精确控制面在本节和附件§4/§4b，是已有模板要求，不建新台账或扫描门。
 | case | fixtureRef | actions | 最終断言 |
 | --- | --- | --- | --- |
 | remote.online | term-front/term-handheld+inactive/offline fixture | 查询、翻页、打开终端详情 | 三态、当前终端身份、原分页/版本查询不变 |
@@ -138,7 +140,7 @@ GET只读：发现租约到期时按已有deadline导出公开ENDED/LEASE_EXPIRE
 | 授权执行点 | 3运营POST generated+ownerrequireGrant；GET原projectReadSession | application server-resolved PROJECT；GET本session发起者与terminal归属 | POST重新核写grant；GET只读scope，不附capability；终端credential仍复核stored会话 |
 | 缓存失效 | 当前session/context代次 | async guard/refresh signal | 旧HTTP不打开新工作区，end不刷ruleTab |
 | 错误 | canonical有限problem和protocolreason | advice/generated/adapter typed result | 原原因中文，不把CAPTURE_FAILED改离线 |
-| 日志 | IDs/phase/reason/count | SafeLogger/LoggerPort/managed sink | JWT、credential、触摸原文、rawSDK错误不落盘 |
+| 日志 | IDs/phase/reason/count | SafeLogger/LoggerPort/managed sink | 业务结构化日志不含JWT、credential或触摸原文；SDK通用debug输出不落盘。runner采集的Android fatal stack按§3.2单独保留在run-scoped诊断日志 |
 
 ## 8. TER规则、command与adapter
 ### 8.0 正式R-01～R-20逐条owner判定点

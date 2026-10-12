@@ -32,6 +32,7 @@ import {
   evaluateManagedRemoteControlDiagnosticCoverage,
   evaluateAndroidDiagnostics,
   readBoundedLogTail,
+  summarizeManagedDiagnosticEvents,
   terminalAutomationExitCode,
 } from '../src/runner.ts';
 import journeyConfig from '../vitest.journeys.config.ts';
@@ -213,6 +214,30 @@ describe('managed DEV remote-control diagnostic coverage', () => {
     });
   });
 
+  it.each([
+    {event: 'REQUEST_FAILED', errorCode: 'INTERNAL_ERROR'},
+    {event: 'REQUEST_COMPLETED', errorCode: 'unassigned'},
+    {event: 'REQUEST_COMPLETED', errorCode: undefined},
+  ])('requires a correlated cause for registration 500 with $event and $errorCode', ({event, errorCode}) => {
+    const baseline: Parameters<typeof evaluateManagedRemoteControlDiagnosticCoverage>[0] = [{source: 'cbs', events: []}];
+    const request: Record<string, string> = {
+      event,
+      operationId: 'registerTerminalRemoteControl',
+      requestId: 'run-request',
+      status: '500',
+      outcome: 'FAILED',
+    };
+    if (errorCode !== undefined) request.errorCode = errorCode;
+    const current: Parameters<typeof evaluateManagedRemoteControlDiagnosticCoverage>[1] = [
+      {source: 'cbs', events: [request]},
+    ];
+    expect(evaluateManagedRemoteControlDiagnosticCoverage(baseline, current, false)).toMatchObject({
+      status: 'FAIL',
+      code: 'TERMINAL_AUTOMATION_REMOTE_FAILURE_CAUSE_DIAGNOSTICS_INCOMPLETE',
+      missingOperations: [],
+    });
+  });
+
   it('accepts a generic unknown 500 when the same owner request has safe cause metadata', () => {
     const baseline: Parameters<typeof evaluateManagedRemoteControlDiagnosticCoverage>[0] = [{source: 'cbs', events: []}];
     const current: Parameters<typeof evaluateManagedRemoteControlDiagnosticCoverage>[1] = [{
@@ -227,6 +252,72 @@ describe('managed DEV remote-control diagnostic coverage', () => {
       code: null,
       missingOperations: [],
     });
+  });
+
+  it('accepts correlated safe registration exception metadata for an unexpected route failure', () => {
+    const baseline: Parameters<typeof evaluateManagedRemoteControlDiagnosticCoverage>[0] = [{source: 'cbs', events: []}];
+    const current: Parameters<typeof evaluateManagedRemoteControlDiagnosticCoverage>[1] = [{source: 'cbs', events: [
+      {event: 'REQUEST_COMPLETED', operationId: 'registerTerminalRemoteControl', requestId: 'run-request', status: '500', outcome: 'FAILED', errorCode: 'INTERNAL_ERROR'},
+      {event: 'TERMINAL_REMOTE_CONTROL_REGISTER_UNEXPECTED_FAILURE', operationId: 'registerTerminalRemoteControl', requestId: 'run-request', exceptionType: 'IllegalStateException', rootCauseType: 'SQLException', exceptionOrigin: 'com.catering.v2s.terminalcontrol.Owner#register'},
+    ]}];
+    expect(evaluateManagedRemoteControlDiagnosticCoverage(baseline, current, false)).toEqual({
+      status: 'PASS', code: null, missingOperations: [],
+    });
+  });
+
+  it('prints diagnostic summaries instead of duplicating large event payloads to stdout', () => {
+    const summary = summarizeManagedDiagnosticEvents({
+      source: 'tds-tds-a',
+      events: [
+        ...Array.from({length: 2_000}, () => ({event: 'tds_listener_health_probe_completed', privatePayload: 'hidden'})),
+        {event: 'tds_remote_operation_claim_disposition'},
+      ],
+    });
+    expect(summary).toEqual({
+      source: 'tds-tds-a',
+      eventCount: 2_001,
+      eventTypeCounts: {
+        tds_listener_health_probe_completed: 2_000,
+        tds_remote_operation_claim_disposition: 1,
+      },
+    });
+    expect(JSON.stringify(summary)).not.toContain('privatePayload');
+  });
+
+  it('requires the correlated typed CBS rejection event for remote owner failures', () => {
+    const baseline: Parameters<typeof evaluateManagedRemoteControlDiagnosticCoverage>[0] = [{source: 'cbs', events: []}];
+    const request = {
+      event: 'REQUEST_COMPLETED',
+      operationId: 'registerTerminalRemoteControl',
+      requestId: 'typed-owner-request',
+      status: '409',
+      outcome: 'FAILED',
+      errorCode: 'TERMINAL_CONTROL_REMOTE_NOT_READY',
+    };
+    const missingRejection = evaluateManagedRemoteControlDiagnosticCoverage(
+      baseline,
+      [{source: 'cbs', events: [request]}],
+      false,
+    );
+    expect(missingRejection).toMatchObject({
+      status: 'FAIL',
+      code: 'TERMINAL_AUTOMATION_REMOTE_REJECTION_DIAGNOSTICS_INCOMPLETE',
+    });
+
+    const diagnosed = evaluateManagedRemoteControlDiagnosticCoverage(
+      baseline,
+      [{source: 'cbs', events: [
+        request,
+        {
+          event: 'TERMINAL_REMOTE_CONTROL_REQUEST_REJECTED',
+          operationId: 'registerTerminalRemoteControl',
+          requestId: 'typed-owner-request',
+          failure: 'NOT_READY',
+        },
+      ]}],
+      false,
+    );
+    expect(diagnosed).toEqual({status: 'PASS', code: null, missingOperations: []});
   });
 
   it('requires the successful remote-control HTTP owner operations on a passing journey', () => {
@@ -473,6 +564,108 @@ describe('run-owned generated artifact cleanup', () => {
       expect(existsSync(linkPath)).toBe(false);
       expect(existsSync(path.join(runBuildDirectory, 'temporary-source-build-links.json'))).toBe(false);
       expect(() => assertNoAndroidIntermediateOutputs(terminalRoot)).not.toThrow();
+    } finally {
+      rmSync(temporaryRoot, {recursive: true, force: true});
+    }
+  });
+
+  it('cleans run-root Android module links and React Native settings output for remote Android runs', () => {
+    const temporaryRoot = mkdtempSync(path.join(os.tmpdir(), 'ter-remote-android-build-cleanup-'));
+    const canonicalTemporaryRoot = realpathSync(temporaryRoot);
+    const runDirectory = path.join(canonicalTemporaryRoot, 'run');
+    const terminalRoot = path.join(canonicalTemporaryRoot, 'terminal');
+    const runBuildDirectory = path.join(runDirectory, 'android-build');
+    const nativeStagingOutput = path.join(runDirectory, 'native', 'android-build', 'app', 'cmake');
+    const moduleAndroidDirectory = path.join(terminalRoot, 'node_modules', '@expo', 'log-box', 'android');
+    const moduleBuildDirectory = path.join(runBuildDirectory, 'projects', 'expo-log-box');
+    const moduleBuildLink = path.join(moduleAndroidDirectory, 'build');
+    const appSettingsOutput = path.join(
+      terminalRoot,
+      'application/android/sample-terminal/android/build/generated/autolinking',
+    );
+    try {
+      mkdirSync(runBuildDirectory, {recursive: true});
+      mkdirSync(nativeStagingOutput, {recursive: true});
+      writeFileSync(path.join(nativeStagingOutput, 'build.ninja'), 'owned');
+      mkdirSync(moduleBuildDirectory, {recursive: true});
+      mkdirSync(moduleAndroidDirectory, {recursive: true});
+      symlinkSync(moduleBuildDirectory, moduleBuildLink, 'dir');
+      writeFileSync(
+        path.join(runBuildDirectory, 'temporary-source-build-links.json'),
+        JSON.stringify([{path: moduleBuildLink, target: moduleBuildDirectory}]),
+      );
+      mkdirSync(appSettingsOutput, {recursive: true});
+      writeFileSync(path.join(appSettingsOutput, 'autolinking.json'), '{}');
+      writeFileSync(path.join(appSettingsOutput, 'package.json.sha'), 'sha');
+      const gradleProblemsReport = path.join(
+        terminalRoot,
+        'application/android/sample-terminal/android/build/reports/problems/problems-report.html',
+      );
+      mkdirSync(path.dirname(gradleProblemsReport), {recursive: true});
+      writeFileSync(gradleProblemsReport, '<html>Gradle diagnostics</html>');
+
+      const result = cleanupManagedRunArtifacts(runDirectory, false, terminalRoot, true);
+
+      expect(result.removed.some(removedPath => removedPath.endsWith('node_modules/@expo/log-box/android/build'))).toBe(true);
+      expect(result.removed).toContain('native/android-build');
+      expect(result.removedBytes).toBeGreaterThan(0);
+      expect(existsSync(moduleBuildLink)).toBe(false);
+      expect(existsSync(path.join(runDirectory, 'native', 'android-build'))).toBe(false);
+      expect(existsSync(appSettingsOutput)).toBe(false);
+      expect(existsSync(gradleProblemsReport)).toBe(false);
+      expect(existsSync(runBuildDirectory)).toBe(false);
+      expect(() => assertNoAndroidIntermediateOutputs(terminalRoot)).not.toThrow();
+    } finally {
+      rmSync(temporaryRoot, {recursive: true, force: true});
+    }
+  });
+
+  it('preserves unknown files in Android settings build output and fails cleanup', () => {
+    const temporaryRoot = mkdtempSync(path.join(os.tmpdir(), 'ter-remote-android-build-unknown-'));
+    const canonicalTemporaryRoot = realpathSync(temporaryRoot);
+    const runDirectory = path.join(canonicalTemporaryRoot, 'run');
+    const terminalRoot = path.join(canonicalTemporaryRoot, 'terminal');
+    const unknownFile = path.join(
+      terminalRoot,
+      'application/android/sample-terminal/android/build/generated/autolinking/unknown.txt',
+    );
+    try {
+      mkdirSync(runDirectory, {recursive: true});
+      mkdirSync(path.dirname(unknownFile), {recursive: true});
+      writeFileSync(unknownFile, 'preserve');
+
+      expect(() => cleanupManagedRunArtifacts(runDirectory, false, terminalRoot, true)).toThrow(
+        'TERMINAL_AUTOMATION_ANDROID_SETTINGS_BUILD_OUTPUT_UNEXPECTED',
+      );
+      expect(readFileSync(unknownFile, 'utf8')).toBe('preserve');
+    } finally {
+      rmSync(temporaryRoot, {recursive: true, force: true});
+    }
+  });
+
+  it('preserves unknown Gradle report files and fails cleanup', () => {
+    const temporaryRoot = mkdtempSync(path.join(os.tmpdir(), 'ter-remote-android-report-unknown-'));
+    const canonicalTemporaryRoot = realpathSync(temporaryRoot);
+    const runDirectory = path.join(canonicalTemporaryRoot, 'run');
+    const terminalRoot = path.join(canonicalTemporaryRoot, 'terminal');
+    const buildDirectory = path.join(
+      terminalRoot,
+      'application/android/sample-terminal/android/build',
+    );
+    const autolinkingDirectory = path.join(buildDirectory, 'generated/autolinking');
+    const unknownFile = path.join(buildDirectory, 'reports/problems/other-report.html');
+    try {
+      mkdirSync(runDirectory, {recursive: true});
+      mkdirSync(autolinkingDirectory, {recursive: true});
+      writeFileSync(path.join(autolinkingDirectory, 'autolinking.json'), '{}');
+      writeFileSync(path.join(autolinkingDirectory, 'package.json.sha'), 'sha');
+      mkdirSync(path.dirname(unknownFile), {recursive: true});
+      writeFileSync(unknownFile, 'preserve');
+
+      expect(() => cleanupManagedRunArtifacts(runDirectory, false, terminalRoot, true)).toThrow(
+        'TERMINAL_AUTOMATION_ANDROID_SETTINGS_BUILD_OUTPUT_UNEXPECTED',
+      );
+      expect(readFileSync(unknownFile, 'utf8')).toBe('preserve');
     } finally {
       rmSync(temporaryRoot, {recursive: true, force: true});
     }
@@ -1055,6 +1248,11 @@ describe('resolveAutomationSuite', () => {
       expect(resolveAutomationSuite(android)).toBe('journeys/remote.android.test.ts');
       expect(remoteRequiresManagedDev(android)).toBe(true);
     }
+
+    expect(parseAutomationRunArguments([
+      '--phase', 'remote', '--platform', 'android', '--remote-topology', 'mobile-single',
+      '--sample', 'console', '--case', 'remote.main', '--device-serial', 'physical-serial', '--device-kind', 'physical',
+    ])).toMatchObject({deviceSerial: 'physical-serial', deviceKind: 'physical'});
   });
 
   it('rejects remote-control topology drift before creating a managed run', () => {
@@ -1065,6 +1263,9 @@ describe('resolveAutomationSuite', () => {
       [ '--phase', 'remote', '--platform', 'android', '--shape', 'dual', '--remote-topology', 'laptop-dual', '--sample', 'console', '--case', 'remote.main', '--device-serial', 'device' ],
       [ '--phase', 'journey', '--platform', 'web', '--shape', 'mobile', '--remote-topology', 'mobile-single' ],
       [ '--phase', 'remote', '--platform', 'web', '--remote-topology', 'mobile-single', '--sample', 'console', '--case', 'remote.unknown' ],
+      [ '--phase', 'remote', '--platform', 'android', '--remote-topology', 'mobile-single', '--sample', 'console', '--case', 'remote.main', '--device-serial', 'physical', '--device-kind', 'vm' ],
+      [ '--phase', 'journey', '--platform', 'android', '--shape', 'mobile', '--sample', 'console', '--case', 'normal', '--age', 'empty', '--device-serial', 'physical', '--device-kind', 'physical' ],
+      [ '--phase', 'remote', '--platform', 'android', '--remote-topology', 'laptop-paired', '--sample', 'console', '--case', 'remote.main', '--device-serial', 'master', '--peer-device-serial', 'slave', '--device-kind', 'physical' ],
     ] as const;
     const errors = [
       'TERMINAL_AUTOMATION_REMOTE_WEB_TOPOLOGY_INVALID',
@@ -1073,6 +1274,9 @@ describe('resolveAutomationSuite', () => {
       'TERMINAL_AUTOMATION_REMOTE_SHAPE_NOT_APPLICABLE',
       'TERMINAL_AUTOMATION_REMOTE_TOPOLOGY_NOT_APPLICABLE',
       'TERMINAL_AUTOMATION_REMOTE_CASE_INVALID',
+      'TERMINAL_AUTOMATION_ANDROID_DEVICE_KIND_INVALID',
+      'TERMINAL_AUTOMATION_ANDROID_DEVICE_KIND_NOT_APPLICABLE',
+      'TERMINAL_AUTOMATION_ANDROID_DEVICE_KIND_NOT_APPLICABLE',
     ];
     cases.forEach((args, index) => expect(() => parseAutomationRunArguments(args)).toThrow(errors[index]));
   });

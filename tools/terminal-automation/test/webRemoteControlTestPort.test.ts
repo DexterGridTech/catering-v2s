@@ -1,5 +1,7 @@
 import {afterEach, describe, expect, it, vi} from 'vitest';
 
+const livekitMockState = vi.hoisted(() => ({connectFailure: undefined as unknown}));
+
 vi.mock('livekit-client', () => ({
   RoomEvent: {DataReceived: 'data-received', Disconnected: 'disconnected'},
   Track: {Source: {ScreenShare: 'screen-share'}},
@@ -8,7 +10,9 @@ vi.mock('livekit-client', () => ({
       publishTrack: async () => ({trackSid: 'TR_WEB_TEST'}),
       publishData: async () => undefined,
     };
-    connect = async () => undefined;
+    connect = async () => {
+      if (livekitMockState.connectFailure !== undefined) throw livekitMockState.connectFailure;
+    };
     disconnect = async () => undefined;
     on = () => this;
     off = () => this;
@@ -24,7 +28,10 @@ class FakeHTMLElement {
 }
 
 describe('Web remote-control test port', () => {
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    livekitMockState.connectFailure = undefined;
+    vi.unstubAllGlobals();
+  });
 
   it('records a safe diagnostic when the primary surface is missing', async () => {
     vi.stubGlobal('HTMLElement', FakeHTMLElement);
@@ -87,5 +94,50 @@ describe('Web remote-control test port', () => {
     expect(ready?.streamId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu);
     expect(ready?.streamId).not.toContain('remote-run-1');
     expect((await port.end({sessionId})).status).toBe('succeeded');
+  });
+
+  it('logs a safe LiveKit connect reason without its message or endpoint context', async () => {
+    const surface = new FakeHTMLElement();
+    const context = {fillStyle: '', font: '', fillRect: () => undefined, fillText: () => undefined};
+    const mediaTrack = {stop: () => undefined, readyState: 'live'};
+    const stream = {getVideoTracks: () => [mediaTrack], getTracks: () => [mediaTrack]};
+    const canvas = {width: 0, height: 0, getContext: () => context, captureStream: () => stream};
+    vi.stubGlobal('HTMLElement', FakeHTMLElement);
+    vi.stubGlobal('CSS', {escape: (value: string) => value});
+    vi.stubGlobal('document', {querySelector: () => surface, createElement: () => canvas});
+    livekitMockState.connectFailure = Object.assign(new Error('private SDK message'), {
+      name: 'ConnectionError',
+      reasonName: 'ServerUnreachable',
+      code: 1,
+      status: 503,
+      context: 'ws://private-host/path?token=private-token',
+    });
+    const traces: Array<{event: string; fields: Readonly<Record<string, unknown>>}> = [];
+    const port = createWebRemoteControlTestPort({
+      runId: 'remote-run-3',
+      primarySurfaceTestId: 'terminal-primary',
+      trace: (event, fields) => traces.push({event, fields}),
+    });
+
+    const result = await port.begin({
+      sessionId: 'session-remote-3',
+      localScreens: [{screen: 'main', surfaceKey: 'PRIMARY', windowIdentity: 'web-primary', generation: 1}],
+      signalUrl: 'ws://private-host/path?token=private-token',
+      token: 'private-token',
+    } as never);
+    const failed = traces.find(trace => trace.event === 'room.connect.failed');
+
+    expect(result).toMatchObject({status: 'failed', error: {code: 'WEB_REMOTE_CONTROL_CONNECT_FAILED'}});
+    expect(failed?.fields).toMatchObject({
+      sessionId: 'session-remote-3',
+      failureStage: 'room-connect',
+      errorName: 'ConnectionError',
+      errorCode: 'LIVEKIT_SERVER_UNREACHABLE',
+      sdkCode: 1,
+      status: 503,
+    });
+    expect(JSON.stringify(failed)).not.toContain('private SDK message');
+    expect(JSON.stringify(failed)).not.toContain('private-host');
+    expect(JSON.stringify(failed)).not.toContain('private-token');
   });
 });

@@ -1,6 +1,12 @@
 import {describe, expect, it, vi} from 'vitest';
 import type {AndroidInput} from '../src/androidInput.js';
-import {tapRegisteredAndroidInput, tapRegisteredAndroidNode} from '../src/androidRegisteredInput.js';
+import {createClickPacer} from '../src/clickPacer.js';
+import {
+  tapRegisteredAndroidInput,
+  tapRegisteredAndroidNode,
+  waitForAndroidVirtualKeyboardDismissed,
+  waitForInteractiveAndroidKeyboardKey,
+} from '../src/androidRegisteredInput.js';
 import type {AutomationDriverServer} from '../src/server.js';
 
 const envelope = (type: 'response' | 'event', body: unknown) => ({
@@ -18,7 +24,117 @@ const node = {
   layout: {x: 10, y: 20, width: 100, height: 50},
 };
 
+describe('waitForAndroidVirtualKeyboardDismissed', () => {
+  it('waits for the surface keyboard node to disappear and releases its subscription', async () => {
+    const keyboardNode = {
+      ...node,
+      testID: 'ui.base.input:virtual-keyboard:outgoing-0',
+      surface: {surface: 'PRIMARY', displayIndex: 0, layoutRevision: 7},
+    };
+    let listener: ((message: ReturnType<typeof envelope>) => void) | null = null;
+    const request = vi.fn(async (_sessionId: string, type: string, body?: unknown) => {
+      if (type === 'controls.query') return envelope('response', {result: {nodes: [keyboardNode]}});
+      if (type === 'controls.subscribe') {
+        const subscriptionId = (body as {subscriptionId: string}).subscriptionId;
+        queueMicrotask(() => listener?.(envelope('event', {subscriptionId, sequence: 2, nodes: []})));
+        return envelope('response', {
+          result: {subscriptionId, sequence: 1, nodes: [keyboardNode]},
+        });
+      }
+      if (type === 'controls.unsubscribe') return envelope('response', {result: {released: true}});
+      throw new Error(`unexpected request ${type}`);
+    });
+    const server = {
+      request,
+      onMessage: vi.fn((_sessionId: string, callback: (message: ReturnType<typeof envelope>) => void) => {
+        listener = callback;
+        return () => {
+          listener = null;
+        };
+      }),
+    } as unknown as AutomationDriverServer;
+
+    await expect(
+      waitForAndroidVirtualKeyboardDismissed({
+        server,
+        sessionId: 'session-1',
+        surface: 'primary',
+        displayIndex: 0,
+        waitTimeoutMs: 100,
+      }),
+    ).resolves.toBeUndefined();
+    expect(request.mock.calls.map(call => call[1])).toEqual([
+      'controls.query',
+      'controls.subscribe',
+      'controls.unsubscribe',
+    ]);
+    expect(listener).toBeNull();
+  });
+
+  it('returns immediately when no keyboard node is registered', async () => {
+    const request = vi.fn(async (_sessionId: string, type: string) => {
+      if (type === 'controls.query') return envelope('response', {result: {nodes: [node]}});
+      throw new Error(`unexpected request ${type}`);
+    });
+    const server = {request, onMessage: vi.fn()} as unknown as AutomationDriverServer;
+
+    await expect(
+      waitForAndroidVirtualKeyboardDismissed({
+        server,
+        sessionId: 'session-1',
+        surface: 'primary',
+        displayIndex: 0,
+        waitTimeoutMs: 100,
+      }),
+    ).resolves.toBeUndefined();
+    expect(request.mock.calls.map(call => call[1])).toEqual(['controls.query']);
+  });
+});
+
 describe('tapRegisteredAndroidNode', () => {
+  it('waits for an interactive keyboard key and releases its readiness subscription', async () => {
+    const keyboardTestID = 'ui.base.input:virtual-keyboard:text-a';
+    const disabledNode = {...node, testID: keyboardTestID, accessibilityState: {disabled: true}};
+    const enabledNode = {...disabledNode, accessibilityState: {disabled: false}};
+    let listener: ((message: ReturnType<typeof envelope>) => void) | null = null;
+    const request = vi.fn(async (_sessionId: string, type: string, body?: unknown) => {
+      if (type === 'controls.query') return envelope('response', {result: {nodes: [disabledNode]}});
+      if (type === 'controls.subscribe') {
+        const subscriptionId = (body as {subscriptionId: string}).subscriptionId;
+        queueMicrotask(() => listener?.(envelope('event', {subscriptionId, nodes: [enabledNode]})));
+        return envelope('response', {result: {subscriptionId, nodes: [disabledNode]}});
+      }
+      if (type === 'controls.unsubscribe') return envelope('response', {result: {released: true}});
+      throw new Error(`unexpected request ${type}`);
+    });
+    const server = {
+      request,
+      onMessage: vi.fn((_sessionId: string, callback: (message: ReturnType<typeof envelope>) => void) => {
+        listener = callback;
+        return () => {
+          listener = null;
+        };
+      }),
+    } as unknown as AutomationDriverServer;
+
+    await expect(
+      waitForInteractiveAndroidKeyboardKey({
+        server,
+        sessionId: 'session-1',
+        testID: keyboardTestID,
+        surface: 'primary',
+        displayIndex: 0,
+        waitTimeoutMs: 100,
+      }),
+    ).resolves.toBeUndefined();
+    expect(request.mock.calls.map(call => call[1])).toEqual([
+      'controls.query',
+      'controls.subscribe',
+      'controls.unsubscribe',
+    ]);
+    expect(listener).toBeNull();
+  });
+
   it('waits for a registered control after an initially empty snapshot and releases the subscription', async () => {
     let listener: ((message: ReturnType<typeof envelope>) => void) | null = null;
     let subscribeCount = 0;
@@ -53,6 +169,7 @@ describe('tapRegisteredAndroidNode', () => {
     } as unknown as AutomationDriverServer;
     const android: AndroidInput = {
       discoverDisplays: vi.fn(),
+      runPacedClick: async action => ({result: await action(() => undefined), waitMs: 0}),
       tap: vi.fn(),
       tapBounds: vi.fn(async () => {
         const subscribeCall = request.mock.calls.filter(call => call[1] === 'controls.subscribe').at(-1);
@@ -83,6 +200,98 @@ describe('tapRegisteredAndroidNode', () => {
     ]);
   });
 
+  it('resolves the registered node and bounds after waiting for the shared click slot', async () => {
+    let releaseFirstClick!: () => void;
+    let firstClickStarted!: () => void;
+    const firstStarted = new Promise<void>(resolve => (firstClickStarted = resolve));
+    const firstClickGate = new Promise<void>(resolve => (releaseFirstClick = resolve));
+    const pacer = createClickPacer(1);
+    const firstClick = pacer.run(async markClickStarted => {
+      markClickStarted();
+      firstClickStarted();
+      await firstClickGate;
+    });
+    await firstStarted;
+
+    let currentNode = {
+      ...node,
+      nodeInstanceId: 'node-new',
+      surface: {surface: 'SECONDARY', displayIndex: 1, layoutRevision: 8},
+    };
+    let listener: ((message: ReturnType<typeof envelope>) => void) | null = null;
+    const request = vi.fn(async (_sessionId: string, type: string, body?: unknown) => {
+      if (type === 'controls.query') return envelope('response', {result: {nodes: [currentNode]}});
+      if (type === 'controls.bounds') {
+        return envelope('response', {
+          result: {
+            nodeInstanceId: currentNode.nodeInstanceId,
+            layoutRevision: currentNode.surface.layoutRevision,
+            bounds: {x: 80, y: 90, width: 120, height: 60},
+          },
+        });
+      }
+      if (type === 'controls.subscribe') {
+        return envelope('response', {
+          result: {subscriptionId: (body as {subscriptionId: string}).subscriptionId, nodes: [currentNode]},
+        });
+      }
+      return envelope('response', {result: {released: true}});
+    });
+    const server = {
+      request,
+      onMessage: vi.fn((_sessionId: string, callback: (message: ReturnType<typeof envelope>) => void) => {
+        listener = callback;
+        return () => {
+          listener = null;
+        };
+      }),
+    } as unknown as AutomationDriverServer;
+    let tappedBounds: Readonly<{x: number; y: number; width: number; height: number}> | undefined;
+    const android: AndroidInput = {
+      discoverDisplays: vi.fn(),
+      runPacedClick: pacer.run,
+      tap: vi.fn(),
+      tapBounds: vi.fn(async (_surface, bounds, _position, _clickPacing, markClickStarted) => {
+        tappedBounds = bounds;
+        markClickStarted?.();
+        const subscriptionId = (
+          request.mock.calls.filter(call => call[1] === 'controls.subscribe').at(-1)?.[2] as {subscriptionId: string}
+        ).subscriptionId;
+        listener?.(
+          envelope('event', {
+            subscriptionId,
+            interaction: {
+              node: {nodeInstanceId: currentNode.nodeInstanceId, surface: currentNode.surface},
+              phase: 'press-in',
+            },
+          }),
+        );
+        return {x: 130, y: 120};
+      }),
+    };
+
+    const tapping = tapRegisteredAndroidNode({
+      server,
+      sessionId: 'session-1',
+      android,
+      testID: 'member.confirm',
+      surface: 'secondary',
+      displayIndex: 1,
+    });
+    expect(request.mock.calls.filter(call => call[1] === 'controls.query')).toHaveLength(0);
+
+    currentNode = {
+      ...currentNode,
+      nodeInstanceId: 'node-after-wait',
+      surface: {surface: 'SECONDARY', displayIndex: 1, layoutRevision: 9},
+    };
+    releaseFirstClick();
+    await expect(tapping).resolves.toMatchObject({nodeInstanceId: 'node-after-wait', layoutRevision: 9});
+    await firstClick;
+    expect(tappedBounds).toEqual({x: 80, y: 90, width: 120, height: 60});
+    expect(request.mock.calls.filter(call => call[1] === 'controls.query')).toHaveLength(1);
+  });
+
   it('fails with the exact target and releases the subscription when a control never registers', async () => {
     let listener: ((message: ReturnType<typeof envelope>) => void) | null = null;
     const request = vi.fn(async (_sessionId: string, type: string, body?: unknown) => {
@@ -103,7 +312,12 @@ describe('tapRegisteredAndroidNode', () => {
         };
       }),
     } as unknown as AutomationDriverServer;
-    const android: AndroidInput = {discoverDisplays: vi.fn(), tap: vi.fn(), tapBounds: vi.fn()};
+    const android: AndroidInput = {
+      discoverDisplays: vi.fn(),
+      runPacedClick: async action => ({result: await action(() => undefined), waitMs: 0}),
+      tap: vi.fn(),
+      tapBounds: vi.fn(),
+    };
 
     await expect(
       tapRegisteredAndroidNode({
@@ -149,6 +363,7 @@ describe('tapRegisteredAndroidNode', () => {
     let subscriptionId = '';
     const android: AndroidInput = {
       discoverDisplays: vi.fn(),
+      runPacedClick: async action => ({result: await action(() => undefined), waitMs: 0}),
       tap: vi.fn(),
       tapBounds: vi.fn(async () => {
         const subscribeCall = request.mock.calls.find(call => call[1] === 'controls.subscribe');
@@ -180,7 +395,13 @@ describe('tapRegisteredAndroidNode', () => {
     });
 
     expect(result).toEqual({nodeInstanceId: 'node-1', layoutRevision: 7, tapX: 132, tapY: 114});
-    expect(android.tapBounds).toHaveBeenCalledWith('secondary', {x: 10, y: 20, width: 100, height: 50}, {x: 0.1, y: 0});
+    expect(android.tapBounds).toHaveBeenCalledWith(
+      'secondary',
+      {x: 10, y: 20, width: 100, height: 50},
+      {x: 0.1, y: 0},
+      'paced',
+      expect.any(Function),
+    );
     expect(server.request).toHaveBeenCalledTimes(4);
   });
 
@@ -226,6 +447,7 @@ describe('tapRegisteredAndroidNode', () => {
     } as unknown as AutomationDriverServer;
     const android: AndroidInput = {
       discoverDisplays: vi.fn(),
+      runPacedClick: async action => ({result: await action(() => undefined), waitMs: 0}),
       tap: vi.fn(),
       tapBounds: vi.fn(async () => {
         listener?.(
@@ -255,11 +477,18 @@ describe('tapRegisteredAndroidNode', () => {
       }),
     ).resolves.toMatchObject({nodeInstanceId: 'node-1', layoutRevision: 7});
     expect(request.mock.calls.filter(call => call[1] === 'controls.query')).toHaveLength(1);
-    expect(android.tapBounds).toHaveBeenCalledWith('secondary', {x: 10, y: 590, width: 100, height: 50});
+    expect(android.tapBounds).toHaveBeenCalledWith(
+      'secondary',
+      {x: 10, y: 590, width: 100, height: 50},
+      undefined,
+      'paced',
+      expect.any(Function),
+    );
   });
 
-  it('uses measured bounds for a registered input without waiting for a layout snapshot', async () => {
+  it('uses measured bounds and waits for the registered input interaction', async () => {
     const unlaidNode = {...node, testID: 'member.name', layout: null};
+    let listener: ((message: ReturnType<typeof envelope>) => void) | null = null;
     const request = vi.fn(async (_sessionId: string, type: string, body?: unknown) => {
       if (type === 'controls.query') return envelope('response', {result: {nodes: [unlaidNode]}});
       if (type === 'controls.bounds') {
@@ -267,16 +496,33 @@ describe('tapRegisteredAndroidNode', () => {
           result: {nodeInstanceId: 'node-1', layoutRevision: 7, bounds: {x: 10, y: 20, width: 100, height: 50}},
         });
       }
+      if (type === 'controls.subscribe') {
+        return envelope('response', {
+          result: {subscriptionId: (body as {subscriptionId: string}).subscriptionId, nodes: [unlaidNode]},
+        });
+      }
+      if (type === 'controls.unsubscribe') return envelope('response', {result: {released: true}});
       throw new Error(`unexpected request ${type}`);
     });
     const server = {
       request,
-      onMessage: vi.fn(),
+      onMessage: vi.fn((_sessionId: string, callback: (message: ReturnType<typeof envelope>) => void) => {
+        listener = callback;
+        return () => {
+          listener = null;
+        };
+      }),
     } as unknown as AutomationDriverServer;
     const android: AndroidInput = {
       discoverDisplays: vi.fn(),
+      runPacedClick: async action => ({result: await action(() => undefined), waitMs: 0}),
       tap: vi.fn(),
-      tapBounds: vi.fn(async () => ({x: 60, y: 45})),
+      tapBounds: vi.fn(async () => {
+        const subscribeCall = request.mock.calls.find(call => call[1] === 'controls.subscribe');
+        const subscriptionId = (subscribeCall?.[2] as {subscriptionId: string}).subscriptionId;
+        listener?.(envelope('event', {subscriptionId, interaction: {node: unlaidNode, phase: 'press-in'}}));
+        return {x: 60, y: 45};
+      }),
     };
 
     await expect(
@@ -289,12 +535,29 @@ describe('tapRegisteredAndroidNode', () => {
         displayIndex: 1,
       }),
     ).resolves.toBeUndefined();
-    expect(request.mock.calls.map(call => call[1])).toEqual(['controls.query', 'controls.bounds']);
-    expect(android.tapBounds).toHaveBeenCalledWith('secondary', {x: 10, y: 20, width: 100, height: 50});
+    expect(request.mock.calls.map(call => call[1])).toEqual([
+      'controls.query',
+      'controls.bounds',
+      'controls.subscribe',
+      'controls.unsubscribe',
+    ]);
+    expect(android.tapBounds).toHaveBeenCalledWith(
+      'secondary',
+      {x: 10, y: 20, width: 100, height: 50},
+      undefined,
+      'paced',
+      expect.any(Function),
+    );
+    expect(listener).toBeNull();
   });
 
   it('rejects ambiguous registration before reading bounds or sending input', async () => {
-    const android: AndroidInput = {discoverDisplays: vi.fn(), tap: vi.fn(), tapBounds: vi.fn()};
+    const android: AndroidInput = {
+      discoverDisplays: vi.fn(),
+      runPacedClick: async action => ({result: await action(() => undefined), waitMs: 0}),
+      tap: vi.fn(),
+      tapBounds: vi.fn(),
+    };
     const server = {
       request: vi.fn(async () => envelope('response', {result: {nodes: [node, {...node, nodeInstanceId: 'node-2'}]}})),
       onMessage: vi.fn(),
@@ -335,6 +598,7 @@ describe('tapRegisteredAndroidNode', () => {
     } as unknown as AutomationDriverServer;
     const android: AndroidInput = {
       discoverDisplays: vi.fn(),
+      runPacedClick: async action => ({result: await action(() => undefined), waitMs: 0}),
       tap: vi.fn(),
       tapBounds: vi.fn(async () => {
         const subscribeCall = request.mock.calls.find(call => call[1] === 'controls.subscribe');
@@ -374,6 +638,7 @@ describe('tapRegisteredAndroidNode', () => {
     } as unknown as AutomationDriverServer;
     const android: AndroidInput = {
       discoverDisplays: vi.fn(),
+      runPacedClick: async action => ({result: await action(() => undefined), waitMs: 0}),
       tap: vi.fn(),
       tapBounds: vi.fn(async () => ({x: 132, y: 114})),
     };
@@ -393,38 +658,75 @@ describe('tapRegisteredAndroidNode', () => {
 });
 
 describe('tapRegisteredAndroidInput', () => {
-  it('uses the registered field bounds for a real native tap without waiting for pressable events', async () => {
-    const request = vi.fn(async (_sessionId: string, type: string) => {
+  it('waits for the registered TextInput press-in before returning to the keyboard driver', async () => {
+    const listener: {current: ((message: ReturnType<typeof envelope>) => void) | null} = {current: null};
+    let notifyTapReached!: () => void;
+    const tapReached = new Promise<void>(resolve => {
+      notifyTapReached = resolve;
+    });
+    const request = vi.fn(async (_sessionId: string, type: string, body?: unknown) => {
       if (type === 'controls.query') return envelope('response', {result: {nodes: [node]}});
       if (type === 'controls.bounds') {
         return envelope('response', {
           result: {nodeInstanceId: 'node-1', layoutRevision: 7, bounds: {x: 10, y: 20, width: 100, height: 50}},
         });
       }
+      if (type === 'controls.subscribe') {
+        const subscriptionId = (body as {subscriptionId: string}).subscriptionId;
+        return envelope('response', {result: {subscriptionId, nodes: [node]}});
+      }
+      if (type === 'controls.unsubscribe') return envelope('response', {result: {released: true}});
       throw new Error('UNEXPECTED_AUTOMATION_REQUEST');
     });
     const server = {
       request,
-      onMessage: vi.fn(),
+      onMessage: vi.fn((_sessionId: string, callback: (message: ReturnType<typeof envelope>) => void) => {
+        listener.current = callback;
+        return () => {
+          listener.current = null;
+        };
+      }),
     } as unknown as AutomationDriverServer;
     const android: AndroidInput = {
       discoverDisplays: vi.fn(),
+      runPacedClick: async action => ({result: await action(() => undefined), waitMs: 0}),
       tap: vi.fn(),
-      tapBounds: vi.fn(async () => ({x: 60, y: 45})),
+      tapBounds: vi.fn(async () => {
+        notifyTapReached();
+        return {x: 60, y: 45};
+      }),
     };
 
+    const focus = tapRegisteredAndroidInput({
+      server,
+      sessionId: 'session-1',
+      android,
+      testID: 'member.confirm',
+      surface: 'secondary',
+      displayIndex: 1,
+    });
+    await tapReached;
     await expect(
-      tapRegisteredAndroidInput({
-        server,
-        sessionId: 'session-1',
-        android,
-        testID: 'member.confirm',
-        surface: 'secondary',
-        displayIndex: 1,
-      }),
-    ).resolves.toBeUndefined();
-    expect(android.tapBounds).toHaveBeenCalledExactlyOnceWith('secondary', {x: 10, y: 20, width: 100, height: 50});
-    expect(request.mock.calls.map(call => call[1])).toEqual(['controls.query', 'controls.bounds']);
-    expect(server.onMessage).not.toHaveBeenCalled();
+      Promise.race([focus.then(() => true), new Promise<boolean>(resolve => setTimeout(() => resolve(false), 0))]),
+    ).resolves.toBe(false);
+    const subscribeCall = request.mock.calls.find(call => call[1] === 'controls.subscribe');
+    const subscriptionId = (subscribeCall?.[2] as {subscriptionId: string}).subscriptionId;
+    listener.current?.(envelope('event', {subscriptionId, interaction: {node, phase: 'press-in'}}));
+    await expect(focus).resolves.toBeUndefined();
+    expect(android.tapBounds).toHaveBeenCalledExactlyOnceWith(
+      'secondary',
+      {x: 10, y: 20, width: 100, height: 50},
+      undefined,
+      'paced',
+      expect.any(Function),
+    );
+    expect(request.mock.calls.map(call => call[1])).toEqual([
+      'controls.query',
+      'controls.bounds',
+      'controls.subscribe',
+      'controls.unsubscribe',
+    ]);
+    expect(server.onMessage).toHaveBeenCalledTimes(1);
+    expect(listener.current).toBeNull();
   });
 });

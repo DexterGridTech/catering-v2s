@@ -16,7 +16,7 @@ node ./scripts/test/terminal-automation.mjs --phase journey --platform web --sha
 node ./scripts/test/terminal-automation.mjs --phase journey --platform android --shape mobile --sample console --case normal --age empty --device-serial <explicit-adb-serial-matched-to-assigned-vm>
 ```
 
-For the wallpaper main journey, use `--sample wallpaper` and omit `--case` and `--age`. The runner provisions the run identity and reads the managed DEV URLs and credentials from its validated manifest. Do not put passwords, activation codes, session tokens, or raw fixture payloads in command arguments, manifests, or logs. Android requires the exact device serial; never select a device by list order. Both commands are examples for an authorized run, not authorization by themselves.
+For the wallpaper main journey, use `--sample wallpaper` and omit `--case` and `--age`. The runner provisions the run identity and reads the managed DEV URLs and credentials from its validated manifest. Do not put credentials or raw fixture payloads in command arguments or manifests. Captured child stdout, stderr, exceptions, and fatal stacks are written as collected to the run-scoped log without field-level redaction. Android requires the exact device serial; never select a device by list order. Both commands are examples for an authorized run, not authorization by themselves.
 
 The app connects to the driver through the build-only `EXPO_PUBLIC_TER_AUTOMATION_URL` and `EXPO_PUBLIC_TER_AUTOMATION_TOKEN` inputs. Web receives them from the managed runner. Android uses `EXPO_PUBLIC_TER_AUTOMATION_BUILD=true` with run-scoped build inputs. Product package configuration keeps automation disabled by default. Do not add runtime toggles or read secrets from application business state.
 
@@ -112,12 +112,12 @@ Runtime selector subscriptions, request observation and driver event waits use R
 
 ## Diagnosis
 
-- **No session:** inspect the current run log and manifest first; verify exact WebSocket URL, build-time setting, app/session identity and managed reverse mapping. Never print the token.
-- **Authentication rejected:** compare presence and run ownership of the token without logging its value; the driver rejects a wrong token.
+- **No session:** inspect the current run log and manifest first; verify exact WebSocket URL, build-time setting, app/session identity and managed reverse mapping. Use the captured error details as written when diagnosing.
+- **Authentication rejected:** compare the configured token and run ownership against the driver rejection in the run log; preserve the original rejection detail.
 - **Node missing/ambiguous:** query the exact surface and display index, confirm the owning `*TestIds` constant is mounted once, then re-query after layout changes.
 - **Bounds or tap offset:** inspect registered bounds, surface layout revision, display mapping and device window metrics. Do not multiply coordinates again as an unverified correction.
 - **Selector did not change:** inspect its initial value, public registration and the command request/result. A request may complete without the expected business mutation.
 - **Old session or late result:** match the run/session/request identity. Do not replay the command; reconnect creates a new session and old subscriptions are released.
 - **Cleanup failure:** preserve the manifest and first failure, inspect owned process identity and resource readback, and use only the managed cleanup path.
 
-Never write credentials, activation secrets, passcodes, raw member data, session tokens, cookies, authorization headers, raw IPs or raw payloads to logs or manifests. Keep only the minimum run identity needed to reproduce and diagnose the result.
+Keep development and test diagnostics unredacted so the original failure can be diagnosed. Write captured process output to the run-scoped log; keep the manifest limited to run identity and phase facts.

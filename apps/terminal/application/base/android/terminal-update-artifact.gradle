@@ -1,6 +1,15 @@
 import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
 import java.security.MessageDigest
 import java.nio.charset.StandardCharsets
+import org.gradle.api.DefaultTask
+import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.tasks.OutputDirectory
+
+abstract class TerminalPublicationMetadataTask extends DefaultTask {
+    @OutputDirectory
+    abstract DirectoryProperty getOutputDirectory()
+}
 
 def terminalPublicationMetadata = providers.gradleProperty('terTerminalPublicationMetadata')
 
@@ -25,6 +34,93 @@ tasks.configureEach { task ->
 
 if (terminalPublicationMetadata.isPresent()) {
     android.sourceSets.main.assets.srcDir(file(terminalPublicationMetadata.get()).parentFile)
+} else if (providers.gradleProperty('terDisableNativeDevSupport').map { value -> value.toBoolean() }.getOrElse(false)) {
+    // A self-contained managed APK runs the same update boot checks as an
+    // installed build. Give each supported variant a manifest for its embedded
+    // bundle so startup validates the payload instead of crashing on a missing asset.
+    def metadataAsset = 'terminal-update-publication.json'
+    def appPackageFile = new File(rootDir.parentFile, 'package.json')
+    def appPackage = new JsonSlurper().parse(appPackageFile)
+    def appRelease = appPackage.terminalRelease
+    def automationApplicationId = android.defaultConfig.applicationId +
+        providers.gradleProperty('terAutomationApplicationIdSuffix').getOrElse('')
+    def automationNativeBuildNumber = providers.gradleProperty('terTerminalNativeBuildNumber')
+        .map { value -> value.toLong() }
+        .getOrElse((appRelease.nativeBuildNumber as Number).longValue())
+    def automationBundleVersion = providers.gradleProperty('terTerminalBundleVersion')
+        .getOrElse(appRelease.bundleVersion.toString())
+    androidComponents.onVariants(androidComponents.selector().all()) { variant ->
+        def variantName = variant.name
+        if (!(variantName in ['debug', 'release'])) return
+        def variantTitle = variantName.capitalize()
+        def metadataDirectory = layout.buildDirectory.dir("generated/terminal-update/${variantName}-assets")
+        def bundleFile = layout.buildDirectory.file("generated/assets/react/${variantName}/index.android.bundle")
+        def identitySource = [
+            'TERMINAL_AUTOMATION_EMBEDDED_IDENTITY_V1',
+            variantName,
+            automationApplicationId,
+            appPackage.version.toString(),
+            automationNativeBuildNumber.toString(),
+            automationBundleVersion.toString(),
+            appRelease.runtimeVersion.toString(),
+        ].join('\u0000')
+        // This is a schema-valid identity for a run-built app, not a published
+        // update artifact. The embedded bundle still has its own SHA-256 entry.
+        def embeddedIdentityId = MessageDigest.getInstance('SHA-256')
+            .digest(identitySource.getBytes(StandardCharsets.UTF_8))
+            .encodeHex()
+            .toString()
+        def publicationId = providers.gradleProperty('terTerminalPublicationId').getOrElse(embeddedIdentityId)
+        android.buildTypes.getByName(variantName).manifestPlaceholders['terminalPublicationId'] = publicationId
+
+        def generateMetadata = tasks.register("generateTerminal${variantTitle}PublicationMetadata", TerminalPublicationMetadataTask) {
+            outputDirectory.set(metadataDirectory)
+            dependsOn(tasks.named("createBundle${variantTitle}JsAndAssets"))
+            inputs.file(bundleFile)
+            inputs.file(appPackageFile)
+            inputs.property('applicationId', automationApplicationId)
+            inputs.property('nativeBuildNumber', automationNativeBuildNumber)
+            inputs.property('nativeVersion', appPackage.version.toString())
+            inputs.property('bundleVersion', automationBundleVersion.toString())
+            inputs.property('runtimeVersion', appRelease.runtimeVersion.toString())
+            inputs.property('publicationId', publicationId)
+            doLast {
+                def bundle = bundleFile.get().asFile
+                if (!bundle.isFile() || bundle.length() <= 0) {
+                    throw new GradleException("TERMINAL_UPDATE_${variantName.toUpperCase()}_EMBEDDED_BUNDLE_MISSING")
+                }
+                def digest = MessageDigest.getInstance('SHA-256')
+                bundle.withInputStream { stream ->
+                    byte[] buffer = new byte[1024 * 1024]
+                    int count
+                    while ((count = stream.read(buffer)) >= 0) {
+                        if (count > 0) digest.update(buffer, 0, count)
+                    }
+                }
+                def metadata = [
+                    schemaVersion: 1,
+                    platform: 'android',
+                    applicationId: automationApplicationId,
+                    nativeVersion: appPackage.version.toString(),
+                    nativeBuildNumber: automationNativeBuildNumber,
+                    bundleVersion: automationBundleVersion.toString(),
+                    runtimeVersion: appRelease.runtimeVersion.toString(),
+                    entry: 'assets/index.android.bundle',
+                    files: [[
+                        path: 'assets/index.android.bundle',
+                        sizeBytes: bundle.length(),
+                        sha256: digest.digest().encodeHex().toString(),
+                    ]],
+                    publicationId: publicationId,
+                ]
+                def output = outputDirectory.file(metadataAsset).get().asFile
+                output.parentFile.mkdirs()
+                output.setText(JsonOutput.prettyPrint(JsonOutput.toJson(metadata)) + '\n', 'UTF-8')
+                logger.lifecycle("TERMINAL_AUTOMATION_EMBEDDED_METADATA_READY variant=${variantName} bundleBytes=${bundle.length()} publication=${publicationId}")
+            }
+        }
+        variant.sources.assets.addGeneratedSourceDirectory(generateMetadata) { task -> task.outputDirectory }
+    }
 }
 
 // React Native autolinking stores native codegen paths under each package's

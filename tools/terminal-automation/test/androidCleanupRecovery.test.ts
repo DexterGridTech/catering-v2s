@@ -89,6 +89,59 @@ describe('failed Android run cleanup recovery guard', () => {
     }
   });
 
+  it('recovers only the failed physical console dual-screen remote main run', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'ter-android-cleanup-remote-'));
+    try {
+      const validExecution = {
+        phase: 'remote',
+        platform: 'android',
+        shape: 'dual',
+        remoteTopology: 'laptop-dual',
+        case: 'remote.main',
+        sample: 'console',
+        deviceSerial: 'physical-dual',
+        deviceKind: 'physical',
+      };
+      writeSourceManifest(root, {
+        execution: validExecution,
+      });
+      const eventPath = path.join(root, '.runtime/terminal-automation', runId, 'events.jsonl');
+      writeFileSync(
+        eventPath,
+        JSON.stringify({
+          event: 'android.reverse.driver.attached',
+          runId,
+          deviceSerial: 'physical-dual',
+          remote: 'tcp:19090',
+          local: 'tcp:19091',
+        }) + '\n',
+      );
+
+      expect(resolveFailedAndroidRunCleanupTarget(root, runId, 'physical-dual', []).reverses).toEqual([
+        {remote: 'tcp:19090', local: 'tcp:19091'},
+      ]);
+      expect(() => resolveFailedAndroidRunCleanupTarget(root, runId, 'other-device', [])).toThrow(
+        'TERMINAL_AUTOMATION_RECOVERY_SOURCE_IDENTITY_MISMATCH',
+      );
+      const rejectedExecutions = [
+        {...validExecution, sample: 'wallpaper'},
+        {...validExecution, remoteTopology: 'mobile-single', shape: 'mobile'},
+        {...validExecution, remoteTopology: 'laptop-single', shape: 'mobile'},
+        {...validExecution, remoteTopology: 'laptop-paired'},
+        {...validExecution, deviceKind: 'emulator'},
+        {...validExecution, deviceKind: undefined},
+      ];
+      for (const execution of rejectedExecutions) {
+        writeSourceManifest(root, {execution});
+        expect(() => resolveFailedAndroidRunCleanupTarget(root, runId, 'physical-dual', [])).toThrow(
+          'TERMINAL_AUTOMATION_RECOVERY_SOURCE_IDENTITY_MISMATCH',
+        );
+      }
+    } finally {
+      rmSync(root, {recursive: true, force: true});
+    }
+  });
+
   it('recovers one explicitly recorded device from an update pair run at a time', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'ter-android-cleanup-pair-'));
     try {

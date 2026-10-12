@@ -3,7 +3,11 @@ import {promisify} from 'node:util';
 import {realpathSync, statSync} from 'node:fs';
 import path from 'node:path';
 import type {Client, DeviceClient} from '@devicefarmer/adbkit';
-import {collectAndroidRemoteControlDiagnostics, collectAndroidRuntimeFailureDiagnostics} from './androidAppDiagnostics.js';
+import {
+  collectAndroidRemoteControlDiagnostics,
+  collectAndroidRuntimeFailureDiagnostics,
+  type AndroidRemoteControlDiagnostics,
+} from './androidAppDiagnostics.js';
 import {requireReadyAndroidDevice} from './androidAdb.js';
 
 const execFile = promisify(execFileCallback);
@@ -76,7 +80,7 @@ export type AndroidDeviceSession = Readonly<{
   readonly readPrimaryAbi: () => Promise<string>;
   readonly readTerminalUpdateLogs: (packageName: string) => Promise<string>;
   readonly readRuntimeFailureDiagnostics: (packageName: string) => Promise<string>;
-  readonly readRemoteControlDiagnostics: (packageName: string) => Promise<Readonly<{lineCount: number; eventKinds: readonly string[]}>>;
+  readonly readRemoteControlDiagnostics: (packageName: string) => Promise<AndroidRemoteControlDiagnostics>;
   readonly forceStop: (packageName: string) => Promise<void>;
   readonly uninstall: (packageName: string) => Promise<void>;
   readonly attachDriver: (hostPort: number) => Promise<() => Promise<void>>;
@@ -408,12 +412,20 @@ export const createAndroidDeviceSession = async (
     },
     readRuntimeFailureDiagnostics: async packageName => {
       validatePackageName(packageName);
-      const pidOutput = await runTextCommand(input.adbPath, ['-s', input.serial, 'shell', 'pidof', packageName]);
+      let pidOutput = '';
+      try {
+        pidOutput = await runTextCommand(input.adbPath, ['-s', input.serial, 'shell', 'pidof', packageName]);
+      } catch (error) {
+        // A startup crash removes the process before afterAll can use --pid.
+        // The package-matched fatal block is retained below so the actual cause
+        // and stack are visible in this run's diagnostics.
+        if (!(error instanceof Error) || error.message !== 'TERMINAL_AUTOMATION_ANDROID_COMMAND_FAILED_EXIT') throw error;
+      }
       const pids = pidOutput.trim().split(/\s+/u).filter(Boolean);
-      if (pids.length !== 1 || !/^\d+$/u.test(pids[0] ?? '')) {
+      if (pids.length > 1 || (pids.length === 1 && !/^\d+$/u.test(pids[0] ?? ''))) {
         fail('TERMINAL_AUTOMATION_ANDROID_RUNTIME_LOG_PROCESS_UNAVAILABLE');
       }
-      const output = await runTextCommand(input.adbPath, [
+      const runtimeArgs = [
         '-s',
         input.serial,
         'shell',
@@ -423,13 +435,40 @@ export const createAndroidDeviceSession = async (
         '200',
         '-v',
         'brief',
-        '--pid',
-        pids[0]!,
+        ...(pids.length === 1 ? ['--pid', pids[0]!] : []),
         '-s',
         'ReactNativeJS:V',
         '*:S',
-      ], 512 * 1024);
-      return collectAndroidRuntimeFailureDiagnostics(output);
+      ];
+      const runtimeOutput =
+        pids.length === 1 ? await runTextCommand(input.adbPath, runtimeArgs, 512 * 1024) : '';
+      const crashOutput = await runTextCommand(
+        input.adbPath,
+        [
+          '-s',
+          input.serial,
+          'shell',
+          'logcat',
+          '-d',
+          '-b',
+          'crash',
+          '-v',
+          'brief',
+          '-s',
+          'AndroidRuntime:E',
+          '*:S',
+        ],
+        8 * 1024 * 1024,
+      );
+      const structuredDiagnostics = collectAndroidRuntimeFailureDiagnostics(`${runtimeOutput}\n${crashOutput}`, packageName);
+      return [
+        'ANDROID_STRUCTURED_DIAGNOSTICS_BEGIN',
+        structuredDiagnostics,
+        'ANDROID_STRUCTURED_DIAGNOSTICS_END',
+        'ANDROID_RAW_REACT_NATIVE_LOGCAT_BEGIN',
+        runtimeOutput,
+        'ANDROID_RAW_REACT_NATIVE_LOGCAT_END',
+      ].join('\n');
     },
     readRemoteControlDiagnostics: async packageName => {
       validatePackageName(packageName);

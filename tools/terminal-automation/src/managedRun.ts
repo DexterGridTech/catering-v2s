@@ -10,7 +10,17 @@ export type TerminalAutomationProcessIdentity = Readonly<{
 }>;
 
 export type TerminalAutomationAndroidDeviceRole =
-  'PHYSICAL_DUAL' | 'LAPTOP_SINGLE' | 'MOBILE_EMULATOR' | 'PAIR_MASTER_EMULATOR' | 'PAIR_SLAVE_EMULATOR';
+  'PHYSICAL_DUAL' | 'LAPTOP_SINGLE' | 'MOBILE_PHYSICAL' | 'MOBILE_EMULATOR' | 'MOBILE_UNKNOWN' |
+  'PAIR_MASTER_EMULATOR' | 'PAIR_SLAVE_EMULATOR';
+
+export type TerminalAutomationAndroidDeviceIdentity = Readonly<{
+  readonly kind: 'physical' | 'emulator' | 'unknown';
+  readonly model: string;
+  readonly product: string;
+  readonly device: string;
+  readonly hardware: string;
+  readonly qemu: '0' | '1' | 'unknown';
+}>;
 
 export type TerminalAutomationRemoteTopology =
   | 'mobile-single'
@@ -21,6 +31,7 @@ export type TerminalAutomationRemoteTopology =
 export type TerminalAutomationAndroidDevice = Readonly<{
   readonly serial: string;
   readonly role: TerminalAutomationAndroidDeviceRole;
+  readonly identity?: TerminalAutomationAndroidDeviceIdentity;
 }>;
 
 export type TerminalAutomationManifest = Readonly<{
@@ -40,6 +51,7 @@ export type TerminalAutomationManifest = Readonly<{
     readonly sample?: 'console' | 'wallpaper';
     readonly deviceSerial?: string;
     readonly peerDeviceSerial?: string;
+    readonly deviceKind?: 'physical' | 'emulator';
   }>;
   readonly androidDevices?: readonly TerminalAutomationAndroidDevice[];
   readonly owner: TerminalAutomationProcessIdentity;
@@ -85,6 +97,7 @@ export type TerminalAutomationExecution = Readonly<{
   readonly sample?: 'console' | 'wallpaper';
   readonly deviceSerial?: string;
   readonly peerDeviceSerial?: string;
+  readonly deviceKind?: 'physical' | 'emulator';
 }>;
 
 const currentProcessIdentity = (): TerminalAutomationProcessIdentity => {
@@ -199,7 +212,7 @@ export const createManagedRun = (
                 serial: execution.deviceSerial,
                 role:
                   execution.remoteTopology === 'mobile-single'
-                    ? ('MOBILE_EMULATOR' as const)
+                    ? ('MOBILE_UNKNOWN' as const)
                     : execution.remoteTopology === 'laptop-single'
                       ? ('LAPTOP_SINGLE' as const)
                       : ('PHYSICAL_DUAL' as const),
@@ -249,6 +262,28 @@ export const createManagedRun = (
     flag: 'wx',
   });
   return manifest;
+};
+
+export const attachAndroidDeviceIdentity = (
+  manifest: TerminalAutomationManifest,
+  serial: string,
+  identity: TerminalAutomationAndroidDeviceIdentity,
+): readonly TerminalAutomationAndroidDevice[] => {
+  const devices = manifest.androidDevices;
+  if (devices === undefined) throw new Error('TERMINAL_AUTOMATION_ANDROID_MANIFEST_DEVICE_MISSING');
+  const matches = devices.filter(device => device.serial === serial);
+  if (matches.length !== 1) throw new Error('TERMINAL_AUTOMATION_ANDROID_MANIFEST_DEVICE_IDENTITY_INVALID');
+  return Object.freeze(devices.map(device => {
+    if (device.serial !== serial) return device;
+    const role = manifest.execution.phase === 'remote' && manifest.execution.remoteTopology === 'mobile-single'
+      ? identity.kind === 'physical'
+        ? 'MOBILE_PHYSICAL'
+        : identity.kind === 'emulator'
+          ? 'MOBILE_EMULATOR'
+          : 'MOBILE_UNKNOWN'
+      : device.role;
+    return Object.freeze({...device, role, identity});
+  }));
 };
 
 export const persistManagedRun = (repositoryRoot: string, manifest: TerminalAutomationManifest): void => {

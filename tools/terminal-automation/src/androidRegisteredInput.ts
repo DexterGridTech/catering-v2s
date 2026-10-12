@@ -1,8 +1,8 @@
 import {randomUUID} from 'node:crypto';
 import {filter, firstValueFrom, ReplaySubject, Subject, take, timeout} from 'rxjs';
 import type {AutomationDriverServer} from './server.js';
-import type {AndroidInput, AndroidSurface} from './androidInput.js';
-import type {AndroidTapPosition} from './androidWindow.js';
+import type {AndroidClickPacing, AndroidInput, AndroidSurface} from './androidInput.js';
+import type {AndroidLogicalBounds, AndroidTapPosition} from './androidWindow.js';
 
 type JsonRecord = Readonly<Record<string, unknown>>;
 type QueriedNode = Readonly<{
@@ -15,6 +15,7 @@ type QueriedNode = Readonly<{
 }>;
 
 const VIRTUAL_KEYBOARD_TEST_ID_PREFIX = 'ui.base.input:virtual-keyboard:';
+const VIRTUAL_KEYBOARD_SURFACE_TEST_ID = 'ui.base.input:virtual-keyboard';
 
 const record = (value: unknown): value is JsonRecord => typeof value === 'object' && value !== null;
 
@@ -73,7 +74,7 @@ const resolveRegisteredNode = async (
 ): Promise<QueriedNode> => {
   let lastObservedState = 'not-registered';
   const recordReadiness = (node: QueriedNode): void => {
-    lastObservedState = node.disabled === true ? 'disabled' : 'enabled';
+    lastObservedState = node.disabled === true ? 'disabled' : node.disabled === false ? 'enabled' : 'unknown';
   };
   const filterBody = {testID: input.testID, surface: input.surface, displayIndex: input.displayIndex};
   const queried = resultOf(await input.server.request(input.sessionId, 'controls.query', {filter: filterBody}));
@@ -145,6 +146,113 @@ const resolveRegisteredNode = async (
   }
 };
 
+export const waitForInteractiveAndroidKeyboardKey = async (
+  input: Readonly<{
+    readonly server: AutomationDriverServer;
+    readonly sessionId: string;
+    readonly testID: string;
+    readonly surface: AndroidSurface;
+    readonly displayIndex: 0 | 1;
+    readonly waitTimeoutMs: number;
+  }>,
+): Promise<void> => {
+  if (!input.testID.startsWith(VIRTUAL_KEYBOARD_TEST_ID_PREFIX)) {
+    throw new Error('TERMINAL_AUTOMATION_KEYBOARD_TARGET_INVALID');
+  }
+  await resolveRegisteredNode({
+    server: input.server,
+    sessionId: input.sessionId,
+    testID: input.testID,
+    surface: input.surface === 'primary' ? 'PRIMARY' : 'SECONDARY',
+    displayIndex: input.displayIndex,
+    waitTimeoutMs: input.waitTimeoutMs,
+    ready: candidate => candidate.disabled === false,
+  });
+};
+
+export const waitForAndroidVirtualKeyboardDismissed = async (
+  input: Readonly<{
+    readonly server: AutomationDriverServer;
+    readonly sessionId: string;
+    readonly surface: AndroidSurface;
+    readonly displayIndex: number;
+    readonly waitTimeoutMs: number;
+  }>,
+): Promise<void> => {
+  if (!Number.isSafeInteger(input.waitTimeoutMs) || input.waitTimeoutMs <= 0) {
+    throw new Error('TERMINAL_AUTOMATION_KEYBOARD_DISMISS_TIMEOUT_INVALID');
+  }
+  const surfaceName = input.surface === 'primary' ? 'PRIMARY' : 'SECONDARY';
+  const filterBody = {surface: surfaceName, displayIndex: input.displayIndex};
+  const hasKeyboard = (nodes: readonly unknown[]): boolean =>
+    nodes.some(
+      node =>
+        record(node) &&
+        typeof node.testID === 'string' &&
+        (node.testID === VIRTUAL_KEYBOARD_SURFACE_TEST_ID ||
+          node.testID.startsWith(`${VIRTUAL_KEYBOARD_SURFACE_TEST_ID}:`)),
+    );
+  const query = resultOf(await input.server.request(input.sessionId, 'controls.query', {filter: filterBody}));
+  if (!record(query) || !Array.isArray(query.nodes)) throw new Error('TERMINAL_AUTOMATION_CONTROL_QUERY_INVALID');
+  if (!hasKeyboard(query.nodes)) return;
+
+  const subscriptionId = `android-keyboard-dismiss-${randomUUID()}`;
+  const updates = new ReplaySubject<readonly unknown[]>(1);
+  const removeListener = input.server.onMessage(input.sessionId, message => {
+    if (!record(message.body) || message.body.subscriptionId !== subscriptionId) return;
+    if (message.type === 'error') {
+      updates.error(
+        new Error(
+          `TERMINAL_AUTOMATION_KEYBOARD_DISMISS_SUBSCRIPTION_FAILED code=${
+            typeof message.body.code === 'string' ? message.body.code : 'UNKNOWN'
+          }`,
+        ),
+      );
+      return;
+    }
+    if (message.type === 'event' && Array.isArray(message.body.nodes)) updates.next(message.body.nodes);
+  });
+  const dismissed = firstValueFrom(
+    updates.pipe(
+      filter(nodes => !hasKeyboard(nodes)),
+      take(1),
+      timeout({first: input.waitTimeoutMs}),
+    ),
+  );
+  let subscribed = false;
+  let primaryError: unknown;
+  try {
+    const response = await input.server.request(input.sessionId, 'controls.subscribe', {
+      subscriptionId,
+      filter: filterBody,
+    });
+    subscribed = response.type === 'response';
+    const initial = resultOf(response);
+    if (!record(initial) || initial.subscriptionId !== subscriptionId || !Array.isArray(initial.nodes)) {
+      throw new Error('TERMINAL_AUTOMATION_CONTROL_SUBSCRIBE_INVALID');
+    }
+    if (!hasKeyboard(initial.nodes)) return;
+    await dismissed;
+  } catch (error) {
+    primaryError = error;
+    if (error instanceof Error && error.name === 'TimeoutError') {
+      throw new Error(`TERMINAL_AUTOMATION_KEYBOARD_DISMISS_TIMEOUT timeoutMs=${input.waitTimeoutMs}`);
+    }
+    throw error;
+  } finally {
+    void dismissed.catch(() => undefined);
+    updates.complete();
+    removeListener();
+    if (subscribed) {
+      try {
+        resultOf(await input.server.request(input.sessionId, 'controls.unsubscribe', {subscriptionId}));
+      } catch (error) {
+        if (primaryError === undefined) throw error;
+      }
+    }
+  }
+};
+
 const requireBounds = (
   value: unknown,
   node: QueriedNode,
@@ -188,6 +296,7 @@ export const tapRegisteredAndroidNode = async (
     readonly surface: AndroidSurface;
     readonly displayIndex: 0 | 1;
     readonly position?: AndroidTapPosition;
+    readonly clickPacing?: AndroidClickPacing;
     readonly interactionTimeoutMs?: number;
   }>,
 ): Promise<
@@ -200,82 +309,100 @@ export const tapRegisteredAndroidNode = async (
 > => {
   const surfaceName = input.surface === 'primary' ? 'PRIMARY' : 'SECONDARY';
   const filterBody = {testID: input.testID, surface: surfaceName, displayIndex: input.displayIndex};
-  const node = await resolveRegisteredNode({
-    server: input.server,
-    sessionId: input.sessionId,
-    testID: input.testID,
-    surface: surfaceName,
-    displayIndex: input.displayIndex,
-    waitTimeoutMs: input.interactionTimeoutMs ?? 2_000,
-    // The input layer disables keys during enter/handoff/exit. Wait for the
-    // same node to become enabled before measuring its native coordinates.
-    ready: input.testID.startsWith(VIRTUAL_KEYBOARD_TEST_ID_PREFIX)
-      ? candidate => candidate.disabled !== true
-      : undefined,
-  });
-  if (node.surface !== surfaceName || node.displayIndex !== input.displayIndex) {
-    throw new Error('TERMINAL_AUTOMATION_NODE_SURFACE_MISMATCH');
-  }
-  const bounds = await boundsOf({server: input.server, sessionId: input.sessionId, node});
   const subscriptionId = `android-input-${randomUUID()}`;
   const interactions = new Subject<Readonly<{readonly phase: string}>>();
   const observedPhases: string[] = [];
-  const removeListener = input.server.onMessage(input.sessionId, message => {
-    if (message.type !== 'event' || !record(message.body) || message.body.subscriptionId !== subscriptionId) return;
-    const interaction = message.body.interaction;
-    if (!record(interaction) || !record(interaction.node) || !record(interaction.node.surface)) return;
-    if (
-      interaction.node.nodeInstanceId === node.nodeInstanceId &&
-      interaction.node.surface.layoutRevision === node.layoutRevision &&
-      typeof interaction.phase === 'string'
-    ) {
-      observedPhases.push(interaction.phase);
-      interactions.next({phase: interaction.phase});
-    }
-  });
+  let node: QueriedNode | undefined;
+  let bounds: AndroidLogicalBounds | undefined;
+  let removeListener: (() => void) | undefined;
   let subscribed = false;
   let observed: Promise<void> | null = null;
   let tapPoint: Readonly<{readonly x: number; readonly y: number}> | null = null;
   try {
-    const subscribeResponse = await input.server.request(input.sessionId, 'controls.subscribe', {
-      subscriptionId,
-      filter: filterBody,
-    });
-    const subscription = resultOf(subscribeResponse);
-    subscribed = subscribeResponse.type === 'response';
-    if (!record(subscription) || !Array.isArray(subscription.nodes)) {
-      throw new Error('TERMINAL_AUTOMATION_CONTROL_SUBSCRIBE_INVALID');
-    }
-    const subscribedNode = requireUniqueNode(subscription, input.testID);
-    if (
-      subscribedNode.nodeInstanceId !== node.nodeInstanceId ||
-      subscribedNode.layoutRevision !== node.layoutRevision ||
-      subscribedNode.surface !== node.surface ||
-      subscribedNode.displayIndex !== node.displayIndex
-    ) {
-      throw new Error('TERMINAL_AUTOMATION_NODE_CHANGED_BEFORE_INPUT');
-    }
-    observed = firstValueFrom(
-      interactions.pipe(
-        filter(interaction => interaction.phase === 'press-in'),
-        take(1),
-        timeout({first: input.interactionTimeoutMs ?? 2_000}),
-      ),
-    )
-      .then(() => undefined)
-      .catch(error => {
-        if (error instanceof Error && error.name === 'TimeoutError') {
-          throw new Error(
-            `TERMINAL_AUTOMATION_ANDROID_INTERACTION_TIMEOUT observed=${observedPhases.join(',') || 'none'}`,
-          );
-        }
-        throw error;
+    const resolveAndTap = async (markClickStarted: () => void): Promise<void> => {
+      // Resolve the app target after its connection-scoped pacing slot becomes
+      // available, so the 800ms gap cannot leave this action with stale bounds.
+      const resolvedNode = await resolveRegisteredNode({
+        server: input.server,
+        sessionId: input.sessionId,
+        testID: input.testID,
+        surface: surfaceName,
+        displayIndex: input.displayIndex,
+        waitTimeoutMs: input.interactionTimeoutMs ?? 2_000,
+        ready: input.testID.startsWith(VIRTUAL_KEYBOARD_TEST_ID_PREFIX)
+          ? candidate => candidate.disabled !== true
+          : undefined,
       });
-    tapPoint =
-      input.position === undefined
-        ? await input.android.tapBounds(input.surface, bounds)
-        : await input.android.tapBounds(input.surface, bounds, input.position);
+      node = resolvedNode;
+      if (resolvedNode.surface !== surfaceName || resolvedNode.displayIndex !== input.displayIndex) {
+        throw new Error('TERMINAL_AUTOMATION_NODE_SURFACE_MISMATCH');
+      }
+      const resolvedBounds = await boundsOf({server: input.server, sessionId: input.sessionId, node: resolvedNode});
+      bounds = resolvedBounds;
+      removeListener = input.server.onMessage(input.sessionId, message => {
+        if (message.type !== 'event' || !record(message.body) || message.body.subscriptionId !== subscriptionId) return;
+        const interaction = message.body.interaction;
+        if (!record(interaction) || !record(interaction.node) || !record(interaction.node.surface)) return;
+        if (
+          interaction.node.nodeInstanceId === resolvedNode.nodeInstanceId &&
+          interaction.node.surface.layoutRevision === resolvedNode.layoutRevision &&
+          typeof interaction.phase === 'string'
+        ) {
+          observedPhases.push(interaction.phase);
+          interactions.next({phase: interaction.phase});
+        }
+      });
+      const subscribeResponse = await input.server.request(input.sessionId, 'controls.subscribe', {
+        subscriptionId,
+        filter: filterBody,
+      });
+      const subscription = resultOf(subscribeResponse);
+      subscribed = subscribeResponse.type === 'response';
+      if (!record(subscription) || !Array.isArray(subscription.nodes)) {
+        throw new Error('TERMINAL_AUTOMATION_CONTROL_SUBSCRIBE_INVALID');
+      }
+      const subscribedNode = requireUniqueNode(subscription, input.testID);
+      if (
+        subscribedNode.nodeInstanceId !== resolvedNode.nodeInstanceId ||
+        subscribedNode.layoutRevision !== resolvedNode.layoutRevision ||
+        subscribedNode.surface !== resolvedNode.surface ||
+        subscribedNode.displayIndex !== resolvedNode.displayIndex
+      ) {
+        throw new Error('TERMINAL_AUTOMATION_NODE_CHANGED_BEFORE_INPUT');
+      }
+      observed = firstValueFrom(
+        interactions.pipe(
+          filter(interaction => interaction.phase === 'press-in'),
+          take(1),
+          timeout({first: input.interactionTimeoutMs ?? 2_000}),
+        ),
+      )
+        .then(() => undefined)
+        .catch(error => {
+          if (error instanceof Error && error.name === 'TimeoutError') {
+            throw new Error(
+              `TERMINAL_AUTOMATION_ANDROID_INTERACTION_TIMEOUT observed=${observedPhases.join(',') || 'none'}`,
+            );
+          }
+          throw error;
+        });
+      tapPoint = await input.android.tapBounds(
+        input.surface,
+        resolvedBounds,
+        input.position,
+        'paced',
+        markClickStarted,
+      );
+    };
+    if (input.clickPacing === 'intentional-overlap') {
+      await resolveAndTap(() => undefined);
+    } else {
+      await input.android.runPacedClick(resolveAndTap);
+    }
     await observed;
+    if (node === undefined || bounds === undefined || tapPoint === null) {
+      throw new Error('TERMINAL_AUTOMATION_ANDROID_TAP_RESULT_UNAVAILABLE');
+    }
     return Object.freeze({
       nodeInstanceId: node.nodeInstanceId,
       layoutRevision: node.layoutRevision,
@@ -284,17 +411,18 @@ export const tapRegisteredAndroidNode = async (
     });
   } catch (error) {
     if (observed !== null) void observed.catch(() => undefined);
+    const boundsSummary = bounds === undefined ? 'unavailable' : `${bounds.x},${bounds.y},${bounds.width},${bounds.height}`;
     if (error instanceof Error && error.message.startsWith('TERMINAL_AUTOMATION_ANDROID_INTERACTION_TIMEOUT')) {
       const point = tapPoint === null ? 'unavailable' : `${tapPoint.x},${tapPoint.y}`;
-      throw new Error(`${error.message} bounds=${bounds.x},${bounds.y},${bounds.width},${bounds.height} tap=${point}`);
+      throw new Error(`${error.message} bounds=${boundsSummary} tap=${point}`);
     }
     if (error instanceof Error && error.message.startsWith('TERMINAL_AUTOMATION_ANDROID_TAP_TARGET_TOO_SMALL')) {
-      throw new Error(`${error.message} bounds=${bounds.x},${bounds.y},${bounds.width},${bounds.height}`);
+      throw new Error(`${error.message} bounds=${boundsSummary}`);
     }
     throw error;
   } finally {
     interactions.complete();
-    removeListener();
+    removeListener?.();
     if (subscribed) {
       resultOf(await input.server.request(input.sessionId, 'controls.unsubscribe', {subscriptionId}));
     }
@@ -311,20 +439,15 @@ export const tapRegisteredAndroidInput = async (
     readonly testID: string;
     readonly surface: AndroidSurface;
     readonly displayIndex: 0 | 1;
+    readonly clickPacing?: AndroidClickPacing;
+    readonly interactionTimeoutMs?: number;
   }>,
 ): Promise<void> => {
-  const surfaceName = input.surface === 'primary' ? 'PRIMARY' : 'SECONDARY';
-  const node = await resolveRegisteredNode({
-    server: input.server,
-    sessionId: input.sessionId,
-    testID: input.testID,
-    surface: surfaceName,
-    displayIndex: input.displayIndex,
-    waitTimeoutMs: 2_000,
+  // TextInput is a registered interactive node too: RnrTextInput reports its
+  // press-in through the same registry. Wait for that app-side observation so
+  // the next virtual-key action cannot race the native focus event.
+  await tapRegisteredAndroidNode({
+    ...input,
+    interactionTimeoutMs: input.interactionTimeoutMs ?? 2_000,
   });
-  if (node.surface !== surfaceName || node.displayIndex !== input.displayIndex) {
-    throw new Error('TERMINAL_AUTOMATION_NODE_SURFACE_MISMATCH');
-  }
-  const bounds = await boundsOf({server: input.server, sessionId: input.sessionId, node});
-  await input.android.tapBounds(input.surface, bounds);
 };

@@ -37,6 +37,8 @@ export const terminalUpdateTestIds = {
   description: 'operations-terminal-update-description',
   reportQuery: 'operations-terminal-update-report-query',
   reportQuerySubmit: 'operations-terminal-update-report-query-submit',
+  reportQueryReset: 'terminal-update-report-filter-reset',
+  reportPagination: 'terminal-update-report-pagination',
   reportStore: 'operations-terminal-update-report-store',
   reportApk: 'operations-terminal-update-report-apk',
   reportJs: 'operations-terminal-update-report-js',

@@ -107,7 +107,7 @@ TER automation runs use `scripts/test/terminal-automation.mjs` with phase/platfo
 
 Stage C adds two executable update cases to the same entry: `update.supply-chain` accepts Android `console/dual` or `wallpaper/mobile`; `update.pair` accepts Android `mobile`, requires `--sample console|wallpaper`, and requires distinct `--device-serial` and `--peer-device-serial` values. Granular `update.*` acceptance-matrix rows are assertions inside those journeys or owner-focused tests, not additional CLI case names. Both cases require the current managed DEV identity and reuse the existing seeded terminal fixture; they do not reset or seed DEV.
 
-If an Android run ends with `cleanup=FAIL` or `UNKNOWN`, do not start another run on that device. First use the same managed entry to recover only resources attributable to the failed run: `node scripts/test/terminal-automation.mjs --recover-failed-android-run <runId> --device-serial <serial>`. For `update.pair`, invoke recovery once per serial listed in the failed run manifest. Recovery verifies the failed Android update manifest, selected device serial, run-derived APK package, and process identities. It removes only attached driver/service reverse mappings recorded for that serial in the run's event journal; for older manifests without those records, it accepts only the finite reverse ports proven by that exact update scenario's driver/installer log and stops if any host-side local port still has a listener. It requires device readback after each removal and package uninstall, records a separate cleanup manifest, and never edits the original first-failure manifest or removes/claims PackageInstaller sessions. Missing, ambiguous, active, or unowned resources fail closed.
+If an Android run ends with `cleanup=FAIL` or `UNKNOWN`, do not start another run on that device. First use the same managed entry to recover only resources attributable to the failed run: `node scripts/test/terminal-automation.mjs --recover-failed-android-run <runId> --device-serial <serial>`. For `update.pair`, invoke recovery once per serial listed in the failed run manifest. For remote control, recovery accepts only the failed Android `console` `remote.main` run recorded as a physical `laptop-dual` device with the exact selected serial and no peer. Recovery verifies the failed run manifest, selected device serial, run-derived APK package, and process identities, then removes only attached driver/service reverse mappings recorded for that serial in the run's event journal. Legacy log-derived reverse recovery is limited to the existing update cases. It requires device readback after each removal and package uninstall, records a separate cleanup manifest, and never edits the original first-failure manifest or removes/claims PackageInstaller sessions. Missing, ambiguous, active, or unowned resources fail closed.
 
 ### Backend acceptance（当前真实业务能力）
 
@@ -284,7 +284,7 @@ node scripts/test/terminal-client-dev-acceptance.mjs --scenario terminal.client.
 受管顺序固定为 terminate connections → drop 精确数据库 → 远端 readback 确认不存在；reset
 不会在本机连接数据库、启动临时 tunnel、使用本机 Docker 或自行 create 数据库。随后 `scripts/dev/start`
 复用既有远端 provision 路径创建业务库。实际 reset 写入独立 `reset/<run-id>/run-manifest.json`
-和脱敏事件日志；如有当前 DEV，只能先核验其 own manifest 与 start token，再委托既有 runner stop。
+和事件日志；如有当前 DEV，只能先核验其 own manifest 与 start token，再委托既有 runner stop。
 
 ### 旧 TER UI runner
 

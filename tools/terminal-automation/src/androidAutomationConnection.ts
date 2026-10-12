@@ -4,8 +4,11 @@ import type {Client} from '@devicefarmer/adbkit';
 import path from 'node:path';
 import {createAndroidDisplayCapture} from './androidCapture.js';
 import {createAndroidDeviceSession} from './androidDevice.js';
+import type {AndroidRemoteControlDiagnostics} from './androidAppDiagnostics.js';
 import type {ManagedHostForwardLifecycle, ManagedReverseLifecycle, ManagedServiceReverse} from './androidDevice.js';
 import {createAndroidInput, type AndroidSurface} from './androidInput.js';
+import {ANDROID_SCREEN_CLICK_INTERVAL_MS, createClickPacer, type ClickPacer} from './clickPacer.js';
+import type {AndroidClickPacing} from './androidInput.js';
 import {tapRegisteredAndroidInput, tapRegisteredAndroidNode} from './androidRegisteredInput.js';
 import {createAndroidSystemUi, type AndroidSystemUi} from './androidSystemUi.js';
 import type {AndroidDisplayShape} from './displayMapping.js';
@@ -29,7 +32,7 @@ export type AndroidAutomationConnection = Readonly<{
   readonly readPrimaryAbi: () => Promise<string>;
   readonly readTerminalUpdateLogs: (packageName: string) => Promise<string>;
   readonly readRuntimeFailureDiagnostics: (packageName: string) => Promise<string>;
-  readonly readRemoteControlDiagnostics: (packageName: string) => Promise<Readonly<{lineCount: number; eventKinds: readonly string[]}>>;
+  readonly readRemoteControlDiagnostics: (packageName: string) => Promise<AndroidRemoteControlDiagnostics>;
   readonly forceStop: (packageName: string) => Promise<void>;
   readonly uninstall: (packageName: string) => Promise<void>;
   readonly discoverDisplays: ReturnType<typeof createAndroidInput>['discoverDisplays'];
@@ -37,7 +40,9 @@ export type AndroidAutomationConnection = Readonly<{
     surface: AndroidSurface,
     bounds: AndroidLogicalBounds,
     position?: AndroidTapPosition,
+    clickPacing?: AndroidClickPacing,
   ) => ReturnType<ReturnType<typeof createAndroidInput>['tapBounds']>;
+  readonly runPacedClick: ClickPacer['run'];
   readonly tapRegisteredNode: (
     input: Readonly<{
       readonly sessionId: string;
@@ -45,6 +50,7 @@ export type AndroidAutomationConnection = Readonly<{
       readonly surface: AndroidSurface;
       readonly displayIndex: 0 | 1;
       readonly position?: AndroidTapPosition;
+      readonly clickPacing?: AndroidClickPacing;
     }>,
   ) => ReturnType<typeof tapRegisteredAndroidNode>;
   readonly tapRegisteredInput: (
@@ -53,6 +59,7 @@ export type AndroidAutomationConnection = Readonly<{
       readonly testID: string;
       readonly surface: AndroidSurface;
       readonly displayIndex: 0 | 1;
+      readonly clickPacing?: AndroidClickPacing;
     }>,
   ) => ReturnType<typeof tapRegisteredAndroidInput>;
   readonly capture: (surface: AndroidSurface) => Promise<Buffer>;
@@ -192,8 +199,31 @@ export const createAndroidAutomationConnection = async (
           event: 'released',
         }),
     });
-    const androidInput = createAndroidInput({adbPath: input.adbPath, serial: input.serial, shape: input.shape});
-    const systemUi = createAndroidSystemUi({adbPath: input.adbPath, serial: input.serial});
+    const clickPacer = createClickPacer(ANDROID_SCREEN_CLICK_INTERVAL_MS);
+    const onClickCadence = (waitMs: number): void => {
+      process.stdout.write(
+        `${JSON.stringify({
+          at: new Date().toISOString(),
+          event: 'android.screen-click.cadence',
+          runId: process.env.TERMINAL_AUTOMATION_RUN_ID ?? 'UNMANAGED',
+          minimumIntervalMs: ANDROID_SCREEN_CLICK_INTERVAL_MS,
+          waitMs,
+        })}\n`,
+      );
+    };
+    const androidInput = createAndroidInput({
+      adbPath: input.adbPath,
+      serial: input.serial,
+      shape: input.shape,
+      clickPacer,
+      onClickCadence,
+    });
+    const systemUi = createAndroidSystemUi({
+      adbPath: input.adbPath,
+      serial: input.serial,
+      clickPacer,
+      onClickCadence,
+    });
     const capture = createAndroidDisplayCapture({adbPath: input.adbPath, serial: input.serial, shape: input.shape});
     let closed = false;
     return Object.freeze({
@@ -201,6 +231,7 @@ export const createAndroidAutomationConnection = async (
       hostPort: address.port,
       driver,
       systemUi,
+      runPacedClick: androidInput.runPacedClick,
       ...(fixtures === undefined ? {} : {fixtures}),
       install: device.install,
       servicePorts,
@@ -230,6 +261,7 @@ export const createAndroidAutomationConnection = async (
           surface: tapInput.surface,
           displayIndex: tapInput.displayIndex,
           ...(tapInput.position === undefined ? {} : {position: tapInput.position}),
+          ...(tapInput.clickPacing === undefined ? {} : {clickPacing: tapInput.clickPacing}),
         }),
       tapRegisteredInput: inputForFocus =>
         tapRegisteredAndroidInput({
@@ -239,6 +271,7 @@ export const createAndroidAutomationConnection = async (
           testID: inputForFocus.testID,
           surface: inputForFocus.surface,
           displayIndex: inputForFocus.displayIndex,
+          ...(inputForFocus.clickPacing === undefined ? {} : {clickPacing: inputForFocus.clickPacing}),
         }),
       capture: capture.capture,
       close: async () => {

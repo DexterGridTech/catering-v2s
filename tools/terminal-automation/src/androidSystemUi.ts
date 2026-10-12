@@ -1,5 +1,6 @@
 import {execFile as execFileCallback} from 'node:child_process';
 import {promisify} from 'node:util';
+import {createClickPacer, type ClickPacer} from './clickPacer.js';
 
 const execFile = promisify(execFileCallback);
 const COMMAND_TIMEOUT_MS = 10_000;
@@ -10,7 +11,12 @@ const ATTRIBUTE_PATTERN = /([A-Za-z_:][A-Za-z0-9_.:-]*)="([^"]*)"/gu;
 export type AndroidSystemUiButton = Readonly<{
   readonly label: string;
   readonly packageName?: string;
-  readonly bounds: Readonly<{readonly left: number; readonly top: number; readonly right: number; readonly bottom: number}>;
+  readonly bounds: Readonly<{
+    readonly left: number;
+    readonly top: number;
+    readonly right: number;
+    readonly bottom: number;
+  }>;
   readonly checked?: boolean;
   readonly targetClass: string;
   readonly labelClass: string;
@@ -26,16 +32,16 @@ type HierarchyNode = {
   readonly children: HierarchyNode[];
 };
 
-const decodeXml = (value: string): string => value
-  .replaceAll('&quot;', '"')
-  .replaceAll('&apos;', "'")
-  .replaceAll('&lt;', '<')
-  .replaceAll('&gt;', '>')
-  .replaceAll('&amp;', '&');
+const decodeXml = (value: string): string =>
+  value
+    .replaceAll('&quot;', '"')
+    .replaceAll('&apos;', "'")
+    .replaceAll('&lt;', '<')
+    .replaceAll('&gt;', '>')
+    .replaceAll('&amp;', '&');
 
-const safeClass = (value: string | undefined): string => value && /^[A-Za-z_$][A-Za-z0-9_.$]{0,159}$/u.test(value)
-  ? value
-  : 'UNKNOWN';
+const safeClass = (value: string | undefined): string =>
+  value && /^[A-Za-z_$][A-Za-z0-9_.$]{0,159}$/u.test(value) ? value : 'UNKNOWN';
 
 const systemLabelAliases: Readonly<Record<string, readonly string[]>> = Object.freeze({
   Install: Object.freeze(['安装']),
@@ -67,10 +73,17 @@ export const findAndroidSystemUiButton = (
   labels: readonly string[],
   allowedPackagePrefixes?: readonly string[],
 ): AndroidSystemUiButton => {
-  if (Buffer.byteLength(xml, 'utf8') > MAX_HIERARCHY_BYTES || !xml.includes('<hierarchy') || !xml.includes('</hierarchy>')) {
+  if (
+    Buffer.byteLength(xml, 'utf8') > MAX_HIERARCHY_BYTES ||
+    !xml.includes('<hierarchy') ||
+    !xml.includes('</hierarchy>')
+  ) {
     throw new Error('TERMINAL_AUTOMATION_ANDROID_SYSTEM_UI_HIERARCHY_INVALID');
   }
-  if (labels.length === 0 || labels.some(label => typeof label !== 'string' || label.trim() !== label || label.length === 0)) {
+  if (
+    labels.length === 0 ||
+    labels.some(label => typeof label !== 'string' || label.trim() !== label || label.length === 0)
+  ) {
     throw new Error('TERMINAL_AUTOMATION_ANDROID_SYSTEM_UI_LABELS_INVALID');
   }
   const matches: AndroidSystemUiButton[] = [];
@@ -85,15 +98,19 @@ export const findAndroidSystemUiButton = (
     const attributeText = tag.slice('<node'.length, tag.length - 1).replace(/\/\s*$/u, '');
     const parent = ancestors.at(-1) ?? null;
     const node: HierarchyNode = {
-      attributes: new Map([...attributeText.matchAll(ATTRIBUTE_PATTERN)].map(value => [value[1]!, decodeXml(value[2]!)])),
+      attributes: new Map(
+        [...attributeText.matchAll(ATTRIBUTE_PATTERN)].map(value => [value[1]!, decodeXml(value[2]!)]),
+      ),
       parent,
       children: [],
     };
     parent?.children.push(node);
     const label = node.attributes.get('text') ?? node.attributes.get('content-desc') ?? '';
     const packageName = packageNameForNode(node);
-    const packageAllowed = allowedPackagePrefixes === undefined ||
-      (packageName !== undefined && allowedPackagePrefixes.some(prefix => packageName === prefix || packageName.startsWith(`${prefix}.`)));
+    const packageAllowed =
+      allowedPackagePrefixes === undefined ||
+      (packageName !== undefined &&
+        allowedPackagePrefixes.some(prefix => packageName === prefix || packageName.startsWith(`${prefix}.`)));
     const requestedLabel = requestedLabelFor(label, labels);
     if (requestedLabel !== undefined && packageAllowed) {
       matchedLabels.push(Object.freeze({label: requestedLabel, node}));
@@ -103,7 +120,10 @@ export const findAndroidSystemUiButton = (
   for (const {label, node} of matchedLabels) {
     let actionable: HierarchyNode | null = node;
     let ancestorDistance = 0;
-    while (actionable && (actionable.attributes.get('enabled') !== 'true' || actionable.attributes.get('clickable') !== 'true')) {
+    while (
+      actionable &&
+      (actionable.attributes.get('enabled') !== 'true' || actionable.attributes.get('clickable') !== 'true')
+    ) {
       actionable = actionable.parent;
       ancestorDistance += 1;
     }
@@ -114,37 +134,70 @@ export const findAndroidSystemUiButton = (
       current.children.forEach(visit);
     };
     visit(actionable);
-    const checkableSwitches = descendants.filter(candidate =>
-      candidate.attributes.get('checkable') === 'true' &&
-      candidate.attributes.get('enabled') === 'true' &&
-      /(?:^|\.)(?:Switch|SwitchCompat)$/u.test(candidate.attributes.get('class') ?? '') &&
-      (candidate.attributes.get('checked') === 'true' || candidate.attributes.get('checked') === 'false'));
+    const checkableSwitches = descendants.filter(
+      candidate =>
+        candidate.attributes.get('checkable') === 'true' &&
+        candidate.attributes.get('enabled') === 'true' &&
+        /(?:^|\.)(?:Switch|SwitchCompat)$/u.test(candidate.attributes.get('class') ?? '') &&
+        (candidate.attributes.get('checked') === 'true' || candidate.attributes.get('checked') === 'false'),
+    );
     const switchTargets = checkableSwitches.filter(candidate => candidate.attributes.get('clickable') === 'true');
-    const stateNode = node.attributes.get('checkable') === 'true' ? node :
-      actionable.attributes.get('checkable') === 'true' ? actionable :
-      checkableSwitches.length === 1 ? checkableSwitches[0] : null;
+    const stateNode =
+      node.attributes.get('checkable') === 'true'
+        ? node
+        : actionable.attributes.get('checkable') === 'true'
+          ? actionable
+          : checkableSwitches.length === 1
+            ? checkableSwitches[0]
+            : null;
     const clickTarget = switchTargets.length === 1 ? switchTargets[0]! : actionable;
     const bounds = clickTarget.attributes.get('bounds')?.match(/^\[([0-9]+),([0-9]+)\]\[([0-9]+),([0-9]+)\]$/u);
     if (!bounds) throw new Error('TERMINAL_AUTOMATION_ANDROID_SYSTEM_UI_BOUNDS_INVALID');
     const [, left, top, right, bottom] = bounds;
     const rectangle = {left: Number(left), top: Number(top), right: Number(right), bottom: Number(bottom)};
-    if (!Object.values(rectangle).every(Number.isSafeInteger) || rectangle.right <= rectangle.left || rectangle.bottom <= rectangle.top) {
+    if (
+      !Object.values(rectangle).every(Number.isSafeInteger) ||
+      rectangle.right <= rectangle.left ||
+      rectangle.bottom <= rectangle.top
+    ) {
       throw new Error('TERMINAL_AUTOMATION_ANDROID_SYSTEM_UI_BOUNDS_INVALID');
     }
     const checked = stateNode?.attributes.get('checked');
-    if (matches.some(value => value.label === label && value.bounds.left === rectangle.left &&
-      value.bounds.top === rectangle.top && value.bounds.right === rectangle.right && value.bounds.bottom === rectangle.bottom)) continue;
+    if (
+      matches.some(
+        value =>
+          value.label === label &&
+          value.bounds.left === rectangle.left &&
+          value.bounds.top === rectangle.top &&
+          value.bounds.right === rectangle.right &&
+          value.bounds.bottom === rectangle.bottom,
+      )
+    )
+      continue;
     const packageName = packageNameForNode(node);
-    matches.push(Object.freeze({label, bounds: Object.freeze(rectangle),
-      ...(packageName && /^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)+$/u.test(packageName) ? {packageName} : {}),
-      ...(checked === 'true' || checked === 'false' ? {checked: checked === 'true'} : {}),
-      targetClass: safeClass(clickTarget.attributes.get('class')),
-      labelClass: safeClass(node.attributes.get('class')),
-      ancestorDistance,
-      targetClickable: clickTarget.attributes.get('clickable') === 'true',
-      targetEnabled: clickTarget.attributes.get('enabled') === 'true',
-      stateSource: stateNode === node ? 'label' : stateNode === actionable ? 'target' :
-        stateNode ? 'switch-descendant' : 'unknown'}));
+    matches.push(
+      Object.freeze({
+        label,
+        bounds: Object.freeze(rectangle),
+        ...(packageName && /^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)+$/u.test(packageName)
+          ? {packageName}
+          : {}),
+        ...(checked === 'true' || checked === 'false' ? {checked: checked === 'true'} : {}),
+        targetClass: safeClass(clickTarget.attributes.get('class')),
+        labelClass: safeClass(node.attributes.get('class')),
+        ancestorDistance,
+        targetClickable: clickTarget.attributes.get('clickable') === 'true',
+        targetEnabled: clickTarget.attributes.get('enabled') === 'true',
+        stateSource:
+          stateNode === node
+            ? 'label'
+            : stateNode === actionable
+              ? 'target'
+              : stateNode
+                ? 'switch-descendant'
+                : 'unknown',
+      }),
+    );
   }
   if (matches.length === 0 && matchedLabels.length === 1) {
     const {label, node} = matchedLabels[0]!;
@@ -153,25 +206,36 @@ export const findAndroidSystemUiButton = (
     const hierarchyFacts: string[] = [];
     let current: HierarchyNode | null = node;
     for (let distance = 0; current !== null && distance < 5; distance += 1, current = current.parent) {
-      hierarchyFacts.push([
-        `ANCESTOR_${distance}`,
-        `CLASS_${safeClass(current.attributes.get('class')).replaceAll('.', '_')}`,
-        `ENABLED_${current.attributes.get('enabled') === 'true' ? 1 : 0}`,
-        `CLICKABLE_${current.attributes.get('clickable') === 'true' ? 1 : 0}`,
-        `CHECKABLE_${current.attributes.get('checkable') === 'true' ? 1 : 0}`,
-        `CHECKED_${current.attributes.get('checked') === 'true' ? 1 : current.attributes.get('checked') === 'false' ? 0 : -1}`,
-      ].join('_'));
+      hierarchyFacts.push(
+        [
+          `ANCESTOR_${distance}`,
+          `CLASS_${safeClass(current.attributes.get('class')).replaceAll('.', '_')}`,
+          `ENABLED_${current.attributes.get('enabled') === 'true' ? 1 : 0}`,
+          `CLICKABLE_${current.attributes.get('clickable') === 'true' ? 1 : 0}`,
+          `CHECKABLE_${current.attributes.get('checkable') === 'true' ? 1 : 0}`,
+          `CHECKED_${current.attributes.get('checked') === 'true' ? 1 : current.attributes.get('checked') === 'false' ? 0 : -1}`,
+        ].join('_'),
+      );
     }
-    throw new Error([
-      'TERMINAL_AUTOMATION_ANDROID_SYSTEM_UI_BUTTON_NOT_ACTIONABLE',
-      `LABEL_${label.toUpperCase().replaceAll(/[^A-Z0-9]+/gu, '_').replaceAll(/^_|_$/gu, '')}`,
-      `PACKAGE_${packageName && /^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)+$/u.test(packageName)
-        ? packageName.toUpperCase().replaceAll('.', '_') : 'UNKNOWN'}`,
-      `CLASS_${labelClass.replaceAll('.', '_')}`,
-      ...hierarchyFacts,
-    ].join('_'));
+    throw new Error(
+      [
+        'TERMINAL_AUTOMATION_ANDROID_SYSTEM_UI_BUTTON_NOT_ACTIONABLE',
+        `LABEL_${label
+          .toUpperCase()
+          .replaceAll(/[^A-Z0-9]+/gu, '_')
+          .replaceAll(/^_|_$/gu, '')}`,
+        `PACKAGE_${
+          packageName && /^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)+$/u.test(packageName)
+            ? packageName.toUpperCase().replaceAll('.', '_')
+            : 'UNKNOWN'
+        }`,
+        `CLASS_${labelClass.replaceAll('.', '_')}`,
+        ...hierarchyFacts,
+      ].join('_'),
+    );
   }
-  if (matches.length !== 1) throw new Error(`TERMINAL_AUTOMATION_ANDROID_SYSTEM_UI_BUTTON_MATCH_COUNT_${matches.length}`);
+  if (matches.length !== 1)
+    throw new Error(`TERMINAL_AUTOMATION_ANDROID_SYSTEM_UI_BUTTON_MATCH_COUNT_${matches.length}`);
   return matches[0]!;
 };
 
@@ -184,13 +248,19 @@ const hasExactText = (xml: string, expectedText: string, allowedPackagePrefixes?
       continue;
     }
     const attributeText = tag.slice('<node'.length, tag.length - 1).replace(/\/?\s*$/u, '');
-    const attributes = new Map([...attributeText.matchAll(ATTRIBUTE_PATTERN)].map(value => [value[1]!, decodeXml(value[2]!)]));
+    const attributes = new Map(
+      [...attributeText.matchAll(ATTRIBUTE_PATTERN)].map(value => [value[1]!, decodeXml(value[2]!)]),
+    );
     const node: HierarchyNode = {attributes, parent: ancestors.at(-1) ?? null, children: []};
     node.parent?.children.push(node);
     if (attributes.get('text') === expectedText || attributes.get('content-desc') === expectedText) {
       const packageName = packageNameForNode(node);
-      if (allowedPackagePrefixes === undefined || (packageName !== undefined &&
-        allowedPackagePrefixes.some(prefix => packageName === prefix || packageName.startsWith(`${prefix}.`)))) return true;
+      if (
+        allowedPackagePrefixes === undefined ||
+        (packageName !== undefined &&
+          allowedPackagePrefixes.some(prefix => packageName === prefix || packageName.startsWith(`${prefix}.`)))
+      )
+        return true;
     }
     if (!/\/\s*>$/u.test(tag)) ancestors.push(node);
   }
@@ -206,21 +276,43 @@ const hasSystemLabel = (xml: string, expectedLabel: string, allowedPackagePrefix
       continue;
     }
     const attributeText = tag.slice('<node'.length, tag.length - 1).replace(/\/?\s*$/u, '');
-    const node: HierarchyNode = {attributes: new Map([...attributeText.matchAll(ATTRIBUTE_PATTERN)].map(value => [value[1]!, decodeXml(value[2]!)])), parent: ancestors.at(-1) ?? null, children: []};
+    const node: HierarchyNode = {
+      attributes: new Map(
+        [...attributeText.matchAll(ATTRIBUTE_PATTERN)].map(value => [value[1]!, decodeXml(value[2]!)]),
+      ),
+      parent: ancestors.at(-1) ?? null,
+      children: [],
+    };
     node.parent?.children.push(node);
     const label = node.attributes.get('text') ?? node.attributes.get('content-desc') ?? '';
     const packageName = packageNameForNode(node);
-    if (requestedLabelFor(label, [expectedLabel]) === expectedLabel &&
-      (allowedPackagePrefixes === undefined || (packageName !== undefined &&
-        allowedPackagePrefixes.some(prefix => packageName === prefix || packageName.startsWith(`${prefix}.`))))) return true;
+    if (
+      requestedLabelFor(label, [expectedLabel]) === expectedLabel &&
+      (allowedPackagePrefixes === undefined ||
+        (packageName !== undefined &&
+          allowedPackagePrefixes.some(prefix => packageName === prefix || packageName.startsWith(`${prefix}.`))))
+    )
+      return true;
     if (!/\/\s*>$/u.test(tag)) ancestors.push(node);
   }
   return false;
 };
 
 const summarizeSystemUi = (xml: string): string => {
-  const labels = ['Install', 'Update', 'Done', 'Cancel', 'Next', 'Allow', 'Open', 'Settings', 'Allow from this source',
-    'Install unknown apps', 'Disabled', 'Disabled by admin'];
+  const labels = [
+    'Install',
+    'Update',
+    'Done',
+    'Cancel',
+    'Next',
+    'Allow',
+    'Open',
+    'Settings',
+    'Allow from this source',
+    'Install unknown apps',
+    'Disabled',
+    'Disabled by admin',
+  ];
   const counts = new Map(labels.map(label => [label, {text: 0, description: 0, actionable: 0}]));
   let nodes = 0;
   let actionable = 0;
@@ -241,8 +333,12 @@ const summarizeSystemUi = (xml: string): string => {
   for (const match of xml.matchAll(NODE_TAG_PATTERN)) {
     if (String(match[0]).startsWith('</')) continue;
     nodes += 1;
-    const attributeText = String(match[0]).slice('<node'.length).replace(/\/?\s*>$/u, '');
-    const attributes = new Map([...attributeText.matchAll(ATTRIBUTE_PATTERN)].map(value => [value[1]!, decodeXml(value[2]!)]));
+    const attributeText = String(match[0])
+      .slice('<node'.length)
+      .replace(/\/?\s*>$/u, '');
+    const attributes = new Map(
+      [...attributeText.matchAll(ATTRIBUTE_PATTERN)].map(value => [value[1]!, decodeXml(value[2]!)]),
+    );
     const text = attributes.get('text') ?? '';
     const description = attributes.get('content-desc') ?? '';
     const isActionable = attributes.get('enabled') === 'true' && attributes.get('clickable') === 'true';
@@ -268,7 +364,8 @@ const summarizeSystemUi = (xml: string): string => {
         checkableSwitches += 1;
         if (attributes.get('enabled') === 'true') enabledCheckableSwitches += 1;
         if (attributes.get('clickable') === 'true') clickableCheckableSwitches += 1;
-        if (attributes.get('checked') === 'true' || attributes.get('checked') === 'false') checkedCheckableSwitches += 1;
+        if (attributes.get('checked') === 'true' || attributes.get('checked') === 'false')
+          checkedCheckableSwitches += 1;
         if (attributes.has('bounds')) switchBounds += 1;
       }
     }
@@ -280,19 +377,33 @@ const summarizeSystemUi = (xml: string): string => {
   }
   const labelSummary = labels.map(label => {
     const count = counts.get(label)!;
-    const key = label.toUpperCase().replaceAll(/[^A-Z0-9]+/gu, '_').replaceAll(/^_|_$/gu, '');
+    const key = label
+      .toUpperCase()
+      .replaceAll(/[^A-Z0-9]+/gu, '_')
+      .replaceAll(/^_|_$/gu, '');
     return `${key}_TEXT_${count.text}_DESC_${count.description}_ACTIONABLE_${count.actionable}`;
   });
-  const packageSummary = [...packages].sort(([left], [right]) => left.localeCompare(right))
+  const packageSummary = [...packages]
+    .sort(([left], [right]) => left.localeCompare(right))
     .map(([packageName, count]) => `PACKAGE_${packageName.toUpperCase().replaceAll('.', '_')}_${count}`);
   return [
-    `NODES_${nodes}`, `ACTIONABLE_${actionable}`, `SETTINGS_NODES_${settingsPackages}`, `INSTALLER_NODES_${installerPackages}`,
-    `ALLOW_SOURCE_NODES_${allowSourceNodes}`, `ALLOW_SOURCE_CLASS_${allowSourceNodeClass.replaceAll('.', '_')}`,
-    `ALLOW_SOURCE_ENABLED_${allowSourceNodeEnabled}`, `ALLOW_SOURCE_CLICKABLE_${allowSourceNodeClickable}`,
-    `ALLOW_SOURCE_BOUNDS_${allowSourceNodeBounds}`, `SWITCH_NODES_${switchNodes}`, `CHECKABLE_SWITCHES_${checkableSwitches}`,
-    `ENABLED_CHECKABLE_SWITCHES_${enabledCheckableSwitches}`, `CLICKABLE_CHECKABLE_SWITCHES_${clickableCheckableSwitches}`,
-    `CHECKED_CHECKABLE_SWITCHES_${checkedCheckableSwitches}`, `SWITCH_BOUNDS_${switchBounds}`,
-    ...labelSummary, ...packageSummary,
+    `NODES_${nodes}`,
+    `ACTIONABLE_${actionable}`,
+    `SETTINGS_NODES_${settingsPackages}`,
+    `INSTALLER_NODES_${installerPackages}`,
+    `ALLOW_SOURCE_NODES_${allowSourceNodes}`,
+    `ALLOW_SOURCE_CLASS_${allowSourceNodeClass.replaceAll('.', '_')}`,
+    `ALLOW_SOURCE_ENABLED_${allowSourceNodeEnabled}`,
+    `ALLOW_SOURCE_CLICKABLE_${allowSourceNodeClickable}`,
+    `ALLOW_SOURCE_BOUNDS_${allowSourceNodeBounds}`,
+    `SWITCH_NODES_${switchNodes}`,
+    `CHECKABLE_SWITCHES_${checkableSwitches}`,
+    `ENABLED_CHECKABLE_SWITCHES_${enabledCheckableSwitches}`,
+    `CLICKABLE_CHECKABLE_SWITCHES_${clickableCheckableSwitches}`,
+    `CHECKED_CHECKABLE_SWITCHES_${checkedCheckableSwitches}`,
+    `SWITCH_BOUNDS_${switchBounds}`,
+    ...labelSummary,
+    ...packageSummary,
   ].join('_');
 };
 
@@ -303,25 +414,32 @@ export type AndroidSystemUi = Readonly<{
   /** Acknowledges Android's full-screen education overlay only when SystemUI owns it. */
   readonly acknowledgeImmersiveModeEducation: () => Promise<boolean>;
   readonly waitForButton: (
-    labels: readonly string[], timeoutMs: number, signal?: AbortSignal, allowedPackagePrefixes?: readonly string[],
+    labels: readonly string[],
+    timeoutMs: number,
+    signal?: AbortSignal,
+    allowedPackagePrefixes?: readonly string[],
     expectedContext?: Readonly<{readonly label: string; readonly text: string}>,
   ) => Promise<AndroidSystemUiButton>;
   /** Resolves a fresh semantic target immediately before tapping it. */
-  readonly clickButton: (input: Readonly<{
-    readonly labels: readonly string[];
-    readonly timeoutMs: number;
-    readonly signal?: AbortSignal;
-    readonly allowedPackagePrefixes?: readonly string[];
-    readonly expectedContext?: Readonly<{readonly label: string; readonly text: string}>;
-  }>) => Promise<AndroidSystemUiButton>;
+  readonly clickButton: (
+    input: Readonly<{
+      readonly labels: readonly string[];
+      readonly timeoutMs: number;
+      readonly signal?: AbortSignal;
+      readonly allowedPackagePrefixes?: readonly string[];
+      readonly expectedContext?: Readonly<{readonly label: string; readonly text: string}>;
+    }>,
+  ) => Promise<AndroidSystemUiButton>;
   readonly tapButton: (button: AndroidSystemUiButton) => Promise<void>;
-  readonly setChecked: (input: Readonly<{
-    readonly labels: readonly string[];
-    readonly checked: boolean;
-    readonly timeoutMs: number;
-    readonly allowedPackagePrefixes?: readonly string[];
-    readonly expectedContext?: Readonly<{readonly label: string; readonly text: string}>;
-  }>) => Promise<AndroidSystemUiButton>;
+  readonly setChecked: (
+    input: Readonly<{
+      readonly labels: readonly string[];
+      readonly checked: boolean;
+      readonly timeoutMs: number;
+      readonly allowedPackagePrefixes?: readonly string[];
+      readonly expectedContext?: Readonly<{readonly label: string; readonly text: string}>;
+    }>,
+  ) => Promise<AndroidSystemUiButton>;
   readonly pressBack: () => Promise<void>;
 }>;
 
@@ -340,17 +458,17 @@ type ChildCommandFailure = Readonly<{
 
 const commandFailureSummary = (error: unknown): string => {
   const failure = typeof error === 'object' && error !== null ? (error as ChildCommandFailure) : {};
-  const stdout = Buffer.isBuffer(failure.stdout) ? failure.stdout.toString('utf8') : failure.stdout ?? '';
-  const stderr = Buffer.isBuffer(failure.stderr) ? failure.stderr.toString('utf8') : failure.stderr ?? '';
-  const code = typeof failure.code === 'number' && Number.isSafeInteger(failure.code)
-    ? `EXIT_${failure.code}`
-    : typeof failure.code === 'string' && /^[A-Z0-9_]{1,40}$/u.test(failure.code)
-      ? `CODE_${failure.code}`
-      : 'CODE_UNKNOWN';
-  const signal = typeof failure.signal === 'string' && /^SIG[A-Z0-9]{1,20}$/u.test(failure.signal)
-    ? failure.signal
-    : 'NONE';
-  const marker = (pattern: RegExp): number => pattern.test(stderr) ? 1 : 0;
+  const stdout = Buffer.isBuffer(failure.stdout) ? failure.stdout.toString('utf8') : (failure.stdout ?? '');
+  const stderr = Buffer.isBuffer(failure.stderr) ? failure.stderr.toString('utf8') : (failure.stderr ?? '');
+  const code =
+    typeof failure.code === 'number' && Number.isSafeInteger(failure.code)
+      ? `EXIT_${failure.code}`
+      : typeof failure.code === 'string' && /^[A-Z0-9_]{1,40}$/u.test(failure.code)
+        ? `CODE_${failure.code}`
+        : 'CODE_UNKNOWN';
+  const signal =
+    typeof failure.signal === 'string' && /^SIG[A-Z0-9]{1,20}$/u.test(failure.signal) ? failure.signal : 'NONE';
+  const marker = (pattern: RegExp): number => (pattern.test(stderr) ? 1 : 0);
   return [
     code,
     `SIGNAL_${signal}`,
@@ -368,7 +486,7 @@ const transientHierarchyCommandOutput = (
   error: unknown,
 ): AndroidSystemUiCommandOutput | undefined => {
   const failure = typeof error === 'object' && error !== null ? (error as ChildCommandFailure) : {};
-  const stderr = Buffer.isBuffer(failure.stderr) ? failure.stderr.toString('utf8') : failure.stderr ?? '';
+  const stderr = Buffer.isBuffer(failure.stderr) ? failure.stderr.toString('utf8') : (failure.stderr ?? '');
   if (
     !args.includes('uiautomator') ||
     !args.includes('dump') ||
@@ -378,7 +496,7 @@ const transientHierarchyCommandOutput = (
     return undefined;
   }
   return Object.freeze({
-    stdout: Buffer.isBuffer(failure.stdout) ? failure.stdout.toString('utf8') : failure.stdout ?? '',
+    stdout: Buffer.isBuffer(failure.stdout) ? failure.stdout.toString('utf8') : (failure.stdout ?? ''),
     stderr,
   });
 };
@@ -405,14 +523,22 @@ const commandText = async (adbPath: string, args: readonly string[]): Promise<An
   }
 };
 
-export const createAndroidSystemUi = (input: Readonly<{
-  readonly adbPath: string;
-  readonly serial: string;
-  readonly runTextCommand?: (adbPath: string, args: readonly string[]) => Promise<string | AndroidSystemUiCommandOutput>;
-}>): AndroidSystemUi => {
+export const createAndroidSystemUi = (
+  input: Readonly<{
+    readonly adbPath: string;
+    readonly serial: string;
+    readonly clickPacer?: ClickPacer;
+    readonly onClickCadence?: (waitMs: number) => void;
+    readonly runTextCommand?: (
+      adbPath: string,
+      args: readonly string[],
+    ) => Promise<string | AndroidSystemUiCommandOutput>;
+  }>,
+): AndroidSystemUi => {
   if (!input.adbPath) throw new Error('TERMINAL_AUTOMATION_ADB_PATH_REQUIRED');
   validateSerial(input.serial);
   const run = input.runTextCommand ?? commandText;
+  const clickPacer = input.clickPacer ?? createClickPacer();
   const readHierarchy = async (): Promise<string> => {
     const args = ['-s', input.serial, 'exec-out', 'uiautomator', 'dump', '--compressed', '/dev/stdout'] as const;
     let rawOutput: string | AndroidSystemUiCommandOutput;
@@ -421,9 +547,10 @@ export const createAndroidSystemUi = (input: Readonly<{
     } catch (error) {
       const transientOutput = transientHierarchyCommandOutput(args, error);
       if (transientOutput === undefined) {
-        const message = error instanceof Error && /^TERMINAL_AUTOMATION_ANDROID_SYSTEM_UI_[A-Z0-9_]+$/u.test(error.message)
-          ? error.message
-          : `TERMINAL_AUTOMATION_ANDROID_SYSTEM_UI_COMMAND_FAILED_${commandFailureSummary(error)}`;
+        const message =
+          error instanceof Error && /^TERMINAL_AUTOMATION_ANDROID_SYSTEM_UI_[A-Z0-9_]+$/u.test(error.message)
+            ? error.message
+            : `TERMINAL_AUTOMATION_ANDROID_SYSTEM_UI_COMMAND_FAILED_${commandFailureSummary(error)}`;
         throw new Error(message);
       }
       rawOutput = transientOutput;
@@ -434,24 +561,29 @@ export const createAndroidSystemUi = (input: Readonly<{
     const end = output.indexOf('</hierarchy>', start);
     if (start < 0 || end < 0) {
       const stderr = commandOutput.stderr;
-      const marker = (pattern: RegExp): number => pattern.test(stderr) ? 1 : 0;
-      throw new Error([
-        'TERMINAL_AUTOMATION_ANDROID_SYSTEM_UI_DUMP_NOT_FOUND',
-        `STDOUT_BYTES_${Buffer.byteLength(output, 'utf8')}`,
-        `STDERR_BYTES_${Buffer.byteLength(stderr, 'utf8')}`,
-        `STDOUT_XML_START_${start >= 0 ? 1 : 0}`,
-        `STDOUT_XML_END_${end >= 0 ? 1 : 0}`,
-        `STDERR_NULL_ROOT_${marker(/null root node returned/iu)}`,
-        `STDERR_IDLE_TIMEOUT_${marker(/could not get idle state/iu)}`,
-        `STDOUT_DUMP_ANNOUNCED_${/UI hierchary dumped to:/iu.test(output) ? 1 : 0}`,
-        `STDERR_DUMP_ANNOUNCED_${marker(/UI hierchary dumped to:/iu)}`,
-      ].join('_'));
+      const marker = (pattern: RegExp): number => (pattern.test(stderr) ? 1 : 0);
+      throw new Error(
+        [
+          'TERMINAL_AUTOMATION_ANDROID_SYSTEM_UI_DUMP_NOT_FOUND',
+          `STDOUT_BYTES_${Buffer.byteLength(output, 'utf8')}`,
+          `STDERR_BYTES_${Buffer.byteLength(stderr, 'utf8')}`,
+          `STDOUT_XML_START_${start >= 0 ? 1 : 0}`,
+          `STDOUT_XML_END_${end >= 0 ? 1 : 0}`,
+          `STDERR_NULL_ROOT_${marker(/null root node returned/iu)}`,
+          `STDERR_IDLE_TIMEOUT_${marker(/could not get idle state/iu)}`,
+          `STDOUT_DUMP_ANNOUNCED_${/UI hierchary dumped to:/iu.test(output) ? 1 : 0}`,
+          `STDERR_DUMP_ANNOUNCED_${marker(/UI hierchary dumped to:/iu)}`,
+        ].join('_'),
+      );
     }
     return output.slice(start, end + '</hierarchy>'.length);
   };
   const readScreenSummary = async (): Promise<string> => summarizeSystemUi(await readHierarchy());
   const waitForButton = async (
-    labels: readonly string[], timeoutMs: number, signal?: AbortSignal, allowedPackagePrefixes?: readonly string[],
+    labels: readonly string[],
+    timeoutMs: number,
+    signal?: AbortSignal,
+    allowedPackagePrefixes?: readonly string[],
     expectedContext?: Readonly<{readonly label: string; readonly text: string}>,
   ): Promise<AndroidSystemUiButton> => {
     if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 120_000) {
@@ -482,10 +614,15 @@ export const createAndroidSystemUi = (input: Readonly<{
       }
       lastSummary = summarizeSystemUi(xml);
       try {
-        const hasContextLabel = expectedContext !== undefined && labels.includes(expectedContext.label) &&
+        const hasContextLabel =
+          expectedContext !== undefined &&
+          labels.includes(expectedContext.label) &&
           hasSystemLabel(xml, expectedContext.label, allowedPackagePrefixes);
-        if (hasContextLabel && expectedContext !== undefined &&
-          !hasExactText(xml, expectedContext.text, allowedPackagePrefixes)) {
+        if (
+          hasContextLabel &&
+          expectedContext !== undefined &&
+          !hasExactText(xml, expectedContext.text, allowedPackagePrefixes)
+        ) {
           throw new Error('TERMINAL_AUTOMATION_ANDROID_SYSTEM_UI_CONTEXT_TEXT_MISSING');
         }
         const button = findAndroidSystemUiButton(xml, labels, allowedPackagePrefixes);
@@ -504,48 +641,65 @@ export const createAndroidSystemUi = (input: Readonly<{
       await new Promise(resolve => setTimeout(resolve, Math.min(300, Math.max(1, deadline - Date.now()))));
     }
     if (signal?.aborted) throw new Error('TERMINAL_AUTOMATION_ANDROID_SYSTEM_UI_WAIT_CANCELLED');
-    throw new Error([
-      'TERMINAL_AUTOMATION_ANDROID_SYSTEM_UI_BUTTON_TIMEOUT',
-      lastReason,
-      lastSummary,
-      ...(lastDumpFailure ? [lastDumpFailure] : []),
-    ].join('_'));
+    throw new Error(
+      [
+        'TERMINAL_AUTOMATION_ANDROID_SYSTEM_UI_BUTTON_TIMEOUT',
+        lastReason,
+        lastSummary,
+        ...(lastDumpFailure ? [lastDumpFailure] : []),
+      ].join('_'),
+    );
   };
   const tapResolvedButton = async (
     button: AndroidSystemUiButton,
     allowedPackagePrefixes?: readonly string[],
     expectedContext?: Readonly<{readonly label: string; readonly text: string}>,
   ): Promise<void> => {
-    // A hierarchy result is a short-lived observation, not a reusable coordinate.
-    // Resolve the same semantic control again immediately before tapping so a
-    // system transition cannot send an old coordinate into a different screen.
-    const hierarchy = await readHierarchy();
-    const hasContextLabel = expectedContext !== undefined && hasSystemLabel(hierarchy, expectedContext.label, allowedPackagePrefixes);
-    if (hasContextLabel && expectedContext !== undefined &&
-      !hasExactText(hierarchy, expectedContext.text, allowedPackagePrefixes)) {
-      throw new Error('TERMINAL_AUTOMATION_ANDROID_SYSTEM_UI_CONTEXT_TEXT_MISSING');
+    const paced = await clickPacer.run(async markClickStarted => {
+      // The 800ms wait happens before this fresh hierarchy read, so a queued
+      // system tap never uses coordinates observed before the screen transition.
+      const hierarchy = await readHierarchy();
+      const hasContextLabel =
+        expectedContext !== undefined && hasSystemLabel(hierarchy, expectedContext.label, allowedPackagePrefixes);
+      if (
+        hasContextLabel &&
+        expectedContext !== undefined &&
+        !hasExactText(hierarchy, expectedContext.text, allowedPackagePrefixes)
+      ) {
+        throw new Error('TERMINAL_AUTOMATION_ANDROID_SYSTEM_UI_CONTEXT_TEXT_MISSING');
+      }
+      const current = findAndroidSystemUiButton(
+        hierarchy,
+        [button.label],
+        button.packageName === undefined ? undefined : [button.packageName],
+      );
+      if (
+        current.packageName !== button.packageName ||
+        current.targetClass !== button.targetClass ||
+        current.checked !== button.checked
+      ) {
+        throw new Error('TERMINAL_AUTOMATION_ANDROID_SYSTEM_UI_BUTTON_STALE');
+      }
+      const {left, top, right, bottom} = current.bounds;
+      const centerY = Math.floor((top + bottom) / 2);
+      // Some Android Settings versions expose the source-install switch as a checked,
+      // clickable row but omit the Switch child from the accessibility tree. Its
+      // actionable bounds then cover the full row, while the actual toggle is at the
+      // right edge. Tap the switch position instead of the row center.
+      const isRowBackedSourceSwitch =
+        current.label === 'Allow from this source' &&
+        current.checked !== undefined &&
+        current.stateSource === 'target' &&
+        current.targetClass === 'android.view.View';
+      const x = isRowBackedSourceSwitch ? right - Math.floor((bottom - top) / 2) : Math.floor((left + right) / 2);
+      markClickStarted();
+      await run(input.adbPath, ['-s', input.serial, 'shell', 'input', 'tap', String(x), String(centerY)]);
+    });
+    try {
+      input.onClickCadence?.(paced.waitMs);
+    } catch {
+      // Diagnostics must not change a system UI action's outcome.
     }
-    const current = findAndroidSystemUiButton(hierarchy, [button.label],
-      button.packageName === undefined ? undefined : [button.packageName]);
-    if (current.packageName !== button.packageName || current.targetClass !== button.targetClass ||
-      current.checked !== button.checked) {
-      throw new Error('TERMINAL_AUTOMATION_ANDROID_SYSTEM_UI_BUTTON_STALE');
-    }
-    const {left, top, right, bottom} = current.bounds;
-    const centerY = Math.floor((top + bottom) / 2);
-    // Some Android Settings versions expose the source-install switch as a checked,
-    // clickable row but omit the Switch child from the accessibility tree. Its
-    // actionable bounds then cover the full row, while the actual toggle is at the
-    // right edge. Tap the switch position instead of the row center.
-    const isRowBackedSourceSwitch = current.label === 'Allow from this source' &&
-      current.checked !== undefined && current.stateSource === 'target' && current.targetClass === 'android.view.View';
-    const x = isRowBackedSourceSwitch
-      ? right - Math.floor((bottom - top) / 2)
-      : Math.floor((left + right) / 2);
-    await run(input.adbPath, [
-      '-s', input.serial, 'shell', 'input', 'tap',
-      String(x), String(centerY),
-    ]);
   };
   const tapButton = async (button: AndroidSystemUiButton): Promise<void> => tapResolvedButton(button);
   const clickButton: AndroidSystemUi['clickButton'] = async options => {
@@ -571,12 +725,21 @@ export const createAndroidSystemUi = (input: Readonly<{
     return true;
   };
   const setChecked: AndroidSystemUi['setChecked'] = async input => {
-    if (typeof input.checked !== 'boolean' || !Number.isSafeInteger(input.timeoutMs) ||
-      input.timeoutMs < 1 || input.timeoutMs > 60_000) {
+    if (
+      typeof input.checked !== 'boolean' ||
+      !Number.isSafeInteger(input.timeoutMs) ||
+      input.timeoutMs < 1 ||
+      input.timeoutMs > 60_000
+    ) {
       throw new Error('TERMINAL_AUTOMATION_ANDROID_SYSTEM_UI_STATE_INPUT_INVALID');
     }
-    const initial = await waitForButton(input.labels, input.timeoutMs, undefined,
-      input.allowedPackagePrefixes, input.expectedContext);
+    const initial = await waitForButton(
+      input.labels,
+      input.timeoutMs,
+      undefined,
+      input.allowedPackagePrefixes,
+      input.expectedContext,
+    );
     if (initial.checked === undefined) throw new Error('TERMINAL_AUTOMATION_ANDROID_SYSTEM_UI_STATE_UNKNOWN');
     if (initial.checked === input.checked) return initial;
     await tapResolvedButton(initial, input.allowedPackagePrefixes, input.expectedContext);
@@ -586,8 +749,10 @@ export const createAndroidSystemUi = (input: Readonly<{
     while (Date.now() < deadline) {
       const hierarchy = await readHierarchy();
       const current = findAndroidSystemUiButton(hierarchy, input.labels, input.allowedPackagePrefixes);
-      if (input.expectedContext !== undefined &&
-        !hasExactText(hierarchy, input.expectedContext.text, input.allowedPackagePrefixes)) {
+      if (
+        input.expectedContext !== undefined &&
+        !hasExactText(hierarchy, input.expectedContext.text, input.allowedPackagePrefixes)
+      ) {
         throw new Error('TERMINAL_AUTOMATION_ANDROID_SYSTEM_UI_CONTEXT_TEXT_MISSING');
       }
       if (current.checked === undefined) throw new Error('TERMINAL_AUTOMATION_ANDROID_SYSTEM_UI_STATE_UNKNOWN');
@@ -595,11 +760,21 @@ export const createAndroidSystemUi = (input: Readonly<{
       if (lastChecked === input.checked) return current;
       await new Promise(resolve => setTimeout(resolve, Math.min(150, Math.max(1, deadline - Date.now()))));
     }
-    throw new Error(`TERMINAL_AUTOMATION_ANDROID_SYSTEM_UI_STATE_TIMEOUT_CHECKED_${lastChecked === undefined ? 'UNKNOWN' : Number(lastChecked)}`);
+    throw new Error(
+      `TERMINAL_AUTOMATION_ANDROID_SYSTEM_UI_STATE_TIMEOUT_CHECKED_${lastChecked === undefined ? 'UNKNOWN' : Number(lastChecked)}`,
+    );
   };
   const pressBack = async (): Promise<void> => {
     await run(input.adbPath, ['-s', input.serial, 'shell', 'input', 'keyevent', 'KEYCODE_BACK']);
   };
-  return Object.freeze({readHierarchy, readScreenSummary, acknowledgeImmersiveModeEducation,
-    waitForButton, clickButton, tapButton, setChecked, pressBack});
+  return Object.freeze({
+    readHierarchy,
+    readScreenSummary,
+    acknowledgeImmersiveModeEducation,
+    waitForButton,
+    clickButton,
+    tapButton,
+    setChecked,
+    pressBack,
+  });
 };

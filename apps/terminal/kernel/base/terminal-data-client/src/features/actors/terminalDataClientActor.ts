@@ -1528,23 +1528,56 @@ export const createTerminalDataClientActor = (
       const state = readState(initialRoot);
       const payload = context.command.payload as TerminalRemoteControlReportPayload;
       const credential = state.credential;
-      if (!isHostRuntime(initialRoot) || !credentialReadyForCurrentMode(initialRoot, state) || credential === null) {
+      const reportLogger = context.platformPorts.logger.scope({moduleName, layer: 'kernel', subsystem: 'terminal-data-client', component: 'http-remote-control'});
+      const logReport = (event: string, data: Readonly<Record<string, string | number | boolean | null>>) => reportLogger.info({
+        category: 'terminal.remote-control.report',
+        event,
+        message: 'Terminal remote-control status request boundary',
+        context: {
+          commandId: context.command.commandId,
+          ...(context.command.requestId == null ? {} : {requestId: context.command.requestId}),
+        },
+        data,
+      });
+      const startedAt = dependencies.now();
+      logReport('report-command-received', {
+        sessionId: typeof payload?.sessionId === 'string' ? payload.sessionId : null,
+        state: payload?.body?.state === 'ACTIVE' || payload?.body?.state === 'ENDED' ? payload.body.state : 'unclassified',
+        readyScreenCount: Array.isArray(payload?.body?.readyScreens) ? payload.body.readyScreens.length : 0,
+      });
+      const hostRuntime = isHostRuntime(initialRoot);
+      const credentialReady = credentialReadyForCurrentMode(initialRoot, state);
+      if (!hostRuntime || !credentialReady || credential === null) {
+        const reason = !hostRuntime ? 'HOST_ROLE_REQUIRED' : credential === null ? 'CREDENTIAL_MISSING' : 'CREDENTIAL_NOT_READY';
+        logReport('report-command-rejected', {sessionId: typeof payload?.sessionId === 'string' ? payload.sessionId : null, reason});
         return Object.freeze({kind: 'failure', category: 'not-delivered', code: 'TERMINAL_NOT_ACTIVE'});
       }
       if (!isCanonicalUuid(payload?.sessionId) || payload.body?.sessionId !== payload.sessionId) {
+        logReport('report-command-rejected', {sessionId: typeof payload?.sessionId === 'string' ? payload.sessionId : null, reason: 'INVALID_REPORT_IDENTITY'});
         return Object.freeze({kind: 'failure', category: 'not-delivered', code: 'INVALID_TERMINAL_REMOTE_CONTROL_REPORT'});
       }
       const credentialRevision = state.credentialRevision;
-      const startedAt = dependencies.now();
-      const result = await terminalClient.client.reportTerminalRemoteControl({
-        pathParameters: {sessionId: payload.sessionId},
-        queryParameters: {},
-        body: payload.body,
-        headers: {
-          Authorization: `Terminal ${credential.bindingGeneration}.${credential.credentialSecret}`,
-          'X-Terminal-Ref': credential.terminalRef,
-        },
-      });
+      logReport('report-http-started', {sessionId: payload.sessionId, state: payload.body.state, readyScreenCount: payload.body.readyScreens.length});
+      let result: TerminalOperationResult<'reportTerminalRemoteControl'>;
+      try {
+        result = await terminalClient.client.reportTerminalRemoteControl({
+          pathParameters: {sessionId: payload.sessionId},
+          queryParameters: {},
+          body: payload.body,
+          headers: {
+            Authorization: `Terminal ${credential.bindingGeneration}.${credential.credentialSecret}`,
+            'X-Terminal-Ref': credential.terminalRef,
+          },
+        });
+      } catch (error) {
+        logReport('report-http-threw', {
+          sessionId: payload.sessionId,
+          state: payload.body.state,
+          elapsedMs: Math.max(0, dependencies.now() - startedAt),
+          errorName: error instanceof Error ? error.name : 'UnknownError',
+        });
+        throw error;
+      }
       const afterRoot = context.getState();
       const after = readState(afterRoot);
       if (
@@ -1552,10 +1585,21 @@ export const createTerminalDataClientActor = (
         after.credentialRevision !== credentialRevision ||
         !credentialReadyForCurrentMode(afterRoot, after)
       ) {
+        logReport('report-rejected-after-http', {sessionId: payload.sessionId, reason: 'CREDENTIAL_CHANGED', elapsedMs: Math.max(0, dependencies.now() - startedAt)});
         return Object.freeze({kind: 'failure', category: 'not-delivered', code: 'TERMINAL_CREDENTIAL_CHANGED'});
       }
       const responseIdentity = terminalClient.readAcceptedResponseIdentity();
-      await terminalClient.acceptBusinessResponse(profileId, dependencies.businessServerName, result);
+      try {
+        await terminalClient.acceptBusinessResponse(profileId, dependencies.businessServerName, result);
+      } catch (error) {
+        logReport('report-response-acceptance-threw', {
+          sessionId: payload.sessionId,
+          state: payload.body.state,
+          elapsedMs: Math.max(0, dependencies.now() - startedAt),
+          errorName: error instanceof Error ? error.name : 'UnknownError',
+        });
+        throw error;
+      }
       context.platformPorts.logger
         .scope({moduleName, layer: 'kernel', subsystem: 'terminal-data-client', component: 'http-remote-control'})
         .info({

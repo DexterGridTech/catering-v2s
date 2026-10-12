@@ -1,6 +1,6 @@
 import {useCallback, useEffect, useMemo, useRef, useState, type ReactNode} from 'react';
 import {Animated, StyleSheet, View, type LayoutChangeEvent} from 'react-native';
-import {AutomationSurfaceProvider} from '@catering-v2s/ui-base-primitives';
+import {AutomationSurfaceProvider, useAutomationNode} from '@catering-v2s/ui-base-primitives';
 import {LayerStack} from './LayerStack';
 import {ScreenContainer} from './ScreenContainer';
 import {SurfaceContext} from '../contexts/SurfaceContext';
@@ -38,6 +38,36 @@ const SurfaceRootContent = ({children}: Readonly<{readonly children?: ReactNode}
 };
 
 const alwaysInactiveInterlock = (): boolean => false;
+
+const RegisteredSurfaceRoot = ({
+  children,
+  onLayout,
+  onLocalInteraction,
+}: Readonly<{
+  readonly children: ReactNode;
+  readonly onLayout: (event: LayoutChangeEvent) => void;
+  readonly onLocalInteraction: () => boolean;
+}>) => {
+  const node = useAutomationNode({testID: renderTestIds.surfaceRoot, role: 'container'});
+  const reportLayout = useCallback(
+    (event: LayoutChangeEvent) => {
+      onLayout(event);
+      node?.onLayout(event);
+    },
+    [node, onLayout],
+  );
+  return (
+    <View
+      ref={node?.attachHostNode}
+      testID={renderTestIds.surfaceRoot}
+      style={styles.root}
+      onLayout={reportLayout}
+      onStartShouldSetResponderCapture={onLocalInteraction}
+    >
+      {children}
+    </View>
+  );
+};
 
 export const SurfaceRoot = ({
   displayMode,
@@ -208,14 +238,9 @@ export const SurfaceRoot = ({
   return (
     <AutomationSurfaceProvider scope={automationSurfaceScope}>
       <SurfaceContext.Provider value={surfaceValue}>
-        <View
-          testID={renderTestIds.surfaceRoot}
-          style={styles.root}
-          onLayout={reportLayout}
-          onStartShouldSetResponderCapture={observeLocalInteraction}
-        >
+        <RegisteredSurfaceRoot onLayout={reportLayout} onLocalInteraction={observeLocalInteraction}>
           <RenderContext.Provider value={scopedRenderContext}>{hostedContent}</RenderContext.Provider>
-        </View>
+        </RegisteredSurfaceRoot>
       </SurfaceContext.Provider>
     </AutomationSurfaceProvider>
   );

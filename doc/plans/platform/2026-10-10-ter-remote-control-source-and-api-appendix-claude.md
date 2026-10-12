@@ -42,7 +42,7 @@ CBS=apps/backend/catering-business-server；TER=apps/terminal；JAVA包前缀=co
 | create Android adapter | TER/adapter/android/remote/package.json；src/index.ts；src/createAndroidRemoteControlPort.ts；android/src/main/java/JAVA/terminal/adapter/android/remote/TerminalRemoteModule.kt；RemoteWindowCapture.kt；RemoteTouchDispatcher.kt；build配置/module声明与tests | TS唯一SDKRoom；Kotlin narrowWindow/frame/input；无第二Room |
 | update original native | TER/adapter/android/dual-screen/.../TerminalDualScreenActivityHandler.kt及tests | 窄publicWindow/inputowner接口与删除/几何event，跨adapter变更明确纳入CP03 |
 | update composition | TER/ui/base/integration-assembly、ui/base/dev-host Web不可用port、两个ui/integration/*/src/application/module.ts、application/base/android装配与两个application的package.json/app config | 原provider注入；SDK registerGlobals原生bootstrap一次；LiveKit/plugin/fullAPK配置；无业务logic移到integration |
-| create operations feature | apps/frontend/operations-admin/src/features/remote-control/api/remoteControlClient.ts；model/remoteControlProtocol.ts；model/remoteControlSession.ts；ui/RemoteControlWorkspace.tsx；ui/RemoteControlVideo.tsx；test/* | 复用baseApi/generatedClient/foundation；DataChannel领域逻辑不能塞原列表巨型组件 |
+| create/update operations feature | apps/frontend/operations-admin/src/features/remote-control/api/remoteControlClient.ts；model/remoteControlProtocol.ts；model/remoteControlSession.ts；ui/RemoteControlWorkspace.tsx（已有文件，内部 `RemoteScreen` 拥有视频节点）；test/* | 复用baseApi/generatedClient/foundation；DataChannel领域逻辑不能塞原列表巨型组件；不另拆不存在的RemoteControlVideo.tsx |
 | update operations | ProjectTerminalUpdatePage.tsx；app/automation/remoteControlTestIds.ts；对应page test；package.json/lock | 原入口仅装配新feature及callback，@livekit/components-react仅该app |
 | update managed | scripts/test/terminal-automation.mjs保持唯一入口；tools/terminal-automation/src/runner.ts/managedRun.ts/driver.ts/android*owned cleanup；新remoteControlTestSession.ts/fixtures/remoteControl.ts/journeys/remote.web.test.ts/remote.android.test.ts | 详设§3a完整控制面，新phase非新runner；只按identity回收 |
 | create deployment | scripts/dev/livekit/docker-compose.yaml与配置模板；scripts/dev/r5-livekit-resident.mjs及test | 单远端官方部署，宿主网络RTC端口；秘密只环境，不进模板/日志 |
@@ -146,31 +146,31 @@ identity来源device只为绑定与PG current目标核验，不改CBS credential
 partial unique terminal where state in STARTING,ACTIVE；request unique(workspace,actor_account_ref,request_id)；project+startedAt读回索引按实际查询必要性添加，不猜统计索引。audit_event同owner标准JSON facts仅terminal/project/session/start/end/finite reason，复用AuditEventWriter事务adapter。
 
 ## 4. TestId唯一常量表与原控件复用
-所有新增常量位于 `apps/frontend/operations-admin/src/app/automation/remoteControlTestIds.ts`；通过foundation testId挂载，UI/driver引用同一源。以下是未来定义，不是已存在的source。动态键用终端UUID/固定slot，不用索引；同terminal不同菜单/状态控件值不能冲突。
+所有新增常量位于 `apps/frontend/operations-admin/src/app/automation/remoteControlTestIds.ts`；通过foundation `testId` 或 Ant Design Menu item 的 `data-testid` 属性挂载，UI/driver引用同一源。动态键用终端UUID/固定slot，不用索引；同terminal不同菜单/状态控件值不能冲突。
 | 符号 | 唯一值/构造规则 | 实际节点/消费 |
 | --- | --- | --- |
 | onlineStatus(terminalRef) | operations-remote-control-online-${terminalRef} | 原表连接Tag/文本；仅观察 |
 | detailActions(terminalRef) | operations-remote-control-actions-${terminalRef} | 原终端Drawer中AdminDetailActionMenu的真实Button |
-| start(terminalRef) | operations-remote-control-start-${terminalRef} | AdminDetailActionLabel真实可点击菜单anchor |
+| start(terminalRef) | operations-remote-control-start-${terminalRef} | Ant Design Menu 的真实 `MenuItem` 节点 |
 | workArea | operations-remote-control-workspace | Modal领域媒体容器，仅观察/限定查找 |
 | screen(slot) | operations-remote-control-screen-${slot}；slot=main/secondary | 接收PointerEvent的video；若SDK组件不公开video属性，使用紧贴该video的输入层并在focused证明内容矩形一致，不用祖先wrapper猜坐标 |
 | status | operations-remote-control-status | 当前工作区状态文本，仅观察 |
 | end / close / restart | operations-remote-control-end / -close / -restart | 各自真实Button，不借Modal外框testId |
 
-原Tab/query/terminalName/list/detail保留 `terminalUpdateTestIds`。只将当前查询重置Button的字面量 `terminal-update-report-filter-reset` 移为同对象 `reportQueryReset`、分页prefix `terminal-update-report-pagination` 移为 `reportPagination`；值不改、不新增UI行为。分页真实Button由CursorPagination拼出 `${reportPagination}-previous/-next`。原TER业务控件仍各包createTestId/品牌TestId，无remote专用TER按钮。
+原Tab/query/terminalName/list/detail保留 `terminalUpdateTestIds`。查询重置 Button 使用当前已定义的 `reportQueryReset`，分页 prefix 使用当前已定义的 `reportPagination`；分页真实 Button 由 `CursorPagination` 拼出 `${reportPagination}-previous/-next`。原TER业务控件仍各包 `createTestId`/品牌TestId，无remote专用TER按钮。
 
 ### 4a. 逐动作九列：UI实现后、L2脚本开发前必须逐行读回
-UI owning source缩写：P=`apps/frontend/operations-admin/src/features/terminal-update/ui/ProjectTerminalUpdatePage.tsx`；W=`apps/frontend/operations-admin/src/features/remote-control/ui/RemoteControlWorkspace.tsx`；V=同feature `RemoteControlVideo.tsx`。binding文件见§4b；以下B=该文件的具名action，D=remoteControlTestSession同名helper。所有拟新增节点均需实施focused与fresh复核，当前OPEN/NOT_RUN。
+UI owning source缩写：P=`apps/frontend/operations-admin/src/features/terminal-update/ui/ProjectTerminalUpdatePage.tsx`；W=`apps/frontend/operations-admin/src/features/remote-control/ui/RemoteControlWorkspace.tsx`；视频节点也由 W 内的 `RemoteScreen` 渲染。binding文件见§4b；以下B=该文件的具名action，D=remoteControlTestSession同名helper。2026-10-12当前源码独立静态复核确认动作节点与TestId来源/挂载；尚未接入Browser-L2 binding/spec的节点仍为OPEN，浏览器focused及动态证明为NOT_RUN。
 | 用户动作 / case-action | 实际控件 | UI owning source | TestIds常量 | 实际挂载节点 | wrapper/native | L2 binding/touch | focused/static proof | 复核结论 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | online.reportsTab | 终端更新状态Tab | P | terminalUpdateTestIds.reportsTabLabel | Tab可见label span | COMPOSITE_OPTION_ANCHOR，保持现有点击语义 | B.reportsTab / D.openReports | page组件切Tab读报告而非规则 | OPEN |
 | online.queryText | 原终端查询 | P | terminalUpdateTestIds.reportQuery | Input的真实input | native；fieldProps转发须读回 | B.queryText / D.queryTerminal | 输入后未提交不查询 | OPEN |
 | online.querySubmit | 查询 | P | terminalUpdateTestIds.reportQuerySubmit | Button | native | B.querySubmit / D.queryTerminal | 显式提交；目标terminalRef唯一 | OPEN |
-| online.queryReset | 重置 | P | terminalUpdateTestIds.reportQueryReset（计划迁入） | Button | native | B.queryReset | 原查询清理/刷新相同 | OPEN |
+| online.queryReset | 重置 | P | terminalUpdateTestIds.reportQueryReset（当前已定义） | Button | native | B.queryReset | 原查询清理/刷新相同 | Browser-L2 binding/proof OPEN；UI/TestId静态复核PASS |
 | online.previous/next | 原列表翻页 | P/CursorPagination | reportPagination派生-previous/-next | 两个Button | native；不是分页wrapper | B.previous/B.next | 51行fixture实际cursor上下页不重复 | OPEN |
 | online.openTerminal | 原终端名称 | P | terminalUpdateTestIds.reportOpen(terminalRef) | 原Button | native稳定UUID | B.openTerminal / D.openTerminal | latest detail身份/三态一致 | OPEN |
 | start.openActions | 操作 | P | remoteControlTestIds.detailActions(terminalRef) | AdminDetailActionMenu触发Button | native | B.openActions / D.start | header菜单真实打开，不借ruleDetailActions | OPEN |
-| start.remoteControl | 远程控制 | P/AdminDetailActionLabel | remoteControlTestIds.start(terminalRef) | 可见菜单label span | COMPOSITE_OPTION_ANCHOR；明确同一菜单动作 | B.start / D.start | 无权/不可用禁用；有权POST真实目标 | OPEN |
+| start.remoteControl | 远程控制 | P | remoteControlTestIds.start(terminalRef) | Ant Design Menu `MenuItem` 节点 | native menu item | B.start / D.start | 无权/不可用禁用；有权POST真实目标 | OPEN |
 | input.main.down/move/up/cancel | 主屏视频单指 | V | remoteControlTestIds.screen('main') | 真实video输入接缝 | native或上述具名紧贴输入层，focused先定一种 | B.main / D.pointer('main') | 内容矩形去黑边、同gesture目标/结果；真实媒体限DEV/device | OPEN |
 | input.secondary.down/move/up/cancel | 副屏视频单指 | V | remoteControlTestIds.screen('secondary') | 第二路真实video输入接缝 | 同主屏；不能按到达顺序 | B.secondary / D.pointer('secondary') | 单屏无节点；dual/pair正确endpoint，旧stream拒绝 | OPEN |
 | end.endSession | 结束远程控制 | W | remoteControlTestIds.end | Button | native | B.end / D.end | 本地先禁输入，CBS当前session结束 | OPEN |

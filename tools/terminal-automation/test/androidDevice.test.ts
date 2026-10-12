@@ -155,7 +155,7 @@ describe('createAndroidDeviceSession', () => {
     );
   });
 
-  it('reads only structured Runtime failure identifiers from the selected app process', async () => {
+  it('preserves raw selected-app Runtime logs alongside structured diagnostics', async () => {
     const repo = repository();
     const context = createClient({});
     const calls: {readonly args: string[]; readonly maxBufferBytes?: number}[] = [];
@@ -167,6 +167,7 @@ describe('createAndroidDeviceSession', () => {
       runTextCommand: async (_adb, args, maxBufferBytes) => {
         calls.push({args: [...args], maxBufferBytes});
         if (args.includes('pidof')) return '1234';
+        if (args.includes('-b')) return '';
         return [
           'E/ReactNativeJS( 1234): ' +
             JSON.stringify({
@@ -182,7 +183,9 @@ describe('createAndroidDeviceSession', () => {
       },
     });
     const diagnostics = await session.readRuntimeFailureDiagnostics('com.example.terminal');
-    expect(JSON.parse(diagnostics)).toEqual({
+    const structured = diagnostics.split('ANDROID_STRUCTURED_DIAGNOSTICS_BEGIN\n')[1]?.split('\nANDROID_STRUCTURED_DIAGNOSTICS_END')[0];
+    expect(structured).toBeDefined();
+    expect(JSON.parse(structured!)).toEqual({
       category: 'runtime.lifecycle',
       event: 'runtime.start.failed',
       level: 'error',
@@ -191,24 +194,168 @@ describe('createAndroidDeviceSession', () => {
       causeName: 'FixtureError',
       causeCode: 'ERR_FIXTURE_START',
     });
-    expect(diagnostics).not.toContain('sensitive fixture payload');
-    expect(calls.at(-1)?.args).toEqual([
-      '-s',
-      'emulator-5554',
-      'shell',
-      'logcat',
-      '-d',
-      '-t',
-      '200',
-      '-v',
-      'brief',
-      '--pid',
-      '1234',
-      '-s',
-      'ReactNativeJS:V',
-      '*:S',
+    expect(diagnostics).toContain('ANDROID_RAW_REACT_NATIVE_LOGCAT_BEGIN');
+    expect(diagnostics).toContain('sensitive fixture payload');
+    expect(calls.map(call => call.args)).toEqual([
+      ['-s', 'emulator-5554', 'shell', 'pidof', 'com.example.terminal'],
+      [
+        '-s', 'emulator-5554', 'shell', 'logcat', '-d', '-t', '200', '-v', 'brief', '--pid', '1234',
+        '-s', 'ReactNativeJS:V', '*:S',
+      ],
+      [
+        '-s', 'emulator-5554', 'shell', 'logcat', '-d', '-b', 'crash', '-v', 'brief',
+        '-s', 'AndroidRuntime:E', '*:S',
+      ],
     ]);
-    expect(calls.at(-1)?.maxBufferBytes).toBe(512 * 1024);
+    expect(calls[1]?.maxBufferBytes).toBe(512 * 1024);
+    expect(calls[2]?.maxBufferBytes).toBe(8 * 1024 * 1024);
+  });
+
+  it('logs the complete native startup exception and stack when the app process has exited', async () => {
+    const repo = repository();
+    const context = createClient({});
+    const calls: string[][] = [];
+    const session = await createAndroidDeviceSession({
+      client: context.client,
+      serial: 'emulator-5554',
+      repositoryRoot: repo.root,
+      adbPath: '/usr/bin/adb',
+      runTextCommand: async (_adb, args) => {
+        calls.push([...args]);
+        if (args.includes('pidof')) throw new Error('TERMINAL_AUTOMATION_ANDROID_COMMAND_FAILED_EXIT');
+        return [
+          'E/AndroidRuntime( 1234): FATAL EXCEPTION: main',
+          'E/AndroidRuntime( 1234): Process: com.example.terminal, PID: 1234',
+          'E/AndroidRuntime( 1234): java.lang.RuntimeException: native wrapper detail',
+          'E/AndroidRuntime( 1234): Caused by: java.io.FileNotFoundException: terminal-update-publication.json',
+          'E/AndroidRuntime( 1234): java.net.SocketException: authorization=Bearer native-secret-token phone=13800138000 callback=https://user:password@192.168.1.7/path',
+          'E/AndroidRuntime( 1234): Cookie: session=first-cookie; identity=second-cookie; Path=/',
+          'E/AndroidRuntime( 1234): Set-Cookie: session=third-cookie; Path=/; HttpOnly',
+          'E/AndroidRuntime( 1234): apiKey=api-secret accessToken=access-secret refreshToken=refresh-secret X-Api-Key: header-secret',
+          'E/AndroidRuntime( 1234): peer=[2001:db8::1] gateway=fe80::1',
+          'E/AndroidRuntime( 1234): retryAt=12:34:56 state=a:b:c',
+          'E/AndroidRuntime( 1234): \tat com.catering.v2s.terminal.update.TerminalUpdateRuntime.readInstalledIdentity(TerminalUpdateRuntime.kt:1049)',
+          'E/ReactNativeJS( 1234): ' +
+            JSON.stringify({
+              level: 'error',
+              category: 'runtime.lifecycle',
+              event: 'runtime.start.failed',
+              error: {name: 'Runtime lifecycle failed', code: 'ERR_TER_RUNTIME_LIFECYCLE_FAILED'},
+              data: {causeName: 'FixtureError', causeCode: 'ERR_FIXTURE_START'},
+              message: 'sensitive fixture payload',
+            }),
+        ].join('\n');
+      },
+    });
+
+    const diagnostics = await session.readRuntimeFailureDiagnostics('com.example.terminal');
+    const structured = diagnostics.split('ANDROID_STRUCTURED_DIAGNOSTICS_BEGIN\n')[1]?.split('\nANDROID_STRUCTURED_DIAGNOSTICS_END')[0] ?? '';
+
+    expect(calls).toEqual([
+      ['-s', 'emulator-5554', 'shell', 'pidof', 'com.example.terminal'],
+      [
+        '-s',
+        'emulator-5554',
+        'shell',
+        'logcat',
+        '-d',
+        '-b',
+        'crash',
+        '-v',
+        'brief',
+        '-s',
+        'AndroidRuntime:E',
+        '*:S',
+      ],
+    ]);
+    expect(structured).toContain('"failureCode":"ERR_TER_RUNTIME_LIFECYCLE_FAILED"');
+    expect(structured).toContain('"causeCode":"ERR_FIXTURE_START"');
+    expect(diagnostics).toContain('ANDROID_RAW_STARTUP_FATAL_BEGIN');
+    expect(diagnostics).toContain('E/AndroidRuntime( 1234): java.lang.RuntimeException: native wrapper detail');
+    expect(diagnostics).toContain('"event":"app.startup.fatal-exception"');
+    expect(diagnostics).toContain('"failureName":"java.lang.RuntimeException"');
+    expect(diagnostics).toContain('"causeName":"java.io.FileNotFoundException"');
+    expect(diagnostics).toContain('native wrapper detail');
+    expect(diagnostics).toContain('terminal-update-publication.json');
+    expect(diagnostics).toContain('authorization=Bearer native-secret-token phone=13800138000 callback=https://user:password@192.168.1.7/path');
+    expect(diagnostics).toContain('Cookie: session=first-cookie; identity=second-cookie; Path=/');
+    expect(diagnostics).toContain('Set-Cookie: session=third-cookie; Path=/; HttpOnly');
+    expect(diagnostics).toContain('apiKey=api-secret accessToken=access-secret refreshToken=refresh-secret X-Api-Key: header-secret');
+    expect(diagnostics).toContain('peer=[2001:db8::1] gateway=fe80::1');
+    expect(diagnostics).toContain('retryAt=12:34:56 state=a:b:c');
+    expect(diagnostics).toContain('TerminalUpdateRuntime.readInstalledIdentity(TerminalUpdateRuntime.kt:1049)');
+  });
+
+  it('uses the latest fatal exception for the selected app package', () => {
+    const diagnostics = collectAndroidRuntimeFailureDiagnostics(
+      [
+        'E/AndroidRuntime( 1234): FATAL EXCEPTION: main',
+        'E/AndroidRuntime( 1234): Process: com.example.terminal, PID: 1234',
+        'E/AndroidRuntime( 1234): java.lang.IllegalStateException: earlier startup failure',
+        'E/AndroidRuntime( 5678): FATAL EXCEPTION: main',
+        'E/AndroidRuntime( 5678): Process: com.example.other, PID: 5678',
+        'E/AndroidRuntime( 5678): java.lang.IllegalArgumentException: unrelated package failure',
+        'E/AndroidRuntime( 9012): FATAL EXCEPTION: main',
+        'E/AndroidRuntime( 9012): Process: com.example.terminal, PID: 9012',
+        'E/AndroidRuntime( 9012): java.io.FileNotFoundException: latest startup failure',
+      ].join('\n'),
+      'com.example.terminal',
+    );
+
+    expect(diagnostics).toContain('latest startup failure');
+    expect(diagnostics).not.toContain('earlier startup failure');
+    expect(diagnostics).not.toContain('unrelated package failure');
+    expect(diagnostics).toContain('"failureName":"java.io.FileNotFoundException"');
+  });
+
+  it('reads a prior process fatal from the crash buffer while the package has restarted', async () => {
+    const repo = repository();
+    const context = createClient({});
+    const calls: string[][] = [];
+    const session = await createAndroidDeviceSession({
+      client: context.client,
+      serial: 'emulator-5554',
+      repositoryRoot: repo.root,
+      adbPath: '/usr/bin/adb',
+      runTextCommand: async (_adb, args) => {
+        calls.push([...args]);
+        if (args.includes('pidof')) return '6789';
+        if (args.includes('-b')) {
+          return [
+            'E/AndroidRuntime( 1234): FATAL EXCEPTION: main',
+            'E/AndroidRuntime( 1234): Process: com.example.terminal, PID: 1234',
+            'E/AndroidRuntime( 1234): java.lang.IllegalStateException: old process crashed',
+            'E/AndroidRuntime( 1234): \tat com.example.terminal.App.start(App.kt:12)',
+          ].join('\n');
+        }
+        return 'E/ReactNativeJS( 6789): current process is alive';
+      },
+    });
+
+    const diagnostics = await session.readRuntimeFailureDiagnostics('com.example.terminal');
+
+    expect(diagnostics).toContain('old process crashed');
+    expect(diagnostics).toContain('App.start(App.kt:12)');
+    const crashCall = calls.find(args => args.includes('-b'));
+    expect(crashCall).toContain('crash');
+    expect(crashCall).not.toContain('--pid');
+  });
+
+  it('keeps a matching fatal stack beyond the old 200-line window', () => {
+    const stack = Array.from({length: 220}, (_, index) =>
+      `E/AndroidRuntime( 1234): \tat com.example.terminal.Frame${index}.run(Frame${index}.kt:${index + 1})`,
+    );
+    const diagnostics = collectAndroidRuntimeFailureDiagnostics(
+      [
+        'E/AndroidRuntime( 1234): FATAL EXCEPTION: main',
+        'E/AndroidRuntime( 1234): Process: com.example.terminal, PID: 1234',
+        'E/AndroidRuntime( 1234): java.lang.RuntimeException: long stack fixture',
+        ...stack,
+      ].join('\n'),
+      'com.example.terminal',
+    );
+
+    expect(diagnostics).toContain('Frame219.run(Frame219.kt:220)');
   });
 
   it('reads only native remote-control event names from the selected app process', async () => {
@@ -224,8 +371,9 @@ describe('createAndroidDeviceSession', () => {
         calls.push({args: [...args], maxBufferBytes});
         if (args.includes('pidof')) return '1234';
         return [
-          'I/TerminalRemote( 1234): event=touch-dispatch surfaceKey=PRIMARY windowIdentity=private-window action=down result=DISPATCHED',
-          'I/TerminalRemoteCapture( 1234): event=capturer-initialized streamId=private-stream',
+          'I/TerminalRemote( 1234): event=touch-dispatch surfaceKey=PRIMARY windowIdentity=window-primary generation=4 action=down result=DISPATCHED',
+          'I/TerminalRemoteCapture( 1234): event=capturer-initialized surfaceKey=PRIMARY windowIdentity=window-primary generation=4',
+          'I/TerminalRemote( 1234): event=video-track-created streamId=stream-123 surfaceKey=PRIMARY windowIdentity=window-primary trackId=track-123 generation=4 width=1280 height=720',
           'I/Other( 1234): event=ignored',
         ].join('\n');
       },
@@ -233,9 +381,29 @@ describe('createAndroidDeviceSession', () => {
 
     const diagnostics = await session.readRemoteControlDiagnostics('com.example.terminal');
 
-    expect(diagnostics).toEqual({lineCount: 2, eventKinds: ['touch-dispatch', 'capturer-initialized']});
-    expect(JSON.stringify(diagnostics)).not.toContain('private-window');
-    expect(JSON.stringify(diagnostics)).not.toContain('private-stream');
+    expect(diagnostics).toEqual({
+      lineCount: 3,
+      eventKinds: ['touch-dispatch', 'capturer-initialized', 'video-track-created'],
+      events: [
+        {
+          event: 'touch-dispatch',
+          fields: {surfaceKey: 'PRIMARY', windowIdentity: 'window-primary', generation: 4, action: 'down', result: 'DISPATCHED'},
+        },
+        {event: 'capturer-initialized', fields: {surfaceKey: 'PRIMARY', windowIdentity: 'window-primary', generation: 4}},
+        {
+          event: 'video-track-created',
+          fields: {
+            streamId: 'stream-123',
+            surfaceKey: 'PRIMARY',
+            windowIdentity: 'window-primary',
+            trackId: 'track-123',
+            generation: 4,
+            width: 1280,
+            height: 720,
+          },
+        },
+      ],
+    });
     expect(calls[1]?.args).toEqual([
       '-s', 'emulator-5554', 'shell', 'logcat', '-d', '-t', '200', '-v', 'brief', '--pid', '1234',
       '-s', 'TerminalRemote:I', 'TerminalRemoteCapture:I', '*:S',

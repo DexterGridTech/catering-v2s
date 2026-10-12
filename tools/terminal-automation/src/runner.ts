@@ -14,6 +14,7 @@ import {
   readSync,
   realpathSync,
   rmSync,
+  rmdirSync,
   statSync,
   unlinkSync,
   writeFileSync,
@@ -22,6 +23,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createConnection} from 'node:net';
 import {
+  attachAndroidDeviceIdentity,
   createManagedRun,
   persistManagedRun,
   type TerminalAutomationExecution,
@@ -30,6 +32,7 @@ import {
   type TerminalAutomationRemoteTopology,
 } from './managedRun.ts';
 import {androidAutomationBuildIdentity} from './androidBuild.ts';
+import {createAndroidAdbClient, inspectAndroidDeviceIdentity} from './androidAdb.ts';
 import {
   cleanupFailedAndroidRunReverses,
   cleanupFailedAndroidRunPackage,
@@ -184,6 +187,23 @@ type ManagedDiagnosticSource = Readonly<{
   readonly events?: readonly ManagedDiagnosticEvent[];
 }>;
 
+export const summarizeManagedDiagnosticEvents = (source: ManagedDiagnosticSource): Readonly<{
+  source: string;
+  eventCount: number;
+  eventTypeCounts: Readonly<Record<string, number>>;
+}> => {
+  const counts = new Map<string, number>();
+  for (const event of source.events ?? []) {
+    const name = event.event;
+    if (typeof name === 'string') counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+  return Object.freeze({
+    source: source.source,
+    eventCount: source.events?.length ?? 0,
+    eventTypeCounts: Object.freeze(Object.fromEntries([...counts.entries()].sort(([left], [right]) => left.localeCompare(right)))),
+  });
+};
+
 const remoteControlDiagnosticOperations = new Set([
   'startOperationsTerminalRemoteControl',
   'issueOperationsRemoteControlGrant',
@@ -198,6 +218,13 @@ const remoteControlDiagnosticRequestEvents = new Set([
   'REQUEST_SUCCEEDED',
   'REQUEST_FAILED',
   'REQUEST_COMPLETED',
+]);
+const remoteControlOwnerFailureCodes = new Set([
+  'TERMINAL_CONTROL_REMOTE_NOT_READY',
+  'TERMINAL_CONTROL_REMOTE_OCCUPIED',
+  'TERMINAL_CONTROL_REMOTE_IDENTITY_CONFLICT',
+  'TERMINAL_CONTROL_REMOTE_SESSION_ENDED',
+  'PLATFORM_DEPENDENCY_UNAVAILABLE',
 ]);
 
 export const evaluateManagedRemoteControlDiagnosticCoverage = (
@@ -225,6 +252,22 @@ export const evaluateManagedRemoteControlDiagnosticCoverage = (
   const currentOwnerFailures = cbsEvents(after).filter(event =>
     event.event === 'OWNER_RESULT_UNKNOWN' && !priorOwnerFailures.has(ownerFailureIdentity(event)),
   );
+  const priorUnexpectedRegistrationFailures = new Set(cbsEvents(before)
+    .filter(event => event.event === 'TERMINAL_REMOTE_CONTROL_REGISTER_UNEXPECTED_FAILURE')
+    .map(ownerFailureIdentity));
+  const currentUnexpectedRegistrationFailures = cbsEvents(after).filter(event =>
+    event.event === 'TERMINAL_REMOTE_CONTROL_REGISTER_UNEXPECTED_FAILURE' &&
+    !priorUnexpectedRegistrationFailures.has(ownerFailureIdentity(event)),
+  );
+  const remoteRejectionIdentity = (event: ManagedDiagnosticEvent): string =>
+    `${String(event.operationId)}:${String(event.requestId)}:${String(event.event)}`;
+  const priorRemoteRejections = new Set(cbsEvents(before)
+    .filter(event => event.event === 'TERMINAL_REMOTE_CONTROL_REQUEST_REJECTED')
+    .map(remoteRejectionIdentity));
+  const currentRemoteRejections = cbsEvents(after).filter(event =>
+    event.event === 'TERMINAL_REMOTE_CONTROL_REQUEST_REJECTED' &&
+    !priorRemoteRejections.has(remoteRejectionIdentity(event)),
+  );
   const prior = new Set(requests(before).map(identity));
   const current = requests(after).filter(event => !prior.has(identity(event)));
   const completed = current.filter(event =>
@@ -240,9 +283,15 @@ export const evaluateManagedRemoteControlDiagnosticCoverage = (
       : typeof failed.status === 'number'
         ? failed.status
         : undefined;
-    if (typeof failedStatus === 'number' && Number.isFinite(failedStatus) && failedStatus >= 500 &&
-        failed.errorCode === 'PLATFORM_COMMON_RESULT_UNKNOWN') {
-      const cause = currentOwnerFailures.find(event =>
+    const isServerFailure = typeof failedStatus === 'number' && Number.isFinite(failedStatus) && failedStatus >= 500;
+    const isTypedRemoteControlRejection =
+      typeof failed.errorCode === 'string' && remoteControlOwnerFailureCodes.has(failed.errorCode);
+    const requiresCauseEvent = isServerFailure && (
+      failed.errorCode === 'PLATFORM_COMMON_RESULT_UNKNOWN' ||
+      (failed.operationId === 'registerTerminalRemoteControl' && !isTypedRemoteControlRejection)
+    );
+    if (requiresCauseEvent) {
+      const ownerCause = currentOwnerFailures.find(event =>
         event.event === 'OWNER_RESULT_UNKNOWN' &&
         event.operationId === failed.operationId &&
         event.requestId === failed.requestId &&
@@ -250,7 +299,15 @@ export const evaluateManagedRemoteControlDiagnosticCoverage = (
         typeof event.rootCauseType === 'string' &&
         typeof event.exceptionOrigin === 'string',
       );
-      if (cause === undefined) {
+      const routeCause = currentUnexpectedRegistrationFailures.find(event =>
+        failed.operationId === 'registerTerminalRemoteControl' &&
+        event.operationId === failed.operationId &&
+        event.requestId === failed.requestId &&
+        typeof event.exceptionType === 'string' &&
+        typeof event.rootCauseType === 'string' &&
+        typeof event.exceptionOrigin === 'string',
+      );
+      if (ownerCause === undefined && routeCause === undefined) {
         return Object.freeze({
           status: 'FAIL',
           code: 'TERMINAL_AUTOMATION_REMOTE_FAILURE_CAUSE_DIAGNOSTICS_INCOMPLETE',
@@ -258,9 +315,21 @@ export const evaluateManagedRemoteControlDiagnosticCoverage = (
         });
       }
     }
-    // CBS owner diagnostics persist a terminal request event (operationId + requestId + status).
-    // They do not emit REQUEST_STARTED for every ordinary owner route, so requiring a second
-    // event would reject a complete failure record and hide the first broken HTTP boundary.
+    if (typeof failed.errorCode === 'string' && remoteControlOwnerFailureCodes.has(failed.errorCode)) {
+      const rejection = currentRemoteRejections.find(event =>
+        event.operationId === failed.operationId &&
+        event.requestId === failed.requestId &&
+        typeof event.failure === 'string',
+      );
+      if (rejection === undefined) {
+        return Object.freeze({
+          status: 'FAIL',
+          code: 'TERMINAL_AUTOMATION_REMOTE_REJECTION_DIAGNOSTICS_INCOMPLETE',
+          missingOperations: Object.freeze([]),
+        });
+      }
+    }
+    // Other edge rejections remain diagnosable by their correlated REQUEST_COMPLETED status/code.
     return Object.freeze({status: 'PASS', code: null, missingOperations: Object.freeze([])});
   }
 
@@ -416,21 +485,42 @@ export const cleanupManagedRunArtifacts = (
   runDirectory: string,
   cleanUpdateArtifacts: boolean,
   terminalRoot = path.join(root, 'apps/terminal'),
+  cleanAndroidBuildOutputs = cleanUpdateArtifacts,
 ) => {
   const runRoot = realpathSync(runDirectory);
   const relativeTargets = ['android-build'];
+  if (cleanAndroidBuildOutputs) relativeTargets.push('native/android-build');
   const removed: string[] = [];
-  if (cleanUpdateArtifacts) {
+  let removedBytes = 0;
+  if (cleanAndroidBuildOutputs) {
     for (const app of updateArtifactApps) {
       const linkPath = path.join(terminalRoot, `application/android/${app}/android/build`);
-      const expectedTarget = path.join(runRoot, 'android-build', app, 'root');
-      if (cleanupRunOwnedDirectoryLink(linkPath, expectedTarget)) {
-        removed.push(path.relative(root, linkPath));
+      if (!existsSync(linkPath)) continue;
+      const linkStat = lstatSync(linkPath);
+      if (linkStat.isSymbolicLink()) {
+        const actualTarget = path.resolve(path.dirname(linkPath), readlinkSync(linkPath));
+        const expectedTargets = [
+          path.join(runRoot, 'android-build', 'root'),
+          path.join(runRoot, 'android-build', app, 'root'),
+        ];
+        if (!expectedTargets.some(target => path.resolve(target) === actualTarget)) {
+          throw new Error('TERMINAL_AUTOMATION_ANDROID_BUILD_LINK_TARGET_MISMATCH');
+        }
+        if (cleanupRunOwnedDirectoryLink(linkPath, actualTarget)) {
+          removed.push(path.relative(root, linkPath));
+        }
+      } else {
+        removedBytes += cleanupReactNativeSettingsBuildOutput(linkPath);
       }
     }
     let nodeModulesRoot: string | undefined;
-    for (const app of updateArtifactApps) {
-      const registryPath = path.join(runRoot, 'android-build', app, 'temporary-source-build-links.json');
+    const registryPaths = [
+      path.join(runRoot, 'android-build', 'temporary-source-build-links.json'),
+      ...updateArtifactApps.map(app =>
+        path.join(runRoot, 'android-build', app, 'temporary-source-build-links.json'),
+      ),
+    ];
+    for (const registryPath of registryPaths) {
       if (!existsSync(registryPath)) continue;
       nodeModulesRoot ??= realpathSync(path.join(terminalRoot, 'node_modules'));
       const registryStat = lstatSync(registryPath);
@@ -457,7 +547,7 @@ export const cleanupManagedRunArtifacts = (
         const targetPath = path.resolve(entry.target);
         const linkParent = realpathSync(path.dirname(linkPath));
         const linkParentRelative = path.relative(nodeModulesRoot, linkParent);
-        const targetRelative = path.relative(path.join(runRoot, 'android-build', app), targetPath);
+        const targetRelative = path.relative(path.dirname(registryPath), targetPath);
         if (
           path.basename(linkPath) !== 'build' ||
           path.basename(linkParent) !== 'android' ||
@@ -497,7 +587,6 @@ export const cleanupManagedRunArtifacts = (
       );
     }
   }
-  let removedBytes = 0;
   for (const relative of relativeTargets) {
     const segments = relative.split('/');
     let cursor = runRoot;
@@ -522,8 +611,85 @@ export const cleanupManagedRunArtifacts = (
     if (existsSync(target)) throw new Error('TERMINAL_AUTOMATION_ARTIFACT_CLEANUP_READBACK_FAILED');
     removed.push(relative);
   }
-  if (cleanUpdateArtifacts) assertNoAndroidIntermediateOutputs(terminalRoot);
+  if (cleanAndroidBuildOutputs) assertNoAndroidIntermediateOutputs(terminalRoot);
   return {removedBytes, removed};
+};
+
+const cleanupReactNativeSettingsBuildOutput = (buildDirectory: string): number => {
+  const generatedDirectory = path.join(buildDirectory, 'generated');
+  const autolinkingDirectory = path.join(generatedDirectory, 'autolinking');
+  const reportsDirectory = path.join(buildDirectory, 'reports');
+  const problemsDirectory = path.join(reportsDirectory, 'problems');
+  const problemsReport = path.join(problemsDirectory, 'problems-report.html');
+  const expectedFiles = ['autolinking.json', 'package.json.sha'];
+  const buildStat = lstatSync(buildDirectory);
+  const buildEntries = readdirSync(buildDirectory).sort().join(',');
+  if (buildStat.isSymbolicLink() || !buildStat.isDirectory()) {
+    throw new Error('TERMINAL_AUTOMATION_ANDROID_SETTINGS_BUILD_OUTPUT_INVALID');
+  }
+  const generatedStat = lstatSync(generatedDirectory);
+  const autolinkingStat = lstatSync(autolinkingDirectory);
+  if (
+    generatedStat.isSymbolicLink() ||
+    !generatedStat.isDirectory() ||
+    autolinkingStat.isSymbolicLink() ||
+    !autolinkingStat.isDirectory() ||
+    (buildEntries !== 'generated' && buildEntries !== 'generated,reports') ||
+    readdirSync(generatedDirectory).join(',') !== 'autolinking'
+  ) {
+    throw new Error('TERMINAL_AUTOMATION_ANDROID_SETTINGS_BUILD_OUTPUT_UNEXPECTED');
+  }
+  const actualFiles = readdirSync(autolinkingDirectory).sort();
+  if (actualFiles.join(',') !== expectedFiles.join(',')) {
+    throw new Error('TERMINAL_AUTOMATION_ANDROID_SETTINGS_BUILD_OUTPUT_UNEXPECTED');
+  }
+  for (const fileName of expectedFiles) {
+    const filePath = path.join(autolinkingDirectory, fileName);
+    const fileStat = lstatSync(filePath);
+    if (fileStat.isSymbolicLink() || !fileStat.isFile()) {
+      throw new Error('TERMINAL_AUTOMATION_ANDROID_SETTINGS_BUILD_OUTPUT_INVALID');
+    }
+  }
+  const hasProblemsReport = existsSync(reportsDirectory);
+  if (hasProblemsReport) {
+    const reportsStat = lstatSync(reportsDirectory);
+    if (
+      reportsStat.isSymbolicLink() ||
+      !reportsStat.isDirectory() ||
+      readdirSync(reportsDirectory).join(',') !== 'problems'
+    ) {
+      throw new Error('TERMINAL_AUTOMATION_ANDROID_SETTINGS_BUILD_OUTPUT_UNEXPECTED');
+    }
+    const problemsStat = lstatSync(problemsDirectory);
+    if (
+      problemsStat.isSymbolicLink() ||
+      !problemsStat.isDirectory() ||
+      readdirSync(problemsDirectory).join(',') !== 'problems-report.html'
+    ) {
+      throw new Error('TERMINAL_AUTOMATION_ANDROID_SETTINGS_BUILD_OUTPUT_UNEXPECTED');
+    }
+    const reportStat = lstatSync(problemsReport);
+    if (
+      reportStat.isSymbolicLink() ||
+      !reportStat.isFile()
+    ) {
+      throw new Error('TERMINAL_AUTOMATION_ANDROID_SETTINGS_BUILD_OUTPUT_UNEXPECTED');
+    }
+  }
+  let removedBytes = managedArtifactBytes(autolinkingDirectory);
+  if (hasProblemsReport) removedBytes += managedArtifactBytes(problemsReport);
+  rmSync(autolinkingDirectory, {recursive: true, force: false});
+  rmdirSync(generatedDirectory);
+  if (hasProblemsReport) {
+    unlinkSync(problemsReport);
+    rmdirSync(problemsDirectory);
+    rmdirSync(reportsDirectory);
+  }
+  rmdirSync(buildDirectory);
+  if (existsSync(buildDirectory)) {
+    throw new Error('TERMINAL_AUTOMATION_ANDROID_SETTINGS_BUILD_CLEANUP_READBACK_FAILED');
+  }
+  return removedBytes;
 };
 
 export const assertNoAndroidIntermediateOutputs = (terminalRoot: string): void => {
@@ -660,6 +826,7 @@ export const parseAutomationRunArguments = (argv: readonly string[]): TerminalAu
     '--device-serial',
     '--peer-device-serial',
     '--remote-topology',
+    '--device-kind',
   ]);
   if ([...values.keys()].some(key => !allowed.has(key))) fail('TERMINAL_AUTOMATION_ARGUMENT_UNKNOWN');
   const phaseValue = values.get('--phase');
@@ -751,6 +918,16 @@ export const parseAutomationRunArguments = (argv: readonly string[]): TerminalAu
   }
   const deviceSerial = values.get('--device-serial');
   const peerDeviceSerial = values.get('--peer-device-serial');
+  const deviceKindValue = values.get('--device-kind');
+  if (deviceKindValue !== undefined && deviceKindValue !== 'physical' && deviceKindValue !== 'emulator') {
+    fail('TERMINAL_AUTOMATION_ANDROID_DEVICE_KIND_INVALID');
+  }
+  if (deviceKindValue !== undefined && (phase !== 'remote' || checkedPlatform !== 'android')) {
+    fail('TERMINAL_AUTOMATION_ANDROID_DEVICE_KIND_NOT_APPLICABLE');
+  }
+  if (deviceKindValue !== undefined && remoteTopologyValue === 'laptop-paired') {
+    fail('TERMINAL_AUTOMATION_ANDROID_DEVICE_KIND_NOT_APPLICABLE');
+  }
   if (checkedPlatform === 'android') {
     if (!deviceSerial || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(deviceSerial)) {
       fail('TERMINAL_AUTOMATION_ANDROID_DEVICE_SERIAL_REQUIRED');
@@ -791,6 +968,7 @@ export const parseAutomationRunArguments = (argv: readonly string[]): TerminalAu
     ...(sample === undefined ? {} : {sample: sample as 'console' | 'wallpaper'}),
     ...(deviceSerial === undefined ? {} : {deviceSerial}),
     ...(peerDeviceSerial === undefined ? {} : {peerDeviceSerial}),
+    ...(deviceKindValue === undefined ? {} : {deviceKind: deviceKindValue as 'physical' | 'emulator'}),
   });
   resolveAutomationSuite(execution);
   return execution;
@@ -982,23 +1160,6 @@ export const isManagedDevHttpBaseUrl = (value: unknown): value is string => {
   );
 };
 
-const redact = (input: string, extraSecrets: readonly string[] = []): string => {
-  let value = input
-    .replace(
-      /((?:sessionToken|token|secret|password|authorization|cookie|activationCode|activation_code)\s*[=:]\s*)[^\s,}"']+/giu,
-      '$1[REDACTED]',
-    )
-    .replace(/\b(?:\d{1,3}\.){3}\d{1,3}\b/gu, '[IP]')
-    .replace(/(https?:\/\/)[^/\s@]+:[^@/\s]+@/giu, '$1[REDACTED]@');
-  for (const [name, secret] of Object.entries(process.env)) {
-    if (secret && /token|secret|password|cookie|authorization|activation/iu.test(name)) {
-      value = value.replaceAll(secret, '[REDACTED]');
-    }
-  }
-  for (const secret of extraSecrets) if (secret) value = value.replaceAll(secret, '[REDACTED]');
-  return value;
-};
-
 const save = (
   manifest: TerminalAutomationManifest,
   patch: Partial<TerminalAutomationManifest>,
@@ -1095,8 +1256,8 @@ const runFailedAndroidCleanupRecovery = async (runId: string, serial: string): P
     encoding: 'utf8',
     maxBuffer: 1024 * 1024,
   });
-  if (preflight.stdout) process.stdout.write(redact(preflight.stdout));
-  if (preflight.stderr) process.stderr.write(redact(preflight.stderr));
+  if (preflight.stdout) process.stdout.write(preflight.stdout);
+  if (preflight.stderr) process.stderr.write(preflight.stderr);
   if (preflight.error || preflight.status !== 0) {
     process.stderr.write('TERMINAL_AUTOMATION_RESOURCE_PREFLIGHT=FAIL\n');
     return 1;
@@ -1301,8 +1462,8 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
     encoding: 'utf8',
     maxBuffer: 1024 * 1024,
   });
-  if (preflight.stdout) process.stdout.write(redact(preflight.stdout));
-  if (preflight.stderr) process.stderr.write(redact(preflight.stderr));
+  if (preflight.stdout) process.stdout.write(preflight.stdout);
+  if (preflight.stderr) process.stderr.write(preflight.stderr);
   if (preflight.error || preflight.status !== 0) {
     process.stderr.write(
       `TERMINAL_AUTOMATION_RESOURCE_PREFLIGHT=FAIL code=${(preflight.error as NodeJS.ErrnoException | undefined)?.code ?? preflight.status ?? 'UNKNOWN'}\n`,
@@ -1339,6 +1500,56 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
   manifest = save(manifest, {stage: 'PREFLIGHT_PASS', logs: Object.freeze([logFile])});
   record(manifest.runId, 'resource.preflight.pass', {profile: 'ter-validation-with-dev'});
   writeFileSync(logPath, '', {mode: 0o600, flag: 'wx'});
+
+  if (execution.platform === 'android') {
+    try {
+      const identity = await inspectAndroidDeviceIdentity(
+        createAndroidAdbClient({adbPath: process.env.ADB_PATH || 'adb', timeoutMs: 10_000}),
+        execution.deviceSerial!,
+      );
+      if (execution.deviceKind !== undefined && identity.kind !== execution.deviceKind) {
+        const code = identity.kind === 'unknown'
+          ? 'TERMINAL_AUTOMATION_ANDROID_DEVICE_KIND_UNVERIFIED'
+          : 'TERMINAL_AUTOMATION_ANDROID_DEVICE_KIND_MISMATCH';
+        record(manifest.runId, 'android.device.identity.rejected', {
+          serial: execution.deviceSerial,
+          expectedKind: execution.deviceKind,
+          actualKind: identity.kind,
+          model: identity.model,
+          product: identity.product,
+          device: identity.device,
+          hardware: identity.hardware,
+          qemu: identity.qemu,
+          code,
+        });
+        manifest = failRun(manifest, code, 'PASS');
+        printRunSummary(manifest);
+        process.stderr.write(`${code}\n`);
+        return 1;
+      }
+      manifest = save(manifest, {
+        androidDevices: attachAndroidDeviceIdentity(manifest, execution.deviceSerial!, identity),
+      });
+      record(manifest.runId, 'android.device.identity.verified', {
+        serial: execution.deviceSerial,
+        kind: identity.kind,
+        model: identity.model,
+        product: identity.product,
+        device: identity.device,
+        hardware: identity.hardware,
+        qemu: identity.qemu,
+      });
+    } catch (error) {
+      const code = error instanceof Error && /^TERMINAL_AUTOMATION_[A-Z0-9_]+$/u.test(error.message)
+        ? error.message
+        : 'TERMINAL_AUTOMATION_ANDROID_DEVICE_IDENTITY_READ_FAILED';
+      record(manifest.runId, 'android.device.identity.failed', {serial: execution.deviceSerial, code});
+      manifest = failRun(manifest, code, 'PASS');
+      printRunSummary(manifest);
+      process.stderr.write(`${code}\n`);
+      return 1;
+    }
+  }
 
   if ((execution.phase === 'update' || execution.phase === 'remote') && execution.platform === 'android') {
     try {
@@ -1416,7 +1627,15 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
           events: source.events,
         })}\n`;
         appendFileSync(logPath, line, {mode: 0o600});
-        process.stdout.write(line);
+        process.stdout.write(`TERMINAL_AUTOMATION_MANAGED_DEV_DIAGNOSTICS_SUMMARY ${JSON.stringify({
+          at: new Date().toISOString(),
+          runId: manifest.runId,
+          managedDevRunId: managedDevContext.runId,
+          phase: 'preflight',
+          status: source.status,
+          tailBytes: source.tailBytes,
+          ...summarizeManagedDiagnosticEvents(source),
+        })}\n`);
         record(manifest.runId, 'managed-dev.diagnostics.preflight.read', {
           managedDevRunId: managedDevContext.runId,
           source: source.source,
@@ -1581,15 +1800,10 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
     const lines = buffered.split('\n');
     const remainder = final ? '' : (lines.pop() ?? '');
     streamBuffers.set(stream, remainder);
-    const safe = redact(
-      `${lines.join('\n')}${lines.length || final ? '\n' : ''}${final ? redact(remainder) : ''}`,
-      managedDevContext === undefined
-        ? []
-        : [managedDevContext.operationsPassword, managedDevContext.platformRootPassword],
-    );
-    if (!safe) return;
-    appendFileSync(logPath, `${stream} ${safe}`, {mode: 0o600});
-    (stream === 'stdout' ? process.stdout : process.stderr).write(safe);
+    const output = `${lines.join('\n')}${lines.length || final ? '\n' : ''}${final ? remainder : ''}`;
+    if (!output) return;
+    appendFileSync(logPath, `${stream} ${output}`, {mode: 0o600});
+    (stream === 'stdout' ? process.stdout : process.stderr).write(output);
   };
   child.stdout.on('data', chunk => writeOutput('stdout', Buffer.from(chunk)));
   child.stderr.on('data', chunk => writeOutput('stderr', Buffer.from(chunk)));
@@ -1700,7 +1914,15 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
           events: source.events,
         })}\n`;
         appendFileSync(logPath, line, {mode: 0o600});
-        process.stdout.write(line);
+        process.stdout.write(`TERMINAL_AUTOMATION_MANAGED_DEV_DIAGNOSTICS_SUMMARY ${JSON.stringify({
+          at: new Date().toISOString(),
+          runId: manifest.runId,
+          managedDevRunId: managedDevContext.runId,
+          phase: 'after',
+          status: source.status,
+          tailBytes: source.tailBytes,
+          ...summarizeManagedDiagnosticEvents(source),
+        })}\n`);
         record(manifest.runId, 'managed-dev.diagnostics.read', {
           managedDevRunId: managedDevContext.runId,
           source: source.source,
@@ -1754,10 +1976,14 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
   }
   let generatedArtifactCleanup: 'PASS' | 'FAIL' = 'PASS';
   let artifactCleanup: ReturnType<typeof cleanupManagedRunArtifacts> | undefined;
+  const cleanUpdateArtifacts =
+    execution.phase === 'update' && (execution.case === 'update.artifacts' || execution.platform === 'android');
   try {
     artifactCleanup = cleanupManagedRunArtifacts(
       runDirectory,
-      execution.phase === 'update' && (execution.case === 'update.artifacts' || execution.platform === 'android'),
+      cleanUpdateArtifacts,
+      path.join(root, 'apps/terminal'),
+      execution.platform === 'android' || cleanUpdateArtifacts,
     );
     record(manifest.runId, 'generated-artifacts.cleanup.passed', {
       removedPaths: artifactCleanup.removed,
@@ -1870,7 +2096,7 @@ const main = async (): Promise<void> => {
     process.exitCode = await run(execution);
   } catch (error) {
     const code = error instanceof Error ? error.message : 'TERMINAL_AUTOMATION_RUNNER_FAILURE';
-    process.stderr.write(`${redact(code)}\n`);
+    process.stderr.write(`${code}\n`);
     process.exitCode = 2;
   }
 };

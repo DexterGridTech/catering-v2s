@@ -10,6 +10,7 @@ import {
   unavailableUpdatePort,
   unavailableLogUploadPort,
   unavailablePersistSecurePort,
+  unavailableRemoteControlPort,
   unavailableScriptPort,
   unavailableTopologyHostPort,
   type LogEvent,
@@ -36,6 +37,7 @@ const makePorts = (events: LogEvent[]) =>
       connector: unavailableConnectorPort,
       update: unavailableUpdatePort,
       logUpload: unavailableLogUploadPort,
+      remoteControl: unavailableRemoteControlPort,
       topologyHost: unavailableTopologyHostPort,
     },
   });

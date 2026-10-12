@@ -501,6 +501,7 @@ export function RemoteControlWorkspace({target, initialStart, contextCurrent, on
           }
           log('pointer.cancelled', 'RECEIVED', {reason: message.body.reason ?? 'NONE', forSeq: message.body.forSeq});
         }
+        log('input.result', message.body.status, {reason: message.body.reason ?? 'NONE', forSeq: message.body.forSeq});
         if (message.body.status !== 'DISPATCHED' && message.body.reason) {
           const label = message.body.reason === 'INPUT_CONFLICT' || message.body.reason === 'GESTURE_EXPIRED'
             ? '本次操作已取消，请重新操作'
@@ -508,7 +509,6 @@ export function RemoteControlWorkspace({target, initialStart, contextCurrent, on
               ? '当前界面不支持远程操作'
               : '远程操作未执行';
           setGestureNotice(label);
-          log('input.result', message.body.status, {reason: message.body.reason, forSeq: message.body.forSeq});
         }
       } else if (message.type === 'SESSION_END') {
         cancelGestureRef.current();
@@ -722,7 +722,7 @@ export function RemoteControlWorkspace({target, initialStart, contextCurrent, on
     }
   };
 
-  const closeWorkspace = () => void finishSession('WORKSPACE_CLOSED', true, true);
+  const closeWorkspace = () => void finishSession('WORKSPACE_CLOSED', true, phase !== 'ended');
   const endWorkspace = () => void finishSession('ADMIN_ENDED', false, true);
 
   useEffect(() => {

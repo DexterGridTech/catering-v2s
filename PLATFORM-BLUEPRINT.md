@@ -46,7 +46,7 @@ operations capability 只表达用户发起的写工作流，不得作为页面�
 
 不得以降低 DB 次数为由删除幂等、CAS、审计、限流/锁、owner 重核验、typed failure 或必要 owner readback。statement count/duration 只用于定位冗余；性能或索引结论必须有受控 workload、结果分位/吞吐、pool/lock/DB 资源观察和适用的 `EXPLAIN (ANALYZE, BUFFERS)`。task-read 默认预算是评审提示，稳定受限批量读取超出时必须说明用户任务、基数、query chain 与 owner/read-model 理由，不能机械压数引入错误的大 SQL。
 
-受管 HTTP diagnostic、浏览器 Journey L2 与性能研究是三种不同执行面，必须分别声明能证明和不能证明的结果。HTTP diagnostic 的 request inventory 只能保存非敏感形状与 symbolic handle；密码、OTP、token、cookie、Authorization 与身份值只能按 run 在内存生成/注入，禁止落入 manifest、receipt、日志、报告、错误输出或清理工件，并需有泄漏 red proof。
+受管 HTTP diagnostic、浏览器 Journey L2 与性能研究是三种不同执行面，必须分别声明能证明和不能证明的结果。HTTP diagnostic 的 request inventory 只保存请求形状与 symbolic handle；测试凭据由当前 run 注入。开发和测试的受管 run log 原样保留采集到的 stdout、stderr 与错误详情，不执行字段级脱敏。manifest、receipt 与 cleanup 工件只保存其定义的运行身份和结果字段，不复制完整请求或响应正文。
 
 ## 数据与开发动作
 

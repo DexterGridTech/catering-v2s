@@ -67,7 +67,7 @@ IMPLEMENTATION_AUTHORITY=false
 | **新 owner 的审计三件套**(owner 自有 `audit_event` 表与同事务写入适配器 · 审计读取路由 · 审计历史实体类型枚举) | `audit-model` 的 `AuditEventWriter`;先例 `store-contract` 的 `ContractAuditHistoryService` / `ContractAuditHistoryPersistence`;`audit-read` 的 `OperationsAuditTaskReadService`;`getOperationsEntityAuditHistory.entityType` 枚举 | acceptance 经 `/api/operations/audit-history` 读回本批实体的审计 | ⛔ 不写别的 owner 的审计表,不另造公共审计写入接口 |                |
 | 幂等键构成与重放语义                                        | 前端规范 §3-G(Dexter 2026-08-16 裁定)   |                            |                             |                |
 | **该用生成物的地方不得手搓字符串**                          | 后端规范 §2-D                           |                            |                             |                |
-| 日志落点与脱敏字段                                          | `AGENTS.md` 硬约束                      |                            |                             |                |
+| 日志落点与诊断内容                                          | `AGENTS.md` 与日志规范                  |                            |                             |                |
 | 迁移回填与可逆性                                            |                                         |                            |                             |                |
 | 前端共享行为(Drawer/列表/表单生命周期)                      | 前端规范 §3-F                           |                            |                             |                |
 | **管理后台交互一致性**                                      | 前端规范 §3-K-1..§3-K-10               | 逐 screen 对照控件位置、形态、行为与失败/恢复；静态检查引用存在且非空 | 只有经 Dexter 接受的承载形态例外；例外必须逐 screen 写明，不得豁免文案、颜色或控件行为 |                |
@@ -181,7 +181,7 @@ proof。该例外不适用于可直接标记的 Button、MenuItem、Checkbox、R
 | **授权执行点** | IA 的 `stateAndPermission`      | **edge:哪个方法、哪一行**                  | owner 是否复核                            |       |
 | **缓存失效**   | IA 的 `navigationAndRefresh`    | 失效调用点                                 | 哪些 query 重取                           |       |
 | **错误映射**   | typed problem 全集              | **注册处的精确类路径**                     | 前端呈现                                  |       |
-| **日志与脱敏** | 哪些字段禁止出现                | 写路径的日志点                             | —                                         |       |
+| **日志与诊断内容** | 事件、关联键、错误详情的记录方式 | 写路径的日志点                             | run log 与 manifest/report 各自保存哪些内容 |       |
 
 > **为什么机制行是强制的**:R5 之前这张矩阵九行**全是业务事实、零机制事实**,
 > 于是机制类缺陷整体逃逸。同一事实跨多层履行时,**每层各写一次它在该层的具体值**,矛盾就藏不住。

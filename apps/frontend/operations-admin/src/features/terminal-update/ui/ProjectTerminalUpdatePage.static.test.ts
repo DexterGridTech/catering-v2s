@@ -20,6 +20,16 @@ describe('terminal update detail pagination wiring', () => {
     expect(source).not.toContain('loadMoreRuleStores');
     expect(source).not.toContain('loadMoreHistory');
   });
+
+  it('uses the terminal update testId source for report reset and pagination controls', () => {
+    const ids = readFileSync(new URL('../../../app/automation/terminalUpdateTestIds.ts', import.meta.url), 'utf8');
+    expect(ids).toContain("reportQueryReset: 'terminal-update-report-filter-reset'");
+    expect(ids).toContain("reportPagination: 'terminal-update-report-pagination'");
+    expect(source).toContain('testId(terminalUpdateTestIds.reportQueryReset)');
+    expect(source).toContain('testIdPrefix={terminalUpdateTestIds.reportPagination}');
+    expect(source).not.toContain("testId('terminal-update-report-filter-reset')");
+    expect(source).not.toContain('testIdPrefix="terminal-update-report-pagination"');
+  });
 });
 
 describe('remote control entry wiring', () => {
@@ -29,7 +39,8 @@ describe('remote control entry wiring', () => {
     expect(source).toContain("versionDetail.connectionStatus !== 'ONLINE'");
     expect(source).toContain('AdminDetailActionMenu');
     expect(source).toContain('remoteControlTestIds.detailActions(versionDetail.terminalRef)');
-    expect(source).toContain('remoteControlTestIds.start(versionDetail.terminalRef)');
+    expect(source).toContain("'data-testid': remoteControlTestIds.start(versionDetail.terminalRef)");
+    expect(source).not.toContain('AdminDetailActionLabel testIdValue={remoteControlTestIds.start');
   });
 
   it('starts through the generated owner API and mounts the workspace with context-bound cleanup', () => {

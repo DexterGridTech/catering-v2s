@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest';
 import type {AutomationDriverServer} from '../src/server.js';
-import {subscribeSelector} from '../src/selectorObservation.js';
+import {subscribeSelector, waitForSelector} from '../src/selectorObservation.js';
 
 describe('Runtime selector observation', () => {
   it('subscribes before reading, observes the changed value, and releases the selector', async () => {
@@ -8,6 +8,7 @@ describe('Runtime selector observation', () => {
     let listener: ((message: any) => void) | undefined;
     let subscriptionId: string | undefined;
     const server = {
+      getSession: () => ({}),
       onMessage: (_sessionId: string, next: (message: any) => void) => {
         listener = next;
         return () => {
@@ -55,6 +56,7 @@ describe('Runtime selector observation', () => {
     let listener: ((message: any) => void) | undefined;
     let subscriptionId: string | undefined;
     const server = {
+      getSession: () => ({}),
       onMessage: (_sessionId: string, next: (message: any) => void) => {
         listener = next;
         return () => {
@@ -94,6 +96,7 @@ describe('Runtime selector observation', () => {
     let listener: ((message: any) => void) | undefined;
     let subscriptionId: string | undefined;
     const server = {
+      getSession: () => ({}),
       onMessage: (_sessionId: string, next: (message: any) => void) => {
         listener = next;
         return () => {
@@ -128,5 +131,33 @@ describe('Runtime selector observation', () => {
     listener?.({type: 'event', body: {subscriptionId, valueState: 'JSON', value: {status: 'ready', revision: 2}}});
     await expect(waiting).resolves.toEqual({status: 'ready', revision: 2});
     await observation.close();
+  });
+
+  it('preserves a selector wait failure when the session closes before unsubscribe', async () => {
+    const requests: string[] = [];
+    let sessionOpen = true;
+    const server = {
+      getSession: () => sessionOpen ? {} : null,
+      onMessage: () => () => undefined,
+      request: async (_sessionId: string, type: string, body: any) => {
+        requests.push(type);
+        if (type === 'selector.subscribe') {
+          return {type: 'response', body: {result: {accepted: true, subscriptionId: body.subscriptionId}}};
+        }
+        if (type === 'selector.read') {
+          sessionOpen = false;
+          return {type: 'response', body: {result: {valueState: 'JSON', value: {active: false}}}};
+        }
+        if (type === 'selector.unsubscribe') {
+          throw new Error('TERMINAL_AUTOMATION_SESSION_NOT_CONNECTED');
+        }
+        throw new Error(`UNEXPECTED_SELECTOR_REQUEST:${type}`);
+      },
+    } as unknown as AutomationDriverServer;
+
+    await expect(
+      waitForSelector(server, 'session', 'example.active', [], () => false, 1),
+    ).rejects.toThrow('TERMINAL_AUTOMATION_SELECTOR_WAIT_TIMEOUT');
+    expect(requests).toEqual(['selector.subscribe', 'selector.read']);
   });
 });

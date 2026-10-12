@@ -4,8 +4,9 @@ import {once} from 'node:events';
 import {mkdirSync, realpathSync} from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {afterAll, beforeAll, describe, expect, it} from 'vitest';
+import {afterAll, beforeAll, describe, it} from 'vitest';
 import {chromium, type Browser, type Locator, type Page} from 'playwright';
+import {expect} from 'playwright/test';
 import type {Client} from '@devicefarmer/adbkit';
 import {topologyTransportConfig} from '@catering-v2s/kernel-base-contracts';
 import {serverConfigSliceName} from '@catering-v2s/kernel-base-server-config';
@@ -15,9 +16,9 @@ import {storeBasicSliceName} from '@catering-v2s/kernel-feature-store-basic';
 import {remoteControlTestIds} from '../../../apps/frontend/operations-admin/src/app/automation/remoteControlTestIds.ts';
 import {terminalUpdateTestIds} from '../../../apps/frontend/operations-admin/src/app/automation/terminalUpdateTestIds.ts';
 import {roleHomeTestIds} from '../../../apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts';
-import {testExpoTestIds} from '../../../apps/terminal/ui/base/dev-host/src/foundations/testExpoTestIds.ts';
 import {inputTestIds} from '@catering-v2s/ui-base-input/test-ids';
 import {
+  ANDROID_SCREEN_CLICK_INTERVAL_MS,
   androidAutomationBuildIdentity,
   androidAutomationGradleArguments,
   createAndroidAdbClient,
@@ -33,13 +34,25 @@ import {
   readApplicationDeviceId,
   readSelector,
   waitForAutomationSession,
+  waitForAndroidVirtualKeyboardDismissed,
+  waitForInteractiveAndroidKeyboardKey,
   waitForSelector,
   type AndroidAutomationConnection,
 } from '../src/index.ts';
 import {mainSampleTerminalName} from '../src/mainSampleJourneyConfig.ts';
 import {mainSampleTestIds} from '../src/mainSampleTestIds.js';
 import {createManagedActivationFixtureApi} from '../fixtures/managedActivation.ts';
-import {safeBrowserRequestFailureReason} from '../src/browserNetworkDiagnostics.js';
+import {terminalAutomationMemberFixture} from '../fixtures/member.js';
+import {
+  operationsRemoteControlOperationOfPath,
+  projectOperationsRemoteControlLog,
+  safeBrowserRequestFailureReason,
+} from '../src/browserNetworkDiagnostics.js';
+import {
+  attachLiveKitSignalDiagnostics,
+  captureBrowserRtcDiagnostics,
+  installBrowserRtcProbe,
+} from '../src/browserRtcProbe.js';
 
 type RemoteTopology = 'mobile-single' | 'laptop-single' | 'laptop-dual' | 'laptop-paired';
 type SafeLogFields = Readonly<Record<string, string | number | boolean>>;
@@ -74,6 +87,8 @@ let browser: Browser | undefined;
 let operationsPage: Page | undefined;
 let masterSessionId: string | null = null;
 let peerSessionId: string | null = null;
+let masterRemoteControlSessionId: string | null = null;
+let peerRemoteControlSessionId: string | null = null;
 let masterDeviceId: string | null = null;
 let peerDeviceId: string | null = null;
 let terminalRef: string | undefined;
@@ -83,6 +98,7 @@ let peerWasAbsent = false;
 let masterInstallAttempted = false;
 let peerInstallAttempted = false;
 let setupStage = 'input-validation';
+let rtcFailureSnapshotCaptured = false;
 
 function required(key: string): string {
   const value = process.env[key];
@@ -111,6 +127,34 @@ const safeFailureCode = (error: unknown): string => {
   return match?.[0] ?? error.name;
 };
 
+const diagnosticText = (value: string): string => value.slice(0, 4_096);
+
+const readVideoReadback = async (video: Locator) =>
+  video.evaluate(element => {
+    const current = element instanceof HTMLVideoElement ? element : undefined;
+    const stream = current?.srcObject instanceof MediaStream ? current.srcObject : undefined;
+    const tracks = stream?.getVideoTracks() ?? [];
+    const duration = current?.duration ?? Number.NaN;
+    return {
+      tagName: element.tagName,
+      isVideo: current !== undefined,
+      readyState: current?.readyState ?? -1,
+      networkState: current?.networkState ?? -1,
+      videoWidth: current?.videoWidth ?? 0,
+      videoHeight: current?.videoHeight ?? 0,
+      paused: current?.paused ?? true,
+      muted: current?.muted ?? false,
+      currentTime: current?.currentTime ?? 0,
+      durationSeconds: Number.isFinite(duration) ? duration : -1,
+      srcObjectPresent: current?.srcObject !== null && current?.srcObject !== undefined,
+      streamActive: stream?.active ?? false,
+      videoTrackCount: tracks.length,
+      liveTrackCount: tracks.filter(track => track.readyState === 'live').length,
+      enabledTrackCount: tracks.filter(track => track.enabled).length,
+      mutedTrackCount: tracks.filter(track => track.muted).length,
+    };
+  });
+
 const apiOperation = (url: string): string | undefined => {
   let pathname: string;
   try {
@@ -120,9 +164,8 @@ const apiOperation = (url: string): string | undefined => {
   }
   if (!pathname.startsWith('/api/')) return undefined;
   if (pathname.endsWith('/auth/session')) return 'admin.session';
-  if (/\/remote-control-sessions\/[^/]+\/controller-grant$/u.test(pathname)) return 'remote.grant';
-  if (/\/remote-control-sessions\/[^/]+\/end$/u.test(pathname)) return 'remote.end';
-  if (/\/remote-control-sessions$/u.test(pathname)) return 'remote.start';
+  const remoteControlOperation = operationsRemoteControlOperationOfPath(pathname);
+  if (remoteControlOperation !== undefined) return `remote.${remoteControlOperation}`;
   if (/\/terminal-update-versions(?:\/|$)/u.test(pathname)) return 'terminal-update.read';
   return 'admin.other';
 };
@@ -160,9 +203,28 @@ const attachAdminDiagnostics = (page: Page): void => {
       operation: apiOperation(request.url()) ?? 'admin.other',
       elapsedMs: Date.now() - (started.get(request) ?? Date.now()),
       reason: safeBrowserRequestFailureReason(request.failure()?.errorText),
+      failureDetail: diagnosticText(request.failure()?.errorText ?? 'No browser failure detail'),
     });
   });
-  page.on('pageerror', error => safeLog('admin.page.error', {errorName: error.name}));
+  page.on('console', message => {
+    const projected = projectOperationsRemoteControlLog(message.text());
+    if (projected !== undefined) {
+      safeLog('operations.frontend.remote-control', projected);
+      return;
+    }
+    if (message.type() === 'info') {
+      return;
+    }
+    if (message.type() !== 'error' && message.type() !== 'warning') return;
+    safeLog('admin.console.diagnostic', {level: message.type(), detail: diagnosticText(message.text())});
+  });
+  page.on('pageerror', error =>
+    safeLog('admin.page.error', {
+      errorName: error.name,
+      message: diagnosticText(error.message),
+      stack: diagnosticText(error.stack ?? 'No JavaScript stack'),
+    }),
+  );
 };
 
 const activeSelectDropdown = async (page: Page, input: Locator): Promise<Locator> => {
@@ -186,9 +248,23 @@ const activeSelectDropdown = async (page: Page, input: Locator): Promise<Locator
 };
 
 const selectOption = async (page: Page, controlTestId: string, optionPrefix: string, label: RegExp): Promise<void> => {
-  const input = page.getByTestId(controlTestId).locator('input').first();
+  const control = page.getByTestId(controlTestId);
+  const input = control.locator('input').first();
   await input.waitFor({state: 'visible', timeout: 30_000});
-  await input.click();
+  safeLog('admin.role-context.selector.ready', {inputEnabled: await input.isEnabled()});
+  await expect(input).toBeEnabled();
+  await control.click();
+  const [ariaExpanded, visibleDropdownCount, allDropdownCount] = await Promise.all([
+    input.getAttribute('aria-expanded'),
+    page.locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden):visible').count(),
+    page.locator('.ant-select-dropdown').count(),
+  ]);
+  safeLog('admin.role-context.selector.opened', {
+    ariaExpanded: ariaExpanded ?? 'missing',
+    hasAriaControls: (await input.getAttribute('aria-controls')) !== null,
+    visibleDropdownCount,
+    allDropdownCount,
+  });
   const dropdown = await activeSelectDropdown(page, input);
   await dropdown.waitFor({state: 'visible', timeout: 10_000});
   const options = dropdown.locator('.ant-select-item-option:visible');
@@ -205,8 +281,24 @@ const selectOption = async (page: Page, controlTestId: string, optionPrefix: str
     matches.count().catch(() => -1),
   ]);
   if (matchWaitFailure !== 'NONE' || labelMatchCount !== 1) {
+    const [visibleOptionCount, allDropdownCount, emptyStateCount] = await Promise.all([
+      options.count().catch(() => -1),
+      page
+        .locator('.ant-select-dropdown')
+        .count()
+        .catch(() => -1),
+      page
+        .getByTestId('operations-role-context-empty')
+        .count()
+        .catch(() => -1),
+    ]);
+    const ariaExpanded = await input.getAttribute('aria-expanded').catch(() => null);
     safeLog('admin.role-context.option.match-failed', {
+      ariaExpanded: ariaExpanded ?? 'missing',
       dropdownVisible: await dropdown.isVisible().catch(() => false),
+      visibleOptionCount,
+      allDropdownCount,
+      emptyStateCount,
       optionCount,
       labelMatchCount,
       matchWaitFailure,
@@ -271,14 +363,44 @@ const readRegisteredBounds = async (
     readonly surface: 'PRIMARY' | 'SECONDARY';
     readonly displayIndex: 0 | 1;
   }>,
-): Promise<Readonly<{x: number; y: number; width: number; height: number}>> => {
+): Promise<
+  Readonly<{
+    readonly nodeInstanceId: string;
+    readonly layoutRevision: number;
+    readonly role: string;
+    readonly disabled: boolean | null;
+    readonly bounds: Readonly<{x: number; y: number; width: number; height: number}>;
+  }>
+> => {
   const query = responseResult(
     await input.connection.driver.request(input.sessionId, 'controls.query', {
       filter: {testID: input.testID, surface: input.surface, displayIndex: input.displayIndex},
     }),
   );
-  if (!isRecord(query) || !Array.isArray(query.nodes) || query.nodes.length !== 1 || !isRecord(query.nodes[0]))
+  const nodeCount = isRecord(query) && Array.isArray(query.nodes) ? query.nodes.length : -1;
+  safeLog('remote.controls.query', {
+    testID: input.testID,
+    surface: input.surface,
+    displayIndex: input.displayIndex,
+    nodeCount,
+  });
+  if (!isRecord(query) || !Array.isArray(query.nodes) || query.nodes.length !== 1 || !isRecord(query.nodes[0])) {
+    if (isRecord(query) && Array.isArray(query.nodes)) {
+      query.nodes.slice(0, 3).forEach((candidate, index) => {
+        if (!isRecord(candidate)) return;
+        const surface = isRecord(candidate.surface) ? candidate.surface : null;
+        safeLog('remote.controls.query.candidate', {
+          index,
+          nodeInstanceId: typeof candidate.nodeInstanceId === 'string' ? candidate.nodeInstanceId : 'missing',
+          role: typeof candidate.role === 'string' ? candidate.role : 'missing',
+          nodeSurface: typeof surface?.surface === 'string' ? surface.surface : 'missing',
+          displayIndex: typeof surface?.displayIndex === 'number' ? surface.displayIndex : -1,
+          layoutRevision: typeof surface?.layoutRevision === 'number' ? surface.layoutRevision : -1,
+        });
+      });
+    }
     throw new Error('TERMINAL_AUTOMATION_REMOTE_CONTROL_NODE_NOT_UNIQUE');
+  }
   const node = query.nodes[0];
   if (
     !isRecord(node.surface) ||
@@ -308,7 +430,30 @@ const readRegisteredBounds = async (
     )
   )
     throw new Error('TERMINAL_AUTOMATION_REMOTE_CONTROL_BOUNDS_INVALID');
-  return bounds as Readonly<{x: number; y: number; width: number; height: number}>;
+  const target = Object.freeze({
+    nodeInstanceId: node.nodeInstanceId,
+    layoutRevision: node.surface.layoutRevision as number,
+    role: typeof node.role === 'string' ? node.role : 'unknown',
+    disabled:
+      isRecord(node.accessibilityState) && typeof node.accessibilityState.disabled === 'boolean'
+        ? node.accessibilityState.disabled
+        : null,
+    bounds: bounds as Readonly<{x: number; y: number; width: number; height: number}>,
+  });
+  safeLog('remote.controls.target-ready', {
+    testID: input.testID,
+    nodeInstanceId: target.nodeInstanceId,
+    role: target.role,
+    disabled: target.disabled ?? 'unknown',
+    surface: input.surface,
+    displayIndex: input.displayIndex,
+    layoutRevision: target.layoutRevision,
+    boundsX: target.bounds.x,
+    boundsY: target.bounds.y,
+    boundsWidth: target.bounds.width,
+    boundsHeight: target.bounds.height,
+  });
+  return target;
 };
 
 const remoteTargetPoint = async (
@@ -323,7 +468,15 @@ const remoteTargetPoint = async (
     readonly targetU?: number;
     readonly targetV?: number;
   }>,
-): Promise<Readonly<{x: number; y: number; u: number; v: number}>> => {
+): Promise<
+  Readonly<{
+    readonly x: number;
+    readonly y: number;
+    readonly u: number;
+    readonly v: number;
+    readonly target: Awaited<ReturnType<typeof readRegisteredBounds>>;
+  }>
+> => {
   const [target, surface] = await Promise.all([
     readRegisteredBounds({
       connection: input.connection,
@@ -335,16 +488,34 @@ const remoteTargetPoint = async (
     readRegisteredBounds({
       connection: input.connection,
       sessionId: input.sessionId,
-      testID: String(testExpoTestIds.surface(input.surface)),
+      testID: String(inputTestIds.surfaceFrame),
       surface: input.surface,
       displayIndex: input.displayIndex,
     }),
   ]);
-  if (surface.width <= 0 || surface.height <= 0 || target.width <= 0 || target.height <= 0)
+  const targetBounds = target.bounds;
+  const surfaceBounds = surface.bounds;
+  if (surfaceBounds.width <= 0 || surfaceBounds.height <= 0 || targetBounds.width <= 0 || targetBounds.height <= 0)
     throw new Error('TERMINAL_AUTOMATION_REMOTE_CONTROL_BOUNDS_INVALID');
-  const u = (target.x + target.width * (input.targetU ?? 0.5) - surface.x) / surface.width;
-  const v = (target.y + target.height * (input.targetV ?? 0.5) - surface.y) / surface.height;
-  if (!(u >= 0 && u <= 1 && v >= 0 && v <= 1)) throw new Error('TERMINAL_AUTOMATION_REMOTE_TARGET_OUTSIDE_SURFACE');
+  const u = (targetBounds.x + targetBounds.width * (input.targetU ?? 0.5) - surfaceBounds.x) / surfaceBounds.width;
+  const v = (targetBounds.y + targetBounds.height * (input.targetV ?? 0.5) - surfaceBounds.y) / surfaceBounds.height;
+  if (!(u >= 0 && u <= 1 && v >= 0 && v <= 1)) {
+    safeLog('remote.target.outside-surface', {
+      screenSlot: input.screenSlot,
+      testID: input.testID,
+      targetX: targetBounds.x,
+      targetY: targetBounds.y,
+      targetWidth: targetBounds.width,
+      targetHeight: targetBounds.height,
+      frameX: surfaceBounds.x,
+      frameY: surfaceBounds.y,
+      frameWidth: surfaceBounds.width,
+      frameHeight: surfaceBounds.height,
+      u,
+      v,
+    });
+    throw new Error('TERMINAL_AUTOMATION_REMOTE_TARGET_OUTSIDE_SURFACE');
+  }
   const video = input.operationsPage.getByTestId(remoteControlTestIds.screen(input.screenSlot));
   await expect
     .poll(
@@ -370,7 +541,271 @@ const remoteTargetPoint = async (
   const renderedHeight = videoSize.height * scale;
   const x = videoBounds.x + (videoBounds.width - renderedWidth) / 2 + u * renderedWidth;
   const y = videoBounds.y + (videoBounds.height - renderedHeight) / 2 + v * renderedHeight;
-  return {x, y, u, v};
+  safeLog('remote.target.mapping', {
+    screenSlot: input.screenSlot,
+    testID: input.testID,
+    surfaceX: surfaceBounds.x,
+    surfaceY: surfaceBounds.y,
+    surfaceWidth: surfaceBounds.width,
+    surfaceHeight: surfaceBounds.height,
+    normalizedU: u,
+    normalizedV: v,
+    videoX: videoBounds.x,
+    videoY: videoBounds.y,
+    videoCssWidth: videoBounds.width,
+    videoCssHeight: videoBounds.height,
+    videoPixelWidth: videoSize.width,
+    videoPixelHeight: videoSize.height,
+    browserX: x,
+    browserY: y,
+  });
+  return {x, y, u, v, target};
+};
+
+const dispatchRemotePointerAndWaitForTargetPressIn = async (
+  input: Readonly<{
+    readonly connection: AndroidAutomationConnection;
+    readonly sessionId: string;
+    readonly testID: string;
+    readonly surface: 'PRIMARY' | 'SECONDARY';
+    readonly displayIndex: 0 | 1;
+    readonly target: Awaited<ReturnType<typeof readRegisteredBounds>>;
+    readonly dispatch: () => Promise<Readonly<{forSeq: number; status: string; reason: string}>>;
+  }>,
+): Promise<Readonly<{forSeq: number; status: string; reason: string}>> => {
+  const {target} = input;
+  if (target.disabled === true) {
+    safeLog('remote.controls.target-disabled', {
+      testID: input.testID,
+      nodeInstanceId: target.nodeInstanceId,
+      layoutRevision: target.layoutRevision,
+    });
+    throw new Error('TERMINAL_AUTOMATION_REMOTE_CONTROL_TARGET_DISABLED');
+  }
+
+  const subscriptionId = `remote-target-${randomUUID()}`;
+  const observedPhases: string[] = [];
+  type TargetObservation =
+    Readonly<{kind: 'press-in'; locationX: number; locationY: number}> | Readonly<{kind: 'error'; code: string}>;
+  let resolveTargetObservation!: (value: TargetObservation | null) => void;
+  const targetObservation = new Promise<TargetObservation | null>(resolve => {
+    resolveTargetObservation = resolve;
+  });
+  let subscribed = false;
+  let removeListener: (() => void) | undefined;
+  let subscriptionError: string | undefined;
+  let primaryError: unknown;
+  try {
+    removeListener = input.connection.driver.onMessage(input.sessionId, message => {
+      if (!isRecord(message.body) || message.body.subscriptionId !== subscriptionId) return;
+      if (message.type === 'error') {
+        const code = typeof message.body.code === 'string' ? message.body.code : 'UNKNOWN';
+        subscriptionError = code;
+        safeLog('remote.controls.target-subscription-error', {
+          testID: input.testID,
+          nodeInstanceId: target.nodeInstanceId,
+          layoutRevision: target.layoutRevision,
+          code,
+        });
+        resolveTargetObservation({kind: 'error', code});
+        return;
+      }
+      if (message.type !== 'event') return;
+      const interaction = message.body.interaction;
+      if (!isRecord(interaction) || !isRecord(interaction.node)) return;
+      const node = interaction.node;
+      if (!isRecord(node.surface)) return;
+      const nodeSurface = node.surface;
+      if (
+        node.nodeInstanceId !== target.nodeInstanceId ||
+        nodeSurface.layoutRevision !== target.layoutRevision ||
+        nodeSurface.surface !== input.surface ||
+        nodeSurface.displayIndex !== input.displayIndex ||
+        (interaction.phase !== 'press-in' && interaction.phase !== 'press-out')
+      ) {
+        return;
+      }
+      observedPhases.push(interaction.phase);
+      safeLog('remote.controls.target-interaction', {
+        testID: input.testID,
+        nodeInstanceId: target.nodeInstanceId,
+        layoutRevision: target.layoutRevision,
+        phase: interaction.phase,
+        locationX: typeof interaction.locationX === 'number' ? interaction.locationX : -1,
+        locationY: typeof interaction.locationY === 'number' ? interaction.locationY : -1,
+      });
+      if (interaction.phase === 'press-in') {
+        resolveTargetObservation({
+          kind: 'press-in',
+          locationX: typeof interaction.locationX === 'number' ? interaction.locationX : -1,
+          locationY: typeof interaction.locationY === 'number' ? interaction.locationY : -1,
+        });
+      }
+    });
+
+    const subscribe = responseResult(
+      await input.connection.driver.request(input.sessionId, 'controls.subscribe', {
+        subscriptionId,
+        filter: {testID: input.testID, surface: input.surface, displayIndex: input.displayIndex},
+      }),
+    );
+    subscribed = true;
+    if (!isRecord(subscribe) || subscribe.subscriptionId !== subscriptionId || !Array.isArray(subscribe.nodes)) {
+      throw new Error('TERMINAL_AUTOMATION_REMOTE_TARGET_SUBSCRIBE_INVALID');
+    }
+    if (subscribe.nodes.length !== 1 || !isRecord(subscribe.nodes[0])) {
+      throw new Error('TERMINAL_AUTOMATION_REMOTE_TARGET_CHANGED_BEFORE_PRESS');
+    }
+    const current = subscribe.nodes[0];
+    if (!isRecord(current.surface)) throw new Error('TERMINAL_AUTOMATION_REMOTE_TARGET_CHANGED_BEFORE_PRESS');
+    const currentSurface = current.surface;
+    if (
+      current.nodeInstanceId !== target.nodeInstanceId ||
+      currentSurface.layoutRevision !== target.layoutRevision ||
+      currentSurface.surface !== input.surface ||
+      currentSurface.displayIndex !== input.displayIndex
+    ) {
+      throw new Error('TERMINAL_AUTOMATION_REMOTE_TARGET_CHANGED_BEFORE_PRESS');
+    }
+    if (isRecord(current.accessibilityState) && current.accessibilityState.disabled === true) {
+      throw new Error('TERMINAL_AUTOMATION_REMOTE_CONTROL_TARGET_DISABLED');
+    }
+    safeLog('remote.controls.target-observation-started', {
+      testID: input.testID,
+      nodeInstanceId: target.nodeInstanceId,
+      layoutRevision: target.layoutRevision,
+      disabled:
+        isRecord(current.accessibilityState) && typeof current.accessibilityState.disabled === 'boolean'
+          ? current.accessibilityState.disabled
+          : 'unknown',
+    });
+
+    if (subscriptionError !== undefined) {
+      throw new Error(`TERMINAL_AUTOMATION_REMOTE_TARGET_SUBSCRIPTION_${subscriptionError}`);
+    }
+
+    const result = await input.dispatch();
+    if (result.status !== 'DISPATCHED') return result;
+    let pressTimeout: ReturnType<typeof setTimeout> | undefined;
+    const press = await Promise.race([
+      targetObservation,
+      new Promise<TargetObservation | null>(resolve => {
+        pressTimeout = setTimeout(() => resolve(null), 2_000);
+      }),
+    ]);
+    if (pressTimeout !== undefined) clearTimeout(pressTimeout);
+    if (press === null) {
+      safeLog('remote.controls.target-press-in-missing', {
+        testID: input.testID,
+        nodeInstanceId: target.nodeInstanceId,
+        layoutRevision: target.layoutRevision,
+        observedPhases: observedPhases.join(',') || 'none',
+        forSeq: result.forSeq,
+      });
+      throw new Error('TERMINAL_AUTOMATION_REMOTE_TARGET_PRESS_IN_NOT_OBSERVED');
+    }
+    if (press.kind === 'error') {
+      throw new Error(`TERMINAL_AUTOMATION_REMOTE_TARGET_SUBSCRIPTION_${press.code}`);
+    }
+    safeLog('remote.controls.target-press-in-observed', {
+      testID: input.testID,
+      nodeInstanceId: target.nodeInstanceId,
+      layoutRevision: target.layoutRevision,
+      locationX: press.locationX,
+      locationY: press.locationY,
+      forSeq: result.forSeq,
+    });
+    return result;
+  } catch (error) {
+    primaryError = error;
+    throw error;
+  } finally {
+    removeListener?.();
+    if (subscribed) {
+      try {
+        responseResult(
+          await input.connection.driver.request(input.sessionId, 'controls.unsubscribe', {subscriptionId}),
+        );
+      } catch (error) {
+        const code = error instanceof Error ? error.message : 'UNKNOWN';
+        safeLog('remote.controls.target-unsubscribe-failed', {
+          testID: input.testID,
+          nodeInstanceId: target.nodeInstanceId,
+          layoutRevision: target.layoutRevision,
+          code,
+          primaryFailurePreserved: primaryError !== undefined,
+        });
+        if (primaryError === undefined) throw error;
+      }
+    }
+  }
+};
+
+const dispatchRemotePointerAndWaitForResult = async (
+  input: Readonly<{
+    readonly page: Page;
+    readonly screen: 'main' | 'secondary';
+    readonly dispatch: () => Promise<void>;
+  }>,
+): Promise<Readonly<{forSeq: number; status: string; reason: string}>> => {
+  let pointerUpSeq: number | null = null;
+  const resultBySequence = new Map<number, Readonly<{forSeq: number; status: string; reason: string}>>();
+  let resolveResult!: (result: Readonly<{forSeq: number; status: string; reason: string}>) => void;
+  const resultReceived = new Promise<Readonly<{forSeq: number; status: string; reason: string}>>(resolve => {
+    resolveResult = resolve;
+  });
+  const onConsole = (message: import('playwright').ConsoleMessage): void => {
+    const event = projectOperationsRemoteControlLog(message.text());
+    if (event === undefined) return;
+    if (
+      event.sourceEvent === 'frontend.remote_control.pointer.up' &&
+      event.diag_screen === input.screen &&
+      typeof event.diag_seq === 'number'
+    ) {
+      pointerUpSeq = event.diag_seq;
+      const result = resultBySequence.get(pointerUpSeq);
+      if (result !== undefined) resolveResult(result);
+      return;
+    }
+    if (
+      event.sourceEvent === 'frontend.remote_control.input.result' &&
+      typeof event.diag_forSeq === 'number' &&
+      typeof event.outcome === 'string'
+    ) {
+      // INPUT_RESULT only carries forSeq; the UI sequence is unique across both screens
+      // for this session, so correlate it to the already screen-scoped pointer-up.
+      const result = Object.freeze({
+        forSeq: event.diag_forSeq,
+        status: event.outcome,
+        reason: typeof event.diag_reason === 'string' ? event.diag_reason : 'NONE',
+      });
+      resultBySequence.set(result.forSeq, result);
+      if (pointerUpSeq === result.forSeq) resolveResult(result);
+    }
+  };
+  input.page.on('console', onConsole);
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await input.dispatch();
+    const result = await Promise.race([
+      resultReceived,
+      new Promise<never>((_resolve, reject) => {
+        timeout = setTimeout(
+          () =>
+            reject(
+              new Error(
+                `TERMINAL_AUTOMATION_REMOTE_INPUT_RESULT_TIMEOUT screen=${input.screen} forSeq=${pointerUpSeq ?? 'unobserved'}`,
+              ),
+            ),
+          5_000,
+        );
+      }),
+    ]);
+    return result;
+  } finally {
+    if (timeout !== undefined) clearTimeout(timeout);
+    input.page.off('console', onConsole);
+  }
 };
 
 const clickRemoteTarget = async (
@@ -385,22 +820,95 @@ const clickRemoteTarget = async (
     readonly duringPress?: () => Promise<void>;
   }>,
 ): Promise<void> => {
-  const {x, y, u, v} = await remoteTargetPoint(input);
-  safeLog('pointer.started', {
+  const isKeyboardKey = input.testID.startsWith('ui.base.input:virtual-keyboard:');
+  if (isKeyboardKey) {
+    await waitForInteractiveAndroidKeyboardKey({
+      server: input.connection.driver,
+      sessionId: input.sessionId,
+      testID: input.testID,
+      surface: input.surface === 'PRIMARY' ? 'primary' : 'secondary',
+      displayIndex: input.displayIndex,
+      waitTimeoutMs: 10_000,
+    });
+  }
+  if (isKeyboardKey) {
+    safeLog('terminal.remote-keyboard.ready', {
+      testID: input.testID,
+      surface: input.surface,
+      displayIndex: input.displayIndex,
+      keyEnabled: true,
+      boundsInSurface: true,
+    });
+  }
+  // Resolve the target and register its interaction observer inside the same
+  // paced action. If layout changes during the 800ms gap, both the coordinates
+  // and the observed node identity come from the new layout.
+  const dispatchCurrentTarget = async (
+    markClickStarted: () => void,
+  ): Promise<Readonly<{readonly point: Awaited<ReturnType<typeof remoteTargetPoint>>; readonly inputResult: Awaited<ReturnType<typeof dispatchRemotePointerAndWaitForTargetPressIn>>}>> => {
+    const point = await remoteTargetPoint(input);
+    safeLog('pointer.started', {
+      screenSlot: input.screenSlot,
+      testID: input.testID,
+      nodeInstanceId: point.target.nodeInstanceId,
+      layoutRevision: point.target.layoutRevision,
+      targetDisabled: point.target.disabled ?? 'unknown',
+      normalizedU: point.u,
+      normalizedV: point.v,
+      browserX: point.x,
+      browserY: point.y,
+    });
+    const inputResult = await dispatchRemotePointerAndWaitForTargetPressIn({
+      connection: input.connection,
+      sessionId: input.sessionId,
+      testID: input.testID,
+      surface: input.surface,
+      displayIndex: input.displayIndex,
+      target: point.target,
+      dispatch: () =>
+        dispatchRemotePointerAndWaitForResult({
+          page: input.operationsPage,
+          screen: input.screenSlot,
+          dispatch: async () => {
+            await input.operationsPage.mouse.move(point.x, point.y);
+            markClickStarted();
+            await input.operationsPage.mouse.down();
+            try {
+              // The pointer goes through LiveKit DataChannel to the native MotionEvent port.
+              await input.duringPress?.();
+            } finally {
+              await input.operationsPage.mouse.up();
+            }
+          },
+        }),
+    });
+    return Object.freeze({point, inputResult});
+  };
+  let clickWaitMs = 0;
+  const dispatched = input.duringPress === undefined
+    ? await input.connection.runPacedClick(dispatchCurrentTarget)
+    : Object.freeze({result: await dispatchCurrentTarget(() => undefined), waitMs: 0});
+  clickWaitMs = dispatched.waitMs;
+  const {point, inputResult} = dispatched.result;
+  safeLog('pointer.cadence.applied', {minimumIntervalMs: ANDROID_SCREEN_CLICK_INTERVAL_MS, waitMs: clickWaitMs});
+  if (inputResult.status !== 'DISPATCHED') {
+    safeLog('pointer.rejected', {
+      screenSlot: input.screenSlot,
+      testID: input.testID,
+      forSeq: inputResult.forSeq,
+      status: inputResult.status,
+      reason: inputResult.reason,
+    });
+    throw new Error(
+      `TERMINAL_AUTOMATION_REMOTE_POINTER_REJECTED testID=${input.testID} status=${inputResult.status} reason=${inputResult.reason}`,
+    );
+  }
+  safeLog('pointer.completed', {
     screenSlot: input.screenSlot,
     testID: input.testID,
-    u: Number(u.toFixed(4)),
-    v: Number(v.toFixed(4)),
+    forSeq: inputResult.forSeq,
+    status: inputResult.status,
   });
-  await input.operationsPage.mouse.move(x, y);
-  await input.operationsPage.mouse.down();
-  try {
-    // The pointer goes through LiveKit DataChannel to the native MotionEvent port.
-    await input.duringPress?.();
-  } finally {
-    await input.operationsPage.mouse.up();
-  }
-  safeLog('pointer.completed', {screenSlot: input.screenSlot, testID: input.testID});
 };
 
 const dragRemoteTarget = async (
@@ -450,6 +958,8 @@ const enterRemoteKeyboardText = async (
     readonly operationsPage: Page;
     readonly fieldTestID: string;
     readonly value: string;
+    readonly completeSteps?: number;
+    readonly waitForDismissal?: boolean;
   }>,
 ): Promise<void> => {
   const target = {
@@ -461,37 +971,33 @@ const enterRemoteKeyboardText = async (
     displayIndex: 0 as const,
   };
   const keyboard = createVirtualKeyboardInput({
-    focusInput: async testID => {
-      await clickRemoteTarget({...target, testID});
-      const readinessKey = /^[A-Za-z]/u.test(input.value) ? 'virtual-keyboard:text-a' : 'virtual-keyboard:text-1';
-      const readinessTestID = String(inputTestIds.node(readinessKey));
-      await expect
-        .poll(
-          async () => {
-            try {
-              await readRegisteredBounds({
-                connection: input.connection,
-                sessionId: input.sessionId,
-                testID: readinessTestID,
-                surface: 'PRIMARY',
-                displayIndex: 0,
-              });
-              return true;
-            } catch {
-              return false;
-            }
-          },
-          {timeout: 10_000},
-        )
-        .toBe(true);
-      safeLog('terminal.remote-keyboard.ready', {
-        fieldTestID: testID,
-        layout: /^[A-Za-z]/u.test(input.value) ? 'alpha' : 'numeric',
-      });
-    },
+    focusInput: async testID => clickRemoteTarget({...target, testID}),
     click: async testID => clickRemoteTarget({...target, testID}),
   });
-  await keyboard.enterTextAndComplete(input.fieldTestID, input.value, {mode: 'PRIMARY', index: 0});
+  const display = {mode: 'PRIMARY', index: 0} as const;
+  await keyboard.enterTextAndComplete(input.fieldTestID, input.value, display);
+  if (input.completeSteps !== undefined) {
+    await keyboard.completeInputSteps(input.completeSteps, display);
+  }
+  if (input.waitForDismissal === true) {
+    safeLog('terminal.remote-keyboard.dismissal-wait.started', {
+      fieldTestID: input.fieldTestID,
+      surface: display.mode,
+      displayIndex: display.index,
+    });
+    await waitForAndroidVirtualKeyboardDismissed({
+      server: input.connection.driver,
+      sessionId: input.sessionId,
+      surface: display.mode === 'PRIMARY' ? 'primary' : 'secondary',
+      displayIndex: display.index,
+      waitTimeoutMs: 5_000,
+    });
+    safeLog('terminal.remote-keyboard.dismissed', {
+      fieldTestID: input.fieldTestID,
+      surface: display.mode,
+      displayIndex: display.index,
+    });
+  }
   safeLog('terminal.remote-keyboard.input-completed', {fieldTestID: input.fieldTestID, keyCount: input.value.length});
 };
 
@@ -549,6 +1055,8 @@ const launchManagedApp = async (
   apkPath: string,
   role: 'MASTER' | 'PEER',
 ): Promise<{sessionId: string; deviceId: string}> => {
+  setupStage = `android-${role.toLowerCase()}-install`;
+  safeLog('android.app.install.started', {role, packageId: packageIdentity.packageId});
   if (await connection.isInstalled(packageIdentity.packageId))
     throw new Error(`TERMINAL_AUTOMATION_${role}_RUN_PACKAGE_ALREADY_INSTALLED`);
   if (role === 'MASTER') masterWasAbsent = true;
@@ -556,10 +1064,38 @@ const launchManagedApp = async (
   if (role === 'MASTER') masterInstallAttempted = true;
   else peerInstallAttempted = true;
   await connection.install(apkPath);
+  safeLog('android.app.install.completed', {role, packageId: packageIdentity.packageId});
   if (!(await connection.isInstalled(packageIdentity.packageId)))
     throw new Error(`TERMINAL_AUTOMATION_${role}_INSTALL_READBACK_FAILED`);
+  setupStage = `android-${role.toLowerCase()}-launch`;
+  safeLog('android.app.launch.started', {role, packageId: packageIdentity.packageId});
   await connection.launch(`${packageIdentity.packageId}/${applicationId}.MainActivity`);
-  const session = await waitForAutomationSession(connection.driver, value => value.appName === appName, 60_000);
+  safeLog('android.app.launch.completed', {role});
+  setupStage = `android-${role.toLowerCase()}-session`;
+  safeLog('android.app.session.wait.started', {role, expectedAppName: appName, timeoutMs: 20_000});
+  let session;
+  try {
+    session = await waitForAutomationSession(connection.driver, value => value.appName === appName, 20_000);
+  } catch (error) {
+    const driver = connection.driver.getDiagnostics();
+    safeLog('android.app.session.wait.failed', {
+      role,
+      expectedAppName: appName,
+      failureCode: safeFailureCode(error),
+      socketConnections: driver.socketConnections,
+      authenticatedSessions: driver.authenticatedSessions,
+      authenticationTimeouts: driver.authenticationTimeouts,
+      rejectedMessages: driver.rejectedMessages,
+      activeSockets: driver.activeSockets,
+      activeSessions: driver.activeSessions,
+    });
+    try {
+      safeLog('android.screen.summary', {role, summary: await connection.systemUi.readScreenSummary()});
+    } catch (screenError) {
+      safeLog('android.screen.summary.unavailable', {role, failureCode: safeFailureCode(screenError)});
+    }
+    throw error;
+  }
   const deviceId = await readApplicationDeviceId(connection.driver, session.sessionId);
   safeLog('android.app.session.ready', {
     role,
@@ -572,9 +1108,6 @@ const launchManagedApp = async (
 
 const readConnectionStatus = (connection: AndroidAutomationConnection, sessionId: string) =>
   readSelector(connection.driver, sessionId, 'kernel.base.terminal-data-client.selectConnectionState', []);
-
-const readRemoteStatus = (connection: AndroidAutomationConnection, sessionId: string) =>
-  readSelector(connection.driver, sessionId, 'kernel.base.remote-control.selectRemoteControlStatus', []);
 
 describe(`TER remote control ${sample} on Android ${topology}`, () => {
   beforeAll(async () => {
@@ -775,6 +1308,8 @@ describe(`TER remote control ${sample} on Android ${topology}`, () => {
       browser = await chromium.launch({headless: true});
       operationsPage = await browser.newPage({viewport: {width: 1440, height: 900}});
       operationsPage.setDefaultTimeout(30_000);
+      await installBrowserRtcProbe(operationsPage, 'operations', safeLog);
+      attachLiveKitSignalDiagnostics(operationsPage, 'operations', safeLog);
       attachAdminDiagnostics(operationsPage);
       if (
         operationsOrigin.protocol !== 'http:' ||
@@ -813,8 +1348,46 @@ describe(`TER remote control ${sample} on Android ${topology}`, () => {
 
   afterAll(async () => {
     const failures: string[] = [];
+    if (operationsPage !== undefined && !rtcFailureSnapshotCaptured) {
+      await captureBrowserRtcDiagnostics(operationsPage, 'operations', safeLog);
+      rtcFailureSnapshotCaptured = true;
+    }
     try {
       if (operationsPage !== undefined) {
+        for (const [role, connection, driverSessionId, currentRemoteSessionId] of [
+          ['MASTER', master, masterSessionId, masterRemoteControlSessionId],
+          ['PEER', peer, peerSessionId, peerRemoteControlSessionId],
+        ] as const) {
+          if (connection === undefined || driverSessionId === null) continue;
+          try {
+            const status = await readSelector(
+              connection.driver,
+              driverSessionId,
+              'kernel.base.remote-control.selectRemoteControlStatus',
+              [],
+            );
+            if (!isRecord(status)) {
+              failures.push(`${role}_REMOTE_STATUS_INVALID`);
+              continue;
+            }
+            const observedId = typeof status.sessionId === 'string' ? status.sessionId : null;
+            if (currentRemoteSessionId !== null && observedId !== currentRemoteSessionId) {
+              failures.push(`${role}_REMOTE_SESSION_IDENTITY_CHANGED`);
+              continue;
+            }
+            if (observedId !== null) {
+              if (role === 'MASTER') masterRemoteControlSessionId = observedId;
+              else peerRemoteControlSessionId = observedId;
+            }
+            safeLog('terminal.cleanup.session-observed', {
+              role,
+              sessionPresent: observedId !== null,
+              phase: typeof status.phase === 'string' ? status.phase : 'missing',
+            });
+          } catch {
+            failures.push(`${role}_REMOTE_STATUS_READBACK_FAILED`);
+          }
+        }
         const end = operationsPage.getByTestId(remoteControlTestIds.end);
         if ((await end.count()) > 0 && (await end.isVisible().catch(() => false))) {
           await end.click();
@@ -827,17 +1400,36 @@ describe(`TER remote control ${sample} on Android ${topology}`, () => {
     } catch {
       failures.push('REMOTE_WORKSPACE_RELEASE_FAILED');
     }
-    for (const [role, connection, sessionId, expectedTracks] of [
-      ['MASTER', master, masterSessionId, dual ? 2 : 1],
-      ['PEER', peer, peerSessionId, 1],
+    for (const [role, connection, driverSessionId, remoteControlSessionId, expectedTracks] of [
+      ['MASTER', master, masterSessionId, masterRemoteControlSessionId, dual ? 2 : 1],
+      ['PEER', peer, peerSessionId, peerRemoteControlSessionId, 1],
     ] as const) {
-      if (connection === undefined || sessionId === null) continue;
+      if (connection === undefined || driverSessionId === null) continue;
       try {
-        const status = await readRemoteStatus(connection, sessionId);
-        if (isRecord(status) && status.sessionId !== null && status.phase !== 'ended') {
+        if (remoteControlSessionId === null) {
+          const status = await readSelector(
+            connection.driver,
+            driverSessionId,
+            'kernel.base.remote-control.selectRemoteControlStatus',
+            [],
+          );
+          if (!isRecord(status) || status.sessionId !== null || status.phase !== 'idle')
+            failures.push(`${role}_REMOTE_SESSION_IDENTITY_MISSING`);
+          else safeLog('terminal.cleanup.no-session', {role, phase: 'idle'});
+          continue;
+        }
+        const status = await waitForSelector(
+          connection.driver,
+          driverSessionId,
+          'kernel.base.remote-control.selectRemoteControlStatus',
+          [],
+          value => isRecord(value) && value.sessionId === remoteControlSessionId && value.phase === 'ended',
+          20_000,
+        );
+        if (!isRecord(status) || status.sessionId !== remoteControlSessionId || status.phase !== 'ended') {
           failures.push(`${role}_REMOTE_SESSION_NOT_ENDED`);
         }
-        if (isRecord(status) && status.sessionId !== null && status.phase === 'ended') {
+        if (isRecord(status) && status.sessionId === remoteControlSessionId && status.phase === 'ended') {
           const cleanup = isRecord(status.cleanup) ? status.cleanup : null;
           const roomLeft = cleanup?.roomLeft === true;
           const inputCancelled = cleanup?.inputCancelled === true;
@@ -876,7 +1468,7 @@ describe(`TER remote control ${sample} on Android ${topology}`, () => {
       try {
         const runtimeLog = await connection.readRuntimeFailureDiagnostics(packageIdentity.packageId);
         const lines = runtimeLog.split(/\r?\n/u).filter(Boolean).length;
-        safeLog('android.diagnostics.read', {role, source: 'runtime', lines});
+        safeLog('android.diagnostics.read', {role, source: 'runtime', lines, details: runtimeLog});
         marker('android-runtime', 'READ', undefined, lines);
       } catch (error) {
         const code = safeFailureCode(error);
@@ -891,6 +1483,9 @@ describe(`TER remote control ${sample} on Android ${topology}`, () => {
           lines: native.lineCount,
           eventKinds: native.eventKinds.length,
         });
+        for (const event of native.events) {
+          safeLog('android.diagnostics.native-event', {role, event: event.event, ...event.fields});
+        }
         marker('android-native-remote', 'READ', undefined, native.lineCount);
       } catch (error) {
         const code = safeFailureCode(error);
@@ -976,6 +1571,9 @@ describe(`TER remote control ${sample} on Android ${topology}`, () => {
           value.readyScreens.length === expectedScreenCount,
         45_000,
       );
+      if (!isRecord(active) || typeof active.sessionId !== 'string')
+        throw new Error('TERMINAL_AUTOMATION_REMOTE_SESSION_ID_MISSING');
+      masterRemoteControlSessionId = active.sessionId;
       expect(active).toMatchObject({
         phase: 'active',
         topologyKind:
@@ -1014,20 +1612,41 @@ describe(`TER remote control ${sample} on Android ${topology}`, () => {
           throw new Error('TERMINAL_AUTOMATION_REMOTE_SCREEN_GEOMETRY_INVALID');
         }
         const video = operationsPage.getByTestId(remoteControlTestIds.screen(screen));
-        await expect
-          .poll(
-            () =>
-              video.evaluate(
-                (element: HTMLVideoElement) =>
-                  element.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
-                  element.videoWidth > 0 &&
-                  element.videoHeight > 0,
-              ),
-            {timeout: 30_000},
-          )
-          .toBe(true);
-        safeLog('remote.video.ready', {screen});
+        try {
+          await expect
+            .poll(
+              () =>
+                video.evaluate(
+                  (element: HTMLVideoElement) =>
+                    element.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
+                    element.videoWidth > 0 &&
+                    element.videoHeight > 0,
+                ),
+              {timeout: 30_000},
+            )
+            .toBe(true);
+        } catch (error) {
+          try {
+            const readback = await readVideoReadback(video);
+            safeLog('remote.video.wait-failed', {
+              screen,
+              failure: diagnosticText(error instanceof Error ? error.message : String(error)),
+              ...readback,
+            });
+          } catch (readbackError) {
+            safeLog('remote.video.readback-failed', {
+              screen,
+              failure: diagnosticText(readbackError instanceof Error ? readbackError.message : String(readbackError)),
+            });
+          }
+          await captureBrowserRtcDiagnostics(operationsPage, 'operations', safeLog);
+          rtcFailureSnapshotCaptured = true;
+          throw error;
+        }
+        safeLog('remote.video.ready', {screen, ...(await readVideoReadback(video))});
       }
+      await captureBrowserRtcDiagnostics(operationsPage, 'operations', safeLog);
+      rtcFailureSnapshotCaptured = true;
       await dispatchObservedUiCommand({
         server: master.driver,
         sessionId: masterSessionId,
@@ -1051,6 +1670,7 @@ describe(`TER remote control ${sample} on Android ${topology}`, () => {
             operationsPage: operationsPage!,
             fieldTestID: mainSampleTestIds.staffPasscode,
             value: '1111',
+            waitForDismissal: true,
           });
           await clickRemoteTarget({
             connection: master!,
@@ -1105,7 +1725,7 @@ describe(`TER remote control ${sample} on Android ${topology}`, () => {
           surface: 'PRIMARY',
           displayIndex: 0,
         });
-        const scrollDeltaPx = Math.abs(afterScroll.y - beforeScroll.y);
+        const scrollDeltaPx = Math.abs(afterScroll.bounds.y - beforeScroll.bounds.y);
         expect(scrollDeltaPx).toBeGreaterThan(1);
         safeLog('business.remote-scroll.verified', {scrollDeltaPx: Number(scrollDeltaPx.toFixed(2))});
 
@@ -1187,6 +1807,162 @@ describe(`TER remote control ${sample} on Android ${topology}`, () => {
         safeLog('business.remote-wallpaper.verified', {wallpaperId: targetWallpaper});
       }
 
+      if (sample === 'console' && topology === 'laptop-dual') {
+        const member = terminalAutomationMemberFixture(runId);
+        const existingMembers = await readSelector(
+          master.driver,
+          masterSessionId,
+          'kernel.feature.sample-member-registry.selectMembers',
+          [],
+        );
+        if (!Array.isArray(existingMembers)) throw new Error('TERMINAL_AUTOMATION_MEMBER_LIST_INVALID');
+        expect(existingMembers).toHaveLength(0);
+
+        await dispatchObservedUiCommand({
+          server: master.driver,
+          sessionId: masterSessionId,
+          workspace: 'MAIN',
+          displayMode: 'PRIMARY',
+          commandName: 'ui.feature.sample-member-desk.member-form-opened',
+          onRequestIdentified: masterDiagnostics.requestStarted,
+          onRequestFinished: masterDiagnostics.requestFinished,
+          onObserverStep: step => safeLog('runtime.command.observation', {step}),
+          action: () =>
+            clickRemoteTarget({
+              connection: master!,
+              sessionId: masterSessionId!,
+              operationsPage: operationsPage!,
+              screenSlot: 'main',
+              testID: mainSampleTestIds.memberListEmptyAction,
+              surface: 'PRIMARY',
+              displayIndex: 0,
+            }),
+        });
+        const memberFormScreen = await waitForSelector(
+          master.driver,
+          masterSessionId,
+          'kernel.base.ui-state.selectScreen',
+          ['PRIMARY', 'main'],
+          value => isRecord(value) && value.partKey === 'sample.desk.member-form',
+          15_000,
+        );
+        expect(memberFormScreen).toMatchObject({partKey: 'sample.desk.member-form'});
+        await enterRemoteKeyboardText({
+          connection: master,
+          sessionId: masterSessionId,
+          operationsPage,
+          fieldTestID: mainSampleTestIds.memberFormName,
+          value: member.name,
+        });
+        await enterRemoteKeyboardText({
+          connection: master,
+          sessionId: masterSessionId,
+          operationsPage,
+          fieldTestID: mainSampleTestIds.memberFormPhone,
+          value: member.phone,
+          completeSteps: 2,
+          waitForDismissal: true,
+        });
+        await dispatchObservedUiCommand({
+          server: master.driver,
+          sessionId: masterSessionId,
+          workspace: 'MAIN',
+          displayMode: 'PRIMARY',
+          commandName: 'kernel.feature.sample-member-registry.submit-member',
+          onRequestIdentified: masterDiagnostics.requestStarted,
+          onRequestFinished: masterDiagnostics.requestFinished,
+          onObserverStep: step => safeLog('runtime.command.observation', {step}),
+          action: () =>
+            clickRemoteTarget({
+              connection: master!,
+              sessionId: masterSessionId!,
+              operationsPage: operationsPage!,
+              screenSlot: 'main',
+              testID: mainSampleTestIds.memberFormSubmit,
+              surface: 'PRIMARY',
+              displayIndex: 0,
+            }),
+        });
+        const pendingScreen = await waitForSelector(
+          master.driver,
+          masterSessionId,
+          'kernel.base.ui-state.selectScreen',
+          ['SECONDARY', 'main'],
+          value => isRecord(value) && value.partKey === 'sample.desk.customer-member',
+          15_000,
+        );
+        expect(pendingScreen).toMatchObject({partKey: 'sample.desk.customer-member'});
+        const pendingMember = await waitForSelector(
+          master.driver,
+          masterSessionId,
+          'kernel.feature.sample-member-registry.selectPendingMember',
+          [],
+          value => isRecord(value) && value.name === member.name && value.phone === member.phone,
+          15_000,
+        );
+        if (
+          !isRecord(pendingMember) ||
+          typeof pendingMember.operationId !== 'string' ||
+          pendingMember.operationId.length === 0
+        )
+          throw new Error('TERMINAL_AUTOMATION_PENDING_MEMBER_INVALID');
+        safeLog('business.remote-secondary-pending.verified', {operationIdPresent: true});
+
+        await dispatchObservedUiCommand({
+          server: master.driver,
+          sessionId: masterSessionId,
+          workspace: 'MAIN',
+          displayMode: 'SECONDARY',
+          commandName: 'kernel.feature.sample-member-registry.confirm-member',
+          onRequestIdentified: masterDiagnostics.requestStarted,
+          onRequestFinished: masterDiagnostics.requestFinished,
+          onObserverStep: step => safeLog('runtime.command.observation', {step}),
+          action: () =>
+            clickRemoteTarget({
+              connection: master!,
+              sessionId: masterSessionId!,
+              operationsPage: operationsPage!,
+              screenSlot: 'secondary',
+              testID: mainSampleTestIds.memberConfirm,
+              surface: 'SECONDARY',
+              displayIndex: 1,
+            }),
+        });
+        const registeredMembers = await waitForSelector(
+          master.driver,
+          masterSessionId,
+          'kernel.feature.sample-member-registry.selectMembers',
+          [],
+          value =>
+            Array.isArray(value) &&
+            value.some(item => isRecord(item) && item.name === member.name && item.phone === member.phone),
+          15_000,
+        );
+        if (!Array.isArray(registeredMembers)) throw new Error('TERMINAL_AUTOMATION_MEMBER_LIST_INVALID');
+        const registeredMatches = registeredMembers.filter(
+          item => isRecord(item) && item.name === member.name && item.phone === member.phone,
+        );
+        expect(registeredMatches).toHaveLength(1);
+        expect(
+          await readSelector(
+            master.driver,
+            masterSessionId,
+            'kernel.feature.sample-member-registry.selectPendingMember',
+            [],
+          ),
+        ).toBeNull();
+        const returnedSecondaryScreen = await waitForSelector(
+          master.driver,
+          masterSessionId,
+          'kernel.base.ui-state.selectScreen',
+          ['SECONDARY', 'main'],
+          value => isRecord(value) && value.partKey === 'sample.desk.customer-welcome',
+          15_000,
+        );
+        expect(returnedSecondaryScreen).toMatchObject({partKey: 'sample.desk.customer-welcome'});
+        safeLog('business.remote-secondary-confirmation.verified', {memberCount: 1, pendingCleared: true});
+      }
+
       if (sample === 'console' && topology === 'laptop-single') {
         await dispatchObservedUiCommand({
           server: master.driver,
@@ -1213,6 +1989,8 @@ describe(`TER remote control ${sample} on Android ${topology}`, () => {
                   testID: mainSampleTestIds.memberListEmptyAction,
                   surface: 'primary',
                   displayIndex: 0,
+                  // This case deliberately overlaps a local tap with the remote press.
+                  clickPacing: 'intentional-overlap',
                 });
                 safeLog('local-input.conflict.dispatched', {testID: mainSampleTestIds.memberListEmptyAction});
               },

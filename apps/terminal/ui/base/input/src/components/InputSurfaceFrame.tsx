@@ -8,7 +8,7 @@ import {
   type GestureResponderEvent,
   type LayoutChangeEvent,
 } from 'react-native';
-import {PrimitiveStatus, type PrimitiveNativeNode} from '@catering-v2s/ui-base-primitives';
+import {PrimitiveStatus, useAutomationNode, type PrimitiveNativeNode} from '@catering-v2s/ui-base-primitives';
 import {SurfacePresentationOffsetProvider} from '@catering-v2s/ui-base-render';
 import {useInputController, useInputKeyboardState, useInputPendingFocusCommit} from '../contexts/context';
 import {InputSurfaceGeometryContext, type InputSurfaceGeometry} from '../contexts/InputSurfaceGeometryContext';
@@ -37,9 +37,16 @@ export const InputSurfaceFrame = ({onMeasuredFrame, children}: InputSurfaceFrame
   const [frameMetrics, setFrameMetrics] = useState<LocalFrameMetrics | null>(null);
   const lastMeasuredFrame = useRef<LocalFrameMetrics | null>(null);
   const [surfaceRoot, setSurfaceRootState] = useState<PrimitiveNativeNode | null>(null);
-  const setSurfaceRoot = useCallback((node: unknown) => {
-    setSurfaceRootState(node as PrimitiveNativeNode | null);
-  }, []);
+  const automationNode = useAutomationNode({testID: inputTestIds.surfaceFrame, role: 'container'});
+  const attachAutomationNode = automationNode?.attachHostNode;
+  const reportAutomationLayout = automationNode?.onLayout;
+  const setSurfaceRoot = useCallback(
+    (node: unknown) => {
+      setSurfaceRootState(node as PrimitiveNativeNode | null);
+      attachAutomationNode?.(node);
+    },
+    [attachAutomationNode],
+  );
   const handleSurfaceLayout = useCallback(
     (event: LayoutChangeEvent) => {
       const {width, height} = event.nativeEvent.layout;
@@ -51,6 +58,7 @@ export const InputSurfaceFrame = ({onMeasuredFrame, children}: InputSurfaceFrame
         orientation: width >= height ? 'landscape' : 'portrait',
       };
       const previous = lastMeasuredFrame.current;
+      reportAutomationLayout?.(event);
       const changed =
         previous === null ||
         previous.width !== nextFrameMetrics.width ||
@@ -62,7 +70,7 @@ export const InputSurfaceFrame = ({onMeasuredFrame, children}: InputSurfaceFrame
       setFrameMetrics(nextFrameMetrics);
       onMeasuredFrame?.(nextFrameMetrics);
     },
-    [onMeasuredFrame],
+    [onMeasuredFrame, reportAutomationLayout],
   );
 
   return (

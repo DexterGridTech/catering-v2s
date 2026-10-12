@@ -985,7 +985,7 @@ function ProjectTerminalUpdateContent({
                           searchConfig.form?.resetFields();
                           resetReportFilters();
                         }}
-                        {...testId('terminal-update-report-filter-reset')}
+                        {...testId(terminalUpdateTestIds.reportQueryReset)}
                       >
                         重置
                       </Button>,
@@ -1009,7 +1009,7 @@ function ProjectTerminalUpdateContent({
                 <CursorPagination
                   state={reportPager}
                   nextCursor={reportNext ?? undefined}
-                  testIdPrefix="terminal-update-report-pagination"
+                  testIdPrefix={terminalUpdateTestIds.reportPagination}
                 />
               </>
             ),
@@ -1156,6 +1156,7 @@ function ProjectTerminalUpdateContent({
             items={[
               {
                 key: 'remote-control',
+                'data-testid': remoteControlTestIds.start(versionDetail.terminalRef),
                 disabled: versionDetail.connectionStatus !== 'ONLINE' || remoteStartLoading,
                 label: (
                   <Tooltip
@@ -1165,11 +1166,7 @@ function ProjectTerminalUpdateContent({
                         ? '终端离线'
                         : undefined}
                   >
-                    <span>
-                      <AdminDetailActionLabel testIdValue={remoteControlTestIds.start(versionDetail.terminalRef)}>
-                        远程控制
-                      </AdminDetailActionLabel>
-                    </span>
+                    <span>远程控制</span>
                   </Tooltip>
                 ),
                 onClick: () => void startRemoteFromDrawer(),

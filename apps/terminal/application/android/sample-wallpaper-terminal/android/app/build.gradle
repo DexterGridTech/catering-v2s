@@ -11,41 +11,6 @@ def terminalAutomationApplicationIdSuffix = findProperty('terAutomationApplicati
 if (terminalAutomationApplicationIdSuffix && !(terminalAutomationApplicationIdSuffix ==~ /\.terauto[a-f0-9]{8}/)) {
     throw new GradleException('TERMINAL_AUTOMATION_APPLICATION_ID_SUFFIX_INVALID')
 }
-def terminalAutomationBuildDirectory = findProperty('terAutomationBuildDir')
-if (terminalAutomationBuildDirectory) {
-    def terminalApplicationGradleProject = project
-    def automationRuntimeRoot = new File(rootDir, '../../../../../../.runtime/terminal-automation').canonicalFile
-    def runBuildDirectory = new File(terminalAutomationBuildDirectory).canonicalFile
-    if (!runBuildDirectory.path.startsWith(automationRuntimeRoot.path + File.separator)) {
-        throw new GradleException('TERMINAL_AUTOMATION_ANDROID_BUILD_DIRECTORY_OUTSIDE_RUN')
-    }
-    layout.buildDirectory.set(runBuildDirectory)
-    rootProject.layout.buildDirectory.set(new File(runBuildDirectory, 'root'))
-
-    // Keep every Gradle project's generated output under this managed run. This
-    // includes Android libraries from node_modules, not just the :app project.
-    rootProject.allprojects { candidate ->
-        if (candidate.path == ':') {
-            candidate.layout.buildDirectory.set(new File(runBuildDirectory, 'root'))
-        } else if (candidate == terminalApplicationGradleProject) {
-            candidate.layout.buildDirectory.set(runBuildDirectory)
-        } else {
-            def projectKey = candidate.path.split(':').findAll { it }.join('/')
-            candidate.layout.buildDirectory.set(new File(runBuildDirectory, "projects/${projectKey}"))
-        }
-        ['com.android.application', 'com.android.library'].each { pluginId ->
-            candidate.plugins.withId(pluginId) {
-                def androidExtension = candidate.extensions.findByName('android')
-                if (androidExtension?.externalNativeBuild?.cmake != null) {
-                    def projectKey = candidate.path.split(':').findAll { it }.join('/')
-                    if (!projectKey) projectKey = 'root'
-                    androidExtension.externalNativeBuild.cmake.buildStagingDirectory =
-                        new File(runBuildDirectory.parentFile, "native/${runBuildDirectory.name}/${projectKey}")
-                }
-            }
-        }
-    }
-}
 def terminalWorkspaceJsInputs = [
     fileTree("${projectRoot}/../../../ui") { tree ->
         tree.include("**/src/**/*")
@@ -170,6 +135,71 @@ react {
 
     /* Autolinking */
     autolinkLibrariesWithApp()
+}
+
+def terminalAutomationBuildDirectory = findProperty('terAutomationBuildDir')
+if (terminalAutomationBuildDirectory) {
+    def terminalApplicationGradleProject = project
+    def automationRuntimeRoot = new File(rootDir, '../../../../../../.runtime/terminal-automation').canonicalFile
+    def runBuildDirectory = new File(terminalAutomationBuildDirectory).canonicalFile
+    if (!runBuildDirectory.path.startsWith(automationRuntimeRoot.path + File.separator)) {
+        throw new GradleException('TERMINAL_AUTOMATION_ANDROID_BUILD_DIRECTORY_OUTSIDE_RUN')
+    }
+    layout.buildDirectory.set(runBuildDirectory)
+    rootProject.layout.buildDirectory.set(new File(runBuildDirectory, 'root'))
+
+    // React Native 0.86.3 creates autolinking.json during settings evaluation
+    // under the Android settings directory. The managed run redirects Gradle's
+    // root build directory, so copy that generated input into this run before
+    // the RN tasks validate/read it.
+    def settingsAutolinkingConfig = new File(rootDir, 'build/generated/autolinking/autolinking.json')
+    def runAutolinkingConfig = rootProject.layout.buildDirectory.file('generated/autolinking/autolinking.json')
+    def prepareRunAutolinkingConfig = tasks.register('prepareTerminalAutomationAutolinkingConfig') {
+        inputs.file(settingsAutolinkingConfig)
+        outputs.file(runAutolinkingConfig)
+        doLast {
+            if (!settingsAutolinkingConfig.isFile()) {
+                throw new GradleException('TERMINAL_AUTOMATION_AUTOLINKING_INPUT_MISSING')
+            }
+            def target = runAutolinkingConfig.get().asFile
+            target.parentFile.mkdirs()
+            java.nio.file.Files.copy(
+                settingsAutolinkingConfig.toPath(),
+                target.toPath(),
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+            )
+            logger.lifecycle("TER_AUTOMATION_AUTOLINKING_CONFIG_READY bytes=${target.length()}")
+        }
+    }
+    tasks.configureEach { task ->
+        if (task.name in ['generateAutolinkingNewArchitectureFiles', 'generateAutolinkingPackageList', 'generateReactNativeEntryPoint']) {
+            task.dependsOn(prepareRunAutolinkingConfig)
+        }
+    }
+
+    // Keep every Gradle project's generated output under this managed run. This
+    // includes Android libraries from node_modules, not just the :app project.
+    rootProject.allprojects { candidate ->
+        if (candidate.path == ':') {
+            candidate.layout.buildDirectory.set(new File(runBuildDirectory, 'root'))
+        } else if (candidate == terminalApplicationGradleProject) {
+            candidate.layout.buildDirectory.set(runBuildDirectory)
+        } else {
+            def projectKey = candidate.path.split(':').findAll { it }.join('/')
+            candidate.layout.buildDirectory.set(new File(runBuildDirectory, "projects/${projectKey}"))
+        }
+        ['com.android.application', 'com.android.library'].each { pluginId ->
+            candidate.plugins.withId(pluginId) {
+                def androidExtension = candidate.extensions.findByName('android')
+                if (androidExtension?.externalNativeBuild?.cmake != null) {
+                    def projectKey = candidate.path.split(':').findAll { it }.join('/')
+                    if (!projectKey) projectKey = 'root'
+                    androidExtension.externalNativeBuild.cmake.buildStagingDirectory =
+                        new File(runBuildDirectory.parentFile, "native/${runBuildDirectory.name}/${projectKey}")
+                }
+            }
+        }
+    }
 }
 
 // RN Gradle 0.86.3 snapshots JS under the app root, not workspace packages

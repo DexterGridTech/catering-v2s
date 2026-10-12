@@ -76,8 +76,7 @@ TDS wire CONTRACT 的 Java 执行器位于 `TerminalConnectionContractScenarios.
    状态或字段值。
 
 负向场景要同时证明拒绝原因是有类型的，并证明没有泄露或非法写入。写场景要证明写入后的
-owner readback、状态/版本或幂等结果；不能把响应码当作写入正确性的替代物。测试中的 OTP、
-password、token、cookie、Authorization、手机号、登录名和 raw payload 不得进入日志或报告。
+owner readback、状态/版本或幂等结果；不能把响应码当作写入正确性的替代物。业务结果报告只记录场景、断言和必要的 owner readback，不复制完整认证上下文或原始请求体。受管 run log 原样保留测试进程采集到的 stdout、stderr 与错误详情，不执行字段级脱敏。
 
 每条场景的 route identity 使用入口类中已有的 operationId/routeTemplate 常量，避免手写路径
 漂移。共享 helper 只有在确实跨 domain 复用时才加入入口类；只服务一个业务域的 fixture 或

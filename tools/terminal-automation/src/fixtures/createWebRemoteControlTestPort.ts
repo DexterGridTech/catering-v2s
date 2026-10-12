@@ -33,6 +33,34 @@ type ActiveSession = {
 const safeId = /^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$/u;
 const testPort = 'remoteControl' as const;
 const capability = 'web-livekit-remote-control-test';
+const liveKitConnectionReasons = new Map([
+  ['NotAllowed', 'LIVEKIT_NOT_ALLOWED'],
+  ['ServerUnreachable', 'LIVEKIT_SERVER_UNREACHABLE'],
+  ['InternalError', 'LIVEKIT_INTERNAL_ERROR'],
+  ['Cancelled', 'LIVEKIT_CANCELLED'],
+  ['LeaveRequest', 'LIVEKIT_LEAVE_REQUEST'],
+  ['Timeout', 'LIVEKIT_TIMEOUT'],
+  ['WebSocket', 'LIVEKIT_WEBSOCKET'],
+  ['ServiceNotFound', 'LIVEKIT_SERVICE_NOT_FOUND'],
+]);
+
+const safeConnectionFailure = (error: unknown, stage: 'room-connect' | 'track-publish') => {
+  const record = typeof error === 'object' && error !== null ? error as Record<string, unknown> : {};
+  const reasonName = record.reasonName;
+  const fields: Record<string, string | number> = {
+    failureStage: stage,
+    errorName: error instanceof Error ? error.name : 'UnknownError',
+  };
+  if (typeof reasonName === 'string') {
+    const reason = liveKitConnectionReasons.get(reasonName);
+    if (reason !== undefined) fields.errorCode = reason;
+  }
+  if (typeof record.code === 'number' && Number.isSafeInteger(record.code)) fields.sdkCode = record.code;
+  if (typeof record.status === 'number' && Number.isInteger(record.status) && record.status >= 100 && record.status <= 599) {
+    fields.status = record.status;
+  }
+  return fields;
+};
 
 const failed = (code: string, retryable = false) => ({
   status: 'failed' as const,
@@ -198,9 +226,11 @@ export const createWebRemoteControlTestPort = (input: WebRemoteControlTestPortIn
       };
       room.on(RoomEvent.DataReceived, onData);
       room.on(RoomEvent.Disconnected, onDisconnected);
+      let failureStage: 'room-connect' | 'track-publish' = 'room-connect';
       try {
         trace('room.connect.started', {sessionId: sessionInput.sessionId});
         await room.connect(sessionInput.signalUrl, sessionInput.token);
+        failureStage = 'track-publish';
         const publication = await room.localParticipant.publishTrack(track, {
           name: `ter-web-${input.runId}`,
           source: Track.Source.ScreenShare,
@@ -238,7 +268,7 @@ export const createWebRemoteControlTestPort = (input: WebRemoteControlTestPortIn
         await room.disconnect().catch(() => undefined);
         room.off(RoomEvent.DataReceived, onData);
         room.off(RoomEvent.Disconnected, onDisconnected);
-        trace('room.connect.failed', {errorName: error instanceof Error ? error.name : 'UnknownError'});
+        trace('room.connect.failed', {sessionId: sessionInput.sessionId, ...safeConnectionFailure(error, failureStage)});
         return failed('WEB_REMOTE_CONTROL_CONNECT_FAILED', true);
       }
     },

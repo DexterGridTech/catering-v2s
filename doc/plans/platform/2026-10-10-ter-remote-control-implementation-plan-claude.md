@@ -74,7 +74,7 @@ role/取消激活/TDP迟到start；失效pair旧join；同机两屏密度不同�
 3. 完整§3a控制面从import和按路径登记两类重开；在现有automation runner新增remote phase/topology/sample/case union、日志诊断与serial/资源owned cleanup；脚本首次业务失败停止后续业务动作，仅继续必要diagnostic/cleanup。
 4. 新remoteControlTestSession复用两App同样的operations fixture、真实start菜单与浏览器pointer；TER selector预订阅+baseline关联真实业务结果，不用remote command shortcut。隔离后台L2使用browser-l2 runtime；DEV/设备journey由terminal-automation父run直接通过Playwright创建/回收browser/context，复用附件§4b bindings，只借用受管DEV的Vite/tunnel。browser/context纳入同一父run cleanup，不调用隔离browser-l2生命周期、不另起数据库/TDS栈；不复活tools/terminal-topology和旧TERrunner。
 5. paired网络复用阶段C最终androidAutomationConnection.attachTopologyHostForward及owned journal/recovery、现有reverse；两serial明示，新增LiveKit RTC网络不能假定reverse支持UDP；错误端口/未授权container/别run设备cleanup红例应拒绝，不删除其他run资源。主副两端日志各自记录READ或LOG_NOT_AVAILABLE；采集失败单列diagnostics失败，不改business/cleanup事实，也不得被父run成功摘要吞掉。不复制旧update case的payload或另起pair runner。
-6. 构造所有§11a适用场景的真实正常/拒绝/断开和cleanup断言，App与四topology矩阵固定为附件§7；加入日志/fixture/roster静态测试防假绿。新resource profile在调用前完成，不等CP06。
+6. 构造所有§11a适用场景的真实正常/拒绝/断开和cleanup断言，App与四topology矩阵固定为附件§7；日志覆盖浏览器信令WS收发、video readback、ICE/RTP统计、有限 native capture事件和run/session/stream/window/track关联标识。RTC video readback在各屏就绪后、输入操作和结束会话前记录一次；异常message/stack、网络endpoint及ICE候选地址在当前run日志中原样保留并限长。业务结构化日志不写JWT或原始触摸payload；driver采集的Android fatal stack作为独立run-scoped诊断原样保留，详见详设§3.2及观测规范§5。加入日志/fixture/roster静态测试防假绿。新resource profile在调用前完成，不等CP06。
 ### 退出
 脚本source可执行shape且测试断言真实结果，seed静态/dry-run计划同源；资源读回/firstfailure路径齐。CP05 MATCHED，不代表L2/DEV设备主流程已运行。
 
@@ -97,17 +97,20 @@ reset/seed仅在Dexter后续明确授权时按scripts/dev/reset/start/seed独立
 | 现有 | node scripts/generate/r5-edge-materialize.mjs → node scripts/generate/edge-codegen.mjs → node scripts/generate/terminal-client-api.mjs --check/--self-test | 生成正常模式按各script现有CLI核实；表中不是串shell自动执行 |
 | 现有 | yarn workspace <本批包name> typecheck；其test/lint脚本 | 精确包name及scripts按package读回；新包复制既有TER骨架规范，不自造runner |
 | 计划新增 | scripts/test/terminal-automation.mjs --phase remote --platform web --remote-topology mobile-single --sample console --case remote.main | parser/suite/fixture完成后才可用；wallpaper同清单另run |
+| 计划新增 | 同entry --platform android --remote-topology mobile-single --sample <console\|wallpaper> --case remote.main --device-serial <explicitSerial> --device-kind physical | L2前真机smoke；manifest记录同serial的白名单设备属性及分类；console、wallpaper各一次 |
 | 计划新增 | 同entry --platform android --remote-topology laptop-dual --sample console --case remote.main --device-serial <explicitSerial> | 真机双屏，当前APK含新增native SDK |
 | 计划新增 | 同entry android mobile-single/laptop-single/laptop-paired + sample及explicitSerial；paired加peer-device-serial | 按附件§7的5个交叉覆盖run；全部四拓扑和两App均覆盖，不声称未跑组合PASS |
 | 现有＋本批新增 | browser-l2-runtime readiness→same-run P1 activation→本批完整generated-chain check→same-run finalize→run→owned cleanup | 原L2唯一顺序；不能只readiness/run跳过中间；专题fixture/source接线CP05实现 |
 ### 10.2 流程
 1. 远端backend-acceptance：六HTTP及online/audit完整oracle；CONTRACT/BUSINESS/DB info/CLEANUP分开。
-2. 非adapter共享remote场景先两个ui/integration Expo Web当前字节通过；typed media fixture只能证明owner/codec/路由，不冒充真实PixelCopy。运营后台独立L2证明实际入口/中文/状态/权限/Modal布局；真实媒体走受管LiveKit。
-3. 用同一场景清单与当前byte进行四topology Android原生主流程：按附件§7：console真机dual、wallpaper mobile VM、console laptop single、console与wallpaper各一组同App双VM pair（5个run）。真实视频输入必须从运营工作区click/drag，经DataChannel→native→原控件，business selector/视图证明结果；本地并用同样要真触摸。明确TR16 adapter例外为PixelCopy/Window input/双VM拓扑主机，非adapter部分不能借例外跳Web。
-4. 合并必要失败反例到该run：任一screen/participant/pair断开、几何变化旧stream、输入冲突、关闭/配置变化与cleanup；不做全组合Chaos平台，不以极端场景拖慢正常交付。
-5. 没有实际部署、device或资源proof一律OPEN/NOT_RUN；测到与路线不同，保留firstfailure/lastknown/brokenboundary，再最小修复focused及受影响项，不无理由重跑已通过无影响矩阵。
+2. 非adapter共享remote场景先两个ui/integration Expo Web当前字节通过；typed media fixture只能证明owner/codec/路由，不冒充真实PixelCopy。
+3. 按Dexter后续执行顺序调整，Expo Web通过后先用唯一 `terminal-automation` driver 在真机跑 `mobile-single/remote.main`：console和wallpaper各一次，`--device-kind physical` 必须由runner读取所选serial的设备属性并记录到run manifest/log。两次均验证真实连接、远控开始、primary画面可用、远程输入和业务selector结果；这只是V-04 mobile/single-screen smoke，不关闭V-05、L2或整批Android矩阵。
+4. 上述真机smoke通过后运行运营后台独立L2，验证实际入口/中文/状态/权限/Modal布局；真实媒体走受管LiveKit。
+5. 再用同一场景清单与当前byte进行四topology Android原生主流程：按附件§7：console真机dual、wallpaper mobile VM、console laptop single、console与wallpaper各一组同App双VM pair（5个run）。真实视频输入必须从运营工作区click/drag，经DataChannel→native→原控件，business selector/视图证明结果；本地并用同样要真触摸。明确TR16 adapter例外为PixelCopy/Window input/双VM拓扑主机，非adapter部分不能借例外跳Web。
+6. 合并必要失败反例到相应run：任一screen/participant/pair断开、几何变化旧stream、输入冲突、关闭/配置变化与cleanup；不做全组合Chaos平台，不以极端场景拖慢正常交付。
+7. 没有实际部署、device或资源proof一律OPEN/NOT_RUN；测到与路线不同，保留firstfailure/lastknown/brokenboundary，再最小修复focused及受影响项，不无理由重跑已通过无影响矩阵。
 ### 10.3 成功与cleanup
-controller/endpoint Room数、capture/track/Window输入订阅/timers、CBS占用ENDED、peerdisconnected、ownedadb mapping与process/container/tunnel分别实际读回。业务PASS不能掩cleanup失败。失败诊断用必要脱敏结构化log，不记录credential/JWT/rawpointer；不重启未知资源。
+controller/endpoint Room数、capture/track/Window输入订阅/timers、CBS占用ENDED、peerdisconnected、ownedadb mapping与process/container/tunnel分别实际读回。业务PASS不能掩cleanup失败。失败诊断写入当前run日志，原样保留并限长message/stack及网络endpoint/ICE候选地址；业务结构化日志不含JWT/rawpointer。automation采集的Android fatal stack是独立run-scoped原始诊断，按观测规范§5保留，不复制到业务结构化日志；不重启未知资源。
 
 ## 11. 逐代码与详设对账（显式交付门）
 主agent收拢全部changed lines与正式source，fresh只读子agent逐代码对本详设/附件，检查所有新符号caller、详设点名却缺产物、生成源/派生模型与原需求所有R/V映射。结果仅MATCHED/OPEN，任何OPEN不得交Dexter/Claude实施review。

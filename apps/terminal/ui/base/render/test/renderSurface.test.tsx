@@ -3,6 +3,7 @@ import {createElement, Fragment, type ComponentType, type ReactElement} from 're
 import {Animated, BackHandler, StyleSheet, Text, TextInput, View} from 'react-native';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import type {LogEvent, LogWriteInput, LogWriteResult, LoggerPort} from '@catering-v2s/kernel-base-platform-ports';
+import {AutomationNodeProvider, type AutomationNodeDescription, type AutomationNodeSink} from '@catering-v2s/ui-base-primitives';
 import {defineCommand, type Runtime} from '@catering-v2s/kernel-base-runtime';
 import {createCommandId} from '@catering-v2s/kernel-base-contracts';
 import {
@@ -222,6 +223,44 @@ const createHostSource = (initial: SurfaceHostSnapshot | null) => {
 };
 
 describe('render surface hosts', () => {
+  it('registers each surface root with the current automation surface scope', async () => {
+    const source = createSource();
+    source.setRoot(rootWithContent(emptyContent()));
+    source.setStatus('started');
+    const {logger} = createLogger();
+    const registered: AutomationNodeDescription[] = [];
+    const sink: AutomationNodeSink = {
+      register: node => registered.push(node),
+      update: vi.fn(),
+      unregister: vi.fn(),
+      invalidateSurface: vi.fn(),
+      interaction: vi.fn(),
+    };
+    const renderer = await mount(
+      createElement(
+        AutomationNodeProvider,
+        {sink},
+        createElement(
+          RenderProvider,
+          {
+            stateSource: source.stateSource,
+            uiCatalog: createUiCatalog([]),
+            rendererCatalog: createRendererCatalog([]),
+            logger,
+            ...unusedRenderProviderBindings,
+          },
+          createElement(SurfaceRoot, {displayMode: 'PRIMARY', containerKey: 'root'}),
+        ),
+      ),
+    );
+
+    const surfaceNodes = registered.filter(node => node.testID === renderTestIds.surfaceRoot);
+    expect(surfaceNodes).toHaveLength(1);
+    expect(surfaceNodes[0]?.surface.surface).toBe('PRIMARY');
+    await act(async () => renderer.unmount());
+    expect(sink.unregister).toHaveBeenCalledWith(surfaceNodes[0]?.nodeInstanceId);
+  });
+
   it('observes a touch start without claiming the responder', async () => {
     const source = createSource();
     source.setRoot(rootWithContent(emptyContent()));

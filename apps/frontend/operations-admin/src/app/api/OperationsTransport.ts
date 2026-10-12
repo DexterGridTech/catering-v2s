@@ -65,7 +65,7 @@ export class ApiFailure extends Error {
   }
 }
 
-type WireInitiateOptions = {subscribe?: boolean; track?: boolean};
+type WireInitiateOptions = {subscribe?: boolean; forceRefetch?: boolean; track?: boolean};
 type PendingWireRequest = {unwrap: () => Promise<unknown>; unsubscribe?: () => void; reset?: () => void};
 let contextStaleRecovery: (() => void | Promise<void>) | undefined;
 
@@ -97,7 +97,7 @@ async function dispatchWire<Response>(operationId: string, request: object): Pro
   let pending: PendingWireRequest;
   try {
     pending = operationsStore.dispatch(
-      endpoint.initiate(request, method === 'GET' ? {subscribe: false} : {track: false}) as never,
+      endpoint.initiate(request, method === 'GET' ? {subscribe: false, forceRefetch: true} : {track: false}) as never,
     ) as PendingWireRequest;
   } catch (error) {
     operationsLogger.error({

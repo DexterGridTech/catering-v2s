@@ -8,7 +8,12 @@ export {buildAndroidTapArguments, createAndroidInput} from './androidInput.js';
 export type {AndroidInput, AndroidSurface} from './androidInput.js';
 export {createAndroidSystemUi, findAndroidSystemUiButton} from './androidSystemUi.js';
 export type {AndroidSystemUi, AndroidSystemUiButton} from './androidSystemUi.js';
-export {tapRegisteredAndroidInput, tapRegisteredAndroidNode} from './androidRegisteredInput.js';
+export {
+  tapRegisteredAndroidInput,
+  tapRegisteredAndroidNode,
+  waitForAndroidVirtualKeyboardDismissed,
+  waitForInteractiveAndroidKeyboardKey,
+} from './androidRegisteredInput.js';
 export {buildAndroidCaptureArguments, createAndroidDisplayCapture} from './androidCapture.js';
 export type {AndroidDisplayCapture} from './androidCapture.js';
 export {resolveDisplayMapping} from './displayMapping.js';
@@ -31,6 +36,7 @@ export {
 export {readApplicationDeviceId} from './runtimeInfo.js';
 export {createTerminalAutomationDriver} from './driver.js';
 export type {TerminalAutomationDriver} from './driver.js';
+export {ANDROID_SCREEN_CLICK_INTERVAL_MS, createClickPacer} from './clickPacer.js';
 export {
   mainSampleAppName,
   mainSampleSeedKey,

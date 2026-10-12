@@ -10,6 +10,7 @@ type RuntimeFailureDiagnostic = Readonly<{
   readonly buildMarker?: string;
   readonly causeName?: string;
   readonly causeCode?: string;
+  readonly nativeDetails?: string;
   readonly moduleName?: string;
   readonly phase?: string;
   readonly commandName?: string;
@@ -86,6 +87,7 @@ type RuntimeFailureDiagnostic = Readonly<{
   readonly pathParameterCount?: number;
   readonly queryParameterCount?: number;
   readonly resultKind?: string;
+  readonly remainingLeaseMs?: number;
   readonly failureCategory?: string;
   readonly resultCode?: string;
   readonly contextReady?: boolean;
@@ -117,6 +119,33 @@ type RuntimeFailureDiagnostic = Readonly<{
   readonly localMode?: string;
   readonly operation?: string;
   readonly transition?: string;
+  readonly endpointId?: string;
+  readonly screen?: string;
+  readonly mode?: string;
+  readonly topologyKind?: string;
+  readonly state?: string;
+  readonly reason?: string;
+  readonly errorName?: string;
+  readonly resource?: string;
+  readonly eventType?: string;
+  readonly trackSid?: string;
+  readonly widthPx?: number;
+  readonly heightPx?: number;
+  readonly screenCount?: number;
+  readonly readyScreenCount?: number;
+  readonly grantCount?: number;
+  readonly actorResultCount?: number;
+  readonly seq?: number;
+  readonly generation?: number;
+  readonly byteLength?: number;
+  readonly forSeq?: number;
+  readonly tracksReleased?: number;
+  readonly paired?: boolean;
+  readonly roomLeft?: boolean;
+  readonly inputCancelled?: boolean;
+  readonly peerStopped?: boolean;
+  readonly reportAccepted?: boolean;
+  readonly acknowledged?: boolean;
 }>;
 
 const safeToken = (value: unknown): string | undefined =>
@@ -130,7 +159,7 @@ const safeUuid = (value: unknown): string | undefined =>
 const record = (value: unknown): Record<string, unknown> | undefined =>
   typeof value === 'object' && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : undefined;
 
-/** Extract only stable startup failure identifiers; never return log messages or business payloads. */
+/** Project structured Runtime diagnostics without raw messages; Android native fatal blocks are retained verbatim below for local debugging. */
 export const projectAndroidRuntimeFailureLog = (line: string): RuntimeFailureDiagnostic | null => {
   const match = line.match(/^[VDIWEF]\/ReactNativeJS\s*\(\s*\d+\):\s*(\{.*\})\s*$/u);
   if (!match) return null;
@@ -231,6 +260,26 @@ const terminalOwnerEvents: Readonly<Record<string, ReadonlySet<string>>> = Objec
   ]),
   'terminal.update.download-grant': new Set(['download-grant-completed']),
   'terminal.update.report': new Set(['report-submit-completed', 'report-submit-rejected']),
+  'terminal.remote-control.register': new Set(['register-completed']),
+  'terminal.remote-control.report': new Set([
+    'report-command-received',
+    'report-command-rejected',
+    'report-http-started',
+    'report-http-threw',
+    'report-rejected-after-http',
+    'report-response-acceptance-threw',
+    'report-completed',
+  ]),
+  'terminal.remote-control.execution': new Set([
+    'remote-command.received',
+    'remote-command.rejected',
+    'remote-command.discarded-after-clear',
+    'remote-command.duplicate-reported',
+    'remote-command.fact-persisted',
+    'remote-command.dispatch-started',
+    'remote-command.dispatch-completed',
+    'remote-command.dispatch-failed',
+  ]),
   'terminal.connection.heartbeat': new Set([
     'heartbeat-consumer-completed',
     'heartbeat-consumer-not-completed',
@@ -325,13 +374,51 @@ const terminalOwnerEvents: Readonly<Record<string, ReadonlySet<string>>> = Objec
     'topology.peer.state-full-rejected',
     'topology.peer.state-full-applied',
   ]),
+  'terminal.remote-control': new Set([
+    'remote-control.cleanup-failed',
+    'remote-control.endpoint-port-begin-completed',
+    'remote-control.endpoint-port-begin-started',
+    'remote-control.endpoint-preparation-rejected',
+    'remote-control.endpoint-preparation-started',
+    'remote-control.input-gesture-cancelled',
+    'remote-control.local-input-preempted',
+    'remote-control.local-screens-read',
+    'remote-control.report-failed',
+    'remote-control.screen-invalidated',
+    'remote-control.screen-ready-sent',
+    'remote-control.session-ended',
+    'remote-control.session-endpoint-preparation-failed',
+    'remote-control.session-registration-completed',
+    'remote-control.session-registration-rejected',
+    'remote-control.session-registration-started',
+    'remote-control.session-started',
+    'remote-control.start-command-received',
+    'remote-control.start-rejected',
+    'remote-control.status-report-dispatch-completed',
+    'remote-control.status-report-dispatch-started',
+    'remote-control.status-report-dispatch-threw',
+  ]),
+  'terminal.remote-control.port-event': new Set(['port-event-dispatch-failed', 'port-event-dispatch-threw']),
+  'terminal.remote-control.environment': new Set(['environment-change-dispatch-failed']),
+  'remote-control.adapter': new Set([
+    'remote-control.adapter.data-rejected',
+    'remote-control.adapter.room-connected',
+    'remote-control.adapter.screen-ready',
+    'remote-control.adapter.session-begun',
+    'remote-control.adapter.session-begin-failed',
+    'remote-control.adapter.session-ended',
+    'remote-control.adapter.window-track-recapture',
+  ]),
 });
 
 const ownerLogTextFields = [
   'commandId',
   'requestId',
   'correlationId',
+  'sessionId',
   'operationId',
+  'remoteOperationId',
+  'commandKind',
   'reportId',
   'taskId',
   'actionId',
@@ -339,6 +426,7 @@ const ownerLogTextFields = [
   'artifactKind',
   'sourceKind',
   'resultKind',
+  'failureCategory',
   'errorCode',
   'code',
   'resultStatus',
@@ -361,9 +449,20 @@ const ownerLogTextFields = [
   'transition',
   'outcome',
   'status',
+  'endpointId',
+  'screen',
+  'mode',
+  'topologyKind',
+  'state',
+  'reason',
+  'errorName',
+  'resource',
+  'eventType',
+  'trackSid',
 ] as const;
 const ownerLogNumberFields = [
   'elapsedMs',
+  'remainingLeaseMs',
   'status',
   'itemCount',
   'attempt',
@@ -371,6 +470,7 @@ const ownerLogNumberFields = [
   'attemptCount',
   'actionPending',
   'reportSequence',
+  'bindingGeneration',
   'subscriptionCount',
   'persistedSubscriptionCount',
   'pageLimit',
@@ -384,6 +484,17 @@ const ownerLogNumberFields = [
   'secondaryContainerCount',
   'nextReportSequence',
   'pendingReportCount',
+  'widthPx',
+  'heightPx',
+  'screenCount',
+  'readyScreenCount',
+  'grantCount',
+  'actorResultCount',
+  'seq',
+  'generation',
+  'byteLength',
+  'forSeq',
+  'tracksReleased',
 ] as const;
 const ownerLogBooleanFields = [
   'candidatePresent',
@@ -417,11 +528,21 @@ const ownerLogBooleanFields = [
   'contextIdentityMatches',
   'bindingIdentityMatches',
   'taskIdPresent',
+  'sessionReady',
+  'hasCredential',
+  'credentialGenerationMatches',
+  'hasPendingActor',
   'taskMatchesCurrentTask',
   'taskMatchesRecentStatus',
   'receiptTaskIdPresent',
   'receiptTaskMatchesPayload',
   'receiptSequenceMatchesPayload',
+  'paired',
+  'roomLeft',
+  'inputCancelled',
+  'peerStopped',
+  'reportAccepted',
+  'acknowledged',
 ] as const;
 
 /** Safe projection shared by Web console capture and Android logcat capture. Raw messages, URLs and payloads are omitted. */
@@ -956,8 +1077,49 @@ export const projectAndroidAutomationSelectorFailureLog = (line: string): Runtim
   });
 };
 
-export const collectAndroidRuntimeFailureDiagnostics = (logcat: string): string =>
-  logcat
+const projectAndroidStartupFatal = (logcat: string, packageName: string): RuntimeFailureDiagnostic | null => {
+  const lines = logcat.split(/\r?\n/u);
+  let latestMatchingFatal: RuntimeFailureDiagnostic | null = null;
+  for (let index = 0; index < lines.length; index += 1) {
+    if (!/^[EWF]\/AndroidRuntime\s*\(\s*\d+\s*\):\s*FATAL EXCEPTION\b/u.test(lines[index] ?? '')) continue;
+    let packageMatches = false;
+    let failureName: string | undefined;
+    let causeName: string | undefined;
+    let causeCode: string | undefined;
+    const fatalLines: string[] = [];
+    for (const line of lines.slice(index)) {
+      if (fatalLines.length > 0 && /^[EWF]\/AndroidRuntime\s*\(\s*\d+\s*\):\s*FATAL EXCEPTION\b/u.test(line)) break;
+      if (!/^[EWF]\/AndroidRuntime\s*\(\s*\d+\s*\):/u.test(line)) continue;
+      fatalLines.push(line);
+      if (line.includes(`Process: ${packageName},`)) packageMatches = true;
+      if (packageMatches && failureName === undefined) {
+        const match = line.match(/:\s*([A-Za-z_$][A-Za-z0-9_$.]*(?:Exception|Error))(?::|$)/u);
+        failureName = safeToken(match?.[1]);
+      }
+      if (packageMatches) {
+        const causeMatch = line.match(/Caused by:\s*([A-Za-z_$][A-Za-z0-9_$.]*(?:Exception|Error))/u);
+        if (causeMatch !== null) causeName = safeToken(causeMatch[1]);
+        const codeMatch = /^E\/AndroidRuntime\s*\(\s*\d+\s*\):.*\b((?:TERMINAL_AUTOMATION|ERR)_[A-Z0-9_]{2,96})\b/u.exec(line);
+        if (codeMatch !== null) causeCode = safeToken(codeMatch[1]);
+      }
+    }
+    if (packageMatches) {
+      latestMatchingFatal = Object.freeze({
+        category: 'android.process',
+        event: 'app.startup.fatal-exception',
+        phase: 'startup',
+        nativeDetails: fatalLines.join('\n'),
+        ...(failureName === undefined ? {} : {failureName}),
+        ...(causeName === undefined ? {} : {causeName}),
+        ...(causeCode === undefined ? {} : {causeCode}),
+      });
+    }
+  }
+  return latestMatchingFatal;
+};
+
+export const collectAndroidRuntimeFailureDiagnostics = (logcat: string, packageName?: string): string => {
+  const diagnostics = logcat
     .split(/\r?\n/u)
     .map(
       line =>
@@ -972,21 +1134,59 @@ export const collectAndroidRuntimeFailureDiagnostics = (logcat: string): string 
         projectAndroidTerminalDataReadLog(line) ??
         projectTerminalAutomationAppLine(line),
     )
-    .filter((value): value is RuntimeFailureDiagnostic => value !== null)
-    .map(value => JSON.stringify(value))
-    .join('\n');
+    .filter((value): value is RuntimeFailureDiagnostic => value !== null);
+  if (packageName !== undefined) {
+    const startupFatal = projectAndroidStartupFatal(logcat, packageName);
+    if (startupFatal !== null) diagnostics.push(startupFatal);
+    const nativeDetails = startupFatal?.nativeDetails;
+    if (typeof nativeDetails === 'string' && nativeDetails.length > 0) {
+      return [
+        ...diagnostics.map(value => JSON.stringify(value)),
+        'ANDROID_RAW_STARTUP_FATAL_BEGIN',
+        nativeDetails,
+        'ANDROID_RAW_STARTUP_FATAL_END',
+      ].join('\n');
+    }
+  }
+  return diagnostics.map(value => JSON.stringify(value)).join('\n');
+};
 
-/** Return only native remote-control event names and counts; never retain log fields or payloads. */
+export type AndroidRemoteControlDiagnostics = Readonly<{
+  lineCount: number;
+  eventKinds: readonly string[];
+  events: readonly Readonly<{event: string; fields: Readonly<Record<string, string | number>>}>[];
+}>;
+
+const remoteEventStringFields = new Set(['reason', 'result', 'action', 'streamId', 'windowIdentity', 'trackId']);
+const remoteEventNumberFields = new Set(['generation', 'width', 'height', 'fps', 'frames', 'droppedFrames']);
+
+/** Keep bounded native capture facts and correlation identities without raw touch payloads. */
 export const collectAndroidRemoteControlDiagnostics = (
   logcat: string,
-): Readonly<{lineCount: number; eventKinds: readonly string[]}> => {
+): AndroidRemoteControlDiagnostics => {
   const events = new Set<string>();
+  const observed: Array<Readonly<{event: string; fields: Readonly<Record<string, string | number>>}>> = [];
   let lineCount = 0;
   for (const line of logcat.split(/\r?\n/u)) {
     const match = line.match(/^[VDIWEF]\/(?:TerminalRemote|TerminalRemoteCapture)\s*\(\s*\d+\s*\):\s*event=([A-Za-z0-9._-]{1,96})\b/u);
     if (match === null) continue;
     lineCount += 1;
     events.add(match[1]!);
+    if (observed.length >= 200) continue;
+    const fields: Record<string, string | number> = {};
+    for (const [, key, value] of line.matchAll(/\b([A-Za-z][A-Za-z0-9]*)=([A-Za-z0-9._-]{1,96})/gu)) {
+      if (key === 'surfaceKey' && (value === 'PRIMARY' || value === 'SECONDARY')) fields.surfaceKey = value;
+      else if (remoteEventStringFields.has(key!)) fields[key!] = value!;
+      else if (remoteEventNumberFields.has(key!)) {
+        const number = Number(value);
+        if (Number.isSafeInteger(number) && number >= 0 && number <= 1_000_000) fields[key!] = number;
+      }
+    }
+    observed.push(Object.freeze({event: match[1]!, fields: Object.freeze(fields)}));
   }
-  return Object.freeze({lineCount, eventKinds: Object.freeze([...events].slice(-30))});
+  return Object.freeze({
+    lineCount,
+    eventKinds: Object.freeze([...events].slice(-30)),
+    events: Object.freeze(observed),
+  });
 };

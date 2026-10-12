@@ -12,7 +12,7 @@ import {
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {afterEach, describe, expect, it} from 'vitest';
-import {createManagedRun, persistManagedRun} from '../src/managedRun.js';
+import {attachAndroidDeviceIdentity, createManagedRun, persistManagedRun} from '../src/managedRun.js';
 
 const roots: string[] = [];
 const execution = Object.freeze({phase: 'journey', platform: 'web', shape: 'mobile', case: 'normal', age: 'empty'});
@@ -196,5 +196,41 @@ describe('createManagedRun', () => {
 
     expect(() => persistManagedRun(root, manifest)).toThrow('TERMINAL_AUTOMATION_MANIFEST_PATH_INVALID');
     expect(readFileSync(outsideManifest, 'utf8')).toBe('outside sentinel');
+  });
+});
+
+describe('managed Android device identity', () => {
+  it('records the verified physical kind and corrects the mobile topology role', () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'terminal-automation-'));
+    roots.push(root);
+    const manifest = createManagedRun(root, Object.freeze({
+      phase: 'remote', platform: 'android', shape: 'mobile', remoteTopology: 'mobile-single',
+      case: 'remote.main', sample: 'console', deviceSerial: 'physical-serial',
+    }), 'physical-remote-run');
+    const identity = Object.freeze({
+      kind: 'physical' as const, model: 'Z3', product: 'D3', device: 'D3', hardware: 'mt6895', qemu: '0' as const,
+    });
+
+    expect(manifest.androidDevices).toEqual([{serial: 'physical-serial', role: 'MOBILE_UNKNOWN'}]);
+    expect(attachAndroidDeviceIdentity(manifest, 'physical-serial', identity)).toEqual([
+      {serial: 'physical-serial', role: 'MOBILE_PHYSICAL', identity},
+    ]);
+  });
+
+  it('rejects an identity that does not match one manifest device', () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'terminal-automation-'));
+    roots.push(root);
+    const manifest = createManagedRun(root, Object.freeze({
+      phase: 'remote', platform: 'android', shape: 'mobile', remoteTopology: 'mobile-single',
+      case: 'remote.main', sample: 'console', deviceSerial: 'physical-serial',
+    }), 'physical-remote-run');
+    const identity = Object.freeze({
+      kind: 'unknown' as const, model: 'UNKNOWN', product: 'UNKNOWN', device: 'UNKNOWN', hardware: 'UNKNOWN',
+      qemu: 'unknown' as const,
+    });
+
+    expect(() => attachAndroidDeviceIdentity(manifest, 'other-serial', identity)).toThrow(
+      'TERMINAL_AUTOMATION_ANDROID_MANIFEST_DEVICE_IDENTITY_INVALID',
+    );
   });
 });

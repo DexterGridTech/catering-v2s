@@ -1,3 +1,4 @@
+import {createRequestId} from '@catering-v2s/kernel-base-contracts';
 import {defineActor, onCommand, selectRuntimeInstanceMode, type ActorDefinition, type ActorExecutionContext} from '@catering-v2s/kernel-base-runtime';
 import {
   registerTerminalRemoteControlCommand,
@@ -12,7 +13,7 @@ import {
 } from '@catering-v2s/kernel-base-terminal-data-client';
 import {selectTopologyFacts, selectTopologyState} from '@catering-v2s/kernel-base-topology';
 import type {StateJsonValue} from '@catering-v2s/kernel-base-state';
-import type {RemoteControlLocalScreen, RemoteControlPort, RemoteControlScreen} from '@catering-v2s/kernel-base-platform-ports';
+import type {RemoteControlPort, RemoteControlScreen} from '@catering-v2s/kernel-base-platform-ports';
 import {moduleName} from '../../moduleName';
 import {remoteControlMessageTypes, type RemoteControlMessage} from '../../generated/terminalRemoteControlProtocol';
 import {remoteControlActions, remoteControlSliceName, type RemoteControlReadyScreen, type RemoteControlState} from '../slices/remoteControl';
@@ -46,7 +47,6 @@ const readRemoteState = (context: ActorExecutionContext): RemoteControlState => 
 };
 const isUuid = (value: unknown): value is string => typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 const dispatchValue = (result: Awaited<ReturnType<ActorExecutionContext['dispatchCommand']>>): unknown => result.actorResults[0]?.result;
-const stateValue = (value: unknown): StateJsonValue => value as StateJsonValue;
 const topologyKind = (state: ReturnType<ActorExecutionContext['getState']>): TerminalRemoteControlDescription['topologyKind'] | null => {
   const facts = selectTopologyFacts(state);
   if (facts === undefined) return null;
@@ -151,6 +151,20 @@ export const createRemoteControlActor = (input: RemoteControlActorInput): Readon
   let activeFence: SessionFence | null = null;
   let startReservation: SessionFence | null = null;
   let stoppingSessionId: string | null = null;
+  let sessionMutationTail: Promise<void> = Promise.resolve();
+
+  const serializeSessionMutation = <TResult,>(operation: () => Promise<TResult>): Promise<TResult> => {
+    const previous = sessionMutationTail;
+    let release!: () => void;
+    sessionMutationTail = new Promise<void>(resolve => { release = resolve; });
+    return previous.then(async () => {
+      try {
+        return await operation();
+      } finally {
+        release();
+      }
+    });
+  };
 
   const log = (context: ActorExecutionContext, event: string, data: Readonly<Record<string, string | number | boolean | null>> = {}) => {
     context.platformPorts.logger.scope({moduleName, layer: 'kernel', subsystem: 'remote-control', component: 'owner'})
@@ -229,16 +243,39 @@ export const createRemoteControlActor = (input: RemoteControlActorInput): Readon
   const report = async (context: ActorExecutionContext, session: RemoteControlState, state: 'ACTIVE' | 'ENDED', reason: string | null) => {
     if (selectRuntimeInstanceMode(context.getState()) !== 'MASTER' || session.sessionId === null) return;
     const requestStartedAt = now();
-    const result = await context.dispatchCommand(reportTerminalRemoteControlCommand, {
-      sessionId: session.sessionId,
-      body: {
+    const reportRequestId = context.command.requestId ?? createRequestId();
+    log(context, 'status-report-dispatch-started', {sessionId: session.sessionId, requestId: reportRequestId, state, readyScreenCount: session.readyScreens.length});
+    let result: Awaited<ReturnType<ActorExecutionContext['dispatchCommand']>>;
+    try {
+      result = await context.dispatchCommand(reportTerminalRemoteControlCommand, {
         sessionId: session.sessionId,
+        body: {
+          sessionId: session.sessionId,
+          state,
+          reason,
+          readyScreens: session.readyScreens.map(item => ({endpointId: item.endpointId, screen: item.screen, streamId: item.streamId, trackSid: item.trackSid})),
+        },
+      }, {requestId: reportRequestId});
+    } catch (error) {
+      log(context, 'status-report-dispatch-threw', {
+        sessionId: session.sessionId,
+        requestId: reportRequestId,
         state,
-        reason,
-        readyScreens: session.readyScreens.map(item => ({endpointId: item.endpointId, screen: item.screen, streamId: item.streamId, trackSid: item.trackSid})),
-      },
-    });
+        elapsedMs: Math.max(0, now() - requestStartedAt),
+        errorName: error instanceof Error ? error.name : 'UnknownError',
+      });
+      throw new Error(`REMOTE_CONTROL_REPORT_${state}_DISPATCH_FAILED`);
+    }
     const value = dispatchValue(result);
+    log(context, 'status-report-dispatch-completed', {
+      sessionId: session.sessionId,
+      requestId: reportRequestId,
+      state,
+      elapsedMs: Math.max(0, now() - requestStartedAt),
+      dispatchStatus: result.status,
+      actorResultCount: result.actorResults.length,
+      resultKind: isRecord(value) && typeof value.kind === 'string' ? value.kind : 'unclassified',
+    });
     if (result.status !== 'completed' || !isRecord(value) || value.kind !== 'success') {
       log(context, 'report-failed', {sessionId: session.sessionId, state, dispatchStatus: result.status});
       throw new Error(`REMOTE_CONTROL_REPORT_${state}_FAILED`);
@@ -252,7 +289,11 @@ export const createRemoteControlActor = (input: RemoteControlActorInput): Readon
   const scheduleLease = (context: ActorExecutionContext, sessionId: string, deadline: number) => {
     if (leaseTimer !== undefined) clearTimeout(leaseTimer);
     if (renewalTimer !== undefined) clearTimeout(renewalTimer);
-    leaseTimer = setTimeout(() => { void context.dispatchCommand(stopRemoteControlCommand, {sessionId, reason: 'LEASE_EXPIRED'}); }, Math.max(0, deadline - now()));
+    leaseTimer = setTimeout(() => {
+      void context.dispatchCommand(stopRemoteControlCommand, {sessionId, reason: 'LEASE_EXPIRED'}, {
+        requestId: context.command.requestId ?? createRequestId(),
+      });
+    }, Math.max(0, deadline - now()));
     renewalTimer = setTimeout(() => {
       void context.dispatchCommand(remoteControlPortEventCommand, {type: 'lease-tick', sessionId});
     }, 10_000);
@@ -281,7 +322,10 @@ export const createRemoteControlActor = (input: RemoteControlActorInput): Readon
     if (selectRuntimeInstanceMode(context.getState()) === 'MASTER') {
       const topology = selectTopologyFacts(context.getState());
       if (topology?.paired) {
-        const peerResult = await context.dispatchCommand(stopRemoteControlCommand, {sessionId: payload.sessionId, reason: payload.reason}, {target: 'peer'}).catch(() => null);
+        const peerResult = await context.dispatchCommand(stopRemoteControlCommand, {sessionId: payload.sessionId, reason: payload.reason}, {
+          requestId: context.command.requestId ?? createRequestId(),
+          target: 'peer',
+        }).catch(() => null);
         peerStopped = peerResult?.status === 'completed';
       }
       try { await report(context, {...current, phase: 'stopping'}, 'ENDED', payload.reason); reportAccepted = true; }
@@ -501,8 +545,17 @@ export const createRemoteControlActor = (input: RemoteControlActorInput): Readon
       if (!isRecord(result) || result.status !== 'started') await stop(context, {sessionId: payload.description.sessionId, reason: 'START_FAILED'});
       return result;
     }),
-    onCommand(stopRemoteControlCommand, async context => stop(context, context.command.payload as StopRemoteControlPayload)),
-    onCommand(remoteControlPortEventCommand, async context => {
+    onCommand(stopRemoteControlCommand, context => {
+      const payload = context.command.payload as StopRemoteControlPayload;
+      const queuedAt = now();
+      log(context, 'stop-command-queued', {sessionId: payload.sessionId, reason: payload.reason});
+      return serializeSessionMutation(async () => {
+        const phase = readRemoteState(context).phase;
+        log(context, 'stop-command-started', {sessionId: payload.sessionId, reason: payload.reason, queueWaitMs: Math.max(0, now() - queuedAt), phase});
+        return stop(context, payload);
+      });
+    }),
+    onCommand(remoteControlPortEventCommand, context => serializeSessionMutation(async () => {
       const event = context.command.payload as RemoteControlPortEventPayload;
       if (event.type === 'lease-tick' && typeof event.sessionId === 'string') {
         const session = readRemoteState(context);
@@ -510,7 +563,7 @@ export const createRemoteControlActor = (input: RemoteControlActorInput): Readon
           const allScreensReady = session.description !== null && session.readyScreens.length === session.description.screens.length;
           if (allScreensReady) {
             try { await report(context, session, 'ACTIVE', null); }
-            catch { await stop(context, {sessionId: session.sessionId, reason: 'TDP_DISCONNECTED'}); }
+            catch { await stop(context, {sessionId: session.sessionId, reason: 'LEASE_EXPIRED'}); }
           }
         }
         return {status: 'processed'};
@@ -570,7 +623,7 @@ export const createRemoteControlActor = (input: RemoteControlActorInput): Readon
         return {status: 'local-input-preempted'};
       }
       return {status: 'ignored'};
-    }),
+    })),
   ]);
 
   const maybeActivate = async (context: ActorExecutionContext, session: RemoteControlState) => {
@@ -590,7 +643,7 @@ export const createRemoteControlActor = (input: RemoteControlActorInput): Readon
       const latest = readRemoteState(context);
       if (latest.sessionId === session.sessionId && latest.phase === 'starting') replace(context, {...latest, phase: 'active'});
     } catch {
-      await stop(context, {sessionId: session.sessionId, reason: 'TDP_DISCONNECTED'});
+      await stop(context, {sessionId: session.sessionId, reason: 'START_FAILED'});
     }
   };
   const processData = async (context: ActorExecutionContext, session: RemoteControlState, senderIdentity: string, bytes: readonly number[]): Promise<StateJsonValue> => {
@@ -646,17 +699,49 @@ export const createRemoteControlActor = (input: RemoteControlActorInput): Readon
     if (message.type !== 'POINTER') return {status: 'ignored'};
     const ready = session.readyScreens.find(item => item.endpointId === message.body.endpointId && item.screen === message.body.screen && item.streamId === message.body.streamId);
     const currentGesture = gestures.get(message.body.screen);
+    const activeGestureExists = gestures.size > 0;
     let status: 'DISPATCHED' | 'REJECTED' = 'REJECTED';
     let reason: 'NOT_READY' | 'SESSION_ENDED' | 'STALE_STREAM' | 'WRONG_TARGET' | 'INVALID_MESSAGE' | 'OUT_OF_BOUNDS' | 'INVALID_GESTURE' | 'DUPLICATE' | 'INPUT_CONFLICT' | 'GESTURE_EXPIRED' | 'UNSUPPORTED_SURFACE' | null = ready === undefined ? 'NOT_READY' : null;
-    if (ready !== undefined && (message.body.phase === 'down' ? currentGesture === undefined : currentGesture?.gestureId === message.body.gestureId)) {
+    const gestureAllowed = message.body.phase === 'down'
+      ? !activeGestureExists
+      : currentGesture?.gestureId === message.body.gestureId;
+    if (ready !== undefined && gestureAllowed) {
+      const dispatchStartedAt = now();
+      log(context, 'pointer-input-dispatch-started', {
+        sessionId: session.sessionId,
+        sequence: message.seq,
+        screen: message.body.screen,
+        phase: message.body.phase,
+      });
       const result = await input.port.dispatchPointer({sessionId: session.sessionId!, screen: message.body.screen, streamId: message.body.streamId, gestureId: message.body.gestureId, phase: message.body.phase, ...(message.body.u === undefined ? {} : {u: message.body.u}), ...(message.body.v === undefined ? {} : {v: message.body.v})});
       if (result.status === 'succeeded' && result.value.dispatched) status = 'DISPATCHED';
       else reason = 'INVALID_MESSAGE';
       if (status === 'DISPATCHED' && message.body.phase === 'down') gestures.set(message.body.screen, {gestureId: message.body.gestureId, downSequence: message.seq});
       if (message.body.phase === 'up' || message.body.phase === 'cancel') gestures.delete(message.body.screen);
-    } else if (reason === null) reason = currentGesture === undefined ? 'INVALID_GESTURE' : 'INPUT_CONFLICT';
-    transmitSequence += 1;
-    await input.port.sendData({sessionId: session.sessionId!, destinationIdentities: [description.controllerIdentity], payload: encode({v: 1, type: 'INPUT_RESULT', sessionId: session.sessionId!, seq: transmitSequence, body: {forSeq: message.seq, gestureId: message.body.gestureId, status, reason}})});
+      log(context, 'pointer-input-dispatch-completed', {
+        sessionId: session.sessionId,
+        sequence: message.seq,
+        screen: message.body.screen,
+        phase: message.body.phase,
+        elapsedMs: Math.max(0, now() - dispatchStartedAt),
+        status,
+        reason,
+      });
+    } else if (reason === null) reason = message.body.phase === 'down' && activeGestureExists
+      ? 'INPUT_CONFLICT'
+      : currentGesture === undefined ? 'INVALID_GESTURE' : 'INPUT_CONFLICT';
+    if (message.body.phase !== 'move' || status !== 'DISPATCHED') {
+      transmitSequence += 1;
+      await input.port.sendData({sessionId: session.sessionId!, destinationIdentities: [description.controllerIdentity], payload: encode({v: 1, type: 'INPUT_RESULT', sessionId: session.sessionId!, seq: transmitSequence, body: {forSeq: message.seq, gestureId: message.body.gestureId, status, reason}})});
+      log(context, 'pointer-input-result-sent', {
+        sessionId: session.sessionId,
+        sequence: message.seq,
+        screen: message.body.screen,
+        phase: message.body.phase,
+        status,
+        reason,
+      });
+    }
     return {status};
   };
   const initialSession = (): RemoteControlState => Object.freeze({sessionId: null, phase: 'idle', topologyKind: null, description: null, localEndpointId: null, readyScreens: Object.freeze([]), reason: null, cleanup: null});

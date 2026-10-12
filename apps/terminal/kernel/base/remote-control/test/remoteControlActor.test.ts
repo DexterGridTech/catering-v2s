@@ -1,5 +1,5 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
-import type {ActorExecutionContext, CommandDefinition} from '@catering-v2s/kernel-base-runtime';
+import type {ActorDispatchOptions, ActorExecutionContext, CommandDefinition} from '@catering-v2s/kernel-base-runtime';
 import {moduleName as terminalDataClientModuleName} from '@catering-v2s/kernel-base-terminal-data-client';
 import {moduleName as topologyModuleName, topologySliceName} from '@catering-v2s/kernel-base-topology';
 import type {RemoteControlPort} from '@catering-v2s/kernel-base-platform-ports';
@@ -58,6 +58,8 @@ const fixture = (portOverrides: Partial<RemoteControlPort> = {}) => {
     [remoteControlSliceName]: {sessionId: null, phase: 'idle', topologyKind: null, description: null, localEndpointId: null, readyScreens: [], reason: null, cleanup: null},
   };
   const events: Array<Readonly<Record<string, unknown>>> = [];
+  const dispatchCalls: Array<Readonly<{commandName: string; requestId?: string}>> = [];
+  const throwingDispatchCommands = new Set<string>();
   const port: RemoteControlPort = {
     subscribeEvents: vi.fn(() => () => undefined),
     readLocalScreens: vi.fn(async (screens: Parameters<RemoteControlPort['readLocalScreens']>[0]) => ({
@@ -84,11 +86,11 @@ const fixture = (portOverrides: Partial<RemoteControlPort> = {}) => {
     readSignalConfiguration: () => ({url: 'ws://127.0.0.1:7880', identity: 'development:1'}),
     now: () => 100,
   });
-  const context = (commandName: string, payload: unknown): ActorExecutionContext => ({
+  const context = (commandName: string, payload: unknown, requestId: string | null = 'test-request'): ActorExecutionContext => ({
     runtimeId: 'test-runtime',
     localNodeId: 'test-node',
     platformPorts: {logger} as never,
-    command: {commandName, payload, commandId: 'test-command', requestId: 'test-request'} as never,
+    command: {commandName, payload, commandId: 'test-command', requestId} as never,
     actor: {actorKey: actorRuntime.actor.actorKey, moduleName: actorRuntime.actor.moduleName, actorName: actorRuntime.actor.actorName},
     getState: () => state as never,
     dispatchAction: (action: Parameters<ActorExecutionContext['dispatchAction']>[0]) => {
@@ -98,9 +100,11 @@ const fixture = (portOverrides: Partial<RemoteControlPort> = {}) => {
     },
     flushPersistence: async () => ({status: 'succeeded'}),
     subscribeState: () => () => undefined,
-    dispatchCommand: async (definition: CommandDefinition | string, payload: StateJsonValue) => {
+    dispatchCommand: async (definition: CommandDefinition | string, payload: StateJsonValue, options: ActorDispatchOptions = {}) => {
       const commandNameValue = typeof definition === 'string' ? definition : definition.commandName;
       events.push({commandName: commandNameValue, payload});
+      dispatchCalls.push({commandName: commandNameValue, ...(options.requestId === undefined ? {} : {requestId: String(options.requestId)})});
+      if (throwingDispatchCommands.has(commandNameValue)) throw new Error('fixture dispatch failure');
       const body = commandNameValue === registerTerminalRemoteControlCommand.commandName
         ? {kind: 'success', body: registerResponse}
         : {kind: 'success', body: {remainingLeaseMs: 30_000}};
@@ -112,7 +116,7 @@ const fixture = (portOverrides: Partial<RemoteControlPort> = {}) => {
     requestApplicationReset: () => undefined,
   } as unknown as ActorExecutionContext);
   const handler = (commandName: string) => actorRuntime.actor.handlers.find(item => item.commandName === commandName)!;
-  return {actorRuntime, context, events, handler, port, logs, getState: () => state as never, setState: (next: Record<string, unknown>) => { state = next; }};
+  return {actorRuntime, context, events, dispatchCalls, handler, port, logs, throwingDispatchCommands, getState: () => state as never, setState: (next: Record<string, unknown>) => { state = next; }};
 };
 
 describe('remote-control owner lifecycle', () => {
@@ -133,10 +137,12 @@ describe('remote-control owner lifecycle', () => {
     });
   };
 
-  const sendDataEvent = async (remote: ReturnType<typeof fixture>, senderIdentity: string, message: unknown) =>
+  const dispatchDataEvent = (remote: ReturnType<typeof fixture>, senderIdentity: string, message: unknown) =>
     remote.handler(remoteControlPortEventCommand.commandName).handle(remote.context(remoteControlPortEventCommand.commandName, {
       type: 'data', sessionId, senderIdentity, payload: Array.from(new TextEncoder().encode(JSON.stringify(message))),
     }));
+  const sendDataEvent = async (remote: ReturnType<typeof fixture>, senderIdentity: string, message: unknown) =>
+    dispatchDataEvent(remote, senderIdentity, message);
 
   it('logs the precise endpoint stage when local screen discovery rejects the session', async () => {
     const remote = fixture({
@@ -218,6 +224,137 @@ describe('remote-control owner lifecycle', () => {
     expect(JSON.parse(new TextDecoder().decode(vi.mocked(remote.port.sendData).mock.calls[0]?.[0].payload))).toMatchObject({
       type: 'KEEPALIVE_ACK', body: {probeId},
     });
+    await remote.actorRuntime.dispose();
+  });
+
+  it('logs a thrown ACTIVE report dispatch before ending the session', async () => {
+    const remote = fixture();
+    remote.throwingDispatchCommands.add(reportTerminalRemoteControlCommand.commandName);
+    await remote.handler(startRemoteControlCommand.commandName).handle(
+      remote.context(startRemoteControlCommand.commandName, {sessionId, bindingGeneration: 7, targetSessionId: 'target-session'}),
+    );
+
+    await remote.handler(remoteControlPortEventCommand.commandName).handle(remote.context(remoteControlPortEventCommand.commandName, {
+      type: 'screen-ready', sessionId, screen: 'main', streamId: endpointId, trackSid: 'track-main', widthPx: 1920, heightPx: 1080,
+    }));
+
+    const reportRequestId = remote.dispatchCalls.find(item => item.commandName === reportTerminalRemoteControlCommand.commandName)?.requestId;
+    expect(reportRequestId).toEqual(expect.any(String));
+    expect(remote.logs).toContainEqual(expect.objectContaining({
+      event: 'remote-control.status-report-dispatch-started',
+      data: expect.objectContaining({sessionId, requestId: reportRequestId, state: 'ACTIVE', readyScreenCount: 1}),
+    }));
+    expect(remote.logs).toContainEqual(expect.objectContaining({
+      event: 'remote-control.status-report-dispatch-threw',
+      data: expect.objectContaining({sessionId, requestId: reportRequestId, state: 'ACTIVE', errorName: 'Error'}),
+    }));
+    expect(selectRemoteControlStatus(remote.getState())).toMatchObject({phase: 'ended', reason: 'START_FAILED'});
+    expect(JSON.stringify(remote.logs)).not.toContain('fixture dispatch failure');
+    await remote.actorRuntime.dispose();
+  });
+
+  it('assigns a request identity when ACTIVE status reporting follows a requestless port event', async () => {
+    const remote = fixture();
+    await remote.handler(startRemoteControlCommand.commandName).handle(
+      remote.context(startRemoteControlCommand.commandName, {sessionId, bindingGeneration: 7, targetSessionId: 'target-session'}),
+    );
+    await remote.handler(remoteControlPortEventCommand.commandName).handle(remote.context(remoteControlPortEventCommand.commandName, {
+      type: 'screen-ready', sessionId, screen: 'main', streamId: endpointId, trackSid: 'track-main', widthPx: 1920, heightPx: 1080,
+    }, null));
+
+    const reportRequestId = remote.dispatchCalls.find(item => item.commandName === reportTerminalRemoteControlCommand.commandName)?.requestId;
+    expect(reportRequestId).toEqual(expect.any(String));
+    expect(remote.logs).toContainEqual(expect.objectContaining({
+      event: 'remote-control.status-report-dispatch-started',
+      data: expect.objectContaining({sessionId, requestId: reportRequestId}),
+    }));
+    expect(remote.logs).toContainEqual(expect.objectContaining({
+      event: 'remote-control.status-report-dispatch-completed',
+      data: expect.objectContaining({sessionId, requestId: reportRequestId}),
+    }));
+    await remote.actorRuntime.dispose();
+  });
+
+  it('preserves the current request identity when ACTIVE status reporting has a parent request', async () => {
+    const remote = fixture();
+    await remote.handler(startRemoteControlCommand.commandName).handle(
+      remote.context(startRemoteControlCommand.commandName, {sessionId, bindingGeneration: 7, targetSessionId: 'target-session'}),
+    );
+    await remote.handler(remoteControlPortEventCommand.commandName).handle(remote.context(remoteControlPortEventCommand.commandName, {
+      type: 'screen-ready', sessionId, screen: 'main', streamId: endpointId, trackSid: 'track-main', widthPx: 1920, heightPx: 1080,
+    }, 'port-event-request'));
+
+    expect(remote.dispatchCalls.find(item => item.commandName === reportTerminalRemoteControlCommand.commandName)?.requestId).toBe('port-event-request');
+    await remote.actorRuntime.dispose();
+  });
+
+  it('assigns a request identity to lease-expiry stop dispatched from a requestless timer', async () => {
+    vi.useFakeTimers();
+    const remote = fixture();
+    try {
+      await remote.handler(startRemoteControlCommand.commandName).handle(
+        remote.context(startRemoteControlCommand.commandName, {sessionId, bindingGeneration: 7, targetSessionId: 'target-session'}),
+      );
+      await remote.handler(remoteControlPortEventCommand.commandName).handle(remote.context(remoteControlPortEventCommand.commandName, {
+        type: 'screen-ready', sessionId, screen: 'main', streamId: endpointId, trackSid: 'track-main', widthPx: 1920, heightPx: 1080,
+      }, null));
+
+      await vi.advanceTimersByTimeAsync(30_000);
+
+      expect(remote.dispatchCalls.find(item => item.commandName === stopRemoteControlCommand.commandName)?.requestId).toEqual(expect.any(String));
+    } finally {
+      await remote.actorRuntime.dispose();
+      vi.useRealTimers();
+    }
+  });
+
+  it('assigns a request identity to peer stop dispatched from a requestless topology event', async () => {
+    const remote = fixture();
+    await remote.handler(startRemoteControlCommand.commandName).handle(
+      remote.context(startRemoteControlCommand.commandName, {sessionId, bindingGeneration: 7, targetSessionId: 'target-session'}),
+    );
+    remote.setState({
+      ...remote.getState() as Record<string, unknown>,
+      [topologySliceName]: {
+        ...(remote.getState()[topologySliceName] as Record<string, unknown>),
+        peerIdentity: {
+          protocolVersion: 1, moduleName: 'sample-console', nodeId: 'node-peer',
+          displayName: 'Peer', instanceMode: 'SLAVE', displayRole: 'VICE',
+        },
+        peerReachable: true,
+        peerStateSyncConnectionId: 'accepted-peer-connection',
+      },
+    });
+    await remote.handler(remoteControlPortEventCommand.commandName).handle(
+      remote.context(remoteControlPortEventCommand.commandName, {type: 'state-changed'}, null),
+    );
+
+    const peerStop = remote.dispatchCalls.find(item => item.commandName === stopRemoteControlCommand.commandName);
+    expect(peerStop?.requestId).toEqual(expect.any(String));
+    expect(selectRemoteControlStatus(remote.getState())).toMatchObject({phase: 'ended', reason: 'PAIR_DISCONNECTED'});
+    await remote.actorRuntime.dispose();
+  });
+
+  it('ends a session as lease-expired when an ACTIVE renewal report cannot be dispatched', async () => {
+    const remote = fixture();
+    await remote.handler(startRemoteControlCommand.commandName).handle(
+      remote.context(startRemoteControlCommand.commandName, {sessionId, bindingGeneration: 7, targetSessionId: 'target-session'}),
+    );
+    await remote.handler(remoteControlPortEventCommand.commandName).handle(remote.context(remoteControlPortEventCommand.commandName, {
+      type: 'screen-ready', sessionId, screen: 'main', streamId: endpointId, trackSid: 'track-main', widthPx: 1920, heightPx: 1080,
+    }));
+    expect(selectRemoteControlStatus(remote.getState()).phase).toBe('active');
+
+    remote.throwingDispatchCommands.add(reportTerminalRemoteControlCommand.commandName);
+    await remote.handler(remoteControlPortEventCommand.commandName).handle(remote.context(remoteControlPortEventCommand.commandName, {
+      type: 'lease-tick', sessionId,
+    }));
+
+    expect(selectRemoteControlStatus(remote.getState())).toMatchObject({phase: 'ended', reason: 'LEASE_EXPIRED'});
+    expect(remote.logs).toContainEqual(expect.objectContaining({
+      event: 'remote-control.status-report-dispatch-threw',
+      data: expect.objectContaining({sessionId, state: 'ACTIVE', errorName: 'Error'}),
+    }));
     await remote.actorRuntime.dispose();
   });
 
@@ -496,6 +633,192 @@ describe('remote-control owner lifecycle', () => {
     expect(remote.port.dispatchPointer).toHaveBeenNthCalledWith(3, {
       sessionId, screen: 'main', streamId, gestureId: nextGestureId, phase: 'down', u: 0.5, v: 0.5,
     });
+    await remote.actorRuntime.dispose();
+  });
+
+  it('processes ordered pointer DOWN and UP events sequentially when native dispatch is asynchronous', async () => {
+    const downStarted = makeDeferred<void>();
+    const releaseDown = makeDeferred<Awaited<ReturnType<RemoteControlPort['dispatchPointer']>>>();
+    const remote = fixture({
+      dispatchPointer: vi.fn(async input => {
+        if (input.phase === 'down') {
+          downStarted.resolve();
+          return releaseDown.promise;
+        }
+        return {status: 'succeeded' as const, value: {dispatched: true}, completedAt: 2};
+      }),
+    });
+    activateFixtureSession(remote);
+    const streamId = '00000000-0000-4000-8000-000000000021';
+    const gestureId = '00000000-0000-4000-8000-000000000022';
+    const currentSession = remote.getState()[remoteControlSliceName] as RemoteControlState;
+    remote.setState({
+      ...remote.getState() as Record<string, unknown>,
+      [remoteControlSliceName]: {
+        ...currentSession,
+        readyScreens: [{endpointId, screen: 'main', streamId, trackSid: 'track-main', widthPx: 1080, heightPx: 1920}],
+      },
+    });
+    const pointer = (seq: number, phase: 'down' | 'up') => ({
+      v: 1,
+      type: 'POINTER',
+      sessionId,
+      seq,
+      body: {endpointId, screen: 'main', streamId, gestureId, phase, u: 0.5, v: 0.5},
+    });
+
+    const down = dispatchDataEvent(remote, 'controller-1', pointer(1, 'down'));
+    await downStarted.promise;
+    const up = dispatchDataEvent(remote, 'controller-1', pointer(2, 'up'));
+    await Promise.resolve();
+
+    expect(remote.port.dispatchPointer).toHaveBeenCalledTimes(1);
+    expect(remote.port.sendData).not.toHaveBeenCalled();
+
+    releaseDown.resolve({status: 'succeeded', value: {dispatched: true}, completedAt: 1});
+    await Promise.all([down, up]);
+
+    expect(remote.port.dispatchPointer).toHaveBeenNthCalledWith(1, {
+      sessionId, screen: 'main', streamId, gestureId, phase: 'down', u: 0.5, v: 0.5,
+    });
+    expect(remote.port.dispatchPointer).toHaveBeenNthCalledWith(2, {
+      sessionId, screen: 'main', streamId, gestureId, phase: 'up', u: 0.5, v: 0.5,
+    });
+    const results = vi.mocked(remote.port.sendData).mock.calls.map(([request]) =>
+      JSON.parse(new TextDecoder().decode(request.payload)),
+    );
+    expect(results).toEqual([
+      expect.objectContaining({type: 'INPUT_RESULT', body: {forSeq: 1, gestureId, status: 'DISPATCHED', reason: null}}),
+      expect.objectContaining({type: 'INPUT_RESULT', body: {forSeq: 2, gestureId, status: 'DISPATCHED', reason: null}}),
+    ]);
+    expect(remote.logs.filter((entry): entry is {event: string; data: Record<string, unknown>} =>
+      typeof entry === 'object' && entry !== null && 'event' in entry && typeof entry.event === 'string' && entry.event.startsWith('remote-control.pointer-input-'),
+    ).map(entry => entry.event)).toEqual([
+      'remote-control.pointer-input-dispatch-started',
+      'remote-control.pointer-input-dispatch-completed',
+      'remote-control.pointer-input-result-sent',
+      'remote-control.pointer-input-dispatch-started',
+      'remote-control.pointer-input-dispatch-completed',
+      'remote-control.pointer-input-result-sent',
+    ]);
+    await remote.actorRuntime.dispose();
+  });
+
+  it('waits for an in-flight pointer event before stopping and releasing its session', async () => {
+    const downStarted = makeDeferred<void>();
+    const releaseDown = makeDeferred<Awaited<ReturnType<RemoteControlPort['dispatchPointer']>>>();
+    const remote = fixture({
+      dispatchPointer: vi.fn(async input => {
+        if (input.phase === 'down') {
+          downStarted.resolve();
+          return releaseDown.promise;
+        }
+        return {status: 'succeeded' as const, value: {dispatched: true}, completedAt: 2};
+      }),
+    });
+    activateFixtureSession(remote);
+    const streamId = '00000000-0000-4000-8000-000000000031';
+    const gestureId = '00000000-0000-4000-8000-000000000032';
+    remote.setState({
+      ...remote.getState() as Record<string, unknown>,
+      [remoteControlSliceName]: {
+        ...remote.getState()[remoteControlSliceName] as RemoteControlState,
+        readyScreens: [{endpointId, screen: 'main', streamId, trackSid: 'track-main', widthPx: 1080, heightPx: 1920}],
+      },
+    });
+    const down = dispatchDataEvent(remote, 'controller-1', {
+      v: 1, type: 'POINTER', sessionId, seq: 1,
+      body: {endpointId, screen: 'main', streamId, gestureId, phase: 'down', u: 0.5, v: 0.5},
+    });
+    await downStarted.promise;
+    const stop = remote.handler(stopRemoteControlCommand.commandName).handle(
+      remote.context(stopRemoteControlCommand.commandName, {sessionId, reason: 'ADMIN_ENDED'}),
+    );
+    await Promise.resolve();
+
+    expect(remote.port.end).not.toHaveBeenCalled();
+    expect((remote.getState()[remoteControlSliceName] as RemoteControlState).phase).toBe('active');
+
+    releaseDown.resolve({status: 'succeeded', value: {dispatched: true}, completedAt: 1});
+    await Promise.all([down, stop]);
+
+    expect(remote.port.sendData).toHaveBeenCalledTimes(2);
+    const sentMessages = vi.mocked(remote.port.sendData).mock.calls.map(([request]) => JSON.parse(new TextDecoder().decode(request.payload)));
+    expect(sentMessages.map(message => message.type)).toEqual(['INPUT_RESULT', 'SESSION_END']);
+    expect(remote.port.end).toHaveBeenCalledWith({sessionId});
+    expect((remote.getState()[remoteControlSliceName] as RemoteControlState).phase).toBe('ended');
+    await remote.actorRuntime.dispose();
+  });
+
+  it('allows only one active gesture across screens owned by the same endpoint', async () => {
+    const remote = fixture();
+    activateFixtureSession(remote);
+    const mainStreamId = '00000000-0000-4000-8000-000000000041';
+    const secondaryStreamId = '00000000-0000-4000-8000-000000000042';
+    const mainGestureId = '00000000-0000-4000-8000-000000000043';
+    const secondaryGestureId = '00000000-0000-4000-8000-000000000044';
+    remote.setState({
+      ...remote.getState() as Record<string, unknown>,
+      [remoteControlSliceName]: {
+        ...remote.getState()[remoteControlSliceName] as RemoteControlState,
+        description: {...registerResponse.description, topologyKind: 'LAPTOP_DUAL', screens: [
+          {screen: 'main', endpointId}, {screen: 'secondary', endpointId},
+        ]},
+        readyScreens: [
+          {endpointId, screen: 'main', streamId: mainStreamId, trackSid: 'track-main', widthPx: 1080, heightPx: 1920},
+          {endpointId, screen: 'secondary', streamId: secondaryStreamId, trackSid: 'track-secondary', widthPx: 1920, heightPx: 1080},
+        ],
+      },
+    });
+    const pointer = (seq: number, screen: 'main' | 'secondary', streamId: string, gestureId: string, phase: 'down' | 'up') => ({
+      v: 1, type: 'POINTER', sessionId, seq,
+      body: {endpointId, screen, streamId, gestureId, phase, u: 0.5, v: 0.5},
+    });
+
+    await sendDataEvent(remote, 'controller-1', pointer(1, 'main', mainStreamId, mainGestureId, 'down'));
+    await sendDataEvent(remote, 'controller-1', pointer(2, 'secondary', secondaryStreamId, secondaryGestureId, 'down'));
+    await sendDataEvent(remote, 'controller-1', pointer(3, 'main', mainStreamId, mainGestureId, 'up'));
+    await sendDataEvent(remote, 'controller-1', pointer(4, 'secondary', secondaryStreamId, secondaryGestureId, 'down'));
+
+    const results = vi.mocked(remote.port.sendData).mock.calls.map(([request]) => JSON.parse(new TextDecoder().decode(request.payload)));
+    expect(results.map(result => result.body)).toEqual([
+      {forSeq: 1, gestureId: mainGestureId, status: 'DISPATCHED', reason: null},
+      {forSeq: 2, gestureId: secondaryGestureId, status: 'REJECTED', reason: 'INPUT_CONFLICT'},
+      {forSeq: 3, gestureId: mainGestureId, status: 'DISPATCHED', reason: null},
+      {forSeq: 4, gestureId: secondaryGestureId, status: 'DISPATCHED', reason: null},
+    ]);
+    expect(remote.port.dispatchPointer).toHaveBeenCalledTimes(3);
+    await remote.actorRuntime.dispose();
+  });
+
+  it('omits receipts for dispatched moves but reports a rejected move', async () => {
+    const remote = fixture();
+    activateFixtureSession(remote);
+    const streamId = '00000000-0000-4000-8000-000000000051';
+    const gestureId = '00000000-0000-4000-8000-000000000052';
+    remote.setState({
+      ...remote.getState() as Record<string, unknown>,
+      [remoteControlSliceName]: {
+        ...remote.getState()[remoteControlSliceName] as RemoteControlState,
+        readyScreens: [{endpointId, screen: 'main', streamId, trackSid: 'track-main', widthPx: 1080, heightPx: 1920}],
+      },
+    });
+    const pointer = (seq: number, phase: 'down' | 'move' | 'up', id = gestureId) => ({
+      v: 1, type: 'POINTER', sessionId, seq,
+      body: {endpointId, screen: 'main', streamId, gestureId: id, phase, u: 0.5, v: 0.5},
+    });
+
+    await sendDataEvent(remote, 'controller-1', pointer(1, 'down'));
+    await sendDataEvent(remote, 'controller-1', pointer(2, 'move'));
+    await sendDataEvent(remote, 'controller-1', pointer(3, 'up'));
+    await sendDataEvent(remote, 'controller-1', pointer(4, 'move'));
+
+    const results = vi.mocked(remote.port.sendData).mock.calls.map(([request]) => JSON.parse(new TextDecoder().decode(request.payload)));
+    expect(results.map(result => result.body)).toEqual([
+      {forSeq: 1, gestureId, status: 'DISPATCHED', reason: null},
+      {forSeq: 3, gestureId, status: 'DISPATCHED', reason: null},
+      {forSeq: 4, gestureId, status: 'REJECTED', reason: 'INVALID_GESTURE'},
+    ]);
     await remote.actorRuntime.dispose();
   });
 });

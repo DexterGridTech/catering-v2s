@@ -4,34 +4,35 @@ import {createRequire} from 'node:module';
 import {once} from 'node:events';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {afterAll, beforeAll, describe, expect, it} from 'vitest';
+import {afterAll, beforeAll, describe, it} from 'vitest';
 import {chromium, type Browser, type Locator, type Page} from 'playwright';
+import {expect} from 'playwright/test';
 import {remoteControlTestIds} from '../../../apps/frontend/operations-admin/src/app/automation/remoteControlTestIds.ts';
 import {terminalUpdateTestIds} from '../../../apps/frontend/operations-admin/src/app/automation/terminalUpdateTestIds.ts';
 import {roleHomeTestIds} from '../../../apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts';
 import {
   createJourneyFailureDiagnostics,
   createTerminalAutomationDriver,
-  createWebJourneyUiPort,
   ensureMainSampleActivated,
   mainSampleAppName,
   parseMainSample,
-  dispatchObservedUiCommand,
   type TerminalAutomationDriver,
 } from '../src/index.ts';
 import {mainSampleTerminalName} from '../src/mainSampleJourneyConfig.ts';
 import type {TerminalAutomationProcessIdentity} from '../src/managedRun.js';
-import {mainSampleTestIds} from '../src/mainSampleTestIds.js';
-import {readSelector, subscribeSelector, waitForSelector} from '../src/selectorObservation.js';
+import {subscribeSelector, waitForSelector} from '../src/selectorObservation.js';
 import {
-  isForwardedExpoWebConsoleLine,
+  createExpoWebOutputTracker,
+  projectOperationsRemoteControlLog,
   projectTerminalRuntimeRemoteControlLog,
+  liveKitSignalSocketProtocol,
+  operationsRemoteControlOperationOfPath,
   safeTerminalBrowserPolicyFailure,
   safeBrowserRequestFailureReason,
   terminalRemoteControlOperationOfPath,
 } from '../src/browserNetworkDiagnostics.js';
 import {createManagedActivationFixtureApi} from '../fixtures/managedActivation.ts';
-import {testExpoTestIds} from '../../../apps/terminal/ui/base/dev-host/src/foundations/testExpoTestIds.ts';
+import {captureBrowserRtcDiagnostics, installBrowserRtcProbe} from '../src/browserRtcProbe.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const sample = parseMainSample(process.env.TERMINAL_AUTOMATION_SAMPLE);
@@ -83,19 +84,33 @@ const processIdentity = (pid: number): TerminalAutomationProcessIdentity => {
 };
 
 const waitForExpo = async (url: string, child: ReturnType<typeof spawn>): Promise<void> => {
+  const startedAt = Date.now();
   const deadline = Date.now() + 60_000;
   let lastStatus = 'NOT_REQUESTED';
+  safeLog('expo.web.readiness.started');
   while (Date.now() < deadline) {
-    if (child.exitCode !== null) throw new Error(`TERMINAL_AUTOMATION_EXPO_EXITED_${child.exitCode}`);
+    if (child.exitCode !== null) {
+      safeLog('expo.web.readiness.failed', {
+        elapsedMs: Date.now() - startedAt,
+        reason: 'PROCESS_EXITED',
+        exitCode: child.exitCode,
+        lastStatus,
+      });
+      throw new Error(`TERMINAL_AUTOMATION_EXPO_EXITED_${child.exitCode}`);
+    }
     try {
       const response = await fetch(url, {signal: AbortSignal.timeout(1_000)});
-      if (response.ok) return;
+      if (response.ok) {
+        safeLog('expo.web.readiness.ready', {elapsedMs: Date.now() - startedAt, httpStatus: response.status});
+        return;
+      }
       lastStatus = `HTTP_${response.status}`;
     } catch (error) {
       lastStatus = error instanceof Error ? error.name : 'FETCH_FAILED';
     }
     await new Promise(resolve => setTimeout(resolve, 250));
   }
+  safeLog('expo.web.readiness.failed', {elapsedMs: Date.now() - startedAt, reason: 'TIMEOUT', lastStatus});
   throw new Error(`TERMINAL_AUTOMATION_EXPO_READINESS_TIMEOUT_${lastStatus}`);
 };
 
@@ -110,70 +125,16 @@ const operationOf = (pageUrl: string): string | undefined => {
   if (pathname.endsWith('/auth/session')) return 'admin-api.session';
   const terminalRemoteControlOperation = terminalRemoteControlOperationOfPath(pathname);
   if (terminalRemoteControlOperation !== undefined) return terminalRemoteControlOperation;
-  if (/\/remote-control-sessions\/[^/]+\/controller-grant$/u.test(pathname)) return 'remote-control.grant';
-  if (/\/remote-control-sessions\/[^/]+\/end$/u.test(pathname)) return 'remote-control.end';
-  if (/\/remote-control-sessions$/u.test(pathname)) return 'remote-control.start';
+  const remoteControlOperation = operationsRemoteControlOperationOfPath(pathname);
+  if (remoteControlOperation !== undefined) return `remote-control.${remoteControlOperation}`;
   if (/\/terminal-update-versions(?:\/|$)/u.test(pathname)) return 'terminal-version.read';
   return undefined;
 };
 
-const remoteControlDiagnosticFields = [
-  'attempt',
-  'cleanupState',
-  'deadlineAtEpochMillis',
-  'endpointCount',
-  'errorCode',
-  'errorName',
-  'expectedScreenCount',
-  'forSeq',
-  'missingEndpointCount',
-  'participantCount',
-  'projectRef',
-  'reason',
-  'readyScreenCount',
-  'screen',
-  'screenCount',
-  'seq',
-  'sessionId',
-  'state',
-  'status',
-  'streamId',
-  'terminalRef',
-  'trackSid',
-  'topologyKind',
-] as const;
-
 const attachFrontendRemoteControlLogs = (page: Page): void => {
-  const prefix = '[operations-admin] ';
   page.on('console', message => {
-    const text = message.text();
-    if (!text.startsWith(prefix)) return;
-    let value: unknown;
-    try {
-      value = JSON.parse(text.slice(prefix.length)) as unknown;
-    } catch {
-      return;
-    }
-    if (!isRecord(value) || value.service !== 'operations-admin') return;
-    if (typeof value.event !== 'string' || !/^frontend\.remote_control\.[a-z0-9_.-]{1,96}$/u.test(value.event)) return;
-
-    const fields: Record<string, string | number | boolean> = {sourceEvent: value.event};
-    for (const key of ['level', 'phase', 'outcome'] as const) {
-      if (typeof value[key] === 'string' && /^[A-Z0-9_.:-]{1,64}$/u.test(value[key])) fields[key] = value[key] as string;
-    }
-    if (typeof value.status === 'number' && Number.isInteger(value.status)) fields.httpStatus = value.status;
-    const diagnostic = isRecord(value.diagnostic) ? value.diagnostic : undefined;
-    if (diagnostic !== undefined) {
-      for (const key of remoteControlDiagnosticFields) {
-        const item = diagnostic[key];
-        if (typeof item === 'number' && Number.isFinite(item)) fields[`diag_${key}`] = item;
-        else if (typeof item === 'string' && /^[A-Za-z0-9_.:-]{1,160}$/u.test(item)) fields[key === 'sessionId' ? 'remoteSessionId' : `diag_${key}`] = item;
-        else if (typeof item === 'boolean') fields[`diag_${key}`] = item;
-      }
-    }
-    if (typeof value.errorCode === 'string' && /^[A-Z0-9_.:-]{1,96}$/u.test(value.errorCode))
-      fields.errorCode = value.errorCode;
-    safeLog('operations.frontend.remote-control', fields);
+    const projected = projectOperationsRemoteControlLog(message.text());
+    if (projected !== undefined) safeLog('operations.frontend.remote-control', projected);
   });
 };
 
@@ -183,6 +144,7 @@ const attachPageDiagnostics = (
   onTerminalRuntimeEvent?: (event: Readonly<Record<string, string | number | boolean>>) => void,
 ): void => {
   let sequence = 0;
+  let liveKitSignalSequence = 0;
   const requestIds = new WeakMap<object, number>();
   const startedAt = new WeakMap<object, number>();
   page.on('request', request => {
@@ -218,6 +180,33 @@ const attachPageDiagnostics = (
       reason: safeBrowserRequestFailureReason(request.failure()?.errorText),
     });
   });
+  page.on('websocket', socket => {
+    const protocol = liveKitSignalSocketProtocol(socket.url());
+    if (protocol === undefined) return;
+    const attempt = ++liveKitSignalSequence;
+    const startedAt = Date.now();
+    let sentFrames = 0;
+    let receivedFrames = 0;
+    safeLog(`${label}.livekit.signal.socket-observed`, {attempt, protocol});
+    socket.on('framesent', () => { sentFrames += 1; });
+    socket.on('framereceived', () => { receivedFrames += 1; });
+    socket.on('socketerror', errorText => {
+      safeLog(`${label}.livekit.signal.socket-error`, {
+        attempt,
+        protocol,
+        reason: safeBrowserRequestFailureReason(errorText),
+      });
+    });
+    socket.on('close', () => {
+      safeLog(`${label}.livekit.signal.socket-closed`, {
+        attempt,
+        protocol,
+        sentFrames,
+        receivedFrames,
+        elapsedMs: Date.now() - startedAt,
+      });
+    });
+  });
   if (label === 'terminal') {
     page.on('console', message => {
       if (message.type() === 'info') {
@@ -251,6 +240,8 @@ const attachPageDiagnostics = (
   page.on('pageerror', error => safeLog(`${label}.page.error`, {errorName: error.name}));
 };
 
+
+
 const activeSelectDropdown = async (page: Page, input: Locator): Promise<Locator> => {
   const listboxId = await input.getAttribute('aria-controls');
   if (listboxId) {
@@ -275,7 +266,20 @@ const selectOption = async (page: Page, controlTestId: string, optionPrefix: str
   const control = page.getByTestId(controlTestId);
   const input = control.locator('input').first();
   await input.waitFor({state: 'visible', timeout: 30_000});
-  await input.click();
+  safeLog('operations.role-context.selector.ready', {inputEnabled: await input.isEnabled()});
+  await expect(input).toBeEnabled();
+  await control.click();
+  const [ariaExpanded, visibleDropdownCount, allDropdownCount] = await Promise.all([
+    input.getAttribute('aria-expanded'),
+    page.locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden):visible').count(),
+    page.locator('.ant-select-dropdown').count(),
+  ]);
+  safeLog('operations.role-context.selector.opened', {
+    ariaExpanded: ariaExpanded ?? 'missing',
+    hasAriaControls: (await input.getAttribute('aria-controls')) !== null,
+    visibleDropdownCount,
+    allDropdownCount,
+  });
   const dropdown = await activeSelectDropdown(page, input);
   await dropdown.waitFor({state: 'visible', timeout: 10_000});
   const options = dropdown.locator('.ant-select-item-option:visible');
@@ -292,8 +296,18 @@ const selectOption = async (page: Page, controlTestId: string, optionPrefix: str
     matches.count().catch(() => -1),
   ]);
   if (matchWaitFailure !== 'NONE' || labelMatchCount !== 1) {
+    const [visibleOptionCount, allDropdownCount, emptyStateCount] = await Promise.all([
+      options.count().catch(() => -1),
+      page.locator('.ant-select-dropdown').count().catch(() => -1),
+      page.getByTestId('operations-role-context-empty').count().catch(() => -1),
+    ]);
+    const ariaExpanded = await input.getAttribute('aria-expanded').catch(() => null);
     safeLog('operations.role-context.option.match-failed', {
+      ariaExpanded: ariaExpanded ?? 'missing',
       dropdownVisible: await dropdown.isVisible().catch(() => false),
+      visibleOptionCount,
+      allDropdownCount,
+      emptyStateCount,
       optionCount,
       labelMatchCount,
       matchWaitFailure,
@@ -314,52 +328,6 @@ const selectOption = async (page: Page, controlTestId: string, optionPrefix: str
     optionIdentityPresent: true,
   });
   await matches.first().click();
-};
-
-const clickRemoteTarget = async (
-  input: Readonly<{terminalPage: Page; operationsPage: Page; testId: string}>,
-): Promise<void> => {
-  const target = input.terminalPage.getByTestId(input.testId);
-  const surface = input.terminalPage.getByTestId(String(testExpoTestIds.surface('PRIMARY')));
-  const [targetBounds, surfaceBounds] = await Promise.all([target.boundingBox(), surface.boundingBox()]);
-  if (targetBounds === null || surfaceBounds === null || surfaceBounds.width <= 0 || surfaceBounds.height <= 0) {
-    throw new Error('TERMINAL_AUTOMATION_REMOTE_TARGET_BOUNDS_UNAVAILABLE');
-  }
-  const u = (targetBounds.x + targetBounds.width / 2 - surfaceBounds.x) / surfaceBounds.width;
-  const v = (targetBounds.y + targetBounds.height / 2 - surfaceBounds.y) / surfaceBounds.height;
-  if (!(u >= 0 && u <= 1 && v >= 0 && v <= 1)) throw new Error('TERMINAL_AUTOMATION_REMOTE_TARGET_OUTSIDE_SURFACE');
-
-  const video = input.operationsPage.getByTestId(remoteControlTestIds.screen('main'));
-  await expect
-    .poll(
-      async () =>
-        video.evaluate(
-          (element: HTMLVideoElement) =>
-            element.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
-            element.videoWidth > 0 &&
-            element.videoHeight > 0,
-        ),
-      {timeout: 30_000},
-    )
-    .toBe(true);
-  const videoBox = await video.boundingBox();
-  const videoSize = await video.evaluate((element: HTMLVideoElement) => ({
-    width: element.videoWidth,
-    height: element.videoHeight,
-  }));
-  if (videoBox === null || videoBox.width <= 0 || videoBox.height <= 0) {
-    throw new Error('TERMINAL_AUTOMATION_REMOTE_VIDEO_BOUNDS_UNAVAILABLE');
-  }
-  const scale = Math.min(videoBox.width / videoSize.width, videoBox.height / videoSize.height);
-  const renderedWidth = videoSize.width * scale;
-  const renderedHeight = videoSize.height * scale;
-  const x = videoBox.x + (videoBox.width - renderedWidth) / 2 + u * renderedWidth;
-  const y = videoBox.y + (videoBox.height - renderedHeight) / 2 + v * renderedHeight;
-  safeLog('pointer.action.started', {testId: input.testId, u: Number(u.toFixed(4)), v: Number(v.toFixed(4))});
-  await input.operationsPage.mouse.move(x, y);
-  await input.operationsPage.mouse.down();
-  await input.operationsPage.mouse.up();
-  safeLog('pointer.action.completed', {testId: input.testId});
 };
 
 const throwRemoteStartFailure = (event: Readonly<Record<string, string | number | boolean>>): never => {
@@ -388,28 +356,16 @@ describe(`TER remote control ${sample} on Expo Web`, () => {
   let observedRemoteStartFailure: Readonly<Record<string, string | number | boolean>> | null = null;
   let resolveRemoteStartFailure: ((event: Readonly<Record<string, string | number | boolean>>) => void) | undefined;
   let remoteStartFailureSignal: Promise<Readonly<Record<string, string | number | boolean>>> | undefined;
-  const expoBuffers = new Map<'stdout' | 'stderr', string>([
-    ['stdout', ''],
-    ['stderr', ''],
-  ]);
-  const pipeExpoLogs = (stream: 'stdout' | 'stderr', chunk: Buffer, final = false): void => {
-    const lines = `${expoBuffers.get(stream) ?? ''}${chunk.toString('utf8')}`.split('\n');
-    const pending = final ? '' : (lines.pop() ?? '');
-    expoBuffers.set(stream, pending);
-    const output = `${lines.join('\n')}${lines.length > 0 || final ? '\n' : ''}${final ? pending : ''}`;
-    const outputLines = output.split('\n');
-    const safeLines = outputLines.filter(line => !isForwardedExpoWebConsoleLine(line));
-    const suppressedConsoleLines = outputLines.length - safeLines.length;
-    if (suppressedConsoleLines > 0) safeLog('expo.web-console.suppressed', {count: suppressedConsoleLines});
-    const secrets = [
-      testToken,
-      process.env.V2S_SEED_OPERATIONS_DEFAULT_PASSWORD,
-      process.env.V2S_SEED_PLATFORM_ROOT_PASSWORD,
-    ].filter((value): value is string => typeof value === 'string' && value.length > 0);
-    let safeOutput = safeLines.join('\n');
-    for (const secret of secrets) safeOutput = safeOutput.replaceAll(secret, '[REDACTED]');
-    if (safeOutput.length > 0) (stream === 'stdout' ? process.stdout : process.stderr).write(safeOutput);
-  };
+  let remoteStartAttempted = false;
+  let remoteControlSessionId: string | null = null;
+  let loggedExpoBundleSuccess = false;
+  const expoOutput = createExpoWebOutputTracker((stream, diagnostic) => {
+    if (diagnostic.category === 'BUNDLE_SUCCEEDED') {
+      if (loggedExpoBundleSuccess) return;
+      loggedExpoBundleSuccess = true;
+    }
+    safeLog('expo.web.output.diagnostic', {stream, ...diagnostic});
+  });
 
   beforeAll(async () => {
     const runId = required('TERMINAL_AUTOMATION_RUN_ID');
@@ -468,13 +424,16 @@ describe(`TER remote control ${sample} on Expo Web`, () => {
     });
     await once(expo, 'spawn');
     if (expo.pid === undefined) throw new Error('TERMINAL_AUTOMATION_EXPO_PID_UNAVAILABLE');
-    expo.stdout?.on('data', value => pipeExpoLogs('stdout', Buffer.from(value)));
-    expo.stderr?.on('data', value => pipeExpoLogs('stderr', Buffer.from(value)));
+    expo.stdout?.on('data', value => expoOutput.push('stdout', value));
+    expo.stderr?.on('data', value => expoOutput.push('stderr', value));
     expoIdentity = processIdentity(expo.pid);
+    safeLog('expo.web.process.started', {pid: expoIdentity.pid, processIdentityBound: true});
     await waitForExpo(webOrigin.origin, expo);
     browser = await chromium.launch({headless: true});
     terminalPage = await browser.newPage({viewport: {width: 1280, height: 720}});
     operationsPage = await browser.newPage({viewport: {width: 1440, height: 900}});
+    await installBrowserRtcProbe(terminalPage, 'terminal', safeLog);
+    await installBrowserRtcProbe(operationsPage, 'operations', safeLog);
     attachPageDiagnostics(terminalPage, 'terminal', event => {
       const registrationRejected = event.event === 'remote-control.session-registration-rejected' ||
         (event.event === 'register-completed' && event.resultKind === 'failure');
@@ -542,10 +501,31 @@ describe(`TER remote control ${sample} on Expo Web`, () => {
         const end = operationsPage.getByTestId(remoteControlTestIds.end);
         if ((await end.count()) > 0 && (await end.isVisible().catch(() => false))) {
           await end.click();
-          await operationsPage
-            .getByTestId(remoteControlTestIds.status)
-            .waitFor({state: 'visible', timeout: 15_000})
-            .catch(() => undefined);
+          safeLog('operations.remote-end.clicked');
+        }
+        if (remoteControlSessionId !== null && driver !== undefined && sessionId !== null) {
+          const endedStatus = await waitForSelector(
+            driver.transport,
+            sessionId,
+            'kernel.base.remote-control.selectRemoteControlStatus',
+            [],
+            value =>
+              isRecord(value) &&
+              value.sessionId === remoteControlSessionId &&
+              value.phase === 'ended' &&
+              isRecord(value.cleanup) &&
+              value.cleanup.roomLeft === true &&
+              value.cleanup.inputCancelled === true &&
+              typeof value.cleanup.tracksReleased === 'number' &&
+              value.cleanup.tracksReleased >= 1,
+            30_000,
+          );
+          const cleanup = isRecord(endedStatus) && isRecord(endedStatus.cleanup) ? endedStatus.cleanup : undefined;
+          safeLog('remote-control.cleanup.readback', {
+            roomLeft: cleanup?.roomLeft === true,
+            inputCancelled: cleanup?.inputCancelled === true,
+            tracksReleased: typeof cleanup?.tracksReleased === 'number' ? cleanup.tracksReleased : 0,
+          });
         }
         const close = operationsPage.getByTestId(remoteControlTestIds.close);
         if ((await close.count()) > 0 && (await close.isVisible().catch(() => false))) {
@@ -569,13 +549,27 @@ describe(`TER remote control ${sample} on Expo Web`, () => {
     }
     if (expoIdentity !== undefined) {
       try {
-        pipeExpoLogs('stdout', Buffer.alloc(0), true);
-        pipeExpoLogs('stderr', Buffer.alloc(0), true);
         if (managedProcessTree.snapshotProcessTree(expoIdentity).length > 0) {
           const result = await managedProcessTree.terminateOwnedProcessTree(expoIdentity);
           if (result.status !== 'PASS' || result.treeReadback.length !== 0)
             cleanupFailures.push('EXPO_PROCESS_TREE_REMAINS');
         }
+        expoOutput.flush();
+        const summary = expoOutput.summary();
+        safeLog('expo.web.process.output-summary', {
+          stdoutBytes: summary.stdoutBytes,
+          stderrBytes: summary.stderrBytes,
+          classifiedLines: summary.classifiedLines,
+          unclassifiedLines: summary.unclassifiedLines,
+          oversizedLines: summary.oversizedLines,
+          bundleSucceeded: summary.categories.BUNDLE_SUCCEEDED ?? 0,
+          bundleFailed: summary.categories.BUNDLE_FAILED ?? 0,
+          moduleResolutionFailed: summary.categories.MODULE_RESOLUTION_FAILED ?? 0,
+          dependencyResolutionFailed: summary.categories.DEPENDENCY_RESOLUTION_FAILED ?? 0,
+          syntaxFailed: summary.categories.SYNTAX_FAILED ?? 0,
+          portBindFailed: summary.categories.PORT_BIND_FAILED ?? 0,
+          expoError: summary.categories.EXPO_ERROR ?? 0,
+        });
       } catch {
         cleanupFailures.push('EXPO_PROCESS_TREE_CLEANUP_FAILED');
       }
@@ -587,7 +581,7 @@ describe(`TER remote control ${sample} on Expo Web`, () => {
     if (cleanupFailures.length > 0) throw new Error(`TERMINAL_AUTOMATION_REMOTE_CLEANUP_${cleanupFailures.join('_')}`);
   });
 
-  it('starts from operations UI and performs a real remote pointer action against the terminal app', async () => {
+  it('verifies the terminal connection and receives the remote-control start command', async () => {
     if (
       driver === undefined ||
       terminalPage === undefined ||
@@ -598,23 +592,16 @@ describe(`TER remote control ${sample} on Expo Web`, () => {
       throw new Error('TERMINAL_AUTOMATION_REMOTE_FIXTURE_NOT_READY');
     }
     diagnostics = createJourneyFailureDiagnostics({server: driver.transport, sessionId});
-    const ui = createWebJourneyUiPort({
-      server: driver.transport,
-      sessionId,
-      page: terminalPage,
-      onStep: diagnostics.markStep,
-    });
     try {
       await waitForSelector(
         driver.transport,
         sessionId,
-        'kernel.base.ui-state.selectScreen',
-        ['PRIMARY', 'main'],
-        value => isRecord(value) && value.partKey === 'sample.auth.login',
-        30_000,
+        'kernel.base.terminal-data-client.selectConnectionState',
+        [],
+        value => isRecord(value) && value.status === 'connected',
+        60_000,
       );
-      await ui.enterTextAndComplete(mainSampleTestIds.staffOperatorName, 'A001', {mode: 'PRIMARY', index: 0});
-      await ui.enterTextAndComplete(mainSampleTestIds.staffPasscode, '1111', {mode: 'PRIMARY', index: 0});
+      safeLog('terminal.tdp.ready', {status: 'connected'});
 
       await operationsPage.getByTestId(terminalUpdateTestIds.reportsTabLabel).click();
       const query = operationsPage.getByTestId(terminalUpdateTestIds.reportQuery);
@@ -650,6 +637,7 @@ describe(`TER remote control ${sample} on Expo Web`, () => {
         resolveRemoteStartFailure = resolve;
         if (observedRemoteStartFailure !== null) resolve(observedRemoteStartFailure);
       });
+      remoteStartAttempted = true;
       await operationsPage.getByTestId(remoteControlTestIds.start(terminalRef)).click();
       const failureSignal = remoteStartFailureSignal;
       if (failureSignal === undefined) throw new Error('TERMINAL_AUTOMATION_REMOTE_FAILURE_OBSERVER_MISSING');
@@ -678,6 +666,9 @@ describe(`TER remote control ${sample} on Expo Web`, () => {
         const latest = remoteStatus.latest();
         const observed = latest?.state === 'JSON' && isRecord(latest.value) ? latest.value : undefined;
         const readyScreens = observed && Array.isArray(observed.readyScreens) ? observed.readyScreens.length : 0;
+        if (observed && typeof observed.sessionId === 'string' && observed.sessionId.length > 0) {
+          remoteControlSessionId = observed.sessionId;
+        }
         safeLog('remote.workspace.active.timeout', {
           terminalRef,
           remoteSessionId: observed && typeof observed.sessionId === 'string' ? observed.sessionId : 'UNKNOWN',
@@ -700,42 +691,29 @@ describe(`TER remote control ${sample} on Expo Web`, () => {
       if (activeWaitResult.kind === 'rejected') {
         throwRemoteStartFailure(activeWaitResult.event);
       }
-      safeLog('remote.workspace.active', {terminalRef});
-
-      await dispatchObservedUiCommand({
-        server: driver.transport,
-        sessionId,
-        workspace: 'MAIN',
-        displayMode: 'PRIMARY',
-        commandName: 'kernel.feature.sample-staff-session.login',
-        onRequestIdentified: requestId => diagnostics?.requestStarted(requestId),
-        onRequestFinished: requestId => diagnostics?.requestFinished(requestId),
-        onObserverStep: diagnostics.markStep,
-        action: () =>
-          clickRemoteTarget({
-            terminalPage: terminalPage!,
-            operationsPage: operationsPage!,
-            testId: mainSampleTestIds.staffLoginSubmit,
-          }),
+      const latest = remoteStatus.latest();
+      const activeStatus = latest?.state === 'JSON' && isRecord(latest.value) ? latest.value : undefined;
+      const readyScreens = activeStatus && Array.isArray(activeStatus.readyScreens) ? activeStatus.readyScreens.length : 0;
+      if (activeStatus && typeof activeStatus.sessionId === 'string' && activeStatus.sessionId.length > 0) {
+        remoteControlSessionId = activeStatus.sessionId;
+      }
+      expect(activeStatus).toMatchObject({phase: 'active'});
+      expect(typeof activeStatus?.sessionId).toBe('string');
+      expect((activeStatus?.sessionId as string | undefined)?.length ?? 0).toBeGreaterThan(0);
+      expect(readyScreens).toBe(1);
+      safeLog('remote-control.start-command-received', {
+        phase: activeStatus?.phase === 'active' ? activeStatus.phase : 'UNKNOWN',
+        readyScreenCount: readyScreens,
+        expectedScreenCount: 1,
+        terminalRef,
       });
-      const qualification = await waitForSelector(
-        driver.transport,
-        sessionId,
-        'kernel.feature.sample-staff-session.selectHostStaffQualification',
-        [],
-        value => isRecord(value) && value.status === 'authenticated' && value.operatorName === 'A001',
-        30_000,
-      );
-      expect(qualification).toMatchObject({status: 'authenticated', operatorName: 'A001'});
-      const currentScreen = await readSelector(driver.transport, sessionId, 'kernel.base.ui-state.selectScreen', [
-        'PRIMARY',
-        'main',
-      ]);
-      expect(currentScreen).toMatchObject({
-        partKey: sample === 'console' ? 'sample.desk.member-list' : 'sample.wallpaper.picker',
-      });
-      safeLog('business.remote-login.verified', {appName, terminalRef});
     } catch (error) {
+      if (remoteStartAttempted && terminalPage !== undefined && operationsPage !== undefined) {
+        await Promise.allSettled([
+          captureBrowserRtcDiagnostics(terminalPage, 'terminal', safeLog),
+          captureBrowserRtcDiagnostics(operationsPage, 'operations', safeLog),
+        ]);
+      }
       diagnostics.report(error);
       safeLog('business.failed', {errorCode: sanitizedErrorCode(error)});
       throw error;

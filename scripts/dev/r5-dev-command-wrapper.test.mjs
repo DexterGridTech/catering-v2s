@@ -183,7 +183,8 @@ test('managed DEV diagnostics retain correlated remote-control registration fail
     'cbs',
     [
       '2026-10-12 ERROR event=REQUEST_FAILED operationId=registerTerminalRemoteControl requestId=req-register correlationId=corr-register phase=EDGE outcome=FAILED status=500 errorCode=INTERNAL_ERROR sessionId=session-1 terminalRef=terminal-1 body=private-response token=private-token',
-      '2026-10-12 WARN event=TERMINAL_REMOTE_CONTROL_REQUEST_REJECTED sessionId=session-1 terminalRef=terminal-1 failure=DEPENDENCY_UNAVAILABLE rawBody=private-response',
+      '2026-10-12 WARN event=TERMINAL_REMOTE_CONTROL_REQUEST_REJECTED operationId=registerTerminalRemoteControl requestId=req-register correlationId=corr-register sessionId=session-1 terminalRef=terminal-1 failure=DEPENDENCY_UNAVAILABLE rawBody=private-response',
+      '2026-10-12 ERROR event=TERMINAL_REMOTE_CONTROL_REGISTER_UNEXPECTED_FAILURE operationId=registerTerminalRemoteControl requestId=req-unexpected correlationId=corr-unexpected terminalRef=terminal-1 phase=OWNER exceptionType=IllegalStateException rootCauseType=SQLException exceptionOrigin=com.catering.v2s.terminalcontrol.Owner#register privateMessage=private-detail',
     ].join('\n'),
   );
 
@@ -204,13 +205,29 @@ test('managed DEV diagnostics retain correlated remote-control registration fail
     {
       source: 'cbs',
       event: 'TERMINAL_REMOTE_CONTROL_REQUEST_REJECTED',
+      operationId: 'registerTerminalRemoteControl',
+      requestId: 'req-register',
+      correlationId: 'corr-register',
       terminalRef: 'terminal-1',
       sessionId: 'session-1',
       failure: 'DEPENDENCY_UNAVAILABLE',
     },
+    {
+      source: 'cbs',
+      event: 'TERMINAL_REMOTE_CONTROL_REGISTER_UNEXPECTED_FAILURE',
+      operationId: 'registerTerminalRemoteControl',
+      requestId: 'req-unexpected',
+      correlationId: 'corr-unexpected',
+      terminalRef: 'terminal-1',
+      phase: 'OWNER',
+      exceptionType: 'IllegalStateException',
+      rootCauseType: 'SQLException',
+      exceptionOrigin: 'com.catering.v2s.terminalcontrol.Owner#register',
+    },
   ]);
   const serialized = JSON.stringify(projected);
   assert.equal(serialized.includes('private-response'), false);
+  assert.equal(serialized.includes('private-detail'), false);
   assert.equal(serialized.includes('private-token'), false);
 });
 

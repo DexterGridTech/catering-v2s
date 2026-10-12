@@ -13,16 +13,149 @@ import {
 } from '../src/androidAppDiagnostics.js';
 
 describe('Android remote-control native diagnostics', () => {
-  it('projects only event names and counts from the current app process log', () => {
+  it('keeps bounded native capture facts with stream, window, and track correlation identities', () => {
     const diagnostics = collectAndroidRemoteControlDiagnostics([
-      'I/TerminalRemote( 1234): event=video-track-created streamId=private-stream windowIdentity=private-window',
-      'I/TerminalRemoteCapture( 1234): event=capturer-initialized surfaceKey=PRIMARY',
+      'I/TerminalRemote( 1234): event=video-track-created streamId=stream-123 surfaceKey=PRIMARY windowIdentity=window-primary trackId=track-123 generation=3 width=1280 height=720',
+      'I/TerminalRemoteCapture( 1234): event=capturer-initialized surfaceKey=PRIMARY windowIdentity=window-primary generation=3',
       'I/Other( 1234): event=unrelated',
     ].join('\n'));
 
-    expect(diagnostics).toEqual({lineCount: 2, eventKinds: ['video-track-created', 'capturer-initialized']});
-    expect(JSON.stringify(diagnostics)).not.toContain('private-stream');
-    expect(JSON.stringify(diagnostics)).not.toContain('private-window');
+    expect(diagnostics).toEqual({
+      lineCount: 2,
+      eventKinds: ['video-track-created', 'capturer-initialized'],
+      events: [
+        {
+          event: 'video-track-created',
+          fields: {
+            streamId: 'stream-123',
+            surfaceKey: 'PRIMARY',
+            windowIdentity: 'window-primary',
+            trackId: 'track-123',
+            generation: 3,
+            width: 1280,
+            height: 720,
+          },
+        },
+        {event: 'capturer-initialized', fields: {surfaceKey: 'PRIMARY', windowIdentity: 'window-primary', generation: 3}},
+      ],
+    });
+  });
+
+  it('collects Android remote owner, port-event, and LiveKit adapter lifecycle boundaries', () => {
+    const lines = [
+      `I/ReactNativeJS (123): ${JSON.stringify({
+        category: 'terminal.remote-control',
+        event: 'remote-control.screen-ready-sent',
+        context: {commandId: 'command-1', requestId: 'request-1'},
+        data: {sessionId: 'session-1', endpointId: 'endpoint-1', screen: 'main', seq: 4},
+      })}`,
+      `I/ReactNativeJS (123): ${JSON.stringify({
+        category: 'remote-control.adapter',
+        event: 'remote-control.adapter.room-connected',
+        data: {sessionId: 'session-1', screenCount: 2},
+      })}`,
+      `W/ReactNativeJS (123): ${JSON.stringify({
+        category: 'terminal.remote-control.port-event',
+        event: 'port-event-dispatch-threw',
+        data: {eventType: 'screen-ready', errorName: 'TypeError'},
+      })}`,
+      `I/ReactNativeJS (123): ${JSON.stringify({
+        category: 'remote-control.adapter',
+        event: 'remote-control.adapter.session-begin-failed',
+        data: {sessionId: 'session-1', reason: 'TypeError'},
+      })}`,
+    ].join('\n');
+
+    const output = collectAndroidRuntimeFailureDiagnostics(lines);
+
+    expect(output).toContain('remote-control.screen-ready-sent');
+    expect(output).toContain('remote-control.adapter.room-connected');
+    expect(output).toContain('port-event-dispatch-threw');
+    expect(output).toContain('remote-control.adapter.session-begin-failed');
+    expect(output).toContain('"sessionId":"session-1"');
+    expect(output).toContain('"screenCount":2');
+    expect(output).toContain('"errorName":"TypeError"');
+    expect(output).not.toContain('payload');
+  });
+
+  it('collects TDC remote-control registration and report owner boundaries on Android', () => {
+    const lines = [
+      `I/ReactNativeJS (123): ${JSON.stringify({
+        category: 'terminal.remote-control.register',
+        event: 'register-completed',
+        context: {commandId: 'register-command', requestId: 'register-request'},
+        data: {sessionId: 'session-1', resultKind: 'success', status: 201, grantCount: 2, elapsedMs: 12},
+      })}`,
+      `I/ReactNativeJS (123): ${JSON.stringify({
+        category: 'terminal.remote-control.report',
+        event: 'report-completed',
+        context: {commandId: 'report-command', requestId: 'report-request'},
+        data: {
+          sessionId: 'session-1',
+          state: 'ACTIVE',
+          resultKind: 'failure',
+          failureCategory: 'transport',
+          code: 'HTTP_TIMEOUT',
+          status: 503,
+          remainingLeaseMs: 8123,
+          readyScreenCount: 2,
+          elapsedMs: 400,
+        },
+      })}`,
+    ].join('\n');
+
+    const output = collectAndroidRuntimeFailureDiagnostics(lines);
+    expect(output).toContain('register-completed');
+    expect(output).toContain('report-completed');
+    expect(output).toContain('"commandId":"report-command"');
+    expect(output).toContain('"failureCategory":"transport"');
+    expect(output).toContain('"remainingLeaseMs":8123');
+  });
+
+  it('collects TDC remote-command execution decisions and dispatch outcomes on Android', () => {
+    const lines = [
+      `I/ReactNativeJS (123): ${JSON.stringify({
+        category: 'terminal.remote-control.execution',
+        event: 'remote-command.rejected',
+        context: {commandId: 'command-1', requestId: 'request-1'},
+        data: {
+          remoteOperationId: 'remote-operation-1',
+          commandKind: 'START_REMOTE_CONTROL',
+          bindingGeneration: 3,
+          sessionReady: false,
+          hasCredential: true,
+          credentialGenerationMatches: true,
+          errorCode: 'REMOTE_SESSION_NOT_READY',
+          credential: 'must-not-be-copied',
+        },
+      })}`,
+      `I/ReactNativeJS (123): ${JSON.stringify({
+        category: 'terminal.remote-control.execution',
+        event: 'remote-command.dispatch-completed',
+        context: {commandId: 'command-2'},
+        data: {
+          remoteOperationId: 'remote-operation-2',
+          commandKind: 'START_REMOTE_CONTROL',
+          bindingGeneration: 3,
+          sessionReady: true,
+          hasCredential: true,
+          credentialGenerationMatches: true,
+          dispatchStatus: 'timed-out',
+          actorResultCount: 1,
+          hasPendingActor: true,
+          token: 'must-not-be-copied',
+        },
+      })}`,
+    ].join('\n');
+
+    const output = collectAndroidRuntimeFailureDiagnostics(lines);
+    expect(output).toContain('remote-command.rejected');
+    expect(output).toContain('remote-command.dispatch-completed');
+    expect(output).toContain('"remoteOperationId":"remote-operation-1"');
+    expect(output).toContain('"errorCode":"REMOTE_SESSION_NOT_READY"');
+    expect(output).toContain('"dispatchStatus":"timed-out"');
+    expect(output).toContain('"hasPendingActor":true');
+    expect(output).not.toContain('must-not-be-copied');
   });
 });
 

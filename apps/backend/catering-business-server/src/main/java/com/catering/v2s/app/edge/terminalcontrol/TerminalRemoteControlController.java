@@ -5,7 +5,9 @@ import com.catering.v2s.app.edge.generated.wire.TerminalRemoteControlRegisterReq
 import com.catering.v2s.app.edge.generated.wire.TerminalRemoteControlRegisterResponse;
 import com.catering.v2s.app.edge.generated.wire.TerminalRemoteControlStatusReportReceipt;
 import com.catering.v2s.app.edge.generated.wire.TerminalRemoteControlStatusReportRequest;
+import com.catering.v2s.app.edge.problem.InvalidEdgeRequestException;
 import com.catering.v2s.app.edge.terminal.TerminalCredentialEdgeVerifier;
+import com.catering.v2s.app.edge.terminal.TerminalDataReadProblem;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.Verification;
 import com.catering.v2s.terminalcontrol.api.TerminalRemoteControlOwnerApi;
@@ -47,10 +49,35 @@ public final class TerminalRemoteControlController {
             @RequestHeader(value = "Authorization", required = false) String authorization,
             @RequestHeader(value = "X-Terminal-Ref", required = false) String terminalRef,
             @RequestBody TerminalRemoteControlRegisterRequest request) {
-        Verification credential = TerminalCredentialEdgeVerifier.verify(credentials, groupWorkspaceKey,
-                authorization, terminalRef);
-        var result = owner.register(new RegistrationCommand(credential, sessionId, request.topologyKind(),
-                TerminalRemoteControlWire.peer(request.peerIdentity())));
+        Verification credential;
+        try {
+            credential = TerminalCredentialEdgeVerifier.verify(credentials, groupWorkspaceKey,
+                    authorization, terminalRef);
+        } catch (InvalidEdgeRequestException | TerminalDataReadProblem typed) {
+            throw typed;
+        } catch (RuntimeException failure) {
+            logUnexpectedRegistrationFailure(servletRequest, safeTerminalRef(terminalRef), "CREDENTIAL", failure);
+            throw failure;
+        }
+
+        TerminalRemoteControlOwnerApi.RegistrationReadback result;
+        try {
+            result = owner.register(new RegistrationCommand(credential, sessionId, request.topologyKind(),
+                    TerminalRemoteControlWire.peer(request.peerIdentity())));
+        } catch (TerminalRemoteControlOwnerApi.RemoteControlException typed) {
+            throw typed;
+        } catch (RuntimeException failure) {
+            logUnexpectedRegistrationFailure(servletRequest, credential.terminalRef().toString(), "OWNER", failure);
+            throw failure;
+        }
+
+        TerminalRemoteControlRegisterResponse response;
+        try {
+            response = TerminalRemoteControlWire.registration(result);
+        } catch (RuntimeException failure) {
+            logUnexpectedRegistrationFailure(servletRequest, credential.terminalRef().toString(), "RESPONSE_WIRE", failure);
+            throw failure;
+        }
         RequestCompletionDiagnosticState diagnostic = RequestCompletionDiagnosticState.find(servletRequest);
         log.atInfo().addKeyValue("event", "TERMINAL_REMOTE_CONTROL_REGISTERED")
                 .addKeyValue("operationId", "registerTerminalRemoteControl")
@@ -59,7 +86,60 @@ public final class TerminalRemoteControlController {
                 .addKeyValue("terminalRef", credential.terminalRef()).addKeyValue("sessionId", sessionId)
                 .addKeyValue("topologyKind", request.topologyKind())
                 .addKeyValue("endpointCount", result.grants().size()).log("event=TERMINAL_REMOTE_CONTROL_REGISTERED");
-        return ResponseEntity.ok(TerminalRemoteControlWire.registration(result));
+        return ResponseEntity.ok(response);
+    }
+
+    private static void logUnexpectedRegistrationFailure(HttpServletRequest request, String terminalRef,
+            String phase, RuntimeException failure) {
+        RequestCompletionDiagnosticState state = RequestCompletionDiagnosticState.find(request);
+        String operationId = state == null ? "unavailable" : state.operationId();
+        String requestId = state == null ? "unavailable" : state.requestId();
+        String correlationId = state == null ? "unavailable" : state.correlationId();
+        Throwable root = rootCause(failure);
+        String exceptionType = safeType(failure);
+        String rootCauseType = safeType(root);
+        String exceptionOrigin = safeOrigin(root);
+        log.atError().addKeyValue("event", "TERMINAL_REMOTE_CONTROL_REGISTER_UNEXPECTED_FAILURE")
+                .addKeyValue("operationId", operationId)
+                .addKeyValue("requestId", requestId)
+                .addKeyValue("correlationId", correlationId)
+                .addKeyValue("terminalRef", terminalRef)
+                .addKeyValue("phase", phase)
+                .addKeyValue("exceptionType", exceptionType)
+                .addKeyValue("rootCauseType", rootCauseType)
+                .addKeyValue("exceptionOrigin", exceptionOrigin)
+                .log("event=TERMINAL_REMOTE_CONTROL_REGISTER_UNEXPECTED_FAILURE operationId={} requestId={} " +
+                                "correlationId={} terminalRef={} phase={} exceptionType={} rootCauseType={} exceptionOrigin={}",
+                        operationId, requestId, correlationId, terminalRef, phase, exceptionType, rootCauseType,
+                        exceptionOrigin);
+    }
+
+    private static String safeTerminalRef(String value) {
+        try { return UUID.fromString(value).toString(); }
+        catch (RuntimeException malformed) { return "unavailable"; }
+    }
+
+    private static Throwable rootCause(Throwable failure) {
+        Throwable current = failure;
+        for (int depth = 0; depth < 16; depth++) {
+            Throwable cause = current.getCause();
+            if (cause == null || cause == current) return current;
+            current = cause;
+        }
+        return current;
+    }
+
+    private static String safeType(Throwable failure) {
+        String value = failure.getClass().getSimpleName();
+        return value.matches("[A-Za-z0-9_$]{1,128}") ? value : "unavailable";
+    }
+
+    private static String safeOrigin(Throwable failure) {
+        StackTraceElement[] trace = failure.getStackTrace();
+        if (trace.length == 0) return "unavailable";
+        StackTraceElement first = trace[0];
+        String value = first.getClassName() + "#" + first.getMethodName();
+        return value.matches("[A-Za-z0-9_.$#<>]{1,160}") ? value : "unavailable";
     }
 
     @PostMapping("/{sessionId}/status")

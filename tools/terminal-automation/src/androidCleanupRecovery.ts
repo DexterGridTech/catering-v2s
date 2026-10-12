@@ -115,6 +115,20 @@ export const resolveFailedAndroidRunCleanupTarget = (
     'update.interruption',
     'update.pair',
   ]);
+  const updateRun =
+    runExecution.phase === 'update' &&
+    typeof runExecution.case === 'string' &&
+    allowedCases.has(runExecution.case);
+  const remoteMainRun =
+    runExecution.phase === 'remote' &&
+    runExecution.platform === 'android' &&
+    runExecution.case === 'remote.main' &&
+    runExecution.sample === 'console' &&
+    runExecution.remoteTopology === 'laptop-dual' &&
+    runExecution.shape === 'dual' &&
+    runExecution.deviceKind === 'physical' &&
+    runExecution.deviceSerial === serial &&
+    runExecution.peerDeviceSerial === undefined;
   const allowedSerials = [runExecution.deviceSerial];
   if (runExecution.case === 'update.pair') {
     const peerSerial = runExecution.peerDeviceSerial;
@@ -142,9 +156,7 @@ export const resolveFailedAndroidRunCleanupTarget = (
   const packageId = manifest.androidPackageId;
   if (
     runExecution.platform !== 'android' ||
-    runExecution.phase !== 'update' ||
-    typeof runExecution.case !== 'string' ||
-    !allowedCases.has(runExecution.case) ||
+    (!updateRun && !remoteMainRun) ||
     !allowedSerials.includes(serial) ||
     (sampleValue !== 'console' && sampleValue !== 'wallpaper') ||
     (shapeValue !== 'mobile' && shapeValue !== 'dual') ||
@@ -227,7 +239,8 @@ export const resolveFailedAndroidRunCleanupTarget = (
       )
       .map(([remote, event]) => Object.freeze({remote, local: event.local as string})),
   );
-  const legacyRecoverableRemotes = reverseEvents.size === 0 ? readLegacyRecoverableRemotes() : Object.freeze([]);
+  const legacyRecoverableRemotes =
+    reverseEvents.size === 0 && updateRun ? readLegacyRecoverableRemotes() : Object.freeze([]);
   const identities = (rawProcesses as unknown[]).flatMap((value: unknown) => {
     if (typeof value !== 'object' || value === null || Array.isArray(value)) return [];
     const process = value as Record<string, unknown>;
