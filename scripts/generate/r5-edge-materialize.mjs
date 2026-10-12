@@ -23,6 +23,8 @@ const terminalCredentialOperationIds = new Set([
   "terminalReadServicePointArea",
   "terminalReadStoreServicePoints",
   "terminalReadServicePoint",
+  "registerTerminalRemoteControl",
+  "reportTerminalRemoteControl",
 ]);
 const catalogPath = "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json";
 const placementPath = "doc/plans/platform/2026-07-26-v2s-r5-edge-contract-file-placement-catalog.json";

@@ -113,14 +113,39 @@ export const resolveFailedAndroidRunCleanupTarget = (
     'update.offline-assets',
     'update.boot-guard',
     'update.interruption',
+    'update.pair',
   ]);
+  const allowedSerials = [runExecution.deviceSerial];
+  if (runExecution.case === 'update.pair') {
+    const peerSerial = runExecution.peerDeviceSerial;
+    const recordedSerials = Array.isArray(manifest.androidDevices)
+      ? manifest.androidDevices.flatMap(value =>
+          typeof value === 'object' && value !== null && !Array.isArray(value) && typeof value.serial === 'string'
+            ? [value.serial]
+            : [],
+        )
+      : [];
+    if (
+      shapeValue !== 'mobile' ||
+      typeof runExecution.deviceSerial !== 'string' ||
+      typeof peerSerial !== 'string' ||
+      runExecution.deviceSerial === peerSerial ||
+      recordedSerials.length !== 2 ||
+      new Set(recordedSerials).size !== 2 ||
+      !recordedSerials.includes(runExecution.deviceSerial) ||
+      !recordedSerials.includes(peerSerial)
+    ) {
+      fail('TERMINAL_AUTOMATION_RECOVERY_SOURCE_IDENTITY_MISMATCH');
+    }
+    allowedSerials.push(peerSerial);
+  }
   const packageId = manifest.androidPackageId;
   if (
     runExecution.platform !== 'android' ||
     runExecution.phase !== 'update' ||
     typeof runExecution.case !== 'string' ||
     !allowedCases.has(runExecution.case) ||
-    runExecution.deviceSerial !== serial ||
+    !allowedSerials.includes(serial) ||
     (sampleValue !== 'console' && sampleValue !== 'wallpaper') ||
     (shapeValue !== 'mobile' && shapeValue !== 'dual') ||
     typeof packageId !== 'string' ||

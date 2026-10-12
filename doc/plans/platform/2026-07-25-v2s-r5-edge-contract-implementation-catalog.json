@@ -68,7 +68,7 @@
     },
     {
       "path": "contracts/openapi-source/r5-baseline/contracts/openapi/components/workspace-iam.schemas.yaml",
-      "sha256": "a94b8d09818387688dd5742da6ba5bf4388c1a3a18eb4f6001579565bbcc4566"
+      "sha256": "bfbc1d9fe1779fa1358a84ab68398527e668dfd3fbab6fd21c834470c149b289"
     },
     {
       "path": "contracts/openapi-source/r5-baseline/contracts/openapi/components/workspace-session.schemas.yaml",
@@ -112,17 +112,21 @@
     },
     {
       "path": "contracts/openapi-source/terminal-update.schemas.json",
-      "sha256": "5958ba00b0b158be5cabd44a243513ffe67a5cfd729b8e35b5b5db1e9f15e647"
+      "sha256": "4e94bafc93c0f9327c3cb0ef57e35a73e2d914c2692d350f3a9ab0adefa92c46"
+    },
+    {
+      "path": "contracts/openapi-source/terminal-remote-control.schemas.json",
+      "sha256": "645ba91cf3ebc359111dad53b01b895a4dde0724c92cc5145a8c5a096fe4e677"
     }
   ],
   "denominator": {
-    "scenarios": 51,
-    "operations": 264,
+    "scenarios": 52,
+    "operations": 270,
     "faces": {
       "platform-admin": 66,
-      "operations-admin": 172,
+      "operations-admin": 176,
       "public": 12,
-      "terminal": 14
+      "terminal": 16
     },
     "owners": [
       "business-channel",
@@ -138,7 +142,8 @@
       "store-terminal",
       "terminal-binding",
       "terminal-update",
-      "workspace-iam"
+      "workspace-iam",
+      "terminal-control"
     ]
   },
   "exactnessPolicy": {
@@ -370,6 +375,30 @@
     {
       "operationId": "getOperationsProjectTerminalUpdateReportHistoryPage",
       "reason": "Dexter-authorized Stage B terminal version/update supply and report chain"
+    },
+    {
+      "operationId": "startOperationsTerminalRemoteControl",
+      "reason": "Dexter-authorized TER in-app remote-control session lifecycle"
+    },
+    {
+      "operationId": "getOperationsTerminalRemoteControl",
+      "reason": "Dexter-authorized TER in-app remote-control session lifecycle"
+    },
+    {
+      "operationId": "issueOperationsRemoteControlGrant",
+      "reason": "Dexter-authorized TER in-app remote-control session lifecycle"
+    },
+    {
+      "operationId": "endOperationsTerminalRemoteControl",
+      "reason": "Dexter-authorized TER in-app remote-control session lifecycle"
+    },
+    {
+      "operationId": "registerTerminalRemoteControl",
+      "reason": "Dexter-authorized TER in-app remote-control session lifecycle"
+    },
+    {
+      "operationId": "reportTerminalRemoteControl",
+      "reason": "Dexter-authorized TER in-app remote-control session lifecycle"
     }
   ],
   "renamedOperations": [
@@ -539,6 +568,17 @@
       "TERMINAL_BINDING_CREDENTIAL_INVALID",
       "PLATFORM_COMMON_RESULT_UNKNOWN",
       "TERMINAL_UPDATE_REPORT_IDENTITY_CONFLICT"
+    ],
+    "TERMINAL_REMOTE_CONTROL_COMMAND": [
+      "PLATFORM_COMMON_VALIDATION_FAILED",
+      "PLATFORM_COMMON_ACCESS_DENIED",
+      "PLATFORM_COMMON_GROUP_WORKSPACE_DISABLED",
+      "PLATFORM_COMMON_RESOURCE_NOT_FOUND",
+      "PLATFORM_DEPENDENCY_UNAVAILABLE",
+      "STORE_TERMINAL_DISABLED",
+      "TERMINAL_BINDING_CREDENTIAL_INVALID",
+      "PLATFORM_COMMON_OWNER_INVARIANT_VIOLATION",
+      "PLATFORM_COMMON_RESULT_UNKNOWN"
     ]
   },
   "operationErrorAugmentations": {
@@ -1277,6 +1317,36 @@
     "getOperationsProjectTerminalUpdateReportHistoryPage": [
       "PLATFORM_COMMON_VALIDATION_FAILED",
       "PLATFORM_COMMON_RESOURCE_NOT_FOUND"
+    ],
+    "startOperationsTerminalRemoteControl": [
+      "PLATFORM_DEPENDENCY_UNAVAILABLE",
+      "TERMINAL_CONTROL_REMOTE_NOT_ACTIVATED",
+      "TERMINAL_CONTROL_REMOTE_TERMINAL_OFFLINE",
+      "TERMINAL_CONTROL_REMOTE_OCCUPIED",
+      "TERMINAL_CONTROL_REMOTE_IDENTITY_CONFLICT"
+    ],
+    "getOperationsTerminalRemoteControl": [
+      "PLATFORM_COMMON_VALIDATION_FAILED",
+      "PLATFORM_DEPENDENCY_UNAVAILABLE"
+    ],
+    "issueOperationsRemoteControlGrant": [
+      "PLATFORM_DEPENDENCY_UNAVAILABLE",
+      "TERMINAL_CONTROL_REMOTE_NOT_READY",
+      "TERMINAL_CONTROL_REMOTE_IDENTITY_CONFLICT",
+      "TERMINAL_CONTROL_REMOTE_SESSION_ENDED"
+    ],
+    "endOperationsTerminalRemoteControl": [
+      "PLATFORM_DEPENDENCY_UNAVAILABLE",
+      "TERMINAL_CONTROL_REMOTE_IDENTITY_CONFLICT"
+    ],
+    "registerTerminalRemoteControl": [
+      "TERMINAL_CONTROL_REMOTE_IDENTITY_CONFLICT",
+      "TERMINAL_CONTROL_REMOTE_NOT_READY",
+      "TERMINAL_CONTROL_REMOTE_SESSION_ENDED"
+    ],
+    "reportTerminalRemoteControl": [
+      "TERMINAL_CONTROL_REMOTE_IDENTITY_CONFLICT",
+      "TERMINAL_CONTROL_REMOTE_SESSION_ENDED"
     ]
   },
   "operationErrorSelectionRules": {
@@ -13171,6 +13241,249 @@
       "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
       "errorSetRef": "AUTHZ_READ",
       "focusedTestId": "edge.getOperationsProjectTerminalUpdateReportHistoryPage"
+    },
+    {
+      "operationId": "startOperationsTerminalRemoteControl",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminals/{terminalRef}/remote-control-sessions",
+      "face": "operations-admin",
+      "owner": "TERMINAL_REMOTE_CONTROL",
+      "scenarioIds": [
+        "N-terminal-remote-control"
+      ],
+      "pageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+      "disposition": "TERMINAL_REMOTE_CONTROL",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "projectRef",
+        "terminalRef"
+      ],
+      "queryParameters": [
+        {
+          "name": "expectedContextVersion",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      ],
+      "requestSchema": "TerminalRemoteControlStartRequest",
+      "responseSchema": "TerminalRemoteControlStartResponse",
+      "successStatus": "201",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.startOperationsTerminalRemoteControl"
+    },
+    {
+      "operationId": "getOperationsTerminalRemoteControl",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminals/{terminalRef}/remote-control-sessions/{sessionId}",
+      "face": "operations-admin",
+      "owner": "TERMINAL_REMOTE_CONTROL",
+      "scenarioIds": [
+        "N-terminal-remote-control"
+      ],
+      "pageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+      "disposition": "TERMINAL_REMOTE_CONTROL",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "projectRef",
+        "terminalRef",
+        "sessionId"
+      ],
+      "queryParameters": [
+        {
+          "name": "expectedContextVersion",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      ],
+      "requestSchema": "NoBody",
+      "responseSchema": "TerminalRemoteControlSessionRead",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "AUTHZ_READ",
+      "focusedTestId": "edge.getOperationsTerminalRemoteControl"
+    },
+    {
+      "operationId": "issueOperationsRemoteControlGrant",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminals/{terminalRef}/remote-control-sessions/{sessionId}/controller-grant",
+      "face": "operations-admin",
+      "owner": "TERMINAL_REMOTE_CONTROL",
+      "scenarioIds": [
+        "N-terminal-remote-control"
+      ],
+      "pageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+      "disposition": "TERMINAL_REMOTE_CONTROL",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "projectRef",
+        "terminalRef",
+        "sessionId"
+      ],
+      "queryParameters": [
+        {
+          "name": "expectedContextVersion",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      ],
+      "requestSchema": "NoBody",
+      "responseSchema": "TerminalRemoteControlControllerGrant",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.issueOperationsRemoteControlGrant"
+    },
+    {
+      "operationId": "endOperationsTerminalRemoteControl",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminals/{terminalRef}/remote-control-sessions/{sessionId}/end",
+      "face": "operations-admin",
+      "owner": "TERMINAL_REMOTE_CONTROL",
+      "scenarioIds": [
+        "N-terminal-remote-control"
+      ],
+      "pageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+      "disposition": "TERMINAL_REMOTE_CONTROL",
+      "security": "OPERATIONS_SESSION_COOKIE",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "projectRef",
+        "terminalRef",
+        "sessionId"
+      ],
+      "queryParameters": [
+        {
+          "name": "expectedContextVersion",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      ],
+      "requestSchema": "TerminalRemoteControlEndRequest",
+      "responseSchema": "TerminalRemoteControlEndResponse",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "OWNER_RECEIPT_SAME_CANONICAL_REQUEST"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "OWNER_COMMAND",
+      "focusedTestId": "edge.endOperationsTerminalRemoteControl"
+    },
+    {
+      "operationId": "registerTerminalRemoteControl",
+      "method": "POST",
+      "path": "/api/terminal/group-workspaces/{groupWorkspaceKey}/remote-control-sessions/{sessionId}/registration",
+      "face": "terminal",
+      "owner": "TERMINAL_REMOTE_CONTROL",
+      "scenarioIds": [
+        "N-terminal-remote-control"
+      ],
+      "pageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+      "disposition": "TERMINAL_REMOTE_CONTROL",
+      "security": "TERMINAL_CREDENTIAL",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "sessionId"
+      ],
+      "queryParameters": [],
+      "requestSchema": "TerminalRemoteControlRegisterRequest",
+      "responseSchema": "TerminalRemoteControlRegisterResponse",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "TERMINAL_REMOTE_CONTROL_COMMAND",
+      "focusedTestId": "edge.registerTerminalRemoteControl",
+      "authorizationMode": "TERMINAL_CREDENTIAL",
+      "headerParameters": [
+        {
+          "name": "X-Terminal-Ref",
+          "in": "header",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
+    },
+    {
+      "operationId": "reportTerminalRemoteControl",
+      "method": "POST",
+      "path": "/api/terminal/group-workspaces/{groupWorkspaceKey}/remote-control-sessions/{sessionId}/status",
+      "face": "terminal",
+      "owner": "TERMINAL_REMOTE_CONTROL",
+      "scenarioIds": [
+        "N-terminal-remote-control"
+      ],
+      "pageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+      "disposition": "TERMINAL_REMOTE_CONTROL",
+      "security": "TERMINAL_CREDENTIAL",
+      "pathParameters": [
+        "groupWorkspaceKey",
+        "sessionId"
+      ],
+      "queryParameters": [],
+      "requestSchema": "TerminalRemoteControlStatusReportRequest",
+      "responseSchema": "TerminalRemoteControlStatusReportReceipt",
+      "successStatus": "200",
+      "idempotency": {
+        "header": "FORBIDDEN",
+        "replay": "NOT_APPLICABLE"
+      },
+      "expectedVersion": "FORBIDDEN_UNLESS_SCHEMA_EXPLICIT",
+      "errorSetRef": "TERMINAL_REMOTE_CONTROL_COMMAND",
+      "focusedTestId": "edge.reportTerminalRemoteControl",
+      "authorizationMode": "TERMINAL_CREDENTIAL",
+      "headerParameters": [
+        {
+          "name": "X-Terminal-Ref",
+          "in": "header",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
     }
   ],
   "scenarioOperationCrosswalk": [
@@ -15423,6 +15736,103 @@
         }
       ],
       "candidateDispositions": []
+    },
+    {
+      "scenarioId": "N-terminal-remote-control",
+      "orderedSteps": [
+        {
+          "stepId": "N-terminal-remote-control-01",
+          "operationId": "startOperationsTerminalRemoteControl",
+          "face": "operations-admin",
+          "owner": "TERMINAL_REMOTE_CONTROL",
+          "pageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+          "disposition": "TERMINAL_REMOTE_CONTROL",
+          "positiveProofRef": "edge.startOperationsTerminalRemoteControl.positive",
+          "negativeProofRef": "edge.startOperationsTerminalRemoteControl.negative"
+        },
+        {
+          "stepId": "N-terminal-remote-control-02",
+          "operationId": "getOperationsTerminalRemoteControl",
+          "face": "operations-admin",
+          "owner": "TERMINAL_REMOTE_CONTROL",
+          "pageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+          "disposition": "TERMINAL_REMOTE_CONTROL",
+          "positiveProofRef": "edge.getOperationsTerminalRemoteControl.positive",
+          "negativeProofRef": "edge.getOperationsTerminalRemoteControl.negative"
+        },
+        {
+          "stepId": "N-terminal-remote-control-03",
+          "operationId": "issueOperationsRemoteControlGrant",
+          "face": "operations-admin",
+          "owner": "TERMINAL_REMOTE_CONTROL",
+          "pageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+          "disposition": "TERMINAL_REMOTE_CONTROL",
+          "positiveProofRef": "edge.issueOperationsRemoteControlGrant.positive",
+          "negativeProofRef": "edge.issueOperationsRemoteControlGrant.negative"
+        },
+        {
+          "stepId": "N-terminal-remote-control-04",
+          "operationId": "endOperationsTerminalRemoteControl",
+          "face": "operations-admin",
+          "owner": "TERMINAL_REMOTE_CONTROL",
+          "pageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+          "disposition": "TERMINAL_REMOTE_CONTROL",
+          "positiveProofRef": "edge.endOperationsTerminalRemoteControl.positive",
+          "negativeProofRef": "edge.endOperationsTerminalRemoteControl.negative"
+        },
+        {
+          "stepId": "N-terminal-remote-control-05",
+          "operationId": "registerTerminalRemoteControl",
+          "face": "terminal",
+          "owner": "TERMINAL_REMOTE_CONTROL",
+          "pageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+          "disposition": "TERMINAL_REMOTE_CONTROL",
+          "positiveProofRef": "edge.registerTerminalRemoteControl.positive",
+          "negativeProofRef": "edge.registerTerminalRemoteControl.negative"
+        },
+        {
+          "stepId": "N-terminal-remote-control-06",
+          "operationId": "reportTerminalRemoteControl",
+          "face": "terminal",
+          "owner": "TERMINAL_REMOTE_CONTROL",
+          "pageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+          "disposition": "TERMINAL_REMOTE_CONTROL",
+          "positiveProofRef": "edge.reportTerminalRemoteControl.positive",
+          "negativeProofRef": "edge.reportTerminalRemoteControl.negative"
+        }
+      ],
+      "candidateDispositions": [
+        {
+          "operationId": "startOperationsTerminalRemoteControl",
+          "disposition": "ADDED",
+          "replacement": null
+        },
+        {
+          "operationId": "getOperationsTerminalRemoteControl",
+          "disposition": "ADDED",
+          "replacement": null
+        },
+        {
+          "operationId": "issueOperationsRemoteControlGrant",
+          "disposition": "ADDED",
+          "replacement": null
+        },
+        {
+          "operationId": "endOperationsTerminalRemoteControl",
+          "disposition": "ADDED",
+          "replacement": null
+        },
+        {
+          "operationId": "registerTerminalRemoteControl",
+          "disposition": "ADDED",
+          "replacement": null
+        },
+        {
+          "operationId": "reportTerminalRemoteControl",
+          "disposition": "ADDED",
+          "replacement": null
+        }
+      ]
     }
   ],
   "crosswalkInvariants": {
@@ -18253,6 +18663,51 @@
     },
     "TerminalUpdateRuleStorePage": {
       "ref": "TerminalUpdateRuleStorePage"
+    },
+    "TerminalRemoteControlPeerIdentity": {
+      "ref": "TerminalRemoteControlPeerIdentity"
+    },
+    "TerminalRemoteControlEndpoint": {
+      "ref": "TerminalRemoteControlEndpoint"
+    },
+    "TerminalRemoteControlScreen": {
+      "ref": "TerminalRemoteControlScreen"
+    },
+    "TerminalRemoteControlDescription": {
+      "ref": "TerminalRemoteControlDescription"
+    },
+    "TerminalRemoteControlEndpointGrant": {
+      "ref": "TerminalRemoteControlEndpointGrant"
+    },
+    "TerminalRemoteControlStartRequest": {
+      "ref": "TerminalRemoteControlStartRequest"
+    },
+    "TerminalRemoteControlStartResponse": {
+      "ref": "TerminalRemoteControlStartResponse"
+    },
+    "TerminalRemoteControlSessionRead": {
+      "ref": "TerminalRemoteControlSessionRead"
+    },
+    "TerminalRemoteControlControllerGrant": {
+      "ref": "TerminalRemoteControlControllerGrant"
+    },
+    "TerminalRemoteControlEndRequest": {
+      "ref": "TerminalRemoteControlEndRequest"
+    },
+    "TerminalRemoteControlEndResponse": {
+      "ref": "TerminalRemoteControlEndResponse"
+    },
+    "TerminalRemoteControlRegisterRequest": {
+      "ref": "TerminalRemoteControlRegisterRequest"
+    },
+    "TerminalRemoteControlRegisterResponse": {
+      "ref": "TerminalRemoteControlRegisterResponse"
+    },
+    "TerminalRemoteControlStatusReportRequest": {
+      "ref": "TerminalRemoteControlStatusReportRequest"
+    },
+    "TerminalRemoteControlStatusReportReceipt": {
+      "ref": "TerminalRemoteControlStatusReportReceipt"
     }
   },
   "componentReferenceClosure": {
@@ -19756,12 +20211,12 @@
     "status": "MATERIALIZED",
     "pipeline": "R24_P3C",
     "sourceOperationCount": 148,
-    "operationCount": 264,
+    "operationCount": 270,
     "faceCounts": {
       "platform-admin": 66,
-      "operations-admin": 172,
+      "operations-admin": 176,
       "public": 12,
-      "terminal": 14
+      "terminal": 16
     }
   },
   "sourceDescription": "The inherited analysis source is recorded for provenance only; generation reads only the repository-owned paths in sources."

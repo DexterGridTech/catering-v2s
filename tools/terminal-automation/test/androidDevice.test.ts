@@ -158,14 +158,14 @@ describe('createAndroidDeviceSession', () => {
   it('reads only structured Runtime failure identifiers from the selected app process', async () => {
     const repo = repository();
     const context = createClient({});
-    const calls: string[][] = [];
+    const calls: {readonly args: string[]; readonly maxBufferBytes?: number}[] = [];
     const session = await createAndroidDeviceSession({
       client: context.client,
       serial: 'emulator-5554',
       repositoryRoot: repo.root,
       adbPath: '/usr/bin/adb',
-      runTextCommand: async (_adb, args) => {
-        calls.push([...args]);
+      runTextCommand: async (_adb, args, maxBufferBytes) => {
+        calls.push({args: [...args], maxBufferBytes});
         if (args.includes('pidof')) return '1234';
         return [
           'E/ReactNativeJS( 1234): ' +
@@ -192,12 +192,14 @@ describe('createAndroidDeviceSession', () => {
       causeCode: 'ERR_FIXTURE_START',
     });
     expect(diagnostics).not.toContain('sensitive fixture payload');
-    expect(calls.at(-1)).toEqual([
+    expect(calls.at(-1)?.args).toEqual([
       '-s',
       'emulator-5554',
       'shell',
       'logcat',
       '-d',
+      '-t',
+      '200',
       '-v',
       'brief',
       '--pid',
@@ -206,6 +208,39 @@ describe('createAndroidDeviceSession', () => {
       'ReactNativeJS:V',
       '*:S',
     ]);
+    expect(calls.at(-1)?.maxBufferBytes).toBe(512 * 1024);
+  });
+
+  it('reads only native remote-control event names from the selected app process', async () => {
+    const repo = repository();
+    const context = createClient({});
+    const calls: {readonly args: string[]; readonly maxBufferBytes?: number}[] = [];
+    const session = await createAndroidDeviceSession({
+      client: context.client,
+      serial: 'emulator-5554',
+      repositoryRoot: repo.root,
+      adbPath: '/usr/bin/adb',
+      runTextCommand: async (_adb, args, maxBufferBytes) => {
+        calls.push({args: [...args], maxBufferBytes});
+        if (args.includes('pidof')) return '1234';
+        return [
+          'I/TerminalRemote( 1234): event=touch-dispatch surfaceKey=PRIMARY windowIdentity=private-window action=down result=DISPATCHED',
+          'I/TerminalRemoteCapture( 1234): event=capturer-initialized streamId=private-stream',
+          'I/Other( 1234): event=ignored',
+        ].join('\n');
+      },
+    });
+
+    const diagnostics = await session.readRemoteControlDiagnostics('com.example.terminal');
+
+    expect(diagnostics).toEqual({lineCount: 2, eventKinds: ['touch-dispatch', 'capturer-initialized']});
+    expect(JSON.stringify(diagnostics)).not.toContain('private-window');
+    expect(JSON.stringify(diagnostics)).not.toContain('private-stream');
+    expect(calls[1]?.args).toEqual([
+      '-s', 'emulator-5554', 'shell', 'logcat', '-d', '-t', '200', '-v', 'brief', '--pid', '1234',
+      '-s', 'TerminalRemote:I', 'TerminalRemoteCapture:I', '*:S',
+    ]);
+    expect(calls[1]?.maxBufferBytes).toBe(512 * 1024);
   });
 
   it('projects the failing Runtime module and hook phase without exposing its message', () => {
@@ -652,6 +687,8 @@ describe('createAndroidDeviceSession', () => {
       'shell',
       'logcat',
       '-d',
+      '-t',
+      '200',
       '-v',
       'brief',
       '--pid',
@@ -659,19 +696,21 @@ describe('createAndroidDeviceSession', () => {
       '-s',
       'TerminalUpdate:I',
       '*:S',
-    ]);
+    ], 512 * 1024);
     expect(runTextCommand).toHaveBeenNthCalledWith(3, '/usr/bin/adb', [
       '-s',
       'emulator-5554',
       'shell',
       'logcat',
       '-d',
+      '-t',
+      '200',
       '-v',
       'brief',
       '-s',
       'ActivityTaskManager:W',
       '*:S',
-    ]);
+    ], 512 * 1024);
   });
 
   it('does not read device logs when run package process identity is ambiguous', async () => {

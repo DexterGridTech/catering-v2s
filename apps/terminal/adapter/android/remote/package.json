@@ -1,0 +1,39 @@
+{
+  "name": "@catering-v2s/adapter-android-remote",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "node ../../../../../tools/terminal-shared/run-owned-lint.mjs",
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "test": "node ../../../../../tools/terminal-shared/run-owned-tests.mjs"
+  },
+  "dependencies": {
+    "@catering-v2s/adapter-android-dual-screen": "workspace:*",
+    "@catering-v2s/kernel-base-platform-ports": "workspace:*",
+    "@livekit/react-native": "3.0.0",
+    "@livekit/react-native-webrtc": "144.2.0",
+    "livekit-client": "2.22.4"
+  },
+  "peerDependencies": {
+    "expo": "*",
+    "expo-modules-core": "*",
+    "react": "*",
+    "react-native": "*"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.2.1",
+    "@types/react": "~19.2.2",
+    "babel-preset-expo": "~57.0.0",
+    "eslint": "~9.39.4",
+    "eslint-config-universe": "^15.0.3",
+    "expo": "~57.0.18",
+    "jest": "^29.7.0",
+    "jest-expo": "~57.0.5",
+    "react-native": "0.86.3",
+    "typescript": "~6.0.3",
+    "vitest": "4.1.10"
+  }
+}

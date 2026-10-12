@@ -6,12 +6,12 @@
   ],
   "calibrationReportDigest": "899d3be106d79612c8b19a349c2ce00191d0910094891681398ef190da77cffc",
   "closure": {
-    "operations": 264,
+    "operations": 270,
     "faceCounts": {
       "platform-admin": 66,
-      "operations-admin": 172,
+      "operations-admin": 176,
       "public": 12,
-      "terminal": 14
+      "terminal": 16
     }
   },
   "operations": [
@@ -446,6 +446,15 @@
         "terminal"
       ],
       "owner": "TERMINAL_UPDATE_PACKAGE"
+    },
+    {
+      "operationId": "endOperationsTerminalRemoteControl",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminals/{terminalRef}/remote-control-sessions/{sessionId}/end",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "TERMINAL_REMOTE_CONTROL"
     },
     {
       "operationId": "getCurrentPlatformSession",
@@ -979,6 +988,15 @@
       "owner": "store-terminal"
     },
     {
+      "operationId": "getOperationsTerminalRemoteControl",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminals/{terminalRef}/remote-control-sessions/{sessionId}",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "TERMINAL_REMOTE_CONTROL"
+    },
+    {
       "operationId": "getOperationsTerminalUpdateArtifactCandidatePage",
       "method": "GET",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/terminal-update-artifact-candidates",
@@ -1456,6 +1474,15 @@
       "owner": "contract"
     },
     {
+      "operationId": "issueOperationsRemoteControlGrant",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminals/{terminalRef}/remote-control-sessions/{sessionId}/controller-grant",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "TERMINAL_REMOTE_CONTROL"
+    },
+    {
       "operationId": "issueTerminalUpdateArtifactDownloadGrant",
       "method": "POST",
       "path": "/api/terminal/group-workspaces/{groupWorkspaceKey}/update-artifacts/{artifactRef}/download-grant",
@@ -1654,6 +1681,15 @@
       "owner": "TERMINAL_UPDATE_PACKAGE"
     },
     {
+      "operationId": "registerTerminalRemoteControl",
+      "method": "POST",
+      "path": "/api/terminal/group-workspaces/{groupWorkspaceKey}/remote-control-sessions/{sessionId}/registration",
+      "consumerFaces": [
+        "terminal"
+      ],
+      "owner": "TERMINAL_REMOTE_CONTROL"
+    },
+    {
       "operationId": "reissueOperationsWorkspaceGroupInvitation",
       "method": "POST",
       "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/{invitationId}/reissue",
@@ -1778,6 +1814,15 @@
         "platform-admin"
       ],
       "owner": "extension"
+    },
+    {
+      "operationId": "reportTerminalRemoteControl",
+      "method": "POST",
+      "path": "/api/terminal/group-workspaces/{groupWorkspaceKey}/remote-control-sessions/{sessionId}/status",
+      "consumerFaces": [
+        "terminal"
+      ],
+      "owner": "TERMINAL_REMOTE_CONTROL"
     },
     {
       "operationId": "requestWorkspaceCredentialReset",
@@ -1994,6 +2039,15 @@
         "public"
       ],
       "owner": "workspace-iam"
+    },
+    {
+      "operationId": "startOperationsTerminalRemoteControl",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminals/{terminalRef}/remote-control-sessions",
+      "consumerFaces": [
+        "operations-admin"
+      ],
+      "owner": "TERMINAL_REMOTE_CONTROL"
     },
     {
       "operationId": "startPlatformPasswordRecovery",

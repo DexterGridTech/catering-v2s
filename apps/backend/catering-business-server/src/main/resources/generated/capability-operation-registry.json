@@ -3,7 +3,7 @@
   "kind": "generated-operation-authorization-catalog",
   "generatedFrom": "contracts/registry/iam-org-governance-manifest.json",
   "closure": {
-    "mutatingOperations": 187
+    "mutatingOperations": 192
   },
   "requirements": [
     {
@@ -1671,6 +1671,25 @@
     },
     {
       "operationIdentity": {
+        "operationId": "endOperationsTerminalRemoteControl",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminals/{terminalRef}/remote-control-sessions/{sessionId}/end",
+        "consumerFace": "operations-admin",
+        "ownerModule": "TERMINAL_REMOTE_CONTROL"
+      },
+      "requirementId": "REQ_END_OPERATIONS_TERMINAL_REMOTE_CONTROL",
+      "capabilityKey": "CONTROL_PROJECT_TERMINAL",
+      "resourceTypeCapabilities": {},
+      "unsupportedResourceTypeDecision": null,
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "TERMINAL_REMOTE_CONTROL",
+      "ownerRecheckId": "OWNER_RECHECK_TERMINAL_CONTROL",
+      "typedProblemMappingId": "PROBLEM_TERMINAL_CONTROL_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_END_OPERATIONS_TERMINAL_REMOTE_CONTROL"
+    },
+    {
+      "operationIdentity": {
         "operationId": "initializeCommercialGroup",
         "method": "POST",
         "path": "/api/platform/group-workspaces/{groupWorkspaceKey}/commercial-group",
@@ -1706,6 +1725,25 @@
       "ownerRecheckId": "OWNER_RECHECK_CONTRACT",
       "typedProblemMappingId": "PROBLEM_CONTRACT_TYPED_OWNER_EXCEPTION",
       "redFixtureId": "RED_REQ_INVALIDATE_OPERATIONS_CONTRACT"
+    },
+    {
+      "operationIdentity": {
+        "operationId": "issueOperationsRemoteControlGrant",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminals/{terminalRef}/remote-control-sessions/{sessionId}/controller-grant",
+        "consumerFace": "operations-admin",
+        "ownerModule": "TERMINAL_REMOTE_CONTROL"
+      },
+      "requirementId": "REQ_ISSUE_OPERATIONS_REMOTE_CONTROL_GRANT",
+      "capabilityKey": "CONTROL_PROJECT_TERMINAL",
+      "resourceTypeCapabilities": {},
+      "unsupportedResourceTypeDecision": null,
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "TERMINAL_REMOTE_CONTROL",
+      "ownerRecheckId": "OWNER_RECHECK_TERMINAL_CONTROL",
+      "typedProblemMappingId": "PROBLEM_TERMINAL_CONTROL_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_ISSUE_OPERATIONS_REMOTE_CONTROL_GRANT"
     },
     {
       "operationIdentity": {
@@ -2182,6 +2220,25 @@
     },
     {
       "operationIdentity": {
+        "operationId": "registerTerminalRemoteControl",
+        "method": "POST",
+        "path": "/api/terminal/group-workspaces/{groupWorkspaceKey}/remote-control-sessions/{sessionId}/registration",
+        "consumerFace": "terminal",
+        "ownerModule": "TERMINAL_REMOTE_CONTROL"
+      },
+      "requirementId": "REQ_REGISTER_TERMINAL_REMOTE_CONTROL",
+      "capabilityKey": null,
+      "resourceTypeCapabilities": {},
+      "unsupportedResourceTypeDecision": null,
+      "authorizationMode": "TERMINAL_CREDENTIAL",
+      "resolverId": "TERMINAL_CREDENTIAL_AUTHENTICATOR",
+      "ownerModule": "TERMINAL_REMOTE_CONTROL",
+      "ownerRecheckId": "OWNER_RECHECK_TERMINAL_CONTROL",
+      "typedProblemMappingId": "PROBLEM_TERMINAL_CONTROL_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_REGISTER_TERMINAL_REMOTE_CONTROL"
+    },
+    {
+      "operationIdentity": {
         "operationId": "reissueOperationsWorkspaceGroupInvitation",
         "method": "POST",
         "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/user-management/group/invitations/{invitationId}/reissue",
@@ -2453,6 +2510,25 @@
       "ownerRecheckId": "OWNER_RECHECK_EXTENSION",
       "typedProblemMappingId": "PROBLEM_EXTENSION_TYPED_OWNER_EXCEPTION",
       "redFixtureId": "RED_REQ_REPLACE_EXTENSION_DEFINITION"
+    },
+    {
+      "operationIdentity": {
+        "operationId": "reportTerminalRemoteControl",
+        "method": "POST",
+        "path": "/api/terminal/group-workspaces/{groupWorkspaceKey}/remote-control-sessions/{sessionId}/status",
+        "consumerFace": "terminal",
+        "ownerModule": "TERMINAL_REMOTE_CONTROL"
+      },
+      "requirementId": "REQ_REPORT_TERMINAL_REMOTE_CONTROL",
+      "capabilityKey": null,
+      "resourceTypeCapabilities": {},
+      "unsupportedResourceTypeDecision": null,
+      "authorizationMode": "TERMINAL_CREDENTIAL",
+      "resolverId": "TERMINAL_CREDENTIAL_AUTHENTICATOR",
+      "ownerModule": "TERMINAL_REMOTE_CONTROL",
+      "ownerRecheckId": "OWNER_RECHECK_TERMINAL_CONTROL",
+      "typedProblemMappingId": "PROBLEM_TERMINAL_CONTROL_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_REPORT_TERMINAL_REMOTE_CONTROL"
     },
     {
       "operationIdentity": {
@@ -2919,6 +2995,25 @@
       "ownerRecheckId": "OWNER_RECHECK_WORKSPACE_IAM",
       "typedProblemMappingId": "PROBLEM_WORKSPACE_IAM_TYPED_OWNER_EXCEPTION",
       "redFixtureId": "RED_REQ_START_OPERATIONS_PASSWORD_RECOVERY"
+    },
+    {
+      "operationIdentity": {
+        "operationId": "startOperationsTerminalRemoteControl",
+        "method": "POST",
+        "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminals/{terminalRef}/remote-control-sessions",
+        "consumerFace": "operations-admin",
+        "ownerModule": "TERMINAL_REMOTE_CONTROL"
+      },
+      "requirementId": "REQ_START_OPERATIONS_TERMINAL_REMOTE_CONTROL",
+      "capabilityKey": "CONTROL_PROJECT_TERMINAL",
+      "resourceTypeCapabilities": {},
+      "unsupportedResourceTypeDecision": null,
+      "authorizationMode": "AUTHENTICATED_WORKSPACE",
+      "resolverId": "AUTHENTICATED_WORKSPACE_TARGET_SCOPE",
+      "ownerModule": "TERMINAL_REMOTE_CONTROL",
+      "ownerRecheckId": "OWNER_RECHECK_TERMINAL_CONTROL",
+      "typedProblemMappingId": "PROBLEM_TERMINAL_CONTROL_TYPED_OWNER_EXCEPTION",
+      "redFixtureId": "RED_REQ_START_OPERATIONS_TERMINAL_REMOTE_CONTROL"
     },
     {
       "operationIdentity": {

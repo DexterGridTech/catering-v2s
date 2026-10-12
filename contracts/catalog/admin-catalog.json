@@ -2047,6 +2047,23 @@
         ],
         "scopeApplicability": "SELECTED_PROJECT_SCOPE"
       }
+    },
+    {
+      "key": "CONTROL_PROJECT_TERMINAL",
+      "kind": "ACTION",
+      "consumerFace": "operations-admin",
+      "display": {
+        "label": "远程控制项目终端"
+      },
+      "action": {
+        "groupKey": "STORE_MANAGEMENT",
+        "targetPageKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+        "grantableRoleNodeTypes": [
+          "GROUP",
+          "PROJECT"
+        ],
+        "scopeApplicability": "SELECTED_PROJECT_SCOPE"
+      }
     }
   ]
 }

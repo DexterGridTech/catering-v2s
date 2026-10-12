@@ -7,6 +7,7 @@ import type {
 } from '@catering-v2s/kernel-base-transport';
 
 type SnapshotReader = (serverName: string) => Promise<TransportNetworkSnapshot>;
+const maximumHttpResponseBytes = 1_048_576;
 
 const urlWithSuffix = (baseUrl: string, suffix: string): string => {
   const base = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
@@ -138,7 +139,7 @@ const sendHttp = async (
       ...(input.body === undefined ? {} : {body: JSON.stringify(input.body)}),
       signal: controller.signal,
     });
-    const bodyText = await boundedResponseText(response, 65_536);
+    const bodyText = await boundedResponseText(response, maximumHttpResponseBytes);
     return Object.freeze({
       kind: 'response',
       status: response.status,

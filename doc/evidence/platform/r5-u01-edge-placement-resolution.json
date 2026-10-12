@@ -8,15 +8,15 @@
     "authorizationManifest": "contracts/registry/iam-org-governance-manifest.json"
   },
   "closure": {
-    "operations": 264,
+    "operations": 270,
     "faceCounts": {
       "platform-admin": 66,
-      "operations-admin": 172,
+      "operations-admin": 176,
       "public": 12,
-      "terminal": 14
+      "terminal": 16
     },
-    "componentBaseline": 350,
-    "componentFiles": 25,
+    "componentBaseline": 365,
+    "componentFiles": 26,
     "unreachable": [
       {
         "component": "BusinessEntitySource",
@@ -3192,6 +3192,78 @@
       "requestComponentFile": "components/common/empty.schemas.json",
       "responseComponentFile": "components/terminal-update/terminal-update.schemas.json",
       "errorSetRef": "AUTHZ_READ"
+    },
+    {
+      "operationId": "startOperationsTerminalRemoteControl",
+      "face": "operations-admin",
+      "owner": "TERMINAL_REMOTE_CONTROL",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminals/{terminalRef}/remote-control-sessions",
+      "capability": "TERMINAL_REMOTE_CONTROL",
+      "pathFile": "contracts/openapi/paths/operations-admin/TERMINAL_REMOTE_CONTROL.paths.json",
+      "requestComponentFile": "components/terminal-control/terminal-remote-control.schemas.json",
+      "responseComponentFile": "components/terminal-control/terminal-remote-control.schemas.json",
+      "errorSetRef": "OWNER_COMMAND"
+    },
+    {
+      "operationId": "getOperationsTerminalRemoteControl",
+      "face": "operations-admin",
+      "owner": "TERMINAL_REMOTE_CONTROL",
+      "method": "GET",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminals/{terminalRef}/remote-control-sessions/{sessionId}",
+      "capability": "TERMINAL_REMOTE_CONTROL",
+      "pathFile": "contracts/openapi/paths/operations-admin/TERMINAL_REMOTE_CONTROL.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/terminal-control/terminal-remote-control.schemas.json",
+      "errorSetRef": "AUTHZ_READ"
+    },
+    {
+      "operationId": "issueOperationsRemoteControlGrant",
+      "face": "operations-admin",
+      "owner": "TERMINAL_REMOTE_CONTROL",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminals/{terminalRef}/remote-control-sessions/{sessionId}/controller-grant",
+      "capability": "TERMINAL_REMOTE_CONTROL",
+      "pathFile": "contracts/openapi/paths/operations-admin/TERMINAL_REMOTE_CONTROL.paths.json",
+      "requestComponentFile": "components/common/empty.schemas.json",
+      "responseComponentFile": "components/terminal-control/terminal-remote-control.schemas.json",
+      "errorSetRef": "OWNER_COMMAND"
+    },
+    {
+      "operationId": "endOperationsTerminalRemoteControl",
+      "face": "operations-admin",
+      "owner": "TERMINAL_REMOTE_CONTROL",
+      "method": "POST",
+      "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminals/{terminalRef}/remote-control-sessions/{sessionId}/end",
+      "capability": "TERMINAL_REMOTE_CONTROL",
+      "pathFile": "contracts/openapi/paths/operations-admin/TERMINAL_REMOTE_CONTROL.paths.json",
+      "requestComponentFile": "components/terminal-control/terminal-remote-control.schemas.json",
+      "responseComponentFile": "components/terminal-control/terminal-remote-control.schemas.json",
+      "errorSetRef": "OWNER_COMMAND"
+    },
+    {
+      "operationId": "registerTerminalRemoteControl",
+      "face": "terminal",
+      "owner": "TERMINAL_REMOTE_CONTROL",
+      "method": "POST",
+      "path": "/api/terminal/group-workspaces/{groupWorkspaceKey}/remote-control-sessions/{sessionId}/registration",
+      "capability": "TERMINAL_REMOTE_CONTROL",
+      "pathFile": "paths/terminal/TERMINAL_REMOTE_CONTROL.paths.json",
+      "requestComponentFile": "components/terminal-control/terminal-remote-control.schemas.json",
+      "responseComponentFile": "components/terminal-control/terminal-remote-control.schemas.json",
+      "errorSetRef": "TERMINAL_REMOTE_CONTROL_COMMAND"
+    },
+    {
+      "operationId": "reportTerminalRemoteControl",
+      "face": "terminal",
+      "owner": "TERMINAL_REMOTE_CONTROL",
+      "method": "POST",
+      "path": "/api/terminal/group-workspaces/{groupWorkspaceKey}/remote-control-sessions/{sessionId}/status",
+      "capability": "TERMINAL_REMOTE_CONTROL",
+      "pathFile": "paths/terminal/TERMINAL_REMOTE_CONTROL.paths.json",
+      "requestComponentFile": "components/terminal-control/terminal-remote-control.schemas.json",
+      "responseComponentFile": "components/terminal-control/terminal-remote-control.schemas.json",
+      "errorSetRef": "TERMINAL_REMOTE_CONTROL_COMMAND"
     }
   ],
   "requiredNestedReferenceChecks": [

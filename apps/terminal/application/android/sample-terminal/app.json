@@ -1,5 +1,9 @@
 {
   "expo": {
+    "plugins": [
+      "@livekit/react-native-expo-plugin",
+      "@config-plugins/react-native-webrtc"
+    ],
     "name": "sample-terminal",
     "slug": "sample-terminal",
     "icon": "./assets/icon.png",

@@ -14,6 +14,7 @@ export const mainSampleTestIds = Object.freeze({
   memberFormName: sampleMemberDeskTestId('sample.desk.member-form:name'),
   memberFormPhone: sampleMemberDeskTestId('sample.desk.member-form:phone'),
   memberFormSubmit: sampleMemberDeskTestId('sample.desk.member-form:submit'),
+  memberFormCancel: sampleMemberDeskTestId('sample.desk.member-form:cancel'),
   memberListEmptyAction: sampleMemberDeskTestId('sample.desk.member-list:empty-action'),
   memberReject: sampleMemberDeskTestId('sample.desk.customer-member:reject'),
   memberRetry: sampleMemberDeskTestId('sample.desk.registry-notice:retry'),
@@ -22,7 +23,9 @@ export const mainSampleTestIds = Object.freeze({
   memberWithdrawConfirm: sampleMemberDeskTestId('sample.desk.withdraw-confirm:withdraw'),
   memberAge: sampleMemberDeskTestId('sample.desk.customer-member:age'),
   memberConfirm: sampleMemberDeskTestId('sample.desk.customer-member:confirm'),
+  wallpaperOptionsScroll: wallpaperPickerTestIds.optionsScroll,
   wallpaperOptionW2: wallpaperOptionTestId('w2'),
+  wallpaperOptionW3: wallpaperOptionTestId('w3'),
   wallpaperConfirm: wallpaperPickerTestIds.confirm,
   wallpaperAssetLoadStatus: wallpaperContentTestIds.updateAssetLoadStatus,
 });

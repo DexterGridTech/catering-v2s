@@ -1,3 +1,4 @@
+import {unavailableRemoteControlPort} from '@catering-v2s/kernel-base-platform-ports';
 import {nowTimestampMs} from '@catering-v2s/kernel-base-contracts';
 import {
   createPlatformPorts,
@@ -220,6 +221,7 @@ export const createTestPlatformPorts = (
       update: withTestPortDescriptor(input.updatePort ?? unavailableUpdatePort, 'update'),
       logUpload: withTestPortDescriptor(unavailableLogUploadPort, 'logUpload'),
       topologyHost: withTestPortDescriptor(unavailableTopologyHostPort, 'topologyHost'),
+      remoteControl: unavailableRemoteControlPort,
     },
   });
   const failureState = {value: input.failStartupReadyCount ?? 0};
@@ -241,5 +243,6 @@ export const createTestPlatformPorts = (
     update: withoutTestPortDescriptor(result.update),
     logUpload: withoutTestPortDescriptor(result.logUpload),
     topologyHost: withoutTestPortDescriptor(result.topologyHost),
+    remoteControl: unavailableRemoteControlPort,
   });
 };

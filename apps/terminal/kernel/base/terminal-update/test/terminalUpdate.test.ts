@@ -1,3 +1,4 @@
+import {unavailableRemoteControlPort} from '@catering-v2s/kernel-base-platform-ports';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {createNodeId, createRequestId, type TimestampMs} from '@catering-v2s/kernel-base-contracts';
 import {createStateRuntime, defineStateRuntimeSlice} from '@catering-v2s/kernel-base-state';
@@ -269,6 +270,7 @@ const createFixture = (
         update: port,
         logUpload: unavailableLogUploadPort,
         topologyHost: unavailableTopologyHostPort,
+        remoteControl: unavailableRemoteControlPort,
       },
     }),
     state: {
@@ -386,13 +388,6 @@ describe('terminal-update admission reporting', () => {
       hot: null,
       policy: Object.freeze({...target.policy, hotStrategy: null, mSeconds: null}),
     });
-    const hotRuntimeMismatchTarget: FixedUpdateTarget = Object.freeze({
-      ...target,
-      hot: Object.freeze({
-        ...target.hot!,
-        artifact: Object.freeze({...target.hot!.artifact, runtimeVersion: '2'}),
-      }),
-    });
     const fullIdentityConflictTarget: FixedUpdateTarget = Object.freeze({
       ...target,
       full: Object.freeze({
@@ -437,8 +432,8 @@ describe('terminal-update admission reporting', () => {
         reportReason: 'INCOMPATIBLE',
       },
       {
-        target: hotRuntimeMismatchTarget,
-        actual: facts,
+        target,
+        actual: Object.freeze({...facts, actual: Object.freeze({...facts.actual!, runtimeVersion: '2'})}),
         failedArtifactIds: [],
         reason: 'HOT_RUNTIME_MISMATCH',
         reportReason: 'INCOMPATIBLE',
@@ -534,7 +529,19 @@ describe('terminal-update admission reporting', () => {
         dispatchCommand: async () => ({status: 'rejected'}),
       } as never;
 
-      await expect(handler.handle(context)).resolves.toMatchObject({status: 'rejected', reason: scenario.reason});
+      const admissionResult = await handler.handle(context);
+      const admissionResultMatches =
+        typeof admissionResult === 'object' &&
+        admissionResult !== null &&
+        !Array.isArray(admissionResult) &&
+        'status' in admissionResult &&
+        admissionResult.status === 'rejected' &&
+        'reason' in admissionResult &&
+        admissionResult.reason === scenario.reason;
+      if (!admissionResultMatches)
+        throw new Error(
+          `ADMISSION_REPORT_RESULT_MISMATCH expectedReason=${scenario.reason} actual=${JSON.stringify(admissionResult)}`,
+        );
       expect(updateState.currentTask).toBeNull();
       expect(updateState.recentStatus).toMatchObject({
         state: 'admission-rejected',
@@ -3335,7 +3342,8 @@ describe('terminal-update local owner', () => {
       },
       sourceProvider: {readTarget: async () => fixedTarget, resolveSourcePath: () => '/unused'},
       readNetworkSnapshot: () => Object.freeze({addresses: Object.freeze([])}),
-      readTerminalUpdateContextFacts: () => currentGrantContextFacts,
+      readTerminalUpdateContextFacts: () => null,
+      readFixedTerminalUpdateContextFacts: () => currentGrantContextFacts,
     });
     const handler = actor.handlers.find(item => item.commandName === requestTerminalUpdateCommand.commandName);
     if (handler === undefined) throw new Error('accept target handler missing');
@@ -4446,6 +4454,7 @@ describe('terminal-update local owner', () => {
         },
         logUpload: unavailableLogUploadPort,
         topologyHost: unavailableTopologyHostPort,
+        remoteControl: unavailableRemoteControlPort,
       },
     });
     const stateRuntime = await createStateRuntime({

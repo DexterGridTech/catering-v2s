@@ -1,3 +1,4 @@
+import {unavailableRemoteControlPort} from '@catering-v2s/kernel-base-platform-ports';
 import {createNodeId, createRequestId, type TimestampMs} from '@catering-v2s/kernel-base-contracts';
 import {moduleName as contractsModuleName} from '@catering-v2s/kernel-base-contracts';
 import {moduleName as platformPortsModuleName} from '@catering-v2s/kernel-base-platform-ports';
@@ -200,6 +201,7 @@ export const createDisplayPlatformPorts = (
       update: unavailableUpdatePort,
       logUpload: unavailableLogUploadPort,
       topologyHost: unavailableTopologyHostPort,
+      remoteControl: unavailableRemoteControlPort,
     },
   });
 

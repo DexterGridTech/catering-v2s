@@ -1,3 +1,4 @@
+import {unavailableRemoteControlPort} from '../src/defaults/unavailableRemoteControl';
 import {describe, expect, it, vi} from 'vitest';
 import {
   consoleLoggerBinding,
@@ -26,6 +27,7 @@ const bindings = (): PlatformPortBindings => ({
   update: unavailableUpdatePort,
   logUpload: unavailableLogUploadPort,
   topologyHost: unavailableTopologyHostPort,
+  remoteControl: unavailableRemoteControlPort,
 });
 
 const startupEventsFrom = (calls: readonly unknown[][]): LogEvent[] =>

@@ -1,3 +1,4 @@
+import {unavailableRemoteControlPort} from '@catering-v2s/kernel-base-platform-ports';
 import {describe, expect, it} from 'vitest';
 import {createRequestId} from '@catering-v2s/kernel-base-contracts';
 import {
@@ -159,6 +160,7 @@ const createRuntimePorts = (
     update: {} as never,
     logUpload: {} as never,
     topologyHost: {} as never,
+    remoteControl: unavailableRemoteControlPort,
   } as CreateRuntimeInput['platformPorts'];
 };
 

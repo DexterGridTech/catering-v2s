@@ -1,3 +1,4 @@
+import {unavailableRemoteControlPort} from '@catering-v2s/kernel-base-platform-ports';
 import {describe, expect, it} from 'vitest';
 import {createNodeId, createRequestId, moduleName as contractsModuleName} from '@catering-v2s/kernel-base-contracts';
 import {
@@ -125,6 +126,7 @@ const createComposition = (
       update: unavailableUpdatePort,
       logUpload: unavailableLogUploadPort,
       topologyHost: unavailableTopologyHostPort,
+      remoteControl: unavailableRemoteControlPort,
     },
   });
   const runtime = createRuntime({

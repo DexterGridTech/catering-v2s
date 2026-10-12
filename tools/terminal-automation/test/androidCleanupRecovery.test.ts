@@ -89,6 +89,56 @@ describe('failed Android run cleanup recovery guard', () => {
     }
   });
 
+  it('recovers one explicitly recorded device from an update pair run at a time', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'ter-android-cleanup-pair-'));
+    try {
+      writeSourceManifest(root, {
+        androidDevices: [
+          {serial: 'emulator-5560', role: 'PAIR_MASTER_EMULATOR'},
+          {serial: 'emulator-5561', role: 'PAIR_SLAVE_EMULATOR'},
+        ],
+        execution: {
+          phase: 'update',
+          platform: 'android',
+          shape: 'mobile',
+          case: 'update.pair',
+          sample: 'console',
+          deviceSerial: 'emulator-5560',
+          peerDeviceSerial: 'emulator-5561',
+        },
+      });
+      const eventPath = path.join(root, '.runtime/terminal-automation', runId, 'events.jsonl');
+      writeFileSync(
+        eventPath,
+        [
+          {
+            event: 'android.reverse.driver.attached',
+            runId,
+            deviceSerial: 'emulator-5560',
+            remote: 'tcp:19090',
+            local: 'tcp:19091',
+          },
+          {
+            event: 'android.reverse.driver.attached',
+            runId,
+            deviceSerial: 'emulator-5561',
+            remote: 'tcp:19090',
+            local: 'tcp:19092',
+          },
+        ].map(value => JSON.stringify(value)).join('\n') + '\n',
+      );
+
+      expect(resolveFailedAndroidRunCleanupTarget(root, runId, 'emulator-5561', []).reverses).toEqual([
+        {remote: 'tcp:19090', local: 'tcp:19092'},
+      ]);
+      expect(() => resolveFailedAndroidRunCleanupTarget(root, runId, 'emulator-5554', [])).toThrow(
+        'TERMINAL_AUTOMATION_RECOVERY_SOURCE_IDENTITY_MISMATCH',
+      );
+    } finally {
+      rmSync(root, {recursive: true, force: true});
+    }
+  });
+
   it('rejects a different device, installed-package identity, nonfailed run, and live owner process', () => {
     const root = mkdtempSync(path.join(os.tmpdir(), 'ter-android-cleanup-'));
     try {

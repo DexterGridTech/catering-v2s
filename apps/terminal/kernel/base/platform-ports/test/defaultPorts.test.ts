@@ -1,3 +1,4 @@
+import {unavailableRemoteControlPort} from '../src/defaults/unavailableRemoteControl';
 import {describe, expect, it, vi} from 'vitest';
 
 import {
@@ -60,6 +61,7 @@ describe('D-1/D-2: usable defaults', () => {
             update: unavailableUpdatePort,
             logUpload: unavailableLogUploadPort,
             topologyHost: unavailableTopologyHostPort,
+            remoteControl: unavailableRemoteControlPort,
           },
         }).logger;
         for (const level of levels) {

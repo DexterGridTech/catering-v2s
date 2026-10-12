@@ -62,6 +62,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.servlet.http.HttpServletRequest;
+import java.sql.SQLException;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -619,6 +620,25 @@ public final class ContractProblemAdvice {
         return value.matches("[A-Za-z0-9_$]{1,128}") ? value : "unknown";
     }
 
+    private static String safeExceptionOrigin(Throwable failure) {
+        for (StackTraceElement frame : failure.getStackTrace()) {
+            String className = frame.getClassName();
+            String methodName = frame.getMethodName();
+            String origin = className + "#" + methodName;
+            if (className.startsWith("com.catering.v2s.")
+                    && className.matches("[A-Za-z0-9_.$]{1,128}")
+                    && methodName.matches("[A-Za-z0-9_$<>]{1,64}")
+                    && origin.length() <= 160) return origin;
+        }
+        return "external";
+    }
+
+    private static String safeSqlState(Throwable failure) {
+        if (failure instanceof SQLException sql && sql.getSQLState() != null
+                && sql.getSQLState().matches("[A-Z0-9]{5}")) return sql.getSQLState();
+        return "unavailable";
+    }
+
     private static String safeValidationReason(Throwable failure) {
         if (failure instanceof PrinterSpecification.InvalidRuleException invalid) {
             return "PRINTER_" + invalid.field().name();
@@ -926,6 +946,29 @@ public final class ContractProblemAdvice {
         DuplicateKeyException.class
     })
     ResponseEntity<Problem> ownerResultUnknown(RuntimeException exception, HttpServletRequest request) {
+        RequestCompletionDiagnosticState completion = RequestCompletionDiagnosticState.find(request);
+        Throwable root = rootCause(exception);
+        log.atError()
+                .addKeyValue("event", "OWNER_RESULT_UNKNOWN")
+                .addKeyValue("operationId", completion == null ? "unavailable" : completion.operationId())
+                .addKeyValue("requestId", completion == null ? "unavailable" : completion.requestId())
+                .addKeyValue("correlationId", completion == null ? "unavailable" : completion.correlationId())
+                .addKeyValue("errorCode", "PLATFORM_COMMON_RESULT_UNKNOWN")
+                .addKeyValue("exceptionType", safeType(exception))
+                .addKeyValue("rootCauseType", safeType(root))
+                .addKeyValue("exceptionOrigin", safeExceptionOrigin(exception))
+                .addKeyValue("sqlState", safeSqlState(root))
+                .log(
+                        "owner-result-unknown event=OWNER_RESULT_UNKNOWN operationId={} requestId={} correlationId={} "
+                                + "errorCode={} exceptionType={} rootCauseType={} exceptionOrigin={} sqlState={}",
+                        completion == null ? "unavailable" : completion.operationId(),
+                        completion == null ? "unavailable" : completion.requestId(),
+                        completion == null ? "unavailable" : completion.correlationId(),
+                        "PLATFORM_COMMON_RESULT_UNKNOWN",
+                        safeType(exception),
+                        safeType(root),
+                        safeExceptionOrigin(exception),
+                        safeSqlState(root));
         return problem(
                 HttpStatus.INTERNAL_SERVER_ERROR,
                 "PLATFORM_COMMON_RESULT_UNKNOWN",

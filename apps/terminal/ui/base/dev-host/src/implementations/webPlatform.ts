@@ -1,3 +1,4 @@
+import {unavailableRemoteControlPort} from '@catering-v2s/kernel-base-platform-ports';
 import {nowTimestampMs} from '@catering-v2s/kernel-base-contracts';
 import {
   createPlatformPorts,
@@ -145,6 +146,7 @@ export const createWebPlatformPorts = (
       update: unavailableUpdatePort,
       logUpload: unavailableLogUploadPort,
       topologyHost: unavailableTopologyHostPort,
+      remoteControl: unavailableRemoteControlPort,
     },
   });
 };

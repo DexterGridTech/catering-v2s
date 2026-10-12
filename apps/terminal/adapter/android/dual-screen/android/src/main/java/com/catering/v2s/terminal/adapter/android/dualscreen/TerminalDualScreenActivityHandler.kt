@@ -16,6 +16,7 @@ import android.os.Looper
 import android.util.Log
 import android.util.DisplayMetrics
 import android.view.Display
+import android.view.MotionEvent
 import android.view.View
 import android.view.Window
 import android.view.WindowInsets
@@ -30,6 +31,9 @@ import com.facebook.react.interfaces.TaskInterface
 import com.facebook.react.interfaces.fabric.ReactSurface
 import com.facebook.react.uimanager.DisplayMetricsHolder
 import expo.modules.core.interfaces.ReactActivityHandler
+import java.lang.reflect.InvocationTargetException
+import java.lang.reflect.Proxy
+import java.util.IdentityHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 
 private const val LOG_TAG = "TerminalDualScreen"
@@ -296,6 +300,11 @@ internal object TerminalSurfaceHostRegistry {
   private val unavailableEntries = mutableMapOf<Int, TerminalSurfaceHostEvent.Unavailable>()
   private val generationCounters = mutableMapOf<Int, Long>()
   private var publisher: ((TerminalSurfaceHostEvent) -> Unit)? = null
+  private var nextWindowObserverId = 1L
+  private val windowObservers = linkedMapOf<Long, (TerminalSurfaceHostEvent) -> Unit>()
+  private var nextLocalInputObserverId = 1L
+  private val windowInterceptors = IdentityHashMap<Window, WindowInterceptor>()
+  private val remoteTouchDispatch = ThreadLocal.withInitial { false }
 
   fun registerPublisher(nextPublisher: (TerminalSurfaceHostEvent) -> Unit) {
     synchronized(lock) { publisher = nextPublisher }
@@ -318,6 +327,149 @@ internal object TerminalSurfaceHostRegistry {
     }
   }
 
+  fun borrowWindow(surfaceKey: String, expectedGeneration: Long?): TerminalDualScreenWindowLease? {
+    val surfaceIndex = surfaceIndexForKey(surfaceKey) ?: return null
+    return synchronized(lock) {
+      val entry = entries[surfaceIndex] ?: return@synchronized null
+      if (expectedGeneration != null && entry.snapshot.generation != expectedGeneration) {
+        return@synchronized null
+      }
+      TerminalDualScreenWindowLease(
+        window = entry.ownerWindow,
+        surfaceKey = entry.snapshot.surfaceKey,
+        windowIdentity = entry.snapshot.windowIdentity,
+        generation = entry.snapshot.generation,
+        displayId = entry.snapshot.displayId,
+        widthPx = entry.snapshot.currentWidthPx,
+        heightPx = entry.snapshot.currentHeightPx,
+      )
+    }
+  }
+
+  fun observeWindows(observer: (TerminalSurfaceHostEvent) -> Unit): AutoCloseable {
+    val observerId = synchronized(lock) {
+      val id = nextWindowObserverId++
+      windowObservers[id] = observer
+      id
+    }
+    return AutoCloseable { synchronized(lock) { windowObservers.remove(observerId) } }
+  }
+
+  fun observeLocalInput(
+    surfaceKey: String,
+    windowIdentity: String,
+    generation: Long,
+    observer: (TerminalLocalInputEvent) -> Unit,
+  ): AutoCloseable? {
+    val surfaceIndex = surfaceIndexForKey(surfaceKey) ?: return null
+    val observerId = synchronized(lock) {
+      val entry = entries[surfaceIndex] ?: return@synchronized null
+      if (entry.snapshot.windowIdentity != windowIdentity || entry.snapshot.generation != generation) {
+        return@synchronized null
+      }
+      val window = entry.ownerWindow
+      val currentCallback = window.callback ?: return@synchronized null
+      val interceptor = windowInterceptors[window] ?: createInterceptor(window, currentCallback).also {
+        windowInterceptors[window] = it
+        window.callback = it.proxy
+      }
+      val id = nextLocalInputObserverId++
+      interceptor.observers[id] = LocalInputObserver(surfaceIndex, surfaceKey, windowIdentity, generation, observer)
+      id
+    } ?: return null
+    return AutoCloseable { removeLocalInputObserver(observerId) }
+  }
+
+  fun dispatchRemoteTouch(
+    surfaceKey: String,
+    windowIdentity: String,
+    generation: Long,
+    event: MotionEvent,
+  ): Boolean {
+    val lease = borrowWindow(surfaceKey, generation) ?: return false
+    if (lease.windowIdentity != windowIdentity) return false
+    val previous = remoteTouchDispatch.get()
+    remoteTouchDispatch.set(true)
+    return try {
+      lease.window.callback?.dispatchTouchEvent(event) ?: false
+    } finally {
+      remoteTouchDispatch.set(previous)
+    }
+  }
+
+  private fun createInterceptor(window: Window, original: Window.Callback): WindowInterceptor {
+    val proxy = Proxy.newProxyInstance(
+      Window.Callback::class.java.classLoader,
+      arrayOf(Window.Callback::class.java),
+    ) { proxyObject, method, args ->
+      if (method.declaringClass == Any::class.java) {
+        when (method.name) {
+          "equals" -> return@newProxyInstance proxyObject === args?.firstOrNull()
+          "hashCode" -> return@newProxyInstance original.hashCode()
+          "toString" -> return@newProxyInstance original.toString()
+        }
+      }
+      val event = args?.firstOrNull() as? MotionEvent
+      if (method.name == "dispatchTouchEvent" && event?.actionMasked == MotionEvent.ACTION_DOWN &&
+        !remoteTouchDispatch.get()
+      ) {
+        publishLocalInput(window)
+      }
+      try {
+        method.invoke(original, *args.orEmpty())
+      } catch (error: InvocationTargetException) {
+        throw error.targetException
+      }
+    } as Window.Callback
+    return WindowInterceptor(original, proxy)
+  }
+
+  private fun publishLocalInput(window: Window) {
+    val events = synchronized(lock) {
+      val interceptor = windowInterceptors[window] ?: return
+      interceptor.observers.values.mapNotNull { registered ->
+        val entry = entries[registered.surfaceIndex]
+        if (entry?.ownerWindow === window && entry.snapshot.windowIdentity == registered.windowIdentity &&
+          entry.snapshot.generation == registered.generation
+        ) {
+          registered.observer to TerminalLocalInputEvent(
+            surfaceKey = registered.surfaceKey,
+            windowIdentity = registered.windowIdentity,
+            generation = registered.generation,
+          )
+        } else null
+      }
+    }
+    events.forEach { (listener, event) ->
+      runCatching { listener(event) }.onFailure { error ->
+        Log.w(LOG_TAG, "event=local-input-observer-failed surfaceKey=${event.surfaceKey} " +
+          "generation=${event.generation} reason=${error.javaClass.simpleName}")
+      }
+    }
+  }
+
+  private fun removeLocalInputObserver(observerId: Long) {
+    synchronized(lock) {
+      val owner = windowInterceptors.entries.firstOrNull { (_, interceptor) ->
+        interceptor.observers.remove(observerId) != null
+      } ?: return
+      val (window, interceptor) = owner
+      if (interceptor.observers.isEmpty()) {
+        if (window.callback === interceptor.proxy) window.callback = interceptor.original
+        windowInterceptors.remove(window)
+      }
+    }
+  }
+
+  private fun releaseLocalInputObservers(window: Window?) {
+    if (window == null) return
+    synchronized(lock) {
+      val interceptor = windowInterceptors.remove(window) ?: return
+      if (window.callback === interceptor.proxy) window.callback = interceptor.original
+      interceptor.observers.clear()
+    }
+  }
+
   fun markUnavailable(
     surfaceIndex: Int,
     displayId: Int?,
@@ -325,6 +477,7 @@ internal object TerminalSurfaceHostRegistry {
     reason: String,
   ) {
     val surfaceKey = surfaceKeyForIndex(surfaceIndex) ?: return
+    var previousWindow: Window? = null
     val event = synchronized(lock) {
       val current = unavailableEntries[surfaceIndex]
       if (current?.reason == reason && current.displayId == displayId && current.windowIdentity == windowIdentity) {
@@ -337,11 +490,12 @@ internal object TerminalSurfaceHostRegistry {
           windowIdentity = windowIdentity,
           reason = reason,
         )
-        entries.remove(surfaceIndex)
+        previousWindow = entries.remove(surfaceIndex)?.ownerWindow
         unavailableEntries[surfaceIndex] = next
         next
       }
     }
+    releaseLocalInputObservers(previousWindow)
     publish(event)
   }
 
@@ -395,8 +549,10 @@ internal object TerminalSurfaceHostRegistry {
     }
 
     val orientation = if (widthPx >= heightPx) "landscape" else "portrait"
+    var replacedWindow: Window? = null
     val event = synchronized(lock) {
       val previous = entries[surfaceIndex]
+      if (previous != null && previous.ownerWindow !== window) replacedWindow = previous.ownerWindow
       val previousSnapshot = previous?.snapshot
       val sameOwner = previous != null && previous.ownerWindow === window &&
         previousSnapshot?.displayId == displayId &&
@@ -450,15 +606,18 @@ internal object TerminalSurfaceHostRegistry {
         TerminalSurfaceHostEvent.Ready(next)
       }
     }
+    releaseLocalInputObservers(replacedWindow)
     publish(event)
   }
 
   fun remove(surfaceIndex: Int, window: Window?, reason: String) {
     val surfaceKey = surfaceKeyForIndex(surfaceIndex) ?: return
+    var removedWindow: Window? = null
     val event = synchronized(lock) {
       val current = entries[surfaceIndex] ?: return@synchronized null
       val ownerMatches = window == null || current.ownerWindow === window
       if (!ownerMatches) return@synchronized null
+      removedWindow = current.ownerWindow
       val removal = resolveSurfaceHostRemoval(
         currentSnapshot = current.snapshot,
         ownerMatches = true,
@@ -467,6 +626,7 @@ internal object TerminalSurfaceHostRegistry {
       )
       removal.recoverable
     }
+    if (event != null) releaseLocalInputObservers(removedWindow)
     publish(event)
   }
 
@@ -507,6 +667,18 @@ internal object TerminalSurfaceHostRegistry {
     }
     val currentPublisher = synchronized(lock) { publisher }
     currentPublisher?.invoke(event)
+    val observers = synchronized(lock) { windowObservers.values.toList() }
+    observers.forEach { observer ->
+      runCatching { observer(event) }.onFailure { error ->
+        val identity = when (event) {
+          is TerminalSurfaceHostEvent.Ready -> event.snapshot.windowIdentity
+          is TerminalSurfaceHostEvent.RecoverableRemoval -> event.windowIdentity
+          is TerminalSurfaceHostEvent.Unavailable -> event.windowIdentity
+        }
+        Log.w(LOG_TAG, "event=window-observer-failed windowIdentity=$identity " +
+          "reason=${error.javaClass.simpleName}")
+      }
+    }
   }
 
   private fun nextGenerationLocked(surfaceIndex: Int): Long {
@@ -530,6 +702,20 @@ internal object TerminalSurfaceHostRegistry {
   private data class Entry(
     val ownerWindow: Window,
     val snapshot: TerminalSurfaceHostSnapshot,
+  )
+
+  private class WindowInterceptor(
+    val original: Window.Callback,
+    val proxy: Window.Callback,
+    val observers: MutableMap<Long, LocalInputObserver> = linkedMapOf(),
+  )
+
+  private data class LocalInputObserver(
+    val surfaceIndex: Int,
+    val surfaceKey: String,
+    val windowIdentity: String,
+    val generation: Long,
+    val observer: (TerminalLocalInputEvent) -> Unit,
   )
 }
 

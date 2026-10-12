@@ -15,6 +15,13 @@ export type OperationsProblemCode = OperationsEdgeProblemCode | PublicEdgeProble
  * The generated edge catalogs are closed sets; new codes must add copy here.
  */
 export const OPERATIONS_PROBLEM_FEEDBACK: Record<OperationsProblemCode, ProblemFeedback> = {
+  PLATFORM_DEPENDENCY_UNAVAILABLE: {title: '服务暂时不可用', detail: '请稍后重试。'},
+  TERMINAL_CONTROL_REMOTE_IDENTITY_CONFLICT: {title: '终端状态已变化', detail: '请刷新终端详情后重新发起。'},
+  TERMINAL_CONTROL_REMOTE_NOT_ACTIVATED: {title: '终端未激活', detail: '请完成终端激活后重新发起。'},
+  TERMINAL_CONTROL_REMOTE_NOT_READY: {title: '终端暂不可控制', detail: '请确认终端在线后重新发起。'},
+  TERMINAL_CONTROL_REMOTE_OCCUPIED: {title: '终端正在被控制', detail: '请稍后重新发起。'},
+  TERMINAL_CONTROL_REMOTE_SESSION_ENDED: {title: '远程控制已结束', detail: '请重新发起远程控制。'},
+  TERMINAL_CONTROL_REMOTE_TERMINAL_OFFLINE: {title: '终端离线', detail: '终端重新上线后再发起远程控制。'},
   TERMINAL_UPDATE_RULE_TARGET_INVALID: {title: '更新范围无效', detail: '请刷新项目与门店范围后重试。'},
   TERMINAL_UPDATE_SCOPE_MISMATCH: {title: '更新范围已变化', detail: '请刷新当前项目后重试。'},
   TERMINAL_UPDATE_SNAPSHOT_TOO_LARGE: {title: '更新规则较多', detail: '当前规则读取超过允许范围，请联系管理员处理。'},

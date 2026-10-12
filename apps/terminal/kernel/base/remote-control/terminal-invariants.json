@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "package": "@catering-v2s/kernel-base-remote-control",
+  "owned": {
+    "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/kernel-base-remote-control", "runner": "vitest"},
+    "lint": {"kind": "OWNED", "owner": "@catering-v2s/kernel-base-remote-control", "runner": "eslint"},
+    "clean": {"kind": "ABSENT"}
+  },
+  "publicExports": [
+    "RemoteControlEnvelope",
+    "RemoteControlMessage",
+    "RemoteControlMessageType",
+    "ScreenReadyBody",
+    "ScreenReadyMessage",
+    "PointerBody",
+    "PointerMessage",
+    "InputResultBody",
+    "InputResultMessage",
+    "KeepaliveBody",
+    "KeepaliveMessage",
+    "KeepaliveAckBody",
+    "KeepaliveAckMessage",
+    "SessionEndBody",
+    "SessionEndMessage",
+    "dependencyModuleNames",
+    "devDependencyModuleNames",
+    "moduleKind",
+    "moduleName",
+    "remoteControlMessageTypes",
+    "remoteControlProtocolMaxMessageBytes",
+    "remoteControlTopic",
+    "runtimeModuleDependencyNames"
+  ]
+}

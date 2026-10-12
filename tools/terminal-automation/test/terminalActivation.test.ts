@@ -33,6 +33,7 @@ const writePriorRun = (
       execution: {platform: 'android', deviceSerial: 'emulator-1'},
       managedDev: {runId: managedDevManifest.runId},
       fixture: {
+        managedDevRunId: managedDevManifest.runId,
         activationIntent: true,
         seedKey: 'term-handheld',
         terminalRef: 'terminal-1',

@@ -11,7 +11,8 @@
     "contracts/openapi/components/organization/store-operating-rule-schemas.generated.json",
     "contracts/openapi/components/contract/contract.schemas.json",
     "contracts/openapi/components/organization/store-service-point-qr.schemas.json",
-    "contracts/openapi-source/terminal-update.schemas.json"
+    "contracts/openapi-source/terminal-update.schemas.json",
+    "contracts/openapi-source/terminal-remote-control.schemas.json"
   ],
   "targets": [
     {
@@ -22,7 +23,9 @@
         "store-contract",
         "terminal-update",
         "TERMINAL_UPDATE_RULE",
-        "TERMINAL_UPDATE_REPORT"
+        "TERMINAL_UPDATE_REPORT",
+        "remote-control",
+        "TERMINAL_REMOTE_CONTROL"
       ],
       "includeOperationIds": [
         "activateTerminal",
@@ -37,7 +40,9 @@
         "terminalReadServicePoint",
         "terminalReadProjectUpdateRuleSnapshotPage",
         "issueTerminalUpdateArtifactDownloadGrant",
-        "submitTerminalUpdateReport"
+        "submitTerminalUpdateReport",
+        "registerTerminalRemoteControl",
+        "reportTerminalRemoteControl"
       ],
       "excludeOperationIds": [
         "downloadTerminalUpdateArtifact"

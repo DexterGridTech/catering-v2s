@@ -11,6 +11,8 @@ val catalogInventoryP1BackendWireOutput = layout.buildDirectory.dir("generated/s
 val backendPerformanceM1CommandExecutionOutput = layout.buildDirectory.dir("generated/sources/backend-performance-m1-command-execution/main/java")
 val catalogInventoryP1BackendWireInputs = listOf(
     "scripts/generate/catalog-inventory-p1.mjs",
+    "contracts/policy/backend-performance-operation-counts.json",
+    "doc/plans/platform/2026-07-25-v2s-r5-edge-contract-implementation-catalog.json",
     "contracts/policy/catalog-inventory-copy-policy.json",
     "contracts/policy/catalog-inventory-design-byte-coverage.json",
     "contracts/policy/catalog-inventory-media-assets.json",

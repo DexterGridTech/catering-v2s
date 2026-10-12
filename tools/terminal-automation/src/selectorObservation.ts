@@ -87,6 +87,7 @@ export const subscribeSelector = async (
     let closed = false;
     return Object.freeze({
       current,
+      latest: () => latest,
       waitFor: (matches: (value: unknown) => boolean, timeoutMs = 15_000): Promise<unknown> => {
         if (closed) return Promise.reject(new Error('TERMINAL_AUTOMATION_SELECTOR_OBSERVATION_CLOSED'));
         if (latest?.state === 'JSON' && matches(latest.value)) return Promise.resolve(latest.value);

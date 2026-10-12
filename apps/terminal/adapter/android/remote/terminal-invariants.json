@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "package": "@catering-v2s/adapter-android-remote",
+  "owned": {
+    "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/adapter-android-remote", "runner": "vitest"},
+    "lint": {"kind": "OWNED", "owner": "@catering-v2s/adapter-android-remote", "runner": "eslint"},
+    "clean": {"kind": "ABSENT"}
+  }
+}

@@ -4,6 +4,8 @@ import {createProcessMemoryStateStoragePort} from '@catering-v2s/kernel-base-pla
 import type {TransportServerConfig} from '@catering-v2s/kernel-base-contracts';
 import {refreshTopologyDisplayCommand} from '@catering-v2s/kernel-base-topology';
 import {createTerminalUpdateAutomationFixture} from '@catering-v2s/kernel-base-terminal-update/testing';
+import {createWebRemoteControlTestPort} from '@catering-v2s/terminal-automation/web-remote-control-test-port';
+import {testExpoTestIds} from '@catering-v2s/ui-base-dev-host';
 import packageJson from '../package.json';
 import {createSampleWallpaperConsoleAssembly, terminalSurfaces} from '../src';
 import {TerminalUpdateAssetLoadProbe} from './TerminalUpdateAssetLoadProbe';
@@ -16,7 +18,10 @@ const managedTdsEntryTwoWebSocketBaseUrl = process.env.EXPO_PUBLIC_TER_MANAGED_T
 const managedDeviceId = process.env.EXPO_PUBLIC_TER_MANAGED_DEVICE_ID;
 const testAutomationUrl = process.env.EXPO_PUBLIC_TER_AUTOMATION_URL;
 const testAutomationToken = process.env.EXPO_PUBLIC_TER_AUTOMATION_TOKEN;
-const terminalUpdateRunId = process.env.EXPO_PUBLIC_TER_AUTOMATION_RUN_ID;
+const terminalUpdateRunId =
+  process.env.EXPO_PUBLIC_TER_AUTOMATION_PHASE === 'remote' ? undefined : process.env.EXPO_PUBLIC_TER_AUTOMATION_RUN_ID;
+const remoteControlTestRunId =
+  process.env.EXPO_PUBLIC_TER_AUTOMATION_PHASE === 'remote' ? process.env.EXPO_PUBLIC_TER_AUTOMATION_RUN_ID : undefined;
 const terminalUpdateAssetProbe = process.env.EXPO_PUBLIC_TER_AUTOMATION_UPDATE_ASSET_PROBE;
 if (terminalUpdateAssetProbe !== undefined && terminalUpdateAssetProbe !== 'true') {
   throw new Error('TEST_EXPO_TERMINAL_UPDATE_ASSET_PROBE_INVALID');
@@ -142,6 +147,28 @@ const App = createTestExpoApp({
         : {
             platformPorts: Object.freeze({...input.platformPorts, update: terminalUpdateFixture.port}),
             terminalUpdateSourceProvider: terminalUpdateFixture.sourceProvider,
+          }),
+      ...(remoteControlTestRunId === undefined
+        ? {}
+        : {
+            platformPorts: Object.freeze({
+              ...input.platformPorts,
+              remoteControl: createWebRemoteControlTestPort({
+                runId: remoteControlTestRunId,
+                primarySurfaceTestId: String(testExpoTestIds.surface('PRIMARY')),
+                trace: (event, data) =>
+                  input.platformPorts.logger.scope({
+                    moduleName: 'ui.integration.sample-wallpaper-console.test-expo',
+                    layer: 'application',
+                    subsystem: 'remote-control-test-endpoint',
+                  }).info({
+                    category: 'terminal.automation.remote-control',
+                    event,
+                    message: 'Web test endpoint media and input lifecycle',
+                    data,
+                  }),
+              }),
+            }),
           }),
       serverSpaces: testServerSpaces(),
       ...(terminalUpdateAssetProbe === 'true'

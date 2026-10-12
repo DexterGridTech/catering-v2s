@@ -9,6 +9,8 @@ import com.catering.v2s.organization.application.OrganizationAuditHistoryService
 import com.catering.v2s.storeterminal.application.StoreTerminalAuditHistoryService;
 import com.catering.v2s.terminalbinding.api.TerminalBindingAuditReadApi;
 import com.catering.v2s.terminalbinding.api.TerminalBindingAuditReadException;
+import com.catering.v2s.terminalcontrol.api.TerminalRemoteControlAuditReadApi;
+import com.catering.v2s.terminalcontrol.api.TerminalRemoteControlAuditReadException;
 import com.catering.v2s.terminalupdate.api.TerminalUpdateRuleAuditReadApi;
 import com.catering.v2s.terminalupdate.api.TerminalUpdateRuleAuditReadException;
 import com.catering.v2s.workspace.iam.application.WorkspaceIamAuditHistoryService;
@@ -27,6 +29,7 @@ public class OperationsAuditTaskReadService {
     private final ContractAuditHistoryService contractAudit;
     private final StoreTerminalAuditHistoryService storeTerminalAudit;
     private final TerminalBindingAuditReadApi terminalBindingAudit;
+    private final TerminalRemoteControlAuditReadApi terminalRemoteControlAudit;
     private final TerminalUpdateRuleAuditReadApi terminalUpdateRuleAudit;
 
     public OperationsAuditTaskReadService(
@@ -35,12 +38,14 @@ public class OperationsAuditTaskReadService {
             ContractAuditHistoryService contractAudit,
             StoreTerminalAuditHistoryService storeTerminalAudit,
             TerminalBindingAuditReadApi terminalBindingAudit,
+            TerminalRemoteControlAuditReadApi terminalRemoteControlAudit,
             TerminalUpdateRuleAuditReadApi terminalUpdateRuleAudit) {
         this.workspaceIamAudit = Objects.requireNonNull(workspaceIamAudit, "workspaceIamAudit");
         this.organizationAudit = Objects.requireNonNull(organizationAudit, "organizationAudit");
         this.contractAudit = Objects.requireNonNull(contractAudit, "contractAudit");
         this.storeTerminalAudit = Objects.requireNonNull(storeTerminalAudit, "storeTerminalAudit");
         this.terminalBindingAudit = Objects.requireNonNull(terminalBindingAudit, "terminalBindingAudit");
+        this.terminalRemoteControlAudit = Objects.requireNonNull(terminalRemoteControlAudit, "terminalRemoteControlAudit");
         this.terminalUpdateRuleAudit = Objects.requireNonNull(terminalUpdateRuleAudit, "terminalUpdateRuleAudit");
     }
 
@@ -121,6 +126,8 @@ public class OperationsAuditTaskReadService {
             case OperationsAuditQuery.StoreTerminal value -> storeTerminalAudit.readOperationsAuditProjection(
                     scope, facts.visibleOrganizationFacts(), value.target(), value.page(), value.pageSize());
             case OperationsAuditQuery.TerminalBinding value -> readTerminalBindingAudit(facts, scope, value);
+            case OperationsAuditQuery.TerminalRemoteControlSession value ->
+                    readTerminalRemoteControlAudit(facts, scope, value);
             case OperationsAuditQuery.TerminalUpdateRule value -> readTerminalUpdateRuleAudit(facts, scope, value);
         };
     }
@@ -163,6 +170,24 @@ public class OperationsAuditTaskReadService {
         }
     }
 
+    private AuditHistoryPage readTerminalRemoteControlAudit(
+            WorkspaceReadAuthorizationFacts facts, AuditReadScope scope,
+            OperationsAuditQuery.TerminalRemoteControlSession query) {
+        Set<UUID> visibleProjectRefs = facts.visibleOrganizationFacts().candidates().stream()
+                .filter(candidate -> "PROJECT".equals(candidate.dataNodeType()))
+                .map(candidate -> candidate.dataNodeId())
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
+        try {
+            return terminalRemoteControlAudit.read(scope, visibleProjectRefs, query.projectRef(),
+                    UUID.fromString(query.target().entityRef()), query.page(), query.pageSize());
+        } catch (TerminalRemoteControlAuditReadException failure) {
+            if (failure.kind() == TerminalRemoteControlAuditReadException.Kind.NOT_FOUND) {
+                throw new StoreTerminalAuditHistoryService.TerminalNotFoundException(failure);
+            }
+            throw new StoreTerminalAuditHistoryService.TerminalAuthorizationException(failure);
+        }
+    }
+
     /** Each variant fixes the wire entity type at compile time; no operation-id dispatch is used. */
     public sealed interface OperationsAuditQuery
             permits OperationsAuditQuery.WorkspaceAccount,
@@ -179,6 +204,7 @@ public class OperationsAuditTaskReadService {
                     OperationsAuditQuery.StoreContract,
                     OperationsAuditQuery.StoreTerminal,
                     OperationsAuditQuery.TerminalBinding,
+                    OperationsAuditQuery.TerminalRemoteControlSession,
                     OperationsAuditQuery.TerminalUpdateRule {
         AuditTarget target();
 
@@ -267,6 +293,14 @@ public class OperationsAuditTaskReadService {
         record TerminalBinding(AuditTarget target, long page, long pageSize) implements OperationsAuditQuery {
             public TerminalBinding {
                 type(target, AuditEntityTypes.TERMINAL_BINDING);
+            }
+        }
+
+        record TerminalRemoteControlSession(AuditTarget target, UUID projectRef, long page, long pageSize)
+                implements OperationsAuditQuery {
+            public TerminalRemoteControlSession {
+                type(target, AuditEntityTypes.TERMINAL_REMOTE_CONTROL_SESSION);
+                if (projectRef == null) throw new IllegalArgumentException("projectRef is required");
             }
         }
 

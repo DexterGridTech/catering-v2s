@@ -1492,7 +1492,8 @@
             "BC-BUSINESS-CHANNEL-PROJECT-EDIT",
             "BC-ORG-STORE-EDIT",
             "EDIT_STORE_SERVICE_POINT_QR",
-            "EDIT_STORE_TERMINAL"
+            "EDIT_STORE_TERMINAL",
+            "CONTROL_PROJECT_TERMINAL"
           ],
           "visibleDataNodePolicy": "PROJECT"
         },

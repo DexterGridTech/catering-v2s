@@ -12,7 +12,8 @@ export type PlatformPortName =
   | 'connector'
   | 'update'
   | 'logUpload'
-  | 'topologyHost';
+  | 'topologyHost'
+  | 'remoteControl';
 
 export type CapabilityUnavailableReason = 'ADAPTER_NOT_INJECTED' | 'PLATFORM_UNSUPPORTED';
 

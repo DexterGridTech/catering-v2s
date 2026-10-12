@@ -1,0 +1,12 @@
+port: 7880
+rtc:
+  udp_port: 7882
+  use_external_ip: false
+  node_ip: 47.106.121.27
+turn:
+  enabled: false
+keys:
+  __LIVEKIT_API_KEY__: __LIVEKIT_API_SECRET__
+logging:
+  level: info
+  json: true

@@ -28,6 +28,8 @@ export type {
   TerminalDataHeartbeatPayload,
   TerminalUpdateDownloadGrantPayload,
   TerminalUpdateReportPayload,
+  TerminalRemoteControlRegisterPayload,
+  TerminalRemoteControlReportPayload,
   TerminalActivationSucceededPayload,
   TerminalReadOperationId,
   TerminalTopicChangedPayload,
@@ -47,6 +49,8 @@ export {
   readTerminalDataCommand,
   requestTerminalUpdateDownloadGrantCommand,
   submitTerminalUpdateReportCommand,
+  registerTerminalRemoteControlCommand,
+  reportTerminalRemoteControlCommand,
   terminalDataHeartbeatCommand,
   terminalTopicChangedCommand,
 } from './features/commands/terminalDataClientCommands';

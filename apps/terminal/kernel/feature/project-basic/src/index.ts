@@ -15,6 +15,7 @@ export {
   selectProjectBasicTopicState,
   selectProjectOrganizationPath,
   selectProjectTerminalUpdateContextFacts,
+  selectProjectFixedTerminalUpdateContextFacts,
   selectProjectTerminalUpdateCandidate,
   selectProjectTerminalUpdateRules,
   selectRegion,

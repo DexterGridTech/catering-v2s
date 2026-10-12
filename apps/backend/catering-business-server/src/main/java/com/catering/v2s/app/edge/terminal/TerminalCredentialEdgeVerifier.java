@@ -12,12 +12,12 @@ import java.util.Arrays;
 import java.util.UUID;
 
 /** Shared terminal-edge credential verification for read-only and update delivery endpoints. */
-final class TerminalCredentialEdgeVerifier {
+public final class TerminalCredentialEdgeVerifier {
     private static final String AUTHORIZATION_PREFIX = "Terminal ";
 
     private TerminalCredentialEdgeVerifier() {}
 
-    static Verification verify(TerminalCredentialVerificationApi credentials, String groupKey,
+    public static Verification verify(TerminalCredentialVerificationApi credentials, String groupKey,
             String authorization, String terminalRef) {
         if (!GroupWorkspaceKey.isValid(groupKey) || terminalRef == null || authorization == null
                 || !authorization.startsWith(AUTHORIZATION_PREFIX)) throw invalid();

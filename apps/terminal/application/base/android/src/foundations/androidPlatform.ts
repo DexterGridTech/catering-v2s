@@ -12,6 +12,7 @@ import {createAndroidDevicePort} from '@catering-v2s/adapter-android-device';
 import {createAndroidSurfaceHostSource} from '@catering-v2s/adapter-android-dual-screen';
 import {createAndroidPersistKvPort} from '@catering-v2s/adapter-android-persist-kv';
 import {createAndroidUpdatePort} from '@catering-v2s/adapter-android-update';
+import {createAndroidRemoteControlPort} from '@catering-v2s/adapter-android-remote';
 import {createAndroidAutomationUpdateTargetSourceProvider} from './androidAutomationUpdateTargetSourceProvider';
 import {createAndroidNativeLoadingCapability} from './nativeLoadingCapability';
 import {
@@ -57,6 +58,7 @@ export const createAndroidPlatformBinding = (persistenceKey: string): AndroidPla
       update: createAndroidUpdatePort(),
       logUpload: unavailableLogUploadPort,
       topologyHost: createAndroidTopologyHostPort(() => platformLogger),
+      remoteControl: createAndroidRemoteControlPort({getLogger: () => platformLogger}),
     },
   });
   platformLogger = platformPorts.logger;

@@ -1,3 +1,4 @@
+import {unavailableRemoteControlPort} from '@catering-v2s/kernel-base-platform-ports';
 import type {ReactElement} from 'react';
 import {describe, expect, it} from 'vitest';
 import {
@@ -57,6 +58,7 @@ describe('console assembly runtime owner recovery', () => {
         update: unavailableUpdatePort,
         logUpload: unavailableLogUploadPort,
         topologyHost: unavailableTopologyHostPort,
+        remoteControl: unavailableRemoteControlPort,
       },
     });
 
@@ -101,7 +103,9 @@ describe('console assembly runtime owner recovery', () => {
 
     const failedRuntime = assembly.runtime;
     const surface = assembly.createSurface({displayIndex: 0, displayMode: 'PRIMARY', surfaceForm: 'laptop'});
-    const renderProvider = surface.props.children as ReactElement<Record<string, unknown>>;
+    const renderProvider = (surface as ReactElement<Record<string, unknown>>).props.children as ReactElement<
+      Record<string, unknown>
+    >;
     expect(renderProvider.type).toBe(RenderProvider);
     const onLocalInteraction = renderProvider.props.onLocalInteraction as () => Promise<void>;
     expect(failedRuntime.status).toBe('failed');

@@ -1,16 +1,27 @@
 ---
 title: TER 应用内远程控制 implementation-facing 详设草案
-status: DRAFT_FOR_DEXTER_CLAUDE_REVIEW
+status: IMPLEMENTATION_AUTHORIZED
 ---
 # TER 应用内远程控制详设
 
 ## 0. 元数据、当前字节与授权
 BUSINESS_SOURCE=doc/plans/platform/2026-10-10-ter-remote-control-formal-requirements-claude.md；JOURNEY_REFS=doc/decisions/2026-10-10-ter-remote-control-journey-claude.md；IA_REF=doc/decisions/2026-10-10-ter-remote-control-ia-claude.md；INTERACTION_REF=doc/decisions/2026-10-10-ter-remote-control-ui-interaction-claude.md；SOURCE_APPENDIX=doc/plans/platform/2026-10-10-ter-remote-control-source-and-api-appendix-claude.md。
-SKILL_USED=cs-spec-to-plan,cs-writing-plans,cs-review；AUTHORIZED=本包文档与独立静态审查；IMPLEMENTATION_AUTHORITY=false。
-NOT_AUTHORIZED=源码、规范、需求产品语义扩张、依赖安装/生成、编译/测试/verify、DEV、reset/seed、Web/Android/设备、L2/UAT/部署。
+SKILL_USED=cs-spec-to-plan,cs-writing-plans,cs-review；AUTHORIZED=Dexter 2026-10-11 会话指派覆盖的阶段C差量修复、远控CP-01～CP-06实现、所需契约/依赖/生成、编译/测试/verify、受管backend-acceptance、DEV、Expo Web、operations-admin L2、受管非生产LiveKit部署及计划内Android设备验证；IMPLEMENTATION_AUTHORITY=true。
+NOT_AUTHORIZED=改变已裁定产品语义、扩展远控范围、无条件reset/seed、UAT、生产部署、扩大设备矩阵或阶段外功能。
 Dexter 2026-10-10已明确批准三态并授权需求同步：R-01/R-02/R-20与本包现统一为NOT_ACTIVATED/OFFLINE/ONLINE；删除不可产生的第四态，不新增连接字段或heartbeat机制。此文档同步不代表设计已获独立GO，也不授权契约生成、源码或动态运行。
 这是遵照Dexter完整设计包指派产出的可评审草案。DEXTER_WIREFRAME_REVIEW=ACCEPTED@2026-10-10；T-01～T-04 OPEN。不冻结未经原生proof确认的具体供应商桥接API，不把该草案或GO_WITH_UNVERIFIED_UI变成实施授权。
-阶段C仍在并发实施，不改它的文件，也不把读到的中间源码当最终出口。实施CP-01必须重开其最终字节；不恢复旧MASTER逐次grant中转、不让SLAVE连TDS。
+阶段C整批 IMPLEMENTATION review 的历史结论仍为 NO-GO；R4 两项差量已按 `doc/review/platform/2026-10-11-ter-version-update-stage-c-implementation-rereview-r4-intake-codex.md` 修复并完成受影响 focused test/typecheck。没有重跑阶段C全矩阵或重新宣称整批 GO。Dexter 已明确要求该差量收口后直接进入远控实施，因此不把阶段C全矩阵/另一次外部复评作为远控前置；CP-01 仍重开最终 owning source。保持旧MASTER不逐次grant中转、SLAVE不连TDS。
+
+### 0.1 阶段C当前源码影响读回（2026-10-11）
+| 已实现接缝 | 本批必须复用的落点与边界 |
+| --- | --- |
+| CBS凭证认证与TDS设备认证分开 | TDC `terminalDataClientActor.ts` 的普通CBS请求只构造Authorization及X-Terminal-Ref；不再增加X-Terminal-Device-Id。activate body与TDS AUTHENTICATE仍保留真实deviceId。远控register/report虽然同用credential，仍须独立复核MASTER角色及本session固定TDP目标；共享credential不能让SLAVE登记或续约。 |
+| 配对不重建Runtime；显式解绑只清TDC所属state | Topology的requestTopologySlaveUnpairStateClearCommand→TDC清空并flush terminalDataClient/terminalClientStatusProjection→complete command→Topology继续解绑；不调用root reset、不删除update任务。remote owner必须直接观察当前角色、pair连接、TDC binding资格并结束旧session，不能等待Runtime重启或根reset替它释放。普通断链时credential仍保留，但按本需求结束整个远控会话，不自动join。 |
+| 项目业务迁入project-basic；服务配置呈现并入admin-shell | 组织/规则不在terminal-update；远控不消费更新候选或完整项目slice。两assembly仍只注入公开selector/provider和ports。服务配置呈现的真实owner已为ui/base/admin-shell，不新建或依赖已删除的server-config-panel包；配置事实仍归kernel/base/server-config。 |
+| 双虚拟机网络与父run诊断已有唯一driver接缝 | 复用androidAutomationConnection.ts的attachTopologyHostForward及其owned journal/cleanup，沿显式MASTER/SLAVE serial；不重新实现forward runner。LiveKit的RTC网络单独核实，不能把ADB HTTP/WS映射当UDP可达证明。 |
+| HTTP正文与WS/Data协议分别有界 | 当前 `createBrowserTransportNetworkAdapter` 的decoded HTTP单页上界为1,048,576字节，流式计数并在超界时取消读取；阶段C R4 对应局部测试覆盖70,000字节成功及1 MiB+1拒绝。远控沿同一HTTP adapter，不另建fetch或压缩层；TDP WS仍65,536字节，远控Data仍4,096字节，三者不互相替代。 |
+
+以上为源码事实与待核接缝，不是远控实现或动态PASS。阶段C的review findings只对受影响接缝做差量读回；不要求重新对账未变化CP或重跑已通过设备矩阵。运营报告的actual未知原因呈现和旧automation case契约漂移由阶段C处置，本批不另造报告页面或旧入口fallback。
 
 ## 1. 真实目标与方案比较
 ### 1.1 结构性问题
@@ -28,7 +39,7 @@ Dexter 2026-10-10已明确批准三态并授权需求同步：R-01/R-02/R-20与�
 | --- | --- | --- | --- | --- |
 | CP-01 | 来源准入、兼容/有限可行性、公共契约 | 主agent、ports/adapter/contract owner | 阶段C最终读回，精确依赖图，T前置最小proof与契约 | UI确认、后续实施授权、实际部署输入 |
 | CP-02 | CBS独占、在线查询、认证与标准审计 | terminal-control，显式read edge | 六operation、session表、权限、集合online读面 | CP-01 MATCHED |
-| CP-03 | TER owner、Android接缝、peer与composition | remote-control/adapter/TDC/topology | 一套生命周期、双屏轨道、正常输入 | CP-02 MATCHED；T-01～03关闭 |
+| CP-03 | TER owner、Android接缝、peer与composition | remote-control/adapter/TDC/topology | 一套生命周期、双屏轨道、正常输入 | CP-02 MATCHED；应用侧T-01及T-02～T-04关闭 |
 | CP-04 | 运营工作区和普通交互 | operations-admin/foundation | 原Tab/Drawer加入口，全屏媒体与pointer | CP-03 MATCHED |
 | CP-05 | 受管部署、seed、真实场景脚本 | scripts、automation driver | Compose生命周期、角色fixture、脚本/cleanup | CP-04 MATCHED |
 | CP-06 | 整合focused与交付准备 | 主agent | API/包文档、受影响门、场景完整接线 | CP-05 MATCHED |
@@ -91,7 +102,7 @@ UI_DESIGN_REVIEW=OPEN；TESTID_REVIEW=OPEN；L2_SCRIPT_ADMISSION=BLOCKED。静�
 
 ## 4. CP退出条件
 每CP完成全部工作项、focused及最小proof、逐点前后双读后，fresh子agent对该完整CP做需求/详设IA/项目记忆三维证伪对账，结果MATCHED/OPEN，不给整批GO。OPEN先根因修复再复查同CP，不逐文件另开关。
-CP-01的T前置proof只在未来实施授权含有相应原生/媒体受管运行时执行；不能拿编译通过代替双Window/触摸/track proof。输入不满足停该CP，不让后续实现猜替代库/双SDK/MediaProjection。
+CP-01只关闭T-01服务端SDK/API proof、解析依赖与官方依据；T-01应用侧桥接/双轨、T-02持续双Window捕获、T-03正常触摸与本地冲突、T-04真实WS/UDP媒体与释放，必须等CP-03正式owner/adapter调用链接通后，在CP-03退出前由唯一automation入口完成。CP-01不提前创建临时业务command或第二测试路径。不能拿编译通过代替双Window/触摸/track proof；输入不满足停该CP，不让后续实现猜替代库/双SDK/MediaProjection。
 
 ## 5. Operation、路径与暴露面
 六operation的精确path/method/input/output及逐operation errorSetRef∪augmentation、wire code/HTTP/优先级见附件§3/§3a，已在本设计选定，不留到CP-01自行发明。运营3个POST每次复核live写grant，1个GET只核有效session/context、页面/角色PROJECT读取范围、本session发起账号及terminal归属，不调用resolveGeneratedOperation、不附写capability；终端2项由TDC构造credential。原page/detail仅增加顶层connectionStatus/observedAt/evaluatedAt，不新增第二目录或在线查询服务。
@@ -122,7 +133,7 @@ GET只读：发现租约到期时按已有deadline导出公开ENDED/LEASE_EXPIRE
 | token | register/controller grant短期响应 | TDC request ledger/现有peer参数 | adapter私有Room输入；root result/公开slice/持久operation均不含token |
 | screen | description slots+endpoint | SCREEN_READY stream/track/pixel | browser绑定实际SDKsender/track并按slot渲染，不按到达顺序 |
 | pointer | canonical sixmessages | 点名endpoint LiveKit data | remote actor校验→port→原控件→原业务command，不直调用onPress |
-| 配置 | server-config livekit地址/revision | composition provider注入port | TER只消费provider；HTTPgrant没有TER URL，不能用CBS前缀拼信令 |
+| 配置 | server-config livekit地址/revision | composition按当前selector读取地址，并在port `begin` 输入中传入 `signalUrl` | TER只消费provider；HTTP grant没有TER URL，不能用CBS前缀拼信令 |
 | 集合 | 原page cursor/limit | 原generated DTO追加connection | 保持服务端分页，无客户端slice/N+1 |
 | 授权执行点 | 3运营POST generated+ownerrequireGrant；GET原projectReadSession | application server-resolved PROJECT；GET本session发起者与terminal归属 | POST重新核写grant；GET只读scope，不附capability；终端credential仍复核stored会话 |
 | 缓存失效 | 当前session/context代次 | async guard/refresh signal | 旧HTTP不打开新工作区，end不刷ruleTab |
@@ -163,9 +174,9 @@ application/base、两个integration只装配remote模块/provider/ports和生�
 ### 8.2 公共command/selector与私有事件
 | 名称（计划新增） | caller/target | actor动作与result |
 | --- | --- | --- |
-| startRemoteControlCommand | CBS经TDP，local MASTER | 验证启动目标→TDC register request→本端port begin→paired精准peer join；快速返回{sessionId,status:'STARTING',reason:null}，不等待CBSACTIVE |
+| startRemoteControlCommand（wire：`kernel.base.remote-control.start-remote-control`） | CBS经TDP，local MASTER | 验证启动目标→TDC register request→本端port begin→paired精准peer join；快速返回{sessionId,status:'STARTING',reason:null}，不等待CBSACTIVE |
 | joinRemoteControlCommand | MASTER现有target:'peer'→SLAVE | 当前accepted MASTER/同App/pair连接/secondary归属复核→本端begin；只返回公开STARTING不回传grant |
-| stopRemoteControlCommand | CBS/root及MASTERpeer/end lifecycle | 仅同session，STOPPING立即拒绝新输入→清理；旧stop不影响新session |
+| stopRemoteControlCommand（wire：`kernel.base.remote-control.stop-remote-control`） | CBS/root及MASTERpeer/end lifecycle | 仅同session，STOPPING立即拒绝新输入→清理；旧stop不影响新session |
 | remoteControlPortEventCommand | adapter subscription→local owner；private | carry session/eventSequence/window generation，媒体/data/liveness事实只进入owneractor；不另用事件总线 |
 | remoteControlTickCommand | 当前actor定时器→local；private | 当前session租约/watchdog/gesture检查，destroy清timer，不复用TDPheartbeat作媒体租约 |
 | selectRemoteControlStatus | UI/automation readonly | sessionId、phase、topologyKind、screen公开摘要、error/cleanup，无token/SDKhandle |
@@ -176,6 +187,7 @@ root参数/结果固定需求R08；peerjoin{description,grant}按需求，token�
 CBS/TER状态和原因完整闭集只取需求R20及canonical；TERslice={sessionId,phase,description,screens,lastError,cleanup}，persistIntent=never/syncIntent=isolated，reset清空；token、Room、track、Window和timer在adapter/actor私有资源中。
 一个当前session代次贯穿HTTP、SDKevent、peer、timer。每次await后重读当前session+role+binding+connection+配置revision；旧结果只清它自己的资源，不能提交或停止新session。STARTING重复同session等值幂等；不同session在旧资源cleanup未完成时返回NOT_READY，不抹掉释放失败。rootreset/reload/dispose先调用port.stop并聚合unsubscribe/leave/capture/CANCEL失败，不能静默吞错。
 paired SLAVE仅校验currentpair和本session，不有独立CBSlease/renew；不连接TDS。MASTER TDP/binding失效、角色/peer/moduleName/配对连接改变即本地停止并peerstop；迟到join必须复核当前accepted连接，不以nodeId相同代替连接身份。
+当前阶段C配对与解绑可以在同一Runtime完成，因此上述结束观察须在remote模块安装时注册并由Runtime资源生命周期退订；解绑清TDC state的成功command和当前selector变化均沿既有command/selector通路，不增加第二事件总线。业务投影ready只作为首次paired join的资格；本远控生命周期不得复用project-basic更新候选selector。任一当前配对连接失效即停止，两端保留凭证不代表保留控制权。
 ### 8.4 RemoteControlPort形状（value-only，CP-01最小proof后冻结）
 port提供`subscribeEvents(listener):unsubscribe`、`begin({sessionId,description,grant,localScreens}):PortResult<STARTING>`、`sendData({sessionId,destinationIdentities,payload})`、`dispatchPointer({sessionId,screen,streamId,gestureId,phase,u?,v?})`、`end({sessionId}):PortResult<cleanupFacts>`。必须逐能力descriptor；生产Web提供unavailable。测试enabled Web仅注入typed fixture，与真实Android形状相同，不把fixture编入production。
 adapter事件是connected/disconnected/screen-ready/data/geometry-changed/capture-failed/local-input-conflict/cleanup-failed有限union；仅owneractor处理它，调用方不可注册任意业务callback。SDK/data handler先做4096bytes边界和JSON判别再command，不把全帧或Bitmap过JS。
@@ -238,7 +250,7 @@ seed static test验证新能力属于PROJECTscope及同源catalog；完整dry-ru
 本轮不执行seed/reset。未来仅明确运行授权可执行；完整seed从reset后空库开始，冲突失败，不做重跑兼容。当前task不授予实施agent自行reset权。
 ### 10b.6 父流程、身份、网络
 owner-command seed使用现有受管workspace会话/权限写入，凭据取既有环境变量，不在文档写值；具体变量名和fixturekey见附件§5。完整seed角色父步骤先于业务fixture；不单起seed绕父流程。
-媒体服务未来由r5-livekit-resident受管在同一受信远端非生产host起单实例官方GoLiveKit/所需Caddy或TURN，具体版本/digest/端口来自CP01冻结部署文件。不增加业务deployable，不本地起Java/DB/Doris，不建立PG tunnel。HTTP/TDS沿既有受管tunnel/reverse；RTC需要真实可达地址，不能用adb reverse冒充UDP通路。
+本轮 LiveKit 仅在受信远端非生产host起单实例官方Go服务，终端信令使用 `ws://47.106.121.27:7880`，服务端API使用 `http://47.106.121.27:7880`；不配置域名、证书、TLS、Caddy或TURN。画面媒体使用 LiveKit 直接 WebRTC/UDP 通路，不能用adb reverse冒充UDP通路。此项是本轮运行约束，不改正式需求长期传输范围。不增加业务deployable，不本地起Java/DB/Doris，不建立PG tunnel。HTTP/TDS沿既有受管tunnel/reverse。
 双虚拟机沿阶段C最终driver owned adb forward/reverse实现pair控制面；每台explicit serial，主副身份/映射run-owned。未具备两模拟器通路停在CP01，不自造pair runner。
 
 ## 11. 验收场景设计
@@ -267,11 +279,12 @@ owner-command seed使用现有受管workspace会话/权限写入，凭据取既�
 | 项 | 状态 | 本批文档允许 | 实施前禁止/关闭目标 |
 | --- | --- | --- | --- |
 | 看图 | ACCEPTED@2026-10-10 | Dexter已确认三个交互面线框 | 只确认交互设计，真实UI与媒体/触摸行为仍NOT_RUN |
-| 阶段C最终出口 | OPEN | 当前source导航 | 重开最终credential/TDC/topology/driver，不能继承中间字节 |
+| 阶段C最终出口 | 整批 GO 未宣称；R4差量已局部闭合 | R4 intake记录两个确认项的源码修复、focused test/typecheck及历史动态证据边界；未重跑全矩阵 | 远控CP-01重开credential/TDC/topology/driver及受影响修复；按Dexter指派直接继续，不将整批Stage C复评作为前置 |
 | T01 SDK/bridge/JVM | OPEN | 精确候选与官方source导航 | 实际解析、public frame桥及双track证明后冻结port供应商实现 |
 | T02持续捕获/覆盖 | OPEN | Window与普通控件分母 | 首帧不能代替持续两屏/native释放 |
 | T03正常输入 | OPEN | MotionEvent接缝与singlepointer | 禁直接callback、Accessibility或第二inputengine替代 |
-| T04网络/停止/预算 | OPEN | 官方Compose方向/当前managed形态 | 域名TLS/ICE/TURN、SDK事件、资源budget实测后冻结 |
+| T04网络/停止/预算 | OPEN | 本轮裸HTTP/WS与直接WebRTC/UDP路径 | 核实HTTP/WS、直接媒体UDP、SDK事件与资源预算；域名/TLS/TURN本轮 `NOT_COVERED` |
+执行顺序：T-01服务端SDK slice 在CP-01完成focused proof；T-01应用侧桥接/双轨及T-02、T-03、T-04在CP-03正式Runtime owner/adapter接线后完成。所有T项整体仍为OPEN，直到各自证据齐全；不因该顺序变化删减原判据，也不在CP-01增加临时业务入口。
 这些技术项不另立产品方案；失败只报告最小具体缺口交Dexter，不能私自换路线或少测拓扑。没有本轮新增库resolved version，不伪造锁文件结果。
 
 ## 13. 停机条件

@@ -144,6 +144,16 @@ export type {
   TopologyHostCall,
   TopologyHostPort,
 } from './types/topologyHost';
+export type {
+  RemoteControlScreen,
+  RemoteControlPointerPhase,
+  RemoteControlLocalScreen,
+  RemoteControlSessionInput,
+  RemoteControlPointerInput,
+  RemoteControlPortEvent,
+  RemoteControlCleanupFacts,
+  RemoteControlPort,
+} from './types/remoteControl';
 export type {NativeLoadingCapability, NativeLoadingHideResult, NativeLoadingTarget} from './types/nativeLoading';
 export type {
   LoggerConsoleBinding,
@@ -170,3 +180,4 @@ export {unavailableConnectorPort} from './defaults/unavailableConnector';
 export {unavailableUpdatePort} from './defaults/unavailableUpdate';
 export {unavailableLogUploadPort} from './defaults/unavailableLogUpload';
 export {unavailableTopologyHostPort} from './defaults/unavailableTopologyHost';
+export {unavailableRemoteControlPort} from './defaults/unavailableRemoteControl';

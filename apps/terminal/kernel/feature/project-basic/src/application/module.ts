@@ -13,6 +13,7 @@ import {
   selectProjectOrganizationPath,
   selectProjectTerminalUpdateCandidate,
   selectProjectTerminalUpdateContextFacts,
+  selectProjectFixedTerminalUpdateContextFacts,
   selectProjectTerminalUpdateRules,
   selectRegion,
 } from '../selectors/selectors';
@@ -49,6 +50,7 @@ export const createProjectBasicModule = (): RuntimeModule => {
       selectProjectOrganizationPath,
       selectProjectTerminalUpdateCandidate,
       selectProjectTerminalUpdateContextFacts,
+      selectProjectFixedTerminalUpdateContextFacts,
       selectProjectTerminalUpdateRules,
       selectRegion,
     ],

@@ -13,6 +13,7 @@ final class BackendAcceptanceScenarioCatalog {
                 new CommercialContractAcceptanceScenarios(host),
                 new AssetAcceptanceScenarios(host),
                 new TerminalUpdateAcceptanceScenarios(host),
+                new RemoteControlAcceptanceScenarios(host),
                 new CatalogAcceptanceScenarios(host),
                 new AuditAcceptanceScenarios(host),
                 new ExtensionAcceptanceScenarios(host),

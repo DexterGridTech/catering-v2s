@@ -22,27 +22,135 @@ import {
   STOP_REMOTE_DIAGNOSTIC_REFRESH_KEYS,
   validateManagedRemoteJavaBinding,
 } from './r5-dev-runner.mjs';
-import {createHaproxyConfiguration, remoteHaproxyIdentityMatches, validateManagedTdsCluster, validateRemoteHaproxyControl} from './r5-managed-terminal-topology.mjs';
+import {LIVEKIT_RESIDENT_SIGNAL_URL} from './r5-livekit-resident.mjs';
+import {
+  createHaproxyConfiguration,
+  remoteHaproxyIdentityMatches,
+  validateManagedTdsCluster,
+  validateRemoteHaproxyControl,
+} from './r5-managed-terminal-topology.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const start = path.join(root, 'scripts/dev/start');
 const runnerSource = readFileSync(path.join(root, 'scripts/dev/r5-dev-runner.mjs'), 'utf8');
 
 test('managed DEV diagnostic projection retains only bounded safe CBS and TDS event fields', () => {
-  const cbs = projectManagedDevDiagnosticEvents('cbs', [
-    '2026-10-10 INFO event=TERMINAL_UPDATE_REPORT_ACCEPTED terminalRef=term-1 reportId=report-1 taskId=task-1 outcome=SUCCEEDED Authorization=Bearer-secret body=private',
-    '2026-10-10 INFO event=TERMINAL_UPDATE_ARTIFACT_STAGE requestId=req-1 stage=PRIVATE_OBJECT_PUT outcome=STARTED byteSize=18000000 elapsedMs=0 path=/tmp/private token=secret',
-    '2026-10-10 INFO event=UNRELATED_REQUEST_COMPLETED login=private-user password=private-secret',
-  ].join('\n'));
-  const tds = projectManagedDevDiagnosticEvents('tds', [
-    '2026-10-10 INFO event=tds_ws_session_registered connectionId=connection-1 sessionId=session-1 generation=4 credential=private-secret payload=private',
-    '2026-10-10 INFO event=unapproved_event sessionId=session-2 token=private-token',
-  ].join('\n'));
+  const cbs = projectManagedDevDiagnosticEvents(
+    'cbs',
+    [
+      '2026-10-10 INFO event=TERMINAL_UPDATE_REPORT_ACCEPTED terminalRef=term-1 reportId=report-1 taskId=task-1 outcome=SUCCEEDED Authorization=Bearer-secret body=private',
+      '2026-10-10 INFO event=REQUEST_COMPLETED operationId=submitTerminalUpdateReport requestId=req-submit correlationId=corr-submit phase=EDGE outcome=SUCCEEDED status=200 durationMillis=12 databaseOperationCount=3 databaseDurationMillis=9 password=private-secret body=private',
+      '2026-10-10 INFO event=REQUEST_COMPLETED operationId=getOperationsProjectTerminalUpdateReportHistoryPage requestId=req-history correlationId=corr-history phase=EDGE outcome=FAILED status=503 errorCode=PLATFORM_DEPENDENCY_UNAVAILABLE durationMillis=20 databaseOperationCount=2 databaseDurationMillis=18',
+      '2026-10-10 INFO security-diagnostic correlationId=corr-login-start requestId=req-login-start operationId=operationsWorkspacePasswordLogin event=REQUEST_STARTED phase=EDGE outcome=STARTED durationMillis=0 status=unassigned errorCode=unassigned databaseOperationCount=0 databaseDurationMillis=0 login=private-user password=private-secret',
+      '2026-10-10 INFO security-diagnostic correlationId=corr-login-ok requestId=req-login-ok operationId=operationsWorkspacePasswordLogin event=REQUEST_SUCCEEDED phase=EDGE outcome=SUCCEEDED durationMillis=318 status=200 errorCode=unassigned databaseOperationCount=2 databaseDurationMillis=14 login=private-user password=private-secret',
+      '2026-10-10 INFO security-diagnostic correlationId=corr-login-fail requestId=req-login-fail operationId=operationsWorkspacePasswordLogin event=REQUEST_FAILED phase=EDGE outcome=FAILED durationMillis=5501 status=503 errorCode=PLATFORM_DEPENDENCY_UNAVAILABLE databaseOperationCount=2 databaseDurationMillis=14 login=private-user password=private-secret',
+      '2026-10-10 INFO event=REQUEST_COMPLETED operationId=operationsWorkspacePasswordLogin requestId=req-login-wrong-shape status=200 login=private-user password=private-secret',
+      '2026-10-10 INFO event=REQUEST_COMPLETED operationId=getOperationsStoreTerminals requestId=req-unrelated correlationId=corr-unrelated status=200 durationMillis=3 login=private-user password=private-secret',
+      '2026-10-10 INFO event=TERMINAL_UPDATE_REPORT_HISTORY_READ operationId=getOperationsProjectTerminalUpdateReportHistoryPage requestId=req-history correlationId=corr-history terminalRef=term-1 projectRef=project-1 itemCount=20 firstReportSequence=42 lastReportSequence=23 cursorPresent=true firstReceivedAtEpochMillis=123456789 lastReceivedAtEpochMillis=123456789 firstTaskId=55555555-5555-4555-8555-555555555555 lastTaskId=66666666-6666-4666-8666-666666666666 nextPagePresent=true elapsedMs=4 rawCursor=opaque-cursor rawBody=private',
+      '2026-10-10 INFO event=TERMINAL_UPDATE_ARTIFACT_STAGE requestId=req-1 stage=PRIVATE_OBJECT_PUT outcome=STARTED byteSize=18000000 elapsedMs=0 path=/tmp/private token=secret',
+      '2026-10-10 INFO event=UNRELATED_REQUEST_COMPLETED login=private-user password=private-secret',
+    ].join('\n'),
+  );
+  const tds = projectManagedDevDiagnosticEvents(
+    'tds',
+    [
+      '2026-10-10 INFO event=tds_ws_session_registered connectionId=connection-1 sessionId=session-1 generation=4 credential=private-secret payload=private',
+      '2026-10-10 INFO event=unapproved_event sessionId=session-2 token=private-token',
+    ].join('\n'),
+  );
   const serialized = JSON.stringify({cbs, tds});
-  assert.equal(cbs.length, 2);
+  assert.equal(cbs.length, 8);
   assert.equal(tds.length, 1);
   assert.equal(cbs[0].event, 'TERMINAL_UPDATE_REPORT_ACCEPTED');
   assert.deepEqual(cbs[1], {
+    source: 'cbs',
+    event: 'REQUEST_COMPLETED',
+    operationId: 'submitTerminalUpdateReport',
+    requestId: 'req-submit',
+    correlationId: 'corr-submit',
+    phase: 'EDGE',
+    outcome: 'SUCCEEDED',
+    status: '200',
+    durationMillis: '12',
+    databaseOperationCount: '3',
+    databaseDurationMillis: '9',
+  });
+  assert.deepEqual(cbs[2], {
+    source: 'cbs',
+    event: 'REQUEST_COMPLETED',
+    operationId: 'getOperationsProjectTerminalUpdateReportHistoryPage',
+    requestId: 'req-history',
+    correlationId: 'corr-history',
+    phase: 'EDGE',
+    outcome: 'FAILED',
+    status: '503',
+    errorCode: 'PLATFORM_DEPENDENCY_UNAVAILABLE',
+    durationMillis: '20',
+    databaseOperationCount: '2',
+    databaseDurationMillis: '18',
+  });
+  assert.deepEqual(cbs[3], {
+    source: 'cbs',
+    event: 'REQUEST_STARTED',
+    operationId: 'operationsWorkspacePasswordLogin',
+    requestId: 'req-login-start',
+    correlationId: 'corr-login-start',
+    phase: 'EDGE',
+    outcome: 'STARTED',
+    status: 'unassigned',
+    errorCode: 'unassigned',
+    durationMillis: '0',
+    databaseOperationCount: '0',
+    databaseDurationMillis: '0',
+  });
+  assert.deepEqual(cbs[4], {
+    source: 'cbs',
+    event: 'REQUEST_SUCCEEDED',
+    operationId: 'operationsWorkspacePasswordLogin',
+    requestId: 'req-login-ok',
+    correlationId: 'corr-login-ok',
+    phase: 'EDGE',
+    outcome: 'SUCCEEDED',
+    status: '200',
+    errorCode: 'unassigned',
+    durationMillis: '318',
+    databaseOperationCount: '2',
+    databaseDurationMillis: '14',
+  });
+  assert.deepEqual(cbs[5], {
+    source: 'cbs',
+    event: 'REQUEST_FAILED',
+    operationId: 'operationsWorkspacePasswordLogin',
+    requestId: 'req-login-fail',
+    correlationId: 'corr-login-fail',
+    phase: 'EDGE',
+    outcome: 'FAILED',
+    status: '503',
+    errorCode: 'PLATFORM_DEPENDENCY_UNAVAILABLE',
+    durationMillis: '5501',
+    databaseOperationCount: '2',
+    databaseDurationMillis: '14',
+  });
+  assert.deepEqual(cbs[6], {
+    source: 'cbs',
+    event: 'TERMINAL_UPDATE_REPORT_HISTORY_READ',
+    operationId: 'getOperationsProjectTerminalUpdateReportHistoryPage',
+    requestId: 'req-history',
+    correlationId: 'corr-history',
+    terminalRef: 'term-1',
+    projectRef: 'project-1',
+    itemCount: '20',
+    firstReportSequence: '42',
+    lastReportSequence: '23',
+    cursorPresent: 'true',
+    firstReceivedAtEpochMillis: '123456789',
+    lastReceivedAtEpochMillis: '123456789',
+    firstTaskId: '55555555-5555-4555-8555-555555555555',
+    lastTaskId: '66666666-6666-4666-8666-666666666666',
+    nextPagePresent: 'true',
+    elapsedMs: '4',
+  });
+  assert.deepEqual(cbs[7], {
     source: 'cbs',
     event: 'TERMINAL_UPDATE_ARTIFACT_STAGE',
     requestId: 'req-1',
@@ -52,10 +160,79 @@ test('managed DEV diagnostic projection retains only bounded safe CBS and TDS ev
     byteSize: '18000000',
   });
   assert.equal(tds[0].event, 'tds_ws_session_registered');
-  for (const forbidden of ['Bearer-secret', 'private-user', 'private-secret', 'private-token', 'private', '/tmp/private', 'secret']) {
+  for (const forbidden of [
+    'Bearer-secret',
+    'private-user',
+    'private-secret',
+    'private-token',
+    'private',
+    '/tmp/private',
+    'secret',
+    'opaque-cursor',
+  ]) {
     assert.equal(serialized.includes(forbidden), false);
   }
-  assert.throws(() => projectManagedDevDiagnosticEvents('unknown', 'event=tds_ws_ready'), /TERMINAL_ACCEPTANCE_MANAGED_DIAGNOSTIC_INPUT_INVALID/);
+  assert.throws(
+    () => projectManagedDevDiagnosticEvents('unknown', 'event=tds_ws_ready'),
+    /TERMINAL_ACCEPTANCE_MANAGED_DIAGNOSTIC_INPUT_INVALID/,
+  );
+});
+
+test('managed DEV diagnostics retain correlated remote-control registration failures without response bodies', () => {
+  const projected = projectManagedDevDiagnosticEvents(
+    'cbs',
+    [
+      '2026-10-12 ERROR event=REQUEST_FAILED operationId=registerTerminalRemoteControl requestId=req-register correlationId=corr-register phase=EDGE outcome=FAILED status=500 errorCode=INTERNAL_ERROR sessionId=session-1 terminalRef=terminal-1 body=private-response token=private-token',
+      '2026-10-12 WARN event=TERMINAL_REMOTE_CONTROL_REQUEST_REJECTED sessionId=session-1 terminalRef=terminal-1 failure=DEPENDENCY_UNAVAILABLE rawBody=private-response',
+    ].join('\n'),
+  );
+
+  assert.deepEqual(projected, [
+    {
+      source: 'cbs',
+      event: 'REQUEST_FAILED',
+      operationId: 'registerTerminalRemoteControl',
+      requestId: 'req-register',
+      correlationId: 'corr-register',
+      terminalRef: 'terminal-1',
+      sessionId: 'session-1',
+      outcome: 'FAILED',
+      status: '500',
+      phase: 'EDGE',
+      errorCode: 'INTERNAL_ERROR',
+    },
+    {
+      source: 'cbs',
+      event: 'TERMINAL_REMOTE_CONTROL_REQUEST_REJECTED',
+      terminalRef: 'terminal-1',
+      sessionId: 'session-1',
+      failure: 'DEPENDENCY_UNAVAILABLE',
+    },
+  ]);
+  const serialized = JSON.stringify(projected);
+  assert.equal(serialized.includes('private-response'), false);
+  assert.equal(serialized.includes('private-token'), false);
+});
+
+test('managed DEV diagnostics retain only safe cause metadata for remote owner failures', () => {
+  const projected = projectManagedDevDiagnosticEvents(
+    'cbs',
+    '2026-10-12 ERROR event=OWNER_RESULT_UNKNOWN operationId=registerTerminalRemoteControl requestId=req-register correlationId=corr-register errorCode=PLATFORM_COMMON_RESULT_UNKNOWN exceptionType=DuplicateKeyException rootCauseType=SQLException exceptionOrigin=com.catering.v2s.terminalcontrol.Owner#register sqlState=23505 rawMessage=private-detail',
+  );
+
+  assert.deepEqual(projected, [{
+    source: 'cbs',
+    event: 'OWNER_RESULT_UNKNOWN',
+    operationId: 'registerTerminalRemoteControl',
+    requestId: 'req-register',
+    correlationId: 'corr-register',
+    errorCode: 'PLATFORM_COMMON_RESULT_UNKNOWN',
+    exceptionType: 'DuplicateKeyException',
+    rootCauseType: 'SQLException',
+    exceptionOrigin: 'com.catering.v2s.terminalcontrol.Owner#register',
+    sqlState: '23505',
+  }]);
+  assert.equal(JSON.stringify(projected).includes('private-detail'), false);
 });
 
 test('managed HAProxy image resolution uses the remote Docker daemon and pins RepoDigest', () => {
@@ -68,11 +245,15 @@ test('managed HAProxy image resolution uses the remote Docker daemon and pins Re
   const imageResolveIndex = startBody.indexOf('await resolveRemoteHaproxyDigest(');
   assert.ok(imageResolveIndex >= 0 && imageResolveIndex < startBody.indexOf('await startRemoteJava('));
   assert.ok(imageResolveIndex < startBody.indexOf('await startRemoteTds('));
-  const runImageScript = repoDigest => childProcess.spawnSync(
-    'bash',
-    ['-c', `docker() {\n  if [ "$1" = pull ]; then test "$2" = docker.io/library/haproxy:3.4.6; return; fi\n  if [ "$1" = image ] && [ "$2" = inspect ]; then printf '%s\\n' "$TEST_REPO_DIGEST"; return; fi\n  return 90\n}\n${imageScript}`],
-    {cwd: root, encoding: 'utf8', env: {...process.env, TEST_REPO_DIGEST: repoDigest}},
-  );
+  const runImageScript = repoDigest =>
+    childProcess.spawnSync(
+      'bash',
+      [
+        '-c',
+        `docker() {\n  if [ "$1" = pull ]; then test "$2" = docker.io/library/haproxy:3.4.6; return; fi\n  if [ "$1" = image ] && [ "$2" = inspect ]; then printf '%s\\n' "$TEST_REPO_DIGEST"; return; fi\n  return 90\n}\n${imageScript}`,
+      ],
+      {cwd: root, encoding: 'utf8', env: {...process.env, TEST_REPO_DIGEST: repoDigest}},
+    );
   for (const repository of ['docker.io/library/haproxy', 'library/haproxy', 'haproxy']) {
     const resolved = runImageScript(`${repository}@${digest}`);
     assert.equal(resolved.status, 0, resolved.stderr);
@@ -80,7 +261,10 @@ test('managed HAProxy image resolution uses the remote Docker daemon and pins Re
   }
   const wrongRepository = runImageScript(`quay.io/library/haproxy@${digest}`);
   assert.equal(wrongRepository.status, 65);
-  assert.match(wrongRepository.stderr, /REMOTE_HAPROXY_PULL=PASS REMOTE_HAPROXY_REPODIGESTS=quay\.io\/library\/haproxy@sha256:/);
+  assert.match(
+    wrongRepository.stderr,
+    /REMOTE_HAPROXY_PULL=PASS REMOTE_HAPROXY_REPODIGESTS=quay\.io\/library\/haproxy@sha256:/,
+  );
 });
 
 test('managed TDS topology has exact three-node identity and two protected ingress backends', () => {
@@ -99,34 +283,83 @@ test('managed TDS topology has exact three-node identity and two protected ingre
     rssBudgetMiB: 512,
     logPath: `${remoteRoot}/results/tds-${name}.log`,
   }));
-  assert.equal(validateManagedTdsCluster({runId, remoteRoot, nodes, entryPorts: {one: 18083, two: 18087}, hostBootId}).nodes.length, 3);
+  assert.equal(
+    validateManagedTdsCluster({runId, remoteRoot, nodes, entryPorts: {one: 18083, two: 18087}, hostBootId}).nodes
+      .length,
+    3,
+  );
   assert.throws(
-    () => validateManagedTdsCluster({
-      runId,
-      remoteRoot,
-      nodes: nodes.map(({instanceName, ...node}) => ({...node, name: instanceName})),
-      entryPorts: {one: 18083, two: 18087},
-      hostBootId,
-    }),
+    () =>
+      validateManagedTdsCluster({
+        runId,
+        remoteRoot,
+        nodes: nodes.map(({instanceName, ...node}) => ({...node, name: instanceName})),
+        entryPorts: {one: 18083, two: 18087},
+        hostBootId,
+      }),
     /R5_TDS_CLUSTER_NODE_NAME_INVALID/,
   );
-  assert.throws(() => validateManagedTdsCluster({runId, remoteRoot, nodes: nodes.slice(0, 2), entryPorts: {one: 18083, two: 18087}, hostBootId}), /R5_TDS_CLUSTER_NODE_COUNT_INVALID/);
-  assert.throws(() => validateManagedTdsCluster({runId, remoteRoot, nodes: nodes.map((node, index) => index === 2 ? {...node, nodeId: 'tds-a'} : node), entryPorts: {one: 18083, two: 18087}, hostBootId}), /R5_TDS_CLUSTER_NODE_ID_INVALID/);
-  assert.throws(() => validateManagedTdsCluster({runId, remoteRoot, nodes, entryPorts: {one: 18084, two: 18087}, hostBootId}), /R5_TDS_CLUSTER_ENTRY_PORTS_INVALID/);
-  assert.throws(() => validateManagedTdsCluster({runId, remoteRoot, nodes, entryPorts: {one: 18083, two: 18087}, hostBootId: 'fedcba9876543210fedcba9876543210'}), /R5_TDS_CLUSTER_NODE_IDENTITY_INVALID/);
+  assert.throws(
+    () =>
+      validateManagedTdsCluster({
+        runId,
+        remoteRoot,
+        nodes: nodes.slice(0, 2),
+        entryPorts: {one: 18083, two: 18087},
+        hostBootId,
+      }),
+    /R5_TDS_CLUSTER_NODE_COUNT_INVALID/,
+  );
+  assert.throws(
+    () =>
+      validateManagedTdsCluster({
+        runId,
+        remoteRoot,
+        nodes: nodes.map((node, index) => (index === 2 ? {...node, nodeId: 'tds-a'} : node)),
+        entryPorts: {one: 18083, two: 18087},
+        hostBootId,
+      }),
+    /R5_TDS_CLUSTER_NODE_ID_INVALID/,
+  );
+  assert.throws(
+    () => validateManagedTdsCluster({runId, remoteRoot, nodes, entryPorts: {one: 18084, two: 18087}, hostBootId}),
+    /R5_TDS_CLUSTER_ENTRY_PORTS_INVALID/,
+  );
+  assert.throws(
+    () =>
+      validateManagedTdsCluster({
+        runId,
+        remoteRoot,
+        nodes,
+        entryPorts: {one: 18083, two: 18087},
+        hostBootId: 'fedcba9876543210fedcba9876543210',
+      }),
+    /R5_TDS_CLUSTER_NODE_IDENTITY_INVALID/,
+  );
 
-  const config = createHaproxyConfiguration({entryOnePort: 18083, entryTwoPort: 18087, nodePorts: {a: 18084, b: 18085, c: 18086}});
+  const config = createHaproxyConfiguration({
+    entryOnePort: 18083,
+    entryTwoPort: 18087,
+    nodePorts: {a: 18084, b: 18085, c: 18086},
+  });
   assert.match(config, /stats socket \/run\/haproxy-control\/admin\.sock mode 600 level admin/);
   assert.match(config, /frontend terminal_entry_one[\s\S]*default_backend terminal_nodes_ab/);
   assert.match(config, /frontend terminal_entry_two[\s\S]*default_backend terminal_node_c/);
-  assert.match(config, /backend terminal_nodes_ab[\s\S]*balance roundrobin[\s\S]*server tds-a 127\.0\.0\.1:18084 check[\s\S]*server tds-b 127\.0\.0\.1:18085 check/);
+  assert.match(
+    config,
+    /backend terminal_nodes_ab[\s\S]*balance roundrobin[\s\S]*server tds-a 127\.0\.0\.1:18084 check[\s\S]*server tds-b 127\.0\.0\.1:18085 check/,
+  );
   assert.match(config, /backend terminal_node_c[\s\S]*server tds-c 127\.0\.0\.1:18086 check/);
   assert.equal((config.match(/http-request deny deny_status 403 if actuator_root or actuator_tree/g) ?? []).length, 2);
   assert.equal((config.match(/timeout tunnel 180s/g) ?? []).length, 1);
   assert.equal((config.match(/^  timeout check 1s$/gm) ?? []).length, 1);
   assert.equal((config.match(/^  default-server inter 1s fall 1 rise 1 check$/gm) ?? []).length, 2);
   assert.doesNotMatch(config, /^  default-server .*\btimeout\b/m);
-  assert.throws(() => createHaproxyConfiguration({entryOnePort: 18083, entryTwoPort: 18084, nodePorts: {a: 18084, b: 18085, c: 18086}}), /R5_TDS_TOPOLOGY_PORT_COLLISION/);
+  assert.throws(
+    () =>
+      createHaproxyConfiguration({entryOnePort: 18083, entryTwoPort: 18084, nodePorts: {a: 18084, b: 18085, c: 18086}}),
+    /R5_TDS_TOPOLOGY_PORT_COLLISION/,
+  );
 
   const haproxyControl = {
     schemaVersion: 1,
@@ -151,7 +384,10 @@ test('managed TDS topology has exact three-node identity and two protected ingre
   assert.equal(validateRemoteHaproxyControl(haproxyControl), haproxyControl);
   assert.equal(remoteHaproxyIdentityMatches(haproxyControl, {...haproxyControl}), true);
   assert.equal(remoteHaproxyIdentityMatches(haproxyControl, {...haproxyControl, configSha256: 'd'.repeat(64)}), false);
-  assert.throws(() => validateRemoteHaproxyControl({...haproxyControl, entryPorts: {one: 18083, two: 18084}}), /R5_REMOTE_HAPROXY_CONTROL_PORTS_INVALID/);
+  assert.throws(
+    () => validateRemoteHaproxyControl({...haproxyControl, entryPorts: {one: 18083, two: 18084}}),
+    /R5_REMOTE_HAPROXY_CONTROL_PORTS_INVALID/,
+  );
 });
 
 test('managed HAProxy stop proves exact absence without requiring a deleted control file', () => {
@@ -178,20 +414,32 @@ test('managed HAProxy stop proves exact absence without requiring a deleted cont
     controlSocketPath: `${remoteRoot}/results/haproxy-control/admin.sock`,
     phase: 'READY',
   };
-  const identity = state => [
-    control.containerId,
-    control.containerImageId,
-    control.imageRef,
-    control.runId,
-    control.remoteRoot,
-    control.hostBootId,
-    control.imageRef,
-    control.configSha256,
-    state,
-  ].join('|');
+  const identity = state =>
+    [
+      control.containerId,
+      control.containerImageId,
+      control.imageRef,
+      control.runId,
+      control.remoteRoot,
+      control.hostBootId,
+      control.imageRef,
+      control.configSha256,
+      state,
+    ].join('|');
   const script = remoteHaproxyStopScript(control);
-  const execute = ({exists = false, inspect = '', exactPresent = false, runLabelPresent = false,
-    bootId = hostBootId, dockerAvailable = true} = {}) => childProcess.spawnSync('bash', ['-c', `
+  const execute = ({
+    exists = false,
+    inspect = '',
+    exactPresent = false,
+    runLabelPresent = false,
+    bootId = hostBootId,
+    dockerAvailable = true,
+  } = {}) =>
+    childProcess.spawnSync(
+      'bash',
+      [
+        '-c',
+        `
 docker() {
   if [ "$1" = info ]; then [ "$DOCKER_AVAILABLE" = true ]; return; fi
   if [ "$1" = inspect ]; then
@@ -219,13 +467,23 @@ cat() {
   if [ "$1" = /proc/sys/kernel/random/boot_id ]; then printf '%s\\n' "$FAKE_BOOT_ID"; else command cat "$@"; fi
 }
 ${script}
-`], {
-    cwd: root,
-    encoding: 'utf8',
-    env: {...process.env, CONTAINER_EXISTS: String(exists), EXACT_PRESENT: String(exactPresent),
-      RUN_LABEL_PRESENT: String(runLabelPresent), CONTAINER_ID: control.containerId, FAKE_INSPECT: inspect,
-      FAKE_BOOT_ID: bootId, DOCKER_AVAILABLE: String(dockerAvailable)},
-  });
+`,
+      ],
+      {
+        cwd: root,
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          CONTAINER_EXISTS: String(exists),
+          EXACT_PRESENT: String(exactPresent),
+          RUN_LABEL_PRESENT: String(runLabelPresent),
+          CONTAINER_ID: control.containerId,
+          FAKE_INSPECT: inspect,
+          FAKE_BOOT_ID: bootId,
+          DOCKER_AVAILABLE: String(dockerAvailable),
+        },
+      },
+    );
 
   const absent = execute();
   assert.equal(absent.status, 0, `${absent.stderr}\n${absent.stdout}`);
@@ -237,7 +495,11 @@ ${script}
 
   const wrongBoot = execute({bootId: 'fedcba9876543210fedcba9876543210'});
   assert.notEqual(wrongBoot.status, 0);
-  const wrongIdentity = execute({exists: true, exactPresent: true, inspect: identity('true').replace(control.runId, 'r5-dev-other')});
+  const wrongIdentity = execute({
+    exists: true,
+    exactPresent: true,
+    inspect: identity('true').replace(control.runId, 'r5-dev-other'),
+  });
   assert.notEqual(wrongIdentity.status, 0);
   const runScopedResourceRemains = execute({runLabelPresent: true});
   assert.notEqual(runScopedResourceRemains.status, 0);
@@ -310,10 +572,7 @@ test('remote Java source sync excludes non-runtime repository payloads', () => {
 test('DEV stop refreshes only bounded remote diagnostics', () => {
   assert.deepEqual(STOP_REMOTE_DIAGNOSTIC_REFRESH_KEYS, ['seedEventsPath', 'statementDictionaryPath']);
   assert.doesNotMatch(runnerSource, /refreshManagedDiagnosticFiles\(manifest\)/);
-  assert.match(
-    runnerSource,
-    /refreshManagedDiagnosticFiles\(manifest, STOP_REMOTE_DIAGNOSTIC_REFRESH_KEYS\)/,
-  );
+  assert.match(runnerSource, /refreshManagedDiagnosticFiles\(manifest, STOP_REMOTE_DIAGNOSTIC_REFRESH_KEYS\)/);
 });
 
 test('DEV stop retains remote-log evidence for already-stopped Java', () => {
@@ -517,14 +776,19 @@ test('remote TDS launch, readiness, logs and stop are independently manifest-bou
   const tdsAttempt = startBody.indexOf('remoteTdsStartAttempted.add(', principalProvision);
   const tdsStart = startBody.indexOf('await startRemoteTds(', tdsAttempt);
   assert.ok(javaStart >= 0 && businessReady > javaStart);
-  assert.ok(principalProvision > businessReady && tdsAttempt > principalProvision && tdsStart > tdsAttempt,
-    'business Flyway readiness must precede schema grants, which must precede TDS process ownership');
+  assert.ok(
+    principalProvision > businessReady && tdsAttempt > principalProvision && tdsStart > tdsAttempt,
+    'business Flyway readiness must precede schema grants, which must precede TDS process ownership',
+  );
   const tdsFunction = runnerSource.slice(
     runnerSource.indexOf('export async function startRemoteTds('),
     runnerSource.indexOf('export function haproxyImageDigestLookupScript('),
   );
-  assert.doesNotMatch(tdsFunction, /provisionRemoteTdsDatabasePrincipal\(/,
-    'TDS process launch must not combine schema grants with process-start cleanup accounting');
+  assert.doesNotMatch(
+    tdsFunction,
+    /provisionRemoteTdsDatabasePrincipal\(/,
+    'TDS process launch must not combine schema grants with process-start cleanup accounting',
+  );
   const tdsLaunchStart = startBody.indexOf('for (const spec of tdsNodeSpecs)');
   const clusterValidation = startBody.indexOf('const validatedCluster', tdsLaunchStart);
   const tdsLaunchAndReadiness = startBody.slice(tdsLaunchStart, clusterValidation);
@@ -541,14 +805,20 @@ test('TDS terminal-control grants and probes wait for the complete CP-06 object 
     runnerSource.indexOf('function provisionRemoteTdsDatabasePrincipal('),
     runnerSource.indexOf('function resolveManagedAcceptanceManifest('),
   );
-  assert.match(principalProvision, /GRANT USAGE ON SCHEMA platform_workspace, store_terminal, organization, terminal_binding, terminal_connection, contract, terminal_update TO \$\{role\}/);
+  assert.match(
+    principalProvision,
+    /GRANT USAGE ON SCHEMA platform_workspace, store_terminal, organization, terminal_binding, terminal_connection, contract, terminal_update TO \$\{role\}/,
+  );
   assert.match(
     principalProvision,
     /printf %s \$\{quote\(encodedSql\)\} \| base64 -d \| docker exec -i catering-postgres psql -U catering -d "\$database" -v ON_ERROR_STOP=1 -q/,
     'schema-scoped grants must execute against the application database, not the postgres maintenance database',
   );
-  assert.doesNotMatch(principalProvision, /GRANT USAGE ON SCHEMA [^;]*terminal_control TO \$\{role\}/,
-    'the stage-independent grant list must not name an object that CP-06 creates');
+  assert.doesNotMatch(
+    principalProvision,
+    /GRANT USAGE ON SCHEMA [^;]*terminal_control TO \$\{role\}/,
+    'the stage-independent grant list must not name an object that CP-06 creates',
+  );
   assert.match(principalProvision, /to_regnamespace\('terminal_control'\)/);
   assert.match(principalProvision, /TDS_TERMINAL_CONTROL_ACCESS_DEFERRED_OBJECTS_ABSENT/);
   assert.match(principalProvision, /TDS_TERMINAL_CONTROL_OBJECT_SET_INCOMPLETE/);
@@ -605,13 +875,26 @@ test('DEV WebSocket readiness probe uses the TDS registered route and a route-sa
 });
 
 test('DEV tunnel maps only approved entry ports and keeps TDS nodes, databases, and Doris private', () => {
-  const openTunnelSource = runnerSource.match(/async function openTunnel\(env, ports\) \{[\s\S]*?\n\}\nasync function /)?.[0];
+  const openTunnelSource = runnerSource.match(
+    /async function openTunnel\(env, ports\) \{[\s\S]*?\n\}\nasync function /,
+  )?.[0];
   assert.ok(openTunnelSource, 'openTunnel implementation must remain directly inspectable');
-  assert.match(openTunnelSource, /\$\{ports\.tds\}:127\.0\.0\.1:\$\{env\.environment\.V2S_DEV_REMOTE_TDS_ENTRY_ONE_PORT\}/);
-  assert.match(openTunnelSource, /\$\{ports\.tdsSecondary\}:127\.0\.0\.1:\$\{env\.environment\.V2S_DEV_REMOTE_TDS_ENTRY_TWO_PORT\}/);
-  const forwardedPorts = [...openTunnelSource.matchAll(/`\$\{ports\.([A-Za-z]+)\}:127\.0\.0\.1:\$\{env\.environment\.([A-Z0-9_]+)\}`/g)]
-    .map(([, local, remote]) => [local, remote]);
-  assert.equal((openTunnelSource.match(/'-L'/g) ?? []).length, 4, 'the tunnel must expose only the four approved local forwards');
+  assert.match(
+    openTunnelSource,
+    /\$\{ports\.tds\}:127\.0\.0\.1:\$\{env\.environment\.V2S_DEV_REMOTE_TDS_ENTRY_ONE_PORT\}/,
+  );
+  assert.match(
+    openTunnelSource,
+    /\$\{ports\.tdsSecondary\}:127\.0\.0\.1:\$\{env\.environment\.V2S_DEV_REMOTE_TDS_ENTRY_TWO_PORT\}/,
+  );
+  const forwardedPorts = [
+    ...openTunnelSource.matchAll(/`\$\{ports\.([A-Za-z]+)\}:127\.0\.0\.1:\$\{env\.environment\.([A-Z0-9_]+)\}`/g),
+  ].map(([, local, remote]) => [local, remote]);
+  assert.equal(
+    (openTunnelSource.match(/'-L'/g) ?? []).length,
+    4,
+    'the tunnel must expose only the four approved local forwards',
+  );
   assert.deepEqual(forwardedPorts, [
     ['http', 'V2S_DEV_REMOTE_HTTP_PORT'],
     ['asset', 'V2S_DEV_REMOTE_ASSET_PORT'],
@@ -619,9 +902,15 @@ test('DEV tunnel maps only approved entry ports and keeps TDS nodes, databases, 
     ['tdsSecondary', 'V2S_DEV_REMOTE_TDS_ENTRY_TWO_PORT'],
   ]);
   assert.doesNotMatch(openTunnelSource, /(?:9030|8030|8040|DORIS_RESIDENT_ENDPOINT)/);
-  assert.match(openTunnelSource, /const tdsListeners = listenerPids\(ports\.tds\);[\s\S]*const tdsSecondaryListeners = listenerPids\(ports\.tdsSecondary\);/);
+  assert.match(
+    openTunnelSource,
+    /const tdsListeners = listenerPids\(ports\.tds\);[\s\S]*const tdsSecondaryListeners = listenerPids\(ports\.tdsSecondary\);/,
+  );
   assert.match(openTunnelSource, /tdsListeners\[0\] === value\.pid &&[\s\S]*tdsSecondaryListeners\[0\] === value\.pid/);
-  assert.doesNotMatch(openTunnelSource, /V2S_DEV_REMOTE_TDS_[ABC]_PORT|V2S_DEV_REMOTE_(?:POSTGRES|DATABASE|PG)_PORT|V2S_DEV_REMOTE_TDS_MANAGEMENT_PORT/);
+  assert.doesNotMatch(
+    openTunnelSource,
+    /V2S_DEV_REMOTE_TDS_[ABC]_PORT|V2S_DEV_REMOTE_(?:POSTGRES|DATABASE|PG)_PORT|V2S_DEV_REMOTE_TDS_MANAGEMENT_PORT/,
+  );
 });
 
 test('DEV requires capacity-derived TDS keys before start and validates the dedicated remote port', () => {
@@ -632,8 +921,14 @@ test('DEV requires capacity-derived TDS keys before start and validates the dedi
   assert.match(capacitySource, /scripts\/env\/tds-dev-capacity\.json/);
   assert.match(capacitySource, /TDS_CAPACITY_CONFIG_MISSING/);
   assert.match(environmentSource, /V2S_TDS_NODE_ID: env\.V2S_TDS_NODE_ID \?\? "tds"/);
-  assert.match(environmentSource, /V2S_TDS_READINESS_WITHDRAWAL_WAIT_MS: env\.V2S_TDS_READINESS_WITHDRAWAL_WAIT_MS \?\? "3000"/);
-  assert.match(environmentSource, /V2S_TERMINAL_BROWSER_ALLOWED_ORIGINS: env\.V2S_TERMINAL_BROWSER_ALLOWED_ORIGINS \?\? "http:\/\/127\.0\.0\.1:8093"/);
+  assert.match(
+    environmentSource,
+    /V2S_TDS_READINESS_WITHDRAWAL_WAIT_MS: env\.V2S_TDS_READINESS_WITHDRAWAL_WAIT_MS \?\? "3000"/,
+  );
+  assert.match(
+    environmentSource,
+    /V2S_TERMINAL_BROWSER_ALLOWED_ORIGINS: env\.V2S_TERMINAL_BROWSER_ALLOWED_ORIGINS \?\? "http:\/\/127\.0\.0\.1:8093"/,
+  );
   assert.match(environmentSource, /V2S_DEV_REMOTE_TERMINAL_UPDATE_ANDROID_BUILD_TOOLS_DIRECTORY/);
   assert.match(environmentSource, /R5_DEV_TERMINAL_UPDATE_ANDROID_BUILD_TOOLS_DIRECTORY_INVALID/);
   assert.match(environmentSource, /R5_DEV_TDS_NODE_ID_INVALID/);
@@ -647,7 +942,10 @@ test('DEV requires capacity-derived TDS keys before start and validates the dedi
   assert.match(runnerSource, /V2S_TDS_MAX_TRACKED_SESSIONS/);
   assert.match(runnerSource, /V2S_TDS_NODE_ID: nodeId/);
   assert.match(runnerSource, /V2S_TDS_READINESS_WITHDRAWAL_WAIT_MS: String\(readinessWithdrawalWaitMs\)/);
-  assert.match(runnerSource, /terminalBrowserAllowedOrigins: env\.environment\.V2S_TERMINAL_BROWSER_ALLOWED_ORIGINS\.split\(/);
+  assert.match(
+    runnerSource,
+    /terminalBrowserAllowedOrigins: env\.environment\.V2S_TERMINAL_BROWSER_ALLOWED_ORIGINS\.split\(/,
+  );
   assert.match(runnerSource, /REMOTE_TDS_NODE_ID_INVALID/);
   assert.match(runnerSource, /REMOTE_TDS_READINESS_WITHDRAWAL_WAIT_INVALID/);
   assert.match(runnerSource, /rssBudgetMiB/);
@@ -723,7 +1021,8 @@ test('DEV start failure tracks and cleans a possible exact root before Java cont
   assert.deepEqual(
     parseRemoteRootCleanupResult('/tmp/r5-dev-1789419999999-70098-1d53aa6c-cd00-444d-8f9a-125f6ee68081', {
       status: 48,
-      stdout: 'R5_REMOTE_ROOT_PRESENT=true\nREMOTE_ACTIVE_PROCESS_COUNT=0\nREMOTE_ACTIVE_PROCESS_PIDS=\nREMOTE_ACTIVE_CONTAINER_COUNT=1\nREMOTE_ACTIVE_CONTAINER_IDS=abc123\nREMOTE_UNKNOWN_PROCESS_COUNT=0\nREMOTE_UNKNOWN_PROCESS_PIDS=\n',
+      stdout:
+        'R5_REMOTE_ROOT_PRESENT=true\nREMOTE_ACTIVE_PROCESS_COUNT=0\nREMOTE_ACTIVE_PROCESS_PIDS=\nREMOTE_ACTIVE_CONTAINER_COUNT=1\nREMOTE_ACTIVE_CONTAINER_IDS=abc123\nREMOTE_UNKNOWN_PROCESS_COUNT=0\nREMOTE_UNKNOWN_PROCESS_PIDS=\n',
       stderr: 'REMOTE_CONTAINERS_REMAIN',
     }),
     {
@@ -780,10 +1079,15 @@ test('remote Java preflights Build Tools without contaminating its JSON control 
     runnerSource.indexOf('export async function startRemoteTds('),
   );
   assert.match(startRemoteJava, /TERMINAL_UPDATE_ANDROID_BUILD_TOOLS_DIRECTORY: terminalUpdateBuildToolsDirectory/);
+  assert.match(startRemoteJava, /V2S_LIVEKIT_SIGNAL_URL:\s*LIVEKIT_RESIDENT_SIGNAL_URL/);
+  assert.match(LIVEKIT_RESIDENT_SIGNAL_URL, /^ws:\/\//u);
   assert.match(startRemoteJava, /REMOTE_TERMINAL_UPDATE_BUILD_TOOLS_MISSING/);
   assert.match(startRemoteJava, /REMOTE_TERMINAL_UPDATE_BUILD_TOOLS_VERSION_MISMATCH/);
-  assert.doesNotMatch(startRemoteJava, /TERMINAL_UPDATE_BUILD_TOOLS_READY=/,
-    'successful preflight must leave stdout as the single JSON control response');
+  assert.doesNotMatch(
+    startRemoteJava,
+    /TERMINAL_UPDATE_BUILD_TOOLS_READY=/,
+    'successful preflight must leave stdout as the single JSON control response',
+  );
 });
 
 test('DEV start forwards only an explicit backend verification mode to remote Java', () => {

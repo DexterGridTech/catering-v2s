@@ -1073,6 +1073,36 @@
       "code": "TERMINAL_UPDATE_REPORT_IDENTITY_CONFLICT",
       "origin": "V2S_TERMINAL_VERSION_UPDATE",
       "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "TERMINAL_CONTROL_REMOTE_NOT_ACTIVATED",
+      "origin": "TER_REMOTE_CONTROL",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "TERMINAL_CONTROL_REMOTE_TERMINAL_OFFLINE",
+      "origin": "TER_REMOTE_CONTROL",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "TERMINAL_CONTROL_REMOTE_OCCUPIED",
+      "origin": "TER_REMOTE_CONTROL",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "TERMINAL_CONTROL_REMOTE_IDENTITY_CONFLICT",
+      "origin": "TER_REMOTE_CONTROL",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "TERMINAL_CONTROL_REMOTE_NOT_READY",
+      "origin": "TER_REMOTE_CONTROL",
+      "disposition": "ACTIVE_V2S_NATIVE"
+    },
+    {
+      "code": "TERMINAL_CONTROL_REMOTE_SESSION_ENDED",
+      "origin": "TER_REMOTE_CONTROL",
+      "disposition": "ACTIVE_V2S_NATIVE"
     }
   ],
   "closure": {
@@ -1081,10 +1111,10 @@
     "heritageSourceCodesOwnedByR3Compatibility": 1,
     "r3SourceCodeCount": 6,
     "r3DispositionCount": 6,
-    "v2sNativeCodeCount": 107,
+    "v2sNativeCodeCount": 113,
     "crossRegistryDuplicateCodeCount": 0,
     "heritageR3ActiveTargetCount": 79,
-    "v2sNativeActiveTargetCount": 107,
+    "v2sNativeActiveTargetCount": 113,
     "allowedDispositions": [
       "RETAIN",
       "RETAIN_R3_WIRE_COMPATIBILITY",
@@ -1094,6 +1124,6 @@
       "NOT_CARRIED_PHASE_KEY_REMOVED",
       "ACTIVE_V2S_NATIVE"
     ],
-    "totalActiveTargetCount": 186
+    "totalActiveTargetCount": 192
   }
 }

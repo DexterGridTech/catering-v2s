@@ -49,7 +49,9 @@ class OperationsAuditHistoryControllerTest {
                             .history(fixture.request, WORKSPACE_KEY, entityType, id.toString(), null, 1, 10)
                             .total());
         }
-        verify(fixture.reads, org.mockito.Mockito.times(14))
+        fixture.controller.history(fixture.request, WORKSPACE_KEY, "TERMINAL_REMOTE_CONTROL_SESSION",
+                id.toString(), UUID.randomUUID().toString(), 1, 10);
+        verify(fixture.reads, org.mockito.Mockito.times(15))
                 .read(org.mockito.ArgumentMatchers.same(fixture.readFacts), org.mockito.ArgumentMatchers.any());
     }
 

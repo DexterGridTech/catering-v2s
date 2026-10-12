@@ -47,6 +47,9 @@ export const createTerminalUpdateModule = (
     readTerminalUpdateContextFacts?: (
       state: ReturnType<RuntimeModuleContext['getState']>,
     ) => TerminalUpdateContextFacts | null;
+    readFixedTerminalUpdateContextFacts?: (
+      state: ReturnType<RuntimeModuleContext['getState']>,
+    ) => TerminalUpdateContextFacts | null;
     readCurrentTarget?: CurrentUpdateTargetReader;
   }>,
 ): RuntimeModule => {
@@ -55,6 +58,7 @@ export const createTerminalUpdateModule = (
     createProtocolUuid: input.createProtocolUuid,
     sourceProvider: input.sourceProvider,
     readTerminalUpdateContextFacts: input.readTerminalUpdateContextFacts,
+    readFixedTerminalUpdateContextFacts: input.readFixedTerminalUpdateContextFacts,
     readCurrentTarget: input.readCurrentTarget,
     readNetworkSnapshot: input.readNetworkSnapshot,
   });

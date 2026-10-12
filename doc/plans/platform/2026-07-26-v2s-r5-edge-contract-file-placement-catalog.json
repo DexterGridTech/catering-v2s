@@ -285,6 +285,30 @@
     "getOperationsProjectTerminalUpdateReportHistoryPage": {
       "capability": "TERMINAL_UPDATE_RULE",
       "pathFile": "contracts/openapi/paths/operations-admin/TERMINAL_UPDATE_RULE.paths.json"
+    },
+    "startOperationsTerminalRemoteControl": {
+      "capability": "TERMINAL_REMOTE_CONTROL",
+      "pathFile": "contracts/openapi/paths/operations-admin/TERMINAL_REMOTE_CONTROL.paths.json"
+    },
+    "getOperationsTerminalRemoteControl": {
+      "capability": "TERMINAL_REMOTE_CONTROL",
+      "pathFile": "contracts/openapi/paths/operations-admin/TERMINAL_REMOTE_CONTROL.paths.json"
+    },
+    "issueOperationsRemoteControlGrant": {
+      "capability": "TERMINAL_REMOTE_CONTROL",
+      "pathFile": "contracts/openapi/paths/operations-admin/TERMINAL_REMOTE_CONTROL.paths.json"
+    },
+    "endOperationsTerminalRemoteControl": {
+      "capability": "TERMINAL_REMOTE_CONTROL",
+      "pathFile": "contracts/openapi/paths/operations-admin/TERMINAL_REMOTE_CONTROL.paths.json"
+    },
+    "registerTerminalRemoteControl": {
+      "capability": "TERMINAL_REMOTE_CONTROL",
+      "pathFile": "paths/terminal/TERMINAL_REMOTE_CONTROL.paths.json"
+    },
+    "reportTerminalRemoteControl": {
+      "capability": "TERMINAL_REMOTE_CONTROL",
+      "pathFile": "paths/terminal/TERMINAL_REMOTE_CONTROL.paths.json"
     }
   },
   "componentFamilyRules": [
@@ -470,7 +494,22 @@
     "TerminalUpdateVersionDetail": "components/terminal-update/terminal-update.schemas.json",
     "TerminalUpdateReportHistoryQuery": "components/terminal-update/terminal-update.schemas.json",
     "TerminalUpdateReportHistoryPage": "components/terminal-update/terminal-update.schemas.json",
-    "TerminalUpdateRuleStorePage": "components/terminal-update/terminal-update.schemas.json"
+    "TerminalUpdateRuleStorePage": "components/terminal-update/terminal-update.schemas.json",
+    "TerminalRemoteControlPeerIdentity": "components/terminal-control/terminal-remote-control.schemas.json",
+    "TerminalRemoteControlEndpoint": "components/terminal-control/terminal-remote-control.schemas.json",
+    "TerminalRemoteControlScreen": "components/terminal-control/terminal-remote-control.schemas.json",
+    "TerminalRemoteControlDescription": "components/terminal-control/terminal-remote-control.schemas.json",
+    "TerminalRemoteControlEndpointGrant": "components/terminal-control/terminal-remote-control.schemas.json",
+    "TerminalRemoteControlStartRequest": "components/terminal-control/terminal-remote-control.schemas.json",
+    "TerminalRemoteControlStartResponse": "components/terminal-control/terminal-remote-control.schemas.json",
+    "TerminalRemoteControlSessionRead": "components/terminal-control/terminal-remote-control.schemas.json",
+    "TerminalRemoteControlControllerGrant": "components/terminal-control/terminal-remote-control.schemas.json",
+    "TerminalRemoteControlEndRequest": "components/terminal-control/terminal-remote-control.schemas.json",
+    "TerminalRemoteControlEndResponse": "components/terminal-control/terminal-remote-control.schemas.json",
+    "TerminalRemoteControlRegisterRequest": "components/terminal-control/terminal-remote-control.schemas.json",
+    "TerminalRemoteControlRegisterResponse": "components/terminal-control/terminal-remote-control.schemas.json",
+    "TerminalRemoteControlStatusReportRequest": "components/terminal-control/terminal-remote-control.schemas.json",
+    "TerminalRemoteControlStatusReportReceipt": "components/terminal-control/terminal-remote-control.schemas.json"
   },
   "resolvedFieldContract": {
     "requiredOnEveryOperation": [
@@ -496,19 +535,19 @@
   "closure": {
     "sourceOperationCount": 148,
     "plannedAdditionalOperationCount": 82,
-    "expectedResolvedOperationCount": 264,
+    "expectedResolvedOperationCount": 270,
     "expectedUnresolvedOperationCount": 0,
     "expectedAmbiguousOperationCount": 0,
-    "sourceComponentCount": 351,
-    "expectedResolvedComponentCount": 350,
+    "sourceComponentCount": 366,
+    "expectedResolvedComponentCount": 365,
     "expectedExplicitNotCarriedComponentCount": 1,
     "expectedUnresolvedComponentCount": 0,
     "expectedAmbiguousComponentCount": 0,
     "faceCounts": {
       "platform-admin": 66,
-      "operations-admin": 172,
+      "operations-admin": 176,
       "public": 12,
-      "terminal": 14
+      "terminal": 16
     }
   }
 }

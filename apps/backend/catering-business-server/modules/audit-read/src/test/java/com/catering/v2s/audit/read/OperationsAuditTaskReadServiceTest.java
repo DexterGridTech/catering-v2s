@@ -21,6 +21,7 @@ import com.catering.v2s.organization.api.OrganizationVisibilityLookup;
 import com.catering.v2s.organization.application.OrganizationAuditHistoryService;
 import com.catering.v2s.storeterminal.application.StoreTerminalAuditHistoryService;
 import com.catering.v2s.terminalbinding.api.TerminalBindingAuditReadApi;
+import com.catering.v2s.terminalcontrol.api.TerminalRemoteControlAuditReadApi;
 import com.catering.v2s.terminalupdate.api.TerminalUpdateRuleAuditReadApi;
 import com.catering.v2s.workspace.iam.application.WorkspaceIamAuditHistoryService;
 import com.catering.v2s.workspace.iam.application.WorkspaceReadAuthorizationFacts;
@@ -30,12 +31,13 @@ import org.junit.jupiter.api.Test;
 
 class OperationsAuditTaskReadServiceTest {
     @Test
-    void dispatchesTheFifteenClosedQueriesOnlyToTheirNamedOwners() {
+    void dispatchesTheSixteenClosedQueriesOnlyToTheirNamedOwners() {
         WorkspaceIamAuditHistoryService workspaceIam = mock(WorkspaceIamAuditHistoryService.class);
         OrganizationAuditHistoryService organization = mock(OrganizationAuditHistoryService.class);
         ContractAuditHistoryService contract = mock(ContractAuditHistoryService.class);
         StoreTerminalAuditHistoryService storeTerminal = mock(StoreTerminalAuditHistoryService.class);
         TerminalBindingAuditReadApi terminalBinding = mock(TerminalBindingAuditReadApi.class);
+        TerminalRemoteControlAuditReadApi terminalRemoteControl = mock(TerminalRemoteControlAuditReadApi.class);
         TerminalUpdateRuleAuditReadApi terminalUpdateRule = mock(TerminalUpdateRuleAuditReadApi.class);
         WorkspaceReadAuthorizationFacts facts = mock(WorkspaceReadAuthorizationFacts.class);
         when(facts.workspaceUuid()).thenReturn(UUID.randomUUID());
@@ -72,9 +74,11 @@ class OperationsAuditTaskReadServiceTest {
         when(storeTerminal.readOperationsAuditProjection(any(), any(), any(), anyLong(), anyLong()))
                 .thenReturn(empty);
         when(terminalBinding.read(any(), any(), any(), anyLong(), anyLong())).thenReturn(empty);
+        when(terminalRemoteControl.read(any(), any(), any(), any(), anyLong(), anyLong())).thenReturn(empty);
         when(terminalUpdateRule.read(any(), any(), any(), any(), anyLong(), anyLong())).thenReturn(empty);
         OperationsAuditTaskReadService service = new OperationsAuditTaskReadService(
-                workspaceIam, organization, contract, storeTerminal, terminalBinding, terminalUpdateRule);
+                workspaceIam, organization, contract, storeTerminal, terminalBinding,
+                terminalRemoteControl, terminalUpdateRule);
         String id = UUID.randomUUID().toString();
         List<OperationsAuditQuery> queries = List.of(
                 new OperationsAuditQuery.WorkspaceAccount(new AuditTarget("WORKSPACE_ACCOUNT", id), 1, 20),
@@ -95,6 +99,8 @@ class OperationsAuditTaskReadServiceTest {
                 new OperationsAuditQuery.StoreTerminal(new AuditTarget(AuditEntityTypes.STORE_TERMINAL, id), 1, 20),
                 new OperationsAuditQuery.TerminalBinding(
                         new AuditTarget(AuditEntityTypes.TERMINAL_BINDING, id), 1, 20),
+                new OperationsAuditQuery.TerminalRemoteControlSession(
+                        new AuditTarget(AuditEntityTypes.TERMINAL_REMOTE_CONTROL_SESSION, id), visibleProjectRef, 1, 20),
                 new OperationsAuditQuery.TerminalUpdateRule(
                         new AuditTarget(AuditEntityTypes.TERMINAL_UPDATE_RULE, id), visibleProjectRef, 1, 20));
         queries.forEach(query -> service.read(facts, query));
@@ -120,13 +126,17 @@ class OperationsAuditTaskReadServiceTest {
                         eq(scope), same(visibleFacts), same(queries.get(12).target()), eq(1L), eq(20L));
         verify(terminalBinding)
                 .read(eq(scope), eq(java.util.Set.of(visibleStoreRef)), eq(UUID.fromString(id)), eq(1L), eq(20L));
+        verify(terminalRemoteControl).read(
+                eq(scope), eq(java.util.Set.of(visibleProjectRef)), eq(visibleProjectRef), eq(UUID.fromString(id)),
+                eq(1L), eq(20L));
         verify(terminalUpdateRule).read(
                 eq(scope), eq(java.util.Set.of(visibleProjectRef)), eq(visibleProjectRef), eq(UUID.fromString(id)), eq(1L), eq(20L));
-        verifyNoMoreInteractions(workspaceIam, organization, contract, storeTerminal, terminalBinding, terminalUpdateRule);
+        verifyNoMoreInteractions(workspaceIam, organization, contract, storeTerminal, terminalBinding,
+                terminalRemoteControl, terminalUpdateRule);
     }
 
     @Test
-    void closedQueriesAcceptOnlyTheirCanonicalFifteenTargetTypes() {
+    void closedQueriesAcceptOnlyTheirCanonicalSixteenTargetTypes() {
         String id = UUID.randomUUID().toString();
         assertDoesNotThrow(
                 () -> new OperationsAuditQuery.WorkspaceAccount(new AuditTarget("WORKSPACE_ACCOUNT", id), 1, 20));
@@ -151,6 +161,8 @@ class OperationsAuditTaskReadServiceTest {
                 new OperationsAuditQuery.StoreTerminal(new AuditTarget(AuditEntityTypes.STORE_TERMINAL, id), 1, 20));
         assertDoesNotThrow(() -> new OperationsAuditQuery.TerminalBinding(
                 new AuditTarget(AuditEntityTypes.TERMINAL_BINDING, id), 1, 20));
+        assertDoesNotThrow(() -> new OperationsAuditQuery.TerminalRemoteControlSession(
+                new AuditTarget(AuditEntityTypes.TERMINAL_REMOTE_CONTROL_SESSION, id), UUID.randomUUID(), 1, 20));
         assertDoesNotThrow(() -> new OperationsAuditQuery.TerminalUpdateRule(
                 new AuditTarget(AuditEntityTypes.TERMINAL_UPDATE_RULE, id), UUID.randomUUID(), 1, 20));
         assertThrows(

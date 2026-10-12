@@ -69,6 +69,9 @@ type TerminalUpdateActorInput = Readonly<{
   readTerminalUpdateContextFacts?: (
     state: ReturnType<ActorExecutionContext['getState']>,
   ) => TerminalUpdateContextFacts | null;
+  readFixedTerminalUpdateContextFacts?: (
+    state: ReturnType<ActorExecutionContext['getState']>,
+  ) => TerminalUpdateContextFacts | null;
   actions?: typeof terminalUpdateActions;
   readNetworkSnapshot?: UpdateNetworkSnapshotReader;
 }>;
@@ -533,11 +536,15 @@ export const createTerminalUpdateActor = (input: TerminalUpdateActorInput): Acto
   };
   const currentRuleContext = (
     context: ActorExecutionContext,
+    fixedTask = false,
   ): Readonly<{
     readonly facts: TerminalUpdateContextFacts;
     readonly identity: string;
   }> | null => {
-    const facts = input.readTerminalUpdateContextFacts?.(context.getState());
+    const contextReader = fixedTask
+      ? (input.readFixedTerminalUpdateContextFacts ?? input.readTerminalUpdateContextFacts)
+      : input.readTerminalUpdateContextFacts;
+    const facts = contextReader?.(context.getState());
     if (
       facts === undefined ||
       facts === null ||
@@ -1165,7 +1172,7 @@ export const createTerminalUpdateActor = (input: TerminalUpdateActorInput): Acto
     let downloadGrant: string | undefined;
     let artifactForPrepare: TerminalUpdateArtifact | null = null;
     if (selected.artifactRef !== undefined) {
-      const grantContext = currentRuleContext(context);
+      const grantContext = currentRuleContext(context, true);
       if (grantContext === null) {
         const reason = 'UPDATE_CONTEXT_NOT_READY';
         logLifecycle(context, 'fixed-task-context-not-ready', {
@@ -1208,7 +1215,7 @@ export const createTerminalUpdateActor = (input: TerminalUpdateActorInput): Acto
         currentTask.actionKind === selected.kind &&
         currentTask.phase === preparingPhase;
       if (!stillOwnsPreparation) return Object.freeze({status: 'stale-task'});
-      const currentGrantContext = currentRuleContext(context);
+      const currentGrantContext = currentRuleContext(context, true);
       const currentGrantNetwork = readNetworkSnapshot(context.getState(), 'business');
       if (
         currentGrantContext?.identity !== grantContext.identity ||

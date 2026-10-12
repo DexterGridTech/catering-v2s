@@ -193,7 +193,9 @@ C不新增CBS operation身份或管理权限；本轮修改既有terminal-bindin
 同一成功command有两个owner listener，沿Runtime现有local fan-out同时启动：
 
 1. **store-basic自己的actor**将当前no-op loaded handler改为本包合同及服务点加载入口；重核具体门店成功事实，调用本包拆出的合同loader及既有服务点command。把当前 `await loaded command` 返回后才执行的两处后续初始化移到这个handler，不在广播后再加载一遍。它不读project readiness、不调用project command。
-2. **project-basic的actor**收到同一个command后重核上述公开store selector与payload身份，再调用现有 `terminalReadStoreOrganizationPath(storeRef)`；返回的projectRef必须对应具体门店的project.id。组织保存flush成功后登记 `PROJECT+projectRef`、`REGION+regionRef`、`COMMERCIAL_GROUP+commercialGroupRef` 初始原始时间，才读取当前项目完整规则分页；末页/hash一致且flush成功后登记 `TERMINAL_UPDATE_RULES+projectRef`。组织字段由服务端沿 Store.projectId→PROJECT.parentId→REGION.parentId 返回，不用集团空间猜集团、不新增三个详情HTTP。规则首次时间沿B响应/原始记录计算，空集0；后续具体通知保存成功后确认TDC通知，不用重算0覆盖服务端时间。
+2. **project-basic的actor**收到同一个command后重核上述公开store selector与payload身份，再调用现有 `terminalReadStoreOrganizationPath(storeRef)`；返回的projectRef必须对应具体门店的project.id。组织保存flush成功后登记 `PROJECT+projectRef`、`REGION+regionRef`、`COMMERCIAL_GROUP+commercialGroupRef` 的初始原始时间，才加载规则。当前 `TerminalUpdateRuleSnapshotPage` 只提供 `items`、`collectionHash`、`nextCursor`，不提供可作为订阅水位的规则更新时间；因此在读取完整规则分页前先登记 `TERMINAL_UPDATE_RULES+projectRef`，`initialTimeEpochMillis=0`，避免快照读取期间漏掉变化通知。该通知只触发完整快照刷新；末页/hash一致且flush成功后，规则快照才进入ready。后续具体通知保存成功后按该通知携带的身份确认，不以初始0覆盖通知时间。组织字段由服务端沿 Store.projectId→PROJECT.parentId→REGION.parentId 返回，不用集团空间猜集团、不新增三个详情HTTP。
+
+规则页通过HTTP完整接收。`project-basic` 当前按每页 1,048,576 字节、整次快照 8,388,608 字节校验；共享 Android HTTP adapter 的有限响应上界不得低于单页边界，超界返回明确的大小错误后由本 owner 继续判定，不能截断规则或按 App 剪裁。WebSocket 的 65,536 字节消息界限独立适用，不转用于HTTP正文。
 
 两listener各自等待本包工作；Runtime的广播聚合可以等待全部listener，但合同/服务点已经在自己的listener内启动，不能等聚合完成再启动。项目与合同/服务点后续互不等待；不新增fire-and-forget调度、broker或成功通知。不同command的同actor嵌套沿现有Runtime规则；loaded handler不再调用本包store首查/重新发loaded，避免递归。
 

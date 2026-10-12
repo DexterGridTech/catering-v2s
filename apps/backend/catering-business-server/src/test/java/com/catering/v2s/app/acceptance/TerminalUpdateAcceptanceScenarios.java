@@ -601,6 +601,30 @@ final class TerminalUpdateAcceptanceScenarios {
         assertEquals("TERMINAL_UPDATE_REPORT_IDENTITY_CONFLICT", conflict.problemCode(),
                 "BUSINESS: sequence replay with changed report facts is rejected as an identity conflict");
 
+        Set<String> expectedHistoryTaskIds = new HashSet<>();
+        expectedHistoryTaskIds.add(taskId.toString());
+        for (int sequence = 2; sequence <= 3; sequence++) {
+            UUID nextReportId = UUID.randomUUID();
+            UUID nextTaskId = UUID.randomUUID();
+            Map<String, Object> nextReport = new java.util.LinkedHashMap<>(report);
+            nextReport.put("reportId", nextReportId);
+            nextReport.put("reportSequence", sequence);
+            nextReport.put("taskId", nextTaskId);
+            Map<String, Object> nextRecent = new java.util.LinkedHashMap<>(recent);
+            nextRecent.put("changedAtEpochMillis", changedAt + sequence);
+            nextReport.put("recent", nextRecent);
+            BackendAcceptanceTest.Response nextAccepted = context.post(TERMINAL_UPDATE_REPORT_SUBMIT,
+                    reportPath, null, nextReport,
+                    Map.of("Authorization", credential.get("Authorization"),
+                            "X-Terminal-Ref", credential.get("X-Terminal-Ref"),
+                            "Idempotency-Key", nextReportId.toString()), Set.of(200));
+            assertEquals(nextReportId.toString(), nextAccepted.json().path("reportId").asText(),
+                    "BUSINESS: distinct task report is committed before it appears in history");
+            assertEquals("ACCEPTED", nextAccepted.json().path("outcome").asText(),
+                    "BUSINESS: each new task report is accepted after persistence");
+            expectedHistoryTaskIds.add(nextTaskId.toString());
+        }
+
         String versions = "/api/operations/group-workspaces/" + terminal.fixture().groupWorkspaceKey()
                 + "/projects/" + terminal.fixture().projectId() + "/terminal-versions";
         JsonNode page = payload(context.get(OPERATIONS_TERMINAL_VERSION_PAGE,
@@ -642,18 +666,47 @@ final class TerminalUpdateAcceptanceScenarios {
                 "BUSINESS: detail receipt time is the same latest report fact as the project page");
 
         String historyPath = versions + "/" + terminal.terminalRef() + "/update-reports"
-                + "?expectedContextVersion=" + operations.contextVersion() + "&limit=20";
-        JsonNode history = payload(context.get(OPERATIONS_TERMINAL_UPDATE_REPORT_HISTORY,
-                historyPath, operations.cookie(), Set.of(200)).json());
-        assertEquals(1, history.path("items").size(), "BUSINESS: task history stores one row after exact replay");
-        assertEquals(taskId.toString(), history.path("items").get(0).path("taskId").asText(),
-                "BUSINESS: task history is correlated to the submitted operation");
+                + "?expectedContextVersion=" + operations.contextVersion() + "&limit=1";
+        List<JsonNode> historyItems = new java.util.ArrayList<>();
+        String historyCursor = null;
+        for (int pageNumber = 0; pageNumber < 3; pageNumber++) {
+            String pagePath = historyPath + (historyCursor == null ? ""
+                    : "&cursor=" + java.net.URLEncoder.encode(historyCursor,
+                            java.nio.charset.StandardCharsets.UTF_8));
+            JsonNode historyPage = payload(context.get(OPERATIONS_TERMINAL_UPDATE_REPORT_HISTORY,
+                    pagePath, operations.cookie(), Set.of(200)).json());
+            assertEquals(1, historyPage.path("items").size(),
+                    "BUSINESS: each cursor page returns exactly one committed task report");
+            historyItems.add(historyPage.path("items").get(0));
+            historyCursor = historyPage.path("nextCursor").asText("");
+            if (pageNumber < 2) {
+                assertFalse(historyCursor.isBlank(), "BUSINESS: remaining task reports have a continuation cursor");
+            } else {
+                assertTrue(historyCursor.isBlank(), "BUSINESS: final task-history page has no continuation cursor");
+            }
+        }
+        List<String> readbackTaskIds = historyItems.stream()
+                .map(item -> item.path("taskId").asText()).toList();
+        assertEquals(expectedHistoryTaskIds, new HashSet<>(readbackTaskIds),
+                "BUSINESS: multi-page history returns every committed task exactly once");
+        for (int index = 1; index < historyItems.size(); index++) {
+            JsonNode previous = historyItems.get(index - 1);
+            JsonNode current = historyItems.get(index);
+            long previousReceivedAt = previous.path("receivedAtEpochMillis").asLong();
+            long currentReceivedAt = current.path("receivedAtEpochMillis").asLong();
+            String previousTaskId = previous.path("taskId").asText();
+            String currentTaskId = current.path("taskId").asText();
+            assertTrue(previousReceivedAt > currentReceivedAt
+                            || (previousReceivedAt == currentReceivedAt
+                                    && previousTaskId.compareTo(currentTaskId) >= 0),
+                    "BUSINESS: cursor history is globally ordered by receipt time and task identity");
+        }
         assertEquals(TerminalUpdateAcceptanceFixtures.APPLICATION_ID,
-                history.path("items").get(0).path("references").path("ruleTarget").path("fullArtifactIdentity").path("applicationId").asText(),
+                historyItems.get(0).path("references").path("ruleTarget").path("fullArtifactIdentity").path("applicationId").asText(),
                 "BUSINESS: task history projects the same scoped rule identity as detail");
-        assertEquals("HOT", history.path("items").get(0).path("references").path("hotArtifactIdentity").path("kind").asText(),
+        assertEquals("HOT", historyItems.get(0).path("references").path("hotArtifactIdentity").path("kind").asText(),
                 "BUSINESS: task history projects the linked HOT artifact identity");
-        assertEquals(pageReceivedAt, history.path("items").get(0).path("receivedAtEpochMillis").asLong(0),
+        assertEquals(pageReceivedAt, historyItems.get(0).path("receivedAtEpochMillis").asLong(0),
                 "BUSINESS: project page, detail and task history share the server receipt time");
 
         String activationCancel = "/api/terminal/group-workspaces/" + terminal.fixture().groupWorkspaceKey()

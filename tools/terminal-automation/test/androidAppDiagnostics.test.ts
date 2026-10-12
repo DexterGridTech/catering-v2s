@@ -1,5 +1,6 @@
 import {describe, expect, it} from 'vitest';
 import {
+  collectAndroidRemoteControlDiagnostics,
   collectAndroidRuntimeFailureDiagnostics,
   projectAndroidAutomationConnectionLog,
   projectAndroidAutomationSelectorFailureLog,
@@ -10,6 +11,20 @@ import {
   projectAndroidTerminalUpdateReportLog,
   projectTerminalAutomationAppEvent,
 } from '../src/androidAppDiagnostics.js';
+
+describe('Android remote-control native diagnostics', () => {
+  it('projects only event names and counts from the current app process log', () => {
+    const diagnostics = collectAndroidRemoteControlDiagnostics([
+      'I/TerminalRemote( 1234): event=video-track-created streamId=private-stream windowIdentity=private-window',
+      'I/TerminalRemoteCapture( 1234): event=capturer-initialized surfaceKey=PRIMARY',
+      'I/Other( 1234): event=unrelated',
+    ].join('\n'));
+
+    expect(diagnostics).toEqual({lineCount: 2, eventKinds: ['video-track-created', 'capturer-initialized']});
+    expect(JSON.stringify(diagnostics)).not.toContain('private-stream');
+    expect(JSON.stringify(diagnostics)).not.toContain('private-window');
+  });
+});
 
 describe('TER Stage C owner log projection', () => {
   it('correlates project and update lifecycle without retaining raw owner data', () => {
@@ -491,7 +506,7 @@ describe('Android terminal heartbeat diagnostics', () => {
 });
 
 describe('Android terminal update report diagnostics', () => {
-  it('retains report state and reason enums without report identity or secrets', () => {
+  it('retains safe report correlation identifiers while filtering arbitrary secrets', () => {
     const line = `I/ReactNativeJS (123): ${JSON.stringify({
       category: 'terminal.update.report',
       event: 'report-submit-completed',
@@ -507,8 +522,10 @@ describe('Android terminal update report diagnostics', () => {
         receiptTaskMatchesPayload: true,
         receiptSequenceMatchesPayload: true,
         receiptOutcome: 'ACCEPTED',
-        reportId: 'private-report-id',
-        taskId: 'private-task-id',
+        reportId: '44444444-4444-4444-8444-444444444444',
+        taskId: '55555555-5555-4555-8555-555555555555',
+        requestId: 'req-stage-c-7',
+        correlationId: 'corr-stage-c-7',
         credentialSecret: 'private-secret',
       },
     })}`;
@@ -526,10 +543,15 @@ describe('Android terminal update report diagnostics', () => {
       receiptTaskMatchesPayload: true,
       receiptSequenceMatchesPayload: true,
       receiptOutcome: 'ACCEPTED',
+      reportId: '44444444-4444-4444-8444-444444444444',
+      taskId: '55555555-5555-4555-8555-555555555555',
+      requestId: 'req-stage-c-7',
+      correlationId: 'corr-stage-c-7',
     });
-    expect(JSON.stringify(projected)).not.toContain('private-report-id');
-    expect(JSON.stringify(projected)).not.toContain('private-task-id');
     expect(JSON.stringify(projected)).not.toContain('private-secret');
+    expect(
+      projectAndroidTerminalUpdateReportLog(line.replace('44444444-4444-4444-8444-444444444444', 'private-report-id')),
+    ).not.toHaveProperty('reportId');
     expect(
       projectAndroidTerminalUpdateReportLog(line.replace('"reportReason":"NONE"', '"reportReason":"PRIVATE_REASON"')),
     ).not.toHaveProperty('reportReason');
@@ -551,6 +573,23 @@ describe('Android terminal update report diagnostics', () => {
       taskMatchesRecentStatus: false,
     });
     expect(JSON.stringify(projected)).not.toContain('private-task-id');
+  });
+
+  it('keeps report IDs in the shared Web and Android app-event projection', () => {
+    const projected = projectTerminalAutomationAppEvent({
+      category: 'terminal.update.report',
+      event: 'report-submit-completed',
+      data: {
+        reportId: '44444444-4444-4444-8444-444444444444',
+        taskId: '55555555-5555-4555-8555-555555555555',
+        correlationId: 'corr-stage-c-7',
+      },
+    });
+    expect(projected).toMatchObject({
+      reportId: '44444444-4444-4444-8444-444444444444',
+      taskId: '55555555-5555-4555-8555-555555555555',
+      correlationId: 'corr-stage-c-7',
+    });
   });
 });
 

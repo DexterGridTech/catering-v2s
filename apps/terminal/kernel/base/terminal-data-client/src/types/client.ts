@@ -165,6 +165,14 @@ export type TerminalUpdateReportPayload = Readonly<{
   readonly idempotencyKey: string;
   readonly body: TerminalRequestMap['submitTerminalUpdateReport']['body'];
 }>;
+export type TerminalRemoteControlRegisterPayload = Readonly<{
+  readonly sessionId: string;
+  readonly body: TerminalRequestMap['registerTerminalRemoteControl']['body'];
+}>;
+export type TerminalRemoteControlReportPayload = Readonly<{
+  readonly sessionId: string;
+  readonly body: TerminalRequestMap['reportTerminalRemoteControl']['body'];
+}>;
 
 /** Shared Runtime command fanned out to feature actors; each consumer matches its own subscription. */
 export type TerminalTopicChangedPayload = Readonly<{

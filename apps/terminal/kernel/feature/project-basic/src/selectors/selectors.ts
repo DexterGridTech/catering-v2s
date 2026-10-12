@@ -46,6 +46,7 @@ const requiredPeerProjectionSliceNames = [serverConfigSliceName, storeBasicSlice
 
 const selectReadyUpdateContext = (
   root: StateRoot,
+  allowDisconnectedSlave = false,
 ): Readonly<{
   readonly binding: NonNullable<ProjectBasicState['binding']>;
   readonly path: NonNullable<ProjectBasicState['organizationPath']>;
@@ -95,10 +96,15 @@ const selectReadyUpdateContext = (
       return null;
   } else if (mode === 'SLAVE') {
     const topology = selectTopologyState(root);
+    const activation = selectActivationState(root);
     if (
       topology.peerIdentity?.instanceMode !== 'MASTER' ||
       topology.peerIdentity.moduleName.length === 0 ||
-      !selectTopologyRequiredProjectionsReady(root, requiredPeerProjectionSliceNames)
+      activation.terminalRef !== binding.terminalRef ||
+      activation.bindingGeneration !== binding.bindingGeneration ||
+      activation.storeRef !== binding.storeRef ||
+      activation.groupWorkspaceKey !== binding.groupWorkspaceKey ||
+      (!allowDisconnectedSlave && !selectTopologyRequiredProjectionsReady(root, requiredPeerProjectionSliceNames))
     )
       return null;
   } else return null;
@@ -164,6 +170,15 @@ export const selectProjectTerminalUpdateContextFacts = defineStateSelector(
   {
     parameters: [],
     selector: (root: StateRoot) => selectReadyUpdateContext(root)?.contextFacts ?? null,
+  },
+);
+
+export const selectProjectFixedTerminalUpdateContextFacts = defineStateSelector(
+  moduleName,
+  'selectProjectFixedTerminalUpdateContextFacts',
+  {
+    parameters: [],
+    selector: (root: StateRoot) => selectReadyUpdateContext(root, true)?.contextFacts ?? null,
   },
 );
 

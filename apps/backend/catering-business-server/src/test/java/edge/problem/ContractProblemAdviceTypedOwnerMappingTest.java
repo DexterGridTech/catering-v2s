@@ -4,6 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import com.catering.v2s.app.edge.diagnostic.EdgeRouteFaceRegistry;
 import com.catering.v2s.app.edge.diagnostic.RequestCompletionDiagnosticState;
 import com.catering.v2s.catalog.api.CatalogOwnerApi;
@@ -22,10 +25,14 @@ import com.catering.v2s.workspace.iam.application.CommandExecutionContextResolve
 import com.catering.v2s.workspace.iam.application.WorkspaceAssignmentScopeService;
 import com.catering.v2s.workspace.iam.application.WorkspaceAuthenticationService;
 import com.catering.v2s.workspace.iam.application.WorkspaceInvitationService;
+import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -225,6 +232,53 @@ class ContractProblemAdviceTypedOwnerMappingTest {
                 advice.malformedRequest(new HttpMessageNotReadableException("invalid UUID", null), request),
                 HttpStatus.BAD_REQUEST,
                 "PLATFORM_COMMON_VALIDATION_FAILED");
+    }
+
+    @Test
+    void unknownOwnerResultLogsCorrelatedCauseTypesWithoutExceptionMessage() {
+        Logger logger = (Logger) LoggerFactory.getLogger(ContractProblemAdvice.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        try {
+            MockHttpServletRequest request = new MockHttpServletRequest(
+                    "POST", "/api/terminal/group-workspaces/test/remote-control-sessions/id/registration");
+            request.addHeader("X-Correlation-Id", "corr-register-test");
+            MockHttpServletResponse response = new MockHttpServletResponse();
+            RequestCompletionDiagnosticState.getOrCreate(request, response,
+                    new EdgeRouteFaceRegistry.Definition("registerTerminalRemoteControl", "POST",
+                            "/api/terminal/group-workspaces/{groupWorkspaceKey}/remote-control-sessions/{sessionId}/registration",
+                            "terminal-control", "terminal"));
+            DuplicateKeyException exception = new DuplicateKeyException(
+                    "private SQL detail", new SQLException("private SQL detail", "23505"));
+
+            assertProblem(advice.ownerResultUnknown(exception, request), HttpStatus.INTERNAL_SERVER_ERROR,
+                    "PLATFORM_COMMON_RESULT_UNKNOWN");
+
+            ILoggingEvent event = appender.list.stream()
+                    .filter(item -> item.getKeyValuePairs() != null && item.getKeyValuePairs().stream()
+                            .anyMatch(pair -> "OWNER_RESULT_UNKNOWN".equals(pair.value)))
+                    .findFirst().orElseThrow();
+            Map<String, String> fields = event.getKeyValuePairs().stream().collect(
+                    java.util.stream.Collectors.toMap(pair -> pair.key, pair -> String.valueOf(pair.value)));
+            assertEquals("registerTerminalRemoteControl", fields.get("operationId"));
+            assertEquals("corr-register-test", fields.get("correlationId"));
+            assertEquals("DuplicateKeyException", fields.get("exceptionType"));
+            assertEquals("SQLException", fields.get("rootCauseType"));
+            assertEquals("23505", fields.get("sqlState"));
+            String formattedMessage = event.getFormattedMessage();
+            assertTrue(formattedMessage.contains("event=OWNER_RESULT_UNKNOWN"));
+            assertTrue(formattedMessage.contains("operationId=registerTerminalRemoteControl"));
+            assertTrue(formattedMessage.contains("requestId=req-"));
+            assertTrue(formattedMessage.contains("correlationId=corr-register-test"));
+            assertTrue(formattedMessage.contains("rootCauseType=SQLException"));
+            assertTrue(formattedMessage.contains("sqlState=23505"));
+            assertFalse(formattedMessage.contains("private SQL detail"));
+            assertEquals(null, event.getThrowableProxy());
+        } finally {
+            logger.detachAppender(appender);
+            appender.stop();
+        }
     }
 
     @Test

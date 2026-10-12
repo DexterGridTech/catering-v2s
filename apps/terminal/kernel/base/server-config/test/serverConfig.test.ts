@@ -1,3 +1,4 @@
+import {unavailableRemoteControlPort} from '@catering-v2s/kernel-base-platform-ports';
 import {afterEach, describe, expect, it} from 'vitest';
 import {
   createNodeId,
@@ -194,6 +195,7 @@ const createFixture = (
         update: unavailableUpdatePort,
         logUpload: unavailableLogUploadPort,
         topologyHost: unavailableTopologyHostPort,
+        remoteControl: unavailableRemoteControlPort,
       },
     }),
     state: {

@@ -30,7 +30,8 @@ public interface TerminalUpdateReportOwnerApi {
             String cursor, int limit) {}
 
     record VersionRow(UUID terminalRef, String terminalName, UUID storeRef, String storeName,
-            boolean hasReport, String actualJson, String recentJson, boolean oldBinding, Long receivedAtEpochMillis) {}
+            boolean hasReport, String actualJson, String recentJson, boolean oldBinding, Long receivedAtEpochMillis,
+            String connectionStatus, Long observedAtEpochMillis, long evaluatedAtEpochMillis) {}
 
     record VersionPage(List<VersionRow> items, String nextCursor) {
         public VersionPage { items = List.copyOf(items); }
@@ -38,7 +39,8 @@ public interface TerminalUpdateReportOwnerApi {
 
     record VersionDetail(UUID terminalRef, String terminalName, UUID storeRef, String storeName,
             String actualJson, String recentJson, boolean oldBinding, Long receivedAtEpochMillis,
-            ReportReferences latestReferences, String historyCursor) {}
+            ReportReferences latestReferences, String historyCursor, String connectionStatus,
+            Long observedAtEpochMillis, long evaluatedAtEpochMillis) {}
 
     record ReportHistoryRow(UUID reportId, UUID taskId, long reportSequence, String actualJson,
             String recentJson, ReportReferences references, long receivedAtEpochMillis) {}

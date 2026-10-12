@@ -1687,7 +1687,17 @@
                 "BC-IAM-STORE-INVITE",
                 "BC-CONTRACT-CREATE",
                 "BC-CONTRACT-EDIT",
-                "BC-CONTRACT-INVALIDATE"
+                "BC-CONTRACT-INVALIDATE",
+                "EDIT_HEAD_COMPANY_CATALOG",
+                "EDIT_STORE_CATALOG",
+                "EDIT_STORE_INVENTORY",
+                "EDIT_STORE_SALES_MENU",
+                "EDIT_STORE_SERVICE_POINT_QR",
+                "EDIT_STORE_TERMINAL",
+                "BC-BUSINESS-CHANNEL-PROJECT-EDIT",
+                "BC-BUSINESS-CHANNEL-STORE-EDIT",
+                "MANAGE_PROJECT_TERMINAL_VERSION",
+                "CONTROL_PROJECT_TERMINAL"
               ]
             }
           },
@@ -1785,7 +1795,17 @@
                 "BC-IAM-STORE-INVITE",
                 "BC-CONTRACT-CREATE",
                 "BC-CONTRACT-EDIT",
-                "BC-CONTRACT-INVALIDATE"
+                "BC-CONTRACT-INVALIDATE",
+                "EDIT_HEAD_COMPANY_CATALOG",
+                "EDIT_STORE_CATALOG",
+                "EDIT_STORE_INVENTORY",
+                "EDIT_STORE_SALES_MENU",
+                "EDIT_STORE_SERVICE_POINT_QR",
+                "EDIT_STORE_TERMINAL",
+                "BC-BUSINESS-CHANNEL-PROJECT-EDIT",
+                "BC-BUSINESS-CHANNEL-STORE-EDIT",
+                "MANAGE_PROJECT_TERMINAL_VERSION",
+                "CONTROL_PROJECT_TERMINAL"
               ]
             }
           },
@@ -1883,7 +1903,17 @@
                     "BC-IAM-STORE-INVITE",
                     "BC-CONTRACT-CREATE",
                     "BC-CONTRACT-EDIT",
-                    "BC-CONTRACT-INVALIDATE"
+                    "BC-CONTRACT-INVALIDATE",
+                    "EDIT_HEAD_COMPANY_CATALOG",
+                    "EDIT_STORE_CATALOG",
+                    "EDIT_STORE_INVENTORY",
+                    "EDIT_STORE_SALES_MENU",
+                    "EDIT_STORE_SERVICE_POINT_QR",
+                    "EDIT_STORE_TERMINAL",
+                    "BC-BUSINESS-CHANNEL-PROJECT-EDIT",
+                    "BC-BUSINESS-CHANNEL-STORE-EDIT",
+                    "MANAGE_PROJECT_TERMINAL_VERSION",
+                    "CONTROL_PROJECT_TERMINAL"
                   ]
                 },
                 "actionGroupKey": {
@@ -2067,7 +2097,17 @@
                 "BC-IAM-STORE-INVITE",
                 "BC-CONTRACT-CREATE",
                 "BC-CONTRACT-EDIT",
-                "BC-CONTRACT-INVALIDATE"
+                "BC-CONTRACT-INVALIDATE",
+                "EDIT_HEAD_COMPANY_CATALOG",
+                "EDIT_STORE_CATALOG",
+                "EDIT_STORE_INVENTORY",
+                "EDIT_STORE_SALES_MENU",
+                "EDIT_STORE_SERVICE_POINT_QR",
+                "EDIT_STORE_TERMINAL",
+                "BC-BUSINESS-CHANNEL-PROJECT-EDIT",
+                "BC-BUSINESS-CHANNEL-STORE-EDIT",
+                "MANAGE_PROJECT_TERMINAL_VERSION",
+                "CONTROL_PROJECT_TERMINAL"
               ]
             }
           },

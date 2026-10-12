@@ -12,6 +12,7 @@ import {
   Table,
   Tabs,
   Tag,
+  Tooltip,
   Typography,
   message,
 } from 'antd';
@@ -39,6 +40,7 @@ import type {HTMLAttributes} from 'react';
 import {
   operationsClient,
   operationsContentTabRefreshSignal,
+  operationsLogger,
   operationsProblemOf,
   operationsRtk,
 } from '../../../app/api/OperationsTransport';
@@ -49,6 +51,7 @@ import {
   type TerminalUpdateArtifactSummary,
   type TerminalUpdateRuleDetail,
   type TerminalUpdateRuleSummary,
+  type TerminalRemoteControlStartResponse,
   type TerminalUpdateVersionDetail,
   type TerminalUpdateVersionReportItem,
 } from '../../../app/api/generated/operations-edge';
@@ -60,6 +63,10 @@ import {OperationsAuditHistoryModal} from '../../audit-history';
 import {idleMinutesToSeconds, idleSecondsToMinutes} from '../model/terminalUpdateDuration';
 import {terminalUpdateCandidateQuery} from '../model/terminalUpdateCandidateQuery';
 import {terminalUpdateRuleFilters, type TerminalUpdateRuleFilterForm, type TerminalUpdateRuleFilters} from '../model/terminalUpdateRuleFilters';
+import {terminalUpdateActualUnknownReasonLabel} from '../model/terminalUpdateActualUnknownReason';
+import {remoteControlTestIds} from '../../../app/automation/remoteControlTestIds';
+import {RemoteControlWorkspace, type RemoteControlTarget} from '../../remote-control/ui/RemoteControlWorkspace';
+import {createRemoteControlUuid} from '../../remote-control/model/remoteControlIdentity';
 import {
   isTerminalUpdateVersionConflict,
   terminalUpdateStatusActionLabel,
@@ -91,7 +98,7 @@ function ProjectTerminalUpdateContent({
   actionCapabilityKeys,
   projectRef,
 }: OperationsPageProps & {projectRef: NonNullable<OperationsPageProps['queryContext']['scopeRef']>}) {
-  const writable = actionCapabilityKeys.includes('MANAGE_PROJECT_TERMINAL_VERSION' as never);
+  const writable = actionCapabilityKeys.includes('MANAGE_PROJECT_TERMINAL_VERSION');
   const contextKey = `${queryContext.groupWorkspaceKey}:${projectRef}:${queryContext.expectedContextVersion}`;
   const latestContextKey = useRef(contextKey);
   latestContextKey.current = contextKey;
@@ -123,6 +130,14 @@ function ProjectTerminalUpdateContent({
   const latestRuleRef = useRef<string | undefined>(undefined);
   const latestVersionTerminalRef = useRef<string | undefined>(undefined);
   const [versionDetail, setVersionDetail] = useState<TerminalUpdateVersionDetail>();
+  const [remoteStartLoading, setRemoteStartLoading] = useState(false);
+  const remoteStartLoadingRef = useRef(false);
+  const remoteStartRequestVersion = useRef(0);
+  const [remoteControlProblem, setRemoteControlProblem] = useState<string>();
+  const [remoteWorkspace, setRemoteWorkspace] = useState<{
+    target: RemoteControlTarget;
+    start: TerminalRemoteControlStartResponse;
+  }>();
   const [history, setHistory] = useState<
     import('../../../app/api/generated/operations-edge').TerminalUpdateReportHistoryPage['items']
   >([]);
@@ -162,7 +177,8 @@ function ProjectTerminalUpdateContent({
     projectId: projectRef,
     pageSize: 50,
   });
-  useOverlayLock(createOpen || Boolean(detail) || Boolean(versionDetail) || Boolean(statusTarget) || auditOpen);
+  const canControlRemote = actionCapabilityKeys.includes('CONTROL_PROJECT_TERMINAL');
+  useOverlayLock(createOpen || Boolean(detail) || Boolean(versionDetail) || Boolean(statusTarget) || auditOpen || Boolean(remoteWorkspace));
   const path = useMemo(
     () => ({groupWorkspaceKey: queryContext.groupWorkspaceKey, projectRef}),
     [projectRef, queryContext.groupWorkspaceKey],
@@ -272,6 +288,8 @@ function ProjectTerminalUpdateContent({
   useEffect(() => {
     versionRequestId.current += 1;
     historyPageRequestId.current += 1;
+    remoteStartRequestVersion.current += 1;
+    remoteStartLoadingRef.current = false;
     historyPageLoadingRef.current = false;
     ruleStorePageRequestId.current += 1;
     ruleStorePageLoadingRef.current = false;
@@ -289,6 +307,7 @@ function ProjectTerminalUpdateContent({
     setRuleStoresCursor(null);
     setRuleStorePageLoading(false);
     setAuditOpen(false);
+    setRemoteStartLoading(false);
     setProblem(undefined);
   }, [contextKey]);
   useEffect(() => {
@@ -433,6 +452,144 @@ function ProjectTerminalUpdateContent({
       if (latestContextKey.current === requestContextKey && versionRequestId.current === requestId)
         setProblem(operationsProblemOf(error).detail || '读取终端报告详情失败');
     }
+  };
+
+  const closeVersionDrawer = () => {
+    versionRequestId.current += 1;
+    historyPageRequestId.current += 1;
+    historyPageLoadingRef.current = false;
+    setHistoryPageLoading(false);
+    historyPager.reset();
+    latestVersionTerminalRef.current = undefined;
+    setVersionDetail(undefined);
+    setHistory([]);
+    setHistoryCursor(null);
+    setRemoteControlProblem(undefined);
+  };
+
+  const startRemoteSession = async (target: RemoteControlTarget) => {
+    const requestId = wireUuid(createRemoteControlUuid());
+    operationsLogger.info({
+      event: 'frontend.remote_control.start',
+      phase: 'remote_control',
+      outcome: 'STARTED',
+      operationId: 'startOperationsTerminalRemoteControl',
+      diagnostic: {projectRef: target.projectRef, terminalRef: target.terminalRef},
+    });
+    const started = await operationsClient.startOperationsTerminalRemoteControl(
+      {
+        groupWorkspaceKey: target.groupWorkspaceKey,
+        projectRef: wireUuid(target.projectRef),
+        terminalRef: wireUuid(target.terminalRef),
+      },
+      {
+        query: {expectedContextVersion: target.expectedContextVersion},
+        body: {requestId},
+      },
+    );
+    operationsLogger.info({
+      event: 'frontend.remote_control.start',
+      phase: 'remote_control',
+      outcome: 'SUCCEEDED',
+      operationId: 'startOperationsTerminalRemoteControl',
+      diagnostic: {sessionId: started.sessionId, state: started.state},
+    });
+    return started;
+  };
+
+  const closeStaleRemoteStart = async (target: RemoteControlTarget, start: TerminalRemoteControlStartResponse) => {
+    try {
+      await operationsClient.endOperationsTerminalRemoteControl(
+        {
+          groupWorkspaceKey: target.groupWorkspaceKey,
+          projectRef: wireUuid(target.projectRef),
+          terminalRef: wireUuid(target.terminalRef),
+          sessionId: start.sessionId,
+        },
+        {query: {expectedContextVersion: target.expectedContextVersion}, body: {reason: 'WORKSPACE_CLOSED'}},
+      );
+      operationsLogger.info({
+        event: 'frontend.remote_control.stale_start_closed',
+        phase: 'remote_control',
+        outcome: 'SUCCEEDED',
+        operationId: 'endOperationsTerminalRemoteControl',
+        diagnostic: {sessionId: start.sessionId},
+      });
+    } catch (error) {
+      const failure = operationsProblemOf(error);
+      operationsLogger.error({
+        event: 'frontend.remote_control.stale_start_close_failed',
+        phase: 'cleanup',
+        outcome: 'ERROR',
+        operationId: 'endOperationsTerminalRemoteControl',
+        errorCode: failure.errorCode,
+        status: failure.status,
+        diagnostic: {sessionId: start.sessionId},
+      });
+    }
+  };
+
+  const startRemoteFromDrawer = async () => {
+    const current = versionDetail;
+    if (!canControlRemote || !current || current.connectionStatus !== 'ONLINE' || remoteStartLoadingRef.current) return;
+    remoteStartLoadingRef.current = true;
+    setRemoteStartLoading(true);
+    setRemoteControlProblem(undefined);
+    const requestContextKey = contextKey;
+    const requestedTerminalRef = current.terminalRef;
+    const requestVersion = ++remoteStartRequestVersion.current;
+    const target: RemoteControlTarget = {
+      groupWorkspaceKey: queryContext.groupWorkspaceKey,
+      projectRef,
+      terminalRef: current.terminalRef,
+      terminalName: current.terminalName,
+      storeName: current.storeName,
+      expectedContextVersion: queryContext.expectedContextVersion,
+      contextKey: requestContextKey,
+    };
+    try {
+      const start = await startRemoteSession(target);
+      const stillCurrent = latestContextKey.current === requestContextKey &&
+        remoteStartRequestVersion.current === requestVersion &&
+        latestVersionTerminalRef.current === requestedTerminalRef;
+      if (!stillCurrent) {
+        await closeStaleRemoteStart(target, start);
+        return;
+      }
+      setRemoteWorkspace({target, start});
+      closeVersionDrawer();
+    } catch (error) {
+      if (latestContextKey.current === requestContextKey && remoteStartRequestVersion.current === requestVersion) {
+        const failure = operationsProblemOf(error);
+        setRemoteControlProblem(failure.detail || '远程控制发起失败，请核对终端状态后重试。');
+        operationsLogger.error({
+          event: 'frontend.remote_control.start_failed',
+          phase: 'remote_control',
+          outcome: 'ERROR',
+          operationId: 'startOperationsTerminalRemoteControl',
+          errorCode: failure.errorCode,
+          status: failure.status,
+          diagnostic: {terminalRef: requestedTerminalRef},
+        });
+      }
+    } finally {
+      if (remoteStartRequestVersion.current === requestVersion) {
+        remoteStartLoadingRef.current = false;
+        setRemoteStartLoading(false);
+      }
+    }
+  };
+
+  const closeRemoteWorkspace = (workspace: NonNullable<typeof remoteWorkspace>, result: {endFailed: boolean; cleanupFailed: boolean}) => {
+    setRemoteWorkspace(undefined);
+    if (result.endFailed) message.error('远程会话结束请求失败，终端占用状态需要刷新核对。');
+    if (result.cleanupFailed) message.error('浏览器媒体连接未能完整释放，请检查本次远控日志。');
+    requestAnimationFrame(() => {
+      const testIdValue = latestContextKey.current === workspace.target.contextKey
+        ? terminalUpdateTestIds.reportOpen(workspace.target.terminalRef)
+        : terminalUpdateTestIds.reportQuerySubmit;
+      document.querySelector<HTMLElement>(`[data-testid="${testIdValue}"]`)?.focus();
+    });
   };
 
   const loadHistoryPage = async (
@@ -618,6 +775,19 @@ function ProjectTerminalUpdateContent({
       ),
     },
     {
+      title: '连接状态',
+      dataIndex: 'connectionStatus',
+      search: false,
+      render: (_, row) => (
+        <Tag
+          color={row.connectionStatus === 'ONLINE' ? 'success' : row.connectionStatus === 'OFFLINE' ? 'warning' : 'default'}
+          {...testId(remoteControlTestIds.onlineStatus(row.terminalRef))}
+        >
+          {row.connectionStatus === 'ONLINE' ? '在线' : row.connectionStatus === 'OFFLINE' ? '离线' : '未激活'}
+        </Tag>
+      ),
+    },
+    {
       title: '门店',
       dataIndex: 'storeRef',
       valueType: 'select',
@@ -680,6 +850,8 @@ function ProjectTerminalUpdateContent({
     jsonObject(latestActual) && typeof latestActual.jsVersion === 'string' ? latestActual.jsVersion : '未知';
   const latestRuntime =
     jsonObject(latestActual) && typeof latestActual.runtimeVersion === 'string' ? latestActual.runtimeVersion : '未知';
+  const latestActualUnknownReason =
+    jsonObject(latestActual) ? terminalUpdateActualUnknownReasonLabel(latestActual.unknownReason) : null;
   const latestStatus = jsonObject(latestRecent) ? reportStateLabel(jsonString(latestRecent, 'state')) : '尚无报告';
   const latestReason = jsonObject(latestRecent) ? reportReasonLabel(jsonString(latestRecent, 'reason')) : '—';
   const latestChangedAt = jsonNumber(latestRecent, 'changedAtEpochMillis');
@@ -974,19 +1146,37 @@ function ProjectTerminalUpdateContent({
       <Drawer
         title={versionDetail ? `${versionDetail.terminalName} · 终端更新状态详情` : '终端更新状态详情'}
         open={Boolean(versionDetail)}
-        onClose={() => {
-          versionRequestId.current += 1;
-          historyPageRequestId.current += 1;
-          historyPageLoadingRef.current = false;
-          setHistoryPageLoading(false);
-          historyPager.reset();
-          latestVersionTerminalRef.current = undefined;
-          setVersionDetail(undefined);
-          setHistory([]);
-          setHistoryCursor(null);
-        }}
+        onClose={closeVersionDrawer}
         width={720}
         {...adminDrawerSurfaceProps}
+        extra={canControlRemote && versionDetail ? (
+          <AdminDetailActionMenu
+            triggerTestId={remoteControlTestIds.detailActions(versionDetail.terminalRef)}
+            loading={remoteStartLoading}
+            items={[
+              {
+                key: 'remote-control',
+                disabled: versionDetail.connectionStatus !== 'ONLINE' || remoteStartLoading,
+                label: (
+                  <Tooltip
+                    title={versionDetail.connectionStatus === 'NOT_ACTIVATED'
+                      ? '终端未激活'
+                      : versionDetail.connectionStatus === 'OFFLINE'
+                        ? '终端离线'
+                        : undefined}
+                  >
+                    <span>
+                      <AdminDetailActionLabel testIdValue={remoteControlTestIds.start(versionDetail.terminalRef)}>
+                        远程控制
+                      </AdminDetailActionLabel>
+                    </span>
+                  </Tooltip>
+                ),
+                onClick: () => void startRemoteFromDrawer(),
+              },
+            ]}
+          />
+        ) : null}
         {...testId(terminalUpdateTestIds.reportDetail)}
       >
         {versionDetail && (
@@ -994,6 +1184,12 @@ function ProjectTerminalUpdateContent({
             <Descriptions {...adminDetailDescriptionsProps}>
               <Descriptions.Item label="终端">{versionDetail.terminalName}</Descriptions.Item>
               <Descriptions.Item label="门店">{versionDetail.storeName}</Descriptions.Item>
+              <Descriptions.Item label="连接状态">
+                <Tag color={versionDetail.connectionStatus === 'ONLINE' ? 'success' : versionDetail.connectionStatus === 'OFFLINE' ? 'warning' : 'default'}>
+                  {versionDetail.connectionStatus === 'ONLINE' ? '在线' : versionDetail.connectionStatus === 'OFFLINE' ? '离线' : '未激活'}
+                </Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="连接观察时间">{versionDetail.observedAt ?? '—'}</Descriptions.Item>
               <Descriptions.Item label="报告状态">{versionDetail.hasReport ? '已上报' : '尚无报告'}</Descriptions.Item>
               {versionDetail.latest?.oldBinding === true && (
                 <Descriptions.Item label="绑定状态">上次绑定报告</Descriptions.Item>
@@ -1001,6 +1197,7 @@ function ProjectTerminalUpdateContent({
               <Descriptions.Item label="实际 APK">{latestApk}</Descriptions.Item>
               <Descriptions.Item label="实际 JS">{latestJs}</Descriptions.Item>
               <Descriptions.Item label="Runtime">{latestRuntime}</Descriptions.Item>
+              <Descriptions.Item label="实际版本未知原因">{latestActualUnknownReason ?? '—'}</Descriptions.Item>
               <Descriptions.Item label="最新报告规则">{latestRuleReference}</Descriptions.Item>
               <Descriptions.Item label="最新报告 FULL 工件">{latestFullReference}</Descriptions.Item>
               <Descriptions.Item label="最新报告 HOT 工件">{latestHotReference}</Descriptions.Item>
@@ -1015,6 +1212,9 @@ function ProjectTerminalUpdateContent({
                   : formatCanonicalDateTime(versionDetail.receivedAtEpochMillis)}
               </Descriptions.Item>
             </Descriptions>
+            {remoteControlProblem && (
+              <Alert type="error" showIcon message={remoteControlProblem} style={{marginBottom: 16}} />
+            )}
             <Space direction="vertical" size={8} style={{display: 'flex'}}>
               <Table
                 rowKey={row => row.reportId}
@@ -1033,6 +1233,10 @@ function ProjectTerminalUpdateContent({
                   {title: '实际 APK', render: (_, row) => row.actual.apkVersion ?? '未知'},
                   {title: '实际 JS', render: (_, row) => row.actual.jsVersion ?? '未知'},
                   {title: 'Runtime', render: (_, row) => row.actual.runtimeVersion},
+                  {
+                    title: '实际版本未知原因',
+                    render: (_, row) => terminalUpdateActualUnknownReasonLabel(row.actual.unknownReason) ?? '—',
+                  },
                   {title: '接收时间', render: (_, row) => formatCanonicalDateTime(row.receivedAtEpochMillis)},
                 ]}
                 pagination={false}
@@ -1081,6 +1285,16 @@ function ProjectTerminalUpdateContent({
         groupWorkspaceKey={queryContext.groupWorkspaceKey}
         onClose={() => setAuditOpen(false)}
       />
+      {remoteWorkspace && (
+        <RemoteControlWorkspace
+          key={remoteWorkspace.start.sessionId}
+          target={remoteWorkspace.target}
+          initialStart={remoteWorkspace.start}
+          contextCurrent={remoteWorkspace.target.contextKey === contextKey}
+          onRestart={() => startRemoteSession(remoteWorkspace.target)}
+          onClose={result => closeRemoteWorkspace(remoteWorkspace, result)}
+        />
+      )}
     </Card>
   );
 }

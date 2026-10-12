@@ -8,6 +8,7 @@ import {
   type TerminalTopicSubscription,
   type TerminalTopicKey,
   type TerminalReadOperationId,
+  type TerminalStoreOrganizationPathRead,
 } from '@catering-v2s/kernel-base-terminal-data-client';
 import {requestTerminalUpdateCommand, type TerminalUpdateTask} from '@catering-v2s/kernel-base-terminal-update';
 import {serverConfigSliceName} from '@catering-v2s/kernel-base-server-config';
@@ -26,6 +27,7 @@ import {
   selectProjectOrganizationPath,
   selectProjectBasicTopicState,
   selectProjectTerminalUpdateContextFacts,
+  selectProjectFixedTerminalUpdateContextFacts,
   selectProjectTerminalUpdateCandidate,
   selectProjectTerminalUpdateRules,
   selectRegion,
@@ -51,7 +53,7 @@ const binding: StoreBasicBinding = Object.freeze({
   groupWorkspaceKey: 'workspace-1',
   bindingGeneration: 7,
 });
-const organizationPath = Object.freeze({
+const organizationPath: TerminalStoreOrganizationPathRead = Object.freeze({
   projectRef: 'project-1',
   projectName: 'Project',
   regionRef: 'region-1',
@@ -306,6 +308,7 @@ describe('project-basic owner', () => {
         selectProjectOrganizationPath,
         selectProjectTerminalUpdateCandidate,
         selectProjectTerminalUpdateContextFacts,
+        selectProjectFixedTerminalUpdateContextFacts,
         selectProjectTerminalUpdateRules,
         selectRegion,
       ]),
@@ -774,6 +777,40 @@ describe('project-basic owner', () => {
     expect(selectProjectTerminalUpdateCandidate(state, 'com.example.console', 'store-1')).toMatchObject({
       rule: {ruleRef: ruleItem.ruleRef},
     });
+
+    const topology = state[topologySliceName] as Record<string, unknown>;
+    const offlineState = {
+      ...state,
+      [topologySliceName]: {
+        ...topology,
+        peerReachable: false,
+        peerStateSyncConnectionId: null,
+        peerAppliedStateSyncRevisions: {},
+      },
+    } as StateRoot;
+    expect(selectProjectTerminalUpdateContextFacts(offlineState)).toBeNull();
+    expect(selectProjectFixedTerminalUpdateContextFacts(offlineState)).toEqual(
+      selectProjectFixedTerminalUpdateContextFacts(state),
+    );
+    expect(selectProjectFixedTerminalUpdateContextFacts(offlineState)).not.toBeNull();
+
+    const unpairedState = {
+      ...offlineState,
+      [topologySliceName]: {...topology, peerIdentity: null, peerReachable: false, peerStateSyncConnectionId: null},
+    } as StateRoot;
+    expect(selectProjectFixedTerminalUpdateContextFacts(unpairedState)).toBeNull();
+
+    const client = state['kernel.base.terminal-data-client.client'] as {
+      credential: Record<string, unknown>;
+    };
+    const changedCredentialState = {
+      ...offlineState,
+      'kernel.base.terminal-data-client.client': {
+        ...state['kernel.base.terminal-data-client.client'],
+        credential: {...client.credential, bindingGeneration: binding.bindingGeneration + 1},
+      },
+    } as StateRoot;
+    expect(selectProjectFixedTerminalUpdateContextFacts(changedCredentialState)).toBeNull();
 
     const readCountBeforeEvaluation = harness.calls.filter(
       call => call.name === readTerminalDataCommand.commandName,

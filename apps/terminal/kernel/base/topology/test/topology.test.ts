@@ -1,3 +1,4 @@
+import {unavailableRemoteControlPort} from '@catering-v2s/kernel-base-platform-ports';
 import {describe, expect, it, vi} from 'vitest';
 import {readFileSync} from 'node:fs';
 import {resolve} from 'node:path';
@@ -442,6 +443,7 @@ const createTopologyRuntime = (
         update: unavailableUpdatePort,
         logUpload: unavailableLogUploadPort,
         topologyHost: input.host,
+        remoteControl: unavailableRemoteControlPort,
       },
     }),
     state: {

@@ -23,9 +23,16 @@ import {
   selectManagedTerminalBrowserOrigin,
   selectManagedDevAdminOrigins,
   updateRequiresManagedDev,
+  remoteRequiresManagedDev,
+  requiresFixtureIntentForSuccessfulRun,
+  readFixtureIntent,
   updateCaseImplemented,
   updateScenarioAssertionsObserved,
   assertManagedDevDiagnosticSourcesReadable,
+  evaluateManagedRemoteControlDiagnosticCoverage,
+  evaluateAndroidDiagnostics,
+  readBoundedLogTail,
+  terminalAutomationExitCode,
 } from '../src/runner.ts';
 import journeyConfig from '../vitest.journeys.config.ts';
 import unitConfig from '../vitest.config.ts';
@@ -34,6 +41,215 @@ describe('Vitest execution boundary', () => {
   it('keeps unmanaged package tests separate from driver-selected journeys', () => {
     expect(unitConfig.test?.include).toEqual(['test/**/*.test.ts']);
     expect(journeyConfig.test?.include).toEqual(['journeys/**/*.test.ts']);
+  });
+});
+
+describe('run-owned fixture intent', () => {
+  it('requires fixture identity for successful remote runs and records the owning DEV run', () => {
+    const remoteExecution = {
+      phase: 'remote', platform: 'web', shape: 'mobile', remoteTopology: 'mobile-single', case: 'remote.main',
+    } as const;
+    expect(requiresFixtureIntentForSuccessfulRun(remoteExecution, 0)).toBe(true);
+    expect(requiresFixtureIntentForSuccessfulRun(remoteExecution, 1)).toBe(false);
+    expect(requiresFixtureIntentForSuccessfulRun({phase: 'contract', platform: 'web', shape: 'mobile'}, 0)).toBe(false);
+  });
+
+  it('accepts fixture evidence only for the managed DEV run bound to this runner', () => {
+    const directory = mkdtempSync(path.join(os.tmpdir(), 'ter-remote-fixture-intent-'));
+    try {
+      writeFileSync(
+        path.join(directory, 'fixture-intent.json'),
+        JSON.stringify({
+          managedDevRunId: 'managed-dev-current',
+          seedKey: 'term-handheld',
+          terminalRef: 'a'.repeat(36),
+          storeRef: 'b'.repeat(36),
+          deviceId: 'ter-auto-current',
+          bindingGeneration: 1,
+        }),
+        {mode: 0o600},
+      );
+
+      expect(readFixtureIntent(directory, 'managed-dev-current')).toMatchObject({
+        managedDevRunId: 'managed-dev-current',
+        seedKey: 'term-handheld',
+        bindingGeneration: 1,
+      });
+      expect(() => readFixtureIntent(directory, 'managed-dev-other')).toThrow(
+        'TERMINAL_AUTOMATION_FIXTURE_MANAGED_DEV_RUN_MISMATCH',
+      );
+    } finally {
+      rmSync(directory, {recursive: true, force: true});
+    }
+  });
+});
+
+describe('Android update diagnostics result', () => {
+  it('reads a fixed byte tail from a potentially large runner log', () => {
+    const directory = mkdtempSync(path.join(os.tmpdir(), 'ter-android-diagnostics-tail-'));
+    const logPath = path.join(directory, 'runner.log');
+    try {
+      writeFileSync(logPath, `${'x'.repeat(512)}TERMINAL_AUTOMATION_DIAGNOSTICS run=tail status=READ`);
+      const marker = 'TERMINAL_AUTOMATION_DIAGNOSTICS run=tail status=READ';
+      const tail = readBoundedLogTail(logPath, 64);
+      expect(Buffer.byteLength(tail)).toBe(64);
+      expect(tail.endsWith(marker)).toBe(true);
+    } finally {
+      rmSync(directory, {recursive: true, force: true});
+    }
+  });
+
+  it('requires each expected device source and makes diagnostic failure nonzero without changing business or cleanup', () => {
+    const execution = {phase: 'update', platform: 'android', shape: 'mobile', case: 'update.pair'};
+    const runId = 'diagnostic-run';
+    const output = [
+      `stdout TERMINAL_AUTOMATION_DIAGNOSTICS run=${runId} source=android-runtime status=READ lines=2`,
+      `stdout TERMINAL_AUTOMATION_DIAGNOSTICS run=${runId} source=android-native-update status=READ lines=3`,
+      `stdout TERMINAL_AUTOMATION_DIAGNOSTICS run=${runId} role=PAIR_SLAVE source=android-runtime status=LOG_NOT_AVAILABLE code=OUTPUT_LIMIT`,
+      `stdout TERMINAL_AUTOMATION_DIAGNOSTICS run=${runId} role=PAIR_SLAVE source=android-native-update status=READ lines=1`,
+    ].join('\n');
+    const diagnostics = evaluateAndroidDiagnostics(execution, runId, output);
+
+    expect(diagnostics).toMatchObject({
+      status: 'FAIL',
+      unavailable: ['PAIR_SLAVE:android-runtime'],
+      missing: [],
+      duplicates: [],
+    });
+    expect(
+      terminalAutomationExitCode({
+        business: 'PASS',
+        cleanup: 'PASS',
+        diagnostics: diagnostics.status,
+        managedDevDiagnostics: 'N/A',
+      }),
+    ).toBe(1);
+    expect(
+      terminalAutomationExitCode({
+        business: 'PASS',
+        cleanup: 'PASS',
+        diagnostics: 'PASS',
+        managedDevDiagnostics: 'N/A',
+      }),
+    ).toBe(0);
+  });
+});
+
+describe('Android remote-control diagnostics result', () => {
+  it('fails a successful logcat read with zero native remote-control events', () => {
+    const execution = {phase: 'remote', platform: 'android', shape: 'laptop-single', remoteTopology: 'laptop-single', case: 'remote.main'} as const;
+    const runId = 'remote-empty-native-diagnostics';
+    const output = [
+      `TERMINAL_AUTOMATION_DIAGNOSTICS run=${runId} source=android-runtime status=READ lines=1`,
+      `TERMINAL_AUTOMATION_DIAGNOSTICS run=${runId} source=android-native-remote status=READ lines=0`,
+    ].join('\n');
+    const diagnostics = evaluateAndroidDiagnostics(execution, runId, output);
+
+    expect(diagnostics).toMatchObject({
+      status: 'FAIL',
+      missing: [],
+      unavailable: [],
+      empty: ['MASTER:android-native-remote'],
+      duplicates: [],
+    });
+    expect(terminalAutomationExitCode({
+      business: 'PASS', cleanup: 'PASS', diagnostics: diagnostics.status, managedDevDiagnostics: 'N/A',
+    })).toBe(1);
+    expect(evaluateAndroidDiagnostics(execution, runId, output.replace('lines=0', 'lines=1')).status).toBe('PASS');
+  });
+
+  it('requires native and Runtime logs from each participating terminal without changing business or cleanup', () => {
+    const execution = {phase: 'remote', platform: 'android', shape: 'mobile', remoteTopology: 'laptop-paired', case: 'remote.main'} as const;
+    const runId = 'remote-diagnostic-run';
+    const output = [
+      `TERMINAL_AUTOMATION_DIAGNOSTICS run=${runId} source=android-runtime status=READ lines=2`,
+      `TERMINAL_AUTOMATION_DIAGNOSTICS run=${runId} source=android-native-remote status=READ lines=4`,
+      `TERMINAL_AUTOMATION_DIAGNOSTICS run=${runId} role=PAIR_SLAVE source=android-runtime status=READ lines=1`,
+    ].join('\n');
+    const diagnostics = evaluateAndroidDiagnostics(execution, runId, output);
+
+    expect(diagnostics).toMatchObject({
+      status: 'FAIL',
+      missing: ['PAIR_SLAVE:android-native-remote'],
+      unavailable: [],
+      duplicates: [],
+    });
+    expect(terminalAutomationExitCode({
+      business: 'PASS', cleanup: 'PASS', diagnostics: diagnostics.status, managedDevDiagnostics: 'N/A',
+    })).toBe(1);
+    expect(evaluateAndroidDiagnostics(execution, runId, [
+      ...output.split('\n'),
+      `TERMINAL_AUTOMATION_DIAGNOSTICS run=${runId} role=PAIR_SLAVE source=android-native-remote status=LOG_NOT_AVAILABLE code=OUTPUT_LIMIT`,
+    ].join('\n')).status).toBe('FAIL');
+  });
+});
+
+describe('managed DEV remote-control diagnostic coverage', () => {
+  it('does not treat readable logs or an old request as current-run coverage', () => {
+    const previous: Parameters<typeof evaluateManagedRemoteControlDiagnosticCoverage>[0] = [{
+      source: 'cbs',
+      events: [{event: 'REQUEST_COMPLETED', operationId: 'registerTerminalRemoteControl', requestId: 'old-request', status: '500'}],
+    }];
+    const coverage = evaluateManagedRemoteControlDiagnosticCoverage(previous, previous, false);
+    expect(coverage).toMatchObject({
+      status: 'FAIL',
+      code: 'TERMINAL_AUTOMATION_REMOTE_REQUEST_DIAGNOSTICS_INCOMPLETE',
+      missingOperations: ['startOperationsTerminalRemoteControl', 'registerTerminalRemoteControl'],
+    });
+  });
+
+  it('does not call a generic unknown 500 fully diagnosed without its matching owner cause event', () => {
+    const baseline: Parameters<typeof evaluateManagedRemoteControlDiagnosticCoverage>[0] = [{source: 'cbs', events: []}];
+    const current: Parameters<typeof evaluateManagedRemoteControlDiagnosticCoverage>[1] = [{
+      source: 'cbs',
+      events: [
+        {event: 'REQUEST_COMPLETED', operationId: 'registerTerminalRemoteControl', requestId: 'run-request', status: '500', outcome: 'FAILED', errorCode: 'PLATFORM_COMMON_RESULT_UNKNOWN'},
+      ],
+    }];
+    expect(evaluateManagedRemoteControlDiagnosticCoverage(baseline, current, false)).toMatchObject({
+      status: 'FAIL',
+      code: 'TERMINAL_AUTOMATION_REMOTE_FAILURE_CAUSE_DIAGNOSTICS_INCOMPLETE',
+      missingOperations: [],
+    });
+  });
+
+  it('accepts a generic unknown 500 when the same owner request has safe cause metadata', () => {
+    const baseline: Parameters<typeof evaluateManagedRemoteControlDiagnosticCoverage>[0] = [{source: 'cbs', events: []}];
+    const current: Parameters<typeof evaluateManagedRemoteControlDiagnosticCoverage>[1] = [{
+      source: 'cbs',
+      events: [
+        {event: 'REQUEST_COMPLETED', operationId: 'registerTerminalRemoteControl', requestId: 'run-request', status: '500', outcome: 'FAILED', errorCode: 'PLATFORM_COMMON_RESULT_UNKNOWN'},
+        {event: 'OWNER_RESULT_UNKNOWN', operationId: 'registerTerminalRemoteControl', requestId: 'run-request', errorCode: 'PLATFORM_COMMON_RESULT_UNKNOWN', exceptionType: 'DuplicateKeyException', rootCauseType: 'SQLException', exceptionOrigin: 'com.catering.v2s.terminalcontrol.Owner#register', sqlState: '23505'},
+      ],
+    }];
+    expect(evaluateManagedRemoteControlDiagnosticCoverage(baseline, current, false)).toEqual({
+      status: 'PASS',
+      code: null,
+      missingOperations: [],
+    });
+  });
+
+  it('requires the successful remote-control HTTP owner operations on a passing journey', () => {
+    const baseline: Parameters<typeof evaluateManagedRemoteControlDiagnosticCoverage>[0] = [{source: 'cbs', events: []}];
+    const operations = [
+      'startOperationsTerminalRemoteControl',
+      'registerTerminalRemoteControl',
+      'issueOperationsRemoteControlGrant',
+      'reportTerminalRemoteControl',
+      'endOperationsTerminalRemoteControl',
+    ];
+    const current: Parameters<typeof evaluateManagedRemoteControlDiagnosticCoverage>[1] = [{source: 'cbs', events: operations.map((operationId, index) => ({
+      event: 'REQUEST_COMPLETED', operationId, requestId: `run-request-${index}`, status: '200', outcome: 'SUCCEEDED',
+    }))}];
+    expect(evaluateManagedRemoteControlDiagnosticCoverage(baseline, current, true)).toMatchObject({
+      status: 'PASS',
+      missingOperations: [],
+    });
+    expect(evaluateManagedRemoteControlDiagnosticCoverage(
+      baseline,
+      [{source: 'cbs', events: current[0]?.events?.slice(0, 1)}],
+      true,
+    ).status).toBe('FAIL');
   });
 });
 
@@ -633,7 +849,7 @@ describe('resolveAutomationSuite', () => {
     }
   });
 
-  it('registers update cases in the current driver and requires DEV only for business-backed cases', () => {
+  it('allows only current Stage C update cases and requires DEV for those business-backed cases', () => {
     const web = parseAutomationRunArguments([
       '--phase',
       'update',
@@ -702,9 +918,9 @@ describe('resolveAutomationSuite', () => {
     ]);
     expect(resolveAutomationSuite(web)).toBe('journeys/update.test.ts');
     expect(updateRequiresManagedDev(web)).toBe(false);
-    expect(updateRequiresManagedDev(flush)).toBe(true);
-    expect(updateRequiresManagedDev(offlineAssets)).toBe(true);
-    expect(updateRequiresManagedDev(fullHot)).toBe(true);
+    expect(updateRequiresManagedDev(flush)).toBe(false);
+    expect(updateRequiresManagedDev(offlineAssets)).toBe(false);
+    expect(updateRequiresManagedDev(fullHot)).toBe(false);
     const supplyChain = parseAutomationRunArguments([
       '--phase',
       'update',
@@ -790,7 +1006,7 @@ describe('resolveAutomationSuite', () => {
         'managed-device-01',
       ]),
     ).toThrow('TERMINAL_AUTOMATION_UPDATE_SUPPLY_CHAIN_SAMPLE_SHAPE_INVALID');
-    expect(updateRequiresManagedDev(bootGuard)).toBe(true);
+    expect(updateRequiresManagedDev(bootGuard)).toBe(false);
     expect(() =>
       parseAutomationRunArguments([
         '--phase',
@@ -803,6 +1019,62 @@ describe('resolveAutomationSuite', () => {
         'update.unknown',
       ]),
     ).toThrow('TERMINAL_AUTOMATION_UPDATE_CASE_INVALID');
+  });
+
+  it('parses the approved remote-control topologies without the legacy shape flag', () => {
+    const web = parseAutomationRunArguments([
+      '--phase', 'remote', '--platform', 'web', '--remote-topology', 'mobile-single', '--sample', 'console', '--case', 'remote.main',
+    ]);
+    expect(web).toMatchObject({
+      phase: 'remote', platform: 'web', shape: 'mobile', remoteTopology: 'mobile-single',
+      sample: 'console', case: 'remote.main',
+    });
+    expect(resolveAutomationSuite(web)).toBe('journeys/remote.web.test.ts');
+    expect(remoteRequiresManagedDev(web)).toBe(true);
+
+    for (const [topology, serials, expectedShape] of [
+      ['mobile-single', ['emulator-mobile'], 'mobile'],
+      ['laptop-single', ['emulator-laptop'], 'mobile'],
+      ['laptop-dual', ['physical-dual'], 'dual'],
+      ['laptop-paired', ['emulator-master', 'emulator-slave'], 'mobile'],
+    ] as const) {
+      const android = parseAutomationRunArguments([
+        '--phase', 'remote',
+        '--platform', 'android',
+        '--remote-topology', topology,
+        '--sample', 'wallpaper',
+        '--case', 'remote.main',
+        '--device-serial', serials[0],
+        ...(serials[1] === undefined ? [] : ['--peer-device-serial', serials[1]]),
+      ]);
+      expect(android).toMatchObject({
+        phase: 'remote', platform: 'android', shape: expectedShape, remoteTopology: topology,
+        sample: 'wallpaper', case: 'remote.main', deviceSerial: serials[0],
+        ...(serials[1] === undefined ? {} : {peerDeviceSerial: serials[1]}),
+      });
+      expect(resolveAutomationSuite(android)).toBe('journeys/remote.android.test.ts');
+      expect(remoteRequiresManagedDev(android)).toBe(true);
+    }
+  });
+
+  it('rejects remote-control topology drift before creating a managed run', () => {
+    const cases = [
+      [ '--phase', 'remote', '--platform', 'web', '--remote-topology', 'laptop-single', '--sample', 'console', '--case', 'remote.main' ],
+      [ '--phase', 'remote', '--platform', 'android', '--remote-topology', 'laptop-paired', '--sample', 'console', '--case', 'remote.main', '--device-serial', 'same', '--peer-device-serial', 'same' ],
+      [ '--phase', 'remote', '--platform', 'android', '--remote-topology', 'laptop-paired', '--sample', 'console', '--case', 'remote.main', '--device-serial', 'master' ],
+      [ '--phase', 'remote', '--platform', 'android', '--shape', 'dual', '--remote-topology', 'laptop-dual', '--sample', 'console', '--case', 'remote.main', '--device-serial', 'device' ],
+      [ '--phase', 'journey', '--platform', 'web', '--shape', 'mobile', '--remote-topology', 'mobile-single' ],
+      [ '--phase', 'remote', '--platform', 'web', '--remote-topology', 'mobile-single', '--sample', 'console', '--case', 'remote.unknown' ],
+    ] as const;
+    const errors = [
+      'TERMINAL_AUTOMATION_REMOTE_WEB_TOPOLOGY_INVALID',
+      'TERMINAL_AUTOMATION_ANDROID_DEVICE_SERIALS_MUST_DIFFER',
+      'TERMINAL_AUTOMATION_ANDROID_PEER_DEVICE_SERIAL_REQUIRED',
+      'TERMINAL_AUTOMATION_REMOTE_SHAPE_NOT_APPLICABLE',
+      'TERMINAL_AUTOMATION_REMOTE_TOPOLOGY_NOT_APPLICABLE',
+      'TERMINAL_AUTOMATION_REMOTE_CASE_INVALID',
+    ];
+    cases.forEach((args, index) => expect(() => parseAutomationRunArguments(args)).toThrow(errors[index]));
   });
 
   it('rejects Stage C acceptance-row labels as CLI cases unless they have a real journey source', () => {
@@ -893,18 +1165,19 @@ describe('resolveAutomationSuite', () => {
         'managed-device-01',
       ]).case,
     ).toBe('update.full-hot');
-    expect(updateCaseImplemented({phase: 'update', platform: 'web', shape: 'mobile', case: 'update.fixed'})).toBe(true);
+    expect(updateCaseImplemented({phase: 'update', platform: 'web', shape: 'mobile', case: 'update.artifacts'})).toBe(true);
+    expect(updateCaseImplemented({phase: 'update', platform: 'web', shape: 'mobile', case: 'update.fixed'})).toBe(false);
     expect(
       updateCaseImplemented({phase: 'update', platform: 'web', shape: 'mobile', case: 'update.install-result'}),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       updateCaseImplemented({phase: 'update', platform: 'web', shape: 'mobile', case: 'update.compatibility'}),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       updateCaseImplemented({phase: 'update', platform: 'android', shape: 'mobile', case: 'update.full-hot'}),
-    ).toBe(true);
+    ).toBe(false);
     expect(updateCaseImplemented({phase: 'update', platform: 'android', shape: 'dual', case: 'update.full-hot'})).toBe(
-      true,
+      false,
     );
     expect(
       updateCaseImplemented({phase: 'update', platform: 'web', shape: 'mobile', case: 'update.supply-chain'}),
@@ -928,43 +1201,43 @@ describe('resolveAutomationSuite', () => {
     ).toBe('update.offline-assets');
     expect(
       updateCaseImplemented({phase: 'update', platform: 'android', shape: 'mobile', case: 'update.offline-assets'}),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       updateCaseImplemented({phase: 'update', platform: 'android', shape: 'dual', case: 'update.offline-assets'}),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       updateCaseImplemented({phase: 'update', platform: 'android', shape: 'mobile', case: 'update.boot-guard'}),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       updateCaseImplemented({phase: 'update', platform: 'android', shape: 'mobile', case: 'update.install-result'}),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       updateCaseImplemented({phase: 'update', platform: 'android', shape: 'mobile', case: 'update.compatibility'}),
-    ).toBe(true);
+    ).toBe(false);
     expect(updateCaseImplemented({phase: 'update', platform: 'android', shape: 'dual', case: 'update.rollback'})).toBe(
-      true,
+      false,
     );
     expect(
       updateRequiresManagedDev({phase: 'update', platform: 'android', shape: 'dual', case: 'update.rollback'}),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       updateRequiresManagedDev({phase: 'update', platform: 'android', shape: 'mobile', case: 'update.compatibility'}),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       updateRequiresManagedDev({phase: 'update', platform: 'android', shape: 'mobile', case: 'update.install-result'}),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       updateRequiresManagedDev({phase: 'update', platform: 'android', shape: 'dual', case: 'update.interruption'}),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       updateCaseImplemented({phase: 'update', platform: 'android', shape: 'dual', case: 'update.interruption'}),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       updateRequiresManagedDev({phase: 'update', platform: 'web', shape: 'mobile', case: 'update.install-result'}),
     ).toBe(false);
     expect(
       updateCaseImplemented({phase: 'update', platform: 'android', shape: 'mobile', case: 'update.interruption'}),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       updateScenarioAssertionsObserved(
         {phase: 'update', platform: 'android', shape: 'dual', case: 'update.interruption'},

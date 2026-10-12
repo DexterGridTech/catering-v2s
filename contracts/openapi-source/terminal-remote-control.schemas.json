@@ -1,0 +1,178 @@
+{
+  "components": {
+    "schemas": {
+      "TerminalRemoteControlPeerIdentity": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["moduleName", "nodeId"],
+        "properties": {
+          "moduleName": {"type": "string", "minLength": 1, "maxLength": 128},
+          "nodeId": {"type": "string", "minLength": 1, "maxLength": 128}
+        }
+      },
+      "TerminalRemoteControlEndpoint": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["endpointId", "participantIdentity"],
+        "properties": {
+          "endpointId": {"type": "string", "format": "uuid"},
+          "participantIdentity": {"type": "string", "minLength": 1, "maxLength": 128}
+        }
+      },
+      "TerminalRemoteControlScreen": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["screen", "endpointId"],
+        "properties": {
+          "screen": {"type": "string", "enum": ["main", "secondary"]},
+          "endpointId": {"type": "string", "format": "uuid"}
+        }
+      },
+      "TerminalRemoteControlDescription": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sessionId", "roomName", "controllerIdentity", "topologyKind", "masterEndpointId", "endpoints", "screens"],
+        "properties": {
+          "sessionId": {"type": "string", "format": "uuid"},
+          "roomName": {"type": "string", "minLength": 1, "maxLength": 128},
+          "controllerIdentity": {"type": "string", "minLength": 1, "maxLength": 128},
+          "topologyKind": {"type": "string", "enum": ["MOBILE_SINGLE", "LAPTOP_SINGLE", "LAPTOP_DUAL", "LAPTOP_PAIRED"]},
+          "masterEndpointId": {"type": "string", "format": "uuid"},
+          "endpoints": {"type": "array", "minItems": 1, "maxItems": 2, "items": {"ref": "TerminalRemoteControlEndpoint"}},
+          "screens": {"type": "array", "minItems": 1, "maxItems": 2, "items": {"ref": "TerminalRemoteControlScreen"}}
+        }
+      },
+      "TerminalRemoteControlEndpointGrant": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["endpointId", "roomName", "participantIdentity", "token", "expiresAtEpochMillis"],
+        "properties": {
+          "endpointId": {"type": "string", "format": "uuid"},
+          "roomName": {"type": "string", "minLength": 1, "maxLength": 128},
+          "participantIdentity": {"type": "string", "minLength": 1, "maxLength": 128},
+          "token": {"type": "string", "minLength": 1, "maxLength": 8192},
+          "expiresAtEpochMillis": {"type": "integer", "format": "int64", "minimum": 0}
+        }
+      },
+      "TerminalRemoteControlStartRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["requestId"],
+        "properties": {"requestId": {"type": "string", "format": "uuid"}}
+      },
+      "TerminalRemoteControlStartResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sessionId", "state", "roomName", "controllerIdentity", "description", "startOperationId", "deadlineAtEpochMillis"],
+        "properties": {
+          "sessionId": {"type": "string", "format": "uuid"},
+          "state": {"type": "string", "enum": ["STARTING"]},
+          "roomName": {"type": "string", "minLength": 1, "maxLength": 128},
+          "controllerIdentity": {"type": "string", "minLength": 1, "maxLength": 128},
+          "description": {"allOf": [{"ref": "TerminalRemoteControlDescription"}], "nullable": true},
+          "startOperationId": {"type": "string", "format": "uuid"},
+          "deadlineAtEpochMillis": {"type": "integer", "format": "int64", "minimum": 0}
+        }
+      },
+      "TerminalRemoteControlSessionRead": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sessionId", "state", "reason", "description", "startedAtEpochMillis", "endedAtEpochMillis"],
+        "properties": {
+          "sessionId": {"type": "string", "format": "uuid"},
+          "state": {"type": "string", "enum": ["STARTING", "ACTIVE", "ENDED"]},
+          "reason": {"type": "string", "nullable": true},
+          "description": {"allOf": [{"ref": "TerminalRemoteControlDescription"}], "nullable": true},
+          "startedAtEpochMillis": {"type": "integer", "format": "int64", "minimum": 0},
+          "endedAtEpochMillis": {"type": "integer", "format": "int64", "minimum": 0, "nullable": true}
+        }
+      },
+      "TerminalRemoteControlControllerGrant": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["url", "roomName", "participantIdentity", "token", "expiresAtEpochMillis", "description"],
+        "properties": {
+          "url": {"type": "string", "format": "uri", "minLength": 1, "maxLength": 2048},
+          "roomName": {"type": "string", "minLength": 1, "maxLength": 128},
+          "participantIdentity": {"type": "string", "minLength": 1, "maxLength": 128},
+          "token": {"type": "string", "minLength": 1, "maxLength": 8192},
+          "expiresAtEpochMillis": {"type": "integer", "format": "int64", "minimum": 0},
+          "description": {"ref": "TerminalRemoteControlDescription"}
+        }
+      },
+      "TerminalRemoteControlEndRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["reason"],
+        "properties": {"reason": {"type": "string", "enum": ["ADMIN_ENDED", "WORKSPACE_CLOSED"]}}
+      },
+      "TerminalRemoteControlEndResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sessionId", "state", "reason", "endedAtEpochMillis"],
+        "properties": {
+          "sessionId": {"type": "string", "format": "uuid"},
+          "state": {"type": "string", "enum": ["ENDED"]},
+          "reason": {"type": "string", "enum": ["ADMIN_ENDED", "WORKSPACE_CLOSED"]},
+          "endedAtEpochMillis": {"type": "integer", "format": "int64", "minimum": 0}
+        }
+      },
+      "TerminalRemoteControlRegisterRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sessionId", "topologyKind", "peerIdentity"],
+        "properties": {
+          "sessionId": {"type": "string", "format": "uuid"},
+          "topologyKind": {"type": "string", "enum": ["MOBILE_SINGLE", "LAPTOP_SINGLE", "LAPTOP_DUAL", "LAPTOP_PAIRED"]},
+          "peerIdentity": {"allOf": [{"ref": "TerminalRemoteControlPeerIdentity"}], "nullable": true}
+        }
+      },
+      "TerminalRemoteControlRegisterResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["description", "remainingLeaseMs", "grants"],
+        "properties": {
+          "description": {"ref": "TerminalRemoteControlDescription"},
+          "remainingLeaseMs": {"type": "integer", "minimum": 0},
+          "grants": {"type": "array", "minItems": 1, "maxItems": 2, "items": {"ref": "TerminalRemoteControlEndpointGrant"}}
+        }
+      },
+      "TerminalRemoteControlStatusReportRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sessionId", "state", "reason", "readyScreens"],
+        "properties": {
+          "sessionId": {"type": "string", "format": "uuid"},
+          "state": {"type": "string", "enum": ["STARTING", "ACTIVE", "ENDED"]},
+          "reason": {"type": "string", "nullable": true},
+          "readyScreens": {
+            "type": "array",
+            "maxItems": 2,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["endpointId", "screen", "streamId", "trackSid"],
+              "properties": {
+                "endpointId": {"type": "string", "format": "uuid"},
+                "screen": {"type": "string", "enum": ["main", "secondary"]},
+                "streamId": {"type": "string", "format": "uuid"},
+                "trackSid": {"type": "string", "minLength": 1, "maxLength": 128}
+              }
+            }
+          }
+        }
+      },
+      "TerminalRemoteControlStatusReportReceipt": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sessionId", "state", "reason", "remainingLeaseMs"],
+        "properties": {
+          "sessionId": {"type": "string", "format": "uuid"},
+          "state": {"type": "string", "enum": ["STARTING", "ACTIVE", "ENDED"]},
+          "reason": {"type": "string", "nullable": true},
+          "remainingLeaseMs": {"type": "integer", "minimum": 0}
+        }
+      }
+    }
+  }
+}

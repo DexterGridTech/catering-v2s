@@ -81,6 +81,16 @@ public class EdgeWebConfiguration implements WebMvcConfigurer {
                 origins,
                 "POST",
                 postHeaders);
+        configureTerminalBrowserCors(
+                registry.addMapping("/api/terminal/group-workspaces/*/remote-control-sessions/*/registration"),
+                origins,
+                "POST",
+                postHeaders);
+        configureTerminalBrowserCors(
+                registry.addMapping("/api/terminal/group-workspaces/*/remote-control-sessions/*/status"),
+                origins,
+                "POST",
+                postHeaders);
         List.of(
                         "/api/terminal/group-workspaces/*/contracts/*",
                         "/api/terminal/group-workspaces/*/service-points/*",

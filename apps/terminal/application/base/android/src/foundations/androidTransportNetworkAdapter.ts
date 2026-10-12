@@ -15,6 +15,17 @@ type NativeSocketEvent = Readonly<{
   readonly reason?: string;
 }>;
 
+type NativeHttpResult =
+  | Readonly<{
+      kind: 'response';
+      status: number;
+      bodyText: string;
+      contentType: string;
+      requestId?: string | null;
+      correlationId?: string | null;
+    }>
+  | Readonly<{kind: 'failure'; code: string}>;
+
 type NativeNetworkModule = Readonly<{
   readonly addListener: (eventName: string, listener: (event: NativeSocketEvent) => void) => EventSubscription;
   readonly request: (
@@ -24,15 +35,7 @@ type NativeNetworkModule = Readonly<{
     bodyText: string | null,
     timeoutMs: number,
     proxy: unknown,
-  ) => Promise<
-    Readonly<{
-      status: number;
-      bodyText: string;
-      contentType: string;
-      requestId?: string | null;
-      correlationId?: string | null;
-    }>
-  >;
+  ) => Promise<NativeHttpResult>;
   readonly openSocket: (
     socketId: string,
     url: string,
@@ -55,6 +58,12 @@ const withSuffix = (baseUrl: string, suffix: string): string => {
 
 const nativeProxy = (proxy: Parameters<TransportNetworkAdapter['connect']>[0]['proxy']): unknown =>
   proxy === undefined ? null : proxy;
+
+const nativeHttpBridgeFailureCode = (error: unknown): string => {
+  if (error instanceof TypeError) return 'ANDROID_HTTP_BRIDGE_TYPE_ERROR';
+  if (error instanceof Error && error.name === 'Error') return 'ANDROID_HTTP_BRIDGE_ERROR';
+  return 'ANDROID_HTTP_BRIDGE_FAILED';
+};
 
 const parseBody = (text: string, contentType: string): unknown => {
   if (text.length === 0) return null;
@@ -138,6 +147,8 @@ const sendHttp = async (
       input.timeoutMs,
       nativeProxy(input.proxy),
     );
+    if (response.kind === 'failure')
+      return Object.freeze({kind: 'failure', category: 'not-delivered', code: response.code});
     return Object.freeze({
       kind: 'response',
       status: response.status,
@@ -146,8 +157,8 @@ const sendHttp = async (
       ...(response.requestId == null ? {} : {requestId: response.requestId}),
       ...(response.correlationId == null ? {} : {correlationId: response.correlationId}),
     });
-  } catch {
-    return Object.freeze({kind: 'failure', category: 'not-delivered', code: 'ANDROID_HTTP_TRANSPORT_FAILED'});
+  } catch (error) {
+    return Object.freeze({kind: 'failure', category: 'not-delivered', code: nativeHttpBridgeFailureCode(error)});
   }
 };
 

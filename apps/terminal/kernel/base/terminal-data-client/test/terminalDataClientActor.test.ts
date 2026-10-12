@@ -18,6 +18,8 @@ import {
   readTerminalDataCommand,
   submitTerminalUpdateReportCommand,
   requestTerminalUpdateDownloadGrantCommand,
+  registerTerminalRemoteControlCommand,
+  reportTerminalRemoteControlCommand,
 } from '../src/features/commands/terminalDataClientCommands';
 import {
   completeTopologySlaveUnpairStateClearCommand,
@@ -250,6 +252,53 @@ const createRemoteOperationHarness = (options?: {
 };
 
 describe('terminal-data-client update report command', () => {
+  it('correlates a completed report request with its stable report and task identities', async () => {
+    const harness = createRemoteOperationHarness();
+    const reportId = '00000000-0000-4000-8000-000000000101';
+    const taskId = '00000000-0000-4000-8000-000000000102';
+    harness.transport.executeHttp.mockResolvedValueOnce({
+      kind: 'response',
+      status: 200,
+      addressName: 'dev',
+      configRevision: 4,
+      requestId: 'edge-request-1',
+      correlationId: 'edge-correlation-1',
+      body: {reportId, taskId, acceptedSequence: 11, outcome: 'ACCEPTED'},
+    });
+    const body = {
+      reportId,
+      reportSequence: 11,
+      taskId,
+      actual: {
+        apkVersion: '1.0.0', nativeBuildNumber: 1, applicationId: 'com.example.console', runtimeVersion: '1',
+        jsVersion: '1.0.0', publicationId: 'a'.repeat(64), apkSha256: 'b'.repeat(64), bundleSha256: null,
+        entryKind: 'INSTALLED_APK', unknownReason: null,
+      },
+      recent: {
+        state: 'SUCCEEDED', reason: 'NONE', changedAtEpochMillis: 123, ruleRef: null,
+        fullArtifactRef: null, hotArtifactRef: null,
+      },
+    };
+    const handler = harness.actor.actor.handlers.find(
+      item => item.commandName === submitTerminalUpdateReportCommand.commandName,
+    );
+
+    await expect(handler!.handle(harness.makeContext(submitTerminalUpdateReportCommand.commandName, {
+      idempotencyKey: reportId,
+      body,
+    }))).resolves.toMatchObject({kind: 'success', body: {reportId, taskId, acceptedSequence: 11}});
+    expect(harness.diagnostics).toContainEqual(expect.objectContaining({
+      category: 'terminal.update.report',
+      event: 'report-submit-completed',
+      data: expect.objectContaining({
+        reportId, taskId, reportSequence: 11, resultKind: 'success',
+        requestId: 'edge-request-1', correlationId: 'edge-correlation-1',
+      }),
+    }));
+    expect(JSON.stringify(harness.diagnostics)).not.toContain('R'.repeat(43));
+    harness.dispose();
+  });
+
   it('rejects non-UUID report identities before HTTP and records a safe diagnostic', async () => {
     const harness = createRemoteOperationHarness();
     const handler = harness.actor.actor.handlers.find(
@@ -373,6 +422,173 @@ describe('terminal-data-client activation command actor', () => {
       }),
     );
     expect(executeHttp.mock.calls[0]?.[0]).not.toHaveProperty('body');
+    actorRuntime.dispose();
+  });
+
+  it('routes remote-control registration and status through generated HTTP using the TDC credential', async () => {
+    const secret = 'A'.repeat(43);
+    const sessionId = '00000000-0000-4000-8000-000000000019';
+    const endpointId = '00000000-0000-4000-8000-000000000020';
+    const description = {
+      sessionId,
+      roomName: `rc_${sessionId}`,
+      controllerIdentity: 'controller-1',
+      topologyKind: 'MOBILE_SINGLE',
+      masterEndpointId: endpointId,
+      endpoints: [{endpointId, participantIdentity: 'terminal-1'}],
+      screens: [{screen: 'main', endpointId}],
+    };
+    const grant = {
+      endpointId,
+      roomName: `rc_${sessionId}`,
+      participantIdentity: 'terminal-1',
+      token: 'transient-room-token',
+      expiresAtEpochMillis: 1_800_000_030_000,
+    };
+    const executeHttp = vi
+      .fn()
+      .mockResolvedValueOnce({
+        kind: 'response',
+        addressName: 'dev',
+        configRevision: 4,
+        status: 200,
+        body: {description, remainingLeaseMs: 30_000, grants: [grant]},
+      })
+      .mockResolvedValueOnce({
+        kind: 'response',
+        addressName: 'dev',
+        configRevision: 4,
+        status: 200,
+        body: {sessionId, state: 'ACTIVE', reason: null, remainingLeaseMs: 28_000},
+      })
+      .mockResolvedValueOnce({
+        kind: 'response',
+        addressName: 'dev',
+        configRevision: 4,
+        status: 500,
+        requestId: 'edge-register-request',
+        correlationId: 'edge-register-correlation',
+        body: {errorCode: 'INTERNAL_ERROR', detail: 'private-response-body'},
+      });
+    const actorRuntime = createTerminalDataClientActor({
+      transport: {
+        start: vi.fn(),
+        ready: vi.fn(),
+        invalid: vi.fn(),
+        stop: vi.fn(),
+        executeHttp,
+        reportHttpAddressAvailable: vi.fn(),
+      },
+      businessServerName: 'business',
+      createCredentialSecret: () => secret,
+      now: () => 10,
+      appVersion: 'test',
+      surfaceForm: 'mobile',
+    });
+    let clientState = terminalDataClientReducer(undefined, {type: 'test/init'});
+    clientState = terminalDataClientReducer(
+      clientState,
+      terminalDataClientActions.replaceCredential({
+        groupWorkspaceKey: 'workspace-1',
+        terminalRef: 'terminal-1',
+        storeRef: 'store-1',
+        deviceId: 'device-1',
+        bindingGeneration: 9,
+        credentialSecret: secret,
+      }),
+    );
+    clientState = terminalDataClientReducer(
+      clientState,
+      terminalDataClientActions.markCredentialReady({
+        credentialRevision: clientState.credentialRevision,
+        instanceMode: 'MASTER',
+      }),
+    );
+    const diagnostics = createActivationTestLogger();
+    const contextFor = (commandName: string, commandId: string, payload: unknown) =>
+      ({
+        runtimeId: 'test-runtime',
+        localNodeId: 'test-node',
+        platformPorts: {logger: diagnostics.logger},
+        command: {commandName, commandId, requestId: commandId, payload} as never,
+        actor: {
+          actorKey: actorRuntime.actor.actorKey,
+          moduleName: actorRuntime.actor.moduleName,
+          actorName: actorRuntime.actor.actorName,
+        },
+        getState: () => actorState(clientState),
+        dispatchAction: (action: unknown) => action as never,
+        flushPersistence: async () => ({status: 'succeeded'}),
+        subscribeState: () => () => undefined,
+        dispatchCommand: async () => ({status: 'completed'}),
+        requestApplicationReset: vi.fn(),
+      }) as unknown as ActorExecutionContext;
+    const handlerFor = (commandName: string) => {
+      const handler = actorRuntime.actor.handlers.find(candidate => candidate.commandName === commandName);
+      if (handler === undefined) throw new Error(`missing TDC command handler: ${commandName}`);
+      return handler;
+    };
+
+    await expect(
+      handlerFor(registerTerminalRemoteControlCommand.commandName).handle(
+        contextFor(registerTerminalRemoteControlCommand.commandName, 'register', {
+          sessionId,
+          body: {sessionId, topologyKind: 'MOBILE_SINGLE', peerIdentity: null},
+        }),
+      ),
+    ).resolves.toMatchObject({kind: 'success', body: {description, grants: [grant]}});
+    await expect(
+      handlerFor(reportTerminalRemoteControlCommand.commandName).handle(
+        contextFor(reportTerminalRemoteControlCommand.commandName, 'report', {
+          sessionId,
+          body: {sessionId, state: 'ACTIVE', reason: null, readyScreens: []},
+        }),
+      ),
+    ).resolves.toMatchObject({kind: 'success', body: {sessionId, state: 'ACTIVE'}});
+    await expect(
+      handlerFor(registerTerminalRemoteControlCommand.commandName).handle(
+        contextFor(registerTerminalRemoteControlCommand.commandName, 'register-failed', {
+          sessionId,
+          body: {sessionId, topologyKind: 'MOBILE_SINGLE', peerIdentity: null},
+        }),
+      ),
+    ).resolves.toEqual({kind: 'failure', category: 'delivered-failure', code: 'HTTP_DELIVERED_FAILURE', status: 500});
+
+    expect(executeHttp).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        serverName: 'business',
+        method: 'POST',
+        pathAndQuery: `/remote-control-sessions/${sessionId}/registration`,
+        headers: {Authorization: `Terminal 9.${secret}`, 'X-Terminal-Ref': 'terminal-1'},
+        body: {sessionId, topologyKind: 'MOBILE_SINGLE', peerIdentity: null},
+      }),
+    );
+    expect(executeHttp).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        serverName: 'business',
+        method: 'POST',
+        pathAndQuery: `/remote-control-sessions/${sessionId}/status`,
+        headers: {Authorization: `Terminal 9.${secret}`, 'X-Terminal-Ref': 'terminal-1'},
+        body: {sessionId, state: 'ACTIVE', reason: null, readyScreens: []},
+      }),
+    );
+    expect(diagnostics.events).toContainEqual(expect.objectContaining({
+      category: 'terminal.remote-control.register',
+      event: 'register-completed',
+      context: expect.objectContaining({commandId: 'register-failed', requestId: 'register-failed'}),
+      data: expect.objectContaining({
+        sessionId,
+        resultKind: 'failure',
+        failureCategory: 'delivered-failure',
+        code: 'HTTP_DELIVERED_FAILURE',
+        status: 500,
+        requestId: 'edge-register-request',
+        correlationId: 'edge-register-correlation',
+      }),
+    }));
+    expect(JSON.stringify(diagnostics.events)).not.toContain('private-response-body');
     actorRuntime.dispose();
   });
 
@@ -3143,6 +3359,7 @@ describe('terminal-data-client activation command actor', () => {
       executeHttp: vi.fn(),
       reportHttpAddressAvailable: vi.fn(async () => undefined),
     };
+    const diagnostics = createActivationTestLogger();
     const childDispatch = vi.fn(async (_commandName: string, _payload: StateJsonValue, _options: unknown) => ({
       requestId: 'local-request',
       commandId: 'local-command',
@@ -3171,7 +3388,7 @@ describe('terminal-data-client activation command actor', () => {
       ({
         runtimeId: 'test-runtime',
         localNodeId: 'test-node',
-        platformPorts: {logger: createActivationTestLogger().logger},
+        platformPorts: {logger: diagnostics.logger},
         command: {commandName, payload, requestId: 'root-request', commandId: 'root-command'} as never,
         actor: {actorKey: actor.actor.actorKey, moduleName: actor.actor.moduleName, actorName: actor.actor.actorName},
         getState: () => actorState(state),
@@ -3239,6 +3456,24 @@ describe('terminal-data-client activation command actor', () => {
         {scope: 'fixture'},
         expect.objectContaining({target: 'local'}),
       );
+      expect(diagnostics.events).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          category: 'terminal.remote-control.execution',
+          event: 'remote-command.received',
+          data: expect.objectContaining({commandKind: 'OTHER', sessionReady: true}),
+        }),
+        expect.objectContaining({
+          category: 'terminal.remote-control.execution',
+          event: 'remote-command.dispatch-started',
+          data: expect.objectContaining({phase: 'STARTED'}),
+        }),
+        expect.objectContaining({
+          category: 'terminal.remote-control.execution',
+          event: 'remote-command.dispatch-completed',
+          data: expect.objectContaining({dispatchStatus: 'completed', actorResultCount: 1}),
+        }),
+      ]));
+      expect(JSON.stringify(diagnostics.events)).not.toContain(secret);
       expect(Object.values(state.remoteOperations)).toHaveLength(1);
       expect(Object.values(state.remoteOperations)[0]).toMatchObject({phase: 'COMPLETED', configRevision: 4});
       const report = JSON.parse(sent.at(-1) ?? '{}');

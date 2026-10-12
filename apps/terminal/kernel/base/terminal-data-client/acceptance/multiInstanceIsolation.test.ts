@@ -1,3 +1,4 @@
+import {unavailableRemoteControlPort} from '@catering-v2s/kernel-base-platform-ports';
 import {appendFileSync} from 'node:fs';
 import {randomUUID} from 'node:crypto';
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
@@ -162,6 +163,7 @@ const createComposition = (
       update: unavailableUpdatePort,
       logUpload: unavailableLogUploadPort,
       topologyHost: unavailableTopologyHostPort,
+      remoteControl: unavailableRemoteControlPort,
     },
   });
   const runtime = createRuntime({

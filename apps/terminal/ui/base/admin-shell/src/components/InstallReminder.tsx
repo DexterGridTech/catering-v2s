@@ -7,7 +7,7 @@ import {
   selectTerminalUpdateTask,
   type TerminalUpdateInstallDecision,
 } from '@catering-v2s/kernel-base-terminal-update';
-import {PrimitiveActions, PrimitiveButton, PrimitiveCenter, PrimitiveContainer, PrimitiveHeading, PrimitiveStatus, PrimitiveText} from '@catering-v2s/ui-base-primitives';
+import {PrimitiveActions, PrimitiveButton, PrimitiveCenter, PrimitiveContainer, PrimitiveHeading, PrimitiveScrollView, PrimitiveStatus, PrimitiveText} from '@catering-v2s/ui-base-primitives';
 import {useSurfaceContext, useTrackedCommand, useUiStateSelector} from '@catering-v2s/ui-base-render';
 import {adminTestIds} from '../foundations/adminTestIds';
 
@@ -74,19 +74,26 @@ export const InstallReminder = () => {
     <PrimitiveCenter testID={adminTestIds.installReminder.root} style={{flex: 1, minHeight: 0, padding: 16}}>
       <PrimitiveContainer layout="card" bounded style={{width: '100%'}}>
         <PrimitiveHeading testID={adminTestIds.installReminder.title}>安装终端更新</PrimitiveHeading>
-        <PrimitiveText testID={adminTestIds.installReminder.message}>更新包已准备好，请完成安装。</PrimitiveText>
-        <PrimitiveText testID={adminTestIds.installReminder.versions}>
-          <PrimitiveText testID={adminTestIds.installReminder.currentVersion}>
-            当前安装版本：{formatVersion(actual.nativeVersion, actual.nativeBuildNumber)}
+        <PrimitiveScrollView testID={adminTestIds.installReminder.scroll}>
+          <PrimitiveText testID={adminTestIds.installReminder.message}>更新包已准备好，请完成安装。</PrimitiveText>
+          <PrimitiveText testID={adminTestIds.installReminder.versions}>
+            <PrimitiveText testID={adminTestIds.installReminder.currentVersion}>
+              当前安装版本：{formatVersion(actual.nativeVersion, actual.nativeBuildNumber)}
+            </PrimitiveText>
+            {'\n'}
+            <PrimitiveText testID={adminTestIds.installReminder.targetVersion}>
+              更新安装版本：{formatVersion(target.nativeVersion, target.nativeBuildNumber)}
+            </PrimitiveText>
           </PrimitiveText>
-          {'\n'}
-          <PrimitiveText testID={adminTestIds.installReminder.targetVersion}>
-            更新安装版本：{formatVersion(target.nativeVersion, target.nativeBuildNumber)}
+          <PrimitiveText testID={adminTestIds.installReminder.reminder}>
+            稍后将在 {reminderMinutes} 分钟后再次提醒。
           </PrimitiveText>
-        </PrimitiveText>
-        <PrimitiveText testID={adminTestIds.installReminder.reminder}>
-          稍后将在 {reminderMinutes} 分钟后再次提醒。
-        </PrimitiveText>
+          {feedback.length === 0 ? null : (
+            <PrimitiveStatus testID={adminTestIds.installReminder.feedback} tone="error">
+              {feedback}
+            </PrimitiveStatus>
+          )}
+        </PrimitiveScrollView>
         <PrimitiveActions testID={adminTestIds.installReminder.actions}>
           <PrimitiveButton
             testID={adminTestIds.installReminder.deferInstall}
@@ -105,11 +112,6 @@ export const InstallReminder = () => {
             安装
           </PrimitiveButton>
         </PrimitiveActions>
-        {feedback.length === 0 ? null : (
-          <PrimitiveStatus testID={adminTestIds.installReminder.feedback} tone="error">
-            {feedback}
-          </PrimitiveStatus>
-        )}
       </PrimitiveContainer>
     </PrimitiveCenter>
   );

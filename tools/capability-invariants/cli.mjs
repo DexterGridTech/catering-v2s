@@ -64,7 +64,7 @@ const TERMINAL_CREDENTIAL_CANCEL = Object.freeze({
   consumerFace: "terminal",
   ownerModule: "terminal-binding",
 });
-const TERMINAL_CREDENTIAL_READS = new Map([
+const TERMINAL_CREDENTIAL_OPERATIONS = new Map([
   ["terminalReadStoreBasic", {method:"GET", path:"/api/terminal/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/basic", ownerModule:"organization"}],
   ["terminalReadStoreOrganizationPath", {method:"GET", path:"/api/terminal/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/organization-path", ownerModule:"organization"}],
   ["terminalReadStoreActiveContracts", {method:"GET", path:"/api/terminal/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/contracts", ownerModule:"store-contract"}],
@@ -76,6 +76,8 @@ const TERMINAL_CREDENTIAL_READS = new Map([
   ["terminalReadProjectUpdateRuleSnapshotPage", {method:"GET", path:"/api/terminal/group-workspaces/{groupWorkspaceKey}/update-rules/projects/{projectRef}", ownerModule:"TERMINAL_UPDATE_RULE"}],
   ["issueTerminalUpdateArtifactDownloadGrant", {method:"POST", path:"/api/terminal/group-workspaces/{groupWorkspaceKey}/update-artifacts/{artifactRef}/download-grant", ownerModule:"TERMINAL_UPDATE_RULE"}],
   ["submitTerminalUpdateReport", {method:"POST", path:"/api/terminal/group-workspaces/{groupWorkspaceKey}/update-reports", ownerModule:"TERMINAL_UPDATE_REPORT"}],
+  ["registerTerminalRemoteControl", {method:"POST", path:"/api/terminal/group-workspaces/{groupWorkspaceKey}/remote-control-sessions/{sessionId}/registration", ownerModule:"TERMINAL_REMOTE_CONTROL"}],
+  ["reportTerminalRemoteControl", {method:"POST", path:"/api/terminal/group-workspaces/{groupWorkspaceKey}/remote-control-sessions/{sessionId}/status", ownerModule:"TERMINAL_REMOTE_CONTROL"}],
 ]);
 const SELF_SESSION_RESOLVER = "AUTHENTICATED_WORKSPACE_SELF_SESSION";
 const READ_SCOPE_RESOLVER = "AUTHENTICATED_WORKSPACE_ROLE_NODE_RANGE";
@@ -167,6 +169,18 @@ const FIXED_BUSINESS_CAPABILITY_OPERATIONS = new Map([
   [
     "updateOperationsOrganizationTenant|PATCH|/api/operations/group-workspaces/{groupWorkspaceKey}/organization/tenants/{tenantId}|operations-admin",
     "BC-ORG-TENANT-EDIT",
+  ],
+  [
+    "startOperationsTerminalRemoteControl|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminals/{terminalRef}/remote-control-sessions|operations-admin",
+    "CONTROL_PROJECT_TERMINAL",
+  ],
+  [
+    "issueOperationsRemoteControlGrant|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminals/{terminalRef}/remote-control-sessions/{sessionId}/controller-grant|operations-admin",
+    "CONTROL_PROJECT_TERMINAL",
+  ],
+  [
+    "endOperationsTerminalRemoteControl|POST|/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminals/{terminalRef}/remote-control-sessions/{sessionId}/end|operations-admin",
+    "CONTROL_PROJECT_TERMINAL",
   ],
 ]);
 const RESOURCE_TYPE_CAPABILITY_OPERATIONS = new Map([
@@ -861,8 +875,8 @@ export function mutatingOperationInventory(root = process.cwd()) {
     for (const [route, methods] of Object.entries(document.paths || {})) {
       for (const [method, operation] of Object.entries(methods || {})) {
         const upperMethod = String(method).toUpperCase();
-        const terminalCredentialRead = upperMethod === "GET" && TERMINAL_CREDENTIAL_READS.has(operation?.operationId);
-        if ((!WRITE_METHODS.has(upperMethod) && !terminalCredentialRead) || !operation || typeof operation !== "object") continue;
+        const terminalCredentialOperation = TERMINAL_CREDENTIAL_OPERATIONS.has(operation?.operationId);
+        if ((!WRITE_METHODS.has(upperMethod) && !(upperMethod === "GET" && terminalCredentialOperation)) || !operation || typeof operation !== "object") continue;
         const consumerFaces = operation["x-consumer-faces"];
         if (!operation.operationId) fail(`CAPABILITY_OPERATION_ID_MISSING:${sourcePath}:${method}:${route}`);
         if (!Array.isArray(consumerFaces) || consumerFaces.length !== 1 || typeof consumerFaces[0] !== "string" || consumerFaces[0].length === 0) {
@@ -883,8 +897,8 @@ export function mutatingOperationInventory(root = process.cwd()) {
         const isUnprotectedActivation = operation.operationId === UNPROTECTED_TERMINAL_ACTIVATION.operationId;
         const terminalCredentialIdentity = operation.operationId === TERMINAL_CREDENTIAL_CANCEL.operationId
           ? TERMINAL_CREDENTIAL_CANCEL
-          : TERMINAL_CREDENTIAL_READS.has(operation.operationId)
-            ? {operationId:operation.operationId, method:TERMINAL_CREDENTIAL_READS.get(operation.operationId).method, path:TERMINAL_CREDENTIAL_READS.get(operation.operationId).path, consumerFace:"terminal", ownerModule:TERMINAL_CREDENTIAL_READS.get(operation.operationId).ownerModule}
+          : TERMINAL_CREDENTIAL_OPERATIONS.has(operation.operationId)
+            ? {operationId:operation.operationId, method:TERMINAL_CREDENTIAL_OPERATIONS.get(operation.operationId).method, path:TERMINAL_CREDENTIAL_OPERATIONS.get(operation.operationId).path, consumerFace:"terminal", ownerModule:TERMINAL_CREDENTIAL_OPERATIONS.get(operation.operationId).ownerModule}
             : undefined;
         if (explicitAuthorizationMode !== undefined
           && !["NONE", TERMINAL_CREDENTIAL_MODE].includes(explicitAuthorizationMode)) {
@@ -1705,6 +1719,25 @@ function selfTest() {
     writeFixture(root, publicOperation);
     validateCapabilityInvariants(root);
 
+    const remoteControlCapabilityOperation = {
+      operationId: "startOperationsTerminalRemoteControl",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminals/{terminalRef}/remote-control-sessions",
+      consumerFace: "operations-admin",
+      ownerModule: "TERMINAL_REMOTE_CONTROL",
+      capabilityKey: "CONTROL_PROJECT_TERMINAL",
+    };
+    writeFixture(root, remoteControlCapabilityOperation);
+    validateCapabilityInvariants(root);
+    const remoteControlCapabilityRegistry = governanceManifest(root);
+    remoteControlCapabilityRegistry.requirements[0].capabilityKey = "CAP_CONTROL_PROJECT_TERMINAL";
+    fs.writeFileSync(path.join(root, REGISTRY_PATH), JSON.stringify(remoteControlCapabilityRegistry));
+    try { validateCapabilityInvariants(root); fail("CAPABILITY_SELF_TEST_REMOTE_CONTROL_CAPABILITY_DRIFT_NOT_DETECTED"); }
+    catch (error) {
+      if (!String(error.message).includes("CAPABILITY_REQUIREMENT_SHAPE_INVALID:startOperationsTerminalRemoteControl")) throw error;
+      process.stdout.write("RED_TERMINAL_REMOTE_CONTROL_CAPABILITY=PASS\n");
+    }
+
     const unprotectedActivation = {
       operationId: UNPROTECTED_TERMINAL_ACTIVATION.operationId,
       method: UNPROTECTED_TERMINAL_ACTIVATION.method,
@@ -1762,7 +1795,7 @@ function selfTest() {
     catch (error) { if (!String(error.message).includes("CAPABILITY_TERMINAL_CREDENTIAL_CONTRACT_DRIFT:cancelTerminalActivation")) throw error; }
     writeFixture(root, terminalCredentialCancellation);
 
-    for (const [operationId, operation] of TERMINAL_CREDENTIAL_READS) {
+    for (const [operationId, operation] of TERMINAL_CREDENTIAL_OPERATIONS) {
       const terminalCredentialRead = {
         operationId,
         method: operation.method,
@@ -2100,7 +2133,7 @@ function selfTest() {
     try { validateP3AStaticProofSurfaces(root); fail("CAPABILITY_SELF_TEST_PROBLEM_ADVICE_NOT_DETECTED"); }
     catch (error) { if (!String(error.message).includes("P3_A_TYPED_PROBLEM_ADVICE_HANDLER_MISSING")) throw error; }
 
-    process.stdout.write("CAPABILITY_INVARIANTS_SELF_TEST=PASS\nRED_TERMINAL_ACTIVATION_PERMISSION=PASS\nRED_TERMINAL_ACTIVATION_IAM_REQUIREMENT=PASS\nRED_TERMINAL_CREDENTIAL_WORKSPACE_CAPABILITY=PASS\nRED_TERMINAL_CREDENTIAL_CROSS_FACE=PASS\nRED_TERMINAL_CREDENTIAL_MARKER=PASS\nRED_MISSING_REQUIREMENT=PASS\nRED_PUBLIC_PROTOCOL=PASS\nRED_PLATFORM_CAPABILITY=PASS\nRED_OWNER_RECHECK=PASS\nRED_ORG_NODE_MAPPING=PASS\nRED_CATALOG_INVENTORY_REQUIREMENT=PASS\nRED_CATALOG_INVENTORY_OPENAPI_REQUIREMENT=PASS\nRED_CATALOG_INVENTORY_TARGET_CAPABILITY_MAPPING=PASS\nRED_CATALOG_INVENTORY_READ_CAPABILITY=PASS\nRED_CATALOG_INVENTORY_DUAL_SCOPE_READ_SELECTOR_SCHEMA=PASS\nRED_CATALOG_INVENTORY_DUAL_SCOPE_READ_SELECTOR_PARAMETER=PASS\nRED_CATALOG_INVENTORY_DEFINITION_COMMAND_MISSING=PASS\nRED_CATALOG_INVENTORY_DEFINITION_COMMAND_EXPANSION=PASS\nRED_CATALOG_INVENTORY_DEFINITION_COMMAND_READ_PLACEMENT=PASS\nRED_CATALOG_INVENTORY_DIRECT_CONFIGURATION_CAPABILITY=PASS\nRED_R24_SHARED_BUSINESS_CAPABILITY=PASS\nRED_R24_CLIENT_BC_REQUIREMENT=PASS\nRED_R24_BLOCKER_PROJECTION=PASS\nRED_READ_OPENAPI_CAPABILITY=PASS\nRED_READ_REGISTRY_CAPABILITY=PASS\nRED_READ_REGISTRY_SCOPE_MODEL=PASS\nRED_READ_EDGE_GET_CAPABILITY=PASS\nRED_READ_EDGE_GET_CAPABILITY_HELPER=PASS\nRED_P3_C_PAGE_KEY_OR_FALLBACK=PASS\nRED_P3_C_EXACT_OPERATION_SET=PASS\nRED_P3_C_CLIENT_TARGET=PASS\nRED_P3_C_TARGET_CAPABILITY=PASS\nRED_P3_C_EDGE_ROOT_OMISSION=PASS\nRED_P3_C_EDGE_LEGACY_ROOT=PASS\nRED_OTP_OPENAPI_EXPOSURE=PASS\nRED_OTP_GENERATED_WIRE_EXPOSURE=PASS\nRED_OTP_OWNER_ESCAPE=PASS\nRED_PROBLEM_ADVICE_SHAPE=PASS\nRED_TYPED_OWNER_EXCEPTION_MAPPING=PASS\nRED_TYPED_OWNER_EXCEPTION_EXACT_MAPPING=PASS\nRED_TYPED_OWNER_EXCEPTION_CATCH_ALL=PASS\nCLEANUP=PASS\n");
+    process.stdout.write("CAPABILITY_INVARIANTS_SELF_TEST=PASS\nRED_TERMINAL_ACTIVATION_PERMISSION=PASS\nRED_TERMINAL_ACTIVATION_IAM_REQUIREMENT=PASS\nRED_TERMINAL_CREDENTIAL_WORKSPACE_CAPABILITY=PASS\nRED_TERMINAL_CREDENTIAL_CROSS_FACE=PASS\nRED_TERMINAL_CREDENTIAL_MARKER=PASS\nRED_TERMINAL_REMOTE_CONTROL_CAPABILITY=PASS\nRED_MISSING_REQUIREMENT=PASS\nRED_PUBLIC_PROTOCOL=PASS\nRED_PLATFORM_CAPABILITY=PASS\nRED_OWNER_RECHECK=PASS\nRED_ORG_NODE_MAPPING=PASS\nRED_CATALOG_INVENTORY_REQUIREMENT=PASS\nRED_CATALOG_INVENTORY_OPENAPI_REQUIREMENT=PASS\nRED_CATALOG_INVENTORY_TARGET_CAPABILITY_MAPPING=PASS\nRED_CATALOG_INVENTORY_READ_CAPABILITY=PASS\nRED_CATALOG_INVENTORY_DUAL_SCOPE_READ_SELECTOR_SCHEMA=PASS\nRED_CATALOG_INVENTORY_DUAL_SCOPE_READ_SELECTOR_PARAMETER=PASS\nRED_CATALOG_INVENTORY_DEFINITION_COMMAND_MISSING=PASS\nRED_CATALOG_INVENTORY_DEFINITION_COMMAND_EXPANSION=PASS\nRED_CATALOG_INVENTORY_DEFINITION_COMMAND_READ_PLACEMENT=PASS\nRED_CATALOG_INVENTORY_DIRECT_CONFIGURATION_CAPABILITY=PASS\nRED_R24_SHARED_BUSINESS_CAPABILITY=PASS\nRED_R24_CLIENT_BC_REQUIREMENT=PASS\nRED_R24_BLOCKER_PROJECTION=PASS\nRED_READ_OPENAPI_CAPABILITY=PASS\nRED_READ_REGISTRY_CAPABILITY=PASS\nRED_READ_REGISTRY_SCOPE_MODEL=PASS\nRED_READ_EDGE_GET_CAPABILITY=PASS\nRED_READ_EDGE_GET_CAPABILITY_HELPER=PASS\nRED_P3_C_PAGE_KEY_OR_FALLBACK=PASS\nRED_P3_C_EXACT_OPERATION_SET=PASS\nRED_P3_C_CLIENT_TARGET=PASS\nRED_P3_C_TARGET_CAPABILITY=PASS\nRED_P3_C_EDGE_ROOT_OMISSION=PASS\nRED_P3_C_EDGE_LEGACY_ROOT=PASS\nRED_OTP_OPENAPI_EXPOSURE=PASS\nRED_OTP_GENERATED_WIRE_EXPOSURE=PASS\nRED_OTP_OWNER_ESCAPE=PASS\nRED_PROBLEM_ADVICE_SHAPE=PASS\nRED_TYPED_OWNER_EXCEPTION_MAPPING=PASS\nRED_TYPED_OWNER_EXCEPTION_EXACT_MAPPING=PASS\nRED_TYPED_OWNER_EXCEPTION_CATCH_ALL=PASS\nCLEANUP=PASS\n");
   } finally {
     fs.rmSync(root, {recursive: true, force: true});
   }

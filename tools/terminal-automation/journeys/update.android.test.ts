@@ -1992,8 +1992,17 @@ it.skipIf(
           90_000,
         );
       } catch (error) {
-        const [currentCandidate, connectionState, activationState, storeReadiness, projectReadiness, organizationPath] =
-          await Promise.all([
+        const [
+          currentCandidate,
+          connectionState,
+          activationState,
+          storeReadiness,
+          projectReadiness,
+          organizationPath,
+          currentRules,
+          updateContextFacts,
+          actualVersions,
+        ] = await Promise.all([
             readSelector(
               connection.driver,
               initial.sessionId,
@@ -2025,6 +2034,24 @@ it.skipIf(
               [],
             ).catch(() => null),
             readSelector(connection.driver, initial.sessionId, projectOrganizationPathSelector, []).catch(() => null),
+            readSelector(
+              connection.driver,
+              initial.sessionId,
+              'kernel.feature.project-basic.selectProjectTerminalUpdateRules',
+              [],
+            ).catch(() => null),
+            readSelector(
+              connection.driver,
+              initial.sessionId,
+              'kernel.feature.project-basic.selectProjectTerminalUpdateContextFacts',
+              [],
+            ).catch(() => null),
+            readSelector(
+              connection.driver,
+              initial.sessionId,
+              'kernel.base.terminal-update.selectTerminalUpdateActualVersions',
+              [],
+            ).catch(() => null),
           ]);
         const readinessBindingMatchesActivation =
           isRecord(storeReadiness) &&
@@ -2043,12 +2070,38 @@ it.skipIf(
         const currentRule =
           isRecord(currentCandidate) && isRecord(currentCandidate.rule) ? currentCandidate.rule : null;
         const matchingRule = currentRule?.ruleRef === supplyUi.ruleRef && currentRule.applicationId === packageId;
+        const ruleItems = isRecord(currentRules) && Array.isArray(currentRules.items) ? currentRules.items : [];
+        const targetSnapshotRule = ruleItems.find(rule => isRecord(rule) && rule.ruleRef === supplyUi!.ruleRef);
+        const targetSnapshotRuleRecord = isRecord(targetSnapshotRule) ? targetSnapshotRule : null;
+        const targetSnapshotStoreRefs =
+          targetSnapshotRuleRecord && Array.isArray(targetSnapshotRuleRecord.storeRefs)
+            ? targetSnapshotRuleRecord.storeRefs
+            : [];
+        const appRules = ruleItems.filter(rule => isRecord(rule) && rule.applicationId === packageId);
+        const appStoreRules = appRules.filter(
+          rule =>
+            isRecord(rule) &&
+            (rule.targetMode === 'ALL' ||
+              (Array.isArray(rule.storeRefs) && rule.storeRefs.includes(supplyStoreRef))),
+        );
+        const contextMatchesSnapshot =
+          isRecord(updateContextFacts) &&
+          isRecord(currentRules) &&
+          currentRules.selectedSpace === updateContextFacts.selectedSpace &&
+          currentRules.projectRef === updateContextFacts.projectRef;
+        const contextMatchesActivation =
+          isRecord(updateContextFacts) &&
+          isRecord(activationState) &&
+          updateContextFacts.selectedSpace === activationState.groupWorkspaceKey &&
+          updateContextFacts.storeRef === activationState.storeRef;
+        const actualApplicationMatches =
+          isRecord(actualVersions) && actualVersions.applicationId === packageId;
         const failureCode =
           error instanceof Error && /^TERMINAL_AUTOMATION_[A-Z0-9_]+$/u.test(error.message)
             ? error.message
             : 'SELECTOR_WAIT_FAILED';
         process.stdout.write(
-          `TERMINAL_AUTOMATION_SUPPLY run=${runId} stage=rule.candidate.wait.failed code=${failureCode} candidateAvailable=${isRecord(currentCandidate)} candidateSpacePresent=${isRecord(currentCandidate) && typeof currentCandidate.selectedSpace === 'string'} candidateSpaceMatchesActivation=${isRecord(currentCandidate) && isRecord(activationState) && currentCandidate.selectedSpace === activationState.groupWorkspaceKey} candidateStoreMatches=${isRecord(currentCandidate) && currentCandidate.storeRef === supplyStoreRef} targetRulePresent=${matchingRule} connection=${isRecord(connectionState) && typeof connectionState.status === 'string' ? connectionState.status : 'unavailable'} activation=${isRecord(activationState) && typeof activationState.status === 'string' ? activationState.status : 'unavailable'} activationWorkspacePresent=${isRecord(activationState) && typeof activationState.groupWorkspaceKey === 'string'} activationWorkspaceMatchesManaged=${isRecord(activationState) && activationState.groupWorkspaceKey === 'aurora'} storeLoad=${isRecord(storeReadiness) && typeof storeReadiness.storeStatus === 'string' ? storeReadiness.storeStatus : 'unavailable'} projectLoad=${isRecord(projectReadiness) && typeof projectReadiness.status === 'string' ? projectReadiness.status : 'unavailable'} runtimeIdPresent=${isRecord(storeReadiness) && typeof storeReadiness.runtimeId === 'string'} bindingPresent=${isRecord(storeReadiness) && isRecord(storeReadiness.binding)} readinessBindingMatchesActivation=${readinessBindingMatchesActivation} organizationPathPresent=${isRecord(organizationPath)} projectRefMatchesPath=${projectRefMatchesPath}\n`,
+          `TERMINAL_AUTOMATION_SUPPLY run=${runId} stage=rule.candidate.wait.failed code=${failureCode} candidateAvailable=${isRecord(currentCandidate)} candidateSpacePresent=${isRecord(currentCandidate) && typeof currentCandidate.selectedSpace === 'string'} candidateSpaceMatchesActivation=${isRecord(currentCandidate) && isRecord(activationState) && currentCandidate.selectedSpace === activationState.groupWorkspaceKey} candidateStoreMatches=${isRecord(currentCandidate) && currentCandidate.storeRef === supplyStoreRef} targetRulePresent=${matchingRule} snapshotStatus=${isRecord(currentRules) && typeof currentRules.status === 'string' ? currentRules.status : 'unavailable'} snapshotItemCount=${ruleItems.length} snapshotHashPresent=${isRecord(currentRules) && typeof currentRules.collectionHash === 'string'} snapshotContextMatchesFacts=${contextMatchesSnapshot} contextReady=${isRecord(updateContextFacts)} contextMatchesActivation=${contextMatchesActivation} targetSnapshotRulePresent=${targetSnapshotRuleRecord !== null} targetSnapshotRuleApplicationMatches=${targetSnapshotRuleRecord?.applicationId === packageId} targetSnapshotRuleStoreMatches=${targetSnapshotRuleRecord?.targetMode === 'ALL' || targetSnapshotStoreRefs.includes(supplyStoreRef)} appRuleCount=${appRules.length} appStoreRuleCount=${appStoreRules.length} actualApplicationMatches=${actualApplicationMatches} connection=${isRecord(connectionState) && typeof connectionState.status === 'string' ? connectionState.status : 'unavailable'} activation=${isRecord(activationState) && typeof activationState.status === 'string' ? activationState.status : 'unavailable'} activationWorkspacePresent=${isRecord(activationState) && typeof activationState.groupWorkspaceKey === 'string'} activationWorkspaceMatchesManaged=${isRecord(activationState) && activationState.groupWorkspaceKey === 'aurora'} storeLoad=${isRecord(storeReadiness) && typeof storeReadiness.storeStatus === 'string' ? storeReadiness.storeStatus : 'unavailable'} projectLoad=${isRecord(projectReadiness) && typeof projectReadiness.status === 'string' ? projectReadiness.status : 'unavailable'} runtimeIdPresent=${isRecord(storeReadiness) && typeof storeReadiness.runtimeId === 'string'} bindingPresent=${isRecord(storeReadiness) && isRecord(storeReadiness.binding)} readinessBindingMatchesActivation=${readinessBindingMatchesActivation} organizationPathPresent=${isRecord(organizationPath)} projectRefMatchesPath=${projectRefMatchesPath}\n`,
         );
         await writeNativeUpdateDiagnostics({connection, packageId, runId});
         throw new Error(`TERMINAL_AUTOMATION_SUPPLY_RULE_SNAPSHOT_WAIT_FAILED:${failureCode}`);

@@ -42,6 +42,8 @@ import type {
   TerminalTopicSubscription,
   TerminalUpdateDownloadGrantPayload,
   TerminalUpdateReportPayload,
+  TerminalRemoteControlRegisterPayload,
+  TerminalRemoteControlReportPayload,
 } from '../../types/client';
 import {
   selectActivationState,
@@ -73,6 +75,8 @@ import {
   unsubscribeTerminalTopicCommand,
   requestTerminalUpdateDownloadGrantCommand,
   submitTerminalUpdateReportCommand,
+  registerTerminalRemoteControlCommand,
+  reportTerminalRemoteControlCommand,
   terminalDataHeartbeatCommand,
   reconcileTerminalCredentialReadinessCommand,
 } from '../commands/terminalDataClientCommands';
@@ -729,6 +733,31 @@ export const createTerminalDataClientActor = (
     if (await persistRemoteFact(context, fact, expectedEpoch)) await sendRemoteReport(fact);
   };
 
+  const logRemoteCommandBoundary = (
+    context: ActorExecutionContext,
+    event: string,
+    data: Readonly<Record<string, string | number | boolean | null>>,
+  ): void => {
+    context.platformPorts.logger
+      .scope({moduleName, layer: 'kernel', subsystem: 'terminal-data-client', component: 'remote-command'})
+      .info({
+        category: 'terminal.remote-control.execution',
+        event: `remote-command.${event}`,
+        message: 'Terminal remote-command execution boundary',
+        context: {
+          commandId: context.command.commandId,
+          ...(context.command.requestId == null ? {} : {requestId: context.command.requestId}),
+        },
+        data,
+      });
+  };
+
+  const remoteCommandKind = (commandName: string): string => {
+    if (commandName === 'kernel.base.remote-control.start-remote-control') return 'START_REMOTE_CONTROL';
+    if (commandName === 'kernel.base.remote-control.stop-remote-control') return 'STOP_REMOTE_CONTROL';
+    return 'OTHER';
+  };
+
   const runRemoteCommand = async (
     context: ActorExecutionContext,
     message: RemoteCommandMessage,
@@ -736,8 +765,23 @@ export const createTerminalDataClientActor = (
     const expectedEpoch = remoteOperationEpoch;
     const client = readState(context.getState());
     const credential = client.credential;
+    const commandKind = remoteCommandKind(message.commandName);
+    const operationContext = {
+      remoteOperationId: message.remoteOperationId,
+      requestId: message.requestId,
+      commandKind,
+      bindingGeneration: message.bindingGeneration,
+      sessionReady,
+      hasCredential: credential !== null,
+      credentialGenerationMatches: credential?.bindingGeneration === message.bindingGeneration,
+    };
+    logRemoteCommandBoundary(context, 'received', operationContext);
     const reject = async (errorCode: string): Promise<Readonly<{status: string}>> => {
-      if (remoteOperationEpoch !== expectedEpoch) return Object.freeze({status: 'operation-cleared'});
+      if (remoteOperationEpoch !== expectedEpoch) {
+        logRemoteCommandBoundary(context, 'discarded-after-clear', {...operationContext, errorCode});
+        return Object.freeze({status: 'operation-cleared'});
+      }
+      logRemoteCommandBoundary(context, 'rejected', {...operationContext, errorCode});
       const reportId = createProtocolUuid(dependencies);
       if (reportId !== null) {
         await sendRemoteReport({
@@ -770,6 +814,7 @@ export const createTerminalDataClientActor = (
       )
         return reject('REMOTE_OPERATION_ID_CONFLICT');
       await sendRemoteReport(prior);
+      logRemoteCommandBoundary(context, 'duplicate-reported', {...operationContext, phase: prior.phase});
       return Object.freeze({status: 'duplicate-reported'});
     }
     if (Object.keys(client.remoteOperations).length >= remoteOperationLimit)
@@ -784,6 +829,7 @@ export const createTerminalDataClientActor = (
       addressName: client.connection.addressName,
     });
     if (!(await persistRemoteFact(context, received, expectedEpoch))) return reject('TERMINAL_PERSISTENCE_FAILED');
+    logRemoteCommandBoundary(context, 'fact-persisted', {...operationContext, phase: 'RECEIVED'});
     await sendRemoteReport(received);
     const started = remoteFactFrom({
       message,
@@ -794,9 +840,14 @@ export const createTerminalDataClientActor = (
     });
     if (!(await persistRemoteFact(context, started, expectedEpoch)))
       return Object.freeze({status: 'start-persistence-failed'});
+    logRemoteCommandBoundary(context, 'fact-persisted', {...operationContext, phase: 'STARTED'});
     await sendRemoteReport(started);
-    if (!ownsRemoteFact(context, started, expectedEpoch)) return Object.freeze({status: 'operation-cleared'});
+    if (!ownsRemoteFact(context, started, expectedEpoch)) {
+      logRemoteCommandBoundary(context, 'discarded-after-clear', {...operationContext, phase: 'STARTED'});
+      return Object.freeze({status: 'operation-cleared'});
+    }
     try {
+      logRemoteCommandBoundary(context, 'dispatch-started', {...operationContext, phase: 'STARTED'});
       const result = await context.dispatchCommand(message.commandName, message.parameters as StateJsonValue, {
         requestId: localRequestId as never,
         commandId: createCommandId(),
@@ -819,6 +870,12 @@ export const createTerminalDataClientActor = (
         lateResultTtlMs: remoteResultResidenceMs,
       });
       const hasPendingActor = flattenActorResults(result.actorResults).some(record => record.status === 'timed-out');
+      logRemoteCommandBoundary(context, 'dispatch-completed', {
+        ...operationContext,
+        dispatchStatus: result.status,
+        actorResultCount: flattenActorResults(result.actorResults).length,
+        hasPendingActor,
+      });
       if (result.status === 'timed-out' || hasPendingActor) {
         const records = flattenActorResults(result.actorResults);
         const accumulator = lateRemoteResults.get(message.remoteOperationId) ?? {
@@ -857,7 +914,11 @@ export const createTerminalDataClientActor = (
         errorCode: result.status === 'completed' ? undefined : 'REMOTE_COMMAND_FAILED',
       });
       return Object.freeze({status: result.status});
-    } catch {
+    } catch (error) {
+      logRemoteCommandBoundary(context, 'dispatch-failed', {
+        ...operationContext,
+        errorName: error instanceof Error ? error.name : 'UnknownError',
+      });
       await reportRemoteOutcome({
         context,
         message,
@@ -1365,6 +1426,7 @@ export const createTerminalDataClientActor = (
           'Idempotency-Key': payload.idempotencyKey,
         },
       });
+      const responseIdentity = terminalClient.readAcceptedResponseIdentity();
       await terminalClient.acceptBusinessResponse(profileId, dependencies.businessServerName, result);
       context.platformPorts.logger
         .scope({moduleName, layer: 'kernel', subsystem: 'terminal-data-client', component: 'http-update'})
@@ -1374,7 +1436,10 @@ export const createTerminalDataClientActor = (
           message: 'Generated terminal update-report request returned a classified result',
           context: logContext,
           data: {
+            reportId: payload.body.reportId,
             reportSequence: payload.body.reportSequence,
+            taskId: payload.body.taskId,
+            ...responseIdentity,
             reportState: payload.body.recent.state,
             reportReason: payload.body.recent.reason,
             taskIdPresent: payload.body.taskId !== null,
@@ -1396,6 +1461,130 @@ export const createTerminalDataClientActor = (
           },
         });
       return result as TerminalOperationResult<'submitTerminalUpdateReport'>;
+    }),
+    onCommand(registerTerminalRemoteControlCommand, async context => {
+      const initialRoot = context.getState();
+      const state = readState(initialRoot);
+      const payload = context.command.payload as TerminalRemoteControlRegisterPayload;
+      const credential = state.credential;
+      if (!isHostRuntime(initialRoot) || !credentialReadyForCurrentMode(initialRoot, state) || credential === null) {
+        return Object.freeze({kind: 'failure', category: 'not-delivered', code: 'TERMINAL_NOT_ACTIVE'});
+      }
+      if (!isCanonicalUuid(payload?.sessionId) || payload.body?.sessionId !== payload.sessionId) {
+        return Object.freeze({kind: 'failure', category: 'not-delivered', code: 'INVALID_TERMINAL_REMOTE_CONTROL_REGISTER'});
+      }
+      const credentialRevision = state.credentialRevision;
+      const startedAt = dependencies.now();
+      const result = await terminalClient.client.registerTerminalRemoteControl({
+        pathParameters: {sessionId: payload.sessionId},
+        queryParameters: {},
+        body: payload.body,
+        headers: {
+          Authorization: `Terminal ${credential.bindingGeneration}.${credential.credentialSecret}`,
+          'X-Terminal-Ref': credential.terminalRef,
+        },
+      });
+      const afterRoot = context.getState();
+      const after = readState(afterRoot);
+      if (
+        after.credential !== credential ||
+        after.credentialRevision !== credentialRevision ||
+        !credentialReadyForCurrentMode(afterRoot, after)
+      ) {
+        return Object.freeze({kind: 'failure', category: 'not-delivered', code: 'TERMINAL_CREDENTIAL_CHANGED'});
+      }
+      const responseIdentity = terminalClient.readAcceptedResponseIdentity();
+      await terminalClient.acceptBusinessResponse(profileId, dependencies.businessServerName, result);
+      context.platformPorts.logger
+        .scope({moduleName, layer: 'kernel', subsystem: 'terminal-data-client', component: 'http-remote-control'})
+        .info({
+          category: 'terminal.remote-control.register',
+          event: 'register-completed',
+          message: 'Generated remote-control registration request returned a classified result',
+          context: {
+            commandId: context.command.commandId,
+            ...(context.command.requestId == null ? {} : {requestId: context.command.requestId}),
+          },
+          data: {
+            sessionId: payload.sessionId,
+            elapsedMs: Math.max(0, dependencies.now() - startedAt),
+            resultKind: result.kind,
+            ...(result.kind === 'success'
+              ? {status: result.status, grantCount: result.body.grants.length}
+              : result.kind === 'business-rejection'
+                ? {status: result.status, errorCode: result.errorCode}
+                : {
+                    failureCategory: result.category,
+                    code: activationLogCode(result.code),
+                    ...(result.status === undefined ? {} : {status: result.status}),
+                  }),
+            ...responseIdentity,
+          },
+        });
+      return result as TerminalOperationResult<'registerTerminalRemoteControl'>;
+    }),
+    onCommand(reportTerminalRemoteControlCommand, async context => {
+      const initialRoot = context.getState();
+      const state = readState(initialRoot);
+      const payload = context.command.payload as TerminalRemoteControlReportPayload;
+      const credential = state.credential;
+      if (!isHostRuntime(initialRoot) || !credentialReadyForCurrentMode(initialRoot, state) || credential === null) {
+        return Object.freeze({kind: 'failure', category: 'not-delivered', code: 'TERMINAL_NOT_ACTIVE'});
+      }
+      if (!isCanonicalUuid(payload?.sessionId) || payload.body?.sessionId !== payload.sessionId) {
+        return Object.freeze({kind: 'failure', category: 'not-delivered', code: 'INVALID_TERMINAL_REMOTE_CONTROL_REPORT'});
+      }
+      const credentialRevision = state.credentialRevision;
+      const startedAt = dependencies.now();
+      const result = await terminalClient.client.reportTerminalRemoteControl({
+        pathParameters: {sessionId: payload.sessionId},
+        queryParameters: {},
+        body: payload.body,
+        headers: {
+          Authorization: `Terminal ${credential.bindingGeneration}.${credential.credentialSecret}`,
+          'X-Terminal-Ref': credential.terminalRef,
+        },
+      });
+      const afterRoot = context.getState();
+      const after = readState(afterRoot);
+      if (
+        after.credential !== credential ||
+        after.credentialRevision !== credentialRevision ||
+        !credentialReadyForCurrentMode(afterRoot, after)
+      ) {
+        return Object.freeze({kind: 'failure', category: 'not-delivered', code: 'TERMINAL_CREDENTIAL_CHANGED'});
+      }
+      const responseIdentity = terminalClient.readAcceptedResponseIdentity();
+      await terminalClient.acceptBusinessResponse(profileId, dependencies.businessServerName, result);
+      context.platformPorts.logger
+        .scope({moduleName, layer: 'kernel', subsystem: 'terminal-data-client', component: 'http-remote-control'})
+        .info({
+          category: 'terminal.remote-control.report',
+          event: 'report-completed',
+          message: 'Generated remote-control status request returned a classified result',
+          context: {
+            commandId: context.command.commandId,
+            ...(context.command.requestId == null ? {} : {requestId: context.command.requestId}),
+          },
+          data: {
+            sessionId: payload.sessionId,
+            state: payload.body.state,
+            readyScreenCount: payload.body.readyScreens.length,
+            elapsedMs: Math.max(0, dependencies.now() - startedAt),
+            resultKind: result.kind,
+            ...(result.kind === 'success'
+              ? {status: result.status, remainingLeaseMs: result.body.remainingLeaseMs}
+              : result.kind === 'business-rejection'
+                ? {status: result.status, errorCode: result.errorCode}
+                : {
+                    failureCategory: result.category,
+                    code: activationLogCode(result.code),
+                    ...(result.status === undefined ? {} : {status: result.status}),
+                  }),
+            ...responseIdentity,
+          },
+        });
+      return result as TerminalOperationResult<'reportTerminalRemoteControl'>;
     }),
     onCommand(activateTerminalCommand, async context => {
       if (!isHostRuntime(context.getState()))

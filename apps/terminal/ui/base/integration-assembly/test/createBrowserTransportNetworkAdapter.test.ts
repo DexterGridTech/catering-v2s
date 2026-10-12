@@ -75,11 +75,34 @@ describe('browser transport adapter', () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it('cancels response reading once the declared HTTP response byte ceiling is exceeded', async () => {
+  it('accepts a normal HTTP page larger than the WebSocket message ceiling', async () => {
+    const body = new Uint8Array(70_000).fill(97);
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(body, {status: 200, headers: {'content-type': 'text/plain'}})));
+    const adapter = createBrowserTransportNetworkAdapter(async serverName =>
+      Object.freeze({
+        serverName,
+        revision: 1,
+        addresses: Object.freeze([{addressName: 'selected', baseUrl: 'https://api.example.test'}]),
+      }),
+    );
+    const snapshot = await adapter.readSnapshot('business');
+
+    const result = await adapter.sendHttp!({
+      address: snapshot.addresses[0]!,
+      method: 'GET',
+      pathAndQuery: '/terminal-update-rules',
+      headers: {},
+      timeoutMs: 1_000,
+    });
+
+    expect(result).toMatchObject({kind: 'response', status: 200, body: 'a'.repeat(70_000)});
+  });
+
+  it('cancels response reading once the 1 MiB HTTP byte ceiling is exceeded', async () => {
     let cancelled = false;
     const body = new ReadableStream<Uint8Array>({
       start(controller) {
-        controller.enqueue(new Uint8Array(65_536));
+        controller.enqueue(new Uint8Array(1_048_576));
         controller.enqueue(new Uint8Array(1));
       },
       cancel() {

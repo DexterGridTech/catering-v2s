@@ -46,6 +46,18 @@ export function readManagedTdsLatestState(
   }>,
 ): ManagedTdsLatestState | null;
 
+export function readManagedTerminalControlOperation(
+  input: Readonly<{
+    manifestPath?: string;
+    runId: string;
+    operationId: string;
+  }>,
+): Readonly<{operationId: string; commandName: string}> | null;
+export function parseManagedTerminalControlOperationReadback(
+  rows: readonly Readonly<Record<string, unknown>>[],
+  operationId: string,
+): Readonly<{operationId: string; commandName: string}> | null;
+
 export function readManagedTerminalBindingByName(
   input: Readonly<{
     manifestPath?: string;

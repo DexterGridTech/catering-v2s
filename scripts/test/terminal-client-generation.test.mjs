@@ -21,7 +21,10 @@ test('terminal API generation closes the face/tag operation set and rejects poli
     'terminalReadStoreServicePoints',
   ];
   assert.deepEqual(result.operationIds, expectedOperationIds);
-  assert.deepEqual(result.outputs.map(output => output.operationIds), [expectedOperationIds]);
+  assert.deepEqual(
+    result.outputs.map(output => output.operationIds),
+    [expectedOperationIds],
+  );
   for (const output of result.outputs) {
     const source = fs.readFileSync(output.output, 'utf8');
     assert.doesNotMatch(source, /^import\s/m);
@@ -32,11 +35,21 @@ test('terminal API generation closes the face/tag operation set and rejects poli
     assert.match(source, /TerminalOperationDescriptor/);
     assert.match(source, /createTerminalApiClient/);
   }
-  assert.match(fs.readFileSync(result.outputs[0].output, 'utf8'), /readonly "Authorization": string/);
-  assert.match(fs.readFileSync(result.outputs[0].output, 'utf8'), /readonly "X-Terminal-Ref": string/);
-  assert.match(fs.readFileSync(result.outputs[0].output, 'utf8'), /readonly "X-Terminal-Device-Id": string/);
-  assert.match(fs.readFileSync(result.outputs[0].output, 'utf8'), /isTerminalActivationResult/);
-  assert.match(fs.readFileSync(result.outputs[0].output, 'utf8'), /"submitTerminalUpdateReport": \{[\s\S]*?idempotencyRequired: true/);
+  const generatedApi = fs.readFileSync(result.outputs[0].output, 'utf8');
+  assert.match(generatedApi, /readonly "Authorization": string/);
+  assert.match(generatedApi, /readonly "X-Terminal-Ref": string/);
+  assert.doesNotMatch(generatedApi, /readonly "X-Terminal-Device-Id": string/);
+  assert.match(generatedApi, /readonly "deviceId": string/);
+  assert.match(generatedApi, /isTerminalActivationResult/);
+  assert.match(generatedApi, /"submitTerminalUpdateReport": \{[\s\S]*?idempotencyRequired: true/);
+  const generatedProtocol = fs.readFileSync(
+    new URL(
+      '../../apps/terminal/kernel/base/terminal-data-client/src/generated/terminalConnectionProtocol.ts',
+      import.meta.url,
+    ),
+    'utf8',
+  );
+  assert.match(generatedProtocol, /export type AuthenticateMessage = \{[\s\S]*?readonly deviceId: string/);
   assert.doesNotMatch(result.operationIds.join(','), /downloadTerminalUpdateArtifact/);
   selfTest();
 });

@@ -2,6 +2,7 @@ package com.catering.v2s.app.edge.terminal;
 
 import com.catering.v2s.app.edge.generated.wire.TerminalUpdateReportReceipt;
 import com.catering.v2s.app.edge.generated.wire.TerminalUpdateReportRequest;
+import com.catering.v2s.app.edge.diagnostic.RequestCompletionDiagnosticState;
 import com.catering.v2s.app.edge.problem.ContractProblemAdvice;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi;
@@ -37,7 +38,8 @@ public final class TerminalUpdateReportController {
     }
 
     @PostMapping
-    ResponseEntity<TerminalUpdateReportReceipt> submit(@PathVariable String groupWorkspaceKey,
+    ResponseEntity<TerminalUpdateReportReceipt> submit(jakarta.servlet.http.HttpServletRequest servletRequest,
+            @PathVariable String groupWorkspaceKey,
             @RequestHeader(value = "Authorization", required = false) String authorization,
             @RequestHeader(value = "X-Terminal-Ref", required = false) String terminalRef,
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
@@ -55,13 +57,26 @@ public final class TerminalUpdateReportController {
         ReportInput input = new ReportInput(request.reportId(), request.reportSequence(), request.taskId(),
                 binding.bindingDeviceId(), actualJson, recentJson, request.recent().changedAtEpochMillis(), bodyHash);
         var receipt = reports.record(binding, input);
+        RequestCompletionDiagnosticState completion = RequestCompletionDiagnosticState.find(servletRequest);
+        String requestId = completion == null ? "unavailable" : completion.requestId();
+        String correlationId = completion == null ? "unavailable" : completion.correlationId();
         log.atInfo().addKeyValue("event", "TERMINAL_UPDATE_REPORT_ACCEPTED")
+                .addKeyValue("operationId", "submitTerminalUpdateReport")
+                .addKeyValue("requestId", requestId)
+                .addKeyValue("correlationId", correlationId)
                 .addKeyValue("terminalRef", binding.terminalRef())
                 .addKeyValue("reportId", receipt.reportId())
                 .addKeyValue("taskId", receipt.taskId())
                 .addKeyValue("reportSequence", receipt.acceptedSequence())
                 .addKeyValue("outcome", receipt.outcome())
-                .log("Terminal update report committed");
+                .log("event=TERMINAL_UPDATE_REPORT_ACCEPTED operationId=submitTerminalUpdateReport"
+                        + " requestId=" + requestId
+                        + " correlationId=" + correlationId
+                        + " terminalRef=" + binding.terminalRef()
+                        + " reportId=" + receipt.reportId()
+                        + " taskId=" + receipt.taskId()
+                        + " reportSequence=" + receipt.acceptedSequence()
+                        + " outcome=" + receipt.outcome());
         return ResponseEntity.ok(new TerminalUpdateReportReceipt(receipt.reportId(), receipt.taskId(),
                 receipt.acceptedSequence(), receipt.outcome()));
     }

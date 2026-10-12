@@ -18,6 +18,7 @@ import com.catering.v2s.platform.access.PlatformExecutionContext;
 import com.catering.v2s.platform.foundation.persistence.DatabaseOperationTracker;
 import com.catering.v2s.platform.foundation.runtime.RuntimeEnvironmentKeys;
 import com.catering.v2s.platform.iam.api.PlatformDiagnosticBootstrap;
+import com.catering.v2s.workspace.iam.api.WorkspaceRoleReadback;
 import com.catering.v2s.workspace.iam.application.WorkspaceInvitationService;
 import com.catering.v2s.workspace.iam.application.WorkspaceRoleService;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -100,6 +101,9 @@ class BackendAcceptanceTest {
     private static final String OBJECT_STORAGE_ACCESS_KEY = "baacceptanceaccess";
     private static final String OBJECT_STORAGE_SECRET_KEY = "ba-acceptance-secret-key";
     private static final String OBJECT_STORAGE_BUCKET = "backend-acceptance";
+    private static final String REMOTE_CONTROL_ACCEPTANCE_API_KEY = "backend-acceptance-livekit-key";
+    private static final String REMOTE_CONTROL_ACCEPTANCE_API_SECRET =
+            "backend-acceptance-livekit-secret-not-for-a-real-service";
     private static final String PLATFORM_RATE_LIMIT_HMAC = "backend-acceptance-platform-rate-limit-hmac";
     private static final String WORKSPACE_RATE_LIMIT_HMAC = "backend-acceptance-workspace-rate-limit-hmac";
     static final String OPERATIONS_PASSWORD = "Acceptance-Pass-123!";
@@ -670,6 +674,30 @@ class BackendAcceptanceTest {
     static final RouteIdentity TERMINAL_UPDATE_REPORT_SUBMIT = new RouteIdentity(
             "submitTerminalUpdateReport",
             "/api/terminal/group-workspaces/{groupWorkspaceKey}/update-reports");
+    static final RouteIdentity OPERATIONS_REMOTE_CONTROL_START = new RouteIdentity(
+            "startOperationsTerminalRemoteControl",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminals/{terminalRef}/remote-control-sessions",
+            true);
+    static final RouteIdentity OPERATIONS_REMOTE_CONTROL_READ = new RouteIdentity(
+            "getOperationsTerminalRemoteControl",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminals/{terminalRef}/remote-control-sessions/{sessionId}",
+            true);
+    static final RouteIdentity OPERATIONS_REMOTE_CONTROL_GRANT = new RouteIdentity(
+            "issueOperationsRemoteControlGrant",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminals/{terminalRef}/remote-control-sessions/{sessionId}/controller-grant",
+            true);
+    static final RouteIdentity OPERATIONS_REMOTE_CONTROL_END = new RouteIdentity(
+            "endOperationsTerminalRemoteControl",
+            "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminals/{terminalRef}/remote-control-sessions/{sessionId}/end",
+            true);
+    static final RouteIdentity TERMINAL_REMOTE_CONTROL_REGISTER = new RouteIdentity(
+            "registerTerminalRemoteControl",
+            "/api/terminal/group-workspaces/{groupWorkspaceKey}/remote-control-sessions/{sessionId}/registration",
+            true);
+    static final RouteIdentity TERMINAL_REMOTE_CONTROL_REPORT = new RouteIdentity(
+            "reportTerminalRemoteControl",
+            "/api/terminal/group-workspaces/{groupWorkspaceKey}/remote-control-sessions/{sessionId}/status",
+            true);
     static final RouteIdentity OPERATIONS_TERMINAL_UPDATE_REPORT_HISTORY = new RouteIdentity(
             "getOperationsProjectTerminalUpdateReportHistoryPage",
             "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminal-versions/{terminalRef}/update-reports");
@@ -803,6 +831,10 @@ class BackendAcceptanceTest {
 
     int primaryBusinessPort() {
         return port;
+    }
+
+    TdsAcceptanceProcess tdsAcceptanceProcess() {
+        return tdsAcceptanceProcess;
     }
 
     private static TdsAcceptanceProcess.DorisConfiguration initializeDorisHistoryTable() throws Exception {
@@ -1366,7 +1398,10 @@ class BackendAcceptanceTest {
                 Map.entry("catering.asset.terminal-update.private-object-prefix", () -> "acceptance/"),
                 Map.entry("catering.terminal-update.android-build-tools-directory",
                         () -> TerminalUpdateAcceptanceFixtures.androidBuildToolsDirectory().toString()),
-                Map.entry("catering.asset.public-base-url", BackendAcceptanceTest::objectStorageEndpoint));
+                Map.entry("catering.asset.public-base-url", BackendAcceptanceTest::objectStorageEndpoint),
+                Map.entry("V2S_LIVEKIT_API_KEY", () -> REMOTE_CONTROL_ACCEPTANCE_API_KEY),
+                Map.entry("V2S_LIVEKIT_API_SECRET", () -> REMOTE_CONTROL_ACCEPTANCE_API_SECRET),
+                Map.entry("V2S_LIVEKIT_SIGNAL_URL", () -> "ws://127.0.0.1:7880"));
     }
 
     @TestFactory
@@ -1761,6 +1796,11 @@ class BackendAcceptanceTest {
     }
 
     Fixture projectUserFixture(Fixture existing, Set<String> pageAccessKeys, Set<String> capabilities) {
+        return projectUserFixture(existing, existing.projectId(), pageAccessKeys, capabilities);
+    }
+
+    Fixture projectUserFixture(
+            Fixture existing, UUID projectRef, Set<String> pageAccessKeys, Set<String> capabilities) {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         long now = Instant.now().toEpochMilli();
         UUID roleId = roles.create(
@@ -1779,14 +1819,14 @@ class BackendAcceptanceTest {
                 existing.workspaceUuid(),
                 existing.groupWorkspaceKey(),
                 mobile,
-                List.of(new WorkspaceInvitationService.AssignmentIntent(roleId, "PROJECT", existing.projectId())),
+                List.of(new WorkspaceInvitationService.AssignmentIntent(roleId, "PROJECT", projectRef)),
                 now + 3_600_000L);
         return new Fixture(
                 existing.workspaceUuid(),
                 existing.groupWorkspaceKey(),
                 existing.groupId(),
                 existing.regionId(),
-                existing.projectId(),
+                projectRef,
                 existing.brandId(),
                 existing.tenantId(),
                 existing.storeId(),
@@ -1795,6 +1835,50 @@ class BackendAcceptanceTest {
                 invitation.rawInvitationToken(),
                 mobile,
                 loginName);
+    }
+
+    WorkspaceRoleReadback replaceProjectUserCapabilitiesForAcceptance(Fixture fixture, Set<String> capabilities) {
+        UUID roleId = jdbc.queryForObject(
+                """
+                SELECT assignment.role_id
+                FROM workspace_iam.workspace_account account
+                JOIN workspace_iam.role_assignment assignment ON assignment.account_id=account.id
+                WHERE account.workspace_uuid=? AND account.group_workspace_key=?
+                  AND account.login_name_normalized=lower(?)
+                  AND assignment.workspace_uuid=account.workspace_uuid
+                  AND assignment.group_workspace_key=account.group_workspace_key
+                  AND assignment.service_node_type='PROJECT' AND assignment.service_node_id=?
+                  AND assignment.status='ACTIVE'
+                """,
+                UUID.class,
+                fixture.workspaceUuid(),
+                fixture.groupWorkspaceKey(),
+                fixture.loginName(),
+                fixture.projectId());
+        WorkspaceRoleReadback current = roles.require(fixture.workspaceUuid(), fixture.groupWorkspaceKey(), roleId);
+        return roles.update(
+                fixture.workspaceUuid(),
+                fixture.groupWorkspaceKey(),
+                roleId,
+                current.version(),
+                current.name(),
+                current.description(),
+                current.pageAccessKeys(),
+                capabilities);
+    }
+
+    UUID createSiblingProjectForAcceptance(Fixture existing) {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        OrganizationNodeReadback project = hierarchy.create(
+                existing.workspaceUuid(),
+                existing.groupWorkspaceKey(),
+                "PROJECT",
+                existing.regionId(),
+                "acceptance-remote-control-" + suffix,
+                "Acceptance Remote Control Scope " + suffix,
+                null,
+                List.of("Opening", "Peak", "Closing"));
+        return project.id();
     }
 
     /** Creates a second user assigned to the existing region for owner-scope acceptance. */
@@ -2559,6 +2643,11 @@ class BackendAcceptanceTest {
         Response post(RouteIdentity route, String path, String cookie, Map<String, Object> body, Set<Integer> expected)
                 throws Exception {
             return send(route, "POST", path, cookie, requestJson(body), null, expected);
+        }
+
+        Response postNoBody(RouteIdentity route, String path, String cookie, Set<Integer> expected)
+                throws Exception {
+            return send(route, "POST", path, cookie, new byte[0], null, expected);
         }
 
         Response postSerializedJson(RouteIdentity route, String path, byte[] body, Set<Integer> expected)

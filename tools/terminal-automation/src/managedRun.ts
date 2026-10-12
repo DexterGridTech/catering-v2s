@@ -10,7 +10,13 @@ export type TerminalAutomationProcessIdentity = Readonly<{
 }>;
 
 export type TerminalAutomationAndroidDeviceRole =
-  'PHYSICAL_DUAL' | 'MOBILE_EMULATOR' | 'PAIR_MASTER_EMULATOR' | 'PAIR_SLAVE_EMULATOR';
+  'PHYSICAL_DUAL' | 'LAPTOP_SINGLE' | 'MOBILE_EMULATOR' | 'PAIR_MASTER_EMULATOR' | 'PAIR_SLAVE_EMULATOR';
+
+export type TerminalAutomationRemoteTopology =
+  | 'mobile-single'
+  | 'laptop-single'
+  | 'laptop-dual'
+  | 'laptop-paired';
 
 export type TerminalAutomationAndroidDevice = Readonly<{
   readonly serial: string;
@@ -28,6 +34,7 @@ export type TerminalAutomationManifest = Readonly<{
     readonly phase: string;
     readonly platform: string;
     readonly shape: string;
+    readonly remoteTopology?: TerminalAutomationRemoteTopology;
     readonly case?: string;
     readonly age?: string;
     readonly sample?: 'console' | 'wallpaper';
@@ -42,10 +49,23 @@ export type TerminalAutomationManifest = Readonly<{
   readonly firstFailure: string | null;
   readonly business: 'NOT_RUN' | 'PASS' | 'FAIL';
   readonly cleanup: 'NOT_RUN' | 'PASS' | 'FAIL';
+  readonly diagnostics?: 'NOT_RUN' | 'PASS' | 'FAIL' | 'N/A';
   readonly androidPackageId?: string;
   readonly recoveryOfRunId?: string;
-  readonly managedDev?: Readonly<{readonly runId: string; readonly manifestSha256: string}>;
+  readonly managedDev?: Readonly<{
+    readonly runId: string;
+    readonly manifestSha256: string;
+    readonly livekitResident?: Readonly<{
+      readonly state: 'RUNNING';
+      readonly bootId: string;
+      readonly containerId: string;
+      readonly imageId: string;
+      readonly endpointRef: 'LIVEKIT_RESIDENT_ENDPOINT';
+      readonly signalTransport: 'WS';
+    }>;
+  }>;
   readonly fixture?: Readonly<{
+    readonly managedDevRunId: string;
     readonly seedKey: 'term-front' | 'term-handheld';
     readonly terminalRef: string;
     readonly storeRef: string;
@@ -59,6 +79,7 @@ export type TerminalAutomationExecution = Readonly<{
   readonly phase: string;
   readonly platform: string;
   readonly shape: string;
+  readonly remoteTopology?: TerminalAutomationRemoteTopology;
   readonly case?: string;
   readonly age?: string;
   readonly sample?: 'console' | 'wallpaper';
@@ -81,6 +102,12 @@ const currentProcessIdentity = (): TerminalAutomationProcessIdentity => {
 };
 
 const safeId = (value: string): boolean => /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$/.test(value);
+const remoteTopologies = new Set<TerminalAutomationRemoteTopology>([
+  'mobile-single',
+  'laptop-single',
+  'laptop-dual',
+  'laptop-paired',
+]);
 
 export const createManagedRun = (
   repositoryRoot: string,
@@ -98,6 +125,23 @@ export const createManagedRun = (
       execution.deviceSerial === execution.peerDeviceSerial)
   ) {
     throw new Error('TERMINAL_AUTOMATION_UPDATE_PAIR_DEVICE_IDENTITY_INVALID');
+  }
+  if (
+    execution.phase === 'remote' &&
+    (!remoteTopologies.has(execution.remoteTopology as TerminalAutomationRemoteTopology) ||
+      execution.case !== 'remote.main' ||
+      (execution.platform === 'web' &&
+        (execution.remoteTopology !== 'mobile-single' ||
+          execution.deviceSerial !== undefined || execution.peerDeviceSerial !== undefined)) ||
+      (execution.platform === 'android' && execution.deviceSerial === undefined) ||
+      (execution.remoteTopology === 'laptop-paired' &&
+        (execution.platform !== 'android' ||
+          execution.deviceSerial === undefined ||
+          execution.peerDeviceSerial === undefined ||
+          execution.deviceSerial === execution.peerDeviceSerial)) ||
+      (execution.remoteTopology !== 'laptop-paired' && execution.peerDeviceSerial !== undefined))
+  ) {
+    throw new Error('TERMINAL_AUTOMATION_REMOTE_TOPOLOGY_IDENTITY_INVALID');
   }
   const root = realpathSync(repositoryRoot);
   const runtimePath = path.join(root, '.runtime');
@@ -142,6 +186,25 @@ export const createManagedRun = (
   const androidDevices =
     execution.platform !== 'android' || execution.deviceSerial === undefined
       ? undefined
+      : execution.phase === 'remote' && execution.remoteTopology === 'laptop-paired'
+        ? execution.peerDeviceSerial === undefined
+          ? undefined
+          : Object.freeze([
+              Object.freeze({serial: execution.deviceSerial, role: 'PAIR_MASTER_EMULATOR' as const}),
+              Object.freeze({serial: execution.peerDeviceSerial, role: 'PAIR_SLAVE_EMULATOR' as const}),
+            ])
+        : execution.phase === 'remote' && execution.remoteTopology !== undefined
+          ? Object.freeze([
+              Object.freeze({
+                serial: execution.deviceSerial,
+                role:
+                  execution.remoteTopology === 'mobile-single'
+                    ? ('MOBILE_EMULATOR' as const)
+                    : execution.remoteTopology === 'laptop-single'
+                      ? ('LAPTOP_SINGLE' as const)
+                      : ('PHYSICAL_DUAL' as const),
+              }),
+            ])
       : execution.case === 'update.pair'
         ? execution.peerDeviceSerial === undefined
           ? undefined
@@ -176,6 +239,10 @@ export const createManagedRun = (
     firstFailure: null,
     business: 'NOT_RUN',
     cleanup: 'NOT_RUN',
+    diagnostics:
+      (execution.phase === 'update' || execution.phase === 'remote') && execution.platform === 'android'
+        ? 'NOT_RUN'
+        : 'N/A',
   });
   writeFileSync(path.join(resolvedDirectory, 'run-manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`, {
     mode: 0o600,

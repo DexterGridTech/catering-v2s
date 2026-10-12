@@ -104,7 +104,8 @@ public class TerminalUpdateReportPersistence {
         if (frontier != null && (!frontier.sortKey().matches("[0-9a-f]{32}")
                 || !frontier.sortKey().equals(uuidHex(frontier.tieBreaker())))) throw new InvalidCursorException();
 
-        StringBuilder sql = new StringBuilder("WITH eligible AS (SELECT t.terminal_ref,t.name AS terminal_name,"
+        StringBuilder sql = new StringBuilder("WITH evaluated AS (SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint AS evaluated_at_epoch_millis), "
+                + "eligible AS (SELECT t.workspace_uuid,t.group_workspace_key,t.terminal_ref,t.name AS terminal_name,"
                 + "s.id AS store_ref,s.name AS store_name,b.generation,b.binding_status FROM organization.store s "
                 + "JOIN store_terminal.terminal t ON t.workspace_uuid=s.workspace_uuid AND t.group_workspace_key=s.group_workspace_key "
                 + "AND t.store_ref=s.id LEFT JOIN terminal_binding.latest_binding b ON b.workspace_uuid=t.workspace_uuid "
@@ -115,7 +116,12 @@ public class TerminalUpdateReportPersistence {
                 + "r.actual,r.recent,r.received_at_epoch_millis,"
                 + "CASE WHEN r.report_id IS NOT NULL AND (e.binding_status IS DISTINCT FROM 'ACTIVE' "
                 + "OR e.generation IS NULL OR r.binding_generation<>e.generation) THEN TRUE ELSE FALSE END AS old_binding "
-                + "FROM eligible e LEFT JOIN LATERAL ("
+                + ",CASE WHEN e.binding_status IS DISTINCT FROM 'ACTIVE' OR e.generation IS NULL THEN 'NOT_ACTIVATED' "
+                + "WHEN c.terminal_ref IS NULL OR c.disconnected_at_epoch_millis IS NOT NULL THEN 'OFFLINE' ELSE 'ONLINE' END AS connection_status,"
+                + "c.last_activity_at_epoch_millis AS observed_at_epoch_millis,evaluated.evaluated_at_epoch_millis "
+                + "FROM eligible e CROSS JOIN evaluated LEFT JOIN terminal_connection.latest_state c "
+                + "ON c.workspace_uuid=e.workspace_uuid AND c.group_workspace_key=e.group_workspace_key AND c.terminal_ref=e.terminal_ref "
+                + "LEFT JOIN LATERAL ("
                 + "SELECT report_id,task_id,binding_generation,actual,recent,received_at_epoch_millis FROM terminal_update.terminal_report r "
                 + "WHERE r.workspace_uuid=? AND r.group_workspace_key=? AND r.terminal_ref=e.terminal_ref "
                 + "ORDER BY r.binding_generation DESC,r.report_sequence DESC LIMIT 1) r ON TRUE WHERE TRUE");
@@ -127,9 +133,10 @@ public class TerminalUpdateReportPersistence {
         addJsonFilter(sql, args, "actual->>'apkVersion'", query.currentApkVersion());
         addJsonFilter(sql, args, "actual->>'jsVersion'", query.currentJsVersion());
         addJsonFilter(sql, args, "actual->>'runtimeVersion'", query.runtimeVersion());
-        if (frontier != null) { sql.append(" AND terminal_ref<?"); args.add(frontier.tieBreaker()); }
+        if (frontier != null) { sql.append(" AND e.terminal_ref<?"); args.add(frontier.tieBreaker()); }
         sql.append(" ORDER BY terminal_ref DESC LIMIT ?) SELECT terminal_ref,terminal_name,store_ref,store_name,"
-                + "report_id,task_id,report_generation,generation,actual::text,recent::text,received_at_epoch_millis,old_binding FROM projected ORDER BY terminal_ref DESC");
+                + "report_id,task_id,report_generation,generation,actual::text,recent::text,received_at_epoch_millis,old_binding,"
+                + "connection_status,observed_at_epoch_millis,evaluated_at_epoch_millis FROM projected ORDER BY terminal_ref DESC");
         args.add(query.limit() + 1);
         List<VersionRow> rows = jdbc.query(sql.toString(), (rs, row) -> new VersionRow(
                 rs.getObject("terminal_ref", UUID.class), rs.getString("terminal_name"),
@@ -137,7 +144,8 @@ public class TerminalUpdateReportPersistence {
                 rs.getObject("report_id", UUID.class) != null,
                 rs.getString("actual"), rs.getString("recent"),
                 rs.getBoolean("old_binding"),
-                rs.getObject("received_at_epoch_millis", Long.class)),
+                rs.getObject("received_at_epoch_millis", Long.class), rs.getString("connection_status"),
+                rs.getObject("observed_at_epoch_millis", Long.class), rs.getLong("evaluated_at_epoch_millis")),
                 args.toArray());
         boolean hasMore = rows.size() > query.limit();
         List<VersionRow> items = hasMore ? List.copyOf(rows.subList(0, query.limit())) : List.copyOf(rows);
@@ -148,24 +156,33 @@ public class TerminalUpdateReportPersistence {
     }
 
     public Optional<VersionDetail> detail(UUID workspace, String groupKey, UUID projectRef, UUID terminalRef) {
-        List<VersionDetail> rows = jdbc.query("SELECT t.terminal_ref,t.name,s.id,s.name,r.actual::text,r.recent::text,"
+        List<VersionDetail> rows = jdbc.query("WITH evaluated AS (SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint AS evaluated_at_epoch_millis) "
+                        + "SELECT t.terminal_ref,t.name,s.id AS store_ref,s.name AS store_name,r.actual::text,r.recent::text,"
                         + "r.received_at_epoch_millis,"
                         + "(r.report_id IS NOT NULL AND (b.binding_status IS DISTINCT FROM 'ACTIVE' "
                         + "OR b.generation IS NULL OR r.report_generation<>b.generation)) "
-                        + "," + REPORT_REFERENCE_COLUMNS + " "
+                        + "AS old_binding," + REPORT_REFERENCE_COLUMNS + ","
+                        + "CASE WHEN b.binding_status IS DISTINCT FROM 'ACTIVE' OR b.generation IS NULL THEN 'NOT_ACTIVATED' "
+                        + "WHEN c.terminal_ref IS NULL OR c.disconnected_at_epoch_millis IS NOT NULL THEN 'OFFLINE' ELSE 'ONLINE' END AS connection_status,"
+                        + "c.last_activity_at_epoch_millis AS observed_at_epoch_millis,evaluated.evaluated_at_epoch_millis "
                         + "FROM organization.store s JOIN store_terminal.terminal t ON t.workspace_uuid=s.workspace_uuid "
                         + "AND t.group_workspace_key=s.group_workspace_key AND t.store_ref=s.id "
                         + "LEFT JOIN terminal_binding.latest_binding b ON b.workspace_uuid=t.workspace_uuid "
                         + "AND b.group_workspace_key=t.group_workspace_key AND b.terminal_ref=t.terminal_ref "
+                        + "LEFT JOIN terminal_connection.latest_state c ON c.workspace_uuid=t.workspace_uuid "
+                        + "AND c.group_workspace_key=t.group_workspace_key AND c.terminal_ref=t.terminal_ref "
                         + "LEFT JOIN LATERAL (SELECT report_id,actual,recent,received_at_epoch_millis,binding_generation AS report_generation FROM terminal_update.terminal_report r "
                         + "WHERE r.workspace_uuid=t.workspace_uuid AND r.group_workspace_key=t.group_workspace_key "
                         + "AND r.terminal_ref=t.terminal_ref ORDER BY binding_generation DESC,report_sequence DESC LIMIT 1) r ON TRUE "
                         + reportReferenceJoins("t.workspace_uuid", "t.group_workspace_key", "s.project_id", "r")
-                        + "WHERE s.workspace_uuid=? AND s.group_workspace_key=? AND s.project_id=? AND s.status='ENABLED' "
+                        + " CROSS JOIN evaluated WHERE s.workspace_uuid=? AND s.group_workspace_key=? AND s.project_id=? AND s.status='ENABLED' "
                         + "AND t.status='ENABLED' AND t.terminal_ref=?",
-                (rs, row) -> new VersionDetail(rs.getObject(1, UUID.class), rs.getString(2), rs.getObject(3, UUID.class),
-                        rs.getString(4), rs.getString(5), rs.getString(6), rs.getBoolean(8),
-                        rs.getObject(7, Long.class), reportReferences(rs), null),
+                (rs, row) -> new VersionDetail(rs.getObject("terminal_ref", UUID.class), rs.getString("name"),
+                        rs.getObject("store_ref", UUID.class), rs.getString("store_name"), rs.getString("actual"),
+                        rs.getString("recent"), rs.getBoolean("old_binding"),
+                        rs.getObject("received_at_epoch_millis", Long.class), reportReferences(rs), null,
+                        rs.getString("connection_status"), rs.getObject("observed_at_epoch_millis", Long.class),
+                        rs.getLong("evaluated_at_epoch_millis")),
                 workspace, groupKey, projectRef, terminalRef);
         return rows.stream().findFirst();
     }
@@ -198,7 +215,8 @@ public class TerminalUpdateReportPersistence {
             args.add(receivedAt); args.add(receivedAt); args.add(frontier.tieBreaker());
         }
         sql.append(" ORDER BY received_at_epoch_millis DESC,task_id DESC LIMIT ?) r ON TRUE")
-                .append(reportReferenceJoins("e.workspace_uuid", "e.group_workspace_key", "e.project_id", "r"));
+                .append(reportReferenceJoins("e.workspace_uuid", "e.group_workspace_key", "e.project_id", "r"))
+                .append(" ORDER BY r.received_at_epoch_millis DESC,r.task_id DESC");
         args.add(limit + 1);
         List<EligibleHistoryRow> eligibleRows = jdbc.query(sql.toString(), (rs, row) -> {
             UUID reportId = rs.getObject("report_id", UUID.class);

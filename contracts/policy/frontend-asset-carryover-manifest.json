@@ -162,9 +162,10 @@
         "EDIT_STORE_TERMINAL",
         "BC-BUSINESS-CHANNEL-PROJECT-EDIT",
         "BC-BUSINESS-CHANNEL-STORE-EDIT",
-        "MANAGE_PROJECT_TERMINAL_VERSION"
+        "MANAGE_PROJECT_TERMINAL_VERSION",
+        "CONTROL_PROJECT_TERMINAL"
       ],
-      "count": 43,
+      "count": 44,
       "rule": "page access grants read entry; only these action keys grant mutations, and neither set implies the other"
     },
     "drawerLifecycleAdaptation": {

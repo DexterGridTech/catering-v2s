@@ -1,3 +1,4 @@
+import {unavailableRemoteControlPort} from '../src/defaults/unavailableRemoteControl';
 import {
   type ConnectorCallRequest,
   type ConnectorCallResponse,
@@ -323,6 +324,7 @@ const completeBindings: PlatformPortBindings = {
   update: completeUpdate,
   logUpload: completeLogUpload,
   topologyHost: completeTopologyHost,
+  remoteControl: unavailableRemoteControlPort,
 };
 const completePortImplementations: PlatformPorts = {
   logger: completeLogger,
@@ -335,6 +337,7 @@ const completePortImplementations: PlatformPorts = {
   update: completeUpdate,
   logUpload: completeLogUpload,
   topologyHost: completeTopologyHost,
+  remoteControl: unavailableRemoteControlPort,
 };
 void completeBindings;
 void completePortImplementations;

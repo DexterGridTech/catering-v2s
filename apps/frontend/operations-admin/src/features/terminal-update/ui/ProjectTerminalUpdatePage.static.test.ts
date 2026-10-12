@@ -21,3 +21,22 @@ describe('terminal update detail pagination wiring', () => {
     expect(source).not.toContain('loadMoreHistory');
   });
 });
+
+describe('remote control entry wiring', () => {
+  it('shows the remote action only with its capability and current online state', () => {
+    expect(source).toContain("actionCapabilityKeys.includes('CONTROL_PROJECT_TERMINAL')");
+    expect(source).toContain("actionCapabilityKeys.includes('MANAGE_PROJECT_TERMINAL_VERSION')");
+    expect(source).toContain("versionDetail.connectionStatus !== 'ONLINE'");
+    expect(source).toContain('AdminDetailActionMenu');
+    expect(source).toContain('remoteControlTestIds.detailActions(versionDetail.terminalRef)');
+    expect(source).toContain('remoteControlTestIds.start(versionDetail.terminalRef)');
+  });
+
+  it('starts through the generated owner API and mounts the workspace with context-bound cleanup', () => {
+    expect(source).toContain('operationsClient.startOperationsTerminalRemoteControl');
+    expect(source).toContain('operationsClient.endOperationsTerminalRemoteControl');
+    expect(source).toContain('contextCurrent={remoteWorkspace.target.contextKey === contextKey}');
+    expect(source).toContain('onClose={result => closeRemoteWorkspace(remoteWorkspace, result)}');
+    expect(source).toContain('<RemoteControlWorkspace');
+  });
+});

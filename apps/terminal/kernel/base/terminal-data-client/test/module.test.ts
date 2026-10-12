@@ -76,6 +76,8 @@ describe('terminal-data-client package identity', () => {
       `${moduleName}.read-terminal-data`,
       `${moduleName}.request-terminal-update-download-grant`,
       `${moduleName}.submit-terminal-update-report`,
+      `${moduleName}.register-terminal-remote-control`,
+      `${moduleName}.report-terminal-remote-control`,
       `${moduleName}.terminal-data-heartbeat`,
       `${moduleName}.topic-changed`,
       `${moduleName}.initialize-terminal-data-client`,

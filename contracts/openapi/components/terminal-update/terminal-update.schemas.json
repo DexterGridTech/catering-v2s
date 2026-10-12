@@ -433,6 +433,9 @@
           "storeName",
           "hasReport",
           "oldBinding",
+          "connectionStatus",
+          "observedAt",
+          "evaluatedAt",
           "actual",
           "recent",
           "receivedAtEpochMillis"
@@ -457,6 +460,25 @@
           },
           "oldBinding": {
             "type": "boolean"
+          },
+          "connectionStatus": {
+            "type": "string",
+            "enum": [
+              "NOT_ACTIVATED",
+              "OFFLINE",
+              "ONLINE"
+            ]
+          },
+          "observedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "evaluatedAt": {
+            "type": "string",
+            "format": "date-time"
           },
           "actual": {
             "type": [
@@ -1471,6 +1493,9 @@
           "storeRef",
           "storeName",
           "hasReport",
+          "connectionStatus",
+          "observedAt",
+          "evaluatedAt",
           "latest",
           "latestReferences",
           "historyCursor",
@@ -1493,6 +1518,25 @@
           },
           "hasReport": {
             "type": "boolean"
+          },
+          "connectionStatus": {
+            "type": "string",
+            "enum": [
+              "NOT_ACTIVATED",
+              "OFFLINE",
+              "ONLINE"
+            ]
+          },
+          "observedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "evaluatedAt": {
+            "type": "string",
+            "format": "date-time"
           },
           "latest": {
             "type": [

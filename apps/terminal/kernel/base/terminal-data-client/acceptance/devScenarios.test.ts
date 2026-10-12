@@ -1,3 +1,4 @@
+import {unavailableRemoteControlPort} from '@catering-v2s/kernel-base-platform-ports';
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import {createServer} from 'node:net';
 import {appendFileSync, readFileSync} from 'node:fs';
@@ -409,6 +410,7 @@ const createScenarioClient = async (alias: string, requireCompression = false): 
       update: unavailableUpdatePort,
       logUpload: unavailableLogUploadPort,
       topologyHost: unavailableTopologyHostPort,
+      remoteControl: unavailableRemoteControlPort,
     },
   });
   runtime = createRuntime({

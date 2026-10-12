@@ -80,6 +80,7 @@ public final class WorkspaceAuthorizationCatalog {
         public static final String EDIT_STORE_SERVICE_POINT_QR = "EDIT_STORE_SERVICE_POINT_QR";
         public static final String EDIT_STORE_TERMINAL = "EDIT_STORE_TERMINAL";
         public static final String MANAGE_PROJECT_TERMINAL_VERSION = "MANAGE_PROJECT_TERMINAL_VERSION";
+        public static final String CONTROL_PROJECT_TERMINAL = "CONTROL_PROJECT_TERMINAL";
     }
     public static List<CapabilityCatalogEntry> capabilityCatalog() { return List.of(
             capability("BC-ORG-GROUP-EDIT", "编辑集团资料", "ORGANIZATION_MANAGEMENT", "组织管理", 100, List.of("GROUP"), "PG-ORG-STRUCTURE", "GROUP_VISIBLE"),
@@ -124,7 +125,8 @@ public final class WorkspaceAuthorizationCatalog {
             capability("EDIT_STORE_SALES_MENU", "编辑门店销售菜单", "CATALOG_MANAGEMENT", "商品与服务", 500, List.of("GROUP", "REGION", "PROJECT", "STORE"), "PG-SALES-MENU-STORE", "SELECTED_STORE_SCOPE"),
             capability("EDIT_STORE_SERVICE_POINT_QR", "编辑门店桌台与二维码", "CATALOG_MANAGEMENT", "商品与服务", 500, List.of("GROUP", "REGION", "PROJECT", "STORE"), "PG-STORE-SERVICE-POINT-QR", "SELECTED_STORE_SCOPE"),
             capability("EDIT_STORE_TERMINAL", "编辑门店终端", "STORE_MANAGEMENT", "门店管理", 200, List.of("GROUP", "REGION", "PROJECT", "STORE"), "PG-STORE-TERMINALS", "SELECTED_STORE_SCOPE"),
-            capability("MANAGE_PROJECT_TERMINAL_VERSION", "管理项目终端版本", "STORE_MANAGEMENT", "门店管理", 200, List.of("GROUP", "PROJECT"), "PG-PROJECT-TERMINAL-VERSION-RULES", "SELECTED_PROJECT_SCOPE")); }
+            capability("MANAGE_PROJECT_TERMINAL_VERSION", "管理项目终端版本", "STORE_MANAGEMENT", "门店管理", 200, List.of("GROUP", "PROJECT"), "PG-PROJECT-TERMINAL-VERSION-RULES", "SELECTED_PROJECT_SCOPE"),
+            capability("CONTROL_PROJECT_TERMINAL", "远程控制项目终端", "STORE_MANAGEMENT", "门店管理", 200, List.of("GROUP", "PROJECT"), "PG-PROJECT-TERMINAL-VERSION-RULES", "SELECTED_PROJECT_SCOPE")); }
     public static List<PageAccessCatalogEntry> pageCatalog() { return List.of(
             page("HOME-GROUP", "集团首页", "工作台", 10, "NONE", List.of("GROUP"), null, false),
             page("HOME-REGION", "大区首页", "工作台", 20, "NONE", List.of("REGION"), null, false),

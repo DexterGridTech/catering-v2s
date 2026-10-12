@@ -173,6 +173,26 @@ const initialState: SurfaceHostSourceState = Object.freeze({
   snapshot: null,
 });
 
+/** Reads the current native owner snapshot at the moment an adapter starts using a Window. */
+export const readAndroidSurfaceHostWindow = async (
+  surfaceKey: 'PRIMARY' | 'SECONDARY',
+): Promise<Pick<AndroidSurfaceHostSnapshot, 'surfaceKey' | 'windowIdentity' | 'generation'> | null> => {
+  const value = await getNativeModule().getSurfaceHostSnapshot(surfaceKey);
+  const accepted = acceptAndroidSurfaceHostEvent({
+    surfaceKey,
+    state: initialState,
+    value,
+    expectedDisplayIndex: surfaceKey === 'PRIMARY' ? 0 : 1,
+  });
+  if (!accepted.accepted || accepted.eventKind !== 'ready' || accepted.state.snapshot === null) return null;
+  const snapshot = accepted.state.snapshot;
+  return Object.freeze({
+    surfaceKey: snapshot.surfaceKey,
+    windowIdentity: snapshot.windowIdentity,
+    generation: snapshot.generation,
+  });
+};
+
 /**
  * Applies the adapter's identity and generation fence before a host fact can
  * reach render. Keeping this pure makes the stale/wrong-surface cases testable

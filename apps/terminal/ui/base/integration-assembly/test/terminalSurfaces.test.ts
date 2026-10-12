@@ -1,3 +1,4 @@
+import {unavailableRemoteControlPort} from '@catering-v2s/kernel-base-platform-ports';
 import {createElement, type ReactElement} from 'react';
 import {describe, expect, it} from 'vitest';
 import {
@@ -14,7 +15,7 @@ import {
 } from '@catering-v2s/kernel-base-platform-ports';
 import {defineCommand} from '@catering-v2s/kernel-base-runtime';
 import {AdminLauncher} from '@catering-v2s/ui-base-admin-shell';
-import {RenderProvider, SurfaceRoot} from '@catering-v2s/ui-base-render';
+import {RenderProvider, SurfaceRoot, type RenderProviderProps} from '@catering-v2s/ui-base-render';
 import {
   createIntegrationAssembly,
   getSurfaceDeclarations,
@@ -121,6 +122,7 @@ describe('shared terminal surface declarations', () => {
         update: unavailableUpdatePort,
         logUpload: unavailableLogUploadPort,
         topologyHost: unavailableTopologyHostPort,
+        remoteControl: unavailableRemoteControlPort,
       },
     });
 
@@ -161,11 +163,15 @@ describe('shared terminal surface declarations', () => {
     const renderProviderProps = renderProviderElement.props as Readonly<{
       readonly children: ReactElement<Record<string, unknown>>;
       readonly onLocalInteraction: () => Promise<void>;
-      readonly runtimeFacts: Readonly<{
-        readonly automation: Readonly<{readonly enabled: boolean; readonly address: string}>;
-      }>;
+      readonly runtimeFacts: RenderProviderProps['runtimeFacts'];
+      readonly createRouteContext?: RenderProviderProps['createRouteContext'];
     }>;
     expect(renderProviderProps.runtimeFacts.automation).toEqual({enabled: true, address: automationAddress});
+    expect(renderProviderProps.createRouteContext?.(assembly.runtime.getState(), 'PRIMARY')).toMatchObject({
+      displayMode: 'PRIMARY',
+      workspace: expect.any(String),
+      instanceMode: expect.any(String),
+    });
     const surfaceRootElement = renderProviderProps.children;
     expect(surfaceRootElement.type).toBe(SurfaceRoot);
 
@@ -190,15 +196,20 @@ describe('shared terminal surface declarations', () => {
       displayMode: 'SECONDARY',
       surfaceForm: 'laptop',
     });
-    const secondaryElementProps = secondaryElement.props as Readonly<{
+    const secondaryElementProps = (secondaryElement as ReactElement<Record<string, unknown>>).props as Readonly<{
       readonly children: ReactElement<Record<string, unknown>>;
     }>;
     const secondaryProvider = secondaryElementProps.children;
-    const secondaryInteraction = (
-      secondaryProvider.props as Readonly<{
-        readonly onLocalInteraction: () => Promise<void>;
-      }>
-    ).onLocalInteraction;
+    const secondaryProviderProps = secondaryProvider.props as Readonly<{
+      readonly createRouteContext?: RenderProviderProps['createRouteContext'];
+      readonly onLocalInteraction: () => Promise<void>;
+    }>;
+    expect(secondaryProviderProps.createRouteContext?.(assembly.runtime.getState(), 'SECONDARY')).toMatchObject({
+      displayMode: 'SECONDARY',
+      workspace: expect.any(String),
+      instanceMode: expect.any(String),
+    });
+    const secondaryInteraction = secondaryProviderProps.onLocalInteraction;
     await renderProviderProps.onLocalInteraction();
     await secondaryInteraction();
     expect(assembly.runtime.evaluateSelector('kernel.base.runtime.selectLastLocalInteraction', [])).toMatchObject({

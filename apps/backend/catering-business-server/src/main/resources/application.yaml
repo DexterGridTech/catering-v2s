@@ -14,6 +14,9 @@ spring:
   flyway:
     locations: classpath:db/migration
     default-schema: public
+server:
+  compression:
+    enabled: true
 platform:
   otp:
     debug-code-exposure: ${CATERING_OTP_DEBUG_CODE_EXPOSURE:false}

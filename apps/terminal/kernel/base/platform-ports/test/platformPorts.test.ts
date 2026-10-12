@@ -1,3 +1,4 @@
+import {unavailableRemoteControlPort} from '../src/defaults/unavailableRemoteControl';
 import {describe, expect, it, vi} from 'vitest';
 
 import {
@@ -31,6 +32,7 @@ describe('A: platform port assembly', () => {
       update: unavailableUpdatePort,
       logUpload: unavailableLogUploadPort,
       topologyHost: unavailableTopologyHostPort,
+      remoteControl: unavailableRemoteControlPort,
     };
 
     const ports = createPlatformPorts({environmentMode: 'TEST', bindings});
@@ -81,6 +83,7 @@ describe('A: platform port assembly', () => {
         update: unavailableUpdatePort,
         logUpload: unavailableLogUploadPort,
         topologyHost: unavailableTopologyHostPort,
+        remoteControl: unavailableRemoteControlPort,
       },
     });
 

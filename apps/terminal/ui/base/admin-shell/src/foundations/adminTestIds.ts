@@ -133,6 +133,7 @@ const serverConfigTestIds = Object.freeze({
 const installReminderTestIds = Object.freeze({
   root: adminTestId('update.install-reminder'),
   title: adminTestId('update.install-reminder:title'),
+  scroll: adminTestId('update.install-reminder:scroll'),
   message: adminTestId('update.install-reminder:message'),
   versions: adminTestId('update.install-reminder:versions'),
   currentVersion: adminTestId('update.install-reminder:version:current'),

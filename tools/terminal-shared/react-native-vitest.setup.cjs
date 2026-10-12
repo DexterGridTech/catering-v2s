@@ -21,7 +21,17 @@ global.__turboModuleProxy = () => new Proxy({
 })
 global.nativeFabricUIManager = new Proxy({}, {get: () => () => undefined})
 
-const packageRequire = Module.createRequire(path.join(process.cwd(), 'package.json'))
+let packageRequire = Module.createRequire(path.join(process.cwd(), 'package.json'))
+try {
+  packageRequire.resolve('react-native/package.json')
+} catch (error) {
+  if (error?.code !== 'MODULE_NOT_FOUND') throw error
+  // Tool-owned journey tests run outside apps/terminal, so resolve the test
+  // runtime from the package that declares the shared React Native test peer.
+  packageRequire = Module.createRequire(
+    path.resolve(__dirname, '../../apps/terminal/ui/base/integration-assembly/package.json'),
+  )
+}
 const reactNativeRoot = path.dirname(packageRequire.resolve('react-native/package.json'))
 const androidPlatform = path.join(reactNativeRoot, 'Libraries/Utilities/Platform.android.js')
 const originalRuntimeGlobals = {

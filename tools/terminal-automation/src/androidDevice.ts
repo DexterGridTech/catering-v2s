@@ -3,7 +3,7 @@ import {promisify} from 'node:util';
 import {realpathSync, statSync} from 'node:fs';
 import path from 'node:path';
 import type {Client, DeviceClient} from '@devicefarmer/adbkit';
-import {collectAndroidRuntimeFailureDiagnostics} from './androidAppDiagnostics.js';
+import {collectAndroidRemoteControlDiagnostics, collectAndroidRuntimeFailureDiagnostics} from './androidAppDiagnostics.js';
 import {requireReadyAndroidDevice} from './androidAdb.js';
 
 const execFile = promisify(execFileCallback);
@@ -76,6 +76,7 @@ export type AndroidDeviceSession = Readonly<{
   readonly readPrimaryAbi: () => Promise<string>;
   readonly readTerminalUpdateLogs: (packageName: string) => Promise<string>;
   readonly readRuntimeFailureDiagnostics: (packageName: string) => Promise<string>;
+  readonly readRemoteControlDiagnostics: (packageName: string) => Promise<Readonly<{lineCount: number; eventKinds: readonly string[]}>>;
   readonly forceStop: (packageName: string) => Promise<void>;
   readonly uninstall: (packageName: string) => Promise<void>;
   readonly attachDriver: (hostPort: number) => Promise<() => Promise<void>>;
@@ -216,15 +217,16 @@ const runAdbArgs = async (
   }
 };
 
-const runAdbText = async (adbPath: string, args: readonly string[]): Promise<string> => {
+const runAdbText = async (
+  adbPath: string,
+  args: readonly string[],
+  maxBufferBytes = 2 * 1024 * 1024,
+): Promise<string> => {
   try {
     const {stdout} = await execFile(adbPath, [...args], {
       encoding: 'utf8',
       timeout: 10_000,
-      // Runtime logcat may contain several hundred KiB before the collector
-      // projects it to a small allowlisted diagnostic record. Keep this bounded
-      // but large enough not to turn normal app output into a false command error.
-      maxBuffer: 2 * 1024 * 1024,
+      maxBuffer: maxBufferBytes,
       windowsHide: true,
     });
     return stdout;
@@ -271,7 +273,11 @@ export const createAndroidDeviceSession = async (
     readonly repositoryRoot: string;
     readonly adbPath: string;
     readonly runCommand?: (adbPath: string, args: readonly string[], failureCode?: string) => Promise<void>;
-    readonly runTextCommand?: (adbPath: string, args: readonly string[]) => Promise<string>;
+    readonly runTextCommand?: (
+      adbPath: string,
+      args: readonly string[],
+      maxBufferBytes?: number,
+    ) => Promise<string>;
   }>,
 ): Promise<AndroidDeviceSession> => {
   validateSerial(input.serial);
@@ -355,6 +361,8 @@ export const createAndroidDeviceSession = async (
         'shell',
         'logcat',
         '-d',
+        '-t',
+        '200',
         '-v',
         'brief',
         '--pid',
@@ -362,7 +370,7 @@ export const createAndroidDeviceSession = async (
         '-s',
         'TerminalUpdate:I',
         '*:S',
-      ]);
+      ], 512 * 1024);
       const lines = output
         .split(/\r?\n/u)
         .filter(line =>
@@ -375,12 +383,14 @@ export const createAndroidDeviceSession = async (
           'shell',
           'logcat',
           '-d',
+          '-t',
+          '200',
           '-v',
           'brief',
           '-s',
           'ActivityTaskManager:W',
           '*:S',
-        ]);
+        ], 512 * 1024);
         if (
           activityManagerOutput
             .split(/\r?\n/u)
@@ -409,6 +419,8 @@ export const createAndroidDeviceSession = async (
         'shell',
         'logcat',
         '-d',
+        '-t',
+        '200',
         '-v',
         'brief',
         '--pid',
@@ -416,8 +428,21 @@ export const createAndroidDeviceSession = async (
         '-s',
         'ReactNativeJS:V',
         '*:S',
-      ]);
+      ], 512 * 1024);
       return collectAndroidRuntimeFailureDiagnostics(output);
+    },
+    readRemoteControlDiagnostics: async packageName => {
+      validatePackageName(packageName);
+      const pidOutput = await runTextCommand(input.adbPath, ['-s', input.serial, 'shell', 'pidof', packageName]);
+      const pids = pidOutput.trim().split(/\s+/u).filter(Boolean);
+      if (pids.length !== 1 || !/^\d+$/u.test(pids[0] ?? '')) {
+        fail('TERMINAL_AUTOMATION_ANDROID_REMOTE_LOG_PROCESS_UNAVAILABLE');
+      }
+      const output = await runTextCommand(input.adbPath, [
+        '-s', input.serial, 'shell', 'logcat', '-d', '-t', '200', '-v', 'brief', '--pid', pids[0]!,
+        '-s', 'TerminalRemote:I', 'TerminalRemoteCapture:I', '*:S',
+      ], 512 * 1024);
+      return collectAndroidRemoteControlDiagnostics(output);
     },
     forceStop: async packageName => {
       validatePackageName(packageName);

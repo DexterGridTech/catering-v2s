@@ -1823,6 +1823,28 @@ export const adminCatalog = {
         "GROUP",
         "PROJECT"
       ]
+    },
+    {
+      "actionKey": "CONTROL_PROJECT_TERMINAL",
+      "actionLabel": "远程控制项目终端",
+      "actionDescription": "远程控制项目终端",
+      "actionGroupKey": "STORE_MANAGEMENT",
+      "actionGroupLabel": "门店管理",
+      "actionGroupOrder": 200,
+      "pageBindings": [
+        {
+          "pageDesignKey": "PG-PROJECT-TERMINAL-VERSION-RULES",
+          "selectedIdentityTypes": [
+            "GROUP",
+            "PROJECT"
+          ],
+          "scopeApplicability": "SELECTED_PROJECT_SCOPE"
+        }
+      ],
+      "grantableRoleNodeTypes": [
+        "GROUP",
+        "PROJECT"
+      ]
     }
   ],
   "userManagementActionBindings": [
@@ -1988,7 +2010,8 @@ export const ACTION_CAPABILITIES = {
   "EDIT_STORE_SALES_MENU": "EDIT_STORE_SALES_MENU",
   "EDIT_STORE_SERVICE_POINT_QR": "EDIT_STORE_SERVICE_POINT_QR",
   "EDIT_STORE_TERMINAL": "EDIT_STORE_TERMINAL",
-  "MANAGE_PROJECT_TERMINAL_VERSION": "MANAGE_PROJECT_TERMINAL_VERSION"
+  "MANAGE_PROJECT_TERMINAL_VERSION": "MANAGE_PROJECT_TERMINAL_VERSION",
+  "CONTROL_PROJECT_TERMINAL": "CONTROL_PROJECT_TERMINAL"
 } as const;
 export type AdminActionCapabilityKey = typeof ACTION_CAPABILITIES[keyof typeof ACTION_CAPABILITIES];
 export const USER_MANAGEMENT_PAGE_DESIGN_KEYS = [

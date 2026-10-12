@@ -4,11 +4,14 @@ import {createRequire} from 'node:module';
 import {
   appendFileSync,
   existsSync,
+  closeSync,
+  openSync,
   lstatSync,
   mkdirSync,
   readlinkSync,
   readdirSync,
   readFileSync,
+  readSync,
   realpathSync,
   rmSync,
   statSync,
@@ -24,6 +27,7 @@ import {
   type TerminalAutomationExecution,
   type TerminalAutomationManifest,
   type TerminalAutomationProcessIdentity,
+  type TerminalAutomationRemoteTopology,
 } from './managedRun.ts';
 import {androidAutomationBuildIdentity} from './androidBuild.ts';
 import {
@@ -37,8 +41,30 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../.
 const driverRoot = path.join(root, 'tools/terminal-automation');
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
+const androidDiagnosticLogTailBytes = 1_048_576;
+
+export const readBoundedLogTail = (logPath: string, maximumBytes = androidDiagnosticLogTailBytes): string => {
+  if (!Number.isSafeInteger(maximumBytes) || maximumBytes < 1)
+    throw new Error('TERMINAL_AUTOMATION_DIAGNOSTIC_LOG_LIMIT_INVALID');
+  const descriptor = openSync(logPath, 'r');
+  try {
+    const fileSize = statSync(logPath).size;
+    const byteLength = Math.min(fileSize, maximumBytes);
+    const buffer = Buffer.allocUnsafe(byteLength);
+    const bytesRead = readSync(descriptor, buffer, 0, byteLength, Math.max(0, fileSize - byteLength));
+    return buffer.subarray(0, bytesRead).toString('utf8');
+  } finally {
+    closeSync(descriptor);
+  }
+};
 type AutomationPlatform = 'web' | 'android';
-type AutomationPhase = 'feasibility' | 'capabilities' | 'journey' | 'skill' | 'f4' | 'update';
+type AutomationPhase = 'feasibility' | 'capabilities' | 'journey' | 'skill' | 'f4' | 'update' | 'remote';
+const remoteTopologies = new Set<TerminalAutomationRemoteTopology>([
+  'mobile-single',
+  'laptop-single',
+  'laptop-dual',
+  'laptop-paired',
+]);
 const updateCases = new Set([
   'update.artifacts',
   'update.baseline',
@@ -61,13 +87,6 @@ const updateCases = new Set([
   'update.supply-chain',
 ]);
 const updateCasesRequiringManagedDev = new Set([
-  'update.flush',
-  'update.full-hot',
-  'update.offline-assets',
-  'update.boot-guard',
-  'update.interruption',
-  'update.compatibility',
-  'update.rollback',
   'update.supply-chain',
   'update.pair',
 ]);
@@ -76,18 +95,8 @@ const isSupportedSupplyChainRun = (execution: TerminalAutomationExecution): bool
   ((execution.shape === 'dual' && (execution.sample === undefined || execution.sample === 'console')) ||
     (execution.shape === 'mobile' && execution.sample === 'wallpaper'));
 const implementedUpdateCases: Readonly<Record<AutomationPlatform, ReadonlySet<string>>> = Object.freeze({
-  web: new Set(['update.artifacts', 'update.fixed', 'update.install-result', 'update.compatibility']),
-  android: new Set([
-    'update.full-hot',
-    'update.offline-assets',
-    'update.boot-guard',
-    'update.install-result',
-    'update.interruption',
-    'update.compatibility',
-    'update.rollback',
-    'update.supply-chain',
-    'update.pair',
-  ]),
+  web: new Set(['update.artifacts']),
+  android: new Set(['update.supply-chain', 'update.pair']),
 });
 const phaseSuite: Readonly<Record<AutomationPlatform, Readonly<Partial<Record<AutomationPhase, string>>>>> =
   Object.freeze({
@@ -98,6 +107,7 @@ const phaseSuite: Readonly<Record<AutomationPlatform, Readonly<Partial<Record<Au
       skill: 'journeys/skill.test.ts',
       f4: 'journeys/f4Visual.test.ts',
       update: 'journeys/update.test.ts',
+      remote: 'journeys/remote.web.test.ts',
     }),
     android: Object.freeze({
       feasibility: 'journeys/geometry.android.test.ts',
@@ -106,6 +116,7 @@ const phaseSuite: Readonly<Record<AutomationPlatform, Readonly<Partial<Record<Au
       f4: 'journeys/f4Performance.android.test.ts',
       skill: 'journeys/skill.android.test.ts',
       update: 'journeys/update.android.test.ts',
+      remote: 'journeys/remote.android.test.ts',
     }),
   });
 const ageNames = new Set(['empty', '37']);
@@ -141,6 +152,9 @@ const readManagedDevDiagnosticEvents = async (input: Readonly<{manifestPath: str
 export type TerminalAutomationRunOptions = TerminalAutomationExecution;
 
 export const resolveAutomationSuite = (execution: TerminalAutomationRunOptions): string => {
+  if (execution.phase === 'remote' && execution.case !== 'remote.main') {
+    throw new Error('TERMINAL_AUTOMATION_REMOTE_CASE_INVALID');
+  }
   if (execution.phase === 'update' && execution.case === 'update.pair') {
     return 'journeys/update.pair.android.test.ts';
   }
@@ -164,11 +178,193 @@ export const assertManagedDevDiagnosticSourcesReadable = (
   }
 };
 
+type ManagedDiagnosticEvent = Readonly<Record<string, string | number | boolean>>;
+type ManagedDiagnosticSource = Readonly<{
+  readonly source: string;
+  readonly events?: readonly ManagedDiagnosticEvent[];
+}>;
+
+const remoteControlDiagnosticOperations = new Set([
+  'startOperationsTerminalRemoteControl',
+  'issueOperationsRemoteControlGrant',
+  'endOperationsTerminalRemoteControl',
+  'getOperationsTerminalRemoteControl',
+  'registerTerminalRemoteControl',
+  'reportTerminalRemoteControl',
+]);
+
+const remoteControlDiagnosticRequestEvents = new Set([
+  'REQUEST_STARTED',
+  'REQUEST_SUCCEEDED',
+  'REQUEST_FAILED',
+  'REQUEST_COMPLETED',
+]);
+
+export const evaluateManagedRemoteControlDiagnosticCoverage = (
+  before: readonly ManagedDiagnosticSource[],
+  after: readonly ManagedDiagnosticSource[],
+  businessPassed: boolean,
+): Readonly<{status: 'PASS' | 'FAIL'; code: string | null; missingOperations: readonly string[]}> => {
+  const requests = (sources: readonly ManagedDiagnosticSource[]): readonly ManagedDiagnosticEvent[] =>
+    sources.find(source => source.source === 'cbs')?.events?.filter(event =>
+      typeof event.operationId === 'string' &&
+      remoteControlDiagnosticOperations.has(event.operationId) &&
+      typeof event.requestId === 'string' &&
+      typeof event.event === 'string' &&
+      remoteControlDiagnosticRequestEvents.has(event.event),
+    ) ?? [];
+  const identity = (event: ManagedDiagnosticEvent): string =>
+    `${String(event.operationId)}:${String(event.requestId)}:${String(event.event)}`;
+  const cbsEvents = (sources: readonly ManagedDiagnosticSource[]): readonly ManagedDiagnosticEvent[] =>
+    sources.find(source => source.source === 'cbs')?.events ?? [];
+  const ownerFailureIdentity = (event: ManagedDiagnosticEvent): string =>
+    `${String(event.operationId)}:${String(event.requestId)}`;
+  const priorOwnerFailures = new Set(cbsEvents(before)
+    .filter(event => event.event === 'OWNER_RESULT_UNKNOWN')
+    .map(ownerFailureIdentity));
+  const currentOwnerFailures = cbsEvents(after).filter(event =>
+    event.event === 'OWNER_RESULT_UNKNOWN' && !priorOwnerFailures.has(ownerFailureIdentity(event)),
+  );
+  const prior = new Set(requests(before).map(identity));
+  const current = requests(after).filter(event => !prior.has(identity(event)));
+  const completed = current.filter(event =>
+    event.event === 'REQUEST_COMPLETED' || event.event === 'REQUEST_FAILED' || event.event === 'REQUEST_SUCCEEDED',
+  );
+  const failed = completed.find(event => {
+    const status = typeof event.status === 'string' ? Number(event.status) : event.status;
+    return event.event === 'REQUEST_FAILED' || event.outcome === 'FAILED' || (typeof status === 'number' && status >= 400);
+  });
+  if (failed !== undefined) {
+    const failedStatus = typeof failed.status === 'string'
+      ? Number(failed.status)
+      : typeof failed.status === 'number'
+        ? failed.status
+        : undefined;
+    if (typeof failedStatus === 'number' && Number.isFinite(failedStatus) && failedStatus >= 500 &&
+        failed.errorCode === 'PLATFORM_COMMON_RESULT_UNKNOWN') {
+      const cause = currentOwnerFailures.find(event =>
+        event.event === 'OWNER_RESULT_UNKNOWN' &&
+        event.operationId === failed.operationId &&
+        event.requestId === failed.requestId &&
+        typeof event.exceptionType === 'string' &&
+        typeof event.rootCauseType === 'string' &&
+        typeof event.exceptionOrigin === 'string',
+      );
+      if (cause === undefined) {
+        return Object.freeze({
+          status: 'FAIL',
+          code: 'TERMINAL_AUTOMATION_REMOTE_FAILURE_CAUSE_DIAGNOSTICS_INCOMPLETE',
+          missingOperations: Object.freeze([]),
+        });
+      }
+    }
+    // CBS owner diagnostics persist a terminal request event (operationId + requestId + status).
+    // They do not emit REQUEST_STARTED for every ordinary owner route, so requiring a second
+    // event would reject a complete failure record and hide the first broken HTTP boundary.
+    return Object.freeze({status: 'PASS', code: null, missingOperations: Object.freeze([])});
+  }
+
+  const successfulOperations = new Set(completed.map(event => String(event.operationId)));
+  const requiredOperations = businessPassed
+    ? ['startOperationsTerminalRemoteControl', 'registerTerminalRemoteControl',
+        'issueOperationsRemoteControlGrant', 'reportTerminalRemoteControl', 'endOperationsTerminalRemoteControl']
+    : ['startOperationsTerminalRemoteControl', 'registerTerminalRemoteControl'];
+  const missingOperations = requiredOperations.filter(operation => !successfulOperations.has(operation));
+  return Object.freeze({
+    status: missingOperations.length === 0 ? 'PASS' : 'FAIL',
+    code: missingOperations.length === 0 ? null : 'TERMINAL_AUTOMATION_REMOTE_REQUEST_DIAGNOSTICS_INCOMPLETE',
+    missingOperations: Object.freeze(missingOperations),
+  });
+};
+
+export const evaluateAndroidDiagnostics = (
+  execution: TerminalAutomationRunOptions,
+  runId: string,
+  output: string,
+): Readonly<{
+  status: 'PASS' | 'FAIL' | 'N/A';
+  missing: readonly string[];
+  unavailable: readonly string[];
+  empty: readonly string[];
+  duplicates: readonly string[];
+}> => {
+  if ((execution.phase !== 'update' && execution.phase !== 'remote') || execution.platform !== 'android') {
+    return Object.freeze({
+      status: 'N/A',
+      missing: Object.freeze([]),
+      unavailable: Object.freeze([]),
+      empty: Object.freeze([]),
+      duplicates: Object.freeze([]),
+    });
+  }
+  const nativeSource = execution.phase === 'update' ? 'android-native-update' : 'android-native-remote';
+  const expected = ['MASTER:android-runtime', `MASTER:${nativeSource}`];
+  if (execution.phase === 'update' && execution.case === 'update.pair' ||
+      execution.phase === 'remote' && execution.remoteTopology === 'laptop-paired')
+    expected.push('PAIR_SLAVE:android-runtime', `PAIR_SLAVE:${nativeSource}`);
+  const observed = new Map<string, Readonly<{status: 'READ' | 'LOG_NOT_AVAILABLE'; lines?: number}>>();
+  const duplicates: string[] = [];
+  for (const line of output.split(/\r?\n/u)) {
+    const marker = `TERMINAL_AUTOMATION_DIAGNOSTICS run=${runId} `;
+    const markerOffset = line.indexOf(marker);
+    if (markerOffset < 0) continue;
+    const match = /^(?:(role=PAIR_SLAVE) )?source=(android-runtime|android-native-update|android-native-remote) status=(READ|LOG_NOT_AVAILABLE)(?: lines=(\d+))?\b/u.exec(
+      line.slice(markerOffset + marker.length),
+    );
+    if (!match) continue;
+    const key = `${match[1] === undefined ? 'MASTER' : 'PAIR_SLAVE'}:${match[2]}`;
+    if (observed.has(key)) duplicates.push(key);
+    else observed.set(key, Object.freeze({
+      status: match[3] as 'READ' | 'LOG_NOT_AVAILABLE',
+      ...(match[4] === undefined ? {} : {lines: Number(match[4])}),
+    }));
+  }
+  const missing = expected.filter(key => !observed.has(key));
+  const unavailable = expected.filter(key => observed.get(key)?.status === 'LOG_NOT_AVAILABLE');
+  const empty = execution.phase === 'remote'
+    ? expected.filter(key => {
+        if (!key.endsWith(':android-native-remote')) return false;
+        const marker = observed.get(key);
+        const lines = marker?.lines;
+        return marker?.status === 'READ' && (lines === undefined || !Number.isSafeInteger(lines) || lines < 1);
+      })
+    : [];
+  return Object.freeze({
+    status: missing.length === 0 && unavailable.length === 0 && empty.length === 0 && duplicates.length === 0 ? 'PASS' : 'FAIL',
+    missing: Object.freeze(missing),
+    unavailable: Object.freeze(unavailable),
+    empty: Object.freeze(empty),
+    duplicates: Object.freeze(duplicates),
+  });
+};
+
+export const terminalAutomationExitCode = (input: Readonly<{
+  business: 'PASS' | 'FAIL';
+  cleanup: 'PASS' | 'FAIL';
+  diagnostics: 'PASS' | 'FAIL' | 'N/A';
+  managedDevDiagnostics: 'PASS' | 'FAIL' | 'N/A';
+}>): 0 | 1 =>
+  input.business === 'PASS' &&
+  input.cleanup === 'PASS' &&
+  input.diagnostics !== 'FAIL' &&
+  input.managedDevDiagnostics !== 'FAIL'
+    ? 0
+    : 1;
+
 export const updateRequiresManagedDev = (execution: TerminalAutomationRunOptions): boolean =>
   execution.phase === 'update' &&
   execution.case !== undefined &&
-  (updateCasesRequiringManagedDev.has(execution.case) ||
-    (execution.platform === 'android' && execution.case === 'update.install-result'));
+  updateCasesRequiringManagedDev.has(execution.case);
+
+export const remoteRequiresManagedDev = (execution: TerminalAutomationRunOptions): boolean =>
+  execution.phase === 'remote';
+
+export const requiresFixtureIntentForSuccessfulRun = (
+  execution: TerminalAutomationRunOptions,
+  exitCode: number,
+): boolean =>
+  exitCode === 0 &&
+  (execution.phase === 'journey' || execution.phase === 'skill' || execution.phase === 'remote');
 
 export const updateCaseImplemented = (execution: TerminalAutomationRunOptions): boolean =>
   execution.phase !== 'update' ||
@@ -391,7 +587,10 @@ const fail = (code: string): never => {
   throw new Error(code);
 };
 
-const readFixtureIntent = (runDirectory: string): NonNullable<TerminalAutomationManifest['fixture']> => {
+export const readFixtureIntent = (
+  runDirectory: string,
+  expectedManagedDevRunId?: string,
+): NonNullable<TerminalAutomationManifest['fixture']> => {
   const runRoot = realpathSync(runDirectory);
   const intentPath = path.join(runRoot, 'fixture-intent.json');
   const stat = lstatSync(intentPath);
@@ -426,7 +625,11 @@ const readFixtureIntent = (runDirectory: string): NonNullable<TerminalAutomation
   ) {
     throw new Error('TERMINAL_AUTOMATION_FIXTURE_INTENT_INVALID');
   }
+  if (expectedManagedDevRunId !== undefined && value.managedDevRunId !== expectedManagedDevRunId) {
+    throw new Error('TERMINAL_AUTOMATION_FIXTURE_MANAGED_DEV_RUN_MISMATCH');
+  }
   return Object.freeze({
+    managedDevRunId: value.managedDevRunId,
     seedKey: value.seedKey,
     terminalRef: value.terminalRef,
     storeRef: value.storeRef,
@@ -456,11 +659,13 @@ export const parseAutomationRunArguments = (argv: readonly string[]): TerminalAu
     '--sample',
     '--device-serial',
     '--peer-device-serial',
+    '--remote-topology',
   ]);
   if ([...values.keys()].some(key => !allowed.has(key))) fail('TERMINAL_AUTOMATION_ARGUMENT_UNKNOWN');
   const phaseValue = values.get('--phase');
   const platform = values.get('--platform');
   const shape = values.get('--shape');
+  const remoteTopologyValue = values.get('--remote-topology');
   if (phaseValue === undefined) fail('TERMINAL_AUTOMATION_PHASE_INVALID');
   if (
     phaseValue !== 'feasibility' &&
@@ -468,20 +673,43 @@ export const parseAutomationRunArguments = (argv: readonly string[]): TerminalAu
     phaseValue !== 'journey' &&
     phaseValue !== 'skill' &&
     phaseValue !== 'f4' &&
-    phaseValue !== 'update'
+    phaseValue !== 'update' &&
+    phaseValue !== 'remote'
   )
     fail('TERMINAL_AUTOMATION_PHASE_INVALID');
   const phase = phaseValue as AutomationPhase;
   if (platform !== 'web' && platform !== 'android') fail('TERMINAL_AUTOMATION_PLATFORM_INVALID');
-  if (shape !== 'mobile' && shape !== 'dual') fail('TERMINAL_AUTOMATION_SHAPE_INVALID');
+  if (phase === 'remote') {
+    if (shape !== undefined) fail('TERMINAL_AUTOMATION_REMOTE_SHAPE_NOT_APPLICABLE');
+    if (!remoteTopologies.has(remoteTopologyValue as TerminalAutomationRemoteTopology)) {
+      fail('TERMINAL_AUTOMATION_REMOTE_TOPOLOGY_INVALID');
+    }
+    if (platform === 'web' && remoteTopologyValue !== 'mobile-single') {
+      fail('TERMINAL_AUTOMATION_REMOTE_WEB_TOPOLOGY_INVALID');
+    }
+  } else {
+    if (remoteTopologyValue !== undefined) fail('TERMINAL_AUTOMATION_REMOTE_TOPOLOGY_NOT_APPLICABLE');
+    if (shape !== 'mobile' && shape !== 'dual') fail('TERMINAL_AUTOMATION_SHAPE_INVALID');
+  }
   const checkedPlatform = platform as 'web' | 'android';
-  const checkedShape = shape as 'mobile' | 'dual';
+  const remoteTopology = phase === 'remote' ? remoteTopologyValue as TerminalAutomationRemoteTopology : undefined;
+  const checkedShape: 'mobile' | 'dual' =
+    phase === 'remote'
+      ? remoteTopology === 'laptop-dual'
+        ? 'dual'
+        : 'mobile'
+      : (shape as 'mobile' | 'dual');
   if (phase === 'skill' && checkedShape !== 'mobile') fail('TERMINAL_AUTOMATION_SKILL_SHAPE_INVALID');
 
   const caseName = values.get('--case');
   const age = values.get('--age');
   const sample = values.get('--sample');
-  if (phase === 'journey' || phase === 'skill') {
+  if (phase === 'remote') {
+    if (caseName !== 'remote.main' || (sample !== 'console' && sample !== 'wallpaper')) {
+      fail('TERMINAL_AUTOMATION_REMOTE_CASE_INVALID');
+    }
+    if (age !== undefined) fail('TERMINAL_AUTOMATION_REMOTE_AGE_NOT_APPLICABLE');
+  } else if (phase === 'journey' || phase === 'skill') {
     if (sample !== 'console' && sample !== 'wallpaper') fail('TERMINAL_AUTOMATION_SAMPLE_INVALID');
     if (phase === 'skill' && sample !== 'console') fail('TERMINAL_AUTOMATION_SKILL_SAMPLE_NOT_CONSOLE');
     if (sample === 'console') {
@@ -532,14 +760,18 @@ export const parseAutomationRunArguments = (argv: readonly string[]): TerminalAu
     }
     if (peerDeviceSerial === deviceSerial) fail('TERMINAL_AUTOMATION_ANDROID_DEVICE_SERIALS_MUST_DIFFER');
     if (
-      ((phase === 'capabilities' && checkedShape === 'dual') || (phase === 'update' && caseName === 'update.pair')) &&
+      ((phase === 'capabilities' && checkedShape === 'dual') ||
+        (phase === 'update' && caseName === 'update.pair') ||
+        (phase === 'remote' && remoteTopology === 'laptop-paired')) &&
       peerDeviceSerial === undefined
     ) {
       fail('TERMINAL_AUTOMATION_ANDROID_PEER_DEVICE_SERIAL_REQUIRED');
     }
     if (
       peerDeviceSerial !== undefined &&
-      !((phase === 'capabilities' && checkedShape === 'dual') || (phase === 'update' && caseName === 'update.pair'))
+      !((phase === 'capabilities' && checkedShape === 'dual') ||
+        (phase === 'update' && caseName === 'update.pair') ||
+        (phase === 'remote' && remoteTopology === 'laptop-paired'))
     ) {
       fail('TERMINAL_AUTOMATION_ANDROID_PEER_DEVICE_SERIAL_NOT_APPLICABLE');
     }
@@ -553,6 +785,7 @@ export const parseAutomationRunArguments = (argv: readonly string[]): TerminalAu
     phase,
     platform: checkedPlatform,
     shape: checkedShape,
+    ...(remoteTopology === undefined ? {} : {remoteTopology}),
     ...(caseName === undefined ? {} : {case: caseName}),
     ...(age === undefined ? {} : {age}),
     ...(sample === undefined ? {} : {sample: sample as 'console' | 'wallpaper'}),
@@ -575,6 +808,14 @@ type ManagedDevContext = Readonly<{
   readonly operationsAdminOrigin: string;
   readonly operationsPassword: string;
   readonly platformRootPassword: string;
+  readonly livekitResident: Readonly<{
+    readonly state: 'RUNNING';
+    readonly bootId: string;
+    readonly containerId: string;
+    readonly imageId: string;
+    readonly endpointRef: 'LIVEKIT_RESIDENT_ENDPOINT';
+    readonly signalTransport: 'WS';
+  }>;
 }>;
 
 const readManagedDevContext = async (): Promise<ManagedDevContext> => {
@@ -630,6 +871,13 @@ const readManagedDevContext = async (): Promise<ManagedDevContext> => {
   ) {
     throw new Error('TERMINAL_AUTOMATION_DEV_ENDPOINTS_INVALID');
   }
+  const {checkLivekitResidentForManagedDev} = await import('../../../scripts/dev/r5-livekit-resident.mjs');
+  const livekitResident = await checkLivekitResidentForManagedDev({
+    host: (validated.remoteHostTrust as Record<string, unknown> | undefined)?.host,
+    fingerprint: (validated.remoteHostTrust as Record<string, unknown> | undefined)?.fingerprint,
+    expectedBootId: (validated.remoteResources as Record<string, unknown> | undefined)?.bootId,
+    developmentResident: validated.livekitResident,
+  });
   const operationsPassword = readOperationsPassword();
   if (!operationsPassword) throw new Error('TERMINAL_AUTOMATION_OPERATIONS_CREDENTIAL_MISSING');
   const platformRootPassword = readPlatformRootPassword();
@@ -646,6 +894,7 @@ const readManagedDevContext = async (): Promise<ManagedDevContext> => {
     operationsAdminOrigin: adminOrigins.operationsAdmin,
     operationsPassword,
     platformRootPassword,
+    livekitResident,
   });
 };
 
@@ -789,7 +1038,7 @@ const managedDiagnosticsFailureCode = (error: unknown): string => {
 const printRunSummary = (manifest: TerminalAutomationManifest): void => {
   const runDirectory = path.join(root, '.runtime/terminal-automation', manifest.runId);
   process.stdout.write(
-    `TERMINAL_AUTOMATION_RUN runId=${manifest.runId} business=${manifest.business} cleanup=${manifest.cleanup} manifest=${path.relative(root, path.join(runDirectory, 'run-manifest.json'))}\n`,
+    `TERMINAL_AUTOMATION_RUN runId=${manifest.runId} business=${manifest.business} diagnostics=${manifest.diagnostics ?? 'N/A'} cleanup=${manifest.cleanup} manifest=${path.relative(root, path.join(runDirectory, 'run-manifest.json'))}\n`,
   );
 };
 
@@ -1091,7 +1340,7 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
   record(manifest.runId, 'resource.preflight.pass', {profile: 'ter-validation-with-dev'});
   writeFileSync(logPath, '', {mode: 0o600, flag: 'wx'});
 
-  if (execution.phase === 'update' && execution.case === 'update.artifacts') {
+  if ((execution.phase === 'update' || execution.phase === 'remote') && execution.platform === 'android') {
     try {
       assertNoAndroidIntermediateOutputs(path.join(root, 'apps/terminal'));
       record(manifest.runId, 'android.intermediate.preflight.pass');
@@ -1107,16 +1356,27 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
   }
 
   let managedDevContext: ManagedDevContext | undefined;
-  if (execution.phase === 'journey' || execution.phase === 'skill' || updateRequiresManagedDev(execution)) {
+  let managedDevDiagnosticBaseline: readonly ManagedDiagnosticSource[] = [];
+  if (
+    execution.phase === 'journey' ||
+    execution.phase === 'skill' ||
+    updateRequiresManagedDev(execution) ||
+    remoteRequiresManagedDev(execution)
+  ) {
     try {
       managedDevContext = await readManagedDevContext();
       manifest = save(manifest, {
-        managedDev: Object.freeze({runId: managedDevContext.runId, manifestSha256: managedDevContext.manifestSha256}),
+        managedDev: Object.freeze({
+          runId: managedDevContext.runId,
+          manifestSha256: managedDevContext.manifestSha256,
+          livekitResident: managedDevContext.livekitResident,
+        }),
       });
       record(manifest.runId, 'managed-dev.identity.verified', {
         managedDevRunId: managedDevContext.runId,
         manifestSha256: managedDevContext.manifestSha256,
       });
+      record(manifest.runId, 'managed-dev.livekit-resident.verified', managedDevContext.livekitResident);
     } catch (error) {
       const reason = error instanceof Error ? error.message : 'TERMINAL_AUTOMATION_DEV_PREREQUISITE_FAILED';
       manifest = failRun(manifest, reason, 'PASS');
@@ -1135,13 +1395,14 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
     return 1;
   }
 
-  if (execution.phase === 'update' && managedDevContext !== undefined) {
+  if ((execution.phase === 'update' || execution.phase === 'remote') && managedDevContext !== undefined) {
     try {
       const sources = await readManagedDevDiagnosticEvents({
         manifestPath: managedDevContext.manifestPath,
         runId: managedDevContext.runId,
       });
       assertManagedDevDiagnosticSourcesReadable(sources);
+      managedDevDiagnosticBaseline = sources;
       for (const source of sources) {
         const line = `TERMINAL_AUTOMATION_MANAGED_DEV_DIAGNOSTICS ${JSON.stringify({
           at: new Date().toISOString(),
@@ -1193,6 +1454,9 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
     TERMINAL_AUTOMATION_PHASE: execution.phase,
     TERMINAL_AUTOMATION_PLATFORM: execution.platform,
     TERMINAL_AUTOMATION_SHAPE: execution.shape,
+    ...(execution.remoteTopology === undefined
+      ? {}
+      : {TERMINAL_AUTOMATION_REMOTE_TOPOLOGY: execution.remoteTopology}),
     ...(execution.deviceSerial === undefined
       ? {}
       : {TERMINAL_AUTOMATION_ANDROID_DEVICE_SERIAL: execution.deviceSerial}),
@@ -1215,11 +1479,19 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
           EXPO_PUBLIC_TER_AUTOMATION_CASE: execution.case ?? '',
         }
       : {}),
-    ...(execution.phase === 'update' && execution.platform === 'android'
+    ...(execution.phase === 'remote' && execution.platform === 'web'
+      ? {
+          EXPO_PUBLIC_TER_AUTOMATION_PHASE: 'remote',
+          EXPO_PUBLIC_TER_AUTOMATION_RUN_ID: manifest.runId,
+          EXPO_PUBLIC_TER_AUTOMATION_CASE: execution.case ?? '',
+        }
+      : {}),
+    ...((execution.phase === 'update' || execution.phase === 'remote') && execution.platform === 'android'
       ? {
           EXPO_PUBLIC_TER_AUTOMATION_BUILD: 'true',
           EXPO_PUBLIC_TER_AUTOMATION_RUN_ID: manifest.runId,
           EXPO_PUBLIC_TER_AUTOMATION_ANDROID_PACKAGE_ID: androidBuildIdentity?.packageId ?? '',
+          ...(execution.phase === 'remote' ? {EXPO_PUBLIC_TER_AUTOMATION_PHASE: 'remote'} : {}),
         }
       : {}),
     ...(managedDevContext === undefined
@@ -1242,11 +1514,15 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
           EXPO_PUBLIC_TER_MANAGED_TDS_ENTRY_TWO_WS_URL: managedDevContext.tdsEntryTwoUrl,
           ...(execution.platform === 'web' ? {EXPO_PUBLIC_TER_MANAGED_DEVICE_ID: `ter-auto-${manifest.runId}`} : {}),
           EXPO_PUBLIC_TER_AUTOMATION_SURFACE_FORM:
-            execution.phase === 'update' && execution.case === 'update.pair'
-              ? 'laptop'
-              : execution.shape === 'mobile'
+            execution.phase === 'remote'
+              ? execution.remoteTopology === 'mobile-single'
                 ? 'mobile'
-                : 'laptop',
+                : 'laptop'
+              : execution.phase === 'update' && execution.case === 'update.pair'
+                ? 'laptop'
+                : execution.shape === 'mobile'
+                  ? 'mobile'
+                  : 'laptop',
         }),
   };
   manifest = save(manifest, {stage: 'TEST_STARTING'});
@@ -1378,6 +1654,40 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
         manifestPath: managedDevContext.manifestPath,
         runId: managedDevContext.runId,
       });
+      if (execution.phase === 'remote' && execution.case === 'remote.main') {
+        const coverage = evaluateManagedRemoteControlDiagnosticCoverage(
+          managedDevDiagnosticBaseline,
+          sources,
+          exitCode === 0,
+        );
+        if (coverage.status !== 'PASS') {
+          managedDevDiagnosticsUnavailable = coverage.code ?? 'TERMINAL_AUTOMATION_REMOTE_DIAGNOSTICS_INCOMPLETE';
+          const line = `TERMINAL_AUTOMATION_MANAGED_DEV_DIAGNOSTICS ${JSON.stringify({
+            at: new Date().toISOString(),
+            runId: manifest.runId,
+            managedDevRunId: managedDevContext.runId,
+            phase: 'coverage',
+            status: 'FAIL',
+            code: managedDevDiagnosticsUnavailable,
+            missingOperations: coverage.missingOperations,
+          })}\n`;
+          appendFileSync(logPath, line, {mode: 0o600});
+          process.stdout.write(line);
+          record(manifest.runId, 'managed-dev.diagnostics.coverage.failed', {
+            managedDevRunId: managedDevContext.runId,
+            code: managedDevDiagnosticsUnavailable,
+            missingOperations: coverage.missingOperations,
+          });
+        } else {
+          record(manifest.runId, 'managed-dev.diagnostics.coverage.passed', {
+            managedDevRunId: managedDevContext.runId,
+            observedRemoteRequestCount: sources.find(source => source.source === 'cbs')?.events?.filter(event =>
+              typeof event.operationId === 'string' && remoteControlDiagnosticOperations.has(event.operationId) &&
+              typeof event.requestId === 'string' && remoteControlDiagnosticRequestEvents.has(event.event),
+            ).length ?? 0,
+          });
+        }
+      }
       for (const source of sources) {
         const line = `TERMINAL_AUTOMATION_MANAGED_DEV_DIAGNOSTICS ${JSON.stringify({
           at: new Date().toISOString(),
@@ -1417,16 +1727,17 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
   }
   let fixtureIntentFailure: string | null = null;
   try {
-    const fixture = readFixtureIntent(runDirectory);
+    const fixture = readFixtureIntent(runDirectory, managedDevContext?.runId);
     manifest = save(manifest, {fixture});
     record(manifest.runId, 'fixture.activation-intent.recorded', {
+      managedDevRunId: fixture.managedDevRunId,
       seedKey: fixture.seedKey,
       bindingGeneration: fixture.bindingGeneration,
     });
   } catch (error) {
     if (
       (error as NodeJS.ErrnoException).code !== 'ENOENT' ||
-      ((execution.phase === 'journey' || execution.phase === 'skill') && exitCode === 0)
+      requiresFixtureIntentForSuccessfulRun(execution, exitCode)
     ) {
       fixtureIntentFailure = error instanceof Error ? error.message : 'TERMINAL_AUTOMATION_FIXTURE_INTENT_INVALID';
     }
@@ -1461,7 +1772,7 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
   const androidDeviceCleanupStatus = execution.platform === 'android' ? androidDeviceCleanup.finish() : 'N/A';
   const deviceCleanupPassed = execution.platform !== 'android' || androidDeviceCleanupStatus === 'PASS';
   let scenarioProofFailure: string | null = null;
-  if (execution.phase === 'update' && execution.platform === 'android') {
+  if ((execution.phase === 'update' || execution.phase === 'remote') && execution.platform === 'android') {
     try {
       const output = readFileSync(logPath, 'utf8');
       if (!updateScenarioAssertionsObserved(execution, manifest.runId, output)) {
@@ -1519,11 +1830,32 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
     status: managedDevDiagnosticsStatus,
     code: managedDevDiagnosticsUnavailable,
   });
+  let androidDiagnosticsStatus: 'PASS' | 'FAIL' | 'N/A' = 'N/A';
+  if ((execution.phase === 'update' || execution.phase === 'remote') && execution.platform === 'android') {
+    try {
+      const diagnostics = evaluateAndroidDiagnostics(execution, manifest.runId, readBoundedLogTail(logPath));
+      androidDiagnosticsStatus = diagnostics.status;
+      manifest = save(manifest, {diagnostics: diagnostics.status});
+      record(manifest.runId, 'android.diagnostics.result', diagnostics);
+    } catch {
+      androidDiagnosticsStatus = 'FAIL';
+      manifest = save(manifest, {diagnostics: 'FAIL'});
+      record(manifest.runId, 'android.diagnostics.result', {
+        status: 'FAIL',
+        code: 'TERMINAL_AUTOMATION_ANDROID_DIAGNOSTIC_LOG_READ_FAILED',
+      });
+    }
+  }
   process.stdout.write(
-    `TERMINAL_AUTOMATION_DIAGNOSTICS_RESULT runId=${manifest.runId} managedDev=${managedDevDiagnosticsStatus}\n`,
+    `TERMINAL_AUTOMATION_DIAGNOSTICS_RESULT runId=${manifest.runId} android=${androidDiagnosticsStatus} managedDev=${managedDevDiagnosticsStatus}\n`,
   );
   printRunSummary(manifest);
-  return businessStatus === 'PASS' && cleanupStatus === 'PASS' && managedDevDiagnosticsStatus !== 'FAIL' ? 0 : 1;
+  return terminalAutomationExitCode({
+    business: businessStatus,
+    cleanup: cleanupStatus,
+    diagnostics: androidDiagnosticsStatus,
+    managedDevDiagnostics: managedDevDiagnosticsStatus,
+  });
 };
 
 const main = async (): Promise<void> => {

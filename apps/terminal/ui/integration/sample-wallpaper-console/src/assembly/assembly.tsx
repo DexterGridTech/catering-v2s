@@ -33,11 +33,13 @@ import {
   fixedTargetFromProjectCandidate,
   selectProjectTerminalUpdateCandidate,
   selectProjectTerminalUpdateContextFacts,
+  selectProjectFixedTerminalUpdateContextFacts,
 } from '@catering-v2s/kernel-feature-project-basic';
 import {createSampleWallpaperModule} from '@catering-v2s/kernel-feature-sample-wallpaper';
 import {createServerConfigModule} from '@catering-v2s/kernel-base-server-config';
 import {createTerminalUpdateModule, type UpdateTargetSourceProvider} from '@catering-v2s/kernel-base-terminal-update';
-import {resolveServerNetworkSnapshot} from '@catering-v2s/kernel-base-server-config';
+import {createRemoteControlModule} from '@catering-v2s/kernel-base-remote-control';
+import {resolveServerNetworkSnapshot, selectServerConfiguration} from '@catering-v2s/kernel-base-server-config';
 import type {TransportServerConfig} from '@catering-v2s/kernel-base-contracts';
 import {
   createTopologyAdminCapability,
@@ -188,6 +190,7 @@ export async function createSampleWallpaperConsoleAssembly(
           createProtocolUuid: () => Crypto.randomUUID(),
           sourceProvider: input.terminalUpdateSourceProvider,
           readTerminalUpdateContextFacts: selectProjectTerminalUpdateContextFacts,
+          readFixedTerminalUpdateContextFacts: selectProjectFixedTerminalUpdateContextFacts,
           readCurrentTarget: (state, requested) => {
             const binding = selectStoreBasicBinding(state);
             if (binding === null) return null;
@@ -221,6 +224,15 @@ export async function createSampleWallpaperConsoleAssembly(
             ...(storeBasicModule.stateSlices ?? []),
             ...(projectBasicModule.stateSlices ?? []),
           ]),
+        }),
+        createRemoteControlModule({
+          applicationId: 'sample-wallpaper-console',
+          port: input.platformPorts.remoteControl,
+          readSignalConfiguration: state => {
+            const snapshot = resolveServerNetworkSnapshot(state, serverSpaces, 'livekit');
+            const url = snapshot.addresses[0]?.baseUrl;
+            return url === undefined ? null : Object.freeze({url, identity: `${selectServerConfiguration(state, serverSpaces).selectedSpace}:${snapshot.revision}`});
+          },
         }),
         createSampleWallpaperConsoleModule(surfaceForm),
         createTerminalActivationModule(),

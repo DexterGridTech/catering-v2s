@@ -3,7 +3,7 @@ title: TER 应用内远程控制 source 与 API 附件
 status: DRAFT_FOR_DEXTER_CLAUDE_REVIEW
 ---
 # Source、API、协议与验收附件
-本附件被详设/计划引用，不是运行报告。所有新路径均是计划create/update，存在的能力与尚未存在的能力分开。当前阶段C进行中，实施前必须重开最终源码。
+本附件被详设/计划引用，不是运行报告。所有新路径均是计划create/update，存在的能力与尚未存在的能力分开。阶段C R4差量已局部修复并完成受影响focused test/typecheck；整批历史review与运行结论仍保持原字节范围。远控CP-01重开最终owning source，不把阶段C局部结果升级为整批PASS。
 
 ## 1. 当前源码与精确变更清单
 ### 1.1 已读源码事实
@@ -55,17 +55,19 @@ CBS=apps/backend/catering-business-server；TER=apps/terminal；JAVA包前缀=co
 ## 2. 第三方实际解析状态/官方依据
 | 坐标 | 当前状态 | 官方来源及已核实行为 | 本批必须proof |
 | --- | --- | --- | --- |
-| Expo57/RN0.86.3 | 当前TER源码依赖基线，实施CP01再读lock/native实际图 | 仓内package/lock/native host | SDK与双Window装配兼容，不凭peer宽范围断言 |
-| @livekit/react-native 3.0.0 | 候选未安装，非resolved | https://github.com/livekit/client-sdk-react-native/tree/@livekit/react-native@3.0.0；package peers需官方WebRTC/JSclient | exact npm解析tag+Expo plugin/nativenamespace，Android build并两track |
-| @livekit/components-react 2.9.24 | 候选未安装 | https://github.com/livekit/components-js/tree/@livekit/components-react@2.9.24；VideoTrack按实际trackRef | operations React/JSclient兼容、单/双track真实渲染 |
-| livekit-client、@livekit/react-native-webrtc、Expo plugins | 尚未解析；取RN候选peer的相容精确版本 | https://docs.livekit.io/transport/sdk-platforms/expo/ （必须native development build，非ExpoGo） | 不装两套WebRTC；registerGlobals/桥API按对应tag源码确认 |
-| io.livekit:livekit-server | 尚未解析，版本不可取main当已解析 | https://github.com/livekit/server-sdk-kotlin；官方Java AccessToken/RoomServiceClient示例 | 精确Maven依赖图、token decode授权、Room踢出/删除有界请求 |
-| LiveKit Go镜像/Compose | 未下载/解析；固定release+digest CP01待决技术输入 | https://docs.livekit.io/transport/self-hosting/vm/ 、ports-firewall | 同远端WSS/RTC/TURN网络、host身份、容器和端口cleanup |
+| Expo/RN | Expo 57.0.18、React Native 0.86.3；两 Android application 的 package.json 与 yarn.lock 已锁定 | 仓内实际解析图 | CP-01仍需Android native build及双Window proof；版本存在不等于装配通过 |
+| @livekit/react-native | 3.0.0，Yarn workspace dependency graph 已解析 | [官方3.0.0源码](https://github.com/livekit/client-sdk-react-native/tree/@livekit/react-native@3.0.0)；[React Native 官方接入](https://docs.livekit.io/transport/sdk-platforms/react-native/) | native development build、registerGlobals、实际单/双track |
+| @livekit/react-native-webrtc | 144.2.0；npm发布元数据 gitHead=`7b650378b27654bb3a14a5db0ed6afc189c09720` | [发布源码 WebRTCModule.java](https://github.com/livekit/react-native-webrtc/blob/7b650378b27654bb3a14a5db0ed6afc189c09720/android/src/main/java/com/oney/WebRTCModule/WebRTCModule.java)：该精确源码含 public `createVideoTrack(AbstractVideoCaptureController)`；基类也为 public。官方 React Native 文档未把此方法列为自定义track扩展契约 | 该可见Java接缝不是运行proof；须完成实际track创建、JS封装、publish/receive、dispose 的 T-01 proof；失败不得改 vendor 或走反射 |
+| livekit-client | 2.22.4，Yarn workspace dependency graph 已解析 | [官方SDK源码](https://github.com/livekit/client-sdk-js/tree/v2.22.4)；[URL转换](https://github.com/livekit/client-sdk-js/blob/v2.22.4/src/room/utils.ts#L708-L720) 会将 `http(s)` 输入转为 `ws(s)` 信令，并将 `ws(s)` 转为 `http(s)` 验证地址；[同版本测试](https://github.com/livekit/client-sdk-js/blob/v2.22.4/src/room/utils.test.ts#L24-L36) 覆盖 `https` 转 `wss`。React Native官方接入要求调用 registerGlobals | adapter原样传入配置地址；JS track构造、双track发布/接收与断连事件仍需本批proof |
+| @livekit/components-react | 2.9.24，operations-admin 与 RN SDK依赖图均解析 | [官方2.9.24源码](https://github.com/livekit/components-js/tree/@livekit/components-react@2.9.24)；官方 `VideoTrack` 接收 `trackRef` | operations-admin实际React版本、按trackRef双画面渲染仍需 CP-04 focused proof |
+| Expo LiveKit/WebRTC plugins | `@livekit/react-native-expo-plugin` 1.0.3、`@config-plugins/react-native-webrtc` 15.0.2，两个Android application均解析 | [LiveKit Expo接入](https://docs.livekit.io/transport/sdk-platforms/expo/) 要求native development build，不支持Expo Go | native namespace、config plugin和APK build仍需证明；不安装重复WebRTC实现 |
+| io.livekit:livekit-server | `0.16.0`，由 `apps/backend/catering-business-server/modules/terminal-control/build.gradle.kts` 声明；CBS `runtimeClasspath` 的 `dependencyInsight` 选择 `0.16.0`，Java 17 variant 与仓内 Java 21 匹配。该运行图把SDK请求的 Jackson Databind `2.22.2` 解析为CBS现有显式版本 `2.19.1`；当前 T-01 focused proof 需验证实际运行图，不单凭元数据断言兼容 | 精确tag源码：[AccessToken.kt](https://github.com/livekit/server-sdk-kotlin/blob/v0.16.0/src/main/kotlin/io/livekit/server/AccessToken.kt)（`ttl` 为毫秒，默认6小时，`expiration` 优先，JWT以HMAC256签名，room join要求identity）；[RoomServiceClient.kt](https://github.com/livekit/server-sdk-kotlin/blob/v0.16.0/src/main/kotlin/io/livekit/server/RoomServiceClient.kt)（`createClient`、RoomService protobuf调用与`removeParticipant`）；[RegionFailover.kt](https://github.com/livekit/server-sdk-kotlin/blob/v0.16.0/src/main/kotlin/io/livekit/server/okhttp/RegionFailover.kt)（裸IP/self-hosted不会命中`.livekit.cloud`区域failover） | `LiveKitServerSdkContractTest` 用当前解析图验证30秒room-scoped participant token和真实SDK `RemoveParticipant` HTTP调用形状；仍须完成T-04受管裸WS/HTTP/UDP proof，T-01真实app token/track端到端proof保持OPEN |
+| LiveKit Go镜像/配置 | 尚未下载/解析；固定release+digest与远端运行输入仍OPEN | [官方VM部署](https://docs.livekit.io/transport/self-hosting/vm/)、[端口/防火墙](https://docs.livekit.io/transport/self-hosting/ports-firewall/) | 本轮裸HTTP/WS `47.106.121.27:7880`、直接WebRTC/UDP、host身份、容器与端口cleanup proof；不配置域名/TLS/TURN |
 | Android PixelCopy/MotionEvent | Android API≥29本批设备准入 | https://developer.android.com/reference/android/view/PixelCopy 、Activity#dispatchTouchEvent、Presentation | 两Window持续采样/完整原业务控件/冲突cancel/Window删除 |
 | 数据包/Room SDK | 官方行为仅支持路线，不代表本仓验证 | https://docs.livekit.io/transport/data/packets/ ，reliable有序有限重传但仍会丢/无离线缓存 | 4096bytes、destinationIdentities、实际sender、两端keepalive与结束 |
 
-特别：官方WebRTC主分支的 `WebRTCModule` 有包内factory/track注册，**不是已核实public customTrack导入接口**；源码 https://github.com/livekit/react-native-webrtc/blob/master/android/src/main/java/com/oney/WebRTCModule/WebRTCModule.java 和 src/MediaStreamTrack.ts 只能作T01研究入口。不得靠反射、改node_modules私有字段或把原生VideoTrack对象当JS MediaStreamTrack。CP01需找到版本相符的可维护帧接缝并做真实track proof；找不到报告Dexter技术阻断，不暗中引入第二SDKRoom。无需为“可能的未来”写通用桥插件框架。
-依赖确认记录须填写版本、lock/Gradle来源、精确官方tag/commit、实际依赖行为、proof边界，当前全部新增行为OPEN。选库不能替代真实桥验证。
+特别：当前实际解析的 WebRTC 发布源码提供 public Java `createVideoTrack(AbstractVideoCaptureController)`，并由 WebRTCModule 管理其 native track 注册/释放；但 LiveKit React Native 与 WebRTC 官方接入文档未将它定义为稳定的自定义track扩展契约。当前 adapter 只证明源码形状与 TS 编译，尚未证明 exact version 的 RN bridge、LiveKit publish/receive 与清理行为。不得靠反射、改 node_modules 私有字段或把原生VideoTrack对象直接假称 JS track。T-01须完成受管真实track proof；无法闭合时停止该技术前置并报告具体证据，不暗中引入第二SDKRoom或系统抓屏。无需为未来场景写通用桥插件框架。
+依赖确认记录须填写版本、lock/Gradle来源、精确官方tag/commit、实际依赖行为、proof边界。当前 resolved versions 只关闭版本身份盘点，不关闭新增行为；选库不能替代真实桥验证。
 
 ## 3. HTTP唯一计划矩阵
 O=/api/operations/group-workspaces/{groupWorkspaceKey}；T=/api/terminal/group-workspaces/{groupWorkspaceKey}。所有运营路径用当前session expectedContextVersion query与projectRef；路径不得包含客户端账号身份。所有终端认证只由TDC从credential生成，C最终认证形状读回后沿用，不添加副机physical鉴权条件。
@@ -191,7 +193,7 @@ UI owning source缩写：P=`apps/frontend/operations-admin/src/features/terminal
 | create准入/spec | scripts/test/terminal-remote-control-l2-admission.mjs及terminal-remote-control-l2-admission.test.mjs；apps/frontend/operations-admin/src/tests/l2/terminal-remote-control.spec.ts | 复用store-terminal同源P1与locator准入形态，不另建compliance控制面；CP05 |
 | update/retain | scripts/test/browser-l2、browser-l2-runtime.mjs、browser-l2-runtime.test.mjs、browser-l2-credentials.mjs；scripts/test/terminal-ws-wire-client.mjs | 原closed suite map增加terminal-remote-control；隔离L2合法激活/真实TDS wire ready，不冒充Android输入。DEV/device主run复用浏览器控制库/配置，不调用隔离runner再开另一套DEV；CP05 |
 | update | scripts/env/check-runtime-resource-budget；scripts/test/test-health-entry-runner.mjs及其test；tools/terminal-shared/run-terminal-format.mjs；scripts/README.md | profiles定义就在预算入口中，非profiles目录。调用前登记现有ter-validation-with-dev与admin-validation-with-ter的父子run根/kind，新的远端LiveKit resident根/kind/预算只按manifest所有权添加；health/format同步新文件；CP05 |
-| create/update | scripts/dev/r5-livekit-resident.mjs及r5-livekit-resident.test.mjs；scripts/dev/livekit/docker-compose.yaml、livekit.yaml.template；scripts/dev/r5-dev-runner.mjs及直接test；scripts/dev/profiles/r5-full.json | 同受管resident check/start/stop，明确RTC/WSS网络readiness、容器/volume/host身份；启动前预算；CP05，不删除镜像cache |
+| create/update | scripts/dev/r5-livekit-resident.mjs及r5-livekit-resident.test.mjs；scripts/dev/livekit/docker-compose.yaml、livekit.yaml.template；scripts/dev/r5-dev-runner.mjs及直接test；scripts/dev/profiles/r5-full.json | 同受管resident check/start/stop，明确HTTP/WS、直接媒体UDP readiness、容器/host身份；启动前预算；CP05，不删除镜像cache |
 | update | contracts/catalog/admin-catalog.json；contracts/registry/iam-org-governance-manifest.json；doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json；scripts/dev/r5-seed-plan.mjs、owner-command-seed-executor.mjs、r5-complete-seed-executor.mjs及各直接test | §5新cap/原role-project，role-group不变、角色数量不变；fixture身份/readonly拒绝断言；CP02声明CP05seed接线 |
 | create/update生成链 | scripts/generate/terminal-remote-control-protocol.mjs及scripts/test/terminal-remote-control-protocol.test.mjs；scripts/generate/r5-edge-materialize.mjs、edge-codegen.mjs、terminal-client-api.mjs及现有selftest | canonical/schema/catalog→materialize→edge-codegen→TDC；Data协议一source两消费者；CP01形状CP06check；输入根内校验不依赖外仓 |
 | retain | 原store-terminal L2的policy/P1/准入/spec；静态skeleton/runtime门；旧phase各tests | 只复用能力形态，不删除别的业务套件；退役TER runner不复活 |
@@ -211,8 +213,8 @@ UI owning source缩写：P=`apps/frontend/operations-admin/src/features/terminal
 
 上述两条DEV role只改原role字段不增角色/账号/任职；完整父seed计数如未改变保持原值，实际涉及cap计数则同步其既有期望，不伪造新session计数。两个测试role的名字是fixture符号键，不写账号、密码或登录名值。
 复用r5-full seed contract stableFixtures.organization.storeTerminals：dual/laptop用term-front，mobile用term-handheld，不新终端数据。激活码只读seed契约。账号/权限使用owner-command seed既有workspace账号和登录环境接缝；当前managedActivation.ts读取V2S_TERMINAL_DEV_MANIFEST、V2S_TERMINAL_DEV_HTTP_BASE_URL、V2S_SEED_OPERATIONS_DEFAULT_PASSWORD，账号定位取共享operations fixture，不在文档写值，不另造登录helper。CP01重开最终helper核对变量名。
-LiveKit配置输入（本批计划新增）：R5_LIVEKIT_PUBLIC_URL、R5_LIVEKIT_API_KEY、R5_LIVEKIT_API_SECRET、R5_LIVEKIT_IMAGE_DIGEST；实际server公共域名/证书及RTC/TURN端口由受管部署文件单源定义。没有可用值时拒绝部署proof；不fallback本机/外部云或猜证书。TERM serverSpaces livekit只含信令地址，不含API secret；主副沿原配置同步。
-Compose使用官方VM生成路线的单实例形态；具体服务/版本/Redis需要按选定官方release配置定稿，而非假设所有release都需要第二数据库。RTC端口应直接可达，信令/CBS/tunnel端口分别登记；Docker host与boot ID、container ID、映射/卷、process start token必须归受管manifest。不回收官方镜像cache、不删除未知容器/端口。
+LiveKit配置输入（本批计划新增）：服务端API地址使用 `http://127.0.0.1:7880`，终端和浏览器信令使用 `ws://47.106.121.27:7880`，API key/secret由受管凭据文件生成与注入，镜像固定release+digest。无域名、证书、TLS或TURN配置；媒体端口沿LiveKit直接WebRTC/UDP配置。TERM `serverSpaces.livekit` 只含信令地址，不含API secret；主副沿原配置同步。
+使用官方单实例服务配置，不添加Caddy或TURN。只登记信令/API TCP 7880和媒体UDP所需端口；Docker host与boot ID、container ID、端口及process start token归受管manifest。不回收官方镜像cache，不删除未知容器或端口。
 
 ## 6. 真实HTTP验收及用户Journey
 六新operation放RemoteControlAcceptanceScenarios；原page/detail连接断言放原TerminalUpdateAcceptanceScenarios或该新能力组通过既有OperationID调用；场景不堆入口，不新增provider。

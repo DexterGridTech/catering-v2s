@@ -801,9 +801,11 @@ export const assertTerminalUpdateReportInUi = async (
   const historyResponse = await historyResponsePromise;
   if (!historyResponse.ok())
     throw new Error(`TERMINAL_UPDATE_SUPPLY_REPORT_HISTORY_HTTP_FAILURE:${historyResponse.status()}`);
+  const safeResponseDiagnosticId = (value: string | undefined): string =>
+    value !== undefined && /^[A-Za-z0-9_.:-]{1,160}$/u.test(value) ? value : 'unavailable';
   const readHistoryPage = async (
     response: import('playwright').Response,
-  ): Promise<Readonly<{items: unknown[]; nextCursor: string | null}>> => {
+  ): Promise<Readonly<{items: unknown[]; nextCursor: string | null; requestId: string; correlationId: string}>> => {
     const payload: unknown = await response.json().catch(() => undefined);
     if (
       !isRecord(payload) ||
@@ -811,7 +813,13 @@ export const assertTerminalUpdateReportInUi = async (
       (payload.nextCursor !== null && typeof payload.nextCursor !== 'string')
     )
       throw new Error('TERMINAL_UPDATE_SUPPLY_REPORT_HISTORY_RESPONSE_INVALID');
-    return {items: payload.items, nextCursor: payload.nextCursor};
+    const headers = await response.allHeaders();
+    return {
+      items: payload.items,
+      nextCursor: payload.nextCursor,
+      requestId: safeResponseDiagnosticId(headers['x-request-id']),
+      correlationId: safeResponseDiagnosticId(headers['x-correlation-id']),
+    };
   };
   const history = page.getByTestId(operationsIds.reportHistory);
   const rows = history.locator('tbody tr');
@@ -837,10 +845,18 @@ export const assertTerminalUpdateReportInUi = async (
   let matchingFactsCount = historyPage.items.filter(matchingReportFacts).length;
   const requestedCursors = new Set<string>();
   const logHistoryPage = (): void => {
+    const boundary = (item: unknown): string => {
+      if (!isRecord(item)) return 'unavailable';
+      const sequence = item.reportSequence;
+      const receivedAt = item.receivedAtEpochMillis;
+      return Number.isSafeInteger(sequence) && Number.isSafeInteger(receivedAt)
+        ? `${String(sequence)}@${String(receivedAt)}`
+        : 'invalid';
+    };
     supplyLog(
       input.runId,
       'report.history.readback',
-      `page=${historyPageNumber} items=${historyPage.items.length} taskIdPresent=${historyPage.items.filter(item => isRecord(item) && typeof item.taskId === 'string').length} taskMatches=${taskIndex >= 0 ? 1 : 0} matchingBusinessFacts=${matchingFactsCount} nextCursorPresent=${historyPage.nextCursor === null ? 0 : 1}`,
+      `page=${historyPageNumber} requestId=${historyPage.requestId} correlationId=${historyPage.correlationId} items=${historyPage.items.length} firstSequenceAt=${boundary(historyPage.items[0])} lastSequenceAt=${boundary(historyPage.items.at(-1))} taskFound=${taskIndex >= 0 ? 1 : 0} matchingBusinessFacts=${matchingFactsCount} nextCursorPresent=${historyPage.nextCursor === null ? 0 : 1}`,
     );
   };
   logHistoryPage();
@@ -941,6 +957,6 @@ export const assertTerminalUpdateReportInUi = async (
   await expect(taskRow).toContainText(/无/u);
   await expect(taskRow).toContainText(canonicalDatePattern);
   process.stdout.write(
-    `TERMINAL_AUTOMATION_SUPPLY_REPORT_READBACK run=${input.runId} terminal=matched taskId=${input.taskId} historyPage=${historyPageNumber} currentTaskMatches=1 visibleHistoryRows=${visibleHistoryRows}\n`,
+    `TERMINAL_AUTOMATION_SUPPLY_REPORT_READBACK run=${input.runId} terminal=matched taskId=${input.taskId} historyPage=${historyPageNumber} currentTaskFound=1 visibleHistoryRows=${visibleHistoryRows}\n`,
   );
 };

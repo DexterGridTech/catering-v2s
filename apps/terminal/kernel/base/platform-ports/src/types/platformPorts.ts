@@ -8,6 +8,7 @@ import type {ConnectorPort} from './connector';
 import type {UpdatePort} from './update';
 import type {LogUploadPort} from './logUpload';
 import type {TopologyHostPort} from './topologyHost';
+import type {RemoteControlPort} from './remoteControl';
 
 export interface LoggerConsoleBinding {
   readonly kind: 'console';
@@ -44,6 +45,7 @@ export interface PlatformPortBindings {
   readonly update: UpdatePort;
   readonly logUpload: LogUploadPort;
   readonly topologyHost: TopologyHostPort;
+  readonly remoteControl: RemoteControlPort;
 }
 
 export interface PlatformPorts {
@@ -59,6 +61,7 @@ export interface PlatformPorts {
   readonly update: UpdatePort;
   readonly logUpload: LogUploadPort;
   readonly topologyHost: TopologyHostPort;
+  readonly remoteControl: RemoteControlPort;
 }
 
 export interface CreatePlatformPortsInput {

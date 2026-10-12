@@ -11,6 +11,7 @@ public final class AuditEntityTypes {
     public static final String TERMINAL_BINDING = "TERMINAL_BINDING";
     public static final String TERMINAL_UPDATE_ARTIFACT = "TERMINAL_UPDATE_ARTIFACT";
     public static final String TERMINAL_UPDATE_RULE = "TERMINAL_UPDATE_RULE";
+    public static final String TERMINAL_REMOTE_CONTROL_SESSION = "TERMINAL_REMOTE_CONTROL_SESSION";
     public static final String REGION = "REGION";
     public static final String PROJECT = "PROJECT";
 

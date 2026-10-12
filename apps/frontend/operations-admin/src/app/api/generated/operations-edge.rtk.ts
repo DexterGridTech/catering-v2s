@@ -342,6 +342,14 @@ export const operationsAdminRtkRequest = {
       requiresSession: true,
       ...options,
     }),
+    endOperationsTerminalRemoteControl: (pathParameters: FaceOperationContracts["endOperationsTerminalRemoteControl"]["path"], options: FaceOperationOptions<"endOperationsTerminalRemoteControl">): FaceOperationRequest<"endOperationsTerminalRemoteControl"> => ({
+      operationId: "endOperationsTerminalRemoteControl",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminals/{terminalRef}/remote-control-sessions/{sessionId}/end",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
     getOperationsBusinessChannelDetail: (pathParameters: FaceOperationContracts["getOperationsBusinessChannelDetail"]["path"], options: FaceOperationOptions<"getOperationsBusinessChannelDetail">): FaceOperationRequest<"getOperationsBusinessChannelDetail"> => ({
       operationId: "getOperationsBusinessChannelDetail",
       method: "GET",
@@ -790,6 +798,14 @@ export const operationsAdminRtkRequest = {
       requiresSession: true,
       ...options,
     }),
+    getOperationsTerminalRemoteControl: (pathParameters: FaceOperationContracts["getOperationsTerminalRemoteControl"]["path"], options: FaceOperationOptions<"getOperationsTerminalRemoteControl">): FaceOperationRequest<"getOperationsTerminalRemoteControl"> => ({
+      operationId: "getOperationsTerminalRemoteControl",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminals/{terminalRef}/remote-control-sessions/{sessionId}",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
     getOperationsTerminalUpdateArtifactCandidatePage: (pathParameters: FaceOperationContracts["getOperationsTerminalUpdateArtifactCandidatePage"]["path"], options: FaceOperationOptions<"getOperationsTerminalUpdateArtifactCandidatePage">): FaceOperationRequest<"getOperationsTerminalUpdateArtifactCandidatePage"> => ({
       operationId: "getOperationsTerminalUpdateArtifactCandidatePage",
       method: "GET",
@@ -978,6 +994,14 @@ export const operationsAdminRtkRequest = {
       operationId: "invalidateOperationsContract",
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}/invalidate",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    issueOperationsRemoteControlGrant: (pathParameters: FaceOperationContracts["issueOperationsRemoteControlGrant"]["path"], options: FaceOperationOptions<"issueOperationsRemoteControlGrant">): FaceOperationRequest<"issueOperationsRemoteControlGrant"> => ({
+      operationId: "issueOperationsRemoteControlGrant",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminals/{terminalRef}/remote-control-sessions/{sessionId}/controller-grant",
       pathParameters,
       requiresSession: true,
       ...options,
@@ -1302,6 +1326,14 @@ export const operationsAdminRtkRequest = {
       requiresSession: true,
       ...options,
     }),
+    startOperationsTerminalRemoteControl: (pathParameters: FaceOperationContracts["startOperationsTerminalRemoteControl"]["path"], options: FaceOperationOptions<"startOperationsTerminalRemoteControl">): FaceOperationRequest<"startOperationsTerminalRemoteControl"> => ({
+      operationId: "startOperationsTerminalRemoteControl",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminals/{terminalRef}/remote-control-sessions",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
     transitionOperationsBusinessChannelStatus: (pathParameters: FaceOperationContracts["transitionOperationsBusinessChannelStatus"]["path"], options: FaceOperationOptions<"transitionOperationsBusinessChannelStatus">): FaceOperationRequest<"transitionOperationsBusinessChannelStatus"> => ({
       operationId: "transitionOperationsBusinessChannelStatus",
       method: "POST",
@@ -1597,6 +1629,10 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
       query: (request) => toWireRequest(request),
       invalidatesTags: (_result, _error, request) => resolveSalesMenuTags<TagTypes>([{"kind":"requestPath","prefix":"sales-menu","path":"salesMenuRef"},{"kind":"static","id":"sales-menu-draft-sections"},{"kind":"static","id":"sales-menu-preview"},{"kind":"static","id":"sales-menu-operation-records"}] as const, request),
     }),
+    endOperationsTerminalRemoteControl: build.mutation<FaceOperationContracts["endOperationsTerminalRemoteControl"]["response"], FaceOperationRequest<"endOperationsTerminalRemoteControl">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
     getOperationsBusinessChannelDetail: build.query<FaceOperationContracts["getOperationsBusinessChannelDetail"]["response"], FaceOperationRequest<"getOperationsBusinessChannelDetail">>({
       query: (request) => toWireRequest(request),
       providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
@@ -1821,6 +1857,10 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
       query: (request) => toWireRequest(request),
       providesTags: (_result, _error, request) => resolveWireTags<TagTypes>([{"kind":"requestPath","prefix":"store-terminal-store","path":"storeRef"},{"kind":"static","id":"store-terminal-tag-candidates"}] as const, request),
     }),
+    getOperationsTerminalRemoteControl: build.query<FaceOperationContracts["getOperationsTerminalRemoteControl"]["response"], FaceOperationRequest<"getOperationsTerminalRemoteControl">>({
+      query: (request) => toWireRequest(request),
+      providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
     getOperationsTerminalUpdateArtifactCandidatePage: build.query<FaceOperationContracts["getOperationsTerminalUpdateArtifactCandidatePage"]["response"], FaceOperationRequest<"getOperationsTerminalUpdateArtifactCandidatePage">>({
       query: (request) => toWireRequest(request),
       providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
@@ -1914,6 +1954,10 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
       providesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     invalidateOperationsContract: build.mutation<FaceOperationContracts["invalidateOperationsContract"]["response"], FaceOperationRequest<"invalidateOperationsContract">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
+    }),
+    issueOperationsRemoteControlGrant: build.mutation<FaceOperationContracts["issueOperationsRemoteControlGrant"]["response"], FaceOperationRequest<"issueOperationsRemoteControlGrant">>({
       query: (request) => toWireRequest(request),
       invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
@@ -2076,6 +2120,10 @@ export function createOperationsAdminRtkEndpoints<TagTypes extends OperationsAdm
     stageStoreServicePointImage: build.mutation<FaceOperationContracts["stageStoreServicePointImage"]["response"], FaceOperationRequest<"stageStoreServicePointImage">>({
       query: (request) => toWireRequest(request),
       invalidatesTags: (_result, _error, request) => resolveWireTags<TagTypes>([] as const, request),
+    }),
+    startOperationsTerminalRemoteControl: build.mutation<FaceOperationContracts["startOperationsTerminalRemoteControl"]["response"], FaceOperationRequest<"startOperationsTerminalRemoteControl">>({
+      query: (request) => toWireRequest(request),
+      invalidatesTags: (_result, _error, request) => [{type: "wire" as Extract<TagTypes, "wire">, id: request.operationId}, {type: "wire" as Extract<TagTypes, "wire">, id: "LIST"}],
     }),
     transitionOperationsBusinessChannelStatus: build.mutation<FaceOperationContracts["transitionOperationsBusinessChannelStatus"]["response"], FaceOperationRequest<"transitionOperationsBusinessChannelStatus">>({
       query: (request) => toWireRequest(request),

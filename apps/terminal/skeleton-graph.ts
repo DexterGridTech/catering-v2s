@@ -46,6 +46,20 @@ export const skeletonGraph = {
     ],
     devDependencies: [],
   },
+  'kernel.base.remote-control': {
+    batch: 2,
+    kind: 'owner',
+    dependencies: [
+      'kernel.base.contracts',
+      'kernel.base.display-context',
+      'kernel.base.platform-ports',
+      'kernel.base.runtime',
+      'kernel.base.state',
+      'kernel.base.terminal-data-client',
+      'kernel.base.topology',
+    ],
+    devDependencies: [],
+  },
   'kernel.base.terminal-data-client': {
     batch: 2,
     dependencies: [

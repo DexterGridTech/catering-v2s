@@ -11,6 +11,7 @@ describe('Android transport HTTP response diagnostics', () => {
 
   it('passes only bounded safe request and correlation IDs from the native response', async () => {
     nativeRequest.mockResolvedValue({
+      kind: 'response',
       status: 409,
       bodyText: '{"errorCode":"TERMINAL_BINDING_CREDENTIAL_INVALID"}',
       contentType: 'application/problem+json',
@@ -49,6 +50,7 @@ describe('Android transport HTTP response diagnostics', () => {
 
   it('forwards response identity fields unchanged for the transport owner to validate', async () => {
     nativeRequest.mockResolvedValue({
+      kind: 'response',
       status: 200,
       bodyText: '{"outcome":"CANCELLED"}',
       contentType: 'application/json',
@@ -77,4 +79,23 @@ describe('Android transport HTTP response diagnostics', () => {
       correlationId: 'c'.repeat(129),
     });
   });
+
+  it('preserves the native safe transport failure code for the transport owner log', async () => {
+    nativeRequest.mockResolvedValue({kind: 'failure', code: 'ANDROID_HTTP_CONNECT_FAILED'});
+    const adapter = createAndroidTransportNetworkAdapter(async () => {
+      throw new Error('snapshot is not used by direct sendHttp');
+    });
+
+    const result = await adapter.sendHttp?.({
+      address: {addressName: 'primary', baseUrl: 'http://127.0.0.1:28080'},
+      method: 'GET',
+      pathAndQuery: '/terminal/update-rules',
+      headers: {},
+      timeoutMs: 5_000,
+      proxy: undefined,
+    });
+
+    expect(result).toEqual({kind: 'failure', category: 'not-delivered', code: 'ANDROID_HTTP_CONNECT_FAILED'});
+  });
+
 });

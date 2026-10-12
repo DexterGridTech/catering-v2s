@@ -1331,6 +1331,7 @@ const SENSITIVE_WIRE_PROPERTIES = new Set([
   'newPassword',
   'password',
   'passwordResetGrant',
+  'token',
   'verificationGrant',
 ]);
 

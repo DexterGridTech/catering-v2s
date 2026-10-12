@@ -44,6 +44,7 @@ describe('admin-shell terminal update reminder', () => {
   it('shows the fixed task versions and sends the exact local owner decision', async () => {
     const view = await render(<InstallReminder />);
 
+    expect(view.getByTestId(adminTestIds.installReminder.scroll)).toBeTruthy();
     expect(view.getByText('安装终端更新')).toBeTruthy();
     expect(view.getByText('更新包已准备好，请完成安装。')).toBeTruthy();
     expect(view.getByText('当前安装版本：2.0.0 (20)')).toBeTruthy();

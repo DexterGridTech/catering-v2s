@@ -1,3 +1,4 @@
+import {unavailableRemoteControlPort} from '@catering-v2s/kernel-base-platform-ports';
 import {
   createPlatformPorts,
   createProcessMemoryStateStoragePort,
@@ -64,6 +65,7 @@ export const createTestPlatformPorts = (
       update: unavailableUpdatePort,
       logUpload: unavailableLogUploadPort,
       topologyHost: unavailableTopologyHostPort,
+      remoteControl: unavailableRemoteControlPort,
     },
   });
 };

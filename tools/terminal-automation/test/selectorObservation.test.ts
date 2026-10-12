@@ -37,6 +37,7 @@ describe('Runtime selector observation', () => {
       [],
     );
     expect(observation.current).toEqual({name: 'before'});
+    expect(observation.latest()).toEqual({state: 'JSON', value: {name: 'before'}});
     expect(requests.slice(0, 2).map(request => request.type)).toEqual(['selector.subscribe', 'selector.read']);
 
     const changed = observation.waitFor(value => (value as {name?: string}).name === 'after');
@@ -45,6 +46,7 @@ describe('Runtime selector observation', () => {
       body: {subscriptionId, valueState: 'JSON', value: {name: 'after'}},
     });
     await expect(changed).resolves.toEqual({name: 'after'});
+    expect(observation.latest()).toEqual({state: 'JSON', value: {name: 'after'}});
     await observation.close();
     expect(requests.at(-1)?.type).toBe('selector.unsubscribe');
   });
@@ -113,6 +115,7 @@ describe('Runtime selector observation', () => {
 
     const observation = await subscribeSelector(server, 'session', 'example.state', []);
     listener?.({type: 'event', body: {subscriptionId, valueState: 'NON_JSON', reason: 'UNDEFINED'}});
+    expect(observation.latest()).toEqual({state: 'INVALID'});
     let settled = false;
     const waiting = observation
       .waitFor(value => (value as {status?: string}).status === 'ready', 1_000)

@@ -58,6 +58,43 @@ describe('createManagedRun', () => {
     ]);
   });
 
+  it('records remote topology and assigns its explicit device roles', () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'terminal-automation-'));
+    roots.push(root);
+    const manifest = createManagedRun(
+      root,
+      Object.freeze({
+        phase: 'remote',
+        platform: 'android',
+        shape: 'dual',
+        remoteTopology: 'laptop-paired',
+        case: 'remote.main',
+        sample: 'console',
+        deviceSerial: 'emulator-master',
+        peerDeviceSerial: 'emulator-slave',
+      }),
+      'remote-pair-run',
+    );
+
+    expect(manifest.execution.remoteTopology).toBe('laptop-paired');
+    expect(manifest.androidDevices).toEqual([
+      {serial: 'emulator-master', role: 'PAIR_MASTER_EMULATOR'},
+      {serial: 'emulator-slave', role: 'PAIR_SLAVE_EMULATOR'},
+    ]);
+    expect(manifest.diagnostics).toBe('NOT_RUN');
+  });
+
+  it('refuses remote manifests that lack their exact topology and device identity', () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'terminal-automation-'));
+    roots.push(root);
+
+    expect(() => createManagedRun(root, Object.freeze({
+      phase: 'remote', platform: 'android', shape: 'dual', case: 'remote.main', sample: 'console',
+      deviceSerial: 'device-one',
+    }), 'remote-missing-topology')).toThrow('TERMINAL_AUTOMATION_REMOTE_TOPOLOGY_IDENTITY_INVALID');
+    expect(existsSync(path.join(root, '.runtime/terminal-automation/remote-missing-topology'))).toBe(false);
+  });
+
   it('rejects pair manifests without two distinct device identities before creating a run root', () => {
     const root = mkdtempSync(path.join(tmpdir(), 'terminal-automation-'));
     roots.push(root);

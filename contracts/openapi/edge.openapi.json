@@ -667,6 +667,24 @@
     },
     "/api/terminal/group-workspaces/{groupWorkspaceKey}/update-reports": {
       "$ref": "./contracts/openapi/paths/terminal/TERMINAL_UPDATE_REPORT.paths.json#/paths/~1api~1terminal~1group-workspaces~1{groupWorkspaceKey}~1update-reports"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminals/{terminalRef}/remote-control-sessions": {
+      "$ref": "./contracts/openapi/paths/operations-admin/TERMINAL_REMOTE_CONTROL.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1projects~1{projectRef}~1terminals~1{terminalRef}~1remote-control-sessions"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminals/{terminalRef}/remote-control-sessions/{sessionId}": {
+      "$ref": "./contracts/openapi/paths/operations-admin/TERMINAL_REMOTE_CONTROL.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1projects~1{projectRef}~1terminals~1{terminalRef}~1remote-control-sessions~1{sessionId}"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminals/{terminalRef}/remote-control-sessions/{sessionId}/controller-grant": {
+      "$ref": "./contracts/openapi/paths/operations-admin/TERMINAL_REMOTE_CONTROL.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1projects~1{projectRef}~1terminals~1{terminalRef}~1remote-control-sessions~1{sessionId}~1controller-grant"
+    },
+    "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminals/{terminalRef}/remote-control-sessions/{sessionId}/end": {
+      "$ref": "./contracts/openapi/paths/operations-admin/TERMINAL_REMOTE_CONTROL.paths.json#/paths/~1api~1operations~1group-workspaces~1{groupWorkspaceKey}~1projects~1{projectRef}~1terminals~1{terminalRef}~1remote-control-sessions~1{sessionId}~1end"
+    },
+    "/api/terminal/group-workspaces/{groupWorkspaceKey}/remote-control-sessions/{sessionId}/registration": {
+      "$ref": "./paths/terminal/TERMINAL_REMOTE_CONTROL.paths.json#/paths/~1api~1terminal~1group-workspaces~1{groupWorkspaceKey}~1remote-control-sessions~1{sessionId}~1registration"
+    },
+    "/api/terminal/group-workspaces/{groupWorkspaceKey}/remote-control-sessions/{sessionId}/status": {
+      "$ref": "./paths/terminal/TERMINAL_REMOTE_CONTROL.paths.json#/paths/~1api~1terminal~1group-workspaces~1{groupWorkspaceKey}~1remote-control-sessions~1{sessionId}~1status"
     }
   },
   "components": {
@@ -1760,6 +1778,51 @@
       },
       "TerminalUpdateRuleStorePage": {
         "$ref": "./components/terminal-update/terminal-update.schemas.json#/components/schemas/TerminalUpdateRuleStorePage"
+      },
+      "TerminalRemoteControlPeerIdentity": {
+        "$ref": "./components/terminal-control/terminal-remote-control.schemas.json#/components/schemas/TerminalRemoteControlPeerIdentity"
+      },
+      "TerminalRemoteControlEndpoint": {
+        "$ref": "./components/terminal-control/terminal-remote-control.schemas.json#/components/schemas/TerminalRemoteControlEndpoint"
+      },
+      "TerminalRemoteControlScreen": {
+        "$ref": "./components/terminal-control/terminal-remote-control.schemas.json#/components/schemas/TerminalRemoteControlScreen"
+      },
+      "TerminalRemoteControlDescription": {
+        "$ref": "./components/terminal-control/terminal-remote-control.schemas.json#/components/schemas/TerminalRemoteControlDescription"
+      },
+      "TerminalRemoteControlEndpointGrant": {
+        "$ref": "./components/terminal-control/terminal-remote-control.schemas.json#/components/schemas/TerminalRemoteControlEndpointGrant"
+      },
+      "TerminalRemoteControlStartRequest": {
+        "$ref": "./components/terminal-control/terminal-remote-control.schemas.json#/components/schemas/TerminalRemoteControlStartRequest"
+      },
+      "TerminalRemoteControlStartResponse": {
+        "$ref": "./components/terminal-control/terminal-remote-control.schemas.json#/components/schemas/TerminalRemoteControlStartResponse"
+      },
+      "TerminalRemoteControlSessionRead": {
+        "$ref": "./components/terminal-control/terminal-remote-control.schemas.json#/components/schemas/TerminalRemoteControlSessionRead"
+      },
+      "TerminalRemoteControlControllerGrant": {
+        "$ref": "./components/terminal-control/terminal-remote-control.schemas.json#/components/schemas/TerminalRemoteControlControllerGrant"
+      },
+      "TerminalRemoteControlEndRequest": {
+        "$ref": "./components/terminal-control/terminal-remote-control.schemas.json#/components/schemas/TerminalRemoteControlEndRequest"
+      },
+      "TerminalRemoteControlEndResponse": {
+        "$ref": "./components/terminal-control/terminal-remote-control.schemas.json#/components/schemas/TerminalRemoteControlEndResponse"
+      },
+      "TerminalRemoteControlRegisterRequest": {
+        "$ref": "./components/terminal-control/terminal-remote-control.schemas.json#/components/schemas/TerminalRemoteControlRegisterRequest"
+      },
+      "TerminalRemoteControlRegisterResponse": {
+        "$ref": "./components/terminal-control/terminal-remote-control.schemas.json#/components/schemas/TerminalRemoteControlRegisterResponse"
+      },
+      "TerminalRemoteControlStatusReportRequest": {
+        "$ref": "./components/terminal-control/terminal-remote-control.schemas.json#/components/schemas/TerminalRemoteControlStatusReportRequest"
+      },
+      "TerminalRemoteControlStatusReportReceipt": {
+        "$ref": "./components/terminal-control/terminal-remote-control.schemas.json#/components/schemas/TerminalRemoteControlStatusReportReceipt"
       },
       "EpochMillis": {
         "$ref": "./components/common/time.schemas.json#/components/schemas/EpochMillis"

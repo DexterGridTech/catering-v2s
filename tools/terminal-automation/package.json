@@ -2,6 +2,10 @@
   "name": "@catering-v2s/terminal-automation",
   "private": true,
   "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./web-remote-control-test-port": "./src/fixtures/createWebRemoteControlTestPort.ts"
+  },
   "engines": {
     "node": ">=22.6.0"
   },
@@ -11,6 +15,7 @@
   },
   "dependencies": {
     "@catering-v2s/kernel-base-contracts": "workspace:*",
+    "@catering-v2s/kernel-base-remote-control": "workspace:*",
     "@catering-v2s/kernel-base-server-config": "workspace:*",
     "@catering-v2s/kernel-base-topology": "workspace:*",
     "@catering-v2s/kernel-feature-project-basic": "workspace:*",
@@ -21,6 +26,7 @@
     "@catering-v2s/ui-feature-sample-staff-auth": "workspace:*",
     "@catering-v2s/ui-feature-sample-wallpaper-picker": "workspace:*",
     "@devicefarmer/adbkit": "3.3.9",
+    "livekit-client": "2.22.4",
     "pixelmatch": "7.2.0",
     "playwright": "1.61.1",
     "pngjs": "7.0.0",

@@ -14,6 +14,8 @@ import type {
   RemoteOperationFact,
   TerminalUpdateDownloadGrantPayload,
   TerminalUpdateReportPayload,
+  TerminalRemoteControlRegisterPayload,
+  TerminalRemoteControlReportPayload,
 } from '../../types/client';
 
 export const activateTerminalCommand = defineCommand<ActivateTerminalPayload>(moduleName, {
@@ -98,6 +100,20 @@ export const requestTerminalUpdateDownloadGrantCommand = defineCommand<TerminalU
 });
 export const submitTerminalUpdateReportCommand = defineCommand<TerminalUpdateReportPayload>(moduleName, {
   name: 'submit-terminal-update-report',
+  visibility: 'public',
+  allowNoActor: false,
+  allowReentry: false,
+  defaultTarget: 'local',
+});
+export const registerTerminalRemoteControlCommand = defineCommand<TerminalRemoteControlRegisterPayload>(moduleName, {
+  name: 'register-terminal-remote-control',
+  visibility: 'public',
+  allowNoActor: false,
+  allowReentry: false,
+  defaultTarget: 'local',
+});
+export const reportTerminalRemoteControlCommand = defineCommand<TerminalRemoteControlReportPayload>(moduleName, {
+  name: 'report-terminal-remote-control',
   visibility: 'public',
   allowNoActor: false,
   allowReentry: false,

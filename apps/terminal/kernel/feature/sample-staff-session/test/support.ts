@@ -1,3 +1,4 @@
+import {unavailableRemoteControlPort} from '@catering-v2s/kernel-base-platform-ports';
 import {
   createPlatformPorts,
   unavailableDevicePort,
@@ -107,6 +108,7 @@ export const createTestRuntime = (
         update: {} as never,
         logUpload: {} as never,
         topologyHost: {} as never,
+        remoteControl: unavailableRemoteControlPort,
       },
     }),
     state: {

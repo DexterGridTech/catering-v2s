@@ -55,6 +55,16 @@
             ]
           },
           {
+            "serverName": "livekit",
+            "addresses": [
+              {
+                "addressName": "primary",
+                "baseUrl": "ws://47.106.121.27:7880",
+                "timeoutMs": 10000
+              }
+            ]
+          },
+          {
             "serverName": "terminal-data-server",
             "addresses": [
               {
@@ -80,8 +90,13 @@
     "@catering-v2s/ui-base-primitives": "workspace:*",
     "@catering-v2s/ui-base-render": "workspace:*",
     "@catering-v2s/ui-integration-sample-console": "workspace:*",
+    "@config-plugins/react-native-webrtc": "15.0.2",
+    "@livekit/react-native": "3.0.0",
+    "@livekit/react-native-expo-plugin": "1.0.3",
+    "@livekit/react-native-webrtc": "144.2.0",
     "expo": "~57.0.18",
     "expo-modules-core": "~57.0.14",
+    "livekit-client": "2.22.4",
     "react": "19.2.3",
     "react-native": "0.86.3",
     "react-native-svg": "15.15.4"

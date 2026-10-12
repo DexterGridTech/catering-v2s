@@ -61,6 +61,9 @@ public final class OperationsAuditHistoryController {
                             target, page, pageSize);
                     case AuditEntityTypes.TERMINAL_BINDING -> new OperationsAuditQuery.TerminalBinding(
                             target, page, pageSize);
+                    case AuditEntityTypes.TERMINAL_REMOTE_CONTROL_SESSION ->
+                            new OperationsAuditQuery.TerminalRemoteControlSession(
+                                    target, uuid(projectRef == null ? "" : projectRef), page, pageSize);
                     case AuditEntityTypes.TERMINAL_UPDATE_RULE -> new OperationsAuditQuery.TerminalUpdateRule(
                             target, uuid(projectRef == null ? "" : projectRef), page, pageSize);
                     default -> throw new InvalidEdgeRequestException("unsupported operations audit target");

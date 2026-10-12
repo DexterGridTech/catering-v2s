@@ -12,7 +12,15 @@ import {
   resolveTerminalNodeRuntime,
   supportsTerminalAcceptanceNodeVersion,
 } from './terminal-client-dev-acceptance.mjs';
-import {TERMINAL_ACCEPTANCE_DEV_ACTIONS, executeManagedTerminalDevAction, haproxyServerAdminState, readManagedDorisHistory, readManagedTdsLatestState, remoteTdsManagedProcessStateScript} from '../dev/r5-dev-runner.mjs';
+import {
+  TERMINAL_ACCEPTANCE_DEV_ACTIONS,
+  executeManagedTerminalDevAction,
+  haproxyServerAdminState,
+  parseManagedTerminalControlOperationReadback,
+  readManagedDorisHistory,
+  readManagedTdsLatestState,
+  remoteTdsManagedProcessStateScript,
+} from '../dev/r5-dev-runner.mjs';
 import {
   acquireTerminalClientDevAcceptanceLock,
   assertNoActiveTerminalClientAcceptance,
@@ -191,6 +199,22 @@ test('managed terminal DEV control exposes only reviewed node actions and verifi
   assert.match(processState, /R5_REMOTE_TDS_STATE=STOPPED/);
   assert.match(processState, /R5_REMOTE_TDS_STATE=RUNNING/);
   assert.doesNotMatch(processState, /kill\s|pkill|pgrep/);
+});
+
+test('managed terminal-control readback returns only one validated operation command identity', () => {
+  const operationId = '33e6ec3d-9eb2-358d-87e4-ca8aa1c7c635';
+  const row = {
+    operation_id: operationId,
+    command_name: 'kernel.base.remote-control.start-remote-control',
+  };
+  assert.deepEqual(parseManagedTerminalControlOperationReadback([row], operationId), {
+    operationId,
+    commandName: row.command_name,
+  });
+  assert.equal(parseManagedTerminalControlOperationReadback([], operationId), null);
+  assert.throws(() => parseManagedTerminalControlOperationReadback([{...row, operation_id: 'other'}], operationId), /TERMINAL_ACCEPTANCE_CONTROL_OPERATION_READBACK_INVALID/);
+  assert.throws(() => parseManagedTerminalControlOperationReadback([{...row, command_name: 'Bearer secret'}], operationId), /TERMINAL_ACCEPTANCE_CONTROL_OPERATION_READBACK_INVALID/);
+  assert.throws(() => parseManagedTerminalControlOperationReadback([row, row], operationId), /TERMINAL_ACCEPTANCE_CONTROL_OPERATION_READBACK_INVALID/);
 });
 
 test('TER Node acceptance records the actually resolved locked Node, Vitest, and Undici versions', () => {

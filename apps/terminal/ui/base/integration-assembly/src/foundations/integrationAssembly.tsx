@@ -111,6 +111,7 @@ const requiredPlatformPortNames = [
   'update',
   'logUpload',
   'topologyHost',
+  'remoteControl',
 ] as const satisfies readonly (keyof PlatformPorts)[];
 
 const platformPortBindingsAreComplete = (platformPorts: PlatformPorts): boolean =>
@@ -398,7 +399,7 @@ export const createIntegrationAssembly = async <TReadyPayload extends StateJsonV
     root,
     displayMode,
   ): CommandRouteContext => {
-    const catalogContext = createCatalogContext(root, displayMode, input.surfaceForm);
+    const catalogContext = createCatalogContext(root, {displayMode, surfaceForm: input.surfaceForm});
     return Object.freeze({
       displayMode: catalogContext.displayMode,
       workspace: catalogContext.workspace,

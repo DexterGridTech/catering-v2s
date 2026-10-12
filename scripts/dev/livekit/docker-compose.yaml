@@ -1,0 +1,16 @@
+services:
+  livekit:
+    image: livekit/livekit-server:r5-6fd3b7088874
+    container_name: catering-v2s-livekit-resident
+    restart: unless-stopped
+    command: ["--config", "/etc/livekit/livekit.yaml"]
+    ports:
+      - "7880:7880/tcp"
+      - "7882:7882/udp"
+    volumes:
+      - ./livekit.yaml:/etc/livekit/livekit.yaml:ro
+    labels:
+      com.catering-v2s.managed: livekit-resident
+      com.catering-v2s.host-fingerprint: ${LIVEKIT_HOST_FINGERPRINT:?required}
+      com.catering-v2s.config-sha256: ${LIVEKIT_CONFIG_SHA256:?required}
+      com.catering-v2s.attempt-id: ${LIVEKIT_ATTEMPT_ID:?required}

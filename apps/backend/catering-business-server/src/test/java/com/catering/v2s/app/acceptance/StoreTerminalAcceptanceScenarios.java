@@ -82,6 +82,19 @@ final class StoreTerminalAcceptanceScenarios {
         return create(context, new StoreContext(fixture, session), name, null);
     }
 
+    UUID createUnboundEnabledTerminalForCoverage(BackendAcceptanceTest.ScenarioContext context,
+            BackendAcceptanceTest.Fixture fixture, BackendAcceptanceTest.Session session, String name) throws Exception {
+        StoreContext store = new StoreContext(fixture, session);
+        BackendAcceptanceTest.Response response = context.postCoverageOnly(
+                BackendAcceptanceTest.OPERATIONS_STORE_TERMINAL_CREATE,
+                terminalsPath(store.fixture()),
+                store.session().cookie(),
+                createBody(name, null, configuration()),
+                idempotency(),
+                CREATED);
+        return UUID.fromString(response.json().path("terminalRef").asText());
+    }
+
     void disableTerminal(BackendAcceptanceTest.ScenarioContext context, BackendAcceptanceTest.Fixture fixture,
             BackendAcceptanceTest.Session session, UUID terminalRef) throws Exception {
         transitionTerminalStatus(context, new StoreContext(fixture, session), terminalRef, "DISABLED");
@@ -89,10 +102,16 @@ final class StoreTerminalAcceptanceScenarios {
 
     ConnectionFixture createConnectionContractFixture(
             BackendAcceptanceTest.ScenarioContext context, ConnectionFixture existing) throws Exception {
+        return createConnectionContractFixture(context, existing, "TDS connection contract second session");
+    }
+
+    ConnectionFixture createConnectionContractFixture(
+            BackendAcceptanceTest.ScenarioContext context, ConnectionFixture existing, String displayName)
+            throws Exception {
         return createConnectionContractFixture(
                 context,
                 new StoreContext(existing.fixture(), existing.session()),
-                "TDS connection contract second session");
+                displayName);
     }
 
     private ConnectionFixture createConnectionContractFixture(

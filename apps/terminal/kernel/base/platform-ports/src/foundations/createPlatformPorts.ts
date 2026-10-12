@@ -171,6 +171,7 @@ export const describePlatformPortCapabilities = (ports: PlatformPorts): readonly
     'update',
     'logUpload',
     'topologyHost',
+    'remoteControl',
   ] as const;
   return Object.freeze(
     portNames.map(port => {
@@ -205,6 +206,7 @@ const describeBindings = (
     ['update', bindings.update],
     ['logUpload', bindings.logUpload],
     ['topologyHost', bindings.topologyHost],
+    ['remoteControl', bindings.remoteControl],
   ] as const;
   const descriptors = Object.freeze(entries.map(([port, binding]) => Object.freeze(readPortDescriptor(port, binding))));
   return Object.freeze({
@@ -230,6 +232,7 @@ export const createPlatformPorts = (input: CreatePlatformPortsInput): Readonly<P
     update: bindings.update,
     logUpload: bindings.logUpload,
     topologyHost: bindings.topologyHost,
+    remoteControl: bindings.remoteControl,
   });
   if (__DEV__ && tracker !== undefined) {
     const descriptorSummary = describeBindings(bindings);

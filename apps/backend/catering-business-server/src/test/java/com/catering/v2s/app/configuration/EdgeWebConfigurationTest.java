@@ -52,17 +52,23 @@ class EdgeWebConfigurationTest {
     }
 
     @Test
-    void enablesConfiguredLoopbackTerminalOriginsForActivationReadsAndUpdateOperations() {
+    void enablesConfiguredLoopbackTerminalOriginsForActivationRemoteControlReadsAndUpdateOperations() {
         EdgeWebConfiguration configuration = configuration("non-production", "http://127.0.0.1:8093");
         CapturingCorsRegistry registry = new CapturingCorsRegistry();
 
         configuration.addCorsMappings(registry);
 
         Map<String, CorsConfiguration> mappings = registry.mappings();
-        assertEquals(14, mappings.size());
+        assertEquals(16, mappings.size());
         assertTerminalPostMapping(mappings.get("/api/terminal/group-workspaces/*/activation"), "http://127.0.0.1:8093");
         assertTerminalPostMapping(
                 mappings.get("/api/terminal/group-workspaces/*/terminals/*/activation/cancel"),
+                "http://127.0.0.1:8093");
+        assertTerminalPostMapping(
+                mappings.get("/api/terminal/group-workspaces/*/remote-control-sessions/*/registration"),
+                "http://127.0.0.1:8093");
+        assertTerminalPostMapping(
+                mappings.get("/api/terminal/group-workspaces/*/remote-control-sessions/*/status"),
                 "http://127.0.0.1:8093");
         for (String path : List.of(
                 "/api/terminal/group-workspaces/*/contracts/*",

@@ -10,6 +10,7 @@ import com.catering.v2s.app.edge.generated.wire.TerminalUpdateVersionDetail;
 import com.catering.v2s.app.edge.generated.wire.TerminalUpdateVersionPage;
 import com.catering.v2s.app.edge.generated.wire.TerminalUpdateVersionPageQuery;
 import com.catering.v2s.app.edge.generated.wire.TerminalUpdateVersionReportItem;
+import com.catering.v2s.app.edge.diagnostic.RequestCompletionDiagnosticState;
 import com.catering.v2s.app.edge.operations.session.OperationsSessionResolver;
 import com.catering.v2s.app.edge.problem.ContractProblemAdvice;
 import com.catering.v2s.app.edge.session.EdgeRequestContext;
@@ -25,6 +26,8 @@ import com.catering.v2s.workspace.iam.api.WorkspaceSessionReadback;
 import com.catering.v2s.workspace.iam.application.WorkspaceCommandAuthorizationService;
 import java.util.List;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -38,6 +41,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/operations/group-workspaces/{groupWorkspaceKey}")
 public final class OperationsTerminalUpdateReadController {
+    private static final Logger log = LoggerFactory.getLogger(OperationsTerminalUpdateReadController.class);
     private static final tools.jackson.databind.ObjectMapper JSON = new tools.jackson.databind.ObjectMapper();
 
     private final OperationsSessionResolver sessions;
@@ -107,7 +111,8 @@ public final class OperationsTerminalUpdateReadController {
                 cursor, limit));
         return new TerminalUpdateVersionPage(page.items().stream().map(item -> new TerminalUpdateVersionReportItem(
                 item.terminalRef(), item.terminalName(), item.storeRef(), item.storeName(), item.hasReport(),
-                item.oldBinding(), json(item.actualJson()), json(item.recentJson()),
+                item.oldBinding(), item.connectionStatus(), nullable(timestamp(item.observedAtEpochMillis())),
+                timestamp(item.evaluatedAtEpochMillis()), json(item.actualJson()), json(item.recentJson()),
                 nullable(item.receivedAtEpochMillis()))).toList(), nullable(page.nextCursor()));
     }
 
@@ -127,23 +132,70 @@ public final class OperationsTerminalUpdateReadController {
             latest = object;
         }
         return new TerminalUpdateVersionDetail(detail.terminalRef(), detail.terminalName(), detail.storeRef(),
-                detail.storeName(), hasReport, latest, JSON.valueToTree(reportReferences(detail.latestReferences())),
-                nullable(detail.historyCursor()), nullable(detail.receivedAtEpochMillis()));
+                detail.storeName(), hasReport, detail.connectionStatus(), nullable(timestamp(detail.observedAtEpochMillis())),
+                timestamp(detail.evaluatedAtEpochMillis()), latest,
+                JSON.valueToTree(reportReferences(detail.latestReferences())), nullable(detail.historyCursor()),
+                nullable(detail.receivedAtEpochMillis()));
     }
 
     @GetMapping("/projects/{projectRef}/terminal-versions/{terminalRef}/update-reports")
     TerminalUpdateReportHistoryPage history(EdgeRequestContext request, @PathVariable String groupWorkspaceKey,
             @PathVariable UUID projectRef, @PathVariable UUID terminalRef,
             @RequestParam long expectedContextVersion, @RequestParam(required = false) String cursor,
-            @RequestParam int limit) {
+            @RequestParam int limit, jakarta.servlet.http.HttpServletRequest servletRequest) {
         WorkspaceSessionReadback session = projectReadSession(request, groupWorkspaceKey, projectRef, expectedContextVersion);
+        long startedAt = System.nanoTime();
         ReportHistoryPage page = reports.readHistory(session.workspaceUuid(), groupWorkspaceKey, projectRef,
                 terminalRef, cursor, limit);
-        return new TerminalUpdateReportHistoryPage(page.items().stream().map(item -> new TerminalUpdateReportHistoryPageItemsItem(
+        TerminalUpdateReportHistoryPage response = new TerminalUpdateReportHistoryPage(page.items().stream().map(item -> new TerminalUpdateReportHistoryPageItemsItem(
                 item.reportId(), item.taskId(), item.reportSequence(),
                 JSON.readValue(item.actualJson(), com.catering.v2s.app.edge.generated.wire.TerminalUpdateReportActual.class),
                 JSON.readValue(item.recentJson(), com.catering.v2s.app.edge.generated.wire.TerminalUpdateReportRecent.class),
                 reportReferences(item.references()), item.receivedAtEpochMillis())).toList(), nullable(page.nextCursor()));
+        RequestCompletionDiagnosticState completion = RequestCompletionDiagnosticState.find(servletRequest);
+        String requestId = completion == null ? "unavailable" : completion.requestId();
+        String correlationId = completion == null ? request.correlationId() : completion.correlationId();
+        var event = log.atInfo()
+                .addKeyValue("event", "TERMINAL_UPDATE_REPORT_HISTORY_READ")
+                .addKeyValue("operationId", "getOperationsProjectTerminalUpdateReportHistoryPage")
+                .addKeyValue("requestId", requestId)
+                .addKeyValue("correlationId", correlationId)
+                .addKeyValue("projectRef", projectRef)
+                .addKeyValue("terminalRef", terminalRef)
+                .addKeyValue("cursorPresent", cursor != null)
+                .addKeyValue("itemCount", page.items().size())
+                .addKeyValue("nextPagePresent", page.nextCursor() != null)
+                .addKeyValue("outcome", "SUCCEEDED")
+                .addKeyValue("elapsedMs", Math.max(0, (System.nanoTime() - startedAt) / 1_000_000));
+        if (!page.items().isEmpty()) {
+            event.addKeyValue("firstReportSequence", page.items().getFirst().reportSequence())
+                    .addKeyValue("lastReportSequence", page.items().getLast().reportSequence())
+                    .addKeyValue("firstReceivedAtEpochMillis", page.items().getFirst().receivedAtEpochMillis())
+                    .addKeyValue("lastReceivedAtEpochMillis", page.items().getLast().receivedAtEpochMillis())
+                    .addKeyValue("firstTaskId", page.items().getFirst().taskId())
+                    .addKeyValue("lastTaskId", page.items().getLast().taskId());
+        }
+        StringBuilder diagnostic = new StringBuilder("event=TERMINAL_UPDATE_REPORT_HISTORY_READ")
+                .append(" operationId=getOperationsProjectTerminalUpdateReportHistoryPage")
+                .append(" requestId=").append(requestId)
+                .append(" correlationId=").append(correlationId)
+                .append(" projectRef=").append(projectRef)
+                .append(" terminalRef=").append(terminalRef)
+                .append(" cursorPresent=").append(cursor != null)
+                .append(" itemCount=").append(page.items().size())
+                .append(" nextPagePresent=").append(page.nextCursor() != null)
+                .append(" outcome=SUCCEEDED")
+                .append(" elapsedMs=").append(Math.max(0, (System.nanoTime() - startedAt) / 1_000_000));
+        if (!page.items().isEmpty()) {
+            diagnostic.append(" firstReportSequence=").append(page.items().getFirst().reportSequence())
+                    .append(" lastReportSequence=").append(page.items().getLast().reportSequence())
+                    .append(" firstReceivedAtEpochMillis=").append(page.items().getFirst().receivedAtEpochMillis())
+                    .append(" lastReceivedAtEpochMillis=").append(page.items().getLast().receivedAtEpochMillis())
+                    .append(" firstTaskId=").append(page.items().getFirst().taskId())
+                    .append(" lastTaskId=").append(page.items().getLast().taskId());
+        }
+        event.log(diagnostic.toString());
+        return response;
     }
 
     @ExceptionHandler({InvalidQuery.class, TerminalUpdateReportOwnerApi.InvalidQueryException.class,
@@ -207,6 +259,10 @@ public final class OperationsTerminalUpdateReadController {
 
     private static tools.jackson.databind.JsonNode json(String value) {
         return value == null ? tools.jackson.databind.node.NullNode.getInstance() : JSON.readTree(value);
+    }
+
+    private static String timestamp(Long epochMillis) {
+        return epochMillis == null ? null : java.time.Instant.ofEpochMilli(epochMillis).toString();
     }
 
     private static tools.jackson.databind.JsonNode nullable(String value) {

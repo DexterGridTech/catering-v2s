@@ -5309,6 +5309,30 @@ final class TerminalConnectionContractScenarios {
         throw new IllegalStateException("V-S14_EXPECTED_SESSION_DISCONNECT_RECORD_MISSING");
     }
 
+    static SessionProbe startRemoteControlAcceptanceSession(
+            TdsAcceptanceProcess tds,
+            StoreTerminalAcceptanceScenarios.ConnectionFixture fixture,
+            String markerId)
+            throws Exception {
+        SessionProbe probe = startSessionProbe(
+                tds,
+                fixture,
+                "terminal.connection.vs1.default-node-id",
+                markerId,
+                wireClientLog(tds, markerId));
+        try {
+            probe.awaitReady(Duration.ofSeconds(15));
+            return probe;
+        } catch (Exception | Error failure) {
+            try {
+                probe.stop();
+            } catch (Exception cleanupFailure) {
+                failure.addSuppressed(cleanupFailure);
+            }
+            throw failure;
+        }
+    }
+
     private static SessionProbe startSessionProbe(
             TdsAcceptanceProcess tds,
             StoreTerminalAcceptanceScenarios.ConnectionFixture fixture,
@@ -5389,7 +5413,7 @@ final class TerminalConnectionContractScenarios {
         return new SessionProbe(node, log, markerId);
     }
 
-    private static final class SessionProbe {
+    static final class SessionProbe {
         private final Process node;
         private final Path log;
         private final String markerId;

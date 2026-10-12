@@ -3,13 +3,13 @@
   "kind": "backend-performance-operation-counts",
   "status": "ACTIVE",
   "manual": true,
-  "operations": 322,
-  "reads": 143,
-  "commands": 179,
+  "operations": 328,
+  "reads": 144,
+  "commands": 184,
   "commandsByFace": {
-    "operationsAdmin": 129,
+    "operationsAdmin": 132,
     "platformAdmin": 37,
     "public": 9,
-    "terminal": 4
+    "terminal": 6
   }
 }

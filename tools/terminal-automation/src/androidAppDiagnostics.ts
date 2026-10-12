@@ -50,6 +50,9 @@ type RuntimeFailureDiagnostic = Readonly<{
   readonly transportCauseCode?: string;
   readonly sessionId?: string;
   readonly requestId?: string;
+  readonly correlationId?: string;
+  readonly reportId?: string;
+  readonly taskId?: string;
   readonly selectorName?: string;
   readonly budgetMs?: number;
   readonly closeCode?: number;
@@ -118,6 +121,11 @@ type RuntimeFailureDiagnostic = Readonly<{
 
 const safeToken = (value: unknown): string | undefined =>
   typeof value === 'string' && /^[A-Za-z0-9_.: -]{1,100}$/u.test(value) ? value.replaceAll(' ', '_') : undefined;
+
+const safeUuid = (value: unknown): string | undefined =>
+  typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu.test(value)
+    ? value.toLowerCase()
+    : undefined;
 
 const record = (value: unknown): Record<string, unknown> | undefined =>
   typeof value === 'object' && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : undefined;
@@ -322,7 +330,9 @@ const terminalOwnerEvents: Readonly<Record<string, ReadonlySet<string>>> = Objec
 const ownerLogTextFields = [
   'commandId',
   'requestId',
+  'correlationId',
   'operationId',
+  'reportId',
   'taskId',
   'actionId',
   'attemptId',
@@ -433,6 +443,7 @@ export const projectTerminalAutomationAppEvent = (value: unknown): RuntimeFailur
   for (const key of ownerLogTextFields) {
     const token = safeToken(data[key]);
     if (token === undefined) continue;
+    if (key === 'reportId' && safeUuid(data[key]) === undefined) continue;
     if (['errorCode', 'code', 'reasonCode'].includes(key) && !/^[A-Z0-9_:-]{1,100}$/u.test(token)) continue;
     if (
       category === 'topology.peer' &&
@@ -667,7 +678,7 @@ export const projectAndroidTerminalDataReadLog = (line: string): RuntimeFailureD
   });
 };
 
-/** Project only classified terminal update-report outcomes; omit report identity and request data. */
+/** Project classified report outcomes and safe correlation identity; omit credentials and request data. */
 export const projectAndroidTerminalUpdateReportLog = (line: string): RuntimeFailureDiagnostic | null => {
   const match = line.match(/^[VDIWEF]\/ReactNativeJS\s*\(\s*\d+\s*\):\s*(\{.*\})\s*$/u);
   if (!match) return null;
@@ -690,6 +701,10 @@ export const projectAndroidTerminalUpdateReportLog = (line: string): RuntimeFail
     category: 'terminal.update.report',
     event: name!,
     ...(safeToken(event.level) === undefined ? {} : {level: safeToken(event.level)}),
+    ...(safeUuid(data.reportId) === undefined ? {} : {reportId: safeUuid(data.reportId)}),
+    ...(safeUuid(data.taskId) === undefined ? {} : {taskId: safeUuid(data.taskId)}),
+    ...(safeToken(data.requestId) === undefined ? {} : {requestId: safeToken(data.requestId)}),
+    ...(safeToken(data.correlationId) === undefined ? {} : {correlationId: safeToken(data.correlationId)}),
     ...(typeof data.reportState === 'string' &&
     [
       'WAITING_USER',
@@ -960,3 +975,18 @@ export const collectAndroidRuntimeFailureDiagnostics = (logcat: string): string 
     .filter((value): value is RuntimeFailureDiagnostic => value !== null)
     .map(value => JSON.stringify(value))
     .join('\n');
+
+/** Return only native remote-control event names and counts; never retain log fields or payloads. */
+export const collectAndroidRemoteControlDiagnostics = (
+  logcat: string,
+): Readonly<{lineCount: number; eventKinds: readonly string[]}> => {
+  const events = new Set<string>();
+  let lineCount = 0;
+  for (const line of logcat.split(/\r?\n/u)) {
+    const match = line.match(/^[VDIWEF]\/(?:TerminalRemote|TerminalRemoteCapture)\s*\(\s*\d+\s*\):\s*event=([A-Za-z0-9._-]{1,96})\b/u);
+    if (match === null) continue;
+    lineCount += 1;
+    events.add(match[1]!);
+  }
+  return Object.freeze({lineCount, eventKinds: Object.freeze([...events].slice(-30))});
+};

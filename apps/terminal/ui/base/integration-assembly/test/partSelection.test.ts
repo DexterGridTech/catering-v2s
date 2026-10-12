@@ -36,6 +36,7 @@ const makeRawPart = (partKey: string, surfaceForm: readonly string[]): TestPart 
     component: () => null,
     layerTier: 'standard',
     layerGuard: 'dismissible',
+    placementScope: 'workspace',
   },
 });
 

@@ -73,6 +73,7 @@ describe('operations required scope surface', () => {
       'PG-CATALOG-BRAND-ITEMS:HEAD_COMPANY',
       'PG-SALES-MENU-STORE:STORE',
       'PG-STORE-SERVICE-POINT-QR:STORE',
+      'PG-PROJECT-TERMINAL-VERSION-RULES:PROJECT',
     ]);
     expect(
       renderToStaticMarkup(

@@ -233,6 +233,13 @@ export const OPERATIONS_ADMIN_OPERATIONS = [
     "requiresSession": true
   },
   {
+    "operationId": "endOperationsTerminalRemoteControl",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminals/{terminalRef}/remote-control-sessions/{sessionId}/end",
+    "owner": "TERMINAL_REMOTE_CONTROL",
+    "requiresSession": true
+  },
+  {
     "operationId": "getOperationsBusinessChannelDetail",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}",
@@ -625,6 +632,13 @@ export const OPERATIONS_ADMIN_OPERATIONS = [
     "requiresSession": true
   },
   {
+    "operationId": "getOperationsTerminalRemoteControl",
+    "method": "GET",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminals/{terminalRef}/remote-control-sessions/{sessionId}",
+    "owner": "TERMINAL_REMOTE_CONTROL",
+    "requiresSession": true
+  },
+  {
     "operationId": "getOperationsTerminalUpdateArtifactCandidatePage",
     "method": "GET",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/terminal-update-artifact-candidates",
@@ -790,6 +804,13 @@ export const OPERATIONS_ADMIN_OPERATIONS = [
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}/invalidate",
     "owner": "contract",
+    "requiresSession": true
+  },
+  {
+    "operationId": "issueOperationsRemoteControlGrant",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminals/{terminalRef}/remote-control-sessions/{sessionId}/controller-grant",
+    "owner": "TERMINAL_REMOTE_CONTROL",
     "requiresSession": true
   },
   {
@@ -1073,6 +1094,13 @@ export const OPERATIONS_ADMIN_OPERATIONS = [
     "requiresSession": true
   },
   {
+    "operationId": "startOperationsTerminalRemoteControl",
+    "method": "POST",
+    "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminals/{terminalRef}/remote-control-sessions",
+    "owner": "TERMINAL_REMOTE_CONTROL",
+    "requiresSession": true
+  },
+  {
     "operationId": "transitionOperationsBusinessChannelStatus",
     "method": "POST",
     "path": "/api/operations/group-workspaces/{groupWorkspaceKey}/business-channels/{channelRef}",
@@ -1243,6 +1271,7 @@ export const OPERATIONS_ADMIN_OPERATION_IDS = {
   "deleteOperationsOwnerBinding": "deleteOperationsOwnerBinding",
   "deleteOperationsSalesMenuItem": "deleteOperationsSalesMenuItem",
   "deleteOperationsSalesMenuSection": "deleteOperationsSalesMenuSection",
+  "endOperationsTerminalRemoteControl": "endOperationsTerminalRemoteControl",
   "getOperationsBusinessChannelDetail": "getOperationsBusinessChannelDetail",
   "getOperationsBusinessChannelTemplates": "getOperationsBusinessChannelTemplates",
   "getOperationsBusinessChannelTemplateVisibleStores": "getOperationsBusinessChannelTemplateVisibleStores",
@@ -1299,6 +1328,7 @@ export const OPERATIONS_ADMIN_OPERATION_IDS = {
   "getOperationsStoreTerminalAreaCandidates": "getOperationsStoreTerminalAreaCandidates",
   "getOperationsStoreTerminals": "getOperationsStoreTerminals",
   "getOperationsStoreTerminalTagCandidates": "getOperationsStoreTerminalTagCandidates",
+  "getOperationsTerminalRemoteControl": "getOperationsTerminalRemoteControl",
   "getOperationsTerminalUpdateArtifactCandidatePage": "getOperationsTerminalUpdateArtifactCandidatePage",
   "getOperationsWorkspaceGroupInvitationCandidates": "getOperationsWorkspaceGroupInvitationCandidates",
   "getOperationsWorkspaceGroupInvitations": "getOperationsWorkspaceGroupInvitations",
@@ -1323,6 +1353,7 @@ export const OPERATIONS_ADMIN_OPERATION_IDS = {
   "getOperationsWorkspaceStoreUser": "getOperationsWorkspaceStoreUser",
   "getOperationsWorkspaceStoreUserAccount": "getOperationsWorkspaceStoreUserAccount",
   "invalidateOperationsContract": "invalidateOperationsContract",
+  "issueOperationsRemoteControlGrant": "issueOperationsRemoteControlGrant",
   "moveOperationsSalesMenuItem": "moveOperationsSalesMenuItem",
   "moveOperationsSalesMenuSection": "moveOperationsSalesMenuSection",
   "operationsWorkspaceLogout": "operationsWorkspaceLogout",
@@ -1363,6 +1394,7 @@ export const OPERATIONS_ADMIN_OPERATION_IDS = {
   "setOperationsSalesMenuItemSoldOut": "setOperationsSalesMenuItemSoldOut",
   "stageOperationsSalesMenuAsset": "stageOperationsSalesMenuAsset",
   "stageStoreServicePointImage": "stageStoreServicePointImage",
+  "startOperationsTerminalRemoteControl": "startOperationsTerminalRemoteControl",
   "transitionOperationsBusinessChannelStatus": "transitionOperationsBusinessChannelStatus",
   "transitionOperationsBusinessChannelTemplateStatus": "transitionOperationsBusinessChannelTemplateStatus",
   "transitionOperationsOrganizationBrandStatus": "transitionOperationsOrganizationBrandStatus",
@@ -1447,6 +1479,7 @@ export const EDGE_PROBLEM_CODES = [
   "PLATFORM_COMMON_RESULT_UNKNOWN",
   "PLATFORM_COMMON_VALIDATION_FAILED",
   "PLATFORM_COMMON_VERSION_CONFLICT",
+  "PLATFORM_DEPENDENCY_UNAVAILABLE",
   "PROJECT_DINE_IN_EXTERNAL_NOT_ALLOWED",
   "PROVIDER_NOT_ENABLED",
   "SALES_ITEM_NOT_FOUND",
@@ -1487,6 +1520,12 @@ export const EDGE_PROBLEM_CODES = [
   "STORE_TERMINAL_VOIDED_IMMUTABLE",
   "TERMINAL_BINDING_CHANGED",
   "TERMINAL_BINDING_NOT_ACTIVE",
+  "TERMINAL_CONTROL_REMOTE_IDENTITY_CONFLICT",
+  "TERMINAL_CONTROL_REMOTE_NOT_ACTIVATED",
+  "TERMINAL_CONTROL_REMOTE_NOT_READY",
+  "TERMINAL_CONTROL_REMOTE_OCCUPIED",
+  "TERMINAL_CONTROL_REMOTE_SESSION_ENDED",
+  "TERMINAL_CONTROL_REMOTE_TERMINAL_OFFLINE",
   "TERMINAL_UPDATE_RULE_TARGET_INVALID",
   "TERMINAL_UPDATE_SCOPE_MISMATCH",
   "TERMINAL_UPDATE_SNAPSHOT_TOO_LARGE",
@@ -3059,6 +3098,69 @@ export type TenantUpdateRequest = (TenantCreateRequest) & ({
   expectedVersion: number;
 });
 
+export type TerminalRemoteControlControllerGrant = {
+  url: string;
+  roomName: string;
+  participantIdentity: string;
+  token: string;
+  expiresAtEpochMillis: number;
+  description: TerminalRemoteControlDescription;
+};
+
+export type TerminalRemoteControlDescription = {
+  sessionId: string & { readonly __uuid: "Uuid" };
+  roomName: string;
+  controllerIdentity: string;
+  topologyKind: "MOBILE_SINGLE" | "LAPTOP_SINGLE" | "LAPTOP_DUAL" | "LAPTOP_PAIRED";
+  masterEndpointId: string & { readonly __uuid: "Uuid" };
+  endpoints: Array<TerminalRemoteControlEndpoint>;
+  screens: Array<TerminalRemoteControlScreen>;
+};
+
+export type TerminalRemoteControlEndRequest = {
+  reason: "ADMIN_ENDED" | "WORKSPACE_CLOSED";
+};
+
+export type TerminalRemoteControlEndResponse = {
+  sessionId: string & { readonly __uuid: "Uuid" };
+  state: "ENDED";
+  reason: "ADMIN_ENDED" | "WORKSPACE_CLOSED";
+  endedAtEpochMillis: number;
+};
+
+export type TerminalRemoteControlEndpoint = {
+  endpointId: string & { readonly __uuid: "Uuid" };
+  participantIdentity: string;
+};
+
+export type TerminalRemoteControlScreen = {
+  screen: "main" | "secondary";
+  endpointId: string & { readonly __uuid: "Uuid" };
+};
+
+export type TerminalRemoteControlSessionRead = {
+  sessionId: string & { readonly __uuid: "Uuid" };
+  state: "STARTING" | "ACTIVE" | "ENDED";
+  reason: (string) | null;
+  description: ((TerminalRemoteControlDescription)) | null;
+  startedAtEpochMillis: number;
+  endedAtEpochMillis: (number) | null;
+};
+
+export type TerminalRemoteControlStartRequest = {
+  requestId: string & { readonly __uuid: "Uuid" };
+};
+
+export type TerminalRemoteControlStartResponse = {
+  sessionId: string & { readonly __uuid: "Uuid" };
+  state: "STARTING";
+  roomName: string;
+  controllerIdentity: string;
+  description: ((TerminalRemoteControlDescription)) | null;
+  startOperationId: string & { readonly __uuid: "Uuid" };
+  deadlineAtEpochMillis: number;
+};
+
 export type TerminalUpdateArtifactCandidatePage = {
   items: Array<TerminalUpdateArtifactSummary>;
   nextCursor: string | null;
@@ -3206,6 +3308,9 @@ export type TerminalUpdateVersionDetail = {
   storeRef: string & { readonly __uuid: "Uuid" };
   storeName: string;
   hasReport: boolean;
+  connectionStatus: "NOT_ACTIVATED" | "OFFLINE" | "ONLINE";
+  observedAt: string | null;
+  evaluatedAt: string;
   latest: Record<string, JsonValue> | null;
   latestReferences: (({
   ruleTarget: (({
@@ -3247,6 +3352,9 @@ export type TerminalUpdateVersionReportItem = {
   storeName: string;
   hasReport: boolean;
   oldBinding: boolean;
+  connectionStatus: "NOT_ACTIVATED" | "OFFLINE" | "ONLINE";
+  observedAt: string | null;
+  evaluatedAt: string;
   actual: Record<string, JsonValue> | null;
   recent: Record<string, JsonValue> | null;
   receivedAtEpochMillis: number | null;
@@ -3371,7 +3479,7 @@ export type WorkspaceRole = {
   name: string;
   description?: (string) | null;
   serviceNodeType: "GROUP" | "REGION" | "PROJECT" | "HEAD_COMPANY" | "STORE";
-  capabilityKeys: Array<"BC-ORG-GROUP-EDIT" | "BC-ORG-GROUP-STATUS" | "BC-ORG-REGION-CREATE" | "BC-ORG-REGION-EDIT" | "BC-ORG-REGION-STATUS" | "BC-ORG-PROJECT-CREATE" | "BC-ORG-PROJECT-EDIT" | "BC-ORG-PROJECT-STATUS" | "BC-ORG-BRAND-CREATE" | "BC-ORG-BRAND-EDIT" | "BC-ORG-BRAND-STATUS" | "BC-ORG-TENANT-CREATE" | "BC-ORG-TENANT-EDIT" | "BC-ORG-TENANT-STATUS" | "BC-ORG-HEAD-COMPANY-CREATE" | "BC-ORG-HEAD-COMPANY-EDIT" | "BC-ORG-HEAD-COMPANY-STATUS" | "BC-ORG-HEAD-COMPANY-BRAND" | "BC-ORG-STORE-CREATE" | "BC-ORG-STORE-EDIT" | "BC-ORG-STORE-STATUS" | "BC-IAM-GROUP-ROLE-REVOKE" | "BC-IAM-REGION-ROLE-REVOKE" | "BC-IAM-PROJECT-ROLE-REVOKE" | "BC-IAM-HEAD-COMPANY-ROLE-REVOKE" | "BC-IAM-STORE-ROLE-REVOKE" | "BC-IAM-GROUP-INVITE" | "BC-IAM-REGION-INVITE" | "BC-IAM-PROJECT-INVITE" | "BC-IAM-HEAD-COMPANY-INVITE" | "BC-IAM-STORE-INVITE" | "BC-CONTRACT-CREATE" | "BC-CONTRACT-EDIT" | "BC-CONTRACT-INVALIDATE">;
+  capabilityKeys: Array<"BC-ORG-GROUP-EDIT" | "BC-ORG-GROUP-STATUS" | "BC-ORG-REGION-CREATE" | "BC-ORG-REGION-EDIT" | "BC-ORG-REGION-STATUS" | "BC-ORG-PROJECT-CREATE" | "BC-ORG-PROJECT-EDIT" | "BC-ORG-PROJECT-STATUS" | "BC-ORG-BRAND-CREATE" | "BC-ORG-BRAND-EDIT" | "BC-ORG-BRAND-STATUS" | "BC-ORG-TENANT-CREATE" | "BC-ORG-TENANT-EDIT" | "BC-ORG-TENANT-STATUS" | "BC-ORG-HEAD-COMPANY-CREATE" | "BC-ORG-HEAD-COMPANY-EDIT" | "BC-ORG-HEAD-COMPANY-STATUS" | "BC-ORG-HEAD-COMPANY-BRAND" | "BC-ORG-STORE-CREATE" | "BC-ORG-STORE-EDIT" | "BC-ORG-STORE-STATUS" | "BC-IAM-GROUP-ROLE-REVOKE" | "BC-IAM-REGION-ROLE-REVOKE" | "BC-IAM-PROJECT-ROLE-REVOKE" | "BC-IAM-HEAD-COMPANY-ROLE-REVOKE" | "BC-IAM-STORE-ROLE-REVOKE" | "BC-IAM-GROUP-INVITE" | "BC-IAM-REGION-INVITE" | "BC-IAM-PROJECT-INVITE" | "BC-IAM-HEAD-COMPANY-INVITE" | "BC-IAM-STORE-INVITE" | "BC-CONTRACT-CREATE" | "BC-CONTRACT-EDIT" | "BC-CONTRACT-INVALIDATE" | "EDIT_HEAD_COMPANY_CATALOG" | "EDIT_STORE_CATALOG" | "EDIT_STORE_INVENTORY" | "EDIT_STORE_SALES_MENU" | "EDIT_STORE_SERVICE_POINT_QR" | "EDIT_STORE_TERMINAL" | "BC-BUSINESS-CHANNEL-PROJECT-EDIT" | "BC-BUSINESS-CHANNEL-STORE-EDIT" | "MANAGE_PROJECT_TERMINAL_VERSION" | "CONTROL_PROJECT_TERMINAL">;
   pageAccessKeys: Array<string>;
   status: WorkspaceRoleStatus;
   revision: number;
@@ -3437,7 +3545,7 @@ export type WorkspaceSessionEntry = {
   requiredDataNodeType: "NONE" | "REGION" | "PROJECT" | "STORE" | "HEAD_COMPANY";
 }>;
 }>;
-  actionGrants: Array<"BC-ORG-GROUP-EDIT" | "BC-ORG-GROUP-STATUS" | "BC-ORG-REGION-CREATE" | "BC-ORG-REGION-EDIT" | "BC-ORG-REGION-STATUS" | "BC-ORG-PROJECT-CREATE" | "BC-ORG-PROJECT-EDIT" | "BC-ORG-PROJECT-STATUS" | "BC-ORG-BRAND-CREATE" | "BC-ORG-BRAND-EDIT" | "BC-ORG-BRAND-STATUS" | "BC-ORG-TENANT-CREATE" | "BC-ORG-TENANT-EDIT" | "BC-ORG-TENANT-STATUS" | "BC-ORG-HEAD-COMPANY-CREATE" | "BC-ORG-HEAD-COMPANY-EDIT" | "BC-ORG-HEAD-COMPANY-STATUS" | "BC-ORG-HEAD-COMPANY-BRAND" | "BC-ORG-STORE-CREATE" | "BC-ORG-STORE-EDIT" | "BC-ORG-STORE-STATUS" | "BC-IAM-GROUP-ROLE-REVOKE" | "BC-IAM-REGION-ROLE-REVOKE" | "BC-IAM-PROJECT-ROLE-REVOKE" | "BC-IAM-HEAD-COMPANY-ROLE-REVOKE" | "BC-IAM-STORE-ROLE-REVOKE" | "BC-IAM-GROUP-INVITE" | "BC-IAM-REGION-INVITE" | "BC-IAM-PROJECT-INVITE" | "BC-IAM-HEAD-COMPANY-INVITE" | "BC-IAM-STORE-INVITE" | "BC-CONTRACT-CREATE" | "BC-CONTRACT-EDIT" | "BC-CONTRACT-INVALIDATE">;
+  actionGrants: Array<"BC-ORG-GROUP-EDIT" | "BC-ORG-GROUP-STATUS" | "BC-ORG-REGION-CREATE" | "BC-ORG-REGION-EDIT" | "BC-ORG-REGION-STATUS" | "BC-ORG-PROJECT-CREATE" | "BC-ORG-PROJECT-EDIT" | "BC-ORG-PROJECT-STATUS" | "BC-ORG-BRAND-CREATE" | "BC-ORG-BRAND-EDIT" | "BC-ORG-BRAND-STATUS" | "BC-ORG-TENANT-CREATE" | "BC-ORG-TENANT-EDIT" | "BC-ORG-TENANT-STATUS" | "BC-ORG-HEAD-COMPANY-CREATE" | "BC-ORG-HEAD-COMPANY-EDIT" | "BC-ORG-HEAD-COMPANY-STATUS" | "BC-ORG-HEAD-COMPANY-BRAND" | "BC-ORG-STORE-CREATE" | "BC-ORG-STORE-EDIT" | "BC-ORG-STORE-STATUS" | "BC-IAM-GROUP-ROLE-REVOKE" | "BC-IAM-REGION-ROLE-REVOKE" | "BC-IAM-PROJECT-ROLE-REVOKE" | "BC-IAM-HEAD-COMPANY-ROLE-REVOKE" | "BC-IAM-STORE-ROLE-REVOKE" | "BC-IAM-GROUP-INVITE" | "BC-IAM-REGION-INVITE" | "BC-IAM-PROJECT-INVITE" | "BC-IAM-HEAD-COMPANY-INVITE" | "BC-IAM-STORE-INVITE" | "BC-CONTRACT-CREATE" | "BC-CONTRACT-EDIT" | "BC-CONTRACT-INVALIDATE" | "EDIT_HEAD_COMPANY_CATALOG" | "EDIT_STORE_CATALOG" | "EDIT_STORE_INVENTORY" | "EDIT_STORE_SALES_MENU" | "EDIT_STORE_SERVICE_POINT_QR" | "EDIT_STORE_TERMINAL" | "BC-BUSINESS-CHANNEL-PROJECT-EDIT" | "BC-BUSINESS-CHANNEL-STORE-EDIT" | "MANAGE_PROJECT_TERMINAL_VERSION" | "CONTROL_PROJECT_TERMINAL">;
   dataNodeCandidates?: Array<WorkspaceScopeNode>;
   selected?: ((({
   roleAssignmentRef: string & { readonly __uuid: "Uuid" };
@@ -4057,6 +4165,24 @@ export type FaceOperationContracts = {
     "Idempotency-Key": string;
   };
     headersRequired: true;
+  };
+  "endOperationsTerminalRemoteControl": {
+    request: TerminalRemoteControlEndRequest;
+    response: TerminalRemoteControlEndResponse;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    projectRef: string & { readonly __uuid: "Uuid" };
+    terminalRef: string & { readonly __uuid: "Uuid" };
+    sessionId: string;
+  };
+    query: {
+    expectedContextVersion: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
   };
   "getOperationsBusinessChannelDetail": {
     request: NoBody;
@@ -5060,6 +5186,24 @@ export type FaceOperationContracts = {
     headers: Record<string, never>;
     headersRequired: false;
   };
+  "getOperationsTerminalRemoteControl": {
+    request: NoBody;
+    response: TerminalRemoteControlSessionRead;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    projectRef: string & { readonly __uuid: "Uuid" };
+    terminalRef: string & { readonly __uuid: "Uuid" };
+    sessionId: string;
+  };
+    query: {
+    expectedContextVersion: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
   "getOperationsTerminalUpdateArtifactCandidatePage": {
     request: NoBody;
     response: TerminalUpdateArtifactCandidatePage;
@@ -5564,6 +5708,24 @@ export type FaceOperationContracts = {
     "Idempotency-Key": string;
   };
     headersRequired: true;
+  };
+  "issueOperationsRemoteControlGrant": {
+    request: NoBody;
+    response: TerminalRemoteControlControllerGrant;
+    requestRequired: false;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    projectRef: string & { readonly __uuid: "Uuid" };
+    terminalRef: string & { readonly __uuid: "Uuid" };
+    sessionId: string;
+  };
+    query: {
+    expectedContextVersion: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
   };
   "moveOperationsSalesMenuItem": {
     request: SalesMenuItemMoveRequest;
@@ -6232,6 +6394,23 @@ export type FaceOperationContracts = {
   };
     headersRequired: true;
   };
+  "startOperationsTerminalRemoteControl": {
+    request: TerminalRemoteControlStartRequest;
+    response: TerminalRemoteControlStartResponse;
+    requestRequired: true;
+    requiresSession: true;
+    path: {
+    groupWorkspaceKey: string;
+    projectRef: string & { readonly __uuid: "Uuid" };
+    terminalRef: string & { readonly __uuid: "Uuid" };
+  };
+    query: {
+    expectedContextVersion: number;
+  };
+    queryRequired: true;
+    headers: Record<string, never>;
+    headersRequired: false;
+  };
   "transitionOperationsBusinessChannelStatus": {
     request: BusinessChannelStatusRequest;
     response: BusinessChannelView;
@@ -6825,6 +7004,14 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       requiresSession: true,
       ...options,
     }),
+    endOperationsTerminalRemoteControl: (pathParameters: FaceOperationContracts["endOperationsTerminalRemoteControl"]["path"], options: FaceOperationOptions<"endOperationsTerminalRemoteControl">) => execute({
+      operationId: "endOperationsTerminalRemoteControl",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminals/{terminalRef}/remote-control-sessions/{sessionId}/end",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
     getOperationsBusinessChannelDetail: (pathParameters: FaceOperationContracts["getOperationsBusinessChannelDetail"]["path"], options: FaceOperationOptions<"getOperationsBusinessChannelDetail">) => execute({
       operationId: "getOperationsBusinessChannelDetail",
       method: "GET",
@@ -7273,6 +7460,14 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       requiresSession: true,
       ...options,
     }),
+    getOperationsTerminalRemoteControl: (pathParameters: FaceOperationContracts["getOperationsTerminalRemoteControl"]["path"], options: FaceOperationOptions<"getOperationsTerminalRemoteControl">) => execute({
+      operationId: "getOperationsTerminalRemoteControl",
+      method: "GET",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminals/{terminalRef}/remote-control-sessions/{sessionId}",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
     getOperationsTerminalUpdateArtifactCandidatePage: (pathParameters: FaceOperationContracts["getOperationsTerminalUpdateArtifactCandidatePage"]["path"], options: FaceOperationOptions<"getOperationsTerminalUpdateArtifactCandidatePage">) => execute({
       operationId: "getOperationsTerminalUpdateArtifactCandidatePage",
       method: "GET",
@@ -7461,6 +7656,14 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       operationId: "invalidateOperationsContract",
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/contracts/{contractId}/invalidate",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    issueOperationsRemoteControlGrant: (pathParameters: FaceOperationContracts["issueOperationsRemoteControlGrant"]["path"], options: FaceOperationOptions<"issueOperationsRemoteControlGrant">) => execute({
+      operationId: "issueOperationsRemoteControlGrant",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminals/{terminalRef}/remote-control-sessions/{sessionId}/controller-grant",
       pathParameters,
       requiresSession: true,
       ...options,
@@ -7781,6 +7984,14 @@ export function createOperationsAdminClient(execute: FaceExecutor) {
       operationId: "stageStoreServicePointImage",
       method: "POST",
       path: "/api/operations/group-workspaces/{groupWorkspaceKey}/stores/{storeRef}/service-point-assets/stage",
+      pathParameters,
+      requiresSession: true,
+      ...options,
+    }),
+    startOperationsTerminalRemoteControl: (pathParameters: FaceOperationContracts["startOperationsTerminalRemoteControl"]["path"], options: FaceOperationOptions<"startOperationsTerminalRemoteControl">) => execute({
+      operationId: "startOperationsTerminalRemoteControl",
+      method: "POST",
+      path: "/api/operations/group-workspaces/{groupWorkspaceKey}/projects/{projectRef}/terminals/{terminalRef}/remote-control-sessions",
       pathParameters,
       requiresSession: true,
       ...options,

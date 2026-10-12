@@ -29,6 +29,7 @@ export type AndroidAutomationConnection = Readonly<{
   readonly readPrimaryAbi: () => Promise<string>;
   readonly readTerminalUpdateLogs: (packageName: string) => Promise<string>;
   readonly readRuntimeFailureDiagnostics: (packageName: string) => Promise<string>;
+  readonly readRemoteControlDiagnostics: (packageName: string) => Promise<Readonly<{lineCount: number; eventKinds: readonly string[]}>>;
   readonly forceStop: (packageName: string) => Promise<void>;
   readonly uninstall: (packageName: string) => Promise<void>;
   readonly discoverDisplays: ReturnType<typeof createAndroidInput>['discoverDisplays'];
@@ -215,6 +216,7 @@ export const createAndroidAutomationConnection = async (
       readPrimaryAbi: device.readPrimaryAbi,
       readTerminalUpdateLogs: device.readTerminalUpdateLogs,
       readRuntimeFailureDiagnostics: device.readRuntimeFailureDiagnostics,
+      readRemoteControlDiagnostics: device.readRemoteControlDiagnostics,
       forceStop: device.forceStop,
       uninstall: device.uninstall,
       discoverDisplays: androidInput.discoverDisplays,

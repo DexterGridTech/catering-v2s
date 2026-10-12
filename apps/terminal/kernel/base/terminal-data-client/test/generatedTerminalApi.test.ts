@@ -13,6 +13,8 @@ describe('generated terminal API contract', () => {
       'activateTerminal',
       'cancelTerminalActivation',
       'issueTerminalUpdateArtifactDownloadGrant',
+      'registerTerminalRemoteControl',
+      'reportTerminalRemoteControl',
       'submitTerminalUpdateReport',
       'terminalReadContract',
       'terminalReadProjectUpdateRuleSnapshotPage',
