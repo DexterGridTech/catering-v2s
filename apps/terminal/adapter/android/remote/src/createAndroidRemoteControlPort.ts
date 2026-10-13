@@ -35,7 +35,7 @@ type WindowHostEvent = Readonly<{
 
 type CaptureEvent = Readonly<{
   event: string;
-  streamId: string;
+  streamId?: string;
   surfaceKey: 'PRIMARY' | 'SECONDARY';
   windowIdentity: string;
   generation: number;
@@ -471,9 +471,15 @@ export const createAndroidRemoteControlPort = (options: AndroidRemoteControlPort
         if (activeSession !== session || session.closing) return;
         const expectedScreen = session.localScreensBySurface.get(event.surfaceKey);
         if (expectedScreen?.windowIdentity !== event.windowIdentity || expectedScreen.generation !== event.generation) return;
-        const track = session.tracks.find(item => !item.released && item.streamId === event.streamId);
+        let track: NativeVideoTrack | undefined;
+        if (event.event === 'local-input-conflict') {
+          track = session.tracks.find(item => !item.released && item.screen.surfaceKey === event.surfaceKey &&
+            item.screen.windowIdentity === event.windowIdentity && item.screen.generation === event.generation);
+        } else if (event.streamId !== undefined) {
+          track = session.tracks.find(item => !item.released && item.streamId === event.streamId);
+        }
         if (track === undefined) {
-          if (session.pendingCaptureStreamIds.has(event.streamId) &&
+          if (event.streamId !== undefined && session.pendingCaptureStreamIds.has(event.streamId) &&
             (event.event === 'first-frame' || event.event === 'capture-failed')) {
             pendingCaptureEvents.set(event.streamId, event);
           }

@@ -1502,48 +1502,52 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
   writeFileSync(logPath, '', {mode: 0o600, flag: 'wx'});
 
   if (execution.platform === 'android') {
+    let identitySerial = execution.deviceSerial!;
     try {
-      const identity = await inspectAndroidDeviceIdentity(
-        createAndroidAdbClient({adbPath: process.env.ADB_PATH || 'adb', timeoutMs: 10_000}),
-        execution.deviceSerial!,
-      );
-      if (execution.deviceKind !== undefined && identity.kind !== execution.deviceKind) {
-        const code = identity.kind === 'unknown'
-          ? 'TERMINAL_AUTOMATION_ANDROID_DEVICE_KIND_UNVERIFIED'
-          : 'TERMINAL_AUTOMATION_ANDROID_DEVICE_KIND_MISMATCH';
-        record(manifest.runId, 'android.device.identity.rejected', {
-          serial: execution.deviceSerial,
-          expectedKind: execution.deviceKind,
-          actualKind: identity.kind,
+      const adbClient = createAndroidAdbClient({adbPath: process.env.ADB_PATH || 'adb', timeoutMs: 10_000});
+      const serials = [execution.deviceSerial!];
+      if (execution.peerDeviceSerial !== undefined) serials.push(execution.peerDeviceSerial);
+      for (const serial of serials) {
+        identitySerial = serial;
+        const identity = await inspectAndroidDeviceIdentity(adbClient, serial);
+        if (serial === execution.deviceSerial && execution.deviceKind !== undefined && identity.kind !== execution.deviceKind) {
+          const code = identity.kind === 'unknown'
+            ? 'TERMINAL_AUTOMATION_ANDROID_DEVICE_KIND_UNVERIFIED'
+            : 'TERMINAL_AUTOMATION_ANDROID_DEVICE_KIND_MISMATCH';
+          record(manifest.runId, 'android.device.identity.rejected', {
+            serial,
+            expectedKind: execution.deviceKind,
+            actualKind: identity.kind,
+            model: identity.model,
+            product: identity.product,
+            device: identity.device,
+            hardware: identity.hardware,
+            qemu: identity.qemu,
+            code,
+          });
+          manifest = failRun(manifest, code, 'PASS');
+          printRunSummary(manifest);
+          process.stderr.write(`${code}\n`);
+          return 1;
+        }
+        manifest = save(manifest, {
+          androidDevices: attachAndroidDeviceIdentity(manifest, serial, identity),
+        });
+        record(manifest.runId, 'android.device.identity.verified', {
+          serial,
+          kind: identity.kind,
           model: identity.model,
           product: identity.product,
           device: identity.device,
           hardware: identity.hardware,
           qemu: identity.qemu,
-          code,
         });
-        manifest = failRun(manifest, code, 'PASS');
-        printRunSummary(manifest);
-        process.stderr.write(`${code}\n`);
-        return 1;
       }
-      manifest = save(manifest, {
-        androidDevices: attachAndroidDeviceIdentity(manifest, execution.deviceSerial!, identity),
-      });
-      record(manifest.runId, 'android.device.identity.verified', {
-        serial: execution.deviceSerial,
-        kind: identity.kind,
-        model: identity.model,
-        product: identity.product,
-        device: identity.device,
-        hardware: identity.hardware,
-        qemu: identity.qemu,
-      });
     } catch (error) {
       const code = error instanceof Error && /^TERMINAL_AUTOMATION_[A-Z0-9_]+$/u.test(error.message)
         ? error.message
         : 'TERMINAL_AUTOMATION_ANDROID_DEVICE_IDENTITY_READ_FAILED';
-      record(manifest.runId, 'android.device.identity.failed', {serial: execution.deviceSerial, code});
+      record(manifest.runId, 'android.device.identity.failed', {serial: identitySerial, code});
       manifest = failRun(manifest, code, 'PASS');
       printRunSummary(manifest);
       process.stderr.write(`${code}\n`);

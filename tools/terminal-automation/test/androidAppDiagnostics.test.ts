@@ -16,13 +16,16 @@ describe('Android remote-control native diagnostics', () => {
   it('keeps bounded native capture facts with stream, window, and track correlation identities', () => {
     const diagnostics = collectAndroidRemoteControlDiagnostics([
       'I/TerminalRemote( 1234): event=video-track-created streamId=stream-123 surfaceKey=PRIMARY windowIdentity=window-primary trackId=track-123 generation=3 width=1280 height=720',
+      'I/TerminalRemote( 1234): event=main-operation operation=touch-dispatch surfaceKey=PRIMARY queueWaitMs=3167 mainWorkMs=2',
+      'I/TerminalRemote( 1234): event=touch-window-dispatch surfaceKey=PRIMARY action=UP elapsedMs=1',
+      'I/TerminalRemote( 1234): event=touch-window-dispatch surfaceKey=PRIMARY action=CANCEL elapsedMs=2',
       'I/TerminalRemoteCapture( 1234): event=capturer-initialized surfaceKey=PRIMARY windowIdentity=window-primary generation=3',
       'I/Other( 1234): event=unrelated',
     ].join('\n'));
 
     expect(diagnostics).toEqual({
-      lineCount: 2,
-      eventKinds: ['video-track-created', 'capturer-initialized'],
+      lineCount: 5,
+      eventKinds: ['video-track-created', 'main-operation', 'touch-window-dispatch', 'capturer-initialized'],
       events: [
         {
           event: 'video-track-created',
@@ -36,6 +39,9 @@ describe('Android remote-control native diagnostics', () => {
             height: 720,
           },
         },
+        {event: 'main-operation', fields: {operation: 'touch-dispatch', surfaceKey: 'PRIMARY', queueWaitMs: 3167, mainWorkMs: 2}},
+        {event: 'touch-window-dispatch', fields: {surfaceKey: 'PRIMARY', action: 'UP', elapsedMs: 1}},
+        {event: 'touch-window-dispatch', fields: {surfaceKey: 'PRIMARY', action: 'CANCEL', elapsedMs: 2}},
         {event: 'capturer-initialized', fields: {surfaceKey: 'PRIMARY', windowIdentity: 'window-primary', generation: 3}},
       ],
     });
@@ -45,9 +51,47 @@ describe('Android remote-control native diagnostics', () => {
     const lines = [
       `I/ReactNativeJS (123): ${JSON.stringify({
         category: 'terminal.remote-control',
+        event: 'remote-control.peer-join-command-rejected',
+        context: {commandId: 'join-command', requestId: 'join-request'},
+        data: {sessionId: 'session-1', reason: 'STATUS_PROJECTION_NOT_READY', resultStatus: 'rejected'},
+      })}`,
+      `I/ReactNativeJS (123): ${JSON.stringify({
+        category: 'terminal.remote-control',
+        event: 'remote-control.peer-endpoint-join-completed',
+        context: {commandId: 'master-command', requestId: 'master-request'},
+        data: {sessionId: 'session-1', dispatchStatus: 'completed', actorStatus: 'completed', actorResultCount: 1, resultStatus: 'rejected'},
+      })}`,
+      `I/ReactNativeJS (123): ${JSON.stringify({
+        category: 'terminal.remote-control',
         event: 'remote-control.screen-ready-sent',
         context: {commandId: 'command-1', requestId: 'request-1'},
         data: {sessionId: 'session-1', endpointId: 'endpoint-1', screen: 'main', seq: 4},
+      })}`,
+      `I/ReactNativeJS (123): ${JSON.stringify({
+        category: 'terminal.remote-control',
+        event: 'remote-control.start-command-received',
+        data: {
+          sessionIdValid: true,
+          mode: 'MASTER',
+          activationStatus: 'active',
+          connectionStatus: 'connected',
+          connectedSessionMatches: true,
+          topologyKind: 'LAPTOP_PAIRED',
+          paired: true,
+          peerModuleName: 'ui.integration.sample-console',
+          peerReachable: true,
+          stateSyncConnectionReady: true,
+        },
+      })}`,
+      `I/ReactNativeJS (123): ${JSON.stringify({
+        category: 'terminal.remote-control.port-event',
+        event: 'port-event-queued',
+        data: {eventType: 'screen-ready', sessionId: 'session-1'},
+      })}`,
+      `I/ReactNativeJS (123): ${JSON.stringify({
+        category: 'terminal.remote-control.port-event',
+        event: 'port-event-started',
+        data: {eventType: 'screen-ready', sessionId: 'session-1', queueWaitMs: 7},
       })}`,
       `I/ReactNativeJS (123): ${JSON.stringify({
         category: 'remote-control.adapter',
@@ -68,7 +112,19 @@ describe('Android remote-control native diagnostics', () => {
 
     const output = collectAndroidRuntimeFailureDiagnostics(lines);
 
+    expect(output).toContain('remote-control.peer-join-command-rejected');
+    expect(output).toContain('remote-control.peer-endpoint-join-completed');
+    expect(output).toContain('STATUS_PROJECTION_NOT_READY');
+    expect(output).toContain('"actorResultCount":1');
     expect(output).toContain('remote-control.screen-ready-sent');
+    expect(output).toContain('remote-control.start-command-received');
+    expect(output).toContain('"activationStatus":"active"');
+    expect(output).toContain('"connectedSessionMatches":true');
+    expect(output).toContain('"peerModuleName":"ui.integration.sample-console"');
+    expect(output).toContain('"stateSyncConnectionReady":true');
+    expect(output).toContain('port-event-queued');
+    expect(output).toContain('port-event-started');
+    expect(output).toContain('"queueWaitMs":7');
     expect(output).toContain('remote-control.adapter.room-connected');
     expect(output).toContain('port-event-dispatch-threw');
     expect(output).toContain('remote-control.adapter.session-begin-failed');

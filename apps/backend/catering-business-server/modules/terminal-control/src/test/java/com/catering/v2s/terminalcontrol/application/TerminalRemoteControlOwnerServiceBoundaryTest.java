@@ -33,6 +33,7 @@ import com.catering.v2s.terminalcontrol.persistence.TerminalRemoteControlPersist
 import com.catering.v2s.terminalcontrol.persistence.TerminalRemoteControlPersistence.OnlineTarget;
 import com.catering.v2s.terminalcontrol.persistence.TerminalRemoteControlPersistence.RemoteSession;
 import com.catering.v2s.terminalcontrol.persistence.TerminalRemoteControlPersistence.StartRecord;
+import com.catering.v2s.workspace.iam.api.WorkspaceCurrentAuthorizationLookup;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
 import java.util.List;
@@ -248,9 +249,10 @@ final class TerminalRemoteControlOwnerServiceBoundaryTest {
         final AuditEventWriter audit = mock(AuditEventWriter.class);
         final TimeProvider time = mock(TimeProvider.class);
         final LiveKitRemoteControlGrantSigner grants = mock(LiveKitRemoteControlGrantSigner.class);
+        final WorkspaceCurrentAuthorizationLookup currentAuthorization = mock(WorkspaceCurrentAuthorizationLookup.class);
         final UUID requestId = UUID.randomUUID();
         final TerminalRemoteControlOwnerService owner = new TerminalRemoteControlOwnerService(
-                persistence, operations, organization, audit, time, new ObjectMapper(), grants);
+                persistence, operations, organization, audit, time, new ObjectMapper(), grants, currentAuthorization);
 
         Fixture() {
             when(organization.requireStoreProjectMemberships(WORKSPACE, GROUP, List.of(STORE)))

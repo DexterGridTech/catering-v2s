@@ -11,12 +11,16 @@ import type {Client} from '@devicefarmer/adbkit';
 import {topologyTransportConfig} from '@catering-v2s/kernel-base-contracts';
 import {serverConfigSliceName} from '@catering-v2s/kernel-base-server-config';
 import {pairByHostTopologyCommand, setTopologyHostEnabledCommand} from '@catering-v2s/kernel-base-topology';
-import {projectBasicSliceName} from '@catering-v2s/kernel-feature-project-basic';
-import {storeBasicSliceName} from '@catering-v2s/kernel-feature-store-basic';
+import {memberSliceName} from '@catering-v2s/kernel-feature-sample-member-registry';
+import {sessionSliceName} from '@catering-v2s/kernel-feature-sample-staff-session';
+import {wallpaperSliceName} from '@catering-v2s/kernel-feature-sample-wallpaper';
+import {terminalClientStatusProjectionSliceName} from '@catering-v2s/kernel-base-terminal-data-client';
+import {contentStateSliceName} from '@catering-v2s/kernel-base-ui-state';
 import {remoteControlTestIds} from '../../../apps/frontend/operations-admin/src/app/automation/remoteControlTestIds.ts';
 import {terminalUpdateTestIds} from '../../../apps/frontend/operations-admin/src/app/automation/terminalUpdateTestIds.ts';
 import {roleHomeTestIds} from '../../../apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts';
 import {inputTestIds} from '@catering-v2s/ui-base-input/test-ids';
+import {wallpaperPickerTestIds} from '@catering-v2s/ui-feature-sample-wallpaper-picker/test-ids';
 import {
   ANDROID_SCREEN_CLICK_INTERVAL_MS,
   androidAutomationBuildIdentity,
@@ -845,8 +849,31 @@ const clickRemoteTarget = async (
   // and the observed node identity come from the new layout.
   const dispatchCurrentTarget = async (
     markClickStarted: () => void,
-  ): Promise<Readonly<{readonly point: Awaited<ReturnType<typeof remoteTargetPoint>>; readonly inputResult: Awaited<ReturnType<typeof dispatchRemotePointerAndWaitForTargetPressIn>>}>> => {
+  ): Promise<
+    Readonly<{
+      readonly point: Awaited<ReturnType<typeof remoteTargetPoint>>;
+      readonly inputResult: Awaited<ReturnType<typeof dispatchRemotePointerAndWaitForTargetPressIn>>;
+    }>
+  > => {
     const point = await remoteTargetPoint(input);
+    const viewport = input.operationsPage.viewportSize();
+    if (
+      viewport === null ||
+      point.x < 0 ||
+      point.y < 0 ||
+      point.x >= viewport.width ||
+      point.y >= viewport.height
+    ) {
+      safeLog('pointer.outside-operations-viewport', {
+        screenSlot: input.screenSlot,
+        testID: input.testID,
+        browserX: point.x,
+        browserY: point.y,
+        viewportWidth: viewport?.width ?? 0,
+        viewportHeight: viewport?.height ?? 0,
+      });
+      throw new Error('TERMINAL_AUTOMATION_REMOTE_TARGET_OUTSIDE_VIEWPORT');
+    }
     safeLog('pointer.started', {
       screenSlot: input.screenSlot,
       testID: input.testID,
@@ -857,6 +884,8 @@ const clickRemoteTarget = async (
       normalizedV: point.v,
       browserX: point.x,
       browserY: point.y,
+      viewportWidth: viewport.width,
+      viewportHeight: viewport.height,
     });
     const inputResult = await dispatchRemotePointerAndWaitForTargetPressIn({
       connection: input.connection,
@@ -885,9 +914,10 @@ const clickRemoteTarget = async (
     return Object.freeze({point, inputResult});
   };
   let clickWaitMs = 0;
-  const dispatched = input.duringPress === undefined
-    ? await input.connection.runPacedClick(dispatchCurrentTarget)
-    : Object.freeze({result: await dispatchCurrentTarget(() => undefined), waitMs: 0});
+  const dispatched =
+    input.duringPress === undefined
+      ? await input.connection.runPacedClick(dispatchCurrentTarget)
+      : Object.freeze({result: await dispatchCurrentTarget(() => undefined), waitMs: 0});
   clickWaitMs = dispatched.waitMs;
   const {point, inputResult} = dispatched.result;
   safeLog('pointer.cadence.applied', {minimumIntervalMs: ANDROID_SCREEN_CLICK_INTERVAL_MS, waitMs: clickWaitMs});
@@ -956,6 +986,7 @@ const enterRemoteKeyboardText = async (
     readonly connection: AndroidAutomationConnection;
     readonly sessionId: string;
     readonly operationsPage: Page;
+    readonly screenSlot: 'main' | 'secondary';
     readonly fieldTestID: string;
     readonly value: string;
     readonly completeSteps?: number;
@@ -966,7 +997,7 @@ const enterRemoteKeyboardText = async (
     connection: input.connection,
     sessionId: input.sessionId,
     operationsPage: input.operationsPage,
-    screenSlot: 'main' as const,
+    screenSlot: input.screenSlot,
     surface: 'PRIMARY' as const,
     displayIndex: 0 as const,
   };
@@ -1273,7 +1304,13 @@ describe(`TER remote control ${sample} on Android ${topology}`, () => {
             isRecord(value) && value.paired === true && value.instanceMode === 'SLAVE' && value.peerReachable === true,
           90_000,
         );
-        const requiredProjections = Object.freeze([serverConfigSliceName, storeBasicSliceName, projectBasicSliceName]);
+        const requiredProjections = Object.freeze([
+          contentStateSliceName('MAIN'),
+          sessionSliceName,
+          sample === 'console' ? memberSliceName : wallpaperSliceName,
+          serverConfigSliceName,
+          terminalClientStatusProjectionSliceName,
+        ]);
         await waitForSelector(
           peer!.driver,
           peerSessionId,
@@ -1282,17 +1319,57 @@ describe(`TER remote control ${sample} on Android ${topology}`, () => {
           value => value === true,
           90_000,
         );
+        await dispatchCommand(
+          peer!,
+          peerSessionId,
+          'kernel.base.display-context.switch-display-role',
+          {displayRole: 'CHIEF'},
+          {workspace: 'BRANCH', instanceMode: 'SLAVE', displayMode: 'PRIMARY'},
+        );
+        const peerDisplayRole = await waitForSelector(
+          peer!.driver,
+          peerSessionId,
+          'kernel.base.display-context.selectDisplayRole',
+          [],
+          value => value === 'CHIEF',
+          15_000,
+        );
+        expect(peerDisplayRole).toBe('CHIEF');
         const peerStatus = await readConnectionStatus(peer!, peerSessionId);
         expect(peerStatus).toMatchObject({status: 'stopped'});
-        const peerActivation = await readSelector(
+        const peerActivation = await waitForSelector(
           peer!.driver,
           peerSessionId,
           'kernel.base.terminal-data-client.selectActivationState',
           [],
+          value =>
+            isRecord(value) &&
+            value.status === 'inactive' &&
+            value.terminalRef === activation.terminalRef &&
+            value.bindingGeneration === activation.bindingGeneration,
+          30_000,
         );
-        expect(peerActivation).toMatchObject({status: 'active'});
+        expect(peerActivation).toMatchObject({
+          status: 'inactive',
+          terminalRef: activation.terminalRef,
+          bindingGeneration: activation.bindingGeneration,
+        });
+        const masterPairReady = await waitForSelector(
+          master.driver,
+          masterSessionId,
+          'kernel.base.topology.selectTopologyRequiredProjectionsReady',
+          [[]],
+          value => value === true,
+          90_000,
+        );
+        expect(masterPairReady).toBe(true);
         safeLog('topology.peer.ready', {
           peerInactiveTds: isRecord(peerStatus) && peerStatus.status === 'stopped',
+          peerCredentialProjected: isRecord(peerActivation) &&
+            peerActivation.terminalRef === activation.terminalRef &&
+            peerActivation.bindingGeneration === activation.bindingGeneration,
+          peerDisplayRoleIsChief: peerDisplayRole === 'CHIEF',
+          masterStateSyncReady: masterPairReady === true,
           projectionsReady: true,
         });
       }
@@ -1306,7 +1383,10 @@ describe(`TER remote control ${sample} on Android ${topology}`, () => {
       setupStage = 'operations-admin-login';
       safeLog('setup.stage', {stage: setupStage});
       browser = await chromium.launch({headless: true});
-      operationsPage = await browser.newPage({viewport: {width: 1440, height: 900}});
+      // The mobile stream is rendered at its native tall aspect ratio. Keep the
+      // whole mapped screen inside the Playwright viewport so remote clicks
+      // cannot silently target coordinates below the browser's visible area.
+      operationsPage = await browser.newPage({viewport: {width: 1440, height: 1600}});
       operationsPage.setDefaultTimeout(30_000);
       await installBrowserRtcProbe(operationsPage, 'operations', safeLog);
       attachLiveKitSignalDiagnostics(operationsPage, 'operations', safeLog);
@@ -1352,6 +1432,7 @@ describe(`TER remote control ${sample} on Android ${topology}`, () => {
       await captureBrowserRtcDiagnostics(operationsPage, 'operations', safeLog);
       rtcFailureSnapshotCaptured = true;
     }
+    let workspaceReleasePhase = 'observe-terminal-sessions';
     try {
       if (operationsPage !== undefined) {
         for (const [role, connection, driverSessionId, currentRemoteSessionId] of [
@@ -1388,16 +1469,26 @@ describe(`TER remote control ${sample} on Android ${topology}`, () => {
             failures.push(`${role}_REMOTE_STATUS_READBACK_FAILED`);
           }
         }
-        const end = operationsPage.getByTestId(remoteControlTestIds.end);
-        if ((await end.count()) > 0 && (await end.isVisible().catch(() => false))) {
-          await end.click();
-          safeLog('admin.remote.end.clicked');
+        const workspace = operationsPage.getByTestId(remoteControlTestIds.workArea);
+        if (await workspace.isVisible().catch(() => false)) {
+          workspaceReleasePhase = 'close-remote-workspace';
           const close = operationsPage.getByTestId(remoteControlTestIds.close);
-          if ((await close.count()) > 0 && (await close.isVisible().catch(() => false))) await close.click();
-          await operationsPage.getByTestId(remoteControlTestIds.workArea).waitFor({state: 'hidden', timeout: 20_000});
+          if ((await close.count()) === 0 || !(await close.isVisible().catch(() => false))) {
+            throw new Error('TERMINAL_AUTOMATION_REMOTE_CLOSE_CONTROL_UNAVAILABLE');
+          }
+          safeLog('admin.remote.close.started');
+          await close.click();
+          safeLog('admin.remote.close.clicked');
+          workspaceReleasePhase = 'wait-remote-workspace-hidden';
+          await workspace.waitFor({state: 'hidden', timeout: 20_000});
+          safeLog('admin.remote.workspace.released');
         }
       }
-    } catch {
+    } catch (error) {
+      safeLog('admin.remote.workspace-release.failed', {
+        stage: workspaceReleasePhase,
+        failureCode: safeFailureCode(error),
+      });
       failures.push('REMOTE_WORKSPACE_RELEASE_FAILED');
     }
     for (const [role, connection, driverSessionId, remoteControlSessionId, expectedTracks] of [
@@ -1594,6 +1685,12 @@ describe(`TER remote control ${sample} on Android ${topology}`, () => {
           : [];
       expect([...readyScreenNames].sort()).toEqual([...expectedScreens].sort());
       safeLog('remote.active.verified', {terminalRef, expectedScreenCount});
+      await operationsPage.getByTestId(remoteControlTestIds.status).waitFor({state: 'hidden', timeout: 20_000});
+      safeLog('remote.controller.interactive.verified', {
+        terminalRef,
+        expectedScreenCount,
+        controllerStartingStatusHidden: true,
+      });
       for (const screen of expectedScreens as ('main' | 'secondary')[]) {
         const remoteScreen = await readSelector(
           master.driver,
@@ -1661,6 +1758,7 @@ describe(`TER remote control ${sample} on Android ${topology}`, () => {
             connection: master!,
             sessionId: masterSessionId!,
             operationsPage: operationsPage!,
+            screenSlot: 'main',
             fieldTestID: mainSampleTestIds.staffOperatorName,
             value: 'A001',
           });
@@ -1668,6 +1766,7 @@ describe(`TER remote control ${sample} on Android ${topology}`, () => {
             connection: master!,
             sessionId: masterSessionId!,
             operationsPage: operationsPage!,
+            screenSlot: 'main',
             fieldTestID: mainSampleTestIds.staffPasscode,
             value: '1111',
             waitForDismissal: true,
@@ -1692,6 +1791,18 @@ describe(`TER remote control ${sample} on Android ${topology}`, () => {
         30_000,
       );
       expect(qualification).toMatchObject({status: 'authenticated', operatorName: 'A001'});
+      if (paired) {
+        const peerQualification = await waitForSelector(
+          peer!.driver,
+          peerSessionId!,
+          'kernel.feature.sample-staff-session.selectHostStaffQualification',
+          [],
+          value => isRecord(value) && value.status === 'authenticated' && value.operatorName === 'A001',
+          15_000,
+        );
+        expect(peerQualification).toMatchObject({status: 'authenticated', operatorName: 'A001'});
+        safeLog('topology.peer.staff-qualification.projected', {status: 'authenticated'});
+      }
       const screen = await readSelector(master.driver, masterSessionId, 'kernel.base.ui-state.selectScreen', [
         'PRIMARY',
         'main',
@@ -1702,32 +1813,59 @@ describe(`TER remote control ${sample} on Android ${topology}`, () => {
       safeLog('business.remote-login.verified', {appName, terminalRef});
 
       if (sample === 'wallpaper') {
-        const beforeScroll = await readRegisteredBounds({
+        const scrollViewport = await readRegisteredBounds({
           connection: master,
           sessionId: masterSessionId,
-          testID: mainSampleTestIds.wallpaperOptionW3,
-          surface: 'PRIMARY',
-          displayIndex: 0,
-        });
-        await dragRemoteTarget({
-          connection: master,
-          sessionId: masterSessionId,
-          operationsPage,
-          screenSlot: 'main',
           testID: mainSampleTestIds.wallpaperOptionsScroll,
           surface: 'PRIMARY',
           displayIndex: 0,
         });
-        const afterScroll = await readRegisteredBounds({
+        const lastAction = await readRegisteredBounds({
           connection: master,
           sessionId: masterSessionId,
-          testID: mainSampleTestIds.wallpaperOptionW3,
+          testID: wallpaperPickerTestIds.logout,
           surface: 'PRIMARY',
           displayIndex: 0,
         });
-        const scrollDeltaPx = Math.abs(afterScroll.bounds.y - beforeScroll.bounds.y);
-        expect(scrollDeltaPx).toBeGreaterThan(1);
-        safeLog('business.remote-scroll.verified', {scrollDeltaPx: Number(scrollDeltaPx.toFixed(2))});
+        const viewportBottom = scrollViewport.bounds.y + scrollViewport.bounds.height;
+        const contentBottom = lastAction.bounds.y + lastAction.bounds.height;
+        const overflowPx = contentBottom - viewportBottom;
+        if (overflowPx > 1) {
+          const beforeScroll = await readRegisteredBounds({
+            connection: master,
+            sessionId: masterSessionId,
+            testID: mainSampleTestIds.wallpaperOptionW3,
+            surface: 'PRIMARY',
+            displayIndex: 0,
+          });
+          await dragRemoteTarget({
+            connection: master,
+            sessionId: masterSessionId,
+            operationsPage,
+            screenSlot: 'main',
+            testID: mainSampleTestIds.wallpaperOptionsScroll,
+            surface: 'PRIMARY',
+            displayIndex: 0,
+          });
+          const afterScroll = await readRegisteredBounds({
+            connection: master,
+            sessionId: masterSessionId,
+            testID: mainSampleTestIds.wallpaperOptionW3,
+            surface: 'PRIMARY',
+            displayIndex: 0,
+          });
+          const scrollDeltaPx = Math.abs(afterScroll.bounds.y - beforeScroll.bounds.y);
+          expect(scrollDeltaPx).toBeGreaterThan(1);
+          safeLog('business.remote-scroll.verified', {
+            overflowPx: Number(overflowPx.toFixed(2)),
+            scrollDeltaPx: Number(scrollDeltaPx.toFixed(2)),
+          });
+        } else {
+          safeLog('business.remote-scroll.not-applicable', {
+            reason: 'wallpaper-content-fits-scroll-viewport',
+            overflowPx: Number(overflowPx.toFixed(2)),
+          });
+        }
 
         const currentWallpaper = await readSelector(
           master.driver,
@@ -1796,15 +1934,125 @@ describe(`TER remote control ${sample} on Android ${topology}`, () => {
           30_000,
         );
         expect(confirmedWallpaper).toBe(targetWallpaper);
-        expect(
-          await readSelector(
-            master.driver,
-            masterSessionId,
+        safeLog('business.remote-wallpaper.verified', {wallpaperId: targetWallpaper});
+
+        if (paired) {
+          const peerConnection = peer;
+          const peerId = peerSessionId;
+          const peerDiagnostics = diagnostics[1];
+          if (peerConnection === undefined || peerId === null || peerDiagnostics === undefined)
+            throw new Error('TERMINAL_AUTOMATION_PAIR_WALLPAPER_SESSION_MISSING');
+
+          const peerWallpaper = await readSelector(
+            peerConnection.driver,
+            peerId,
+            'kernel.feature.sample-wallpaper.selectWallpaperId',
+            [],
+          );
+          if (peerWallpaper !== 'none' && peerWallpaper !== 'w1' && peerWallpaper !== 'w2' && peerWallpaper !== 'w3')
+            throw new Error('TERMINAL_AUTOMATION_PAIR_WALLPAPER_STATE_INVALID');
+          const peerTargetWallpaper: 'w2' | 'w3' = peerWallpaper === 'w2' ? 'w3' : 'w2';
+          const peerTargetTestID =
+            peerTargetWallpaper === 'w2'
+              ? mainSampleTestIds.branchWallpaperOptionW2
+              : mainSampleTestIds.branchWallpaperOptionW3;
+          const peerViewport = await readRegisteredBounds({
+            connection: peerConnection,
+            sessionId: peerId,
+            testID: mainSampleTestIds.branchWallpaperOptionsScroll,
+            surface: 'PRIMARY',
+            displayIndex: 0,
+          });
+          const peerOption = await readRegisteredBounds({
+            connection: peerConnection,
+            sessionId: peerId,
+            testID: peerTargetTestID,
+            surface: 'PRIMARY',
+            displayIndex: 0,
+          });
+          const peerOverflow =
+            peerOption.bounds.y + peerOption.bounds.height - (peerViewport.bounds.y + peerViewport.bounds.height);
+          if (peerOverflow > 1) {
+            await dragRemoteTarget({
+              connection: peerConnection,
+              sessionId: peerId,
+              operationsPage: operationsPage!,
+              screenSlot: 'secondary',
+              testID: mainSampleTestIds.branchWallpaperOptionsScroll,
+              surface: 'PRIMARY',
+              displayIndex: 0,
+            });
+          }
+          safeLog('pair.secondary-wallpaper.action.started', {
+            targetWallpaper: peerTargetWallpaper,
+            scrolled: peerOverflow > 1,
+          });
+          await dispatchObservedUiCommand({
+            server: peerConnection.driver,
+            sessionId: peerId,
+            workspace: 'BRANCH',
+            displayMode: 'PRIMARY',
+            commandName: wallpaperCommandNames.optionSelected,
+            onRequestIdentified: peerDiagnostics.requestStarted,
+            onRequestFinished: peerDiagnostics.requestFinished,
+            onObserverStep: step => safeLog('runtime.command.observation', {role: 'PEER', step}),
+            action: () =>
+              clickRemoteTarget({
+                connection: peerConnection,
+                sessionId: peerId,
+                operationsPage: operationsPage!,
+                screenSlot: 'secondary',
+                testID: peerTargetTestID,
+                surface: 'PRIMARY',
+                displayIndex: 0,
+              }),
+          });
+          const peerPendingWallpaper = await waitForSelector(
+            peerConnection.driver,
+            peerId,
             'kernel.feature.sample-wallpaper.selectPendingWallpaperId',
             [],
-          ),
-        ).toBeUndefined();
-        safeLog('business.remote-wallpaper.verified', {wallpaperId: targetWallpaper});
+            value => value === peerTargetWallpaper,
+            15_000,
+          );
+          expect(peerPendingWallpaper).toBe(peerTargetWallpaper);
+          await dispatchObservedUiCommand({
+            server: peerConnection.driver,
+            sessionId: peerId,
+            workspace: 'BRANCH',
+            displayMode: 'PRIMARY',
+            commandName: wallpaperCommandNames.confirmRequested,
+            onRequestIdentified: peerDiagnostics.requestStarted,
+            onRequestFinished: peerDiagnostics.requestFinished,
+            onObserverStep: step => safeLog('runtime.command.observation', {role: 'PEER', step}),
+            action: () =>
+              clickRemoteTarget({
+                connection: peerConnection,
+                sessionId: peerId,
+                operationsPage: operationsPage!,
+                screenSlot: 'secondary',
+                testID: mainSampleTestIds.branchWallpaperConfirm,
+                surface: 'PRIMARY',
+                displayIndex: 0,
+              }),
+          });
+          const peerConfirmedWallpaper = await waitForSelector(
+            peerConnection.driver,
+            peerId,
+            'kernel.feature.sample-wallpaper.selectWallpaperId',
+            [],
+            value => value === peerTargetWallpaper,
+            30_000,
+          );
+          expect(peerConfirmedWallpaper).toBe(peerTargetWallpaper);
+          expect(
+            await readSelector(master.driver, masterSessionId, 'kernel.feature.sample-wallpaper.selectWallpaperId', []),
+          ).toBe(confirmedWallpaper);
+          safeLog('business.remote-paired-wallpaper.verified', {
+            branchWallpaperId: peerTargetWallpaper,
+            hostWallpaperUnchanged: true,
+          });
+        }
       }
 
       if (sample === 'console' && topology === 'laptop-dual') {
@@ -1851,6 +2099,7 @@ describe(`TER remote control ${sample} on Android ${topology}`, () => {
           connection: master,
           sessionId: masterSessionId,
           operationsPage,
+          screenSlot: 'main',
           fieldTestID: mainSampleTestIds.memberFormName,
           value: member.name,
         });
@@ -1858,6 +2107,7 @@ describe(`TER remote control ${sample} on Android ${topology}`, () => {
           connection: master,
           sessionId: masterSessionId,
           operationsPage,
+          screenSlot: 'main',
           fieldTestID: mainSampleTestIds.memberFormPhone,
           value: member.phone,
           completeSteps: 2,
@@ -1916,7 +2166,7 @@ describe(`TER remote control ${sample} on Android ${topology}`, () => {
           commandName: 'kernel.feature.sample-member-registry.confirm-member',
           onRequestIdentified: masterDiagnostics.requestStarted,
           onRequestFinished: masterDiagnostics.requestFinished,
-          onObserverStep: step => safeLog('runtime.command.observation', {step}),
+          onObserverStep: step => safeLog('runtime.command.observation', {role: 'MASTER', step}),
           action: () =>
             clickRemoteTarget({
               connection: master!,
@@ -1960,7 +2210,276 @@ describe(`TER remote control ${sample} on Android ${topology}`, () => {
           15_000,
         );
         expect(returnedSecondaryScreen).toMatchObject({partKey: 'sample.desk.customer-welcome'});
-        safeLog('business.remote-secondary-confirmation.verified', {memberCount: 1, pendingCleared: true});
+        safeLog('business.remote-secondary-confirmation.verified', {
+          memberCount: 1,
+          pendingCleared: true,
+          endpoint: 'MASTER_SECONDARY',
+        });
+      }
+
+      if (sample === 'console' && paired) {
+        const peerConnection = peer;
+        const peerId = peerSessionId;
+        const peerDiagnostics = diagnostics[1];
+        if (peerConnection === undefined || peerId === null || peerDiagnostics === undefined)
+          throw new Error('TERMINAL_AUTOMATION_PAIR_MEMBER_SESSION_MISSING');
+        const member = terminalAutomationMemberFixture(runId);
+        const peerMembers = await readSelector(
+          peerConnection.driver,
+          peerId,
+          'kernel.feature.sample-member-registry.selectMembers',
+          [],
+        );
+        if (!Array.isArray(peerMembers)) throw new Error('TERMINAL_AUTOMATION_MEMBER_LIST_INVALID');
+        expect(peerMembers).toHaveLength(0);
+        const peerRouteTopology = await readSelector(
+          peerConnection.driver,
+          peerId,
+          'kernel.base.topology.selectTopologyState',
+          [],
+        );
+        const peerRouteActivation = await readSelector(
+          peerConnection.driver,
+          peerId,
+          'ui.base.terminal-activation.selectActivationStatusView',
+          [],
+        );
+        const peerRouteStatusProjection = await readSelector(
+          peerConnection.driver,
+          peerId,
+          'kernel.base.terminal-data-client.selectTerminalClientStatusProjection',
+          [],
+        );
+        const peerRouteStaff = await readSelector(
+          peerConnection.driver,
+          peerId,
+          'kernel.feature.sample-staff-session.selectHostStaffQualification',
+          [],
+        );
+        const peerRouteProjectionReady = await readSelector(
+          peerConnection.driver,
+          peerId,
+          'kernel.base.topology.selectTopologyRequiredProjectionsReady',
+          [[
+            contentStateSliceName('MAIN'),
+            sessionSliceName,
+            memberSliceName,
+            serverConfigSliceName,
+            terminalClientStatusProjectionSliceName,
+          ]],
+        );
+        const peerActivationValue =
+          isRecord(peerRouteActivation) && isRecord(peerRouteActivation.activation)
+            ? peerRouteActivation.activation
+            : null;
+        const peerProjectionMatches =
+          isRecord(peerRouteStatusProjection) &&
+          isRecord(peerRouteTopology) &&
+          isRecord(peerRouteTopology.peerIdentity) &&
+          peerRouteStatusProjection.sourceNodeId === peerRouteTopology.peerIdentity.nodeId;
+        safeLog('topology.peer.route-gate-snapshot', {
+          peerRuntimeNodeId:
+            isRecord(peerRouteTopology) && typeof peerRouteTopology.nodeId === 'string'
+              ? peerRouteTopology.nodeId
+              : 'unavailable',
+          pairedHostNodeId:
+            isRecord(peerRouteTopology) &&
+            isRecord(peerRouteTopology.peerIdentity) &&
+            typeof peerRouteTopology.peerIdentity.nodeId === 'string'
+              ? peerRouteTopology.peerIdentity.nodeId
+              : 'unavailable',
+          projectedStatusSourceNodeId:
+            isRecord(peerRouteStatusProjection) && typeof peerRouteStatusProjection.sourceNodeId === 'string'
+              ? peerRouteStatusProjection.sourceNodeId
+              : 'unavailable',
+          repairPending: isRecord(peerRouteTopology) && peerRouteTopology.repairPending === true,
+          peerReachable: isRecord(peerRouteTopology) && peerRouteTopology.peerReachable === true,
+          requiredProjectionsReady: peerRouteProjectionReady === true,
+          statusProjectionAvailable:
+            isRecord(peerRouteStatusProjection) && peerRouteStatusProjection.available === true,
+          statusProjectionMatchesPeer: peerProjectionMatches,
+          projectedActivationStatus:
+            isRecord(peerRouteStatusProjection) &&
+            isRecord(peerRouteStatusProjection.activation) &&
+            typeof peerRouteStatusProjection.activation.status === 'string'
+              ? peerRouteStatusProjection.activation.status
+              : 'unavailable',
+          activationViewAvailable: peerRouteActivation !== null,
+          activationStatus:
+            peerActivationValue !== null && typeof peerActivationValue.status === 'string'
+              ? peerActivationValue.status
+              : 'unavailable',
+          activationCurrentPeerValue:
+            isRecord(peerRouteActivation) && peerRouteActivation.currentPeerValue === true,
+          staffStatus: isRecord(peerRouteStaff) && typeof peerRouteStaff.status === 'string'
+            ? peerRouteStaff.status
+            : 'unavailable',
+        });
+        const branchListScreen = await waitForSelector(
+          peerConnection.driver,
+          peerId,
+          'kernel.base.ui-state.selectScreen',
+          ['PRIMARY', 'main'],
+          value => isRecord(value) && value.partKey === 'sample.desk.branch.member-list',
+          15_000,
+        );
+        expect(branchListScreen).toMatchObject({partKey: 'sample.desk.branch.member-list'});
+        await dispatchObservedUiCommand({
+          server: peerConnection.driver,
+          sessionId: peerId,
+          workspace: 'BRANCH',
+          displayMode: 'PRIMARY',
+          commandName: 'ui.feature.sample-member-desk.member-form-opened',
+          onRequestIdentified: peerDiagnostics.requestStarted,
+          onRequestFinished: peerDiagnostics.requestFinished,
+          onObserverStep: step => safeLog('runtime.command.observation', {role: 'PEER', step}),
+          action: () =>
+            clickRemoteTarget({
+              connection: peerConnection,
+              sessionId: peerId,
+              operationsPage: operationsPage!,
+              screenSlot: 'secondary',
+              testID: mainSampleTestIds.branchMemberListEmptyAction,
+              surface: 'PRIMARY',
+              displayIndex: 0,
+            }),
+        });
+        const branchFormScreen = await waitForSelector(
+          peerConnection.driver,
+          peerId,
+          'kernel.base.ui-state.selectScreen',
+          ['PRIMARY', 'main'],
+          value => isRecord(value) && value.partKey === 'sample.desk.branch.member-form',
+          15_000,
+        );
+        expect(branchFormScreen).toMatchObject({partKey: 'sample.desk.branch.member-form'});
+        await enterRemoteKeyboardText({
+          connection: peerConnection,
+          sessionId: peerId,
+          operationsPage: operationsPage!,
+          screenSlot: 'secondary',
+          fieldTestID: mainSampleTestIds.branchMemberFormName,
+          value: member.name,
+        });
+        await enterRemoteKeyboardText({
+          connection: peerConnection,
+          sessionId: peerId,
+          operationsPage: operationsPage!,
+          screenSlot: 'secondary',
+          fieldTestID: mainSampleTestIds.branchMemberFormPhone,
+          value: member.phone,
+          completeSteps: 2,
+          waitForDismissal: true,
+        });
+        await dispatchObservedUiCommand({
+          server: peerConnection.driver,
+          sessionId: peerId,
+          workspace: 'BRANCH',
+          displayMode: 'PRIMARY',
+          commandName: 'kernel.feature.sample-member-registry.submit-member',
+          onRequestIdentified: peerDiagnostics.requestStarted,
+          onRequestFinished: peerDiagnostics.requestFinished,
+          onObserverStep: step => safeLog('runtime.command.observation', {role: 'PEER', step}),
+          action: () =>
+            clickRemoteTarget({
+              connection: peerConnection,
+              sessionId: peerId,
+              operationsPage: operationsPage!,
+              screenSlot: 'secondary',
+              testID: mainSampleTestIds.branchMemberFormSubmit,
+              surface: 'PRIMARY',
+              displayIndex: 0,
+            }),
+        });
+        const branchPending = await waitForSelector(
+          peerConnection.driver,
+          peerId,
+          'kernel.feature.sample-member-registry.selectPendingMember',
+          [],
+          value => isRecord(value) && value.name === member.name && value.phone === member.phone,
+          15_000,
+        );
+        if (!isRecord(branchPending) || typeof branchPending.operationId !== 'string' || branchPending.operationId.length === 0)
+          throw new Error('TERMINAL_AUTOMATION_BRANCH_PENDING_MEMBER_INVALID');
+        const branchCustomerScreen = await waitForSelector(
+          peerConnection.driver,
+          peerId,
+          'kernel.base.ui-state.selectScreen',
+          ['PRIMARY', 'main'],
+          value => isRecord(value) && value.partKey === 'sample.desk.branch.customer-member',
+          15_000,
+        );
+        expect(branchCustomerScreen).toMatchObject({partKey: 'sample.desk.branch.customer-member'});
+        safeLog('pair.secondary-member-pending.verified', {operationIdPresent: true});
+        await dispatchObservedUiCommand({
+          server: peerConnection.driver,
+          sessionId: peerId,
+          workspace: 'BRANCH',
+          displayMode: 'PRIMARY',
+          commandName: 'kernel.feature.sample-member-registry.confirm-member',
+          onRequestIdentified: peerDiagnostics.requestStarted,
+          onRequestFinished: peerDiagnostics.requestFinished,
+          onObserverStep: step => safeLog('runtime.command.observation', {role: 'PEER', step}),
+          action: () =>
+            clickRemoteTarget({
+              connection: peerConnection,
+              sessionId: peerId,
+              operationsPage: operationsPage!,
+              screenSlot: 'secondary',
+              testID: mainSampleTestIds.branchMemberConfirm,
+              surface: 'PRIMARY',
+              displayIndex: 0,
+            }),
+        });
+        const hostMembers = await waitForSelector(
+          master.driver,
+          masterSessionId,
+          'kernel.feature.sample-member-registry.selectMembers',
+          [],
+          value => Array.isArray(value) && value.some(item => isRecord(item) && item.name === member.name),
+          15_000,
+        );
+        if (!Array.isArray(hostMembers)) throw new Error('TERMINAL_AUTOMATION_MEMBER_LIST_INVALID');
+        const hostMatches = hostMembers.filter(
+          item => isRecord(item) && item.name === member.name && item.phone === member.phone,
+        );
+        expect(hostMatches).toHaveLength(1);
+        const peerConfirmedMembers = await waitForSelector(
+          peerConnection.driver,
+          peerId,
+          'kernel.feature.sample-member-registry.selectMembers',
+          [],
+          value => Array.isArray(value) && value.some(item => isRecord(item) && item.name === member.name),
+          15_000,
+        );
+        if (!Array.isArray(peerConfirmedMembers)) throw new Error('TERMINAL_AUTOMATION_MEMBER_LIST_INVALID');
+        expect(
+          peerConfirmedMembers.filter(
+            item => isRecord(item) && item.name === member.name && item.phone === member.phone,
+          ),
+        ).toHaveLength(1);
+        expect(
+          await readSelector(
+            peerConnection.driver,
+            peerId,
+            'kernel.feature.sample-member-registry.selectPendingMember',
+            [],
+          ),
+        ).toBeNull();
+        const branchListReturned = await waitForSelector(
+          peerConnection.driver,
+          peerId,
+          'kernel.base.ui-state.selectScreen',
+          ['PRIMARY', 'main'],
+          value => isRecord(value) && value.partKey === 'sample.desk.branch.member-list',
+          15_000,
+        );
+        expect(branchListReturned).toMatchObject({partKey: 'sample.desk.branch.member-list'});
+        safeLog('business.remote-paired-member-confirmation.verified', {
+          branchPendingCleared: true,
+          hostMemberCount: 1,
+          endpoint: 'PEER_BRANCH_PRIMARY',
+        });
       }
 
       if (sample === 'console' && topology === 'laptop-single') {

@@ -273,6 +273,12 @@ export const attachAndroidDeviceIdentity = (
   if (devices === undefined) throw new Error('TERMINAL_AUTOMATION_ANDROID_MANIFEST_DEVICE_MISSING');
   const matches = devices.filter(device => device.serial === serial);
   if (matches.length !== 1) throw new Error('TERMINAL_AUTOMATION_ANDROID_MANIFEST_DEVICE_IDENTITY_INVALID');
+  if (
+    (matches[0].role === 'PAIR_MASTER_EMULATOR' || matches[0].role === 'PAIR_SLAVE_EMULATOR') &&
+    identity.kind !== 'emulator'
+  ) {
+    throw new Error('TERMINAL_AUTOMATION_ANDROID_PAIR_DEVICE_NOT_EMULATOR');
+  }
   return Object.freeze(devices.map(device => {
     if (device.serial !== serial) return device;
     const role = manifest.execution.phase === 'remote' && manifest.execution.remoteTopology === 'mobile-single'

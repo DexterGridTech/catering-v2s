@@ -14,6 +14,7 @@ import {
   terminalHeartbeatTickCommand,
   terminalRemoteOperationMutationCommand,
   terminalTransportEventCommand,
+  refreshTerminalClientStatusProjectionCommand,
   terminalDataHeartbeatCommand,
   readTerminalDataCommand,
   submitTerminalUpdateReportCommand,
@@ -24,6 +25,7 @@ import {
 import {
   completeTopologySlaveUnpairStateClearCommand,
   requestTopologySlaveUnpairStateClearCommand,
+  topologySliceName,
 } from '@catering-v2s/kernel-base-topology';
 import {
   terminalDataClientActions,
@@ -331,6 +333,67 @@ describe('terminal-data-client update report command', () => {
 });
 
 describe('terminal-data-client activation command actor', () => {
+  it('projects the topology identity rather than the Runtime-local node identity', async () => {
+    const actorRuntime = createTerminalDataClientActor({
+      transport: {
+        start: vi.fn(),
+        ready: vi.fn(),
+        invalid: vi.fn(),
+        stop: vi.fn(),
+        executeHttp: vi.fn(),
+        reportHttpAddressAvailable: vi.fn(),
+      },
+      businessServerName: 'terminal-business-api',
+      createCredentialSecret: () => 'A'.repeat(43),
+      now: () => 1_000,
+      appVersion: '1.0.0',
+      surfaceForm: 'laptop',
+    });
+    const handler = actorRuntime.actor.handlers.find(
+      candidate => candidate.commandName === refreshTerminalClientStatusProjectionCommand.commandName,
+    );
+    if (handler === undefined) throw new Error('terminal status projection handler missing');
+
+    const clientState = terminalDataClientReducer(undefined, {type: 'test/init'});
+    let projectionState = terminalClientStatusProjectionReducer(undefined, {type: 'test/init'});
+    const logger = createActivationTestLogger().logger;
+    const state = () =>
+      ({
+        [terminalDataClientStateSlice.name]: clientState,
+        [terminalClientStatusProjectionSliceName]: projectionState,
+        [topologySliceName]: {nodeId: 'topology-master-node'},
+        'kernel.base.runtime.instance-mode': {instanceMode: 'MASTER'},
+      }) as StateRoot;
+
+    expect(
+      handler.handle({
+        runtimeId: 'test-runtime',
+        localNodeId: 'runtime-local-node',
+        platformPorts: {logger},
+        command: {
+          commandName: refreshTerminalClientStatusProjectionCommand.commandName,
+          commandId: 'refresh-projection',
+          requestId: 'refresh-projection',
+          payload: {},
+        },
+        actor: {
+          actorKey: actorRuntime.actor.actorKey,
+          moduleName: actorRuntime.actor.moduleName,
+          actorName: actorRuntime.actor.actorName,
+        },
+        getState: state,
+        dispatchAction: (action: unknown) => {
+          projectionState = terminalClientStatusProjectionReducer(projectionState, action as never);
+          return action as never;
+        },
+      } as unknown as ActorExecutionContext),
+    ).toEqual({status: 'updated'});
+
+    expect(projectionState.projection.sourceNodeId).toBe('topology-master-node');
+    expect(projectionState.projection.sourceNodeId).not.toBe('runtime-local-node');
+    await actorRuntime.dispose();
+  });
+
   it('injects the active credential into generated read operations and replaces caller store identity', async () => {
     const secret = 'A'.repeat(43);
     const executeHttp = vi.fn(async (_request: unknown) => ({

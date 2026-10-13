@@ -558,7 +558,11 @@ describe('Android system UI installer controls', () => {
         return '';
       },
     });
-    const tapping = ui.clickButton({labels: ['Update'], timeoutMs: 1000, allowedPackagePrefixes: ['com.android.packageinstaller']});
+    const tapping = ui.clickButton({
+      labels: ['Update'],
+      timeoutMs: 1000,
+      allowedPackagePrefixes: ['com.android.packageinstaller'],
+    });
     expect(calls.filter(args => args.includes('exec-out'))).toHaveLength(1);
 
     bounds = '[101,202][141,262]';

@@ -80,6 +80,8 @@ public final class WorkspaceAuthenticationServiceSql {
             "AND r.group_workspace_key=s.group_workspace_key AND r.status='ENABLED' ";
     public static final String WHERE_TOKEN_HASH_STATUS_ACTIVE_008 =
             "WHERE s.token_hash=? AND s.status='ACTIVE' AND s.expires_at_epoch_millis>?";
+    public static final String WHERE_SESSION_ID_STATUS_ACTIVE_019 =
+            "WHERE s.id=? AND s.status='ACTIVE' AND s.expires_at_epoch_millis>?";
     public static final String WORKSPACE_AUTHENTICATION_SERVICE_SELECT_ROLE_ASSIGNMENT_ROLE_ID_STATUS_ACTIVE =
             "SELECT role_id FROM workspace_iam.role_assignment WHERE id=? AND status='ACTIVE'";
     public static final String UPDATE_WS_SESSION_STATUS_REVOKED_009 =

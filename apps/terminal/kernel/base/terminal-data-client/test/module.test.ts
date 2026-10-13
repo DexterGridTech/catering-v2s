@@ -13,6 +13,7 @@ import {
   terminalDataHeartbeatCommand,
 } from '../src/features/commands/terminalDataClientCommands';
 import {terminalDataClientStateSlice} from '../src/features/slices/terminalDataClient';
+import {topologySliceName} from '@catering-v2s/kernel-base-topology';
 import {
   terminalClientStatusProjectionSliceName,
   terminalClientStatusProjectionStateSlice,
@@ -175,6 +176,7 @@ describe('terminal-data-client package identity', () => {
     const projectionState = terminalClientStatusProjectionStateSlice;
     const state = {
       'kernel.base.runtime.instance-mode': {instanceMode: 'MASTER'},
+      [topologySliceName]: {nodeId: 'topology-host-node'},
       [terminalDataClientStateSlice.name]: {
         credential: {
           groupWorkspaceKey: 'workspace-1',
@@ -213,6 +215,7 @@ describe('terminal-data-client package identity', () => {
     expect(JSON.stringify(actions)).not.toContain(secret);
     expect(JSON.stringify(actions)).not.toContain('credentialSecret');
     expect(JSON.stringify(actions)).not.toContain('session-host-only');
+    expect(JSON.stringify(actions)).toContain('topology-host-node');
     expect(JSON.stringify(actions)).toContain('terminal-1');
     expect(JSON.stringify(actions)).toContain('17');
   });

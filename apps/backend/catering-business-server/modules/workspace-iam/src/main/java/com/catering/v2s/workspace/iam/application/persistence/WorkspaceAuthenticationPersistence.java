@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.PreparedStatementSetter;
 import org.springframework.stereotype.Repository;
 
 /** Typed execution boundary for workspace authentication, sessions and credentials. */
@@ -136,6 +137,24 @@ public class WorkspaceAuthenticationPersistence {
     }
 
     public ReadAuthorizationRow activeAuthorizationRow(String tokenHash, long now) {
+        return activeAuthorizationRow(
+                WorkspaceAuthenticationServiceSql.WHERE_TOKEN_HASH_STATUS_ACTIVE_008,
+                statement -> {
+                    statement.setString(1, tokenHash);
+                    statement.setLong(2, now);
+                });
+    }
+
+    public ReadAuthorizationRow activeAuthorizationRow(UUID sessionId, long now) {
+        return activeAuthorizationRow(
+                WorkspaceAuthenticationServiceSql.WHERE_SESSION_ID_STATUS_ACTIVE_019,
+                statement -> {
+                    statement.setObject(1, sessionId);
+                    statement.setLong(2, now);
+                });
+    }
+
+    private ReadAuthorizationRow activeAuthorizationRow(String predicate, PreparedStatementSetter parameters) {
         return ReadBudgetComponent.measure(
                 ReadBudgetComponent.Component.CONTEXT_WORKSPACE_IAM,
                 () -> jdbc.query(
@@ -160,11 +179,8 @@ public class WorkspaceAuthenticationPersistence {
                                 + WorkspaceAuthenticationServiceSql.WORKSPACE_AUTHENTICATION_SERVICE_WORKSPACE_UUID
                                 + WorkspaceAuthenticationServiceSql
                                         .WORKSPACE_AUTHENTICATION_SERVICE_CONDITION_GROUP_WORKSPACE_KEY_STATUS_ENABLED
-                                + WorkspaceAuthenticationServiceSql.WHERE_TOKEN_HASH_STATUS_ACTIVE_008,
-                        statement -> {
-                            statement.setString(1, tokenHash);
-                            statement.setLong(2, now);
-                        },
+                                + predicate,
+                        parameters,
                         result -> result.next() ? readAuthorization(result) : null));
     }
 

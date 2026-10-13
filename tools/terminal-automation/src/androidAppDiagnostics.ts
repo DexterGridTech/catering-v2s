@@ -93,6 +93,13 @@ type RuntimeFailureDiagnostic = Readonly<{
   readonly contextReady?: boolean;
   readonly contentReady?: boolean;
   readonly connectionStatus?: string;
+  readonly activationStatus?: string;
+  readonly peerModuleName?: string;
+  readonly sessionIdValid?: boolean;
+  readonly connectedSessionMatches?: boolean;
+  readonly peerReachable?: boolean;
+  readonly stateSyncConnectionReady?: boolean;
+  readonly queueWaitMs?: number;
   readonly snapshotStatus?: string;
   readonly sliceName?: string;
   readonly direction?: string;
@@ -383,6 +390,9 @@ const terminalOwnerEvents: Readonly<Record<string, ReadonlySet<string>>> = Objec
     'remote-control.input-gesture-cancelled',
     'remote-control.local-input-preempted',
     'remote-control.local-screens-read',
+    'remote-control.peer-endpoint-join-completed',
+    'remote-control.peer-join-command-received',
+    'remote-control.peer-join-command-rejected',
     'remote-control.report-failed',
     'remote-control.screen-invalidated',
     'remote-control.screen-ready-sent',
@@ -398,7 +408,12 @@ const terminalOwnerEvents: Readonly<Record<string, ReadonlySet<string>>> = Objec
     'remote-control.status-report-dispatch-started',
     'remote-control.status-report-dispatch-threw',
   ]),
-  'terminal.remote-control.port-event': new Set(['port-event-dispatch-failed', 'port-event-dispatch-threw']),
+  'terminal.remote-control.port-event': new Set([
+    'port-event-queued',
+    'port-event-started',
+    'port-event-dispatch-failed',
+    'port-event-dispatch-threw',
+  ]),
   'terminal.remote-control.environment': new Set(['environment-change-dispatch-failed']),
   'remote-control.adapter': new Set([
     'remote-control.adapter.data-rejected',
@@ -431,10 +446,14 @@ const ownerLogTextFields = [
   'code',
   'resultStatus',
   'dispatchStatus',
+  'actorStatus',
   'topicKey',
   'portStatus',
   'actionState',
   'taskPhase',
+  'activationStatus',
+  'connectionStatus',
+  'peerModuleName',
   'recentState',
   'reportState',
   'reasonCode',
@@ -495,6 +514,7 @@ const ownerLogNumberFields = [
   'byteLength',
   'forSeq',
   'tracksReleased',
+  'queueWaitMs',
 ] as const;
 const ownerLogBooleanFields = [
   'candidatePresent',
@@ -543,6 +563,10 @@ const ownerLogBooleanFields = [
   'peerStopped',
   'reportAccepted',
   'acknowledged',
+  'sessionIdValid',
+  'connectedSessionMatches',
+  'peerReachable',
+  'stateSyncConnectionReady',
 ] as const;
 
 /** Safe projection shared by Web console capture and Android logcat capture. Raw messages, URLs and payloads are omitted. */
@@ -1157,8 +1181,11 @@ export type AndroidRemoteControlDiagnostics = Readonly<{
   events: readonly Readonly<{event: string; fields: Readonly<Record<string, string | number>>}>[];
 }>;
 
-const remoteEventStringFields = new Set(['reason', 'result', 'action', 'streamId', 'windowIdentity', 'trackId']);
-const remoteEventNumberFields = new Set(['generation', 'width', 'height', 'fps', 'frames', 'droppedFrames']);
+const remoteEventStringFields = new Set(['reason', 'result', 'action', 'operation', 'streamId', 'windowIdentity', 'trackId']);
+const remoteEventNumberFields = new Set([
+  'generation', 'width', 'height', 'fps', 'frames', 'droppedFrames',
+  'queueWaitMs', 'mainWorkMs', 'windowDispatchMs', 'elapsedMs',
+]);
 
 /** Keep bounded native capture facts and correlation identities without raw touch payloads. */
 export const collectAndroidRemoteControlDiagnostics = (

@@ -239,7 +239,7 @@ export async function createSampleAssembly(input: SampleAssemblyInput): Promise<
           ]),
         }),
         createRemoteControlModule({
-          applicationId: 'sample-console',
+          topologyModuleName: integrationModuleName,
           port: input.platformPorts.remoteControl,
           readSignalConfiguration: state => {
             const snapshot = resolveServerNetworkSnapshot(state, serverSpaces, 'livekit');

@@ -10,6 +10,7 @@ import {selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
 import {
   completeTopologySlaveUnpairStateClearCommand,
   requestTopologySlaveUnpairStateClearCommand,
+  selectTopologyState,
 } from '@catering-v2s/kernel-base-topology';
 import type {PersistenceOperationResult, StateJsonValue, StateRoot} from '@catering-v2s/kernel-base-state';
 import {
@@ -1002,7 +1003,7 @@ export const createTerminalDataClientActor = (
       const connection = selectConnectionState(state);
       const next = Object.freeze({
         available: true,
-        sourceNodeId: context.localNodeId,
+        sourceNodeId: selectTopologyState(state).nodeId,
         activation: selectActivationState(state),
         connection: Object.freeze({
           status: connection.status,

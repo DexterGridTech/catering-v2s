@@ -11,6 +11,8 @@ import com.catering.v2s.organization.api.OrganizationTaskPathLookup;
 import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.Verification;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.Outcome;
+import com.catering.v2s.workspace.iam.api.WorkspaceCurrentAuthorizationLookup;
+import com.catering.v2s.workspace.iam.api.WorkspaceCurrentAuthorizationLookup.CurrentAuthorizationQuery;
 import com.catering.v2s.terminalcontrol.api.TerminalControlOwnerApi;
 import com.catering.v2s.terminalcontrol.api.TerminalControlOwnerApi.InvocationOutcome;
 import com.catering.v2s.terminalcontrol.api.TerminalControlOwnerApi.InvokeOnlineCommand;
@@ -55,11 +57,13 @@ public class TerminalRemoteControlOwnerService implements TerminalRemoteControlO
     private final TimeProvider time;
     private final ObjectMapper json;
     private final LiveKitRemoteControlGrantSigner grants;
+    private final WorkspaceCurrentAuthorizationLookup currentAuthorization;
 
     public TerminalRemoteControlOwnerService(TerminalRemoteControlPersistence persistence,
             TerminalControlOwnerApi operations, OrganizationTaskPathLookup organization,
             @Qualifier("terminalRemoteControlAuditEventWriter") AuditEventWriter audit,
-            TimeProvider time, ObjectMapper json, LiveKitRemoteControlGrantSigner grants) {
+            TimeProvider time, ObjectMapper json, LiveKitRemoteControlGrantSigner grants,
+            WorkspaceCurrentAuthorizationLookup currentAuthorization) {
         this.persistence = Objects.requireNonNull(persistence);
         this.operations = Objects.requireNonNull(operations);
         this.organization = Objects.requireNonNull(organization);
@@ -67,6 +71,7 @@ public class TerminalRemoteControlOwnerService implements TerminalRemoteControlO
         this.time = Objects.requireNonNull(time);
         this.json = Objects.requireNonNull(json);
         this.grants = Objects.requireNonNull(grants);
+        this.currentAuthorization = Objects.requireNonNull(currentAuthorization);
     }
 
     @Override
@@ -239,6 +244,12 @@ public class TerminalRemoteControlOwnerService implements TerminalRemoteControlO
                 throw failure(Failure.INVALID_STATE);
             if (session.description() == null) throw failure(Failure.NOT_READY);
             validateReadyScreens(session.description(), command.readyScreens(), "ACTIVE".equals(next));
+            if ("ACTIVE".equals(next) && !currentAuthorization.isCurrentlyAuthorized(new CurrentAuthorizationQuery(
+                    session.actorSessionRef(), session.workspaceUuid(), session.groupWorkspaceKey(),
+                    session.actorAccountRef(), "REQ_START_OPERATIONS_TERMINAL_REMOTE_CONTROL",
+                    "PROJECT", session.projectRef()))) {
+                throw failure(Failure.AUTHORIZATION_DENIED);
+            }
             if ("ENDED".equals(next) && !END_REASONS.contains(command.reason())) throw failure(Failure.INVALID_STATE);
             ArrayNode ready = json.createArrayNode();
             for (ReadyScreen screen : command.readyScreens()) {

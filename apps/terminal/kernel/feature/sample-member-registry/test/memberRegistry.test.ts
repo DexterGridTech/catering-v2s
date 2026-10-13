@@ -1,6 +1,11 @@
 import {describe, expect, it} from 'vitest';
 import {createRequestId} from '@catering-v2s/kernel-base-contracts';
-import type {PeerDispatchGateway, Runtime, RuntimeModule} from '@catering-v2s/kernel-base-runtime';
+import {
+  selectRequestExecutionViews,
+  type PeerDispatchGateway,
+  type Runtime,
+  type RuntimeModule,
+} from '@catering-v2s/kernel-base-runtime';
 import {
   releaseRuntimeForTest,
   releaseRuntimeForTestAsync,
@@ -26,15 +31,21 @@ import {createEventRecorderModule, createMemoryStorageForTest, createTestRuntime
 import {memberSliceName} from '../src/features/slices/slice';
 import {setRuntimeInstanceModeAction} from '../../../base/runtime/src/features/slices/runtimeInstanceMode';
 
-const peerGatewayModule = (peer: Runtime): RuntimeModule => {
+const peerGatewayModule = (
+  peer: Runtime,
+  afterDispatch?: (commandName: string) => Promise<void>,
+): RuntimeModule => {
   const gateway: PeerDispatchGateway = {
-    dispatchCommand: (command, options) =>
-      peer.dispatchCommand(command.definition, command.payload, {
+    dispatchCommand: async (command, options) => {
+      const result = await peer.dispatchCommand(command.definition, command.payload, {
         requestId: options.requestId ?? undefined,
         commandId: options.commandId,
         parentCommandId: options.parentCommandId ?? undefined,
         routeContext: options.routeContext,
-      }),
+      });
+      await afterDispatch?.(command.definition.commandName);
+      return result;
+    },
   };
   return Object.freeze({
     moduleName: 'test.sample-member-registry.peer-gateway',
@@ -267,6 +278,57 @@ describe('sample member registry owner module', () => {
     } finally {
       releaseRuntimeForTest(slave);
       releaseRuntimeForTest(master);
+    }
+  });
+
+  it('does not reconcile a branch confirmation again while its peer registration is still returning', async () => {
+    const master = createTestRuntime([createSampleMemberRegistryModule()]);
+    let slave: Runtime;
+    const syncMemberProjectionBeforePeerReply = async (commandName: string): Promise<void> => {
+      if (commandName !== registerBranchConfirmedMemberCommand.commandName) return;
+      const payload = runtimeStateSyncForTest(master).createFullSyncPayload(memberSliceName);
+      expect(payload.status).toBe('ready');
+      if (payload.status !== 'ready') return;
+      expect(runtimeStateSyncForTest(slave).applyAuthoritativeSync(memberSliceName, payload.payload)).toMatchObject({
+        status: 'applied',
+      });
+    };
+    slave = createTestRuntime([
+      createSampleMemberRegistryModule(),
+      peerGatewayModule(master, syncMemberProjectionBeforePeerReply),
+    ]);
+    try {
+      await master.start();
+      await slave.start();
+      slave.getStore().dispatch(setRuntimeInstanceModeAction('SLAVE'));
+      const operationId = createRequestId();
+      await slave.dispatchCommand(
+        submitMemberCommand,
+        {name: 'In-flight branch member', phone: '010-2222-3333'},
+        {requestId: operationId},
+      );
+
+      const confirmation = await slave.dispatchCommand(
+        confirmMemberCommand,
+        {operationId: String(operationId)},
+        {requestId: createRequestId()},
+      );
+      await new Promise<void>(resolve => setTimeout(resolve, 0));
+
+      expect(confirmation.status).toBe('completed');
+      expect(selectBranchPendingMember(slave.getState())).toBeNull();
+      expect(selectMembers(master.getState())).toHaveLength(1);
+      const confirmationRoots = selectRequestExecutionViews(slave.getState())
+        .flatMap(view => view.commands)
+        .filter(
+          command =>
+            command.commandName === confirmMemberCommand.commandName &&
+            command.parentCommandId === null,
+        );
+      expect(confirmationRoots).toHaveLength(1);
+    } finally {
+      await releaseRuntimeForTestAsync(slave);
+      await releaseRuntimeForTestAsync(master);
     }
   });
 

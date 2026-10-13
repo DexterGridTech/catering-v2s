@@ -312,14 +312,24 @@ export const tapRegisteredAndroidNode = async (
   const subscriptionId = `android-input-${randomUUID()}`;
   const interactions = new Subject<Readonly<{readonly phase: string}>>();
   const observedPhases: string[] = [];
-  let node: QueriedNode | undefined;
-  let bounds: AndroidLogicalBounds | undefined;
+  const diagnostics: {
+    bounds?: AndroidLogicalBounds;
+    tapPoint?: Readonly<{readonly x: number; readonly y: number}>;
+    observed?: Promise<void>;
+  } = {};
   let removeListener: (() => void) | undefined;
   let subscribed = false;
-  let observed: Promise<void> | null = null;
-  let tapPoint: Readonly<{readonly x: number; readonly y: number}> | null = null;
   try {
-    const resolveAndTap = async (markClickStarted: () => void): Promise<void> => {
+    const resolveAndTap = async (
+      markClickStarted: () => void,
+    ): Promise<
+      Readonly<{
+        readonly node: QueriedNode;
+        readonly bounds: AndroidLogicalBounds;
+        readonly tapPoint: Readonly<{readonly x: number; readonly y: number}>;
+        readonly observed: Promise<void>;
+      }>
+    > => {
       // Resolve the app target after its connection-scoped pacing slot becomes
       // available, so the 800ms gap cannot leave this action with stale bounds.
       const resolvedNode = await resolveRegisteredNode({
@@ -333,12 +343,11 @@ export const tapRegisteredAndroidNode = async (
           ? candidate => candidate.disabled !== true
           : undefined,
       });
-      node = resolvedNode;
       if (resolvedNode.surface !== surfaceName || resolvedNode.displayIndex !== input.displayIndex) {
         throw new Error('TERMINAL_AUTOMATION_NODE_SURFACE_MISMATCH');
       }
       const resolvedBounds = await boundsOf({server: input.server, sessionId: input.sessionId, node: resolvedNode});
-      bounds = resolvedBounds;
+      diagnostics.bounds = resolvedBounds;
       removeListener = input.server.onMessage(input.sessionId, message => {
         if (message.type !== 'event' || !record(message.body) || message.body.subscriptionId !== subscriptionId) return;
         const interaction = message.body.interaction;
@@ -370,7 +379,7 @@ export const tapRegisteredAndroidNode = async (
       ) {
         throw new Error('TERMINAL_AUTOMATION_NODE_CHANGED_BEFORE_INPUT');
       }
-      observed = firstValueFrom(
+      const observed = firstValueFrom(
         interactions.pipe(
           filter(interaction => interaction.phase === 'press-in'),
           take(1),
@@ -386,34 +395,36 @@ export const tapRegisteredAndroidNode = async (
           }
           throw error;
         });
-      tapPoint = await input.android.tapBounds(
+      diagnostics.observed = observed;
+      const tapPoint = await input.android.tapBounds(
         input.surface,
         resolvedBounds,
         input.position,
         'paced',
         markClickStarted,
       );
+      diagnostics.tapPoint = tapPoint;
+      return Object.freeze({node: resolvedNode, bounds: resolvedBounds, tapPoint, observed});
     };
-    if (input.clickPacing === 'intentional-overlap') {
-      await resolveAndTap(() => undefined);
-    } else {
-      await input.android.runPacedClick(resolveAndTap);
-    }
-    await observed;
-    if (node === undefined || bounds === undefined || tapPoint === null) {
-      throw new Error('TERMINAL_AUTOMATION_ANDROID_TAP_RESULT_UNAVAILABLE');
-    }
+    const click =
+      input.clickPacing === 'intentional-overlap'
+        ? await resolveAndTap(() => undefined)
+        : (await input.android.runPacedClick(resolveAndTap)).result;
+    await click.observed;
     return Object.freeze({
-      nodeInstanceId: node.nodeInstanceId,
-      layoutRevision: node.layoutRevision,
-      tapX: tapPoint.x,
-      tapY: tapPoint.y,
+      nodeInstanceId: click.node.nodeInstanceId,
+      layoutRevision: click.node.layoutRevision,
+      tapX: click.tapPoint.x,
+      tapY: click.tapPoint.y,
     });
   } catch (error) {
-    if (observed !== null) void observed.catch(() => undefined);
-    const boundsSummary = bounds === undefined ? 'unavailable' : `${bounds.x},${bounds.y},${bounds.width},${bounds.height}`;
+    if (diagnostics.observed !== undefined) void diagnostics.observed.catch(() => undefined);
+    const bounds = diagnostics.bounds;
+    const tapPoint = diagnostics.tapPoint;
+    const boundsSummary =
+      bounds === undefined ? 'unavailable' : `${bounds.x},${bounds.y},${bounds.width},${bounds.height}`;
     if (error instanceof Error && error.message.startsWith('TERMINAL_AUTOMATION_ANDROID_INTERACTION_TIMEOUT')) {
-      const point = tapPoint === null ? 'unavailable' : `${tapPoint.x},${tapPoint.y}`;
+      const point = tapPoint === undefined ? 'unavailable' : `${tapPoint.x},${tapPoint.y}`;
       throw new Error(`${error.message} bounds=${boundsSummary} tap=${point}`);
     }
     if (error instanceof Error && error.message.startsWith('TERMINAL_AUTOMATION_ANDROID_TAP_TARGET_TOO_SMALL')) {

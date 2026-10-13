@@ -7,6 +7,7 @@ export type RemoteControlKeepaliveFailure = 'ACK_TIMEOUT' | 'SEND_FAILED';
 
 export type RemoteControlKeepalive = Readonly<{
   acknowledge: (participantIdentity: string, probeId: string) => boolean;
+  hasAcknowledgedAllEndpoints: () => boolean;
   stop: () => void;
 }>;
 
@@ -19,6 +20,7 @@ export function startRemoteControlKeepalive(input: Readonly<{
   const now = input.now ?? Date.now;
   const endpointIdentities = [...new Set(input.endpointIdentities)];
   const lastAcknowledgedAt = new Map(endpointIdentities.map(identity => [identity, now()]));
+  const acknowledgedEndpoints = new Set<string>();
   const recentProbeIds: string[] = [];
   let active = true;
   let timer: ReturnType<typeof setInterval> | undefined;
@@ -29,6 +31,7 @@ export function startRemoteControlKeepalive(input: Readonly<{
     if (timer !== undefined) clearInterval(timer);
     timer = undefined;
     recentProbeIds.length = 0;
+    acknowledgedEndpoints.clear();
   };
   const fail = (failure: RemoteControlKeepaliveFailure, missingEndpointCount: number) => {
     if (!active) return;
@@ -71,10 +74,14 @@ export function startRemoteControlKeepalive(input: Readonly<{
       return false;
     }
     lastAcknowledgedAt.set(participantIdentity, now());
+    acknowledgedEndpoints.add(participantIdentity);
     return true;
   };
 
+  const hasAcknowledgedAllEndpoints = () =>
+    active && endpointIdentities.length > 0 && endpointIdentities.every(identity => acknowledgedEndpoints.has(identity));
+
   timer = setInterval(tick, remoteControlKeepaliveIntervalMs);
   send();
-  return Object.freeze({acknowledge, stop});
+  return Object.freeze({acknowledge, hasAcknowledgedAllEndpoints, stop});
 }

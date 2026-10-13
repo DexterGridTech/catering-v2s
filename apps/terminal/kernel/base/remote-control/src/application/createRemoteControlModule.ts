@@ -18,7 +18,8 @@ const toPayload = (event: RemoteControlPortEvent): RemoteControlPortEventPayload
 };
 
 export const createRemoteControlModule = (input: Readonly<{
-  applicationId: string;
+  /** Must match the moduleName published by this Runtime's TopologyIdentity. */
+  topologyModuleName: string;
   port: RemoteControlPort;
   readSignalConfiguration: (state: ReturnType<RuntimeModuleContext['getState']>) => Readonly<{url: string; identity: string}> | null;
 }>): RuntimeModule => {

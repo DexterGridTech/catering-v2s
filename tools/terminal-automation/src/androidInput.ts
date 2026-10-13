@@ -159,6 +159,7 @@ export const createAndroidInput = (
     } catch {
       // Diagnostics must not change an input action's outcome.
     }
+    return paced;
   };
 
   const discoverDisplays = async (): Promise<AndroidDisplayMapping> => {

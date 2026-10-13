@@ -226,7 +226,7 @@ export async function createSampleWallpaperConsoleAssembly(
           ]),
         }),
         createRemoteControlModule({
-          applicationId: 'sample-wallpaper-console',
+          topologyModuleName: integrationModuleName,
           port: input.platformPorts.remoteControl,
           readSignalConfiguration: state => {
             const snapshot = resolveServerNetworkSnapshot(state, serverSpaces, 'livekit');

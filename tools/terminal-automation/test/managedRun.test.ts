@@ -81,7 +81,51 @@ describe('createManagedRun', () => {
       {serial: 'emulator-master', role: 'PAIR_MASTER_EMULATOR'},
       {serial: 'emulator-slave', role: 'PAIR_SLAVE_EMULATOR'},
     ]);
+    const masterIdentity = Object.freeze({
+      kind: 'emulator' as const, model: 'Android VM master', product: 'sdk_phone64_arm64', device: 'emu64a', hardware: 'ranchu', qemu: '1' as const,
+    });
+    const peerIdentity = Object.freeze({
+      kind: 'emulator' as const, model: 'Android VM peer', product: 'sdk_phone64_arm64', device: 'emu64a', hardware: 'ranchu', qemu: '1' as const,
+    });
+    const withMasterIdentity = attachAndroidDeviceIdentity(manifest, 'emulator-master', masterIdentity);
+    const withBothIdentities = attachAndroidDeviceIdentity({...manifest, androidDevices: withMasterIdentity}, 'emulator-slave', peerIdentity);
+    expect(withBothIdentities).toEqual([
+      {serial: 'emulator-master', role: 'PAIR_MASTER_EMULATOR', identity: masterIdentity},
+      {serial: 'emulator-slave', role: 'PAIR_SLAVE_EMULATOR', identity: peerIdentity},
+    ]);
     expect(manifest.diagnostics).toBe('NOT_RUN');
+  });
+
+  it('fails closed when either explicitly paired device is not verified as an emulator', () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'terminal-automation-'));
+    roots.push(root);
+    const manifest = createManagedRun(
+      root,
+      Object.freeze({
+        phase: 'remote',
+        platform: 'android',
+        shape: 'dual',
+        remoteTopology: 'laptop-paired',
+        case: 'remote.main',
+        sample: 'console',
+        deviceSerial: 'emulator-master',
+        peerDeviceSerial: 'emulator-slave',
+      }),
+      'remote-pair-kind-run',
+    );
+    const physical = Object.freeze({
+      kind: 'physical' as const, model: 'phone', product: 'phone', device: 'phone', hardware: 'board', qemu: '0' as const,
+    });
+    const unknown = Object.freeze({
+      kind: 'unknown' as const, model: 'UNKNOWN', product: 'UNKNOWN', device: 'UNKNOWN', hardware: 'UNKNOWN', qemu: 'unknown' as const,
+    });
+
+    expect(() => attachAndroidDeviceIdentity(manifest, 'emulator-master', physical)).toThrow(
+      'TERMINAL_AUTOMATION_ANDROID_PAIR_DEVICE_NOT_EMULATOR',
+    );
+    expect(() => attachAndroidDeviceIdentity(manifest, 'emulator-slave', unknown)).toThrow(
+      'TERMINAL_AUTOMATION_ANDROID_PAIR_DEVICE_NOT_EMULATOR',
+    );
   });
 
   it('refuses remote manifests that lack their exact topology and device identity', () => {

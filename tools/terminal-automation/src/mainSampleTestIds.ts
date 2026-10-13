@@ -1,6 +1,8 @@
 import {sampleMemberDeskTestId} from '@catering-v2s/ui-feature-sample-member-desk/test-ids';
 import {sampleStaffAuthTestIds} from '@catering-v2s/ui-feature-sample-staff-auth/test-ids';
 import {
+  branchWallpaperOptionTestId,
+  branchWallpaperPickerTestIds,
   wallpaperPickerTestIds,
   wallpaperOptionTestId,
   wallpaperContentTestIds,
@@ -27,5 +29,14 @@ export const mainSampleTestIds = Object.freeze({
   wallpaperOptionW2: wallpaperOptionTestId('w2'),
   wallpaperOptionW3: wallpaperOptionTestId('w3'),
   wallpaperConfirm: wallpaperPickerTestIds.confirm,
+  branchWallpaperOptionsScroll: branchWallpaperPickerTestIds.optionsScroll,
+  branchWallpaperOptionW2: branchWallpaperOptionTestId('w2'),
+  branchWallpaperOptionW3: branchWallpaperOptionTestId('w3'),
+  branchWallpaperConfirm: branchWallpaperPickerTestIds.confirm,
   wallpaperAssetLoadStatus: wallpaperContentTestIds.updateAssetLoadStatus,
+  branchMemberListEmptyAction: sampleMemberDeskTestId('sample.desk.branch.member-list:empty-action'),
+  branchMemberFormName: sampleMemberDeskTestId('sample.desk.branch.member-form:name'),
+  branchMemberFormPhone: sampleMemberDeskTestId('sample.desk.branch.member-form:phone'),
+  branchMemberFormSubmit: sampleMemberDeskTestId('sample.desk.branch.member-form:submit'),
+  branchMemberConfirm: sampleMemberDeskTestId('sample.desk.branch.customer-member:confirm'),
 });

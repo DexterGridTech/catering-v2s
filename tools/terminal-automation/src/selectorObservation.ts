@@ -33,6 +33,8 @@ const jsonValue = (value: unknown): unknown => {
   return value.value;
 };
 
+type SelectorObservationOptions = Readonly<{allowUndefinedCurrent?: boolean}>;
+
 export const readSelector = async (
   server: AutomationDriverServer,
   sessionId: string,
@@ -45,10 +47,12 @@ export const subscribeSelector = async (
   sessionId: string,
   selectorName: string,
   argsTuple: readonly unknown[],
+  options: SelectorObservationOptions = {},
 ) => {
   const subscriptionId = `selector-observation-${randomUUID()}`;
   let latest:
     Readonly<{readonly state: 'JSON'; readonly value: unknown}> | Readonly<{readonly state: 'INVALID'}> | undefined;
+  let fatalNonJsonError: Error | undefined;
   let waiter:
     | Readonly<{
         matches: (value: unknown) => boolean;
@@ -58,6 +62,7 @@ export const subscribeSelector = async (
     | undefined;
   const removeListener = server.onMessage(sessionId, message => {
     if (message.type !== 'event' || !isRecord(message.body) || message.body.subscriptionId !== subscriptionId) return;
+    if (fatalNonJsonError !== undefined) return;
     try {
       const value = jsonValue(message.body);
       latest = Object.freeze({state: 'JSON', value});
@@ -67,8 +72,13 @@ export const subscribeSelector = async (
       }
     } catch (error) {
       latest = Object.freeze({state: 'INVALID'});
-      waiter?.reject(error instanceof Error ? error : new Error('TERMINAL_AUTOMATION_SELECTOR_EVENT_INVALID'));
-      waiter = undefined;
+      const isUndefined = isRecord(message.body) && message.body.valueState === 'NON_JSON' && message.body.reason === 'UNDEFINED';
+      if (!options.allowUndefinedCurrent || !isUndefined) {
+        const selectorError = error instanceof Error ? error : new Error('TERMINAL_AUTOMATION_SELECTOR_EVENT_INVALID');
+        if (options.allowUndefinedCurrent) fatalNonJsonError = selectorError;
+        waiter?.reject(selectorError);
+        waiter = undefined;
+      }
     }
   });
   let subscribed = false;
@@ -105,14 +115,20 @@ export const subscribeSelector = async (
       throw new Error('TERMINAL_AUTOMATION_SELECTOR_SUBSCRIBE_FAILED');
     }
     subscribed = true;
-    const current = await readSelector(server, sessionId, selectorName, argsTuple);
-    if (latest === undefined) latest = Object.freeze({state: 'JSON', value: current});
+    const currentResult = await responseResult(server, sessionId, 'selector.read', {selectorName, argsTuple});
+    const current = options.allowUndefinedCurrent && isRecord(currentResult) && currentResult.valueState === 'NON_JSON' && currentResult.reason === 'UNDEFINED'
+      ? undefined
+      : jsonValue(currentResult);
+    if (latest === undefined) latest = current === undefined
+      ? Object.freeze({state: 'INVALID'})
+      : Object.freeze({state: 'JSON', value: current});
     let closed = false;
     return Object.freeze({
       current,
       latest: () => latest,
       waitFor: (matches: (value: unknown) => boolean, timeoutMs = 15_000): Promise<unknown> => {
         if (closed) return Promise.reject(new Error('TERMINAL_AUTOMATION_SELECTOR_OBSERVATION_CLOSED'));
+        if (fatalNonJsonError !== undefined) return Promise.reject(fatalNonJsonError);
         if (latest?.state === 'JSON' && matches(latest.value)) return Promise.resolve(latest.value);
         return new Promise((resolve, reject) => {
           const timer = setTimeout(() => {
@@ -154,7 +170,7 @@ export const waitForSelector = async (
   matches: (value: unknown) => boolean,
   timeoutMs = 15_000,
 ): Promise<unknown> => {
-  const observation = await subscribeSelector(server, sessionId, selectorName, argsTuple);
+  const observation = await subscribeSelector(server, sessionId, selectorName, argsTuple, {allowUndefinedCurrent: true});
   try {
     return await observation.waitFor(matches, timeoutMs);
   } finally {

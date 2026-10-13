@@ -1,7 +1,7 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import type {ActorDispatchOptions, ActorExecutionContext, CommandDefinition} from '@catering-v2s/kernel-base-runtime';
-import {moduleName as terminalDataClientModuleName} from '@catering-v2s/kernel-base-terminal-data-client';
-import {moduleName as topologyModuleName, topologySliceName} from '@catering-v2s/kernel-base-topology';
+import {moduleName as terminalDataClientModuleName, terminalClientStatusProjectionSliceName} from '@catering-v2s/kernel-base-terminal-data-client';
+import {topologySliceName} from '@catering-v2s/kernel-base-topology';
 import type {RemoteControlPort} from '@catering-v2s/kernel-base-platform-ports';
 import type {StateJsonValue} from '@catering-v2s/kernel-base-state';
 import {createRemoteControlActor} from '../src/features/actors/remoteControlActor';
@@ -38,7 +38,7 @@ const makeDeferred = <TValue,>() => {
   return {promise, resolve};
 };
 
-const fixture = (portOverrides: Partial<RemoteControlPort> = {}) => {
+const fixture = (portOverrides: Partial<RemoteControlPort> = {}, registrationResponse: unknown = registerResponse) => {
   let state: Record<string, unknown> = {
     'kernel.base.runtime.instance-mode': {instanceMode: 'MASTER'},
     [`${terminalDataClientModuleName}.client`]: {
@@ -81,7 +81,7 @@ const fixture = (portOverrides: Partial<RemoteControlPort> = {}) => {
   };
   const logger = {scope: () => scopedLogger};
   const actorRuntime = createRemoteControlActor({
-    applicationId: 'sample-console',
+    topologyModuleName: 'ui.integration.sample-console',
     port,
     readSignalConfiguration: () => ({url: 'ws://127.0.0.1:7880', identity: 'development:1'}),
     now: () => 100,
@@ -105,12 +105,33 @@ const fixture = (portOverrides: Partial<RemoteControlPort> = {}) => {
       events.push({commandName: commandNameValue, payload});
       dispatchCalls.push({commandName: commandNameValue, ...(options.requestId === undefined ? {} : {requestId: String(options.requestId)})});
       if (throwingDispatchCommands.has(commandNameValue)) throw new Error('fixture dispatch failure');
-      const body = commandNameValue === registerTerminalRemoteControlCommand.commandName
-        ? {kind: 'success', body: registerResponse}
+      const result = commandNameValue === registerTerminalRemoteControlCommand.commandName
+        ? {kind: 'success', body: registrationResponse}
+        : commandNameValue === joinRemoteControlCommand.commandName
+          ? {status: 'started', sessionId}
         : {kind: 'success', body: {remainingLeaseMs: 30_000}};
+      const actorResults = commandNameValue === joinRemoteControlCommand.commandName && options.target === 'peer'
+        ? [{
+            actorKey: 'kernel.base.runtime.peer-dispatch',
+            status: 'completed',
+            startedAt: 1,
+            completedAt: 2,
+            result: {
+              actorResults: [{
+                actorKey: 'ui.integration.sample-console.kernel.base.remote-control.actor',
+                status: 'completed',
+                startedAt: 1,
+                completedAt: 2,
+                result,
+                error: null,
+              }],
+            },
+            error: null,
+          }]
+        : [{actorKey: 'test.owner', status: 'completed', startedAt: 1, completedAt: 2, result, error: null}];
       return {
         requestId: 'child-request', commandId: 'child-command', status: 'completed',
-        actorResults: [{actorKey: 'test.owner', status: 'completed', startedAt: 1, completedAt: 2, result: body, error: null}],
+        actorResults,
       } as never;
     },
     requestApplicationReset: () => undefined,
@@ -121,6 +142,94 @@ const fixture = (portOverrides: Partial<RemoteControlPort> = {}) => {
 
 describe('remote-control owner lifecycle', () => {
   beforeEach(() => vi.useRealTimers());
+
+  it('starts paired control when the accepted peer carries this integration module identity', async () => {
+    const peerEndpointId = '00000000-0000-4000-8000-000000000021';
+    const pairedResponse = {
+      ...registerResponse,
+      description: {
+        ...registerResponse.description,
+        topologyKind: 'LAPTOP_PAIRED',
+        endpoints: [
+          {endpointId, participantIdentity: 'terminal-master'},
+          {endpointId: peerEndpointId, participantIdentity: 'terminal-peer'},
+        ],
+        screens: [
+          {screen: 'main', endpointId},
+          {screen: 'secondary', endpointId: peerEndpointId},
+        ],
+      },
+      grants: [
+        {...registerResponse.grants[0], participantIdentity: 'terminal-master'},
+        {endpointId: peerEndpointId, roomName: `rc_${sessionId}`, participantIdentity: 'terminal-peer', token: 'temporary-peer-token', expiresAtEpochMillis: 1_800_000_030_000},
+      ],
+    } as const;
+    const remote = fixture({}, pairedResponse);
+    remote.setState({
+      ...remote.getState() as Record<string, unknown>,
+      [topologySliceName]: {
+        ...(remote.getState()[topologySliceName] as Record<string, unknown>),
+        surfaceForm: 'laptop',
+        peerIdentity: {
+          protocolVersion: 1,
+          moduleName: 'ui.integration.sample-console',
+          nodeId: 'node-peer',
+          displayName: 'Peer',
+          instanceMode: 'SLAVE',
+          displayRole: 'VICE',
+        },
+        peerReachable: true,
+        peerStateSyncConnectionId: 'accepted-peer-connection',
+      },
+    });
+
+    const startResult = await remote.handler(startRemoteControlCommand.commandName).handle(
+      remote.context(startRemoteControlCommand.commandName, {sessionId, bindingGeneration: 7, targetSessionId: 'target-session'}),
+    );
+    expect(startResult).toMatchObject({sessionId, status: 'STARTING'});
+    expect(remote.events).toContainEqual(expect.objectContaining({
+      commandName: registerTerminalRemoteControlCommand.commandName,
+      payload: expect.objectContaining({body: expect.objectContaining({topologyKind: 'LAPTOP_PAIRED', peerIdentity: expect.objectContaining({moduleName: 'ui.integration.sample-console'})})}),
+    }));
+    expect(remote.events).toContainEqual(expect.objectContaining({commandName: joinRemoteControlCommand.commandName}));
+    expect(remote.logs).toContainEqual(expect.objectContaining({
+      event: 'remote-control.peer-endpoint-join-completed',
+      data: expect.objectContaining({dispatchStatus: 'completed', actorStatus: 'completed', actorResultCount: 1, resultStatus: 'started'}),
+    }));
+    expect(remote.logs).toContainEqual(expect.objectContaining({event: 'remote-control.session-started', data: expect.objectContaining({paired: true})}));
+    expect(remote.logs).toContainEqual(expect.objectContaining({
+      event: 'remote-control.start-command-received',
+      data: expect.objectContaining({topologyKind: 'LAPTOP_PAIRED', paired: true, peerModuleName: 'ui.integration.sample-console', peerReachable: true, stateSyncConnectionReady: true}),
+    }));
+    await remote.actorRuntime.dispose();
+  });
+
+  it('rejects paired control when the accepted peer belongs to a different integration module', async () => {
+    const remote = fixture();
+    remote.setState({
+      ...remote.getState() as Record<string, unknown>,
+      [topologySliceName]: {
+        ...(remote.getState()[topologySliceName] as Record<string, unknown>),
+        surfaceForm: 'laptop',
+        peerIdentity: {
+          protocolVersion: 1,
+          moduleName: 'ui.integration.sample-wallpaper-console',
+          nodeId: 'node-peer',
+          displayName: 'Peer',
+          instanceMode: 'SLAVE',
+          displayRole: 'VICE',
+        },
+        peerReachable: true,
+        peerStateSyncConnectionId: 'accepted-peer-connection',
+      },
+    });
+
+    await expect(remote.handler(startRemoteControlCommand.commandName).handle(
+      remote.context(startRemoteControlCommand.commandName, {sessionId, bindingGeneration: 7, targetSessionId: 'target-session'}),
+    )).resolves.toMatchObject({status: 'rejected', reason: 'PAIR_NOT_READY'});
+    expect(remote.events).not.toContainEqual(expect.objectContaining({commandName: registerTerminalRemoteControlCommand.commandName}));
+    await remote.actorRuntime.dispose();
+  });
 
   const activateFixtureSession = (remote: ReturnType<typeof fixture>) => {
     const current = selectRemoteControlStatus(remote.getState());
@@ -318,7 +427,7 @@ describe('remote-control owner lifecycle', () => {
       [topologySliceName]: {
         ...(remote.getState()[topologySliceName] as Record<string, unknown>),
         peerIdentity: {
-          protocolVersion: 1, moduleName: 'sample-console', nodeId: 'node-peer',
+          protocolVersion: 1, moduleName: 'ui.integration.sample-console', nodeId: 'node-peer',
           displayName: 'Peer', instanceMode: 'SLAVE', displayRole: 'VICE',
         },
         peerReachable: true,
@@ -461,12 +570,17 @@ describe('remote-control owner lifecycle', () => {
         masterLocator: {
           host: '127.0.0.1', port: 7800, basePath: '/',
           identity: {
-            protocolVersion: 1, moduleName: 'sample-console', nodeId: 'node-master',
+            protocolVersion: 1, moduleName: 'ui.integration.sample-console', nodeId: 'node-master',
             displayName: 'Master', instanceMode: 'MASTER', displayRole: 'CHIEF',
           },
         },
+        peerIdentity: {
+          protocolVersion: 1, moduleName: 'ui.integration.sample-console', nodeId: 'node-master',
+          displayName: 'Master', instanceMode: 'MASTER', displayRole: 'CHIEF',
+        },
         peerReachable: true,
         peerStateSyncConnectionId: 'accepted-pair-connection',
+        peerAppliedStateSyncRevisions: {[terminalClientStatusProjectionSliceName]: 1},
       },
     });
 
@@ -478,16 +592,22 @@ describe('remote-control owner lifecycle', () => {
     expect(remote.port.begin).toHaveBeenCalledWith(expect.objectContaining({
       sessionId, roomName, participantIdentity: 'terminal-slave', token: 'temporary-peer-token',
     }));
+    expect(remote.logs).toContainEqual(expect.objectContaining({
+      event: 'remote-control.peer-join-command-received',
+      data: expect.objectContaining({sessionId, mode: 'SLAVE', topologyKind: 'LAPTOP_PAIRED'}),
+    }));
     await remote.actorRuntime.dispose();
   });
 
   it.each([
-    {label: 'inactive shared credential', activationStatus: 'inactive', masterApplicationId: 'sample-console', grantEndpointId: '00000000-0000-4000-8000-000000000021', screens: [{screen: 'main', endpointId}, {screen: 'secondary', endpointId: '00000000-0000-4000-8000-000000000021'}], reason: 'PAIR_NOT_READY'},
-    {label: 'different application master', activationStatus: 'active', masterApplicationId: 'sample-wallpaper-console', grantEndpointId: '00000000-0000-4000-8000-000000000021', screens: [{screen: 'main', endpointId}, {screen: 'secondary', endpointId: '00000000-0000-4000-8000-000000000021'}], reason: 'PAIR_NOT_READY'},
-    {label: 'grant for the master endpoint', activationStatus: 'active', masterApplicationId: 'sample-console', grantEndpointId: endpointId, screens: [{screen: 'main', endpointId}, {screen: 'secondary', endpointId: '00000000-0000-4000-8000-000000000021'}], reason: 'GRANT_INVALID'},
-    {label: 'missing secondary screen mapping', activationStatus: 'active', masterApplicationId: 'sample-console', grantEndpointId: '00000000-0000-4000-8000-000000000021', screens: [{screen: 'main', endpointId}], reason: 'GRANT_INVALID'},
-    {label: 'secondary screen mapped to the master endpoint', activationStatus: 'active', masterApplicationId: 'sample-console', grantEndpointId: '00000000-0000-4000-8000-000000000021', screens: [{screen: 'main', endpointId}, {screen: 'secondary', endpointId}], reason: 'GRANT_INVALID'},
-    {label: 'slave grant mapped to the wrong screen', activationStatus: 'active', masterApplicationId: 'sample-console', grantEndpointId: '00000000-0000-4000-8000-000000000021', screens: [{screen: 'main', endpointId}, {screen: 'main', endpointId: '00000000-0000-4000-8000-000000000021'}], reason: 'GRANT_INVALID'},
+    {label: 'inactive shared credential', activationStatus: 'inactive', masterApplicationId: 'ui.integration.sample-console', grantEndpointId: '00000000-0000-4000-8000-000000000021', screens: [{screen: 'main', endpointId}, {screen: 'secondary', endpointId: '00000000-0000-4000-8000-000000000021'}], reason: 'PAIR_NOT_READY'},
+    {label: 'different application master', activationStatus: 'active', masterApplicationId: 'ui.integration.sample-wallpaper-console', grantEndpointId: '00000000-0000-4000-8000-000000000021', screens: [{screen: 'main', endpointId}, {screen: 'secondary', endpointId: '00000000-0000-4000-8000-000000000021'}], reason: 'PAIR_NOT_READY'},
+    {label: 'status projection from a previous master', activationStatus: 'active', masterApplicationId: 'ui.integration.sample-console', projectionSourceNodeId: 'node-previous-master', grantEndpointId: '00000000-0000-4000-8000-000000000021', screens: [{screen: 'main', endpointId}, {screen: 'secondary', endpointId: '00000000-0000-4000-8000-000000000021'}], reason: 'PAIR_NOT_READY'},
+    {label: 'matching master projection not applied on the current connection', activationStatus: 'active', masterApplicationId: 'ui.integration.sample-console', projectionApplied: false, grantEndpointId: '00000000-0000-4000-8000-000000000021', screens: [{screen: 'main', endpointId}, {screen: 'secondary', endpointId: '00000000-0000-4000-8000-000000000021'}], reason: 'PAIR_NOT_READY'},
+    {label: 'grant for the master endpoint', activationStatus: 'active', masterApplicationId: 'ui.integration.sample-console', grantEndpointId: endpointId, screens: [{screen: 'main', endpointId}, {screen: 'secondary', endpointId: '00000000-0000-4000-8000-000000000021'}], reason: 'GRANT_INVALID'},
+    {label: 'missing secondary screen mapping', activationStatus: 'active', masterApplicationId: 'ui.integration.sample-console', grantEndpointId: '00000000-0000-4000-8000-000000000021', screens: [{screen: 'main', endpointId}], reason: 'GRANT_INVALID'},
+    {label: 'secondary screen mapped to the master endpoint', activationStatus: 'active', masterApplicationId: 'ui.integration.sample-console', grantEndpointId: '00000000-0000-4000-8000-000000000021', screens: [{screen: 'main', endpointId}, {screen: 'secondary', endpointId}], reason: 'GRANT_INVALID'},
+    {label: 'slave grant mapped to the wrong screen', activationStatus: 'active', masterApplicationId: 'ui.integration.sample-console', grantEndpointId: '00000000-0000-4000-8000-000000000021', screens: [{screen: 'main', endpointId}, {screen: 'main', endpointId: '00000000-0000-4000-8000-000000000021'}], reason: 'GRANT_INVALID'},
   ])('rejects a paired slave join when $label', async invalidation => {
     const remote = fixture();
     const slaveEndpointId = '00000000-0000-4000-8000-000000000021';
@@ -507,7 +627,7 @@ describe('remote-control owner lifecycle', () => {
       'kernel.base.runtime.instance-mode': {instanceMode: 'SLAVE'},
       [`${terminalDataClientModuleName}.status-projection`]: {
         projection: {
-          available: true, sourceNodeId: 'node-master',
+          available: true, sourceNodeId: 'projectionSourceNodeId' in invalidation ? invalidation.projectionSourceNodeId : 'node-master',
           activation: {status: activationStatus, terminalRef: 'terminal-ref', storeRef: 'store-ref', groupWorkspaceKey: 'workspace-key', bindingGeneration: 7},
           connection: {status: 'stopped', addressName: null, nodeId: null, lastCloseReason: null},
           lastRttMs: null, updatedAt: 1,
@@ -519,8 +639,15 @@ describe('remote-control owner lifecycle', () => {
           host: '127.0.0.1', port: 7800, basePath: '/',
           identity: {protocolVersion: 1, moduleName: masterApplicationId, nodeId: 'node-master', displayName: 'Master', instanceMode: 'MASTER', displayRole: 'CHIEF'},
         },
+        peerIdentity: {
+          protocolVersion: 1, moduleName: 'ui.integration.sample-console', nodeId: 'node-master',
+          displayName: 'Master', instanceMode: 'MASTER', displayRole: 'CHIEF',
+        },
         peerReachable: true,
         peerStateSyncConnectionId: 'accepted-pair-connection',
+        peerAppliedStateSyncRevisions: 'projectionApplied' in invalidation && !invalidation.projectionApplied
+          ? {}
+          : {[terminalClientStatusProjectionSliceName]: 1},
       },
     });
 
@@ -530,6 +657,12 @@ describe('remote-control owner lifecycle', () => {
         grant: {endpointId: invalidation.grantEndpointId, roomName: description.roomName, participantIdentity: invalidation.grantEndpointId === endpointId ? 'terminal-master' : 'terminal-slave', token: 'temporary-peer-token', expiresAtEpochMillis: 1_800_000_030_000},
       }),
     )).resolves.toMatchObject({status: 'rejected', reason: invalidation.reason});
+    if (invalidation.label === 'matching master projection not applied on the current connection') {
+      expect(remote.logs).toContainEqual(expect.objectContaining({
+        event: 'remote-control.peer-join-command-rejected',
+        data: expect.objectContaining({sessionId, reason: 'STATUS_PROJECTION_NOT_READY', resultStatus: 'rejected'}),
+      }));
+    }
     expect(remote.port.begin).not.toHaveBeenCalled();
     await remote.actorRuntime.dispose();
   });
@@ -701,6 +834,15 @@ describe('remote-control owner lifecycle', () => {
       'remote-control.pointer-input-dispatch-completed',
       'remote-control.pointer-input-result-sent',
     ]);
+    expect(remote.logs.filter((entry): entry is {event: string; data: Record<string, unknown>} =>
+      typeof entry === 'object' && entry !== null && 'event' in entry && typeof entry.event === 'string' && entry.event.startsWith('remote-control.port-event-'),
+    ).map(entry => entry.event)).toEqual(expect.arrayContaining([
+      'remote-control.port-event-queued',
+      'remote-control.port-event-started',
+    ]));
+    expect(remote.logs.filter((entry): entry is {event: string; data: Record<string, unknown>} =>
+      typeof entry === 'object' && entry !== null && 'event' in entry && entry.event === 'remote-control.port-event-started',
+    ).every(entry => typeof entry.data.queueWaitMs === 'number' && entry.data.eventType === 'data')).toBe(true);
     await remote.actorRuntime.dispose();
   });
 

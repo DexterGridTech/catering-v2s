@@ -427,7 +427,20 @@ public class WorkspaceAuthenticationService {
      */
     @Transactional(readOnly = true)
     public WorkspaceCommandAuthorizationFacts commandAuthorizationFacts(String rawToken) {
-        WorkspaceAuthenticationPersistence.ReadAuthorizationRow row = activeAuthorizationRow(rawToken);
+        return commandAuthorizationFacts(activeAuthorizationRow(rawToken));
+    }
+
+    /** Fresh authorization facts for an already-correlated owner session; no token or cached projection is reused. */
+    @Transactional(readOnly = true)
+    public WorkspaceCommandAuthorizationFacts commandAuthorizationFacts(UUID sessionId) {
+        WorkspaceAuthenticationPersistence.ReadAuthorizationRow row = persistence.activeAuthorizationRow(
+                sessionId, time.currentEpochMillis());
+        if (row == null) throw new SessionInvalidException();
+        return commandAuthorizationFacts(row);
+    }
+
+    private WorkspaceCommandAuthorizationFacts commandAuthorizationFacts(
+            WorkspaceAuthenticationPersistence.ReadAuthorizationRow row) {
         WorkspaceSessionReadback session = new WorkspaceSessionReadback(
                 row.sessionId(),
                 row.workspaceUuid(),

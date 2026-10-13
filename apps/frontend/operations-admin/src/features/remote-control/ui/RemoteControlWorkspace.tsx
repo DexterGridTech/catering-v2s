@@ -223,6 +223,7 @@ export function RemoteControlWorkspace({target, initialStart, contextCurrent, on
   const [screenReady, setScreenReady] = useState<ReadonlyMap<ScreenSlot, ScreenReadyMessage>>(new Map());
   const [visibleFrames, setVisibleFrames] = useState<ReadonlySet<string>>(new Set());
   const [phase, setPhase] = useState<'starting' | 'active' | 'ended'>('starting');
+  const [dataPathReady, setDataPathReady] = useState(false);
   const [problem, setProblem] = useState<string>();
   const [gestureNotice, setGestureNotice] = useState<string>();
   const [restarting, setRestarting] = useState(false);
@@ -234,6 +235,7 @@ export function RemoteControlWorkspace({target, initialStart, contextCurrent, on
   const incomingSequenceRef = useRef(new Map<string, number>());
   const lifecycleRef = useRef(0);
   const finishingRef = useRef(false);
+  const closeWorkspaceRequestedRef = useRef(false);
   const gestureRef = useRef<Gesture | null>(null);
   const cancelGestureRef = useRef<() => void>(() => undefined);
   const screenReadyRef = useRef(screenReady);
@@ -339,7 +341,14 @@ export function RemoteControlWorkspace({target, initialStart, contextCurrent, on
     closeWorkspace: boolean,
     sendEnd: boolean,
   ) => {
-    if (finishingRef.current) return;
+    if (finishingRef.current) {
+      if (closeWorkspace) {
+        closeWorkspaceRequestedRef.current = true;
+        log('workspace-close-queued', 'REQUESTED', {reason});
+      }
+      return;
+    }
+    if (closeWorkspace) closeWorkspaceRequestedRef.current = true;
     finishingRef.current = true;
     setEnding(true);
     setPhase('ended');
@@ -383,7 +392,9 @@ export function RemoteControlWorkspace({target, initialStart, contextCurrent, on
     setVisibleFrames(new Set());
     setEnding(false);
     finishingRef.current = false;
-    if (closeWorkspace) onClose({endFailed, cleanupFailed});
+    const shouldCloseWorkspace = closeWorkspaceRequestedRef.current;
+    closeWorkspaceRequestedRef.current = false;
+    if (shouldCloseWorkspace) onClose({endFailed, cleanupFailed});
   }, [log, onClose, reportEnd]);
 
   useEffect(() => {
@@ -395,17 +406,19 @@ export function RemoteControlWorkspace({target, initialStart, contextCurrent, on
   }, [contextCurrent, phase]);
 
   useEffect(() => {
-    if (!allScreensVisible || phase !== 'starting') return;
+    if (!allScreensVisible || !dataPathReady || phase !== 'starting') return;
     setPhase('active');
     setProblem(undefined);
-    log('session.screens_visible', 'SUCCEEDED', {
+    log('session.interactive_ready', 'SUCCEEDED', {
       topologyKind: description?.topologyKind ?? 'UNKNOWN',
       readyScreenCount: screenReady.size,
       expectedScreenCount: requiredScreens.length,
       screenCount: requiredScreens.length,
+      videoVisible: true,
+      dataPathReady,
       cleanupState: 'NOT_STARTED',
     });
-  }, [allScreensVisible, description?.topologyKind, log, phase, requiredScreens.length, screenReady.size]);
+  }, [allScreensVisible, dataPathReady, description?.topologyKind, log, phase, requiredScreens.length, screenReady.size]);
 
   useEffect(() => {
     const generation = ++lifecycleRef.current;
@@ -417,6 +430,7 @@ export function RemoteControlWorkspace({target, initialStart, contextCurrent, on
     sequenceRef.current = 0;
     gestureRef.current = null;
     finishingRef.current = false;
+    setDataPathReady(false);
     setPhase('starting');
     setProblem(undefined);
     setGestureNotice(undefined);
@@ -471,8 +485,13 @@ export function RemoteControlWorkspace({target, initialStart, contextCurrent, on
       if (message.seq <= previousSequence) return;
       incomingSequenceRef.current.set(participant.identity, message.seq);
       if (message.type === 'KEEPALIVE_ACK') {
-        const acknowledged = keepaliveRef.current?.acknowledge(participant.identity, message.body.probeId) ?? false;
+        const keepalive = keepaliveRef.current;
+        const acknowledged = keepalive?.acknowledge(participant.identity, message.body.probeId) ?? false;
         log('keepalive.ack', acknowledged ? 'ACCEPTED' : 'IGNORED', {reason: acknowledged ? 'MATCHED_RECENT_PROBE' : 'STALE_OR_UNEXPECTED_PROBE'});
+        if (acknowledged && keepalive?.hasAcknowledgedAllEndpoints()) {
+          setDataPathReady(true);
+          log('input-path.ready', 'SUCCEEDED', {endpointCount: activeDescription?.endpoints.length ?? 0});
+        }
       } else if (message.type === 'SCREEN_READY') {
         const endpoint = activeDescription?.endpoints.find(item => item.participantIdentity === participant.identity);
         const targetScreen = activeDescription?.screens.find(item => item.screen === message.body.screen);

@@ -116,15 +116,16 @@ describe('Android device kind', () => {
     expect(selectedDevice.getProperties).toHaveBeenCalledExactlyOnceWith();
   });
 
-  it('returns a stable failure when device properties cannot be read', async () => {
+  it('fails closed when the selected pair peer properties cannot be read', async () => {
     const selectedDevice = {getProperties: vi.fn().mockRejectedValue(new Error('private transport detail'))} as unknown as DeviceClient;
     const client = {
-      listDevices: vi.fn().mockResolvedValue([{id: 'physical-serial', type: 'device'}]),
+      listDevices: vi.fn().mockResolvedValue([{id: 'emulator-peer', type: 'emulator'}]),
       getDevice: vi.fn().mockReturnValue(selectedDevice),
     } as unknown as Client;
 
-    await expect(inspectAndroidDeviceIdentity(client, 'physical-serial')).rejects.toThrow(
+    await expect(inspectAndroidDeviceIdentity(client, 'emulator-peer')).rejects.toThrow(
       'TERMINAL_AUTOMATION_ANDROID_DEVICE_PROPERTIES_UNAVAILABLE',
     );
+    expect(client.getDevice).toHaveBeenCalledExactlyOnceWith('emulator-peer');
   });
 });

@@ -3,6 +3,7 @@ package com.catering.v2s.terminal.adapter.android.remote
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import android.util.Log
 import android.view.MotionEvent
 import com.catering.v2s.terminal.adapter.android.dualscreen.TerminalDualScreenWindowAccess
 import java.util.concurrent.Callable
@@ -20,15 +21,15 @@ internal class RemoteTouchDispatcher {
     actionName: String,
     xNormalized: Double,
     yNormalized: Double,
-  ): String = onMain {
+  ): String = onMain("touch-dispatch", surfaceKey) {
     dispatchOnMain(surfaceKey, windowIdentity, generation, actionName, xNormalized, yNormalized)
   }
 
-  fun cancel(surfaceKey: String, windowIdentity: String, generation: Long): String = onMain {
+  fun cancel(surfaceKey: String, windowIdentity: String, generation: Long): String = onMain("touch-cancel", surfaceKey) {
     cancelOnMain(surfaceKey, windowIdentity, generation)
   }
 
-  fun cancelForLocalInput(surfaceKey: String, windowIdentity: String, generation: Long): Boolean = onMain {
+  fun cancelForLocalInput(surfaceKey: String, windowIdentity: String, generation: Long): Boolean = onMain("local-input-cancel", surfaceKey) {
     cancelOnMain(surfaceKey, windowIdentity, generation) == "dispatched"
   }
 
@@ -69,12 +70,15 @@ internal class RemoteTouchDispatcher {
       }
     }
     val event = MotionEvent.obtain(downTime, now, action, x, y, 0)
+    val windowDispatchStartedAt = SystemClock.elapsedRealtime()
     val delivered = try {
       TerminalDualScreenWindowAccess.dispatchRemoteTouch(surfaceKey, windowIdentity, generation, event)
     } catch (_error: RuntimeException) {
       false
     } finally {
       event.recycle()
+      Log.i(LOG_TAG, "event=touch-window-dispatch surfaceKey=$surfaceKey action=$actionName " +
+        "elapsedMs=${SystemClock.elapsedRealtime() - windowDispatchStartedAt}")
     }
     synchronized(lock) {
       when (action) {
@@ -104,23 +108,42 @@ internal class RemoteTouchDispatcher {
       gesture.y,
       0,
     )
+    val windowDispatchStartedAt = SystemClock.elapsedRealtime()
     val delivered = try {
       TerminalDualScreenWindowAccess.dispatchRemoteTouch(surfaceKey, windowIdentity, generation, event)
     } catch (_error: RuntimeException) {
       false
     } finally {
       event.recycle()
+      Log.i(LOG_TAG, "event=touch-window-dispatch surfaceKey=$surfaceKey action=CANCEL " +
+        "elapsedMs=${SystemClock.elapsedRealtime() - windowDispatchStartedAt}")
       synchronized(lock) { gestures.remove(surfaceKey) }
     }
     return if (delivered) "dispatched" else "not-consumed"
   }
 
-  private fun <T> onMain(block: () -> T): T {
-    if (Looper.myLooper() == Looper.getMainLooper()) return block()
-    val task = FutureTask(Callable(block))
+  private fun <T> onMain(operation: String, surfaceKey: String, block: () -> T): T {
+    val queuedAt = SystemClock.elapsedRealtime()
+    val task = FutureTask(Callable {
+      val startedAt = SystemClock.elapsedRealtime()
+      try {
+        block()
+      } finally {
+        Log.i(LOG_TAG, "event=main-operation operation=$operation surfaceKey=$surfaceKey " +
+          "queueWaitMs=${startedAt - queuedAt} mainWorkMs=${SystemClock.elapsedRealtime() - startedAt}")
+      }
+    })
+    if (Looper.myLooper() == Looper.getMainLooper()) {
+      task.run()
+      return task.get()
+    }
     check(mainHandler.post(task)) { "main-thread-unavailable" }
     return task.get()
   }
 
   private data class Gesture(val downTime: Long, val x: Float, val y: Float)
+
+  private companion object {
+    const val LOG_TAG = "TerminalRemote"
+  }
 }

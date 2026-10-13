@@ -20,11 +20,14 @@ describe('remote-control controller keepalive', () => {
     });
 
     expect(sendProbe).toHaveBeenCalledTimes(1);
+    expect(keepalive.hasAcknowledgedAllEndpoints()).toBe(false);
     const firstProbe = sendProbe.mock.calls[0]?.[0] as string;
     expect(keepalive.acknowledge('unlisted-endpoint', firstProbe)).toBe(false);
     expect(keepalive.acknowledge('master-endpoint', '00000000-0000-4000-8000-000000000099')).toBe(false);
     expect(keepalive.acknowledge('master-endpoint', firstProbe)).toBe(true);
+    expect(keepalive.hasAcknowledgedAllEndpoints()).toBe(false);
     expect(keepalive.acknowledge('slave-endpoint', firstProbe)).toBe(true);
+    expect(keepalive.hasAcknowledgedAllEndpoints()).toBe(true);
 
     await vi.advanceTimersByTimeAsync(remoteControlKeepaliveIntervalMs);
     expect(sendProbe).toHaveBeenCalledTimes(2);
@@ -36,6 +39,7 @@ describe('remote-control controller keepalive', () => {
     expect(onFailure).not.toHaveBeenCalled();
 
     keepalive.stop();
+    expect(keepalive.hasAcknowledgedAllEndpoints()).toBe(false);
     await vi.advanceTimersByTimeAsync(remoteControlKeepaliveIntervalMs * 2);
     expect(sendProbe).toHaveBeenCalledTimes(3);
   });
@@ -53,6 +57,7 @@ describe('remote-control controller keepalive', () => {
     await vi.advanceTimersByTimeAsync(remoteControlKeepaliveIntervalMs * 2);
     const latestProbe = sendProbe.mock.calls[2]?.[0] as string;
     expect(keepalive.acknowledge('master-endpoint', latestProbe)).toBe(true);
+    expect(keepalive.hasAcknowledgedAllEndpoints()).toBe(false);
 
     await vi.advanceTimersByTimeAsync(remoteControlKeepaliveIntervalMs);
     expect(sendProbe).toHaveBeenCalledTimes(3);

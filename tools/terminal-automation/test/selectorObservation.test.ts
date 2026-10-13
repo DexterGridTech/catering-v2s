@@ -133,6 +133,80 @@ describe('Runtime selector observation', () => {
     await observation.close();
   });
 
+  it('waits through an undefined selector value until the selector becomes JSON', async () => {
+    let listener: ((message: any) => void) | undefined;
+    let subscriptionId: string | undefined;
+    let readStarted!: () => void;
+    const selectorReadStarted = new Promise<void>(resolve => { readStarted = resolve; });
+    const server = {
+      getSession: () => ({}),
+      onMessage: (_sessionId: string, next: (message: any) => void) => {
+        listener = next;
+        return () => {
+          listener = undefined;
+        };
+      },
+      request: async (_sessionId: string, type: string, body: any) => {
+        if (type === 'selector.subscribe') {
+          subscriptionId = body.subscriptionId;
+          listener?.({type: 'event', body: {subscriptionId, valueState: 'NON_JSON', reason: 'UNDEFINED'}});
+          return {type: 'response', body: {result: {accepted: true, subscriptionId}}};
+        }
+        if (type === 'selector.read') {
+          readStarted();
+          return {type: 'response', body: {result: {valueState: 'NON_JSON', reason: 'UNDEFINED'}}};
+        }
+        if (type === 'selector.unsubscribe') return {type: 'response', body: {result: {released: true}}};
+        throw new Error(`UNEXPECTED_SELECTOR_REQUEST:${type}`);
+      },
+    } as unknown as AutomationDriverServer;
+
+    const waiting = waitForSelector(server, 'peer-session', 'kernel.base.ui-state.selectScreen', ['PRIMARY', 'main'],
+      value => (value as {partKey?: string}).partKey === 'sample.desk.branch.member-list', 1_000);
+    await selectorReadStarted;
+    await new Promise<void>(resolve => setImmediate(resolve));
+    listener?.({
+      type: 'event',
+      body: {subscriptionId, valueState: 'JSON', value: {partKey: 'sample.desk.branch.member-list'}},
+    });
+    await expect(waiting).resolves.toEqual({partKey: 'sample.desk.branch.member-list'});
+  });
+
+  it('does not hide a non-undefined NON_JSON event that arrives before the initial read', async () => {
+    const requests: string[] = [];
+    let listener: ((message: any) => void) | undefined;
+    let subscriptionId: string | undefined;
+    const server = {
+      getSession: () => ({}),
+      onMessage: (_sessionId: string, next: (message: any) => void) => {
+        listener = next;
+        return () => {
+          listener = undefined;
+        };
+      },
+      request: async (_sessionId: string, type: string, body: any) => {
+        requests.push(type);
+        if (type === 'selector.subscribe') {
+          subscriptionId = body.subscriptionId;
+          listener?.({type: 'event', body: {subscriptionId, valueState: 'NON_JSON', reason: 'RESOURCE_LIMIT'}});
+          return {type: 'response', body: {result: {accepted: true, subscriptionId}}};
+        }
+        if (type === 'selector.read') {
+          listener?.({type: 'event', body: {subscriptionId, valueState: 'JSON', value: {status: 'ready'}}});
+          return {type: 'response', body: {result: {valueState: 'JSON', value: {status: 'ready'}}}};
+        }
+        if (type === 'selector.unsubscribe') return {type: 'response', body: {result: {released: true}}};
+        throw new Error(`UNEXPECTED_SELECTOR_REQUEST:${type}`);
+      },
+    } as unknown as AutomationDriverServer;
+
+    await expect(
+      waitForSelector(server, 'peer-session', 'kernel.base.ui-state.selectScreen', ['PRIMARY', 'main'],
+        value => (value as {status?: string}).status === 'ready', 1_000),
+    ).rejects.toThrow('TERMINAL_AUTOMATION_SELECTOR_VALUE_NOT_JSON');
+    expect(requests).toEqual(['selector.subscribe', 'selector.read', 'selector.unsubscribe']);
+  });
+
   it('preserves a selector wait failure when the session closes before unsubscribe', async () => {
     const requests: string[] = [];
     let sessionOpen = true;

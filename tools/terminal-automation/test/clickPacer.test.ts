@@ -1,7 +1,29 @@
 import {describe, expect, it} from 'vitest';
-import {createClickPacer} from '../src/clickPacer.js';
+import {ANDROID_SCREEN_CLICK_INTERVAL_MS, createClickPacer} from '../src/clickPacer.js';
 
 describe('createClickPacer', () => {
+  it('spaces default Android screen clicks by at least 800ms', async () => {
+    expect(ANDROID_SCREEN_CLICK_INTERVAL_MS).toBe(800);
+    const pacer = createClickPacer();
+    const starts: number[] = [];
+    const [first, second] = await Promise.all([
+      pacer.run(async markClickStarted => {
+        markClickStarted();
+        starts.push(performance.now());
+        return 'first';
+      }),
+      pacer.run(async markClickStarted => {
+        markClickStarted();
+        starts.push(performance.now());
+        return 'second';
+      }),
+    ]);
+
+    expect(first.result).toBe('first');
+    expect(second.result).toBe('second');
+    expect(starts[1]! - starts[0]!).toBeGreaterThanOrEqual(ANDROID_SCREEN_CLICK_INTERVAL_MS);
+  });
+
   it('serializes clicks and spaces their start times by the configured minimum', async () => {
     const pacer = createClickPacer(20);
     const starts: number[] = [];

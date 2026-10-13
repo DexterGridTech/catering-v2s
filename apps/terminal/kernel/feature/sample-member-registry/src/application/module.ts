@@ -47,9 +47,19 @@ export const createSampleMemberRegistryModule = (
 ): RuntimeModule => {
   let active = false;
   let reconciliationOperationId: string | null = null;
+  let branchConfirmationInFlightOperationId: string | null = null;
+  let reconcileRegisteredBranchMember = (): void => undefined;
   const actors = [
     createSubmitMemberActor(input.canMutate),
-    createConfirmMemberActor(input.canMutate),
+    createConfirmMemberActor(input.canMutate, {
+      onStarted: operationId => {
+        branchConfirmationInFlightOperationId = operationId;
+      },
+      onSettled: operationId => {
+        if (branchConfirmationInFlightOperationId === operationId) branchConfirmationInFlightOperationId = null;
+        reconcileRegisteredBranchMember();
+      },
+    }),
     createRejectMemberActor(input.canMutate),
     createRegisterBranchConfirmedMemberActor(input.canMutate),
   ] as const;
@@ -67,7 +77,7 @@ export const createSampleMemberRegistryModule = (
     stateSlices: [memberStateRegistration],
     install: (context: RuntimeModuleContext) => {
       active = true;
-      const reconcileRegisteredBranchMember = (): void => {
+      reconcileRegisteredBranchMember = (): void => {
         if (!active || selectRuntimeInstanceMode(context.getState()) !== 'SLAVE') {
           reconciliationOperationId = null;
           return;
@@ -83,6 +93,7 @@ export const createSampleMemberRegistryModule = (
           return;
         }
         if (reconciliationOperationId === pending.operationId) return;
+        if (branchConfirmationInFlightOperationId === pending.operationId) return;
         const operationId = pending.operationId;
         reconciliationOperationId = operationId;
         queueMicrotask(() => {
@@ -93,7 +104,8 @@ export const createSampleMemberRegistryModule = (
             !active ||
             selectRuntimeInstanceMode(current) !== 'SLAVE' ||
             currentPending?.operationId !== operationId ||
-            currentRegistered === undefined
+            currentRegistered === undefined ||
+            branchConfirmationInFlightOperationId === operationId
           ) {
             if (reconciliationOperationId === operationId) reconciliationOperationId = null;
             return;

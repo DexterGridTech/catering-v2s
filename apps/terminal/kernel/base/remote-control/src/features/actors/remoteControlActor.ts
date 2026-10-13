@@ -6,12 +6,13 @@ import {
   selectActivationState,
   selectConnectionState,
   selectTerminalClientStatusProjection,
+  terminalClientStatusProjectionSliceName,
   isTerminalRemoteControlRegisterResponse,
   type TerminalRemoteControlDescription,
   type TerminalRemoteControlEndpointGrant,
   type TerminalRemoteControlRegisterResponse,
 } from '@catering-v2s/kernel-base-terminal-data-client';
-import {selectTopologyFacts, selectTopologyState} from '@catering-v2s/kernel-base-topology';
+import {selectTopologyFacts, selectTopologyRequiredProjectionsReady, selectTopologyState} from '@catering-v2s/kernel-base-topology';
 import type {StateJsonValue} from '@catering-v2s/kernel-base-state';
 import type {RemoteControlPort, RemoteControlScreen} from '@catering-v2s/kernel-base-platform-ports';
 import {moduleName} from '../../moduleName';
@@ -20,7 +21,7 @@ import {remoteControlActions, remoteControlSliceName, type RemoteControlReadyScr
 import {joinRemoteControlCommand, remoteControlPortEventCommand, startRemoteControlCommand, stopRemoteControlCommand, type JoinRemoteControlPayload, type RemoteControlPortEventPayload, type StopRemoteControlPayload} from '../commands/commands';
 
 type RemoteControlActorInput = Readonly<{
-  applicationId: string;
+  topologyModuleName: string;
   port: RemoteControlPort;
   readSignalConfiguration: (state: ReturnType<ActorExecutionContext['getState']>) => Readonly<{url: string; identity: string}> | null;
   now?: () => number;
@@ -450,6 +451,7 @@ export const createRemoteControlActor = (input: RemoteControlActorInput): Readon
       const connection = selectConnectionState(root);
       const topology = selectTopologyState(root);
       const facts = selectTopologyFacts(root);
+      const kind = topologyKind(root);
       const mode = selectRuntimeInstanceMode(root);
       const rejectStart = (reason: string) => {
         log(context, 'start-rejected', {sessionId: isUuid(payload.sessionId) ? payload.sessionId : null, mode, reason});
@@ -461,7 +463,11 @@ export const createRemoteControlActor = (input: RemoteControlActorInput): Readon
         activationStatus: activation.status,
         connectionStatus: connection.status,
         connectedSessionMatches: connection.sessionId === payload.targetSessionId,
-        topologyKind: current.topologyKind,
+        topologyKind: kind,
+        paired: facts?.paired ?? false,
+        peerModuleName: topology.peerIdentity?.moduleName ?? null,
+        peerReachable: topology.peerReachable,
+        stateSyncConnectionReady: topology.peerStateSyncConnectionId !== null,
       });
       if (!isUuid(payload.sessionId) || !Number.isSafeInteger(payload.bindingGeneration) || payload.bindingGeneration < 1 || typeof payload.targetSessionId !== 'string') return rejectStart('INVALID_TARGET');
       if (mode !== 'MASTER' || activation.status !== 'active' || activation.bindingGeneration !== payload.bindingGeneration || connection.status !== 'connected' || connection.sessionId !== payload.targetSessionId) return rejectStart('TARGET_NOT_CURRENT');
@@ -474,8 +480,7 @@ export const createRemoteControlActor = (input: RemoteControlActorInput): Readon
           : rejectStart('SESSION_OCCUPIED');
       }
       if (current.sessionId !== null && current.sessionId !== payload.sessionId && current.phase !== 'ended' && current.phase !== 'idle') return rejectStart('SESSION_OCCUPIED');
-      if (facts?.paired && (topology.peerIdentity === null || topology.peerIdentity.moduleName !== input.applicationId || !topology.peerReachable || topology.peerStateSyncConnectionId === null)) return rejectStart('PAIR_NOT_READY');
-      const kind = topologyKind(root);
+      if (facts?.paired && (topology.peerIdentity === null || topology.peerIdentity.moduleName !== input.topologyModuleName || !topology.peerReachable || topology.peerStateSyncConnectionId === null)) return rejectStart('PAIR_NOT_READY');
       if (kind === null) return rejectStart('TOPOLOGY_UNAVAILABLE');
       const signalConfiguration = input.readSignalConfiguration(root);
       if (signalConfiguration === null) return rejectStart('CONFIG_UNAVAILABLE');
@@ -520,8 +525,30 @@ export const createRemoteControlActor = (input: RemoteControlActorInput): Readon
         const peerGrant = response.grants.find(item => item.endpointId !== grant.endpointId);
         if (peerGrant === undefined) return await stop(context, {sessionId: payload.sessionId, reason: 'START_FAILED'});
         const joined = await context.dispatchCommand(joinRemoteControlCommand, {description: response.description, grant: peerGrant} as JoinRemoteControlPayload, {target: 'peer'});
-        const joinResult = dispatchValue(joined);
-        if (joined.status !== 'completed' || !isRecord(joinResult) || joinResult.status !== 'started') return await stop(context, {sessionId: payload.sessionId, reason: 'START_FAILED'});
+        const peerDispatchActor = joined.actorResults[0];
+        const peerDispatchValue = dispatchValue(joined);
+        const peerActorResults = isRecord(peerDispatchValue) && Array.isArray(peerDispatchValue.actorResults)
+          ? peerDispatchValue.actorResults
+          : [];
+        const peerJoinActor = peerActorResults.length === 1 && isRecord(peerActorResults[0]) ? peerActorResults[0] : null;
+        const peerJoinResult = peerJoinActor?.result;
+        const dispatchActorStatus = typeof peerDispatchActor?.status === 'string' ? peerDispatchActor.status : 'missing';
+        const peerResultStatus = isRecord(peerJoinResult) && peerJoinResult.status === 'started'
+          ? 'started'
+          : isRecord(peerJoinResult) && peerJoinResult.status === 'rejected'
+            ? 'rejected'
+            : 'missing';
+        log(context, 'peer-endpoint-join-completed', {
+          sessionId: payload.sessionId,
+          dispatchStatus: joined.status,
+          actorStatus: dispatchActorStatus,
+          actorResultCount: peerActorResults.length,
+          resultStatus: peerResultStatus,
+        });
+        if (
+          joined.status !== 'completed' || peerDispatchActor?.status !== 'completed' || peerActorResults.length !== 1 ||
+          peerJoinActor?.status !== 'completed' || !isRecord(peerJoinResult) || peerJoinResult.status !== 'started'
+        ) return await stop(context, {sessionId: payload.sessionId, reason: 'START_FAILED'});
       }
       scheduleLease(context, payload.sessionId, startRequestAt + Math.max(0, response.remainingLeaseMs));
       startReservation = null;
@@ -534,12 +561,47 @@ export const createRemoteControlActor = (input: RemoteControlActorInput): Readon
       const topology = selectTopologyState(state);
       const master = topology.masterLocator?.identity;
       const projection = selectTerminalClientStatusProjection(state);
-      if (selectRuntimeInstanceMode(state) !== 'SLAVE' || payload.description.topologyKind !== 'LAPTOP_PAIRED' || master?.moduleName !== input.applicationId || !topology.peerReachable || topology.peerStateSyncConnectionId === null || !projection.available || projection.activation?.status !== 'active') return {status: 'rejected', reason: 'PAIR_NOT_READY'};
+      const statusProjectionReady = selectTopologyRequiredProjectionsReady(state, [terminalClientStatusProjectionSliceName]);
+      const mode = selectRuntimeInstanceMode(state);
+      log(context, 'peer-join-command-received', {
+        sessionId: payload.description.sessionId,
+        mode,
+        topologyKind: payload.description.topologyKind,
+      });
+      const readinessReason = mode !== 'SLAVE'
+        ? 'LOCAL_MODE_MISMATCH'
+        : payload.description.topologyKind !== 'LAPTOP_PAIRED'
+          ? 'TOPOLOGY_MISMATCH'
+          : master?.moduleName !== input.topologyModuleName
+            ? 'MASTER_MODULE_MISMATCH'
+            : projection.sourceNodeId !== master?.nodeId
+              ? 'PROJECTION_SOURCE_MISMATCH'
+              : !statusProjectionReady
+                ? 'STATUS_PROJECTION_NOT_READY'
+                : !projection.available
+                  ? 'PROJECTION_UNAVAILABLE'
+                  : projection.activation?.status !== 'active'
+                    ? 'MASTER_NOT_ACTIVE'
+                    : null;
+      if (readinessReason !== null) {
+        log(context, 'peer-join-command-rejected', {
+          sessionId: payload.description.sessionId,
+          reason: readinessReason,
+          resultStatus: 'rejected',
+        });
+        return {status: 'rejected', reason: 'PAIR_NOT_READY'};
+      }
       const secondaryScreens = payload.description.screens.filter(screen => screen.screen === 'secondary');
       const grantScreens = payload.description.screens.filter(screen => screen.endpointId === payload.grant.endpointId);
-      if (findEndpoint(payload.description, payload.description.masterEndpointId) === null || payload.description.masterEndpointId === payload.grant.endpointId || secondaryScreens.length !== 1 || secondaryScreens[0]?.endpointId !== payload.grant.endpointId || grantScreens.length !== 1 || grantScreens[0]?.screen !== 'secondary') return {status: 'rejected', reason: 'GRANT_INVALID'};
+      if (findEndpoint(payload.description, payload.description.masterEndpointId) === null || payload.description.masterEndpointId === payload.grant.endpointId || secondaryScreens.length !== 1 || secondaryScreens[0]?.endpointId !== payload.grant.endpointId || grantScreens.length !== 1 || grantScreens[0]?.screen !== 'secondary') {
+        log(context, 'peer-join-command-rejected', {sessionId: payload.description.sessionId, reason: 'GRANT_INVALID', resultStatus: 'rejected'});
+        return {status: 'rejected', reason: 'GRANT_INVALID'};
+      }
       const signalConfiguration = input.readSignalConfiguration(state);
-      if (signalConfiguration === null) return {status: 'rejected', reason: 'CONFIG_UNAVAILABLE'};
+      if (signalConfiguration === null) {
+        log(context, 'peer-join-command-rejected', {sessionId: payload.description.sessionId, reason: 'CONFIG_UNAVAILABLE', resultStatus: 'rejected'});
+        return {status: 'rejected', reason: 'CONFIG_UNAVAILABLE'};
+      }
       const fence = createFence(context, payload.description.sessionId, signalConfiguration);
       const result = await prepareEndpoint(context, payload.description, payload.grant, 'SLAVE', fence);
       if (!isRecord(result) || result.status !== 'started') await stop(context, {sessionId: payload.description.sessionId, reason: 'START_FAILED'});
@@ -555,75 +617,84 @@ export const createRemoteControlActor = (input: RemoteControlActorInput): Readon
         return stop(context, payload);
       });
     }),
-    onCommand(remoteControlPortEventCommand, context => serializeSessionMutation(async () => {
+    onCommand(remoteControlPortEventCommand, context => {
       const event = context.command.payload as RemoteControlPortEventPayload;
-      if (event.type === 'lease-tick' && typeof event.sessionId === 'string') {
-        const session = readRemoteState(context);
-        if (session.sessionId === event.sessionId && session.phase === 'active') {
-          const allScreensReady = session.description !== null && session.readyScreens.length === session.description.screens.length;
-          if (allScreensReady) {
-            try { await report(context, session, 'ACTIVE', null); }
-            catch { await stop(context, {sessionId: session.sessionId, reason: 'LEASE_EXPIRED'}); }
+      const queuedAt = now();
+      const eventIdentity = {
+        eventType: typeof event.type === 'string' ? event.type : 'non-string',
+        sessionId: typeof event.sessionId === 'string' ? event.sessionId : null,
+      };
+      log(context, 'port-event-queued', eventIdentity);
+      return serializeSessionMutation(async () => {
+        log(context, 'port-event-started', {...eventIdentity, queueWaitMs: Math.max(0, now() - queuedAt)});
+        if (event.type === 'lease-tick' && typeof event.sessionId === 'string') {
+          const session = readRemoteState(context);
+          if (session.sessionId === event.sessionId && session.phase === 'active') {
+            const allScreensReady = session.description !== null && session.readyScreens.length === session.description.screens.length;
+            if (allScreensReady) {
+              try { await report(context, session, 'ACTIVE', null); }
+              catch { await stop(context, {sessionId: session.sessionId, reason: 'LEASE_EXPIRED'}); }
+            }
           }
+          return {status: 'processed'};
         }
-        return {status: 'processed'};
-      }
-      if (event.type === 'watchdog-tick' && typeof event.sessionId === 'string') {
+        if (event.type === 'watchdog-tick' && typeof event.sessionId === 'string') {
+          const session = readRemoteState(context);
+          if (session.sessionId === event.sessionId && session.phase !== 'idle' && session.phase !== 'ended') {
+            if (now() - lastKeepaliveAt >= 15_000) await stop(context, {sessionId: event.sessionId, reason: 'CONTROLLER_DISCONNECTED'});
+            else scheduleWatchdog(context, event.sessionId);
+          }
+          return {status: 'processed'};
+        }
+        if (event.type === 'state-changed') {
+          if (activeFence !== null && activeFence.sessionId === readRemoteState(context).sessionId) {
+            const reason = fenceReason(context, activeFence);
+            if (reason !== null) await stop(context, {sessionId: activeFence.sessionId, reason});
+          }
+          return {status: 'processed'};
+        }
         const session = readRemoteState(context);
-        if (session.sessionId === event.sessionId && session.phase !== 'idle' && session.phase !== 'ended') {
-          if (now() - lastKeepaliveAt >= 15_000) await stop(context, {sessionId: event.sessionId, reason: 'CONTROLLER_DISCONNECTED'});
-          else scheduleWatchdog(context, event.sessionId);
+        if (session.sessionId === null || event.sessionId !== session.sessionId) return {status: 'ignored'};
+        if (event.type === 'disconnected') {
+          const participantIdentity = typeof event.participantIdentity === 'string' ? event.participantIdentity : null;
+          const reason = participantIdentity === session.description?.controllerIdentity
+            ? 'CONTROLLER_DISCONNECTED'
+            : participantIdentity !== null && session.description?.endpoints.some(item => item.participantIdentity === participantIdentity)
+              ? 'SCREEN_DISCONNECTED'
+              : 'TDP_DISCONNECTED';
+          return stop(context, {sessionId: session.sessionId, reason});
         }
-        return {status: 'processed'};
-      }
-      if (event.type === 'state-changed') {
-        if (activeFence !== null && activeFence.sessionId === readRemoteState(context).sessionId) {
-          const reason = fenceReason(context, activeFence);
-          if (reason !== null) await stop(context, {sessionId: activeFence.sessionId, reason});
+        if (event.type === 'capture-failed') return stop(context, {sessionId: session.sessionId, reason: 'CAPTURE_FAILED'});
+        if (event.type === 'cleanup-failed') {
+          log(context, 'cleanup-failed', {sessionId: session.sessionId, resource: String(event.resource ?? 'unknown')});
+          return {status: 'cleanup-failed'};
         }
-        return {status: 'processed'};
-      }
-      const session = readRemoteState(context);
-      if (session.sessionId === null || event.sessionId !== session.sessionId) return {status: 'ignored'};
-      if (event.type === 'disconnected') {
-        const participantIdentity = typeof event.participantIdentity === 'string' ? event.participantIdentity : null;
-        const reason = participantIdentity === session.description?.controllerIdentity
-          ? 'CONTROLLER_DISCONNECTED'
-          : participantIdentity !== null && session.description?.endpoints.some(item => item.participantIdentity === participantIdentity)
-            ? 'SCREEN_DISCONNECTED'
-            : 'TDP_DISCONNECTED';
-        return stop(context, {sessionId: session.sessionId, reason});
-      }
-      if (event.type === 'capture-failed') return stop(context, {sessionId: session.sessionId, reason: 'CAPTURE_FAILED'});
-      if (event.type === 'cleanup-failed') {
-        log(context, 'cleanup-failed', {sessionId: session.sessionId, resource: String(event.resource ?? 'unknown')});
-        return {status: 'cleanup-failed'};
-      }
-      if (event.type === 'screen-ready' && typeof event.screen === 'string' && typeof event.streamId === 'string' && typeof event.trackSid === 'string' && typeof event.widthPx === 'number' && typeof event.heightPx === 'number' && session.description !== null && session.localEndpointId !== null) {
-        const screen = event.screen as RemoteControlScreen;
-        const localReady: RemoteControlReadyScreen = Object.freeze({endpointId: session.localEndpointId, screen, streamId: event.streamId, trackSid: event.trackSid, widthPx: event.widthPx, heightPx: event.heightPx});
-        const next = Object.freeze({...session, readyScreens: Object.freeze([...session.readyScreens.filter(item => item.endpointId !== localReady.endpointId || item.screen !== screen), localReady])});
-        replace(context, next);
-        await sendScreenReady(context, next, localReady);
-        await maybeActivate(context, next);
-        return {status: 'ready'};
-      }
-      if (event.type === 'data' && Array.isArray(event.payload) && typeof event.senderIdentity === 'string') return processData(context, session, event.senderIdentity, event.payload.filter((byte): byte is number => typeof byte === 'number'));
-      if (event.type === 'geometry-changed' && typeof event.screen === 'string') {
-        const screen = event.screen as RemoteControlScreen;
-        await cancelGesture(context, session, screen, 'STALE_STREAM');
-        replace(context, {...session, readyScreens: Object.freeze(session.readyScreens.filter(item => item.endpointId !== session.localEndpointId || item.screen !== screen))});
-        log(context, 'screen-invalidated', {sessionId: session.sessionId, screen, generation: typeof event.generation === 'number' ? event.generation : -1});
-        return {status: 'screen-invalidated'};
-      }
-      if (event.type === 'local-input-conflict' && typeof event.screen === 'string') {
-        const screen = event.screen as RemoteControlScreen;
-        await cancelGesture(context, session, screen, 'INPUT_CONFLICT');
-        log(context, 'local-input-preempted', {sessionId: session.sessionId, screen});
-        return {status: 'local-input-preempted'};
-      }
-      return {status: 'ignored'};
-    })),
+        if (event.type === 'screen-ready' && typeof event.screen === 'string' && typeof event.streamId === 'string' && typeof event.trackSid === 'string' && typeof event.widthPx === 'number' && typeof event.heightPx === 'number' && session.description !== null && session.localEndpointId !== null) {
+          const screen = event.screen as RemoteControlScreen;
+          const localReady: RemoteControlReadyScreen = Object.freeze({endpointId: session.localEndpointId, screen, streamId: event.streamId, trackSid: event.trackSid, widthPx: event.widthPx, heightPx: event.heightPx});
+          const next = Object.freeze({...session, readyScreens: Object.freeze([...session.readyScreens.filter(item => item.endpointId !== localReady.endpointId || item.screen !== screen), localReady])});
+          replace(context, next);
+          await sendScreenReady(context, next, localReady);
+          await maybeActivate(context, next);
+          return {status: 'ready'};
+        }
+        if (event.type === 'data' && Array.isArray(event.payload) && typeof event.senderIdentity === 'string') return processData(context, session, event.senderIdentity, event.payload.filter((byte): byte is number => typeof byte === 'number'));
+        if (event.type === 'geometry-changed' && typeof event.screen === 'string') {
+          const screen = event.screen as RemoteControlScreen;
+          await cancelGesture(context, session, screen, 'STALE_STREAM');
+          replace(context, {...session, readyScreens: Object.freeze(session.readyScreens.filter(item => item.endpointId !== session.localEndpointId || item.screen !== screen))});
+          log(context, 'screen-invalidated', {sessionId: session.sessionId, screen, generation: typeof event.generation === 'number' ? event.generation : -1});
+          return {status: 'screen-invalidated'};
+        }
+        if (event.type === 'local-input-conflict' && typeof event.screen === 'string') {
+          const screen = event.screen as RemoteControlScreen;
+          await cancelGesture(context, session, screen, 'INPUT_CONFLICT');
+          log(context, 'local-input-preempted', {sessionId: session.sessionId, screen});
+          return {status: 'local-input-preempted'};
+        }
+        return {status: 'ignored'};
+      });
+    }),
   ]);
 
   const maybeActivate = async (context: ActorExecutionContext, session: RemoteControlState) => {

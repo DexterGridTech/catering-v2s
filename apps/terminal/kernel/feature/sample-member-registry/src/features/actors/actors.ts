@@ -21,6 +21,10 @@ import {selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
 import type {StateRoot} from '@catering-v2s/kernel-base-state';
 
 export type MemberMutationGuard = (state: StateRoot) => boolean;
+export type BranchConfirmationLifecycle = Readonly<{
+  onStarted: (operationId: string) => void;
+  onSettled: (operationId: string) => void;
+}>;
 const requireEligible = (guard: MemberMutationGuard | undefined, context: ActorExecutionContext): void => {
   if (guard !== undefined && !guard(context.getState())) throw new Error('MEMBER_MUTATION_REQUIRES_ACTIVE_SESSION');
 };
@@ -59,7 +63,10 @@ export const createSubmitMemberActor = (guard?: MemberMutationGuard): ActorDefin
     }),
   ]);
 
-export const createConfirmMemberActor = (guard?: MemberMutationGuard): ActorDefinition =>
+export const createConfirmMemberActor = (
+  guard?: MemberMutationGuard,
+  branchConfirmation?: BranchConfirmationLifecycle,
+): ActorDefinition =>
   defineActor(moduleName, 'confirm', [
     onCommand(confirmMemberCommand, async context => {
       requireEligible(guard, context);
@@ -70,43 +77,52 @@ export const createConfirmMemberActor = (guard?: MemberMutationGuard): ActorDefi
         ? selectHostPendingMember(context.getState())
         : selectBranchPendingMember(context.getState());
       if (pending === null || pending.operationId !== operationId) return null;
-      if (!isMaster) {
-        const registered = selectMembers(context.getState()).find(member => member.operationId === operationId);
-        if (registered !== undefined) {
+      if (!isMaster) branchConfirmation?.onStarted(operationId);
+      try {
+        if (!isMaster) {
+          const registered = selectMembers(context.getState()).find(member => member.operationId === operationId);
+          if (registered !== undefined) {
+            context.dispatchAction(memberActions.withdrawBranchPending(operationId));
+            await context.dispatchCommand(memberConfirmedCommand, {memberId: registered.memberId});
+            return null;
+          }
+        }
+        const requestedAge = context.command.payload.age;
+        const age = typeof requestedAge === 'number' && Number.isFinite(requestedAge) ? requestedAge : undefined;
+        const member = Object.freeze({
+          memberId: operationId,
+          operationId,
+          name: pending.name,
+          phone: pending.phone,
+          ...(age === undefined ? {} : {age}),
+          registeredAt: nowTimestampMs(),
+        });
+        if (isMaster) {
+          context.dispatchAction(memberActions.confirmHostPending(member));
+        } else {
+          const result = await context.dispatchCommand(
+            registerBranchConfirmedMemberCommand,
+            {
+              operationId,
+              name: pending.name,
+              phone: pending.phone,
+              ...(age === undefined ? {} : {age}),
+            },
+            {target: 'peer'},
+          );
+          if (result.status !== 'completed') throw new Error('Host member registration did not complete');
+          if (selectBranchPendingMember(context.getState())?.operationId !== operationId) return null;
+          const registered = selectMembers(context.getState()).find(member => member.operationId === operationId);
+          if (registered === undefined) return null;
           context.dispatchAction(memberActions.withdrawBranchPending(operationId));
           await context.dispatchCommand(memberConfirmedCommand, {memberId: registered.memberId});
           return null;
         }
+        await context.dispatchCommand(memberConfirmedCommand, {memberId: member.memberId});
+        return null;
+      } finally {
+        if (!isMaster) branchConfirmation?.onSettled(operationId);
       }
-      const requestedAge = context.command.payload.age;
-      const age = typeof requestedAge === 'number' && Number.isFinite(requestedAge) ? requestedAge : undefined;
-      const member = Object.freeze({
-        memberId: operationId,
-        operationId,
-        name: pending.name,
-        phone: pending.phone,
-        ...(age === undefined ? {} : {age}),
-        registeredAt: nowTimestampMs(),
-      });
-      if (isMaster) {
-        context.dispatchAction(memberActions.confirmHostPending(member));
-      } else {
-        const result = await context.dispatchCommand(
-          registerBranchConfirmedMemberCommand,
-          {
-            operationId,
-            name: pending.name,
-            phone: pending.phone,
-            ...(age === undefined ? {} : {age}),
-          },
-          {target: 'peer'},
-        );
-        if (result.status !== 'completed') throw new Error('Host member registration did not complete');
-        if (selectBranchPendingMember(context.getState())?.operationId !== operationId) return null;
-        context.dispatchAction(memberActions.withdrawBranchPending(operationId));
-      }
-      await context.dispatchCommand(memberConfirmedCommand, {memberId: member.memberId});
-      return null;
     }),
   ]);
 
