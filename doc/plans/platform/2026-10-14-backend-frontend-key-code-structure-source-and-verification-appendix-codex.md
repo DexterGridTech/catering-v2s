@@ -2,6 +2,8 @@
 
 日期：2026-10-14。本文件补齐详设中的精确住址与执行输入。全部动作计划态/NOT_RUN；没有冻结全仓计数、建立规范或授权实施。来源为当前源码、正式需求、适用规范及主agent汇总的两名只读explorer研究；explorer未写文件。行号仅用于观察导航，编辑用具名符号。
 
+当前源码自审补充见详设§0.2及对应自审记录。本附件新增的三个扩展列表消费者仍是现能力，仅迁公开引用；现extensionList.tsx/extensionList.test.ts接缝和内部orderedExtensionFields保留。原十一状态/gate/channel引用不被当作全部公开消费者，所有变化仍沿原owner与路线A完成，无新增动态执行面。
+
 ## 1 · 路径、责任与文件处置
 
 本附件及详设缩写：CBS=`apps/backend/catering-business-server`；CAT=`CBS/modules/catalog/src/main/java/com/catering/v2s/catalog/application`；CAT test=`CBS/modules/catalog/src/test/java/com/catering/v2s/catalog/application`；ASSET=`CBS/modules/asset/src/main/java/com/catering/v2s/platform/asset/application`，ASSET test对应src/test；TDS=`apps/backend/terminal-data-server`；OPS=`apps/frontend/operations-admin/src/features`；PLATFORM=`apps/frontend/platform-admin/src/features`。这些是精确仓根相对路径展开，不是依赖或runtime变量。
@@ -24,7 +26,8 @@
 | UPDATE/03 | 下述十一外部引用＋更新Page/十Drawer的实际消费 | type-only与re-export同闭合；内部同feature不误改 |
 | CREATE/03 | OPS/terminal-update/model/terminalUpdateLifecyclePresentation.ts 与 .test.ts | 三具名label/一个color，现fallback与VOIDED文案别名，foundation不改 |
 | UPDATE/03 | apps/frontend/operations-admin/src/tests/architecture/public-entry-boundary.test.mjs | 沿现门检查本批跨feature进口，有真实违规red与合法内部反例；不禁止所有model路径 |
-| CREATE/04 | OPS/extension-fields/index.ts、model/extensionFormValues.ts、extensionFormValues.test.ts、extensionRequestAdapters.test.tsx | 真实对象＋全部十四提交接缝；pure定义与窄出口同CP；不新HTTP执行器 |
+| CREATE/04 | OPS/extension-fields/index.ts、model/extensionFormValues.ts、extensionFormValues.test.ts、extensionRequestAdapters.test.tsx | 真实对象＋全部十四提交接缝；pure定义与窄出口同CP；同一index导出现extensionListAndSearchColumns/extensionQueryValues，不公开无外部消费者的orderedExtensionFields；不新HTTP执行器 |
+| UPDATE/04 | OPS/business-entity-management/ui/BusinessEntityManagementPage.tsx、store-management/ui/StoreManagementPage.tsx、contract-management/ui/ContractManagementPage.tsx；extension-fields/model/extensionList.test.ts；OPS tests/architecture/public-entry-boundary.test.mjs | 三个列表的两个现能力改从extension-fields窄入口引用；列、筛选参数、排序及query生命周期保留，原extensionList.tsx实现不搬；F检查行为不变和外部deep import红例 |
 | DELETE/04 | OPS/organization-structure/model/organizationExtensionValues.ts | 所有生产/测试/渲染调用迁完后删除旧纯规则与双cast |
 | UPDATE/04 | OPS/organization-structure/ui/OrganizationExtensionFields.tsx、OrganizationExtensionFields.test.ts；十Drawer（§2） | 保留宿主query/UI，不再跨feature转导出纯规则；原数组expect改对象expect |
 | UPDATE/04 | CBS/src/main/java/com/catering/v2s/app/edge/extension/ExtensionSubmissionWireMapper.java；src/test/java/com/catering/v2s/app/edge/extension/ExtensionSubmissionWireMapperTest.java | 全调用者迁完才退array/legacyFields，保留typedowner/public toSubmission |
@@ -37,6 +40,8 @@
 | UPDATE/06 | §5控制面、tools/terminal-automation/journeys/{update.test.ts,terminalUpdateSupplyUi.ts,remote.web.test.ts}及其现helper直接测试/README | 三case隔离L2＋四个现Web run，补跨页/重发/焦点，不新runner/TDS/wire/credential fixture |
 
 十一外部引用（相对OPS）：organizationStatus在business-channel/model/businessChannelCodeLabels.ts、store-profile/ui/StoreProfilePage.tsx、store-management/ui/{StoreManagementPage,StoreDetailDrawer,StoreStatusModal}.tsx；gate在catalog-management/ui/controllers/CatalogWorkbenchController.tsx、ui/CatalogWorkbenchContent.tsx（type）、inventory-management/ui/InventoryManagementPage.tsx、sales-menu/ui/SalesMenuPage.tsx、store-service-point/ui/StoreServicePointPage.tsx；accessKindLabels/orderKindLabels在sales-menu/ui/SalesMenuPage.tsx。导出组织label/toggle、gate hook/type、channel两个label；不将gate业务变成foundation。
+
+extension-fields同根外部列表消费者为BusinessEntityManagementPage、StoreManagementPage、ContractManagementPage，均消费extensionListAndSearchColumns与extensionQueryValues；这三处由CP04随现纯提交能力的index一起迁移。与前述三组十一引用、remote调用者、十Drawer及其转导出分别核验，不把十一引用当全批公开边界分母；同feature的extensionList.test.ts/orderedExtensionFields内部引用是保留反例。
 
 **明确 RETAIN**：CBS其余owner公开API/DB/迁移、CAT CatalogOwnerService/CatalogCopyService constructor graph、promotion/self-call、ItemRow等原private持久入口、catalog tabs、IAM公开嵌套record；TDS session/store binding/SQL switch；两App HTTP/RTK执行器与generated；PLATFORM/organization-contract-overview/ui/PlatformReadPage.tsx两个正确guard；OPS/sales-menu/model/useSalesMenuReadModel.ts及Page表单effect；平台集团初始化/服务点object整体提交；foundation生命周期词表/async/cursor/Drawer原实现；TER手写consumer。无统计“全包逐行已审计”声称。
 
@@ -88,7 +93,7 @@ HTTP error源保持：上述GET为AUTHZ_READ，写为OWNER_COMMAND，加其现op
 | catalog.pure-extraction：三个new pure tests＋CatalogCategoryOwnerIntegrationTest/CatalogAcceptanceScenarios | 原真实shape rules/JSON值与现PG/Flyway/direct构造fixture | null/MissingNode/effective与sku子集、totalCount；实际输出item/SKU单位/inbound/preparation；原stale receipt/CAS/promotion和引用失败无写 |
 | extension.object-submission：fields/request adapters＋mapper＋ExtensionAcceptanceScenarios | 原GROUP capability fixture/定义版本，TEXT/NUMBER/BOOLEAN/DATE；原brand/store/contract | fourteen实际request对象，不以source含字符证明；H用LinkedHashMap/ObjectNode容纳null，SET false/0/DATE readback，CLEAR=null后真实字段清除；同键重放不第二写，omission保持，required/disabled拒绝不写 |
 | update.resource-fences：terminalUpdateReadModels.test.tsx / RuleCreateDrawer.test.tsx | deferred request真实hook、两context/两entity、两页 | 独立guard success/error/finally失效；检查通过后还有await时，再切context/entity/cursor或close/unmount，迟到成功/拒绝/finally均不写新结果/problem/loading/ref或调用新关闭链；刷新dirty不丢；仅VERSION_CONFLICT走CAS；FULL/HOT候选/幂等保留 |
-| remote.launcher-identity：useRemoteControlLauncher.test.tsx / RemoteControlWorkspace.test.tsx | 原SessionReadback/Target，deferred start/disconnect/end和mock Room/track/keepalive | start→立即close/context切换→旧reply只end其session；同一Workspace不重挂载，currentStart由A变B，A disconnect/end成功或拒绝均不改B的phase/problem/loading/tracks/关闭链。A已ended/身份失效/end拒绝仍释放A自有listener/keepalive/Room，原finally保留；listener/track/gesture清理精确归属；不把void Promise当完成，不声称媒体/TER证明 |
+| remote.launcher-identity：useRemoteControlLauncher.test.tsx / RemoteControlWorkspace.test.tsx | 原SessionReadback/Target，deferred start/disconnect/end和mock Room/track/keepalive | start→立即close/context切换→旧reply只end其session；同一Workspace不重挂载，currentStart由A变B，A disconnect/end成功或拒绝均不改B的phase/problem/loading/tracks/关闭链。end/disconnect启动即接拒绝观察，补end先拒绝、disconnect随后完成/拒绝；A已ended/身份失效/end拒绝仍释放A自有listener/keepalive/Room，原finally保留；listener/track/gesture清理精确归属；不把void Promise当完成，不声称媒体/TER证明 |
 | menu/labels/public-entry：registry/state/architecture | 当前typed registration、授权key、unknown值、真实违规consumer | menu成员不取icon truthy；两domain所有现fallback；外部deepimport红，内部同feature合法；不冻结whole-repo计数 |
 
 legacy同步测试全集（当前已命中，实施前按同一有限source面复查新增）：CBS/src/test/java/com/catering/v2s/app/acceptance/{ExtensionAcceptanceScenarios,OrganizationAcceptanceScenarios,StoreTerminalAcceptanceScenarios,AuditAcceptanceScenarios,P2ReadConnectionScopeScenarios,CommercialContractAcceptanceScenarios}.java；CBS/src/test/java/com/catering/v2s/app/edge/operations/contract/OperationsContractControllerScopeAndCandidateTest.java；edge/extension/ExtensionSubmissionWireMapperTest；OPS/organization-structure/ui/OrganizationExtensionFields.test.ts；scripts/dev/owner-command-seed-executor.test.mjs。typedExtensionValues/extensionSet及空List请求转object，但owner typed list测试保留。源码扫描面是 apps/frontend/apps backend host tests/scripts/tools，fixture不构成保留legacy理由。

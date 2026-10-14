@@ -190,7 +190,7 @@ Markdown，不会重新执行 seed。
 
 ### UAT 环境实施
 
-UAT 与 DEV 共用受管远端主机，但使用独立 manifest、数据库、凭证、目录、服务身份、端口及预算。`scripts/uat/check` 是只读主机预检；`scripts/uat/build` 构建两个后台与 CBS/TDS 部署产物；`scripts/uat/init` 创建首次远端资源并启动服务；`scripts/uat/seed` 单独导入完整 `r5-full`；`scripts/uat/status` 读取当前状态；`scripts/uat/stop` 仅停止 manifest 绑定的 UAT 进程与容器并保留数据；`scripts/uat/start` 只启动服务，绝不隐式 seed。运行记录写入 `.runtime/uat/<runId>/`，凭证位于权限受限的 `.runtime/uat/credentials.env`。UAT 操作不停止或修改 DEV。
+UAT 与 DEV 共用受管远端主机，但使用独立 manifest、数据库、凭证、目录、服务身份、端口及预算。`scripts/uat/check` 是只读主机预检；`scripts/uat/build` 构建两个后台与 CBS/TDS 部署产物；`scripts/uat/init` 创建首次远端资源并启动服务；`scripts/uat/continue-init` 只续接同一manifest已绑定、因服务就绪检查失败的首次初始化，不重建数据库或容器；`scripts/uat/seed` 单独导入完整 `r5-full`；`scripts/uat/status` 读取当前状态；`scripts/uat/stop` 仅停止 manifest 绑定的 UAT 进程与容器并保留数据；`scripts/uat/start` 只启动服务，绝不隐式 seed。运行记录写入 `.runtime/uat/<runId>/`，凭证位于权限受限的 `.runtime/uat/credentials.env`。UAT 操作不停止或修改 DEV。
 
 远端 Testcontainers 保持其 JVM/Docker 同平面的技术验证边界，不能被解释为上述浏览器 L2 或 UAT。
 

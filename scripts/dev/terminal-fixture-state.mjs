@@ -9,7 +9,7 @@ import {spawnSync} from 'node:child_process';
 import {existsSync, mkdirSync, readFileSync, statSync, writeFileSync} from 'node:fs';
 import path from 'node:path';
 import {resolveTrustedRemoteHost} from './r5-remote-host-trust.mjs';
-import {seedEnvironmentKind} from './managed-seed-target.mjs';
+import {seedEnvironmentKind, seedTargetBaseUrl} from './managed-seed-target.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const runtime = path.resolve(process.env.V2S_RUNTIME_DIR ?? path.join(root, '.runtime/r5'));
@@ -154,6 +154,19 @@ export function verifyTerminalTranscript(stdout) {
   }
 }
 
+export function validateUatTargetBinding(manifest, expectedDatabase) {
+  let targetDatabase;
+  try {
+    targetDatabase = new URL(String(manifest?.database).replace(/^jdbc:/, '')).pathname.slice(1);
+    seedTargetBaseUrl(manifest);
+  } catch {
+    fail('TERMINAL_FIXTURE_UAT_TARGET_MISMATCH');
+  }
+  if (!expectedDatabase || targetDatabase !== expectedDatabase || manifest?.databaseName !== expectedDatabase) {
+    fail('TERMINAL_FIXTURE_UAT_TARGET_MISMATCH');
+  }
+}
+
 function runRemoteTerminal(topology, input, environmentKind) {
   const sql = buildInvitationExpiredSql(input, crypto.randomUUID(), environmentKind);
   if (topology.kind === 'uat') {
@@ -236,10 +249,7 @@ function main() {
         },
       };
   validateTerminalEligibility({...topology, kind});
-  if (kind === 'uat') {
-    const targetDatabase = new URL(String(manifest.database).replace(/^jdbc:/, '')).pathname.slice(1);
-    if (targetDatabase !== topology.expectedDatabase || !manifest.endpoints?.business?.startsWith(`http://${manifest.remoteHostTrust.host}:`)) fail('TERMINAL_FIXTURE_UAT_TARGET_MISMATCH');
-  }
+  if (kind === 'uat') validateUatTargetBinding(manifest, topology.expectedDatabase);
   const input = validateTerminalFixtureInput(parseInput());
   if (kind === 'dev' && manifest.database !== topology.environment.V2S_DEV_DATABASE_URL) fail('TERMINAL_FIXTURE_MANIFEST_DATABASE_MISMATCH');
   try {

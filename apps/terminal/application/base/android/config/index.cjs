@@ -115,7 +115,16 @@ const createMetroConfig = ({appDir, globalCssPath}) => {
     configPath: path.join(appDir, 'tailwind.config.cjs'),
     inlineRem: 16,
   })
-  return pinNativeWindRuntime(nativeWindConfig, workspaceRoot)
+  return pinNativeWindRuntime({
+    ...nativeWindConfig,
+    resolver: {
+      ...nativeWindConfig.resolver,
+      nodeModulesPaths: [...new Set([
+        dependencyNodeModules,
+        ...(nativeWindConfig.resolver?.nodeModulesPaths ?? []),
+      ])],
+    },
+  }, workspaceRoot)
 }
 
 const sharedColors = require('@catering-v2s/ui-base-primitives/config/semantic-color-keys')

@@ -95,6 +95,7 @@ export function renderUatHaproxyConfig() {
 export function renderUatNginxConfig() {
   const apiProxy = [
     '    location = /api {',
+    '      client_max_body_size 258m;',
     `      proxy_pass http://127.0.0.1:${UAT_PORTS.businessInternal};`,
     '      proxy_set_header Host $host;',
     '      proxy_set_header X-Real-IP $remote_addr;',
@@ -102,6 +103,7 @@ export function renderUatNginxConfig() {
     '      proxy_set_header X-Forwarded-Proto $scheme;',
     '    }',
     '    location ^~ /api/ {',
+    '      client_max_body_size 258m;',
     `      proxy_pass http://127.0.0.1:${UAT_PORTS.businessInternal};`,
     '      proxy_set_header Host $host;',
     '      proxy_set_header X-Real-IP $remote_addr;',
@@ -201,6 +203,7 @@ export function renderUatCateringBusinessServerEnvironment(credentials, diagnost
     V2S_LIVEKIT_API_SECRET: livekitApiSecret,
     V2S_LIVEKIT_SIGNAL_URL: UAT_ENDPOINTS.livekit,
     V2S_RUNTIME_ENVIRONMENT: 'uat',
+    CATERING_OTP_DEBUG_CODE_EXPOSURE: 'true',
     TERMINAL_UPDATE_ANDROID_BUILD_TOOLS_DIRECTORY: androidBuildTools,
     SERVER_ADDRESS: '127.0.0.1',
     SERVER_PORT: String(UAT_PORTS.businessInternal),
@@ -208,7 +211,6 @@ export function renderUatCateringBusinessServerEnvironment(credentials, diagnost
       V2S_DEV_PROFILE: 'r5-full',
       V2S_DEV_NAMESPACE: UAT_NAMESPACE,
       V2S_SEED_OTP_FIXED_VALUE: requiredCredential(credentials, 'V2S_SEED_OTP_FIXED_VALUE'),
-      CATERING_OTP_DEBUG_CODE_EXPOSURE: 'true',
       V2S_SEED_REPORT_RUN_ID: diagnosticRun.runId,
       V2S_SEED_REPORT_SECRET: requiredCredential(credentials, 'V2S_SEED_REPORT_SECRET'),
       V2S_SEED_REPORT_EVENTS: `${diagnosticRun.remoteRoot}/results/seed-request-events.jsonl`,
@@ -372,7 +374,7 @@ export function renderUatCompose() {
   ].join('\n');
 
   return [
-    `name: ${UAT_DOCKER_PROJECT}`,
+    'version: "3.3"',
     'services:',
     postgres,
     minio,

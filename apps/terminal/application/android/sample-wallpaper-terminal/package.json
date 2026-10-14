@@ -9,6 +9,11 @@
   "main": "index.ts",
   "private": true,
   "type": "module",
+  "expo": {
+    "autolinking": {
+      "searchPaths": ["../../../node_modules"]
+    }
+  },
   "exports": {
     ".": "./src/index.ts"
   },

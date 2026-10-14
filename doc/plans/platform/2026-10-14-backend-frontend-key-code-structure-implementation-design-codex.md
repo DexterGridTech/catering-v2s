@@ -27,6 +27,14 @@ Dexter 本次授权只同步本设计包文档，不实施，也不打扰在途 
 
 本补充是当前文档修订，不是独立 verdict；既有设计 review 只适用于其原审阅字节。本轮不重开已关闭 cycle，所有新增判据的实现和运行仍为 NOT_RUN。
 
+### 0.2 当前源码适用性自审（2026-10-14）
+
+Dexter 授权结合当前代码自审完整设计包、修订确认问题后准备实施话术。本次仅修改设计包及自审记录，不实施、不运行，不重开既有 DESIGN cycle；历史 verdict 与输入字节保持。结论与当前文件摘要见 `doc/review/platform/2026-10-14-backend-frontend-structure-current-source-self-audit-codex.md`。
+
+当前仍需整改的真实接缝为 TDS 手写 topic 集、asset 两条物化循环、catalog 两处制作差异和同 owner 纯提取、菜单图标过滤、extension 数组/双 cast/内部引用、更新页六资源和远控双重 session 住址。没有因 T1 或 UAT 的在途改动而整体失去整改价值。当前 remote generator 仍是同 renderer 的两个目标；T1 的 `remote-control/application/readRemoteControlSignalConfiguration.ts` 已通过 server-config 公开能力解释 LiveKit 配置，TDC 公开 `executeTerminalHttpCommand`，两 integration 注入 `serverSpaces`。这里只确认源码接缝可定位，不宣布 T1 整批或本批 Web 已通过；实施写前继续读取当前值，不以历史 OPEN 无期限阻断，也不借本批改 TER 手写源码。
+
+本次最小修订为：CP04 纳入三个现扩展列表的窄出口引用；将残留更新/远控 L2 表述统一为既定路线 A 的 F/W；在既定远控关闭 F 中明确并行 Promise 的拒绝观察。均属 R09/R10/R11/R17 已批准边界，无新业务、页面、HTTP operation、数据库、依赖或框架。尚需实现、解析与运行的项目继续 NOT_RUN/OPEN；后续实施权限只能来自 Dexter 转交的明确授权。
+
 ## 1 · 问题、用户任务与方案
 
 ### 1.1 实际目标
@@ -74,10 +82,10 @@ Dexter 本次授权只同步本设计包文档，不实施，也不打扰在途 
 | 生成值消费 | Protocol loader / remote protocol generator | F canonical新增值派生到目标，未知值拒绝 | 双目标同renderer；合法集≠SQL权限 | TDS codec、Web parser，TER生成物只派生 |
 | 日志/诊断 | observability-and-acceptance-standard §3，现 createSafeLogger/HTTP完成事件 | F error含关联；H/L2 首败能到源边界 | 不用 audit/status替日志，不造日志平台 | fixture→HTTP→edge→owner→readback、UI请求/回包/cleanup |
 | migration/backfill | N/A：结构/现合法wire，不改DB | 静态无Flyway/schema变化；H现数据可读 | 不设计双写/兼容DB | 全批 |
-| 前端共享行为 | asyncGeneration、useCursorStack、useDrawerFormLifecycle、drawerSurface、useOverlayLock | F 独立资源互不取消；L2关面留稿/焦点/分页 | 实际消费foundation；workspace特殊Room释放仍归remote | 更新四hook/Drawer、remote、十扩展Drawer |
+| 前端共享行为 | asyncGeneration、useCursorStack、useDrawerFormLifecycle、drawerSurface、useOverlayLock | F 独立资源互不取消；门店/合同关面留稿由L2证明；更新/远控关闭与焦点由F/W，历史分页由F/W_CONTROLLED_UI证明 | 实际消费foundation；workspace特殊Room释放仍归remote | 更新四hook/Drawer、remote、十扩展Drawer |
 | 管理后台一致性 | frontend §3-K 与上述原交互锚点 | F/L2/W 控件位置/文案/Tag/焦点不变 | 主数据常量不改任务/报告状态；现fallback详列§8.6 | 三个隔离L2case及更新/远控Web回归surface |
-| candidates/dropdowns | useOrganizationCandidates、useCursorCandidates | F 选FULL后HOT绑定候选；L2现选择可达 | 不重造候选查询/操作；内外scope不改 | RuleCreateDrawer、十Drawer现选项 |
-| 编码/名称呈现 | formatNameCode/NameCodeText、现owner投影 | L2标题/字段是code/name，不裸UUID | 如当前合法别名则保持，不跨域统一 | 更新详情、组织/合同宿主、菜单 |
+| candidates/dropdowns | useOrganizationCandidates、useCursorCandidates | FULL/HOT绑定候选由F/W；门店/合同现选择由L2证明 | 不重造候选查询/操作；内外scope不改 | RuleCreateDrawer、十Drawer现选项 |
+| 编码/名称呈现 | formatNameCode/NameCodeText、现owner投影 | 更新详情由W、组织/合同宿主和菜单由L2核标题/字段为code/name，不裸UUID | 如当前合法别名则保持，不跨域统一 | 更新详情、组织/合同宿主、菜单 |
 | 原子组 | charter §5-C | F 编译/生成check＋具体红反例 | 全调用者/测试/fixture同步，不让下一CP修旧形状 | 双目标生成；catalog纯提取调用者；extension全链；窄出口；更新hook迁移 |
 
 第三方版本/官方依据见附件§6。仅复用当前 API；不新增依赖/React模式、Spring代理或LiveKit操作。Java classpath解析当前未运行，不把Boot声明当Spring解析事实；实施 CP01 必须用受管 classpath输出确认。若要改变事务/SDK调用形态，必须先更新设计和相应官方依据，不能先编码猜。
@@ -99,9 +107,9 @@ Dexter 2026-10-14 选择 A：隔离 admin-ui suite 只保留 admin.menu.registry
 | 01 | Codec仍有手写topic集；Web仍手写reason；只更新一个generated目标 | canonical同源，保留所有帧校验/typed拒绝；TER手写不改 | 真实Protocol/Codec及parser/生成器F；无需设备 | R03/04；canonical；T1 current outputPaths；相关loader/codec/parser/tests |
 | 02 | 两个asset流式循环；制作差异仍重复；newpure持有JDBC/owner API | facade/FQCN/构造/tx/锁/readback不改；不搬detail IO或promotion Bean | 原真实服务/PG fixture＋纯值F，原H全量最后做 | R05/06/07/14；R-READ01–10；三个owner源及调用者 |
 | 03 | icon仍过滤菜单；十一deep imports或type-only越界；foundation改局部文案 | 窄入口只导出实际消费者；现状态分支保留 | 注册/consumer类型/状态行为F；不新建空index/registry | D01/02；R08/09/13；当前registry/consumer/lifecycleLabel |
-| 04 | 十Drawer仍cast数组；seed/HTTP fixture仍发送legacy却删mapper | 对象SET/CLEAR/omission一致，typed owner list保持；不造兼容层 | F全调用者＋H代表原域case；同步seed只改不运行 | R12；mapper/owner；十四operation；seed helper/测试/父计划 |
-| 05 | hook包一层却保留counter双实现；宿主仍start/end；回包写旧target | 分资源guard；当前context/entity/page fence；创建dirty/幂等和远控身份保持 | deferred响应与Room关闭行为F；L2在全CP后 | R10/11；既有IA/interaction；Page/workspace/foundation |
-| 06 | spec引用无testId或旧runner不可执行；fakeONLINE；首败仅status | 全控件/fixture/日志/cleanup闭合；不新runner；不擅自运行 | static控制面红例＋授权后H/L2；本CP不提前声称动态PASS | R15–17；模板§3a/6c；L2正本/唯一runner/seed与资源门 |
+| 04 | 十Drawer仍cast数组；seed/HTTP fixture仍发送legacy却删mapper；三个列表仍deep import extension-fields | 对象SET/CLEAR/omission一致，typed owner list保持；表单/列表消费者同走窄出口，不造兼容层 | F全调用者＋H代表原域case；同步seed只改不运行 | R09/12；mapper/owner；十四operation及三个列表；seed helper/测试/父计划 |
+| 05 | hook包一层却保留counter双实现；宿主仍start/end；回包写旧target | 分资源guard；当前context/entity/page fence；创建dirty/幂等和远控身份保持 | deferred响应与Room关闭行为F；现update/remote W在全CP后，不增加这两个feature的隔离L2 | R10/11；既有IA/interaction；Page/workspace/foundation |
+| 06 | spec引用无testId或旧runner不可执行；fakeONLINE；首败仅status | 全控件/fixture/日志/cleanup闭合；不新runner；不擅自运行 | static控制面红例＋授权后H/L2/W；本CP不提前声称动态PASS | R15–17；模板§3a/6c；L2正本/唯一runner/seed与资源门 |
 
 ## 5 · HTTP/face/集合（无新 operation）
 
@@ -134,7 +142,7 @@ Dexter 2026-10-14 选择 A：隔离 admin-ui suite 只保留 admin.menu.registry
 | topic合法值 | protocol JSON topicKeys | Protocol不可变Set | Codec；F全集/unknown，session SQL独立保留 |
 | remote body enum字段 | canonical六个enum字段 | 原generator相同runtime arrays/types到双目标 | Web parser；TERconsumer保留；F非法reason/seq/bytes |
 | extension JSON | 现schema对象＋Form值 | enabled/DATE/changed-only→object SET或null CLEAR→edge toSubmission | owner typed SET/CLEAR；F十Drawer/H真实读回 |
-| 当前资源identity | 宿主queryContext/target/entity及Cursor栈 | 各hook foundation guard，开始前capture，成功/error/finally都核当前 | UI不会迟到覆盖；F deferred/L2切scope |
+| 当前资源identity | 宿主queryContext/target/entity及Cursor栈 | 各hook foundation guard，开始前capture，成功/error/finally都核当前 | UI不会迟到覆盖；F deferred覆盖context/entity/cursor/close，W验证现主流程；本批不新增动态范围切换case |
 | 集合形态 | 现IA与canonical | 原page/cursor/filter参数完全传递 | hook不slice；total/Cursor来自owner；F＋W历史过页 |
 | 授权执行点 | 既有contract页面/写policy | edge原scope grant/owner first recheck | 不搬到Page/launcher；H wrongscope/stale replay |
 | 刷新 | 原RTK失效＋当前页refresh signal | hook接useRefreshVersion、mutation原一次收口 | 当前列表与开详情重读，dirty保持；F/L2/W |
@@ -177,7 +185,7 @@ CatalogItemDetailAssembler 为package-private纯值类，接收mapper/manifest�
 ### 8.4 registration/feature入口
 
 Registration增必填icon:ReactNode，在现每个registration声明该icon；删除Shell menuIconByKey及其filter。成员取catalog∩实际registration∩session.pageAccessKeys，排序仍menuOrder；缺注册/授权不进入。分组navigationIconByKey是另一个呈现事实，保持。registered未知key不以默认icon伪装。
-最终五个现feature的index仅导出实际消费者：remote-control的launcher/workspace/Target、extension-fields纯提交能力、organizationStatus的label/toggle、storeOperatingRuleGate的hook/type、businessChannel access/order labels。阶段顺序固定：CP03只export已存在的remote workspace/Target/UUID与三组既有能力；CP04实际新增纯提交能力时才建extension-fields出口；CP05新增launcher时才补remote出口。不得前向export尚未存在文件或建空实现为CP03编译占位。消费者见附件；audit-history现入口不改，不把HTTP执行器复制到feature。
+最终五个现feature的index仅导出实际消费者：remote-control的launcher/workspace/Target、extension-fields纯提交能力及现有extensionListAndSearchColumns/extensionQueryValues、organizationStatus的label/toggle、storeOperatingRuleGate的hook/type、businessChannel access/order labels。阶段顺序固定：CP03只export已存在的remote workspace/Target/UUID与三组既有能力；CP04实际新增纯提交能力时才建extension-fields出口，同时将BusinessEntityManagementPage、StoreManagementPage、ContractManagementPage对extension-fields/model/extensionList的引用改为该窄入口；CP05新增launcher时才补remote出口。列表列/搜索转换仍由现extensionList.tsx实现，查询、排序和业务owner不迁移；orderedExtensionFields没有外部消费者，继续内部使用。不得前向export尚未存在文件或建空实现为CP03编译占位。消费者见附件；audit-history现入口不改，不把HTTP执行器复制到feature。
 
 ### 8.5 Page与远控
 
@@ -186,6 +194,7 @@ Registration增必填icon:ReactNode，在现每个registration声明该icon；�
 RuleCreateDrawer独立文件，搬原lifecycle/幂等/FULL-HOT候选两个独立effect及对选中FULL的绑定，不重新设计表单。规则mutation保留原version/intent/重入锁/CAS准确code和权威readback。
 remote useRemoteControlLauncher是currentSession身份的唯一owner，拥有start/restart/closeStaleRemoteStart；start捕获target/context/session-generation，迟到仅end该返回session；关闭/unmount不得清掉新session。Workspace的initialStart改为受控currentStart prop，删除useState(initialStart)/setCurrentStart及restart时写入第二份身份；onRestart只请求launcher更新，prop变化驱动Room effect释放旧资源并建立新资源。Workspace继续统一Room/track/gesture/keepalive/listener/disconnect及description/phase等本次连接的临时呈现值；不将特殊资源清理抽成通用hook，不新增第二会话状态机。每个异步end/cleanup捕获其原sessionId，A迟到不得end或清除新B；launcher提供宿主受控open/currentSession/target与动作，workspace结束反馈经同一关闭链，CBS end幂等；宿主保留资格target与焦点。V11覆盖A→restart B→A迟到结束。不得把同一结束路径在宿主和launcher再实现两遍。
 远控清理将“释放旧资源”与“提交当前UI反馈”分开：前者只作用于闭包捕获的旧session/Room/listener/keepalive，CBS end拒绝、会话已ended或身份失效都不能跳过它；后者在最后一次disconnect/end等待后仍须检查是否为当前session。旧A完成不能改B的phase/problem/loading、清空B tracks或调用已指向B的finish/onClose。正常finishSession当前已有disconnect finally移除listener，保持该能力；effect cleanup同步失效和detach，异步disconnect显式处理，不把void Promise或ended标签写成释放完成。F必须保持同一Workspace挂载，仅改变currentStart为B，再交错A的disconnect/end成功或拒绝，核B继续可用及A的精确释放；不能靠卸载重挂掩盖接缝。
+end与disconnect可以沿现流程并行，但各自启动时即安装拒绝观察，不能先启动endRequest、等disconnect后才接catch。两项结果分别记录，不能为避免拒绝而串行等HTTP成功才释放Room。既定F增加“end先拒绝、disconnect随后完成或拒绝”的交错，核无未处理拒绝、A资源仍释放且B反馈不受影响；仅使用现Promise/日志/身份闭包，不增加队列或恢复框架。
 PlatformReadPage现两个正确foundation guard和SalesMenu现read model RETAIN；本批只改SalesMenu的跨feature引用，不重写其表单effect或RTK数据。
 
 ### 8.6 状态与策略
@@ -249,7 +258,7 @@ NOT_APPLICABLE_WITH_REASON：无DB/schema/持久事实格式变更；HTTP array�
 | V05 | catalog.preparation-diff null/missing/skuSubset/totalCount不变 | F/H | 新增CAT test CatalogOwnerValueSupportTest.java；现CatalogCategoryOwnerIntegrationTest.java/CatalogAcceptanceScenarios.java |
 | V06 | catalog.pure-extraction 真service校验/readback/tx保持 | F/H | 新增CAT test CatalogItemDraftValidatorTest.java、CatalogItemDetailAssemblerTest.java；现CatalogCategoryOwnerIntegrationTest.java/CatalogAcceptanceScenarios.java |
 | V07 | menu.registered-access 图标不决定成员/未授权不可达 | F/L2 | 新增OPS app/routing/pageRegistry.test.tsx；OPS tests/l2/admin-ui.spec.ts（新增） |
-| V08 | feature.public-consumers 十一引用/type-only＋remote/extension无deep import | F/静态 | OPS tests/architecture/public-entry-boundary.test.mjs；各十四request tests/类型；附件消费表 |
+| V08 | feature.public-consumers 三组十一引用/type-only、remote/extension调用者及三个业务列表均走窄入口，无deep import | F/静态 | OPS tests/architecture/public-entry-boundary.test.mjs；各十四request tests/类型；现OPS extension-fields/model/extensionList.test.ts；附件消费表 |
 | V09 | update.resource-fences 六资源迟到/error/finally不串 | F/W | 新增OPS terminal-update/model/terminalUpdateReadModels.test.tsx；现tools/terminal-automation/journeys/update.test.ts、terminalUpdateSupplyUi.ts（补跨页） |
 | V10 | update.cursor-dirty 切详情/过页/刷新/留稿 | F/W | 上项readModels test、新增ui/RuleCreateDrawer.test.tsx；现tools/terminal-automation/journeys/update.test.ts、terminalUpdateSupplyUi.ts |
 | V11 | remote.launcher-identity start/reject/late/restart/end/session精确关闭 | F/W | 新增OPS remote-control/model/useRemoteControlLauncher.test.tsx、ui/RemoteControlWorkspace.test.tsx；现tools/terminal-automation/journeys/remote.web.test.ts（补restart/焦点/释放） |
