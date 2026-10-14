@@ -39,77 +39,90 @@
     "sessionToken": ""
   },
   "serverSpaces": {
-    "selectedSpace": "development",
-    "spaces": [
-      {
-        "name": "development",
-        "servers": [
-          {
-            "serverName": "business",
-            "addresses": [
-              {
-                "addressName": "primary",
-                "baseUrl": "http://127.0.0.1:28080/api/terminal/group-workspaces/aurora",
-                "timeoutMs": 10000
-              }
-            ]
-          },
-          {
-            "serverName": "livekit",
-            "addresses": [
-              {
-                "addressName": "primary",
-                "baseUrl": "ws://47.106.121.27:7880",
-                "timeoutMs": 10000
-              }
-            ]
-          },
-          {
-            "serverName": "terminal-data-server",
-            "addresses": [
-              {
-                "addressName": "haproxy-entry-one",
-                "baseUrl": "ws://127.0.0.1:28180",
-                "timeoutMs": 10000
-              },
-              {
-                "addressName": "haproxy-entry-two",
-                "baseUrl": "ws://127.0.0.1:28181",
-                "timeoutMs": 10000
-              }
-            ]
-          }
-        ]
-      }
-    ]
-  },
-  "dependencies": {
-    "@catering-v2s/application-base-android": "workspace:*",
-    "@catering-v2s/kernel-base-terminal-update": "workspace:*",
-    "@catering-v2s/ui-base-input": "workspace:*",
-    "@catering-v2s/ui-base-primitives": "workspace:*",
-    "@catering-v2s/ui-base-render": "workspace:*",
-    "@catering-v2s/ui-integration-sample-wallpaper-console": "workspace:*",
-    "@config-plugins/react-native-webrtc": "15.0.2",
-    "@livekit/react-native": "3.0.0",
-    "@livekit/react-native-expo-plugin": "1.0.3",
-    "@livekit/react-native-webrtc": "144.2.0",
-    "expo": "~57.0.18",
-    "expo-modules-core": "~57.0.14",
-    "livekit-client": "2.22.4",
-    "react": "19.2.3",
-    "react-native": "0.86.3",
-    "react-native-svg": "15.15.4"
-  },
-  "devDependencies": {
-    "@types/react": "~19.2.2",
-    "babel-preset-expo": "~57.0.0",
-    "nativewind": "4.2.6",
-    "react-native-reanimated": "4.5.1",
-    "react-native-worklets": "0.10.1",
-    "tailwindcss": "3.4.19",
-    "typescript": "~6.0.3"
-  },
+  "selectedSpace": "development",
+  "spaces": [
+    {
+      "name": "development",
+      "servers": [
+        {
+          "serverName": "business",
+          "addresses": [
+            {
+              "addressName": "primary",
+              "baseUrl": "http://127.0.0.1:28080/api/terminal/group-workspaces/aurora",
+              "timeoutMs": 10000
+            }
+          ]
+        },
+        {
+          "serverName": "livekit",
+          "addresses": [
+            {
+              "addressName": "primary",
+              "baseUrl": "ws://47.106.121.27:7880",
+              "timeoutMs": 10000
+            }
+          ]
+        },
+        {
+          "serverName": "terminal-data-server",
+          "addresses": [
+            {
+              "addressName": "haproxy-entry-one",
+              "baseUrl": "ws://127.0.0.1:28180",
+              "timeoutMs": 10000
+            },
+            {
+              "addressName": "haproxy-entry-two",
+              "baseUrl": "ws://127.0.0.1:28181",
+              "timeoutMs": 10000
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "uat",
+      "servers": [
+        {
+          "serverName": "business",
+          "addresses": [
+            {
+              "addressName": "primary",
+              "baseUrl": "http://47.106.121.27:19182/api/terminal/group-workspaces/aurora",
+              "timeoutMs": 10000
+            }
+          ]
+        },
+        {
+          "serverName": "livekit",
+          "addresses": [
+            {
+              "addressName": "primary",
+              "baseUrl": "ws://47.106.121.27:19184",
+              "timeoutMs": 10000
+            }
+          ]
+        },
+        {
+          "serverName": "terminal-data-server",
+          "addresses": [
+            {
+              "addressName": "haproxy-entry-one",
+              "baseUrl": "ws://47.106.121.27:19190",
+              "timeoutMs": 10000
+            },
+            {
+              "addressName": "haproxy-entry-two",
+              "baseUrl": "ws://47.106.121.27:19191",
+              "timeoutMs": 10000
+            }
+          ]
+        }
+      ]
+    }
+  ]
+},
   "scripts": {
     "lint": "node ../../../../../tools/terminal-shared/run-owned-lint.mjs",
     "package:install": "node ../../../../../scripts/build/terminal-update-artifact.mjs --app sample-wallpaper-terminal --kind install",

@@ -95,7 +95,7 @@ public final class HttpRequestMetricsInterceptor implements HandlerInterceptor {
         this.databaseOperationHmacKey = decodeHmacKey(databaseOperationHmacValue);
         this.databaseCaptureActive = this.databaseOperationsPath != null && this.databaseOperationHmacKey != null;
         this.databaseCaptureHmacMissing = this.databaseOperationsPath != null && this.databaseOperationHmacKey == null;
-        this.scopeActive = mode != null && "non-production".equals(environment) && namespaceMatches(mode, namespace);
+        this.scopeActive = mode != null && namespaceMatches(mode, namespace, environment);
         this.eventActive = scopeActive
                 && runId != null
                 && runId.matches("[A-Za-z0-9._:-]{8,128}")
@@ -511,11 +511,16 @@ public final class HttpRequestMetricsInterceptor implements HandlerInterceptor {
         return candidate != null && candidate.matches("/[A-Za-z0-9._~{}:/-]{1,256}") ? candidate : "/unresolved";
     }
 
-    private static boolean namespaceMatches(Mode mode, String namespace) {
+    private static boolean namespaceMatches(Mode mode, String namespace, String environment) {
         if (namespace == null) return false;
+        if (mode == Mode.SEED) {
+            return ("non-production".equals(environment) && namespace.matches("v2s-dev-[a-z0-9-]{3,32}"))
+                    || ("uat".equals(environment) && namespace.matches("v2s-uat-[a-z0-9-]{3,32}"));
+        }
+        if (!"non-production".equals(environment)) return false;
         if (mode == Mode.BACKEND_ACCEPTANCE) return namespace.matches("v2s-backend-acceptance-[a-z0-9-]{3,32}");
         if (mode == Mode.L2) return namespace.matches("v2s_l2_[a-z0-9_]{3,64}");
-        return namespace.matches("v2s-dev-[a-z0-9-]{3,32}");
+        return false;
     }
 
     private static byte[] decodeHmacKey(String candidate) {

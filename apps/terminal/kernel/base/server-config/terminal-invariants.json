@@ -2,27 +2,44 @@
   "schemaVersion": 1,
   "package": "@catering-v2s/kernel-base-server-config",
   "owned": {
-    "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/kernel-base-server-config", "runner": "vitest"},
-    "lint": {"kind": "OWNED", "owner": "@catering-v2s/kernel-base-server-config", "runner": "eslint"},
-    "clean": {"kind": "ABSENT"}
+    "test": {
+      "kind": "REAL_TESTS",
+      "owner": "@catering-v2s/kernel-base-server-config",
+      "runner": "vitest"
+    },
+    "lint": {
+      "kind": "OWNED",
+      "owner": "@catering-v2s/kernel-base-server-config",
+      "runner": "eslint"
+    },
+    "clean": {
+      "kind": "ABSENT"
+    }
   },
   "publicExports": [
+    "EffectiveServerConfigView",
+    "ProxyPasswordInput",
+    "ServerConfigAddressInput",
+    "ServerConfigDefaults",
+    "ServerConfigEnvironment",
+    "ServerConfigProxyInput",
+    "ServerConfigServiceContext",
+    "SetServerOverridePayload",
     "clearServerOverrideCommand",
     "createServerConfigModule",
     "dependencyModuleNames",
     "devDependencyModuleNames",
-    "EffectiveServerConfigView",
     "moduleKind",
     "moduleName",
-    "ProxyPasswordInput",
+    "parseServerConfigEnvironmentJson",
+    "resolveServerConfigEnvironment",
+    "resolveServerNetworkSnapshot",
     "restoreServerDefaultsCommand",
     "runtimeModuleDependencyNames",
+    "selectServerConfigServiceContext",
     "selectServerConfigSpaceCommand",
     "selectServerConfiguration",
-    "ServerConfigAddressInput",
-    "ServerConfigDefaults",
-    "ServerConfigProxyInput",
-    "SetServerOverridePayload",
+    "serverConfigSliceName",
     "setServerOverrideCommand"
   ]
 }

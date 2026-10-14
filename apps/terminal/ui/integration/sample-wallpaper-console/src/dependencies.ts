@@ -10,9 +10,11 @@ import {moduleName as uiState} from '@catering-v2s/kernel-base-ui-state';
 import {moduleName as staffSession} from '@catering-v2s/kernel-feature-sample-staff-session';
 import {moduleName as wallpaper} from '@catering-v2s/kernel-feature-sample-wallpaper';
 import {moduleName as adminShell} from '@catering-v2s/ui-base-admin-shell';
+import {moduleName as featureAssembly} from '@catering-v2s/ui-base-feature-assembly';
 import {moduleName as terminalActivation} from '@catering-v2s/ui-base-terminal-activation';
 import {moduleName as terminalDataClient} from '@catering-v2s/kernel-base-terminal-data-client';
 import {moduleName as terminalUpdate} from '@catering-v2s/kernel-base-terminal-update';
+import {moduleName as remoteControl} from '@catering-v2s/kernel-base-remote-control';
 import {moduleName as storeBasic} from '@catering-v2s/kernel-feature-store-basic';
 import {moduleName as projectBasic} from '@catering-v2s/kernel-feature-project-basic';
 import {moduleName as render} from '@catering-v2s/ui-base-render';
@@ -36,9 +38,11 @@ export const dependencyModuleNames = [
   staffSession,
   wallpaper,
   adminShell,
+  featureAssembly,
   terminalActivation,
   terminalDataClient,
   terminalUpdate,
+  remoteControl,
   storeBasic,
   projectBasic,
   render,
@@ -62,8 +66,10 @@ export const runtimeModuleDependencyNames = [
   wallpaper,
   staffAuth,
   wallpaperPicker,
+  terminalActivation,
   terminalDataClient,
   terminalUpdate,
+  remoteControl,
   storeBasic,
   projectBasic,
 ] as const;

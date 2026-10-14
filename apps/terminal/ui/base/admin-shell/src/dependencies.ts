@@ -10,6 +10,7 @@ import {moduleName as primitives} from '@catering-v2s/ui-base-primitives';
 import {moduleName as uiState} from '@catering-v2s/kernel-base-ui-state';
 import {moduleName as displayContext} from '@catering-v2s/kernel-base-display-context';
 import {moduleName as input} from '@catering-v2s/ui-base-input';
+import {moduleName as featureAssembly} from '@catering-v2s/ui-base-feature-assembly';
 
 export const dependencyModuleNames = [
   contracts,
@@ -23,7 +24,10 @@ export const dependencyModuleNames = [
   render,
   primitives,
   input,
+  featureAssembly,
   uiState,
 ] as const;
 
 export const devDependencyModuleNames = [] as const;
+
+export const runtimeModuleDependencyNames = [] as const;

@@ -1,8 +1,8 @@
 import {createRequestId} from '@catering-v2s/kernel-base-contracts';
 import {defineActor, onCommand} from '../../foundations/defineActor';
 import {moduleName} from '../../moduleName';
-import {defaultCommandTimeoutMs} from '../../types/limits';
-import {resetRuntimeAfterSystemFailureCommand} from '../commands/resetRuntimeAfterSystemFailure';
+import {defaultCommandTimeoutMs} from '../../declarations/parameters';
+import {resetRuntimeAfterSystemFailureCommand} from '../../declarations/commands';
 
 export type ResetRuntimeAfterSystemFailureOutcome = Readonly<{
   readonly status: 'accepted' | 'unavailable' | 'failed' | 'timed-out';

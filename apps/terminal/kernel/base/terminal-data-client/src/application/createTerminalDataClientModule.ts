@@ -1,5 +1,10 @@
-import type {RuntimeModule, RuntimeModuleContext, RuntimeModuleResetInput} from '@catering-v2s/kernel-base-runtime';
-import {selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
+import {
+  createRuntimeModule,
+  selectRuntimeInstanceMode,
+  type RuntimeModule,
+  type RuntimeModuleContext,
+  type RuntimeModuleResetInput,
+} from '@catering-v2s/kernel-base-runtime';
 import {runtimeModuleDependencyNames} from '../dependencies';
 import {moduleKind, moduleName} from '../moduleName';
 import type {TerminalDataClientDependencies} from '../types/client';
@@ -14,11 +19,7 @@ import {
   initializeTerminalDataClientCommand,
   reconcileTerminalCredentialReadinessCommand,
   refreshTerminalClientStatusProjectionCommand,
-  readTerminalDataCommand,
-  requestTerminalUpdateDownloadGrantCommand,
-  submitTerminalUpdateReportCommand,
-  registerTerminalRemoteControlCommand,
-  reportTerminalRemoteControlCommand,
+  executeTerminalHttpCommand,
   terminalDataHeartbeatCommand,
   terminalHeartbeatTickCommand,
   terminalRemoteOperationMutationCommand,
@@ -27,18 +28,16 @@ import {
   terminalTopicChangedCommand,
   terminalTransportEventCommand,
   unsubscribeTerminalTopicCommand,
-} from '../features/commands/terminalDataClientCommands';
-import {
-  selectActivationState,
-  selectConnectionLatency,
-  selectConnectionState,
-  selectTerminalTopicSubscriptions,
-} from '../selectors/selectTerminalDataClientState';
+} from '../declarations/commands';
+import {selectActivationState} from '../selectors/selectActivationState';
+import {selectConnectionLatency} from '../selectors/selectConnectionLatency';
+import {selectConnectionState} from '../selectors/selectConnectionState';
+import {selectTerminalTopicSubscriptions} from '../selectors/selectTerminalTopicSubscriptions';
 import {selectTerminalClientStatusProjection} from '../selectors/selectTerminalDataClientStatusProjection';
+import {selectTerminalHttpContext} from '../selectors/selectTerminalHttpContext';
 import {terminalDataClientStateSlice, terminalDataClientSliceName} from '../features/slices/terminalDataClient';
 import {
   terminalClientStatusProjectionStateSlice,
-  terminalClientStatusProjectionSliceName,
 } from '../features/slices/terminalClientStatusProjection';
 import type {TerminalClientState} from '../types/client';
 
@@ -55,11 +54,7 @@ export const createTerminalDataClientModule = (dependencies: TerminalDataClientD
     subscribeTerminalTopicCommand,
     unsubscribeTerminalTopicCommand,
     acceptTerminalTopicNotificationCommand,
-    readTerminalDataCommand,
-    requestTerminalUpdateDownloadGrantCommand,
-    submitTerminalUpdateReportCommand,
-    registerTerminalRemoteControlCommand,
-    reportTerminalRemoteControlCommand,
+    executeTerminalHttpCommand,
     terminalDataHeartbeatCommand,
     terminalTopicChangedCommand,
     initializeTerminalDataClientCommand,
@@ -69,11 +64,10 @@ export const createTerminalDataClientModule = (dependencies: TerminalDataClientD
     terminalHeartbeatTickCommand,
     terminalRemoteOperationMutationCommand,
   ] as const;
-  return Object.freeze({
+  return createRuntimeModule({
     moduleName,
     kind: moduleKind,
     dependencies: runtimeModuleDependencyNames.map(name => ({moduleName: name})),
-    commands: commandDefinitions.map(command => ({name: command.commandName, visibility: command.visibility})),
     commandDefinitions,
     selectorDefinitions: [
       selectActivationState,
@@ -81,13 +75,9 @@ export const createTerminalDataClientModule = (dependencies: TerminalDataClientD
       selectConnectionLatency,
       selectTerminalTopicSubscriptions,
       selectTerminalClientStatusProjection,
+      selectTerminalHttpContext,
     ],
-    actors: [{name: actorRuntime.actor.actorName}],
     actorDefinitions: [actorRuntime.actor],
-    slices: [
-      {name: terminalDataClientSliceName, persistIntent: 'owner-only' as const},
-      {name: terminalClientStatusProjectionSliceName, persistIntent: 'owner-only' as const},
-    ],
     stateSlices: [terminalDataClientStateSlice, terminalClientStatusProjectionStateSlice],
     install: async (context: RuntimeModuleContext) => {
       context.registerResource(actorRuntime.dispose);

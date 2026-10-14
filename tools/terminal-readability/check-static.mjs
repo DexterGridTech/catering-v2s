@@ -7,6 +7,7 @@ const toolDirectory = path.dirname(fileURLToPath(import.meta.url));
 export const repoRoot = path.resolve(toolDirectory, '../..');
 
 export const VOCABULARY = Object.freeze([
+  'declarations',
   'types',
   'foundations',
   'implementations',

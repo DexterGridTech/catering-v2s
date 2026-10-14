@@ -8,7 +8,7 @@ import {
   peerRequestLedgerSliceNameForMode,
   readLiveRequestEnvelope,
   requestLedgerSliceNameForMode,
-} from '../features/slices/requestLedger';
+} from '../foundations/requestLedgerState';
 import {readRequestLedgerState} from './readRequestLedgerState';
 import {selectRuntimeInstanceMode} from './selectRuntimeInstanceMode';
 import {freezeList} from '../foundations/freezeList';

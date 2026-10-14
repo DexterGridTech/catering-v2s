@@ -31,9 +31,12 @@ display-context 物理屏 helper 仍保持原语义。runtime 组装与平台启
   `CustomerMemberAgeField.tsx` 是真正共用的业务/输入内容组件。
 - `src/hooks`：按职责拆分的共享业务 hook；双端 renderer 消费同一 hook，不在 hook 中返回 JSX。
 - `src/types` 与 `src/foundations`：共享 props/type 与登记提示等纯业务语义。
-- `src/features`：本 feature 的 UI 意图命令与 actor；业务事实仍调用 kernel owner。
-- `src/parts/parts.ts`：本 feature 的 part、layer identity 与呈现声明。
-- `src/assembly/assembly.ts`：feature assembly 与运行期模块接线；`src/application/module.ts`：模块工厂。
+- `src/declarations/commands.ts` 与 `parts.ts`：本 feature 的 UI 意图命令及 part/layer identity 和呈现声明。
+- `src/features/actors/deskNavigationActor.ts`、`deskFormActor.ts`、`deskPendingActor.ts`、
+  `deskConfirmedActor.ts`、`deskRejectedActor.ts`、`deskNoticeActor.ts` 与
+  `deskSystemNoticeActor.ts`：按导航、表单、登记状态和提示职责拆分的 actor；屏幕/图层
+  派发与拓扑投影读取共用 `actors/shared/memberDeskActorSupport.ts`，不建立第二份业务状态。
+- `src/application/module.ts`：本包模块工厂，将 parts 与 layer dismissals 作为自身呈现贡献返回。
 - `src/foundations/systemFailureDismissal.ts`：系统失败层关闭动作的 feature-owned 转接。
 
 部件只通过 `ui/base/primitives` 的 typed React Native 控件以 JSX 构建。`MemberRow` 因为
@@ -56,13 +59,13 @@ discard-confirm、withdraw-confirm、system-notice）；全专题的 layer seman
 
 ## 用法
 
-通过公开 assembly 取得本 feature 的 parts，并在 integration 装配时取得它的真实运行期模块：
+通过公开模块工厂取得本 feature 的运行模块与呈现贡献：
 
 ```ts
-import {sampleMemberDeskAssembly} from '@catering-v2s/ui-feature-sample-member-desk'
+import {createSampleMemberDeskModule} from '@catering-v2s/ui-feature-sample-member-desk'
 
-const module = sampleMemberDeskAssembly.createModule()
-const memberDeskParts = sampleMemberDeskAssembly.parts
+const module = createSampleMemberDeskModule()
+const memberDeskParts = module.presentationContributions.parts
 void module
 void memberDeskParts
 ```
@@ -73,8 +76,7 @@ ui-state 的通用 closeLayer；业务 partKey、容器准入与呈现文案只�
 ## 公共包入口
 
 包根 @catering-v2s/ui-feature-sample-member-desk 当前公开以下符号（含类型）：
-MemberDeskAssembly、dependencyModuleNames、devDependencyModuleNames、moduleKind、moduleName、
-sampleMemberDeskAssembly。唯一包导出映射为 . → ./src/index.ts；包内实现深路径不是包级导入入口。
+createSampleMemberDeskModule、dependencyModuleNames、devDependencyModuleNames、moduleKind、moduleName。唯一包导出映射为 . → ./src/index.ts；包内实现深路径不是包级导入入口。
 该清单与 terminal-invariants.json 的 publicExports / publicExportMap 及
 test/publicSurface.test.ts 对齐。
 

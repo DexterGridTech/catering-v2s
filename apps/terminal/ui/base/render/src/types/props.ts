@@ -34,6 +34,7 @@ type RenderStateSource = Readonly<{
 
 type RenderDispatchOptions = Readonly<{
   readonly requestId: NonNullable<CommandDispatchOptions['requestId']>;
+  readonly onLifecycleEvent?: CommandDispatchOptions['onLifecycleEvent'];
   /** Internal route metadata; SurfaceRoot supplies routeContext for its subtree. */
   readonly routeContext?: CommandRouteContext | null;
   /** Semantic intent only; the runtime derives the concrete target. */

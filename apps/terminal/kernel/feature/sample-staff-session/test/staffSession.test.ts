@@ -23,7 +23,7 @@ describe('sample staff session owner module', () => {
     expect(module.moduleName).toBe('kernel.feature.sample-staff-session');
     expect(module.kind).toBe('owner');
     expect(module.dependencies?.map(dependency => dependency.moduleName)).toEqual(['kernel.base.runtime']);
-    expect(module.commands?.map(command => [command.name, command.visibility])).toEqual([
+    expect(module.commandDefinitions?.map(command => [command.commandName, command.visibility])).toEqual([
       ['kernel.feature.sample-staff-session.bootstrap-session', 'internal'],
       ['kernel.feature.sample-staff-session.login', 'public'],
       ['kernel.feature.sample-staff-session.logout', 'public'],
@@ -33,8 +33,8 @@ describe('sample staff session owner module', () => {
       ['kernel.feature.sample-staff-session.session-restored-authenticated', 'public'],
       ['kernel.feature.sample-staff-session.session-restored-anonymous', 'public'],
     ]);
-    expect(module.actors?.map(actor => actor.name)).toEqual(['bootstrap', 'login', 'logout']);
-    expect(module.slices).toEqual([
+    expect(module.actorDefinitions?.map(actor => actor.actorName)).toEqual(['bootstrap', 'login', 'logout']);
+    expect(module.stateSlices?.map(slice => ({name: slice.name, persistIntent: slice.persistIntent}))).toEqual([
       {
         name: 'kernel.feature.sample-staff-session.session',
         persistIntent: 'owner-only',

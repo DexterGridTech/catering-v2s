@@ -13,7 +13,7 @@ import {
   transportStablePeriodElapsedCommand,
   transportStartCommand,
   transportStopCommand,
-} from '../commands/transportCommands';
+} from '../../declarations/commands';
 
 export type TransportHttpActorBoundary = Readonly<{
   readonly readRequest: (requestId: string) => TransportHttpRequest | undefined;

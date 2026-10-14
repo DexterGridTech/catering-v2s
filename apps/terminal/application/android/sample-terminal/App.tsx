@@ -25,7 +25,7 @@ export default function App({displayIndex, surfaceForm}: AppProps) {
   return (
     <AndroidTerminalApp<SampleAssembly>
       displayIndex={displayIndex}
-      surfaceForm={surfaceForm ?? automationSurfaceForm}
+      surfaceForm={automationSurfaceForm ?? surfaceForm}
       createAssembly={createSampleTerminalAssembly}
       renderSurface={(assembly, nextDisplayIndex) => createSurfaceForDisplayIndex(assembly, nextDisplayIndex)}
       renderFailurePage={({reason, displayIndex}) => (

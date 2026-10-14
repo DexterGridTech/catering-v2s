@@ -2,7 +2,7 @@ import type {CommandDispatchResult} from '@catering-v2s/kernel-base-runtime';
 
 export type RequestOutcome = 'completed' | 'running' | 'business-failure' | 'system-failure';
 
-const businessCategories = new Set(['AUTHENTICATION', 'BUSINESS', 'VALIDATION']);
+const businessCategories = new Set(['AUTHENTICATION', 'AUTHORIZATION', 'BUSINESS', 'VALIDATION']);
 
 export const isBusinessErrorCategory = (category: string): boolean => businessCategories.has(category);
 

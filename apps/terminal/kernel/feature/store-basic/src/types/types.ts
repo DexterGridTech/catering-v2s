@@ -4,7 +4,7 @@ import type {
   StoreContract,
   TerminalServicePointData,
   TerminalServicePointAreaData,
-} from '@catering-v2s/kernel-base-terminal-data-client';
+} from '../generated/terminalApi';
 
 export type StoreBasicBinding = Readonly<{
   terminalRef: string;

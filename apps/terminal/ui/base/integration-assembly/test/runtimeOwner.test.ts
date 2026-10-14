@@ -1,6 +1,6 @@
 import {unavailableRemoteControlPort} from '@catering-v2s/kernel-base-platform-ports';
-import type {ReactElement} from 'react';
-import {describe, expect, it} from 'vitest';
+import {act, type ReactNode} from 'react';
+import {describe, expect, it, vi} from 'vitest';
 import {
   createPlatformPorts,
   createProcessMemoryStateStoragePort,
@@ -14,6 +14,7 @@ import {
   type NativeLoadingCapability,
 } from '@catering-v2s/kernel-base-platform-ports';
 import {
+  createRuntimeModule,
   defineActor,
   defineCommand,
   onCommand,
@@ -21,8 +22,25 @@ import {
   type RuntimeModuleContext,
   type RuntimeModule,
 } from '@catering-v2s/kernel-base-runtime';
-import {RenderProvider} from '@catering-v2s/ui-base-render';
-import {createIntegrationAssembly} from '../src/foundations/integrationAssembly';
+import {definePart, type RenderProviderProps} from '@catering-v2s/ui-base-render';
+import {createUiRuntimeModule} from '@catering-v2s/ui-base-feature-assembly';
+import {createIntegrationAssembly} from '../src/application/integrationAssembly';
+
+const renderedBundle = vi.hoisted(() => ({props: undefined as unknown}));
+vi.mock('@catering-v2s/ui-base-render', async importOriginal => {
+  const actual = await importOriginal<typeof import('@catering-v2s/ui-base-render')>();
+  const React = await import('react');
+  return {
+    ...actual,
+    RenderProvider: (props: Readonly<{uiCatalog: Readonly<{entries: readonly Readonly<{partKey: string}>[]}>; children?: ReactNode}>) => {
+      renderedBundle.props = props;
+      return React.createElement('div', {'data-ui-part-keys': props.uiCatalog.entries.map(entry => entry.partKey).join(',')}, props.children);
+    },
+    SurfaceRoot: (props: Readonly<{children?: ReactNode}>) => React.createElement(React.Fragment, null, props.children),
+  };
+});
+
+type TestRoot = Readonly<{render(node: ReactNode): void; unmount(): void}>;
 
 const moduleName = 'test.console-owner-retry';
 const startupReadyCommand = defineCommand<Readonly<{readonly ready: boolean}>>(moduleName, {
@@ -36,7 +54,7 @@ const nativeLoadingCapability: NativeLoadingCapability = Object.freeze({
 });
 
 describe('console assembly runtime owner recovery', () => {
-  it('retains a failed runtime, releases its resources, and replaces it with fresh modules', async () => {
+  it('replaces the bundle rendered by an already mounted surface when runtime retry succeeds', async () => {
     const events: unknown[] = [];
     let installAttempts = 0;
     let cleanupCalls = 0;
@@ -66,12 +84,10 @@ describe('console assembly runtime owner recovery', () => {
       const actor = defineActor(moduleName, 'startup-ready', [
         onCommand(startupReadyCommand, () => ({completed: true})),
       ]);
-      return Object.freeze({
+      const runtimeModule = createRuntimeModule({
         moduleName,
         kind: 'owner' as const,
         dependencies: [],
-        commands: [{name: startupReadyCommand.commandName, visibility: startupReadyCommand.visibility}],
-        actors: [{name: 'startup-ready'}],
         commandDefinitions: [startupReadyCommand],
         actorDefinitions: [actor],
         install: (context: RuntimeModuleContext) => {
@@ -81,6 +97,22 @@ describe('console assembly runtime owner recovery', () => {
           });
           if (installAttempts === 1) throw new Error('first runtime install fails');
         },
+      });
+      return createUiRuntimeModule(runtimeModule, {
+        parts: [
+          definePart({
+            partKey: `test.owner-part-${installAttempts}`,
+            rendererKey: `test.owner-part-${installAttempts}.laptop`,
+            containerKeys: ['main'],
+            displayModes: ['PRIMARY'],
+            workspaces: ['MAIN'],
+            instanceModes: ['MASTER'],
+            surfaceForm: ['laptop'],
+            title: 'Owner part',
+            description: 'Owner contribution for retry test',
+            component: () => null,
+          }),
+        ],
       });
     };
 
@@ -93,9 +125,6 @@ describe('console assembly runtime owner recovery', () => {
       nativeLoadingCapability,
       surfaceForm: 'laptop',
       surfaceDeclarations: {PRIMARY: {width: 1280, height: 800}},
-      parts: [],
-      layerDismissals: {},
-      variables: [],
       startupReadyCommand,
       createStartupReadyPayload: () => ({ready: true}),
       createApplicationModules: () => [createApplicationModule()],
@@ -103,32 +132,61 @@ describe('console assembly runtime owner recovery', () => {
 
     const failedRuntime = assembly.runtime;
     const surface = assembly.createSurface({displayIndex: 0, displayMode: 'PRIMARY', surfaceForm: 'laptop'});
-    const renderProvider = (surface as ReactElement<Record<string, unknown>>).props.children as ReactElement<
-      Record<string, unknown>
-    >;
-    expect(renderProvider.type).toBe(RenderProvider);
-    const onLocalInteraction = renderProvider.props.onLocalInteraction as () => Promise<void>;
     expect(failedRuntime.status).toBe('failed');
     expect(installAttempts).toBe(1);
     expect(cleanupCalls).toBe(1);
     expect(events).toEqual(expect.any(Array));
 
-    const firstRetry = assembly.retryRuntime();
-    const concurrentRetry = assembly.retryRuntime();
-    expect(concurrentRetry).toBe(firstRetry);
-    await firstRetry;
+    const {JSDOM} = (await import('jsdom' as string)) as {
+      JSDOM: new (html: string) => {window: Window & typeof globalThis; close(): void};
+    };
+    const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>');
+    const oldWindow = Object.getOwnPropertyDescriptor(globalThis, 'window');
+    const oldDocument = Object.getOwnPropertyDescriptor(globalThis, 'document');
+    Object.defineProperty(globalThis, 'window', {configurable: true, value: dom.window});
+    Object.defineProperty(globalThis, 'document', {configurable: true, value: dom.window.document});
+    Object.defineProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT', {configurable: true, value: true});
+    const {createRoot} = (await import('react-dom/client' as string)) as {
+      createRoot(container: Element): TestRoot;
+    };
+    const root = createRoot(dom.window.document.getElementById('root') as Element);
+    try {
+      await act(async () => root.render(surface));
+      const renderedContainer = dom.window.document.querySelector('[data-ui-part-keys]');
+      expect(renderedContainer?.getAttribute('data-ui-part-keys')).toBe('test.owner-part-0');
 
-    const recoveredRuntime = assembly.runtime;
-    expect(recoveredRuntime.status).toBe('started');
-    expect(recoveredRuntime.runtimeId).not.toBe(failedRuntime.runtimeId);
-    expect(installAttempts).toBe(2);
-    expect(cleanupCalls).toBe(1);
+      let firstRetry!: Promise<void>;
+      await act(async () => {
+        firstRetry = assembly.retryRuntime();
+        const concurrentRetry = assembly.retryRuntime();
+        expect(concurrentRetry).toBe(firstRetry);
+        await firstRetry;
+      });
 
-    await onLocalInteraction();
-    expect(selectLastLocalInteraction(recoveredRuntime.getState()).revision).toBe(1);
+      const recoveredRuntime = assembly.runtime;
+      expect(recoveredRuntime.status).toBe('started');
+      expect(recoveredRuntime.runtimeId).not.toBe(failedRuntime.runtimeId);
+      expect(renderedContainer?.getAttribute('data-ui-part-keys')).toBe('test.owner-part-1');
+      expect(installAttempts).toBe(2);
+      expect(cleanupCalls).toBe(1);
 
-    await assembly.retryRuntime();
-    expect(assembly.runtime).toBe(recoveredRuntime);
-    expect(installAttempts).toBe(2);
+      const providerProps = renderedBundle.props as RenderProviderProps;
+      await act(async () => {
+        await providerProps.onLocalInteraction?.();
+      });
+      expect(selectLastLocalInteraction(recoveredRuntime.getState()).revision).toBe(1);
+
+      await act(async () => assembly.retryRuntime());
+      expect(assembly.runtime).toBe(recoveredRuntime);
+      expect(installAttempts).toBe(2);
+    } finally {
+      await act(async () => root.unmount());
+      dom.window.close();
+      if (oldWindow === undefined) Reflect.deleteProperty(globalThis, 'window');
+      else Object.defineProperty(globalThis, 'window', oldWindow);
+      if (oldDocument === undefined) Reflect.deleteProperty(globalThis, 'document');
+      else Object.defineProperty(globalThis, 'document', oldDocument);
+      Reflect.deleteProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT');
+    }
   });
 });

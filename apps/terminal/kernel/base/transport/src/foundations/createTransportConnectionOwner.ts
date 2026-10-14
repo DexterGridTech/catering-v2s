@@ -2,12 +2,14 @@ import type {TransportServerAddress} from '@catering-v2s/kernel-base-contracts';
 import type {
   TransportConnection,
   TransportConnectionEvent,
-  TransportHttpExecutionResult,
-  TransportHttpRequest,
   TransportManagedConnection,
   TransportNetworkAdapter,
-  TransportReconnectPolicy,
   TransportNetworkSnapshot,
+} from '@catering-v2s/kernel-base-platform-ports';
+import type {
+  TransportHttpExecutionResult,
+  TransportHttpRequest,
+  TransportReconnectPolicy,
   TransportStartInput,
 } from '../types/runtimeControl';
 

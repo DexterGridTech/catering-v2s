@@ -1,6 +1,12 @@
-import type {FaceOperationContracts, TerminalUpdateStageResult} from '../../../app/api/generated/platform-edge';
+import {
+  PLATFORM_ADMIN_OPERATION_IDS,
+  type FaceOperationContracts,
+  type TerminalUpdateStageResult,
+} from '../../../app/api/generated/platform-edge';
 
-type ArtifactPageQuery = FaceOperationContracts['getPlatformTerminalUpdateArtifactPage']['query'];
+type ArtifactPageQuery = FaceOperationContracts[
+  typeof PLATFORM_ADMIN_OPERATION_IDS.getPlatformTerminalUpdateArtifactPage
+]['query'];
 type MinimumFull = NonNullable<TerminalUpdateStageResult['minimumFull']>;
 
 export function platformMinimumFullCandidateQuery(minimumFull: MinimumFull | undefined): ArtifactPageQuery {

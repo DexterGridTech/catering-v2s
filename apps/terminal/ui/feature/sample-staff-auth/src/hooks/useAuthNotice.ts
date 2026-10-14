@@ -1,6 +1,6 @@
 import {useCallback} from 'react';
 import {dispatchWithRequestId, useDispatchCommand} from '@catering-v2s/ui-base-render';
-import {authNoticeDismissedCommand} from '../features/commands/commands';
+import {authNoticeDismissedCommand} from '../declarations/commands';
 import {authNoticeMessage} from '../foundations/authNoticeCopy';
 
 export const useAuthNotice = (reasonCode: string) => {

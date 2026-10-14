@@ -12,6 +12,7 @@
 - `terminal-data-client` 独占终端凭证、激活/取消激活、TDS 认证首帧、`SESSION_READY`、`PING/PONG`、seq、RTT、心跳超时和业务关闭原因。transport 只收发原始字节和通用连接事件。
 - `start` 可携带协议 owner 提供的 opaque `endpointPathAndQuery`。terminal-data-client 按共享协议构造 `/tdp/{encodedGroupWorkspaceKey}/ws`；transport 只拒绝绝对 URL、origin-relative 双斜杠、反斜杠、fragment 与控制字符，不解释路径业务语义。composition 注入的 network adapter 将其与配置地址的 origin 组合后建连，地址切换时路径保持一致。
 - `server-config` 拥有服务地址和代理配置及代理密码。TER composition 通过其内部网络装配 API 提供 snapshot provider，并注入 `TransportNetworkAdapter`。transport 每次新连接尝试读取当前快照；既不依赖 server-config，也不直接读它的 selector、state 或 persistence。代理密码只短暂到达 network adapter，不进入 selector、日志或 connection event。
+- `TransportNetworkAdapter` 与其连接事件是 `platform-ports` 的纯类型契约；transport 提供连接策略与命令，Android adapter 只依赖 `platform-ports` 并执行注入的网络配置。
 - `TransportConnection.send/subscribe` 是通用原始通道；start/ready/invalid/stop、HTTP 执行、HTTP 地址可用信号与网络变化由 transport command/actor 承载。socket 回调不直接改变 transport 状态或触发重连。HTTP request 对 transport 不透明；它只按调用方给的送达分类与 `safeRetryable` 执行地址尝试和时限，不读响应 body、不解释 status 或业务错误码。
 - topology 可以继续使用既有拓扑协议 primitives；拓扑字段、方向、大小和 fail-closed parser 的 owner 仍是 `contracts/src/foundations/topologyWire.ts`。TDS 业务消息不进入该 parser。
 
@@ -21,7 +22,8 @@
 src/
   application/        runtime module、命令 gateway 和 owner 装配
   features/           transport commands 与 connection actor
-  foundations/        地址、退避、network bridge、WebSocket 等纯机制
+  application/        runtime module、命令 gateway、network-status bridge 与 owner 装配
+  foundations/        地址、退避、WebSocket 等纯机制
   types/              通用 transport 形状
   index.ts            唯一公开面
 ```

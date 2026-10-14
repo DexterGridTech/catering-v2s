@@ -6,6 +6,7 @@ import {
   createRuntimeInstanceId,
 } from '@catering-v2s/kernel-base-contracts';
 import {
+  createRuntimeModule,
   createRuntime,
   defineActor,
   defineCommand,
@@ -29,13 +30,11 @@ const moduleFor = (
   actors: readonly ReturnType<typeof defineActor>[] = [],
   extra: Partial<RuntimeModule> = {},
 ): RuntimeModule =>
-  Object.freeze({
+  createRuntimeModule({
     moduleName,
     kind: 'owner' as const,
     dependencies: [{moduleName: 'kernel.base.runtime'}],
-    commands: commands.map(command => ({name: command.commandName, visibility: command.visibility})),
     commandDefinitions: commands,
-    actors: actors.map(actor => ({name: actor.actorName})),
     actorDefinitions: actors,
     ...extra,
   });

@@ -10,8 +10,9 @@ export {
   logoutSucceededCommand,
   sessionRestoredAnonymousCommand,
   sessionRestoredAuthenticatedCommand,
-} from './features/commands/commands';
+} from './declarations/commands';
 export {createSampleStaffSessionModule} from './application/module';
-export {selectHostStaffQualification, selectSessionState} from './selectors/selectors';
-export {sessionSliceName} from './features/slices/slice';
+export {selectHostStaffQualification} from './selectors/selectHostStaffQualification';
+export {selectSessionState} from './selectors/selectSessionState';
+export {sessionSliceName} from './features/slices/staffSession';
 export type {LoginFailedPayload, LoginPayload, SessionState, SessionStatus} from './types/types';

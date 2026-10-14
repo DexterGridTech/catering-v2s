@@ -1,7 +1,7 @@
 import {describe, expect, it, vi} from 'vitest';
 import {runtimeInstanceModeChangedCommand, selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
 import type {DisplayInfo, LogEvent, PortResult} from '@catering-v2s/kernel-base-platform-ports';
-import {releaseRuntimeForTest} from '@catering-v2s/kernel-base-runtime/testing';
+import {releaseRuntimeForTestAsync} from '@catering-v2s/kernel-base-runtime/testing';
 import {getDisplayRoleChangeEligibility} from '../src/foundations/displayDerivation';
 import {
   cancelPowerRoleChangeCommand,
@@ -103,7 +103,7 @@ describe('display-context command actors', () => {
       displayCount: multiDevice.displayCount,
     });
     expect(eligibility).toEqual({allowed: false, reasonCode: 'multiple-physical-displays'});
-    releaseRuntimeForTest(multiFixture.runtime);
+    await releaseRuntimeForTestAsync(multiFixture.runtime);
   });
 
   it('A-4 switchDisplayRole rejects malformed display info', async () => {
@@ -445,8 +445,8 @@ describe('display-context bridge and install lifecycle', () => {
     resolveDisplayInfo(succeeded({displayCount: 1}));
     await pendingStart;
     expect(startSettled).toBe(true);
-    releaseRuntimeForTest(persisted.runtime);
-    releaseRuntimeForTest(pendingFixture.runtime);
+    await releaseRuntimeForTestAsync(persisted.runtime);
+    await releaseRuntimeForTestAsync(pendingFixture.runtime);
 
     const device = new FakeDevicePort();
     device.subscribeResult = unavailable('subscribePowerStatus');
@@ -475,7 +475,7 @@ describe('display-context bridge and install lifecycle', () => {
       capability: 'subscribePowerStatus',
       errorType: 'Error',
     });
-    releaseRuntimeForTest(rejectingFixture.runtime);
+    await releaseRuntimeForTestAsync(rejectingFixture.runtime);
   });
 
   it('B-6 logs subscription onError without changing display role', async () => {
@@ -487,7 +487,7 @@ describe('display-context bridge and install lifecycle', () => {
 
   it('B-7 release unregisters the native subscription and ignores later events', async () => {
     const {runtime, device} = await startSlaveRuntime();
-    expect(releaseRuntimeForTest(runtime)).toBeGreaterThan(0);
+    expect(await releaseRuntimeForTestAsync(runtime)).toBeGreaterThan(0);
     await vi.waitFor(() => expect(device.calls.unsubscribePowerStatus).toHaveLength(1));
     device.emit('external');
     await Promise.resolve();
@@ -496,8 +496,8 @@ describe('display-context bridge and install lifecycle', () => {
 
   it('B-8 release is idempotent and never unsubscribes twice', async () => {
     const {runtime, device} = await startSlaveRuntime();
-    expect(releaseRuntimeForTest(runtime)).toBeGreaterThan(0);
-    expect(releaseRuntimeForTest(runtime)).toBe(0);
+    expect(await releaseRuntimeForTestAsync(runtime)).toBeGreaterThan(0);
+    expect(await releaseRuntimeForTestAsync(runtime)).toBe(0);
     await vi.waitFor(() => expect(device.calls.unsubscribePowerStatus).toHaveLength(1));
 
     const failureDevice = new FakeDevicePort();
@@ -505,7 +505,7 @@ describe('display-context bridge and install lifecycle', () => {
     const failureEvents: LogEvent[] = [];
     const failureFixture = createDisplayRuntime({device: failureDevice, events: failureEvents});
     await failureFixture.runtime.start();
-    expect(releaseRuntimeForTest(failureFixture.runtime)).toBeGreaterThan(0);
+    expect(await releaseRuntimeForTestAsync(failureFixture.runtime)).toBeGreaterThan(0);
     await vi.waitFor(() =>
       expect(failureEvents.find(event => event.event === 'power-bridge.unsubscribe-failed')).toBeDefined(),
     );
@@ -526,7 +526,7 @@ describe('display-context bridge and install lifecycle', () => {
     const timeoutEvents: LogEvent[] = [];
     const timeoutFixture = createDisplayRuntime({device: timeoutDevice, events: timeoutEvents});
     await timeoutFixture.runtime.start();
-    expect(releaseRuntimeForTest(timeoutFixture.runtime)).toBeGreaterThan(0);
+    expect(await releaseRuntimeForTestAsync(timeoutFixture.runtime)).toBeGreaterThan(0);
     await vi.waitFor(() =>
       expect(timeoutEvents.find(event => event.event === 'power-bridge.unsubscribe-failed')).toBeDefined(),
     );
@@ -541,7 +541,7 @@ describe('display-context bridge and install lifecycle', () => {
     const unavailableEvents: LogEvent[] = [];
     const unavailableFixture = createDisplayRuntime({device: unavailableDevice, events: unavailableEvents});
     await unavailableFixture.runtime.start();
-    expect(releaseRuntimeForTest(unavailableFixture.runtime)).toBeGreaterThan(0);
+    expect(await releaseRuntimeForTestAsync(unavailableFixture.runtime)).toBeGreaterThan(0);
     await vi.waitFor(() =>
       expect(unavailableEvents.find(event => event.event === 'power-bridge.unsubscribe-failed')).toBeDefined(),
     );
@@ -556,7 +556,7 @@ describe('display-context bridge and install lifecycle', () => {
     const rejectingEvents: LogEvent[] = [];
     const rejectingFixture = createDisplayRuntime({device: rejectingDevice, events: rejectingEvents});
     await rejectingFixture.runtime.start();
-    expect(releaseRuntimeForTest(rejectingFixture.runtime)).toBeGreaterThan(0);
+    expect(await releaseRuntimeForTestAsync(rejectingFixture.runtime)).toBeGreaterThan(0);
     await vi.waitFor(() =>
       expect(rejectingEvents.find(event => event.event === 'power-bridge.unsubscribe-rejected')).toBeDefined(),
     );

@@ -1,7 +1,4 @@
-import {
-  createFeatureAssemblyModule,
-  type CreateFeatureAssemblyModuleInput,
-} from '@catering-v2s/ui-base-feature-assembly';
+import {createUiRuntimeModule} from '@catering-v2s/ui-base-feature-assembly';
 import {runtimeModuleDependencyNames} from '../dependencies';
 import {
   deskSystemFailureDismissedCommand,
@@ -13,17 +10,16 @@ import {
   memberRegistrationAbandonedCommand,
   memberRegistrationRetryRequestedCommand,
   memberSubmissionWithdrawnCommand,
-} from '../features/commands/commands';
-import {
-  createDeskConfirmedActor,
-  createDeskFormActor,
-  createDeskNavigationActor,
-  createDeskNoticeActor,
-  createDeskPendingActor,
-  createDeskRejectedActor,
-  createDeskSystemNoticeActor,
-} from '../features/actors/actors';
+} from '../declarations/commands';
+import {createDeskConfirmedActor} from '../features/actors/deskConfirmedActor';
+import {createDeskFormActor} from '../features/actors/deskFormActor';
+import {createDeskNavigationActor} from '../features/actors/deskNavigationActor';
+import {createDeskNoticeActor} from '../features/actors/deskNoticeActor';
+import {createDeskPendingActor} from '../features/actors/deskPendingActor';
+import {createDeskRejectedActor} from '../features/actors/deskRejectedActor';
+import {createDeskSystemNoticeActor} from '../features/actors/deskSystemNoticeActor';
 import {moduleKind, moduleName} from '../moduleName';
+import {parts, layerDismissals} from '../declarations/parts';
 
 const commands = [
   startMemberDeskCommand,
@@ -37,7 +33,7 @@ const commands = [
   deskSystemFailureDismissedCommand,
 ] as const;
 
-export const createSampleMemberDeskModuleInput = (): CreateFeatureAssemblyModuleInput => {
+export const createSampleMemberDeskModule = () => {
   const actors = [
     createDeskNavigationActor(),
     createDeskFormActor(),
@@ -47,13 +43,14 @@ export const createSampleMemberDeskModuleInput = (): CreateFeatureAssemblyModule
     createDeskNoticeActor(),
     createDeskSystemNoticeActor(),
   ] as const;
-  return {
-    moduleName,
-    kind: moduleKind,
-    dependencies: runtimeModuleDependencyNames.map(name => ({moduleName: name})),
-    commandDefinitions: commands,
-    actorDefinitions: actors,
-  };
+  return createUiRuntimeModule(
+    {
+      moduleName,
+      kind: moduleKind,
+      dependencies: runtimeModuleDependencyNames.map(name => ({moduleName: name})),
+      commandDefinitions: commands,
+      actorDefinitions: actors,
+    },
+    {parts, layerDismissals},
+  );
 };
-
-export const createSampleMemberDeskModule = () => createFeatureAssemblyModule(createSampleMemberDeskModuleInput());

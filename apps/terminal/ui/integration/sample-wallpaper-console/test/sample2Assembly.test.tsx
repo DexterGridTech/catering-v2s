@@ -43,12 +43,12 @@ import {
 } from '../src';
 import {TerminalUpdateAssetLoadProbe} from '../test-expo/TerminalUpdateAssetLoadProbe';
 import {
-  sampleWallpaperPickerAssembly,
+  createSampleWallpaperPickerModule,
   wallpaperPickerExitRequestedCommand,
   wallpaperContentTestIds,
   wallpaperPickerTestIds,
 } from '@catering-v2s/ui-feature-sample-wallpaper-picker';
-import {sampleStaffAuthAssembly, sampleStaffAuthTestIds} from '@catering-v2s/ui-feature-sample-staff-auth';
+import {createSampleStaffAuthModule, sampleStaffAuthTestIds} from '@catering-v2s/ui-feature-sample-staff-auth';
 import {needToActivateTerminalCommand} from '@catering-v2s/ui-base-terminal-activation';
 import {activateTerminalCommand} from '@catering-v2s/kernel-base-terminal-data-client';
 import {
@@ -539,6 +539,7 @@ describe('sample2 wallpaper console assembly', () => {
     const developmentSpace = integrationDefaults.spaces.find(space => space.name === integrationDefaults.selectedSpace);
     expect(developmentSpace?.servers.map(server => server.serverName).sort()).toEqual([
       'business',
+      'livekit',
       'terminal-data-server',
     ]);
     expect(developmentSpace?.servers.find(server => server.serverName === 'terminal-data-server')?.addresses).toEqual([
@@ -546,7 +547,7 @@ describe('sample2 wallpaper console assembly', () => {
       {addressName: 'haproxy-entry-two', baseUrl: 'ws://127.0.0.1:28181', timeoutMs: 10000},
     ]);
     const defaultsAssembly = await createSampleWallpaperConsoleAssembly({
-      platformPorts: createTestPlatformPorts(),
+      platformPorts: createTestPlatformPorts({deviceInfo: ACTIVATION_DEVICE_INFO}),
       persistenceKey: `sample-wallpaper-console-server-defaults-${Date.now()}`,
       surfaceForm: 'mobile',
     });
@@ -560,6 +561,10 @@ describe('sample2 wallpaper console assembly', () => {
               serverName: 'business',
               addresses: [{addressName: 'fixture', baseUrl: 'https://sample-wallpaper.invalid/api', timeoutMs: 4321}],
             },
+            {
+              serverName: 'livekit',
+              addresses: [{addressName: 'fixture', baseUrl: 'wss://sample-wallpaper.invalid', timeoutMs: 4321}],
+            },
           ],
         },
       ],
@@ -567,7 +572,7 @@ describe('sample2 wallpaper console assembly', () => {
     let fixtureAssembly: Awaited<ReturnType<typeof createSampleWallpaperConsoleAssembly>> | undefined;
     try {
       fixtureAssembly = await createSampleWallpaperConsoleAssembly({
-        platformPorts: createTestPlatformPorts(),
+        platformPorts: createTestPlatformPorts({deviceInfo: ACTIVATION_DEVICE_INFO}),
         persistenceKey: `sample-wallpaper-console-server-fixture-${Date.now()}`,
         surfaceForm: 'mobile',
         serverSpaces: fixture,
@@ -586,7 +591,10 @@ describe('sample2 wallpaper console assembly', () => {
       expect(selectServerConfiguration(fixtureState, fixture).spaces).toMatchObject([
         {
           name: 'sample-wallpaper-fixture',
-          servers: [{serverName: 'business', addresses: fixture.spaces[0]!.servers[0]!.addresses}],
+          servers: [
+            {serverName: 'business', addresses: fixture.spaces[0]!.servers[0]!.addresses},
+            {serverName: 'livekit', addresses: fixture.spaces[0]!.servers[1]!.addresses},
+          ],
         },
       ]);
     } finally {
@@ -945,7 +953,10 @@ describe('sample2 wallpaper console assembly', () => {
   });
 
   it('keeps primary business parts as distinct laptop/mobile siblings and secondary parts laptop-only', async () => {
-    const primaryParts = [...sampleStaffAuthAssembly.parts, ...sampleWallpaperPickerAssembly.parts];
+    const primaryParts = [
+      ...(createSampleStaffAuthModule().presentationContributions.parts ?? []),
+      ...(createSampleWallpaperPickerModule().presentationContributions.parts ?? []),
+    ];
     const pairedKeys = new Set(
       primaryParts
         .filter(part => part.catalogEntry.surfaceForm.includes('mobile'))
@@ -979,7 +990,7 @@ describe('sample2 wallpaper console assembly', () => {
         .map(part => part.catalogEntry.partKey),
     ).toEqual(['sample.wallpaper-console.waiting', 'sample.wallpaper-console.welcome']);
     expect(
-      sampleWallpaperPickerAssembly.parts
+      (createSampleWallpaperPickerModule().presentationContributions.parts ?? [])
         .filter(part => part.catalogEntry.displayModes.includes('SECONDARY'))
         .map(part => part.catalogEntry.partKey),
     ).toEqual(['sample.wallpaper.host-display']);

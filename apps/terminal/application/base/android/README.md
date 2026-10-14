@@ -10,8 +10,10 @@
 
 - `src/moduleName.ts`：模块名与包的公开身份。
 - `src/dependencies.ts`：该装配包声明的 workspace 依赖。
-- `src/foundations/nativeLoadingCapability.ts`：module-scope prevent 与幂等 hide provider。
-- `src/foundations/androidAutomationUpdateTargetSourceProvider.ts`：读取受管自动化构建注入的更新目标；生产构建返回未配置状态。
+- `src/implementations/nativeLoadingCapability.ts`：连接 Expo splash 与原生 Activity loading gate。
+- `src/implementations/androidAutomationUpdateTargetSourceProvider.ts`：读取受管自动化构建注入的更新目标；生产构建返回未配置状态。
+- `src/implementations/androidPlatformBinding.ts`：把本地 adapter ports 与 NativeLoadingCapability 装配为 App 注入值。
+- `src/implementations/androidStructuredLoggerBinding.ts`：把结构化事件送入 Android/JS console。
 - `src/index.ts`：唯一公开入口和 capability 类型转出。
 - `terminal-invariants.json`：公开面的静态不变量。
 
@@ -20,23 +22,39 @@
 
 ## 用法
 
-App assembly 在构造 render/runtime 时创建本包的 binding，并把 required capability
+Android application 从包根创建 binding，并把 required capability
 传给共享 render assembly；assembly rejection 的 UI 也必须由 App 注入 render-owned
 `StandaloneStartupFailurePage`，本包不自绘 failure page 或另起一条 hide reason。provider
 的目标固定为物理 PRIMARY surface；业务 feature 不得直接调用 Expo splash API，也不得以
 no-op capability 兜底。
+
+```ts
+import {createAndroidPlatformBinding} from '@catering-v2s/application-base-android'
+
+const android = createAndroidPlatformBinding('sample-console')
+const {platformPorts, nativeLoadingCapability} = android
+```
+
+`sample-console` 应替换成当前 App 自己稳定的 persistence key；后续 assembly 使用返回的
+`platformPorts`、`nativeLoadingCapability` 及其他平台 binding 字段。
 
 `AndroidPlatformBinding.terminalUpdateSourceProvider` 只在受管自动化构建变量完整时提供
 run-scoped fixture source；Android app assembly 将它传给 integration 的
 `terminalUpdateSourceProvider` 输入。常规构建下该值为 `undefined`，真实版本规则仍由
 project-basic 和 terminal-update owner 处理。
 
-## 迭代边界
+## 在这个包上迭代时
 
 在这个包上迭代时，先同步 `doc/plans/platform/2026-09-14-v2s-terminal-sample-infrastructure-uplift-implementation-design-codex.md`
 的 D-5/D-6 与 `terminal-invariants.json`，再核对两个 App 的原生注册顺序和资源编译
 入口。不要在此加入 feature、integration、runtime state 或第二条 loading bridge；
 修改后必须跑对应 static/focused/native proof。
+
+```sh
+yarn workspace @catering-v2s/application-base-android typecheck
+yarn workspace @catering-v2s/application-base-android test
+yarn workspace @catering-v2s/application-base-android lint
+```
 
 Android 启动时由 `TerminalExpoSplashScreen.prepareActivity` 在共享包内统一设置
 `SplashScreenManager.preventAutoHideCalled`，再注册 Activity；两个 App

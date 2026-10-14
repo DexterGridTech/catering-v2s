@@ -22,7 +22,7 @@
 
 - `src/features/slices/displayRole.ts`：唯一 slice，持久化字段只有 `displayRole`；电源确认是同一 slice
   中的短生命周期、不可持久化 `powerConfirmation`，owner-only、isolated sync。
-- `src/features/commands` 与 `src/features/actors`：七条 command、六个 actor；公开 command 需要
+- `src/declarations/commands.ts` 与 `src/features/actors/`：七条 command、六个具名 actor；公开 command 需要
   `requestId` 与可信的 route context。
 - `src/foundations/displayDerivation.ts`：显示模式、workspace、角色/instance 准入和电源目标的纯函数。
 - `src/foundations/displayDevice.ts`：设备屏数读取与三态归类；私有调用超时不属于公共数值契约。
@@ -56,3 +56,21 @@ hydrate 恢复出的危险 `VICE` 在无法确认单屏时改回 `CHIEF` 并留�
   `?? 1` 降级逻辑。
 - 记录 entry 是本地事实；本包不承诺“无后续变更时自动恢复”以外的审计或重试语义，新增公开字段、端口方法、
   依赖边或改变失败域前必须重新核对需求、详设、规范与 invariant。
+
+最小装配与读取示例：
+
+```ts
+import {createDisplayContextModule, selectDisplayRole} from '@catering-v2s/kernel-base-display-context'
+
+const displayContextModule = createDisplayContextModule({surfaceForm: 'laptop'})
+const displayRole = selectDisplayRole(runtime.getState())
+```
+
+`displayContextModule` 加入 Runtime module 列表；`runtime` 是已经装配该 module 的 Runtime。
+角色读取只通过 selector，不从 slice 直接取值。
+
+```sh
+yarn workspace @catering-v2s/kernel-base-display-context typecheck
+yarn workspace @catering-v2s/kernel-base-display-context test
+yarn workspace @catering-v2s/kernel-base-display-context lint
+```

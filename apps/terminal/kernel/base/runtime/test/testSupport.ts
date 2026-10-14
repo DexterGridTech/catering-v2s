@@ -17,6 +17,7 @@ import {
 } from '@catering-v2s/kernel-base-platform-ports';
 import {defineStateRuntimeSlice, type StateRuntimeSliceRegistration} from '@catering-v2s/kernel-base-state';
 import {
+  createRuntimeModule,
   defineActor,
   onCommand,
   type ActorCommandHandler,
@@ -134,8 +135,7 @@ export const createTestRuntimeInput = (
   },
 });
 
-/** Build a minimal owner module for dispatch/lifecycle tests while retaining
- * the declarations that the runtime validates at registration time. */
+/** Build a minimal owner module from the same concrete definitions used at runtime. */
 export const createCommandModule = <TPayload extends import('@catering-v2s/kernel-base-state').StateJsonValue>(
   input: Readonly<{
     moduleName?: string;
@@ -152,13 +152,11 @@ export const createCommandModule = <TPayload extends import('@catering-v2s/kerne
   const actorName = input.actorName ?? 'handler';
   const handler = input.handler ?? (() => null);
   const actor = defineActor(moduleName, actorName, [onCommand(input.command, handler)]);
-  return Object.freeze({
+  return createRuntimeModule({
     moduleName,
     kind: 'owner' as const,
     dependencies: [{moduleName: 'kernel.base.runtime'}],
-    commands: [{name: input.command.commandName, visibility: input.command.visibility}],
     commandDefinitions: [input.command],
-    actors: [{name: actorName}],
     actorDefinitions: [actor],
     stateSlices: input.stateSlice === undefined ? [] : [input.stateSlice],
     install: input.install,

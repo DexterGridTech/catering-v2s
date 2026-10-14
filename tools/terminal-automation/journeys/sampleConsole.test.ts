@@ -85,6 +85,7 @@ describe(`TER automation ${appName} main journey on Expo Web`, () => {
   let expo: ReturnType<typeof spawn> | undefined;
   let expoIdentity: TerminalAutomationProcessIdentity | undefined;
   let selectedJourney: MainSampleJourneyConfig | undefined;
+  let journeyDiagnostics: ReturnType<typeof createJourneyFailureDiagnostics> | undefined;
   const expoBuffers = new Map<'stdout' | 'stderr', string>([
     ['stdout', ''],
     ['stderr', ''],
@@ -175,6 +176,11 @@ describe(`TER automation ${appName} main journey on Expo Web`, () => {
   afterAll(async () => {
     const errors: string[] = [];
     try {
+      journeyDiagnostics?.close();
+    } catch {
+      errors.push('JOURNEY_DIAGNOSTICS_CLEANUP_FAILED');
+    }
+    try {
       await browser?.close();
     } catch {
       errors.push('BROWSER_CLOSE_FAILED');
@@ -197,6 +203,11 @@ describe(`TER automation ${appName} main journey on Expo Web`, () => {
         errors.push('EXPO_PROCESS_TREE_CLEANUP_FAILED');
       }
     }
+    const harnessRunId = process.env.TERMINAL_AUTOMATION_RUN_ID ?? 'UNKNOWN';
+    const harnessSuite = `journey.${selectedSample}`;
+    process.stdout.write(
+      `TERMINAL_AUTOMATION_WEB_HARNESS_CLEANUP_${errors.length === 0 ? 'PASS' : 'FAIL'} runId=${harnessRunId} suite=${harnessSuite}${errors.length === 0 ? '' : ` failures=${errors.join(',')}`}\n`,
+    );
     if (errors.length > 0) throw new Error(`TERMINAL_AUTOMATION_CLEANUP_${errors.join('_')}`);
   });
 
@@ -207,6 +218,7 @@ describe(`TER automation ${appName} main journey on Expo Web`, () => {
     const journey = selectedJourney;
     if (journey === undefined) throw new Error('TERMINAL_AUTOMATION_JOURNEY_CONFIG_MISSING');
     const diagnostics = createJourneyFailureDiagnostics({server: driver.transport, sessionId});
+    journeyDiagnostics = diagnostics;
     const ui = createWebJourneyUiPort({
       server: driver.transport,
       sessionId,
@@ -228,7 +240,7 @@ describe(`TER automation ${appName} main journey on Expo Web`, () => {
               },
               storeBasicProof: {
                 runId: journey.runId,
-                httpBaseUrl: readRequiredEnv('EXPO_PUBLIC_TER_MANAGED_GROUP_WORKSPACE_BASE_URL'),
+                httpBaseUrl: readRequiredEnv('V2S_TERMINAL_DEV_HTTP_BASE_URL'),
                 operationsPassword: readRequiredEnv('V2S_SEED_OPERATIONS_DEFAULT_PASSWORD'),
                 platformRootPassword: readRequiredEnv('V2S_SEED_PLATFORM_ROOT_PASSWORD'),
               },
@@ -237,8 +249,9 @@ describe(`TER automation ${appName} main journey on Expo Web`, () => {
     } catch (error) {
       diagnostics.report(error);
       throw error;
-    } finally {
-      diagnostics.close();
     }
+    process.stdout.write(
+      `TERMINAL_AUTOMATION_WEB_HARNESS_BUSINESS_PASS runId=${journey.runId} suite=journey.${journey.sample}\n`,
+    );
   }, 90_000);
 });

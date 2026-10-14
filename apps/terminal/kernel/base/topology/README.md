@@ -24,7 +24,7 @@ slice；接收侧必须把跨机请求归一为本地执行，避免回环。
 ```text
 src/
   application/        topology RuntimeModule 与依赖装配
-  features/           commands、actors、topology slice
+  features/           `topologyPairActor.ts`、`topologyRoleActor.ts`、topology slice；共享纯操作规则在`topologyActorSupport.ts`
   foundations/        operation eligibility 与 secondary 纯谓词
   selectors/          topology state/facts 的只读读取面
   types/              topology 本地 state

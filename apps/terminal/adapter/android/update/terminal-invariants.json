@@ -5,5 +5,12 @@
     "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/adapter-android-update", "runner": "vitest"},
     "lint": {"kind": "OWNED", "owner": "@catering-v2s/adapter-android-update", "runner": "eslint"},
     "clean": {"kind": "ABSENT"}
-  }
+  },
+  "publicExports": [
+    "createAndroidAppControlPort",
+    "createAndroidUpdatePort",
+    "dependencyModuleNames",
+    "devDependencyModuleNames",
+    "moduleName"
+  ]
 }

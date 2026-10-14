@@ -1,7 +1,7 @@
 import {useEffect, useMemo} from 'react';
 import {StyleSheet, View} from 'react-native';
 import {selectScreen, type ScreenPlacement} from '@catering-v2s/kernel-base-ui-state';
-import {useRenderContext} from '../contexts/RenderContext';
+import {useRenderContext} from '../hooks/useRenderContext';
 import {useSurfaceContext} from '../contexts/SurfaceContext';
 import {ContainerDiagnosticEffect, RenderFallback, resolvePartWithStatus} from './resolvePart';
 import {useRenderStatus} from '../hooks/useRenderStatus';

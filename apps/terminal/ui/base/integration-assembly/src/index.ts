@@ -17,19 +17,17 @@ export type {
 } from './foundations/terminalSurfaces';
 export {createStartupReadyActor, createStartupReadyPayload} from './foundations/startupReady';
 export type {StartupReadyActorInput, StartupReadyPayload} from './foundations/startupReady';
-export {selectStateSyncSlices} from './foundations/stateSyncSlices';
 export {createBrowserTransportNetworkAdapter} from './foundations/createBrowserTransportNetworkAdapter';
-export type {StateSyncSlice, TopologyStateSyncSlice} from './foundations/stateSyncSlices';
 export {
   createIntegrationAssembly,
   createDispatchCommand,
   createStateSource,
   createSurfaceForDisplayIndex,
-} from './foundations/integrationAssembly';
+} from './application/integrationAssembly';
 export type {AutomationAgentConfig} from '@catering-v2s/ui-base-automation-agent';
 export type {
   IntegrationAssembly,
   IntegrationAssemblyInput,
   IntegrationSurfaceCreationInput,
   IntegrationSurfaceDeclarations,
-} from './foundations/integrationAssembly';
+} from './application/integrationAssembly';

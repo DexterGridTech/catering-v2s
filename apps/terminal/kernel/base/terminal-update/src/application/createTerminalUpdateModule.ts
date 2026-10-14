@@ -1,4 +1,5 @@
 import {
+  createRuntimeModule,
   selectLastLocalInteraction,
   type RuntimeModule,
   type RuntimeModuleContext,
@@ -16,15 +17,13 @@ import {
   reconcileTerminalUpdateCommand,
   terminalUpdateDeadlineCommand,
   updatePresentationChangedCommand,
-} from '../features/commands/commands';
+} from '../declarations/commands';
 import {terminalUpdateRegistration} from '../features/slices/terminalUpdate';
-import {
-  selectTerminalUpdateActualVersions,
-  selectTerminalUpdateInvitation,
-  selectTerminalUpdateRecentStatus,
-  selectTerminalUpdateReportDelivery,
-  selectTerminalUpdateTask,
-} from '../selectors/selectors';
+import {selectTerminalUpdateActualVersions} from '../selectors/selectTerminalUpdateActualVersions';
+import {selectTerminalUpdateInvitation} from '../selectors/selectTerminalUpdateInvitation';
+import {selectTerminalUpdateRecentStatus} from '../selectors/selectTerminalUpdateRecentStatus';
+import {selectTerminalUpdateReportDelivery} from '../selectors/selectTerminalUpdateReportDelivery';
+import {selectTerminalUpdateTask} from '../selectors/selectTerminalUpdateTask';
 import type {
   UpdateNetworkSnapshotReader,
   TerminalUpdateContextFacts,
@@ -72,11 +71,10 @@ export const createTerminalUpdateModule = (
     reconcileTerminalUpdateCommand,
     updatePresentationChangedCommand,
   ] as const;
-  return Object.freeze({
+  return createRuntimeModule({
     moduleName,
     kind: moduleKind,
     dependencies: runtimeModuleDependencyNames.map(name => ({moduleName: name})),
-    commands: commandDefinitions.map(command => ({name: command.commandName, visibility: command.visibility})),
     commandDefinitions,
     selectorDefinitions: [
       selectTerminalUpdateActualVersions,
@@ -85,11 +83,7 @@ export const createTerminalUpdateModule = (
       selectTerminalUpdateRecentStatus,
       selectTerminalUpdateReportDelivery,
     ],
-    actors: [{name: actor.actorName}],
     actorDefinitions: [actor],
-    slices: [
-      {name: terminalUpdateRegistration.name, persistIntent: 'owner-only' as const, resetIntent: 'retain' as const},
-    ],
     stateSlices: [terminalUpdateRegistration],
     install: async (context: RuntimeModuleContext) => {
       let disposed = false;

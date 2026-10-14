@@ -1,7 +1,7 @@
 import {useCallback} from 'react';
 import {selectMembers as selectMemberRecords} from '@catering-v2s/kernel-feature-sample-member-registry';
 import {logoutCommand} from '@catering-v2s/kernel-feature-sample-staff-session';
-import {deskSystemFailureObservedCommand, memberFormOpenedCommand} from '../features/commands/commands';
+import {deskSystemFailureObservedCommand, memberFormOpenedCommand} from '../declarations/commands';
 import {
   dispatchWithRequestId,
   useDispatchCommand,

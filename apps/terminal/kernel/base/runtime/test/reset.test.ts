@@ -1,5 +1,12 @@
 import {describe, expect, it, vi} from 'vitest';
-import {createRuntime, defineActor, defineCommand, onCommand, type RuntimeModule} from '../src/index';
+import {
+  createRuntimeModule,
+  createRuntime,
+  defineActor,
+  defineCommand,
+  onCommand,
+  type RuntimeModule,
+} from '../src/index';
 import {createRequestId} from '@catering-v2s/kernel-base-contracts';
 import {createSharedMemoryStoragePort, createTestRuntimeInput, createTestSlice, deferred} from './testSupport';
 
@@ -11,13 +18,11 @@ const moduleFor = (
   actors: readonly ReturnType<typeof defineActor>[],
   extra: Partial<RuntimeModule> = {},
 ): RuntimeModule =>
-  Object.freeze({
+  createRuntimeModule({
     moduleName,
     kind: 'owner' as const,
     dependencies: [{moduleName: 'kernel.base.runtime'}],
-    commands: commands.map(command => ({name: command.commandName, visibility: command.visibility})),
     commandDefinitions: commands,
-    actors: actors.map(actor => ({name: actor.actorName})),
     actorDefinitions: actors,
     ...extra,
   });

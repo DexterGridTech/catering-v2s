@@ -1,7 +1,7 @@
 import {useEffect, useMemo, useState, useSyncExternalStore, type ReactNode} from 'react';
 import {PixelRatio, StyleSheet, View} from 'react-native';
 import {PrimitiveSpinner} from '@catering-v2s/ui-base-primitives';
-import {useRenderContext} from '../contexts/RenderContext';
+import {useRenderContext} from '../hooks/useRenderContext';
 import {renderTestIds} from '../foundations/renderTestIds';
 import {
   calculateSurfaceHostGeometry,

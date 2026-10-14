@@ -5,7 +5,7 @@ import {
   type CommandIntent,
   type DefineCommandInput,
 } from '../types/command';
-import {defaultCommandTimeoutMs} from '../types/limits';
+import {defaultCommandTimeoutMs} from '../declarations/parameters';
 import {assertNonEmptyString} from './assertNonEmptyString';
 
 export const defineCommand = <TPayload extends StateJsonValue = StateJsonValue>(

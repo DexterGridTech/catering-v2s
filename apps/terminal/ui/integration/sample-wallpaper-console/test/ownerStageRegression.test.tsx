@@ -19,7 +19,7 @@ import {
 } from '@catering-v2s/kernel-feature-project-basic';
 import {terminalDataClientActions} from '../../../../../terminal/kernel/base/terminal-data-client/src/features/slices/terminalDataClient';
 import {createSurfaceForDisplayIndex, createSampleWallpaperConsoleAssembly} from '../src';
-import {startupReadyCommand} from '../src/application/module';
+import {startupReadyCommand} from '../src/declarations/commands';
 import {createReadyTerminalNetworkAdapter, createTestPlatformPorts, type TestPlatformPorts} from './support';
 import {adminTestIds} from '@catering-v2s/ui-base-admin-shell';
 import {
@@ -70,6 +70,12 @@ const wallpaperStageServerSpaces: TransportServerConfig = Object.freeze({
           ]),
         }),
         Object.freeze({
+          serverName: 'livekit',
+          addresses: Object.freeze([
+            Object.freeze({addressName: 'primary', baseUrl: 'ws://127.0.0.1:7880', timeoutMs: 10_000}),
+          ]),
+        }),
+        Object.freeze({
           serverName: 'terminal-data-server',
           addresses: Object.freeze([
             Object.freeze({addressName: 'primary', baseUrl: 'ws://127.0.0.1:28180', timeoutMs: 10_000}),
@@ -108,7 +114,6 @@ const createAssembly = (input: TestAssemblyInput) =>
   });
 
 const dispatchOptions = () => ({requestId: createRequestId()});
-
 const waitForPersistedSession = async (storage: ReturnType<typeof createProcessMemoryStateStoragePort>) => {
   await waitFor(async () => {
     const result = await storage.listKeys({});
@@ -362,6 +367,7 @@ describe('sample-wallpaper-console integration owner-stage regressions', () => {
         }),
     });
     try {
+      expect(assembly.runtime.status).toBe('started');
       await activate(assembly);
       await waitFor(() => expect(selectProjectBasicLoadReadiness(assembly.runtime.getState()).status).toBe('flushed'));
       await waitFor(() => expect(selectProjectTerminalUpdateRules(assembly.runtime.getState()).status).toBe('ready'));

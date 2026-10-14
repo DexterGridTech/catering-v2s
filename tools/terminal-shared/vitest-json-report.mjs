@@ -13,15 +13,6 @@ function assertionStatuses(report) {
   return results;
 }
 
-function safeFailureLine(value) {
-  return String(value ?? '')
-    .split(/\r?\n/, 1)[0]
-    .replace(/\b[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}\b/g, '[REDACTED_EMAIL]')
-    .replace(/\b\+?\d[\d ().-]{7,}\d\b/g, '[REDACTED_NUMBER]')
-    .replace(/\b(password|passcode|token|cookie|authorization)\s*[:=]\s*[^\s,;]+/gi, '$1=[REDACTED]')
-    .slice(0, 300);
-}
-
 function safeFailureFrames(value) {
   return String(value ?? '')
     .split(/\r?\n/)
@@ -46,15 +37,15 @@ export function summarizeVitestFailureReport(report) {
       .filter(assertion => assertion.status === 'failed')
       .map(assertion => ({
         file: path.basename(file.name ?? 'unknown-test-file'),
-        test: safeFailureLine(assertion.fullName ?? assertion.title ?? 'unknown test'),
-        detail: safeFailureLine(assertion.failureMessages?.[0] ?? ''),
+        test: String(assertion.fullName ?? assertion.title ?? 'unknown test'),
+        detail: JSON.stringify(String(assertion.failureMessages?.[0] ?? '')),
         frames: safeFailureFrames(assertion.failureMessages?.[0] ?? ''),
       }));
   });
   if (failedAssertions.length === 0) {
     const failedFiles = report.testResults
       .filter(file => file?.status === 'failed')
-      .map(file => ({file: path.basename(file.name ?? 'unknown-test-file'), detail: safeFailureLine(file.message)}));
+      .map(file => ({file: path.basename(file.name ?? 'unknown-test-file'), detail: JSON.stringify(String(file.message ?? ''))}));
     if (failedFiles.length === 0) {
       return `VITEST_FAILURE_REPORT_NO_FAILED_ITEMS files=${report.testResults.length} success=${String(report.success)} total=${String(report.numTotalTests)} failed=${String(report.numFailedTests)} pending=${String(report.numPendingTests)}`;
     }
@@ -66,7 +57,7 @@ export function summarizeVitestFailureReport(report) {
   return failedAssertions
     .slice(0, 10)
     .map(
-      ({file, test, detail, frames}) =>
+        ({file, test, detail, frames}) =>
         `VITEST_FAILED_TEST file=${file} test=${test}${detail ? ` detail=${detail}` : ''}${frames ? ` frames=${frames}` : ''}`,
     )
     .join('\n');

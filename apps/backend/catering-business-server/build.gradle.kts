@@ -1,4 +1,5 @@
 import java.io.File
+import groovy.json.JsonSlurper
 
 plugins {
     java
@@ -228,4 +229,35 @@ tasks.register<JavaExec>("managedInvitationBootstrap") {
     description = "Runs the managed non-web workspace invitation bootstrap for isolated L2 fixtures."
     classpath = sourceSets["main"].runtimeClasspath
     mainClass.set("com.catering.v2s.app.bootstrap.ManagedInvitationBootstrap")
+}
+
+val r5FullSeedFixtureContract = rootProject.file("doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json")
+tasks.register<JavaExec>("managedUatPlatformBootstrap") {
+    group = "verification"
+    description = "Runs the one-shot non-web UAT platform administrator bootstrap."
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("com.catering.v2s.app.bootstrap.ManagedUatPlatformBootstrap")
+    inputs.file(r5FullSeedFixtureContract)
+    doFirst {
+        val fixture = JsonSlurper().parse(r5FullSeedFixtureContract) as? Map<*, *>
+            ?: throw GradleException("UAT_BOOTSTRAP_FIXTURE_CONTRACT_INVALID")
+        val stableFixtures = fixture["stableFixtures"] as? Map<*, *>
+            ?: throw GradleException("UAT_BOOTSTRAP_FIXTURE_CONTRACT_INVALID")
+        val platformAdmins = stableFixtures["platformAdmins"] as? List<*>
+            ?: throw GradleException("UAT_BOOTSTRAP_FIXTURE_CONTRACT_INVALID")
+        val bootstrapAdmins = platformAdmins.mapNotNull { it as? Map<*, *> }
+            .filter { it["key"] == "pa-bootstrap" }
+        if (bootstrapAdmins.size != 1) throw GradleException("UAT_BOOTSTRAP_CANONICAL_ADMIN_INVALID")
+        val bootstrapAdmin = bootstrapAdmins.single()
+        val administratorId = bootstrapAdmin["id"] as? String
+            ?: throw GradleException("UAT_BOOTSTRAP_CANONICAL_ADMIN_INVALID")
+        if (!Regex("^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$").matches(administratorId)
+            || bootstrapAdmin["login"] != "root"
+            || bootstrapAdmin["displayName"] != "平台超级管理员"
+            || bootstrapAdmin["builtIn"] != true
+            || bootstrapAdmin["status"] != "ENABLED") {
+            throw GradleException("UAT_BOOTSTRAP_CANONICAL_ADMIN_INVALID")
+        }
+        environment("V2S_UAT_PLATFORM_ROOT_ID", administratorId)
+    }
 }

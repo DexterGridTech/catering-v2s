@@ -1,4 +1,4 @@
-import type {RuntimeModule, RuntimeModuleContext} from '@catering-v2s/kernel-base-runtime';
+import {createRuntimeModule, type RuntimeModule, type RuntimeModuleContext} from '@catering-v2s/kernel-base-runtime';
 import type {TransportServerConfig} from '@catering-v2s/kernel-base-contracts';
 import {runtimeModuleDependencyNames} from '../dependencies';
 import {moduleKind, moduleName} from '../moduleName';
@@ -10,9 +10,10 @@ import {
   selectServerConfigSpaceCommand,
   setServerOverrideCommand,
   validateHydratedServerConfigCommand,
-} from '../features/commands';
+} from '../declarations/commands';
 import {defaultServiceNames, validateServerConfigDefaults} from '../foundations/validateServerConfigDefaults';
 import {resolveServerNetworkSnapshot, selectServerConfiguration} from '../selectors/selectServerConfiguration';
+import {selectServerConfigServiceContext} from '../selectors/selectServerConfigServiceContext';
 
 /** Creates the server-configuration owner with immutable assembly defaults. */
 export const createServerConfigModule = (defaults: TransportServerConfig): RuntimeModule => {
@@ -27,16 +28,13 @@ export const createServerConfigModule = (defaults: TransportServerConfig): Runti
     restoreServerDefaultsCommand,
     validateHydratedServerConfigCommand,
   ] as const;
-  return Object.freeze({
+  return createRuntimeModule({
     moduleName,
     kind: moduleKind,
     dependencies: runtimeModuleDependencyNames.map(name => ({moduleName: name})),
-    commands: commandDefinitions.map(command => ({name: command.commandName, visibility: command.visibility})),
     commandDefinitions,
-    selectorDefinitions: [selectServerConfiguration, resolveServerNetworkSnapshot],
-    actors: [{name: actor.actorName}],
+    selectorDefinitions: [selectServerConfiguration, resolveServerNetworkSnapshot, selectServerConfigServiceContext],
     actorDefinitions: [actor],
-    slices: [{name: slice.registration.name, persistIntent: 'owner-only' as const, resetIntent: 'retain' as const}],
     stateSlices: [slice.registration],
     install: async (context: RuntimeModuleContext) => {
       const result = await context.dispatchCommand(validateHydratedServerConfigCommand, Object.freeze({}));

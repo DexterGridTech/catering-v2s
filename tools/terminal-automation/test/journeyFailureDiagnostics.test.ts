@@ -4,7 +4,7 @@ import {createJourneyFailureDiagnostics} from '../src/journeyFailureDiagnostics.
 afterEach(() => vi.unstubAllEnvs());
 
 describe('journey failure diagnostics', () => {
-  it('reports the current step, request identity, and whitelisted push metadata without payloads', () => {
+  it('reports the failed boundary, last completed step, raw error, and safe push metadata without payloads', () => {
     vi.stubEnv('TERMINAL_AUTOMATION_RUN_ID', 'run-diagnostic-1');
     const listener = vi.fn();
     const line = vi.fn();
@@ -18,6 +18,7 @@ describe('journey failure diagnostics', () => {
     });
 
     diagnostics.markStep('kernel.feature.sample-staff-session.login');
+    diagnostics.markStep('kernel.feature.sample-staff-session.submit');
     diagnostics.requestStarted('request-1');
     listener({
       type: 'event',
@@ -33,17 +34,19 @@ describe('journey failure diagnostics', () => {
     const report = line.mock.calls.map(call => call[0] as string).find(value => value.includes('TERMINAL_AUTOMATION_JOURNEY_FAILURE'));
     expect(report).toBeDefined();
     expect(report).toContain('TERMINAL_AUTOMATION_JOURNEY_FAILURE');
-    expect(report).toContain('kernel.feature.sample-staff-session.login');
+    expect(report).toContain('"lastKnownGoodStep":"kernel.feature.sample-staff-session.login"');
+    expect(report).toContain('"brokenBoundary":"kernel.feature.sample-staff-session.submit"');
     expect(report).toContain('request-1');
     expect(report).toContain('actor.started');
     expect(report).toContain('NOT_SAVED_REDACTION_UNAVAILABLE');
+    expect(report).toContain('raw-sensitive-value');
     expect(report).not.toContain('secret-payload');
     expect(report).not.toContain('01012345678');
     expect(report).not.toContain('1111');
-    expect(report).not.toContain('raw-sensitive-value');
     const json = report?.slice('TERMINAL_AUTOMATION_JOURNEY_FAILURE '.length) ?? '';
-    const parsed = JSON.parse(json) as {at?: unknown; runId?: unknown};
+    const parsed = JSON.parse(json) as {at?: unknown; runId?: unknown; errorMessage?: unknown};
     expect(parsed.runId).toBe('run-diagnostic-1');
+    expect(parsed.errorMessage).toBe('TERMINAL_AUTOMATION_SELECTOR_FAILED raw-sensitive-value');
     expect(typeof parsed.at).toBe('string');
     expect(new Date(parsed.at as string).toISOString()).toBe(parsed.at);
     diagnostics.close();

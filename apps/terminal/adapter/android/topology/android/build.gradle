@@ -1,0 +1,28 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'com.catering.v2s.terminal.adapter.android.topology'
+version = '0.1.0'
+
+android {
+  namespace "com.catering.v2s.terminal.adapter.android.topology"
+  defaultConfig { versionCode 1; versionName "0.1.0" }
+  testOptions { unitTests.returnDefaultValues = true }
+  lintOptions { abortOnError false }
+}
+
+tasks.withType(org.gradle.api.tasks.testing.Test).configureEach {
+  systemProperty 'ter.repositoryRoot', rootProject.projectDir.toPath()
+    .resolve('../../../../../../')
+    .toFile()
+    .canonicalPath
+}
+
+dependencies {
+  implementation("com.facebook.react:react-android")
+  implementation("org.nanohttpd:nanohttpd-websocket:2.3.1")
+  testImplementation 'junit:junit:4.13.2'
+  testImplementation 'org.json:json:20260719'
+}

@@ -258,9 +258,13 @@
       "source": "apps/frontend/operations-admin/src/features/terminal-update/ui/ProjectTerminalUpdatePage.tsx",
       "primaryKinds": ["TERMINAL_UPDATE_RULE"],
       "tableIndex": 0,
-      "filterKeys": ["status"],
-      "filterColumnMappings": [{"filterKey": "status", "visibleColumnTitle": "状态"}],
-      "additionalVisibleColumnTitles": ["规则", "范围", "FULL", "HOT", "检查间隔", "创建时间"]
+      "filterKeys": ["applicationId", "createdRange", "status"],
+      "filterColumnMappings": [
+        {"filterKey": "applicationId", "visibleColumnTitle": "更新目标"},
+        {"filterKey": "createdRange", "visibleColumnTitle": "创建时间"},
+        {"filterKey": "status", "visibleColumnTitle": "状态"}
+      ],
+      "additionalVisibleColumnTitles": ["门店范围", "安装提醒间隔"]
     },
     {
       "id": "operations-terminal-version-reports",
@@ -275,16 +279,21 @@
         {"filterKey": "currentJsVersion", "visibleColumnTitle": "实际 JS"},
         {"filterKey": "runtimeVersion", "visibleColumnTitle": "Runtime"}
       ],
-      "additionalVisibleColumnTitles": ["最新实际状态"]
+      "additionalVisibleColumnTitles": ["连接状态", "最新升级报告状态", "接收时间"]
     },
     {
       "id": "platform-terminal-update-artifacts",
       "source": "apps/frontend/platform-admin/src/features/terminal-update/ui/TerminalUpdatePackagesPage.tsx",
       "primaryKinds": ["TERMINAL_UPDATE_ARTIFACT"],
       "tableIndex": 0,
-      "filterKeys": ["kind"],
-      "filterColumnMappings": [{"filterKey": "kind", "visibleColumnTitle": "类型"}],
-      "additionalVisibleColumnTitles": ["应用", "原生版本", "APK 版本", "JS 版本", "Runtime", "创建时间"]
+      "filterKeys": ["kind", "appId", "runtimeVersion", "queryText"],
+      "filterColumnMappings": [
+        {"filterKey": "kind", "visibleColumnTitle": "类型"},
+        {"filterKey": "appId", "visibleColumnTitle": "应用"},
+        {"filterKey": "runtimeVersion", "visibleColumnTitle": "Runtime"},
+        {"filterKey": "queryText", "visibleColumnTitle": "更新包"}
+      ],
+      "additionalVisibleColumnTitles": ["原生版本", "APK 版本", "JS 版本", "创建时间"]
     },
     {
       "id": "platform-owner-binding-list",

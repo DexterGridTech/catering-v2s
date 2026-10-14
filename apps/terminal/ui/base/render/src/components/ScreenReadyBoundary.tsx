@@ -1,7 +1,7 @@
 import {useCallback, useEffect, useRef, useState, type ReactNode} from 'react';
 import {StyleSheet, Text, View, type LayoutChangeEvent} from 'react-native';
 import type {LoggerPort, NativeLoadingCapability} from '@catering-v2s/kernel-base-platform-ports';
-import {useRenderContext} from '../contexts/RenderContext';
+import {useRenderContext} from '../hooks/useRenderContext';
 import {useSurfaceContext} from '../contexts/SurfaceContext';
 import type {ContentFailureReason, RenderSurfaceReadyInput, SystemFailureReason} from '../types/props';
 import {renderTestIds} from '../foundations/renderTestIds';

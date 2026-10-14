@@ -1,47 +1,51 @@
-# Integration 基础装配
+# 终端应用装配壳（`ui.base.integration-assembly`）
 
 ## 定位
 
-`ui.base.integration-assembly` 是两个 terminal integration 共用的整机装配壳。它读取设备与屏幕
-事实，合并 admin shell 与 integration 提供的 parts，建立并启动 runtime，按每块屏幕的 display
-mode 和 surface form 生成界面树，并导出 `createIntegrationAssembly` 与按屏幕创建 surface 的
-基础能力。启动诊断 writer 只是其中一项职责；本包不拥有 feature 业务状态、catalog 或原生开机
-画面。
+本包是两个 terminal integration 共用的整机装配壳。它读取设备与屏幕事实，加载各 owner module，
+从已加载的 UI module 收集呈现贡献，构建 catalog、Runtime 与 surface。它不拥有业务状态，
+也不手工维护 UI parts 或 State 同步资格名单。
+
+这是 UI toolkit，由 `sample-console` 和 `sample-wallpaper-console` 使用；直接依赖为 contracts/display-context/platform-ports/runtime/state/transport/ui-state 与 admin-shell/automation-agent/feature-assembly/input/primitives/render。App-specific modules、策略和平台输入仍由这两个 integration 提供。
 
 ## 结构
 
-- `src/moduleName.ts`：公开模块身份。
-- `src/dependencies.ts`：integration assembly 的 workspace 依赖声明。
-- `src/foundations/integrationAssembly.tsx`：共享整机装配壳、设备/屏幕事实读取、parts 合并、
-  runtime 启动、surface 输入和 per-runtime primary-ready 生命周期门，并导出
-  `createIntegrationAssembly`。
-- runtime facts 同时携带按 PRIMARY/SECONDARY 解析后的应用逻辑画布尺寸；这是应用逻辑分辨率，
-  不等同于设备 adapter 提供的逻辑显示区域或物理像素尺寸。
-- `src/foundations/terminalSurfaces.ts`：无业务知识的 surface declaration parser 与
-  orientation selector；package.json 仍由 integration adapter 读取。
-- `src/foundations/startupReady.ts`：startup-ready payload 与 actor 的机械共性；command
-  identity、消息和装配时机仍由 integration 持有。
-- `src/foundations/stateSyncSlices.ts`：只过滤显式提供的 isolated slice，不扫描、排序或
-  去重 integration 的 state source。
-- `src/foundations/startupDiagnosticsWriter.ts`：单一 writer 与 duplicate guard。
-- `src/index.ts`：唯一公开入口。
+- `src/application/integrationAssembly.tsx`：加载 modules、构建完整 Runtime bundle、创建各屏 surface，
+  并在 retry 时替换 Runtime 与 catalog。
+- `src/foundations/terminalSurfaces.ts`：surface declaration parser 与 orientation selector。
+- `src/foundations/startupReady.ts`：startup-ready payload 与 actor 的共用实现。
+- `src/foundations/startupDiagnosticsWriter.ts`：startup complete 的单一 writer 与 duplicate guard。
+- `src/index.ts`：唯一公共入口。
 - `terminal-invariants.json`：公开面与包边界不变量。
 
-两个 integration 通过同一 writer 接收 logger、唯一 run identity、client/app 及
-surface provenance；它们不得各自复制 `startup.complete` 写入逻辑，也不得把 sink
-oracle 变成写入端。
+## 所有权与生命周期
+
+UI package module 自身贡献 parts、variables 和 `partKey → dismissal`。本包逐项收集，重复 partKey
+或 dismissal key 会拒绝装配；catalog、renderer、dismissals、ui-state 与 Runtime 属于同一 bundle，
+失败重试会重新构建并整体替换。
+
+State 从已注册 slice descriptor 派生同步资格，Runtime 只转交只读资格 view，Topology 在 install
+时消费。integration 不再传入第二份 State 同步白名单；业务 required projections 仍由各业务 consumer
+按自己的判据检查。
+
+两套 integration 通过同一 startup diagnostics writer 提供 logger、run identity 与 surface provenance；
+不得复制 `startup.complete` 写入逻辑，也不得把只读诊断 sink 当成写入端。
 
 ## 用法
 
-在 integration assembly 完成 required startup groups 和 surface provenance 后，调用
-`createStartupDiagnosticsWriter` 的受控入口。writer 必须拒绝相同 run 的重复 complete，
-并保留结构化、脱敏、可关联的日志字段；integration 通过 `createStartupReadyActor`、
-`createStartupReadyPayload`、`selectStateSyncSlices` 和 terminal-surface adapter 接入，
-不在包内复制这些机械实现。
+通用 App composition 由本包创建 assembly；屏幕根节点按物理显示序号挂载对应 surface：
 
-## 迭代边界
+```tsx
+const assembly = await createIntegrationAssembly(input)
+const primarySurface = createSurfaceForDisplayIndex(assembly, 0)
+```
 
-在这个包上迭代时，先同步详设 D-7/D-8 与计划 B3，再核对两个 integration 的
-`package.json`、`dependencies.ts`、graph edge 和 admin console 接线。不要在此加入
-第二 writer、跨客户端聚合、feature notice 或 runtime state；每个新字段都要有 focused
-red mutation 和日志脱敏复核。
+两个函数都是本包 `src/index.ts` 当前公开导出；`input` 由 integration 提供 App 名称、平台端口、模块工厂和 surface 声明。
+
+其余主要公共接缝包括 `getSurfaceDeclarations`、`readTerminalSurfaces`、`surfaceFormForOrientation`、`createDispatchCommand` 与 `createStateSource`；完整 export 以 `src/index.ts` 和 `terminal-invariants.json` 为准。
+
+## 在这个包上迭代时
+
+先核对两个 integration 的 `package.json`、`dependencies.ts`、graph edge、module 顺序及 UI owner factory。
+不在本包加入第二 writer、跨客户端聚合、feature notice 或 Runtime state。改动需补 focused 测试，
+并同步 README、公开面登记和适用机械门。运行 `yarn workspace @catering-v2s/ui-base-integration-assembly typecheck`、`test`、`lint`；surface/native 表现另按获批执行面验证。

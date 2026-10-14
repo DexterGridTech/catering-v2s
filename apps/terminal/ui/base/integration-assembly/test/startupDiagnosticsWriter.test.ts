@@ -1,6 +1,7 @@
 import {describe, expect, it, vi} from 'vitest';
 import type {LogEvent, LogWriteInput, LogWriteResult, LoggerPort} from '@catering-v2s/kernel-base-platform-ports';
-import {createStartupDiagnosticsWriter} from '../src/foundations/startupDiagnosticsWriter';
+import {createStartupCommandObserver, createStartupDiagnosticsWriter} from '../src/foundations/startupDiagnosticsWriter';
+import {createCommandId, createNodeId, createRequestId, createRuntimeInstanceId} from '@catering-v2s/kernel-base-contracts';
 
 const createLogger = () => {
   const writes: LogWriteInput[] = [];
@@ -43,6 +44,39 @@ const renderFailureReadiness = () => ({
 });
 
 describe('startup diagnostics writer', () => {
+  it('writes generic Runtime lifecycle facts at the UI startup command boundary', () => {
+    const {logger, writes} = createLogger();
+    const observer = createStartupCommandObserver(logger, 'sample-console');
+
+    observer({
+      occurredAt: 10,
+      runtimeId: createRuntimeInstanceId(),
+      localNodeId: createNodeId(),
+      requestId: createRequestId(),
+      commandId: createCommandId(),
+      parentCommandId: null,
+      commandName: 'sample-console.startup-ready',
+      visibility: 'public',
+      kind: 'actor.completed',
+      actorKey: 'sample-console.owner-stage-route',
+      status: 'completed',
+      errorKey: null,
+    });
+
+    expect(writes).toHaveLength(1);
+    expect(writes[0]).toMatchObject({
+      category: 'startup.command-lifecycle',
+      event: 'startup.command.actor.completed',
+      data: {
+        appName: 'sample-console',
+        commandName: 'sample-console.startup-ready',
+        actorKey: 'sample-console.owner-stage-route',
+        status: 'completed',
+        errorKey: null,
+      },
+    });
+  });
+
   it('writes one structured completion for one run', () => {
     const {logger, writes} = createLogger();
     const writer = createStartupDiagnosticsWriter({

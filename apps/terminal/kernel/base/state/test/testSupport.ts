@@ -71,7 +71,10 @@ export const exampleReducer = (state: ExampleState = initialExampleState, action
   return state;
 };
 
-export const createExampleRegistration = (name = 'example.state'): StateRuntimeSliceRegistration =>
+export const createExampleRegistration = (
+  name = 'example.state',
+  syncIntent: 'master-to-slave' | 'slave-to-master' = 'master-to-slave',
+): StateRuntimeSliceRegistration =>
   defineStateRuntimeSlice<ExampleState>({
     name,
     reducer: exampleReducer,
@@ -92,7 +95,7 @@ export const createExampleRegistration = (name = 'example.state'): StateRuntimeS
         }),
       },
     ],
-    syncIntent: 'master-to-slave',
+    syncIntent,
     sync: {
       kind: 'record',
       getEntries: (state): SyncRecordState => {

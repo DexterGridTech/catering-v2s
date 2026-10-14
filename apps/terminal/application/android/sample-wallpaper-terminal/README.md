@@ -44,7 +44,12 @@ Android 正常入口由 adapter 传入 `displayIndex` 与 `surfaceForm`。App �
 options 的受批准 fallback 使用 `displayIndex=0`、`surfaceForm='laptop'`；它不按窗口宽度
 重新判断设备形态。mobile 不创建副屏，laptop 的副屏由 adapter 的既有 Presentation 路径
 创建并使用相同的 integration assembly。
+automation 构建显式提供 `EXPO_PUBLIC_TER_AUTOMATION_SURFACE_FORM` 时，以该测试形态覆盖 adapter 启动参数；普通构建继续使用 adapter 提供的真实设备形态。
 Android 运行时使用本包 `package.json` 的 `terminalSurfaces` 整份覆盖 integration 默认值；integration 仍按 `surfaceForm` 选择对应声明。
+`src/index.ts` 与 `terminal-invariants.json.publicExports` 一致，只公开
+`moduleName`、`dependencyModuleNames`、`devDependencyModuleNames`。assembly factory 仅供本包
+`App.tsx` 使用，不作为应用包根 API。Expo 默认组件由 `App.tsx` 提供，不属于包根 barrel。
+
 本 Android application 的 `package.json.serverSpaces` 是该入口唯一的内置服务配置。`platformPorts.ts`
 在创建 integration assembly 时显式传入它；它不继承或合并 `sample-wallpaper-console` integration 的默认列表。
 Android 运行时使用本包 `package.json` 的 `showAdminPassword` 控制 admin 登录提示旁是否显示当前动态口令。

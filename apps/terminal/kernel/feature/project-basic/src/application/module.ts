@@ -1,30 +1,29 @@
 import {createRequestId} from '@catering-v2s/kernel-base-contracts';
-import type {RuntimeModule, RuntimeModuleContext} from '@catering-v2s/kernel-base-runtime';
+import {createRuntimeModule, type RuntimeModule, type RuntimeModuleContext} from '@catering-v2s/kernel-base-runtime';
 import {selectTerminalUpdateActualVersions, selectTerminalUpdateTask} from '@catering-v2s/kernel-base-terminal-update';
 import {selectStoreBasicBinding} from '@catering-v2s/kernel-feature-store-basic';
 import {runtimeModuleDependencyNames} from '../dependencies';
 import {moduleKind, moduleName} from '../moduleName';
-import {
-  selectCommercialGroup,
-  selectProject,
-  selectProjectBasicLoadReadiness,
-  selectProjectBasicState,
-  selectProjectBasicTopicState,
-  selectProjectOrganizationPath,
-  selectProjectTerminalUpdateCandidate,
-  selectProjectTerminalUpdateContextFacts,
-  selectProjectFixedTerminalUpdateContextFacts,
-  selectProjectTerminalUpdateRules,
-  selectRegion,
-} from '../selectors/selectors';
-import {createProjectBasicActors} from '../features/actors/actors';
+import {selectCommercialGroup} from '../selectors/selectCommercialGroup';
+import {selectProject} from '../selectors/selectProject';
+import {selectProjectBasicLoadReadiness} from '../selectors/selectProjectBasicLoadReadiness';
+import {selectProjectBasicState} from '../selectors/selectProjectBasicState';
+import {selectProjectBasicTopicState} from '../selectors/selectProjectBasicTopicState';
+import {selectProjectOrganizationPath} from '../selectors/selectProjectOrganizationPath';
+import {selectProjectTerminalUpdateCandidate} from '../selectors/selectProjectTerminalUpdateCandidate';
+import {selectCurrentProjectTerminalUpdateTarget} from '../selectors/selectCurrentProjectTerminalUpdateTarget';
+import {selectProjectTerminalUpdateContextFacts} from '../selectors/selectProjectTerminalUpdateContextFacts';
+import {selectProjectFixedTerminalUpdateContextFacts} from '../selectors/selectProjectFixedTerminalUpdateContextFacts';
+import {selectProjectTerminalUpdateRules} from '../selectors/selectProjectTerminalUpdateRules';
+import {selectRegion} from '../selectors/selectRegion';
+import {createProjectBasicActor} from '../features/actors/projectBasicActor';
 import {
   initializeProjectBasicCommand,
   evaluateProjectTerminalUpdateCommand,
   refreshProjectBasicTopicCommand,
   refreshProjectTerminalUpdateRulesCommand,
-} from '../features/commands/commands';
-import {projectBasicStateRegistration} from '../features/slices/slice';
+} from '../declarations/commands';
+import {projectBasicStateRegistration} from '../features/slices/projectBasicState';
 
 const commands = [
   initializeProjectBasicCommand,
@@ -34,12 +33,11 @@ const commands = [
 ] as const;
 
 export const createProjectBasicModule = (): RuntimeModule => {
-  const actors = createProjectBasicActors();
-  return Object.freeze({
+  const actors = createProjectBasicActor();
+  return createRuntimeModule({
     moduleName,
     kind: moduleKind,
     dependencies: runtimeModuleDependencyNames.map(name => ({moduleName: name})),
-    commands: commands.map(command => ({name: command.commandName, visibility: command.visibility})),
     commandDefinitions: commands,
     selectorDefinitions: [
       selectCommercialGroup,
@@ -49,14 +47,13 @@ export const createProjectBasicModule = (): RuntimeModule => {
       selectProjectBasicTopicState,
       selectProjectOrganizationPath,
       selectProjectTerminalUpdateCandidate,
+      selectCurrentProjectTerminalUpdateTarget,
       selectProjectTerminalUpdateContextFacts,
       selectProjectFixedTerminalUpdateContextFacts,
       selectProjectTerminalUpdateRules,
       selectRegion,
     ],
-    actors: actors.map(actor => ({name: actor.actorName})),
     actorDefinitions: actors,
-    slices: [{name: projectBasicStateRegistration.name, persistIntent: projectBasicStateRegistration.persistIntent}],
     stateSlices: [projectBasicStateRegistration],
     install: async (context: RuntimeModuleContext) => {
       let lastEvaluationKey: string | null = null;

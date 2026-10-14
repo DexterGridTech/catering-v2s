@@ -117,6 +117,40 @@ function createExampleStateRegistration(
 }
 
 describe('P/R/F/H/C/M/X groups: persistence runtime', () => {
+  it('derives topology sync qualifications from registered non-isolated slice descriptors', async () => {
+    const {runtime} = await createRuntime();
+    try {
+      expect(runtime.getStateSyncQualifications()).toEqual([
+        {name: 'example.state', syncIntent: 'master-to-slave'},
+      ]);
+      expect(Object.isFrozen(runtime.getStateSyncQualifications())).toBe(true);
+      expect(Object.isFrozen(runtime.getStateSyncQualifications()[0])).toBe(true);
+    } finally {
+      await runtime.dispose();
+    }
+  });
+  it('keeps the same sync projection reference until its registered slice changes', async () => {
+    const {runtime} = await createRuntime();
+    try {
+      const initial = runtime.createFullSyncPayload('example.state');
+      const repeated = runtime.createFullSyncPayload('example.state');
+      expect(initial.status).toBe('ready');
+      expect(repeated.status).toBe('ready');
+      if (initial.status !== 'ready' || repeated.status !== 'ready') throw new Error('expected sync payload');
+      expect(repeated.payload).toBe(initial.payload);
+
+      runtime.getStore().dispatch({type: 'example/setEntry', key: 'new-entry', value: 'new-value'});
+      const changed = runtime.createFullSyncPayload('example.state');
+      expect(changed.status).toBe('ready');
+      if (changed.status !== 'ready') throw new Error('expected changed sync payload');
+      expect(changed.payload).not.toBe(initial.payload);
+      expect(changed.payload.entries).toEqual([
+        {key: 'new-entry', value: {value: 'new-value', updatedAt: 1}},
+      ]);
+    } finally {
+      await runtime.dispose();
+    }
+  });
   it('P-1 hydrates field and record values through one listKeys and one readMany per backend', async () => {
     const plainStorage = createFakeStorage({
       [fieldKey]: 'true',
@@ -238,6 +272,76 @@ describe('P/R/F/H/C/M/X groups: persistence runtime', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('P-3d disposal cancels the debounce and removes the store listener', async () => {
+    vi.useFakeTimers();
+    const plainStorage = createFakeStorage();
+    try {
+      const {runtime} = await createRuntime({
+        plainStorage,
+        registration: createExampleStateRegistration({
+          fieldFlushMode: 'immediate',
+          recordFlushMode: 'debounced',
+        }),
+        debounceMs: 25,
+      });
+      runtime.getStore().dispatch({type: 'example/setEntry', key: 'pending-write', value: 1});
+      const disposal = runtime.dispose();
+
+      expect(runtime.dispose()).toBe(disposal);
+      await disposal;
+      vi.advanceTimersByTime(25);
+      await Promise.resolve();
+      runtime.getStore().dispatch({type: 'example/setEntry', key: 'after-dispose', value: 2});
+      await Promise.resolve();
+
+      expect(plainStorage.calls.write.map(entry => entry.key)).not.toContain(recordKey('pending-write'));
+      expect(plainStorage.calls.write.map(entry => entry.key)).not.toContain(recordKey('after-dispose'));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('waits for queued flush and reset work, then rejects new persistence after disposal starts', async () => {
+    const plainStorage = createFakeStorage();
+    const originalWrite = plainStorage.write.bind(plainStorage);
+    let releaseWrite!: () => void;
+    let markWriteStarted!: () => void;
+    const writeGate = new Promise<void>(resolve => {
+      releaseWrite = resolve;
+    });
+    const writeStarted = new Promise<void>(resolve => {
+      markWriteStarted = resolve;
+    });
+    plainStorage.write = async input => {
+      markWriteStarted();
+      await writeGate;
+      return originalWrite(input);
+    };
+    const {runtime} = await createRuntime({
+      plainStorage,
+      registration: createExampleStateRegistration({fieldFlushMode: 'debounced', recordFlushMode: 'debounced'}),
+      debounceMs: 60_000,
+    });
+    runtime.getStore().dispatch({type: 'example/setEnabled', value: true});
+    const flush = runtime.flushPersistence();
+    await writeStarted;
+    const reset = runtime.getResetActor().handleResetCommand();
+    let disposed = false;
+    const disposal = runtime.dispose().then(() => {
+      disposed = true;
+    });
+
+    expect(disposed).toBe(false);
+    await expect(runtime.flushPersistence()).rejects.toThrow('STATE_PERSISTENCE_ENGINE_DISPOSED');
+    await expect(runtime.getResetActor().handleResetCommand()).rejects.toThrow('STATE_PERSISTENCE_ENGINE_DISPOSED');
+    releaseWrite();
+    await Promise.all([flush, reset, disposal]);
+
+    expect(disposed).toBe(true);
+    expect(plainStorage.calls.write).toHaveLength(1);
+    expect(plainStorage.calls.remove).toContain(fieldKey);
   });
 
   it('P-4 removes cached record entries that disappeared from owner state', async () => {

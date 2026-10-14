@@ -2,12 +2,17 @@ import {defineActor, onCommand, selectRuntimeInstanceMode} from '@catering-v2s/k
 import type {ActorDefinition, ActorExecutionContext} from '@catering-v2s/kernel-base-runtime';
 import type {UnknownAction} from '@reduxjs/toolkit';
 import type {TransportHttpProxy, TransportServerConfig} from '@catering-v2s/kernel-base-contracts';
+import {createAppError, isAppError} from '@catering-v2s/kernel-base-contracts';
 import {serverConfigSliceName} from '../slices/serverConfig';
-import {clearServerOverrideCommand} from '../commands/clearServerOverride';
-import {restoreServerDefaultsCommand} from '../commands/restoreServerDefaults';
-import {selectServerConfigSpaceCommand} from '../commands/selectServerConfigSpace';
-import {setServerOverrideCommand} from '../commands/setServerOverride';
-import {validateHydratedServerConfigCommand} from '../commands/validateHydratedServerConfig';
+import {
+  invalidServerConfigInputErrorDefinition,
+  serverConfigMutationNotAllowedErrorDefinition,
+} from '../../declarations/errors';
+import {clearServerOverrideCommand} from '../../declarations/commands';
+import {restoreServerDefaultsCommand} from '../../declarations/commands';
+import {selectServerConfigSpaceCommand} from '../../declarations/commands';
+import {setServerOverrideCommand} from '../../declarations/commands';
+import {validateHydratedServerConfigCommand} from '../../declarations/commands';
 import type {
   ProxyPasswordInput,
   ServerConfigOverrideState,
@@ -26,7 +31,7 @@ type ServerConfigActions = Readonly<{
 }>;
 
 const invalid = (code: string): never => {
-  throw new Error(`SERVER_CONFIG_${code}`);
+  throw createAppError(invalidServerConfigInputErrorDefinition, {details: {reasonCode: `SERVER_CONFIG_${code}`}});
 };
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
@@ -34,12 +39,13 @@ const isObject = (value: unknown): value is Record<string, unknown> =>
 
 const readState = (context: ActorExecutionContext): ServerConfigState => {
   const current = context.getState()[serverConfigSliceName];
-  if (!isObject(current)) return invalid('STATE_MISSING');
+  if (!isObject(current)) throw new Error('SERVER_CONFIG_STATE_MISSING');
   return current as unknown as ServerConfigState;
 };
 
 const requireMaster = (context: ActorExecutionContext): void => {
-  if (selectRuntimeInstanceMode(context.getState()) !== 'MASTER') return invalid('HOST_ONLY');
+  if (selectRuntimeInstanceMode(context.getState()) !== 'MASTER')
+    throw createAppError(serverConfigMutationNotAllowedErrorDefinition);
 };
 
 const revise = (state: ServerConfigState, names: readonly string[]): Readonly<Record<string, number>> => {
@@ -65,7 +71,7 @@ const requireKnownService = (serverName: unknown, serviceNames: ReadonlySet<stri
 };
 
 const normalizeAddresses = (value: unknown): SetServerOverridePayload['addresses'] => {
-  if (!Array.isArray(value) || value.length < 1 || value.length > 4) return invalid('OVERRIDE_ADDRESS_COUNT_INVALID');
+  if (!Array.isArray(value) || value.length < 1) return invalid('OVERRIDE_ADDRESS_COUNT_INVALID');
   const names = new Set<string>();
   return Object.freeze(
     value.map(raw => {
@@ -268,7 +274,16 @@ export const createServerConfigActor = (
     onCommand(setServerOverrideCommand, async context => {
       requireMaster(context);
       const state = readState(context);
-      const parsed = normalizeSetPayload(context.command.payload, state, serviceNameSet);
+      let parsed: ReturnType<typeof normalizeSetPayload>;
+      try {
+        parsed = normalizeSetPayload(context.command.payload, state, serviceNameSet);
+      } catch (error) {
+        if (isAppError(error)) throw error;
+        throw createAppError(invalidServerConfigInputErrorDefinition, {
+          details: {reasonCode: 'SERVER_CONFIG_OVERRIDE_INVALID'},
+          cause: error,
+        });
+      }
       const currentOverride = state.overrides[parsed.serverName];
       const currentPassword = state.proxyPasswords[parsed.serverName];
       if (

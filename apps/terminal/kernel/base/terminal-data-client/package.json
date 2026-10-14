@@ -17,6 +17,7 @@
     "@catering-v2s/kernel-base-contracts": "workspace:*",
     "@catering-v2s/kernel-base-platform-ports": "workspace:*",
     "@catering-v2s/kernel-base-runtime": "workspace:*",
+    "@catering-v2s/kernel-base-server-config": "workspace:*",
     "@catering-v2s/kernel-base-state": "workspace:*",
     "@catering-v2s/kernel-base-topology": "workspace:*",
     "@catering-v2s/kernel-base-transport": "workspace:*"

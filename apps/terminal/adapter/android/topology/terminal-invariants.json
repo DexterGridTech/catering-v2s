@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "package": "@catering-v2s/adapter-android-topology",
+  "owned": {
+    "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/adapter-android-topology", "runner": "vitest"},
+    "lint": {"kind": "OWNED", "owner": "@catering-v2s/adapter-android-topology", "runner": "eslint"},
+    "clean": {"kind": "ABSENT"}
+  },
+  "publicExports": [
+    "createAndroidTopologyHostPort",
+    "createAndroidTopologyPeerChannel",
+    "dependencyModuleNames",
+    "devDependencyModuleNames",
+    "moduleName"
+  ]
+}

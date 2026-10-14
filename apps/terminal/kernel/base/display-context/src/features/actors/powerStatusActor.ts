@@ -1,8 +1,8 @@
 import {defineActor, onCommand} from '@catering-v2s/kernel-base-runtime';
 import type {ActorDefinition} from '@catering-v2s/kernel-base-runtime';
 import {moduleName} from '../../moduleName';
-import {powerStatusChangedCommand} from '../commands/powerStatusChanged';
-import {requestPowerRoleChangeCommand} from '../commands/requestPowerRoleChange';
+import {powerStatusChangedCommand} from '../../declarations/commands';
+import {requestPowerRoleChangeCommand} from '../../declarations/commands';
 import {createDisplayError} from '../../foundations/displayErrors';
 import {isPowerSource} from '../../types/display';
 

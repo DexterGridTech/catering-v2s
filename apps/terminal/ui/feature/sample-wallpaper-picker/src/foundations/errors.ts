@@ -1,24 +1,8 @@
-import {
-  createAppError,
-  createModuleErrorFactory,
-  isAppError,
-  type AppError,
-  type ErrorCategory,
-} from '@catering-v2s/kernel-base-contracts';
+import {createAppError, isAppError, type AppError, type ErrorCategory} from '@catering-v2s/kernel-base-contracts';
 import type {ActorExecutionContext, CommandDispatchResult} from '@catering-v2s/kernel-base-runtime';
 import {isBusinessErrorCategory} from '@catering-v2s/ui-base-render';
-import type {WallpaperSystemFailurePhase, WallpaperSystemOperation} from '../features/commands/commands';
-import {moduleName} from '../moduleName';
-
-const defineError = createModuleErrorFactory(moduleName);
-
-const childDispatchFailureDefinition = defineError('child-dispatch-failed', {
-  name: 'Wallpaper picker child dispatch failed',
-  defaultTemplate: 'Wallpaper picker child dispatch failed',
-  category: 'SYSTEM',
-  severity: 'MEDIUM',
-  code: 'ERR_TER_SAMPLE_WALLPAPER_PICKER_CHILD_DISPATCH_FAILED',
-});
+import type {WallpaperSystemFailurePhase, WallpaperSystemOperation} from '../declarations/commands';
+import {childDispatchFailureDefinition} from '../declarations/errors';
 
 const childCategory = (result: CommandDispatchResult | undefined, rejection: unknown): ErrorCategory => {
   const resultCategories = result?.actorResults

@@ -39,15 +39,37 @@ src/
     catalog.ts                  catalog 校验、canonical copy、冻结和枚举
     uiVariable.ts               module 前缀变量声明与 typed write
     valueValidation.ts          JSON-safe 输入校验与冻结副本
-    workspaceSlices.ts          内容的 MAIN/BRANCH RTK slice 与 state descriptor
-    variableSlices.ts           变量的 MAIN/BRANCH RTK slice 与声明驱动 descriptor
+    workspaceSlices.ts          内容状态校验、codec、hydration 与 descriptor
+    variableSlices.ts           变量校验、持久化映射与 descriptor
   application/
     createUiStateModule.ts      catalog、变量 registry、command/actor/registration 组装
   features/
     commands/                   show/open/close/clear 内容 command
-    actors/                     内容与变量 command 的 runtime actor
+    actors/index.ts             显式聚合具名 actor，不承载行为
+    actors/showScreenActor.ts、openLayerActor.ts、closeLayerActor.ts、clearLayersActor.ts
+                                各自拥有一个内容 command actor
+    actors/pruneHydratedContainersActor.ts、pruneHydratedLayersActor.ts
+                                分别清理不可渲染容器与未知 layer
+    actors/setUiVariablesActor.ts、clearUiVariablesActor.ts
+                                分别拥有变量写入与清除 command
+    actors/shared/contentActorSupport.ts
+                                内容 payload 校验、workspace ownership 与一次写入观察
+    actors/shared/variableActorSupport.ts
+                                变量 payload 校验与 workspace action dispatch
+    actors/completeWrite.ts     持久化 UI 写入并返回统一结果
+    slices/contentSlice.ts、contentActions.ts
+                                内容 reducers 与具名 action creators
+    slices/contentMain.ts、contentBranch.ts
+                                内容 MAIN/BRANCH workspace slice 定义
+    slices/variableSlice.ts、variableActions.ts
+                                变量 reducers 与具名 action creators
+    slices/variablesMain.ts、variablesBranch.ts
+                                变量 MAIN/BRANCH workspace slice 定义
   selectors/
-    selectContent.ts            显式 displayMode 的 screen/layer selector
+    contentState.ts             当前 workspace 的内容状态读取 helper
+    selectScreen.ts             显式 displayMode 的 screen selector
+    selectLayers.ts             显式 displayMode 的 layer selector
+    isCurrentWorkspaceOwnedByInstance.ts 当前 workspace owner selector
   index.ts                      唯一公开面，逐项显式导出
 test/
   module.test.ts                包身份和运行时公开值面

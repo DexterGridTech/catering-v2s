@@ -45,12 +45,18 @@ registerRootComponent(App)
 `createSurfaceForDisplayIndex()` 完成对应 surface 的呈现；assembly 被拒绝时只把失败事实
 交给来自 `ui.base.render` 的 `StandaloneStartupFailurePage`，不在 App 自绘失败 UI 或调用
 splash。库消费者不应绕过 `App` 自己创建第二个 React host、runtime 或 store。
+
+`src/index.ts` 与 `terminal-invariants.json.publicExports` 一致，只公开
+`moduleName`、`dependencyModuleNames`、`devDependencyModuleNames`。Expo 默认组件由 `App.tsx`
+作为应用启动入口提供，不是该 TypeScript 包根 barrel 的导出。
+
 本 Android application 的 `package.json.serverSpaces` 是该入口唯一的内置服务配置。`platformPorts.ts`
 在创建 integration assembly 时显式传入它；它不继承或合并 `sample-console` integration 的默认列表。
 
 `App` 是唯一保留 `surfaceForm='laptop'` 默认值的外层入口；它把解析后的形态显式传给
 `createSampleTerminalAssembly`，Android wrapper 与 sample-console assembly 不再各自兜底。
 Android 运行时使用本包 `package.json` 的 `terminalSurfaces` 整份覆盖 integration 默认值；integration 仍按 `surfaceForm` 选择对应声明。
+automation 构建显式提供 `EXPO_PUBLIC_TER_AUTOMATION_SURFACE_FORM` 时，以该测试形态覆盖 adapter 启动参数；普通构建继续使用 adapter 提供的真实设备形态。
 Android 运行时使用本包 `package.json` 的 `showAdminPassword` 控制 admin 登录提示旁是否显示当前动态口令。
 
 进入 admin console 后，laptop/mobile 的 master-detail 或可换行 tablist 版式由 integration 接入的

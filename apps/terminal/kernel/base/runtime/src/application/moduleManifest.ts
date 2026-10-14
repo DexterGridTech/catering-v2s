@@ -10,7 +10,7 @@ export const describeRuntimeModule = (module: RuntimeModule): RuntimeModuleDescr
     protocolVersion: module.protocolVersion,
     dependencies: freezeList(module.dependencies ?? []),
     stateSliceNames: freezeList((module.stateSlices ?? []).map(slice => slice.name)),
-    commandNames: freezeList((module.commands ?? []).map(command => command.name)),
+    commandNames: freezeList((module.commandDefinitions ?? []).map(command => command.commandName)),
     actorKeys: freezeList((module.actorDefinitions ?? []).map(actor => `${actor.moduleName}.${actor.actorName}`)),
     selectorNames: freezeList(
       (module.selectorDefinitions ?? []).flatMap(selector => {

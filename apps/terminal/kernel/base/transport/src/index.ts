@@ -1,4 +1,5 @@
 export {moduleName, moduleKind} from './moduleName';
+export {transportParameters} from './declarations/parameters';
 export {dependencyModuleNames, devDependencyModuleNames, runtimeModuleDependencyNames} from './dependencies';
 export {createTransportModule} from './application/createTransportModule';
 export {createTopologySession} from './foundations/createTopologySession';
@@ -10,7 +11,6 @@ export {
 } from './foundations/createTransportRetryController';
 export {createTransportHeartbeat} from './foundations/createTransportHeartbeat';
 export {createTransportWebSocketController} from './foundations/createTransportWebSocketController';
-export {createTransportNetworkStatusBridge} from './foundations/createTransportNetworkStatusBridge';
 export {createTransportConnectionOwner, transportReconnectDelayMs} from './foundations/createTransportConnectionOwner';
 export type {TransportConnectionOwner} from './foundations/createTransportConnectionOwner';
 export {
@@ -24,7 +24,6 @@ export type {
   TopologySessionMessage,
   TopologySessionState,
 } from './types/session';
-export type {TopologyPeerChannel, TopologyPeerChannelEvent} from './types/channel';
 export type {TopologyIdentityClient} from './types/identityClient';
 export type {CreateTopologyIdentityClientOptions, FetchLike} from './foundations/createTopologyIdentityClient';
 export type {
@@ -59,9 +58,6 @@ export type {
 } from './foundations/createTransportWebSocketController';
 export type {
   TransportCommandGateway,
-  TransportConnection,
-  TransportConnectionEvent,
-  TransportManagedConnection,
   TransportNetworkStatusBridge,
   TransportNetworkStatusChanged,
   TransportNetworkStatusDispatch,
@@ -70,12 +66,9 @@ export type {
   TransportStartInput,
 } from './types/runtimeControl';
 export type {
-  TransportHttpAttemptResult,
   TransportHttpExecutionResult,
   TransportHttpRequest,
   TransportModuleOptions,
-  TransportNetworkAdapter,
-  TransportNetworkSnapshot,
 } from './types/runtimeControl';
 export {
   transportInvalidCommand,
@@ -88,4 +81,4 @@ export {
   transportStablePeriodElapsedCommand,
   transportStartCommand,
   transportStopCommand,
-} from './features/commands/transportCommands';
+} from './declarations/commands';

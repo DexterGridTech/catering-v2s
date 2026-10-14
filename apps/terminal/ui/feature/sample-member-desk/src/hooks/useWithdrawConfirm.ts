@@ -1,6 +1,6 @@
 import {useCallback} from 'react';
 import {closeLayerCommand} from '@catering-v2s/kernel-base-ui-state';
-import {memberSubmissionWithdrawnCommand} from '../features/commands/commands';
+import {memberSubmissionWithdrawnCommand} from '../declarations/commands';
 import {selectHostPendingMember} from '@catering-v2s/kernel-feature-sample-member-registry';
 import {dispatchWithRequestId, useDispatchCommand, useUiStateSelector} from '@catering-v2s/ui-base-render';
 

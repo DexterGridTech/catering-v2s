@@ -36,7 +36,7 @@ vi.mock('expo-modules-core', () => ({
   }),
 }));
 
-const {createAndroidNativeLoadingCapability} = await import('../src/foundations/nativeLoadingCapability');
+const {createAndroidNativeLoadingCapability} = await import('../src/implementations/nativeLoadingCapability');
 
 describe('Android native loading capability', () => {
   it('releases the matching Activity gate before synchronously releasing the Expo splash', async () => {

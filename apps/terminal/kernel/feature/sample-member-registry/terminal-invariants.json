@@ -2,9 +2,19 @@
   "schemaVersion": 1,
   "package": "@catering-v2s/kernel-feature-sample-member-registry",
   "owned": {
-    "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/kernel-feature-sample-member-registry", "runner": "vitest"},
-    "lint": {"kind": "OWNED", "owner": "@catering-v2s/kernel-feature-sample-member-registry", "runner": "eslint"},
-    "clean": {"kind": "ABSENT"}
+    "test": {
+      "kind": "REAL_TESTS",
+      "owner": "@catering-v2s/kernel-feature-sample-member-registry",
+      "runner": "vitest"
+    },
+    "lint": {
+      "kind": "OWNED",
+      "owner": "@catering-v2s/kernel-feature-sample-member-registry",
+      "runner": "eslint"
+    },
+    "clean": {
+      "kind": "ABSENT"
+    }
   },
   "ownerKind": "owner",
   "publicExports": [
@@ -19,10 +29,14 @@
     "memberConfirmedCommand",
     "memberPendingCommand",
     "memberRejectedCommand",
+    "memberSliceName",
     "memberWithdrawnCommand",
     "moduleKind",
     "moduleName",
+    "registerBranchConfirmedMemberCommand",
     "rejectMemberCommand",
+    "selectBranchPendingMember",
+    "selectHostPendingMember",
     "selectMembers",
     "selectPendingMember",
     "submitMemberCommand",

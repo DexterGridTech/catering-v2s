@@ -11,7 +11,7 @@ import {
   connectTerminalCommand,
   refreshTerminalClientStatusProjectionCommand,
   terminalDataHeartbeatCommand,
-} from '../src/features/commands/terminalDataClientCommands';
+} from '../src/declarations/commands';
 import {terminalDataClientStateSlice} from '../src/features/slices/terminalDataClient';
 import {topologySliceName} from '@catering-v2s/kernel-base-topology';
 import {
@@ -20,6 +20,8 @@ import {
 } from '../src/features/slices/terminalClientStatusProjection';
 import type {ActorExecutionContext} from '@catering-v2s/kernel-base-runtime';
 import type {StateRoot} from '@catering-v2s/kernel-base-state';
+import {terminalDataClientParameters} from '../src/declarations/parameters';
+import {transportParameters} from '@catering-v2s/kernel-base-transport';
 
 const runtimeInstanceModeSliceName = 'kernel.base.runtime.instance-mode' as const;
 
@@ -41,30 +43,49 @@ const createDependencies = () => ({
 });
 
 describe('terminal-data-client package identity', () => {
-  it('owns protocol and credential behavior while depending only on the generic transport mechanism', () => {
+  it('keeps retry policy with transport and retained remote-operation policies with TDC', () => {
+    expect(terminalDataClientParameters.callTimeoutMs.defaultValue).toBe(5_000);
+    expect(transportParameters.reconnectPolicy.defaultValue).toEqual({
+      initialDelayMs: 10_000,
+      incrementMs: 1_000,
+      maximumDelayMs: 300_000,
+      maximumJitterRatio: 0.5,
+      cappedDelayFloorRatio: 5 / 6,
+      readyTimeoutMs: 20_000,
+      networkRecoveryMinimumIntervalMs: 10_000,
+    });
+    expect(transportParameters.reconnectPolicy.validate?.(transportParameters.reconnectPolicy.defaultValue)).toBe(true);
+    expect(terminalDataClientParameters.remoteOperationLimit.defaultValue).toBe(64);
+    expect(terminalDataClientParameters.remoteResultResidenceMs.defaultValue).toBe(7_200_000);
+    expect(terminalDataClientParameters.latencyWindowMs.defaultValue).toBe(7_200_000);
+  });
+
+  it('owns protocol and credential behavior and uses only the generic HTTP/config context APIs', () => {
     expect(moduleName).toBe('kernel.base.terminal-data-client');
     expect(moduleKind).toBe('owner');
     expect(dependencyModuleNames).toEqual([
       'kernel.base.contracts',
       'kernel.base.platform-ports',
       'kernel.base.runtime',
+      'kernel.base.server-config',
       'kernel.base.state',
       'kernel.base.transport',
       'kernel.base.topology',
     ]);
-    expect(dependencyModuleNames).not.toContain('kernel.base.server-config');
     expect(runtimeModuleDependencyNames).toEqual([
       'kernel.base.runtime',
+      'kernel.base.server-config',
       'kernel.base.transport',
       'kernel.base.topology',
     ]);
     const module = createTerminalDataClientModule(createDependencies());
     expect(module.dependencies).toEqual([
       {moduleName: 'kernel.base.runtime'},
+      {moduleName: 'kernel.base.server-config'},
       {moduleName: 'kernel.base.transport'},
       {moduleName: 'kernel.base.topology'},
     ]);
-    expect(module.commands?.map(command => command.name)).toEqual([
+    expect(module.commandDefinitions?.map(command => command.commandName)).toEqual([
       `${moduleName}.activate-terminal`,
       `${moduleName}.activation-succeeded`,
       `${moduleName}.cancel-terminal-activation`,
@@ -74,11 +95,7 @@ describe('terminal-data-client package identity', () => {
       `${moduleName}.subscribe-topic`,
       `${moduleName}.unsubscribe-topic`,
       `${moduleName}.accept-topic-notification`,
-      `${moduleName}.read-terminal-data`,
-      `${moduleName}.request-terminal-update-download-grant`,
-      `${moduleName}.submit-terminal-update-report`,
-      `${moduleName}.register-terminal-remote-control`,
-      `${moduleName}.report-terminal-remote-control`,
+      `${moduleName}.execute-terminal-http`,
       `${moduleName}.terminal-data-heartbeat`,
       `${moduleName}.topic-changed`,
       `${moduleName}.initialize-terminal-data-client`,
@@ -88,11 +105,11 @@ describe('terminal-data-client package identity', () => {
       `${moduleName}.heartbeat-tick`,
       `${moduleName}.mutate-remote-operation`,
     ]);
-    expect(module.commands?.find(command => command.name === terminalDataHeartbeatCommand.commandName)).toEqual({
-      name: terminalDataHeartbeatCommand.commandName,
-      visibility: 'public',
-    });
-    expect(module.slices).toEqual([
+    expect(
+      module.commandDefinitions?.find(command => command.commandName === terminalDataHeartbeatCommand.commandName)
+        ?.visibility,
+    ).toBe('public');
+    expect(module.stateSlices?.map(slice => ({name: slice.name, persistIntent: slice.persistIntent}))).toEqual([
       {name: `${moduleName}.client`, persistIntent: 'owner-only'},
       {name: terminalClientStatusProjectionSliceName, persistIntent: 'owner-only'},
     ]);

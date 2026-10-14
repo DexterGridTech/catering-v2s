@@ -1,6 +1,7 @@
 import {describe, expect, it} from 'vitest';
 import {createRequestId, createCommandId} from '@catering-v2s/kernel-base-contracts';
 import {
+  createRuntimeModule,
   createCommand,
   createRuntime,
   defineActor,
@@ -27,23 +28,17 @@ const createModule = <TPayload extends StateJsonValue>(
   input: Readonly<{
     command: CommandDefinition<TPayload>;
     handler?: ActorCommandHandler<TPayload>;
-    omitVisibility?: boolean;
-    omitActor?: boolean;
   }>,
 ): RuntimeModule => {
   const command = input.command;
   const actorName = 'handler';
-  const actor = input.omitActor
-    ? undefined
-    : defineActor('test.visibility', actorName, [onCommand(command, input.handler ?? (() => ({ok: true})))]);
-  return Object.freeze({
+  const actor = defineActor('test.visibility', actorName, [onCommand(command, input.handler ?? (() => ({ok: true})))]);
+  return createRuntimeModule({
     moduleName: 'test.visibility',
     kind: 'owner' as const,
     dependencies: [{moduleName: 'kernel.base.runtime'}],
-    commands: [{name: command.commandName, ...(input.omitVisibility ? {} : {visibility: command.visibility})}],
     commandDefinitions: [command],
-    actors: actor === undefined ? [] : [{name: actorName}],
-    actorDefinitions: actor === undefined ? [] : [actor],
+    actorDefinitions: [actor],
     stateSlices: [createTestSlice('test.visibility.state')],
   });
 };
@@ -126,22 +121,5 @@ describe('runtime command visibility and identity', () => {
       message: 'Runtime lifecycle failed',
     });
     expect(createCommand(publicCommand, {value: 3}).definition).toBe(publicCommand);
-  });
-
-  it('V-5 defaults descriptor visibility to public and rejects a conflicting declaration', async () => {
-    const defaulted = createRuntime(
-      createTestRuntimeInput({modules: [createModule({command: publicCommand, omitVisibility: true})]}),
-    );
-    await defaulted.start();
-    const result = await defaulted.dispatchCommand(publicCommand, {value: 1}, {requestId: createRequestId()});
-    expect(result.status).toBe('completed');
-
-    const conflicting = Object.freeze({
-      ...createModule({command: internalCommand, omitVisibility: true}),
-      commands: [{name: internalCommand.commandName, visibility: 'public' as const}],
-    });
-    expect(() => createRuntime(createTestRuntimeInput({modules: [conflicting]}))).toThrow(
-      'Runtime command definition invalid',
-    );
   });
 });

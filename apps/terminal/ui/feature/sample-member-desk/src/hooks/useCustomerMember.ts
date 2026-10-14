@@ -12,7 +12,7 @@ import {
   deskSystemFailureObservedCommand,
   memberSubmissionWithdrawnCommand,
   type DeskSystemOperation,
-} from '../features/commands/commands';
+} from '../declarations/commands';
 import {
   dispatchWithRequestId,
   useDispatchCommand,

@@ -291,8 +291,6 @@ function loadModel(root = repoRoot) {
     });
   }
   const assignedIds = [...assignmentCounts.keys()].sort();
-  const duplicatedAssignment = [...assignmentCounts].find(([, count]) => count !== 1);
-  if (duplicatedAssignment) fail('TERMINAL_CLIENT_OPERATION_DUPLICATE_ASSIGNMENT', duplicatedAssignment[0]);
   const excludedIds = policy.targets.flatMap(target => target.excludeOperationIds ?? []);
   if (
     new Set(excludedIds).size !== excludedIds.length ||
@@ -432,18 +430,16 @@ function render(model) {
           .join('; ');
       const pathParameters = renderParameters(operation.pathParameters, 'path');
       const queryParameters = renderParameters(operation.queryParameters, 'query');
-      const headerParameters = renderParameters(operation.headerParameters, 'header');
-      const authorizationHeader =
-        operation.auth === 'TERMINAL_CREDENTIAL' &&
-        !operation.headerParameters.some(parameter => parameter.name.toLowerCase() === 'authorization')
-          ? (headerParameters ? headerParameters + '; ' : '') + 'readonly "Authorization": string'
-          : headerParameters;
+      const ownerHeaders = operation.headerParameters.filter(
+        parameter => !['authorization', 'x-terminal-ref'].includes(parameter.name.toLowerCase()),
+      );
+      const headerParameters = renderParameters(ownerHeaders, 'header');
       const requestParts = [
         'readonly pathParameters: { ' + pathParameters + ' }',
         'readonly queryParameters: ' +
           (queryParameters ? '{ ' + queryParameters + ' }' : 'Readonly<Record<string, never>>'),
         'readonly headers: ' +
-          (authorizationHeader ? '{ ' + authorizationHeader + ' }' : 'Readonly<Record<string, never>>'),
+          (headerParameters ? '{ ' + headerParameters + ' }' : 'Readonly<Record<string, never>>'),
         operation.requestSchema === 'NoBody'
           ? 'readonly body?: never'
           : 'readonly body: ' + operation.requestSchema,
@@ -591,15 +587,28 @@ export type TerminalBusinessProblem = Readonly<{
   readonly correlationId: string;
   readonly [key: string]: JsonValue;
 }>;
+export type TerminalExecutionMetadata = Readonly<{
+  readonly requestId?: string;
+  readonly correlationId?: string;
+  readonly addressName?: string;
+  readonly configRevision?: number;
+}>;
 export type TerminalExecutionResult =
-  | {readonly kind: "response"; readonly status: number; readonly body: unknown; readonly contentType?: string}
+  | {readonly kind: "response"; readonly status: number; readonly body: unknown; readonly contentType?: string; readonly execution?: TerminalExecutionMetadata}
   | {readonly kind: "failure"; readonly category: "not-delivered" | "delivered-failure"; readonly code: string};
+export type TerminalHttpCommandRequest = Readonly<{
+  readonly method: string;
+  readonly pathAndQuery: string;
+  readonly headers: Readonly<Record<string, string>>;
+  readonly body: Readonly<{readonly kind: "empty"}> | Readonly<{readonly kind: "json"; readonly value: JsonValue}>;
+  readonly safeRetryable: boolean;
+}>;
 export type TerminalOperationDescriptor<I extends TerminalOperationId = TerminalOperationId> = typeof terminalOperationContracts[I];
 export type TerminalRequestExecutor = <I extends TerminalOperationId>(descriptor: TerminalOperationDescriptor<I>, request: TerminalRequestMap[I]) => Promise<TerminalExecutionResult>;
 export type TerminalOperationResult<I extends TerminalOperationId> =
-  | {readonly kind: "success"; readonly status: number; readonly body: TerminalResponseMap[I]}
-  | {readonly kind: "business-rejection"; readonly status: number; readonly errorCode: TerminalBusinessErrorCode<I>; readonly problem: TerminalBusinessProblem}
-  | {readonly kind: "failure"; readonly category: "not-delivered" | "delivered-failure" | "unknown-business-rejection"; readonly code: string; readonly status?: number};
+  | {readonly kind: "success"; readonly status: number; readonly body: TerminalResponseMap[I]; readonly execution?: TerminalExecutionMetadata}
+  | {readonly kind: "business-rejection"; readonly status: number; readonly errorCode: TerminalBusinessErrorCode<I>; readonly problem: TerminalBusinessProblem; readonly execution?: TerminalExecutionMetadata}
+  | {readonly kind: "failure"; readonly category: "not-delivered" | "delivered-failure" | "unknown-business-rejection"; readonly code: string; readonly status?: number; readonly execution?: TerminalExecutionMetadata};
 export const terminalOperationContracts = {
 ${operationRows}
 } as const;
@@ -611,23 +620,51 @@ export function createTerminalApiClient(executeRequest: TerminalRequestExecutor)
     const descriptor = terminalOperationContracts[operationId];
     const result = await executeRequest(descriptor, request);
     if (result.kind === "failure") return result;
+    const execution = result.execution === undefined ? {} : {execution: result.execution};
     if (result.status >= 200 && result.status < 300) {
       if (result.status !== descriptor.successStatus || !validateTerminalResponse(descriptor.responseSchema, result.body)) {
-        return {kind: "failure", category: "delivered-failure", code: "TERMINAL_RESPONSE_SCHEMA_INVALID", status: result.status};
+        return {kind: "failure", category: "delivered-failure", code: "TERMINAL_RESPONSE_SCHEMA_INVALID", status: result.status, ...execution};
       }
-      return {kind: "success", status: result.status, body: result.body as TerminalResponseMap[I]};
+      return {kind: "success", status: result.status, body: result.body as TerminalResponseMap[I], ...execution};
     }
     if (result.status >= 400 && result.status < 500 && isTerminalBusinessProblem(result.body, result.status)) {
       if (descriptor.errorCodes.includes(result.body.errorCode as never)) {
-        return {kind: "business-rejection", status: result.status, errorCode: result.body.errorCode as TerminalBusinessErrorCode<I>, problem: result.body};
+        return {kind: "business-rejection", status: result.status, errorCode: result.body.errorCode as TerminalBusinessErrorCode<I>, problem: result.body, ...execution};
       }
-      return {kind: "failure", category: "unknown-business-rejection", code: result.body.errorCode, status: result.status};
+      return {kind: "failure", category: "unknown-business-rejection", code: result.body.errorCode, status: result.status, ...execution};
     }
-    return {kind: "failure", category: "delivered-failure", code: "HTTP_DELIVERED_FAILURE", status: result.status};
+    return {kind: "failure", category: "delivered-failure", code: "HTTP_DELIVERED_FAILURE", status: result.status, ...execution};
   };
   return {
 ${methods}
   } as const;
+}
+
+export function buildTerminalHttpCommandRequest<I extends TerminalOperationId>(
+  descriptor: TerminalOperationDescriptor<I>,
+  request: TerminalRequestMap[I],
+): TerminalHttpCommandRequest {
+  const pathParameters = request.pathParameters as Readonly<Record<string, string>>;
+  const path = descriptor.path.replace(/\\{([^}]+)\\}/g, (_match, name: string) => {
+    const value = pathParameters[name];
+    if (typeof value !== "string") throw new Error("TERMINAL_HTTP_PATH_PARAMETER_MISSING");
+    return encodeURIComponent(value);
+  });
+  const query = Object.entries(request.queryParameters as Readonly<Record<string, unknown>>).flatMap(([key, raw]) => {
+    const values = Array.isArray(raw) ? raw : [raw];
+      return values.flatMap(value =>
+      value === undefined || value === null ? [] : [encodeURIComponent(key) + "=" + encodeURIComponent(String(value))],
+    );
+  });
+  return Object.freeze({
+    method: descriptor.method,
+    pathAndQuery: query.length === 0 ? path : path + "?" + query.join("&"),
+    headers: request.headers as Readonly<Record<string, string>>,
+    body: request.body === undefined
+      ? Object.freeze({kind: "empty" as const})
+      : Object.freeze({kind: "json" as const, value: request.body as JsonValue}),
+    safeRetryable: descriptor.safeRetryable,
+  });
 }
 
 function validateTerminalResponse(schemaName: string, value: unknown): boolean {
@@ -976,7 +1013,7 @@ export function selfTest() {
     const duplicateTargets = {
       ...policy,
       targets: [
-        {...singleTarget, includeOperationIds: ['activateTerminal']},
+        singleTarget,
         {
           targetPackage: 'apps/terminal/kernel/base/another-owner',
           tags: ['terminal-binding'],
@@ -987,12 +1024,12 @@ export function selfTest() {
       ],
     };
     writePolicy(duplicateTargets);
-    try {
-      loadModel(root);
-      fail('TERMINAL_CLIENT_RED_DUPLICATE_ASSIGNMENT_NOT_DETECTED');
-    } catch (error) {
-      if (error.code !== 'TERMINAL_CLIENT_OPERATION_DUPLICATE_ASSIGNMENT') throw error;
-    }
+    const duplicatedModel = loadModel(root);
+    if (
+      duplicatedModel.targets.length !== 2 ||
+      duplicatedModel.targets.reduce((count, target) => count + target.selected.length, 0) !== 3
+    )
+      fail('TERMINAL_CLIENT_RED_MULTIPLE_PRIVATE_OUTPUTS_NOT_SUPPORTED');
     const wrongTarget = {
       ...policy,
       targets: [
@@ -1083,7 +1120,7 @@ export function selfTest() {
       if (error.code !== 'TERMINAL_CLIENT_INPUT_PATH_ESCAPE') throw error;
     }
     process.stdout.write(
-      'TERMINAL_CLIENT_API_SELF_TEST=PASS\nRED_ZERO_SELECTOR=PASS\nRED_WRONG_FACE=PASS\nRED_GENERATED_DRIFT=PASS\nRED_MULTIPLE_TARGET_ASSIGNMENT=PASS\nRED_DUPLICATE_ASSIGNMENT=PASS\nRED_NON_OWNER_TARGET=PASS\nRED_SELECTOR_MISMATCH=PASS\nRED_OUTPUT_ESCAPE=PASS\nRED_ROOT_ESCAPE=PASS\nRED_SYMLINK_ESCAPE=PASS\nRED_TARGET_PACKAGE_SYMLINK_ESCAPE=PASS\nRED_TARGET_MODULE_NAME_SYMLINK_ESCAPE=PASS\n',
+      'TERMINAL_CLIENT_API_SELF_TEST=PASS\nRED_ZERO_SELECTOR=PASS\nRED_WRONG_FACE=PASS\nRED_GENERATED_DRIFT=PASS\nRED_MULTIPLE_TARGET_ASSIGNMENT=PASS\nMULTIPLE_PRIVATE_OUTPUTS=PASS\nRED_NON_OWNER_TARGET=PASS\nRED_SELECTOR_MISMATCH=PASS\nRED_OUTPUT_ESCAPE=PASS\nRED_ROOT_ESCAPE=PASS\nRED_SYMLINK_ESCAPE=PASS\nRED_TARGET_PACKAGE_SYMLINK_ESCAPE=PASS\nRED_TARGET_MODULE_NAME_SYMLINK_ESCAPE=PASS\n',
     );
   } finally {
     fs.rmSync(root, {recursive: true, force: true});

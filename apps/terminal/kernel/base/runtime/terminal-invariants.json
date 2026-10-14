@@ -61,6 +61,7 @@
     "aggregateCommandStatus",
     "createCommand",
     "createRuntime",
+    "createRuntimeModule",
     "defaultCommandTimeoutMs",
     "defaultMaxActorResultBytes",
     "defaultMaxCommandDepth",
@@ -81,6 +82,7 @@
     "recordLocalInteractionCommand",
     "resetRuntimeAfterSystemFailureCommand",
     "runtimeInstanceModeChangedCommand",
+    "runtimeParameters",
     "selectRequestExecutionCommands",
     "selectRequestExecutionView",
     "selectRequestExecutionViews",
@@ -104,6 +106,7 @@
     "registerAsyncResource",
     "createFullSyncPayload",
     "applyAuthoritativeSync",
+    "getStateSyncQualifications",
     "dispatchCommand",
     "evaluateSelector",
     "installPeerDispatchGateway"
@@ -205,8 +208,8 @@
   },
   "tr01Exceptions": [
     {
-      "sourceFile": "src/foundations/createCommandDispatcher.ts",
-      "declarationId": "writeLedgerTransition",
+      "sourceFile": "src/application/createRequestLedgerWriter.ts",
+      "declarationId": "createRequestLedgerWriter",
       "dispatchExpression": "input.stateRuntime.getStore().dispatch",
       "reasonCategory": "runtime-ledger-owner"
     },

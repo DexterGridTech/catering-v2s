@@ -1,26 +1,24 @@
-import type {RuntimeModule, RuntimeModuleContext} from '@catering-v2s/kernel-base-runtime';
+import {createRuntimeModule, type RuntimeModule, type RuntimeModuleContext} from '@catering-v2s/kernel-base-runtime';
 import {createRequestId} from '@catering-v2s/kernel-base-contracts';
 import {runtimeModuleDependencyNames} from '../dependencies';
 import {moduleKind, moduleName} from '../moduleName';
-import {
-  selectActiveContracts,
-  selectServicePointAreas,
-  selectServicePoints,
-  selectStore,
-  selectStoreBasicBinding,
-  selectStoreBasicLoadReadiness,
-  selectStoreBasicState,
-  selectStoreBasicTopicState,
-  selectStoreOperatingRules,
-} from '../selectors/selectors';
-import {createStoreBasicActors} from '../features/actors/actors';
+import {selectActiveContracts} from '../selectors/selectActiveContracts';
+import {selectServicePointAreas} from '../selectors/selectServicePointAreas';
+import {selectServicePoints} from '../selectors/selectServicePoints';
+import {selectStore} from '../selectors/selectStore';
+import {selectStoreBasicBinding} from '../selectors/selectStoreBasicBinding';
+import {selectStoreBasicLoadReadiness} from '../selectors/selectStoreBasicLoadReadiness';
+import {selectStoreBasicState} from '../selectors/selectStoreBasicState';
+import {selectStoreBasicTopicState} from '../selectors/selectStoreBasicTopicState';
+import {selectStoreOperatingRules} from '../selectors/selectStoreOperatingRules';
+import {createStoreBasicActor} from '../features/actors/storeBasicActor';
 import {
   initializeStoreBasicCommand,
   initializeStoreServicePointsCommand,
   refreshStoreBasicTopicCommand,
   storeBasicInformationLoadedCommand,
-} from '../features/commands/commands';
-import {storeBasicStateRegistration} from '../features/slices/slice';
+} from '../declarations/commands';
+import {storeBasicStateRegistration} from '../features/slices/storeBasicState';
 
 const commands = [
   initializeStoreBasicCommand,
@@ -38,12 +36,11 @@ const safeErrorCode = (error: unknown): string => {
 };
 
 export const createStoreBasicModule = (): RuntimeModule => {
-  const actors = createStoreBasicActors();
-  return Object.freeze({
+  const actors = createStoreBasicActor();
+  return createRuntimeModule({
     moduleName,
     kind: moduleKind,
     dependencies: runtimeModuleDependencyNames.map(name => ({moduleName: name})),
-    commands: commands.map(command => ({name: command.commandName, visibility: command.visibility})),
     commandDefinitions: commands,
     selectorDefinitions: [
       selectActiveContracts,
@@ -56,9 +53,7 @@ export const createStoreBasicModule = (): RuntimeModule => {
       selectStoreBasicTopicState,
       selectStoreOperatingRules,
     ],
-    actors: actors.map(actor => ({name: actor.actorName})),
     actorDefinitions: actors,
-    slices: [{name: storeBasicStateRegistration.name, persistIntent: storeBasicStateRegistration.persistIntent}],
     stateSlices: [storeBasicStateRegistration],
     install: (context: RuntimeModuleContext) => {
       void context

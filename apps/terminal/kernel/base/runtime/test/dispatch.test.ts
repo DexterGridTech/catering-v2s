@@ -1,5 +1,6 @@
 import {describe, expect, it} from 'vitest';
 import {
+  createRuntimeModule,
   createRuntime,
   defineActor,
   defineCommand,
@@ -17,16 +18,11 @@ const moduleFor = (
   commands: readonly CommandSpec[],
   actors: readonly ReturnType<typeof defineActor>[] = [],
 ): RuntimeModule =>
-  Object.freeze({
+  createRuntimeModule({
     moduleName,
     kind: 'owner' as const,
     dependencies: [{moduleName: 'kernel.base.runtime'}],
-    commands: commands.map(command => ({
-      name: command.commandName,
-      visibility: command.visibility,
-    })),
     commandDefinitions: commands,
-    actors: actors.map(actor => ({name: actor.actorName})),
     actorDefinitions: actors,
   });
 

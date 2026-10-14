@@ -43,6 +43,7 @@ import {
   waitForSelector,
   type AndroidAutomationConnection,
 } from '../src/index.ts';
+import {parseServerConfigEnvironment} from '../src/serverConfigEnvironment.ts';
 import {mainSampleTerminalName} from '../src/mainSampleJourneyConfig.ts';
 import {mainSampleTestIds} from '../src/mainSampleTestIds.js';
 import {createManagedActivationFixtureApi} from '../fixtures/managedActivation.ts';
@@ -1153,12 +1154,9 @@ describe(`TER remote control ${sample} on Android ${topology}`, () => {
       if (peerSerial === serial) throw new Error('TERMINAL_AUTOMATION_ANDROID_DEVICE_SERIALS_MUST_DIFFER');
       const operationsPassword = required('V2S_SEED_OPERATIONS_DEFAULT_PASSWORD');
       const operationsOrigin = new URL(required('TERMINAL_AUTOMATION_OPERATIONS_ADMIN_ORIGIN'));
-      const managedUrls = {
-        businessBaseUrl: required('EXPO_PUBLIC_TER_MANAGED_GROUP_WORKSPACE_BASE_URL'),
-        tdsEntryOneUrl: required('V2S_TERMINAL_DEV_TDS_ENTRY_ONE_WS_URL'),
-        tdsEntryTwoUrl: required('V2S_TERMINAL_DEV_TDS_ENTRY_TWO_WS_URL'),
-      };
-      const serviceReverses = managedDevServiceReverses(managedUrls);
+      const serviceReverses = managedDevServiceReverses(
+        parseServerConfigEnvironment(required('EXPO_PUBLIC_TER_SERVER_CONFIG_ENVIRONMENT_JSON')),
+      );
       const runDirectory = path.join(root, '.runtime/terminal-automation', runId);
       const buildDirectory = path.join(runDirectory, 'android-build');
       mkdirSync(buildDirectory, {recursive: true, mode: 0o700});

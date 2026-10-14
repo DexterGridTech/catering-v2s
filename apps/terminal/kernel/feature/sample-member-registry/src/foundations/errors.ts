@@ -1,24 +1,6 @@
-import {createAppError, createModuleErrorFactory, type AppError} from '@catering-v2s/kernel-base-contracts';
+import {createAppError, type AppError} from '@catering-v2s/kernel-base-contracts';
 import type {ActorExecutionContext} from '@catering-v2s/kernel-base-runtime';
-import {moduleName} from '../moduleName';
-
-const defineError = createModuleErrorFactory(moduleName);
-
-const noPendingMemberErrorDefinition = defineError('no-pending-member', {
-  name: 'No pending member registration',
-  defaultTemplate: 'No pending member registration is available to confirm',
-  category: 'BUSINESS',
-  severity: 'LOW',
-  code: 'ERR_TER_SAMPLE_MEMBER_NO_PENDING',
-});
-
-const invalidMemberPayloadErrorDefinition = defineError('invalid-member-payload', {
-  name: 'Sample member payload is invalid',
-  defaultTemplate: 'Sample member payload is invalid',
-  category: 'VALIDATION',
-  severity: 'LOW',
-  code: 'ERR_TER_SAMPLE_MEMBER_INVALID_PAYLOAD',
-});
+import {invalidMemberPayloadErrorDefinition, noPendingMemberErrorDefinition} from '../declarations/errors';
 
 const errorContext = (context: ActorExecutionContext) => ({
   commandName: context.command.commandName,
@@ -40,5 +22,3 @@ export const createInvalidMemberPayloadError = (context: ActorExecutionContext):
     context: errorContext(context),
     details: {reasonCode: 'invalid-member-payload'},
   });
-
-export const memberErrorDefinitions = [noPendingMemberErrorDefinition, invalidMemberPayloadErrorDefinition] as const;

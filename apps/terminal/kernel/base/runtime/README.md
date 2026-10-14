@@ -19,8 +19,8 @@ topology/adapter 包负责。
 
 ```text
 src/
-  application/   createRuntime、四阶段生命周期接线、模块 descriptor
-  foundations/   拓扑解析、dispatcher、lifecycle emitter、journal、资源注册表、错误归一化
+  application/   createRuntime、dispatcher、request ledger writer、四阶段生命周期接线、模块 descriptor
+  foundations/   拓扑解析、actor/peer dispatcher、lifecycle emitter、journal、资源注册表、错误归一化
   features/      runtime initialize、instance-mode、request-ledger 与 system-failure reset command/actor/slice
   selectors/     instance-mode 与 request execution view selector
   types/         command、actor、execution、requestLedger、peer、journal、limits、module、runtime

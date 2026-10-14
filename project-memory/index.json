@@ -1842,7 +1842,9 @@
         "SPRING_APPLICATION_CONTEXT_OBJECT_IS_NOT_A_BEAN",
         "BACKEND_ACCEPTANCE_SECONDARY_CONTEXT_MUST_EXCLUDE_TEST_CONFIGURATION_AND_MIGRATIONS",
         "GRADLE_ACCEPTANCE_REPOSITORY_INPUTS_MUST_USE_EXPLICIT_ROOT",
-        "SPRING_STEREOTYPE_MULTIPLE_CONSTRUCTORS_NEED_EXPLICIT_INJECTION"
+        "SPRING_STEREOTYPE_MULTIPLE_CONSTRUCTORS_NEED_EXPLICIT_INJECTION",
+        "FIXTURE_TRANSITION_MUST_KEEP_CORRELATED_FACTS_COHERENT",
+        "ASYNC_OWNER_EFFECT_REQUIRES_AUTHORITATIVE_SETTLEMENT"
       ],
       "assertionSources": [
         {
@@ -2134,6 +2136,26 @@
           "assertionKey": "SPRING_STEREOTYPE_MULTIPLE_CONSTRUCTORS_NEED_EXPLICIT_INJECTION",
           "path": "tools/verify-gates/verify.mjs",
           "anchor": "    'tds-constructor-assembly',"
+        },
+        {
+          "assertionKey": "FIXTURE_TRANSITION_MUST_KEEP_CORRELATED_FACTS_COHERENT",
+          "path": "apps/terminal/kernel/base/terminal-update/test/automationFixture.test.ts",
+          "anchor": "  it('keeps the actual prepared FULL/HOT publication identity through apply, readback, and release', async () => {"
+        },
+        {
+          "assertionKey": "FIXTURE_TRANSITION_MUST_KEEP_CORRELATED_FACTS_COHERENT",
+          "path": "apps/terminal/kernel/base/terminal-update/src/testing/automationFixture.ts",
+          "anchor": "        if (command.kind === 'full') currentEmbedded = currentPrepared.artifact;"
+        },
+        {
+          "assertionKey": "FIXTURE_TRANSITION_MUST_KEEP_CORRELATED_FACTS_COHERENT",
+          "path": "project-memory/operations/phase-retrospective-and-systemic-repair.md",
+          "anchor": "### FIXTURE_TRANSITION_MUST_KEEP_CORRELATED_FACTS_COHERENT"
+        },
+        {
+          "assertionKey": "ASYNC_OWNER_EFFECT_REQUIRES_AUTHORITATIVE_SETTLEMENT",
+          "path": "project-memory/operations/phase-retrospective-and-systemic-repair.md",
+          "anchor": "- `ASYNC_OWNER_EFFECT_REQUIRES_AUTHORITATIVE_SETTLEMENT`: A successful initiating task does not prove that a downstream asynchronous owner effect has completed. The finite denominator is tests that assert a persisted/reporting side effect dispatched by a later natural heartbeat or scheduled owner command; synchronous effects and flows without such a downstream trigger are counterexamples. The root cause is treating task terminal state as the same fact as report delivery. The minimum reusable proof waits on the existing owner delivery selector until settled, then reads the authoritative server record for the exact operation identity; it must not inject a test-only trigger or use a fixed sleep. Paused, failed, pending, and mismatched identity states remain failures. Prevention is this memory plus focused owner-flow tests and the implementation review checklist."
         }
       ],
       "sourceRefs": [
@@ -2154,6 +2176,8 @@
         "apps/backend/terminal-data-server/src/test/java/architecture/TdsModuleBoundariesTest.java",
         "apps/backend/terminal-data-server/src/test/java/com/catering/v2s/terminaldataserver/protocol/TerminalConnectionProtocolTest.java",
         "apps/backend/terminal-data-server/src/test/java/com/catering/v2s/terminaldataserver/session/TdsConnectionCapacityLimiterTest.java",
+        "apps/terminal/kernel/base/terminal-update/src/testing/automationFixture.ts",
+        "apps/terminal/kernel/base/terminal-update/test/automationFixture.test.ts",
         "doc/decisions/2026-07-26-v2s-r5-operation-history-interaction-design.md",
         "doc/decisions/2026-07-27-v2s-identified-finding-generalization-and-prevention.md",
         "doc/decisions/2026-08-08-v2s-catalog-inventory-scope-specific-write-capabilities.md",
@@ -2521,7 +2545,7 @@
         {
           "assertionKey": "LAYERED_TESTS_SHARE_EXPENSIVE_FIXTURE_PROOF",
           "path": "apps/terminal/kernel/base/topology/test/topology.test.ts",
-          "anchor": "  it('locks a deterministic sender payload failure until the members reference changes', async () => {"
+          "anchor": "  it('locks a deterministic sender payload failure until State returns a changed projection', async () => {"
         },
         {
           "assertionKey": "TEST_FIXTURES_STAY_OUTSIDE_SCANNED_SOURCE_ROOTS",
@@ -3708,7 +3732,11 @@
       "assertions": [
         "SELF_TEST_FIXTURE_MUST_MATCH_STRUCTURE",
         "MUTATION_MUST_CHANGE_SOURCE",
-        "NEGATIVE_CONTROL_MUST_BE_SEMANTIC"
+        "NEGATIVE_CONTROL_MUST_BE_SEMANTIC",
+        "LAYOUT_GATE_MUST_MATCH_CURRENT_VOCABULARY",
+        "STATIC_FIXTURE_MUST_USE_REAL_IMPORTS_AND_TYPES",
+        "COMPOSED_ACTOR_DEFINITION_MUST_BE_RECOGNIZED",
+        "OWNER_CALLBACK_REFACTOR_MUST_UPDATE_FACTORY_WIRING"
       ],
       "assertionSources": [
         {
@@ -3725,10 +3753,39 @@
           "assertionKey": "NEGATIVE_CONTROL_MUST_BE_SEMANTIC",
           "path": "doc/decisions/2026-07-29-v2s-observability-and-acceptance-standard.md",
           "anchor": "## 3. 适用边界与反例"
+        },
+        {
+          "assertionKey": "LAYOUT_GATE_MUST_MATCH_CURRENT_VOCABULARY",
+          "path": "doc/platform/terminal-coding-standard.md",
+          "anchor": "### `TR-R06` · source 根与 features 直接子目录必须闭合"
+        },
+        {
+          "assertionKey": "LAYOUT_GATE_MUST_MATCH_CURRENT_VOCABULARY",
+          "path": "tools/terminal-skeleton/check-static.mjs",
+          "anchor": "function runSourceLayout(context) {"
+        },
+        {
+          "assertionKey": "STATIC_FIXTURE_MUST_USE_REAL_IMPORTS_AND_TYPES",
+          "path": "tools/terminal-skeleton/check-static.test.mjs",
+          "anchor": "  const actorCommandInstallerPath = path.join("
+        },
+        {
+          "assertionKey": "COMPOSED_ACTOR_DEFINITION_MUST_BE_RECOGNIZED",
+          "path": "tools/terminal-skeleton/check-static.mjs",
+          "anchor": "      const isActorSource ="
+        },
+        {
+          "assertionKey": "OWNER_CALLBACK_REFACTOR_MUST_UPDATE_FACTORY_WIRING",
+          "path": "apps/terminal/kernel/feature/store-basic/src/features/actors/storeBasicActor.ts",
+          "anchor": "  const loadStore = createLoadStore({"
         }
       ],
       "sourceRefs": [
+        "apps/terminal/kernel/feature/store-basic/src/features/actors/storeBasicActor.ts",
         "doc/decisions/2026-07-29-v2s-observability-and-acceptance-standard.md",
+        "doc/platform/terminal-coding-standard.md",
+        "tools/terminal-skeleton/check-static.mjs",
+        "tools/terminal-skeleton/check-static.test.mjs",
         "tools/verify-gates/cli.mjs"
       ]
     },

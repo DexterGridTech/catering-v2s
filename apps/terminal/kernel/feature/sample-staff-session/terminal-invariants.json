@@ -2,9 +2,19 @@
   "schemaVersion": 1,
   "package": "@catering-v2s/kernel-feature-sample-staff-session",
   "owned": {
-    "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/kernel-feature-sample-staff-session", "runner": "vitest"},
-    "lint": {"kind": "OWNED", "owner": "@catering-v2s/kernel-feature-sample-staff-session", "runner": "eslint"},
-    "clean": {"kind": "ABSENT"}
+    "test": {
+      "kind": "REAL_TESTS",
+      "owner": "@catering-v2s/kernel-feature-sample-staff-session",
+      "runner": "vitest"
+    },
+    "lint": {
+      "kind": "OWNED",
+      "owner": "@catering-v2s/kernel-feature-sample-staff-session",
+      "runner": "eslint"
+    },
+    "clean": {
+      "kind": "ABSENT"
+    }
   },
   "ownerKind": "owner",
   "publicExports": [
@@ -23,9 +33,10 @@
     "logoutSucceededCommand",
     "moduleKind",
     "moduleName",
-    "selectSessionState",
     "selectHostStaffQualification",
+    "selectSessionState",
     "sessionRestoredAnonymousCommand",
-    "sessionRestoredAuthenticatedCommand"
+    "sessionRestoredAuthenticatedCommand",
+    "sessionSliceName"
   ]
 }

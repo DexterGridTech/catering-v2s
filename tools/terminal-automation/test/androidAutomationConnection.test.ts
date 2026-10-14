@@ -78,6 +78,10 @@ describe('createAndroidAutomationConnection', () => {
           if (index >= 0) adb.reverses.splice(index, 1);
         }
       });
+      const tdsServicePorts = Array.from({length: 10}, (_, index) => ({
+        remotePort: 28_180 + index,
+        localPort: 18_180 + index,
+      }));
       const connection = await createAndroidAutomationConnection({
         client: adb.client,
         serial: 'emulator-5554',
@@ -87,8 +91,7 @@ describe('createAndroidAutomationConnection', () => {
         token: 'managed-driver-token',
         managedServicePorts: [
           {remotePort: 28080, localPort: 18080},
-          {remotePort: 28180, localPort: 18180},
-          {remotePort: 28181, localPort: 18181},
+          ...tdsServicePorts,
         ],
         runCommand,
       });
@@ -100,10 +103,8 @@ describe('createAndroidAutomationConnection', () => {
       expect(events.map(event => `${event.event}:${event.remote}`)).toEqual([
         'android.reverse.driver.attached:tcp:19090',
         'android.reverse.managed.attached:tcp:28080',
-        'android.reverse.managed.attached:tcp:28180',
-        'android.reverse.managed.attached:tcp:28181',
-        'android.reverse.managed.released:tcp:28181',
-        'android.reverse.managed.released:tcp:28180',
+        ...tdsServicePorts.map(value => `android.reverse.managed.attached:tcp:${value.remotePort}`),
+        ...[...tdsServicePorts].reverse().map(value => `android.reverse.managed.released:tcp:${value.remotePort}`),
         'android.reverse.managed.released:tcp:28080',
         'android.reverse.driver.released:tcp:19090',
       ]);

@@ -6,6 +6,8 @@
 虚拟键盘 owner，以及随承载 surface 尺寸计算的虚拟键盘 dock。它不是业务 state、runtime、
 command、store 或中文 IME 引擎；本轮所有输入统一走虚拟键盘。
 
+这是 UI toolkit，直接依赖 `ui-base-primitives` 和 `ui-base-render`；表单字段与 surface 由调用方创建，实际使用入口见本 README 的组件示例。
+
 字段使用 `keyboardKind="virtual"` 和既有 `KeyboardLayout`，input 包不读取屏数、不读取
 `Dimensions.get('window')`，也不感知业务字段名。无原生控件的字段可设置 `nativeLess`，仍通过
 同一个 field registry、`InputController` 和虚拟键盘取得 owner 与焦点，不另起输入管线。
@@ -26,6 +28,7 @@ command、store 或中文 IME 引擎；本轮所有输入统一走虚拟键盘�
 - `VirtualKeyboard` 只产生通用编辑 key，不派业务 command，业务不得直接用它拼第二套键盘；
 - `InputFieldOptions` 固定使用 `keyboardKind: 'virtual'`，`KeyboardLayout` 描述输入呈现/承载能力；
   frame 尺寸由 `InputSurfaceFrame` 自己的 `onLayout` 读取，不通过公共 `surfaceSize` prop 传入。
+
 - `full`、`alpha`、`numeric`、`financial` 的行列、稳定 keyId 与 region/key `testID` 由
   `src/foundations/keyboardLayout.ts` 唯一维护；键本身仍通过 primitives 的 `PrimitiveButton` 呈现，
   input/feature 不传 `className`。
@@ -43,6 +46,22 @@ command、store 或中文 IME 引擎；本轮所有输入统一走虚拟键盘�
 
 值只在字段局部状态和同步 registry 中维护；提交时由消费者调用 `useInputSnapshot()` 或 field result 的 `captureInputSnapshot()`，形成
 冻结对象后再交给业务 owner。编辑期不写 kernel slice、uiVariables 或 runtime command。
+
+## 在这个包上迭代时
+
+先复用 `useInputField`、surface 唯一键盘 owner 和 `InputScrollArea`，不要在业务控件内创建第二套字段注册、键盘布局或焦点状态。修改后运行 `yarn workspace @catering-v2s/ui-base-input typecheck`、`test`、`lint`；测试继续由本包 `run-owned-tests.mjs --dev-matrix` 托管。
+
+## 源码单元
+
+`src/contexts/context.ts` 只创建输入上下文并定义 `InputScrollAncestor` 类型。每个读取单一上下文的 hook
+分别由 `src/hooks/useInputController.ts`、`useInputPendingFocusCommit.ts`、`useInputKeyboardState.ts`、
+`useInputFieldKeyboardState.ts`、`useInputScrollAncestor.ts` 提供；字段和组件从具名 hook 文件导入，
+不在 context 声明文件里聚合 hook 实现。
+
+`InputSurfaceFrame.tsx` 只测量 surface 并装配 Provider；`InputSurfaceFrameContents.tsx` 持有唯一的焦点/键盘
+呈现状态机及几何交接；`hooks/useKeyboardPresentation.ts` 持有该状态机唯一的动画时钟与递增 serial，卸载时停止动画；
+`InputKeyboardOverlay.tsx` 只按状态呈现键盘层、命中遮罩和焦点失败提示；状态联合类型放在
+`types/keyboardPresentation.ts`。这些单元仍属于同一个 surface 生命周期，不复制 keyboard owner、动画进度或焦点事实。
 
 ## 性能与焦点纪律
 

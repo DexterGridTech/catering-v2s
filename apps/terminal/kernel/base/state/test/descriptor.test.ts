@@ -5,8 +5,15 @@ import {
   type StateRuntimeSliceRegistration,
 } from '../src/index';
 import {createExampleRegistration, exampleReducer, initialExampleState} from './testSupport';
+import {stateParameters} from '../src/declarations/parameters';
 
 describe('D group: descriptor validation', () => {
+  it('keeps the existing production debounce default in the State-owned parameter', () => {
+    expect(stateParameters.persistenceDebounceMs.defaultValue).toBe(300);
+    expect(stateParameters.persistenceDebounceMs.validate?.(0)).toBe(true);
+    expect(stateParameters.persistenceDebounceMs.validate?.(-1)).toBe(false);
+  });
+
   it('D-1 accepts a complete descriptor and returns an opaque frozen registration', () => {
     const registration = createExampleRegistration();
 

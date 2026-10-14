@@ -15,7 +15,9 @@
 
 - `src/assembly/assembly.tsx`：唯一的 `createSampleAssembly` 组装入口，以及按物理屏序创建 surface 的
   `createSurfaceForDisplayIndex` 入口；一次性闭包持有 runtime 与 catalog。
-- `src/application/module.ts`：sample-console 自己拥有的可移除运行期模块声明。
+- `src/application/module.ts`：只装配本包的可移除运行期模块。
+- `src/features/actors/ownerStageRouteActor.ts`：唯一 activation→staff→business placement actor，并持有当前路由签名与订阅协调闭包。
+- `src/selectors/`：分别定义业务互锁、店员登录资格、业务 mutation 资格和当前路由阶段；共享投影/激活判定集中在 `selectors/shared/sampleConsoleState.ts`。
 - `src/application/terminalSurfaces.ts`：读取本包 `package.json` 的固定逻辑 surface 配置并导出 typed 常量。
 - `theme/`：本应用的 NativeWind/Tailwind 语义色 token；主题属于 integration app，不抽到共享包。
 - `app.json` 与 `assets/favicon.png`：仅供本包 Expo Web 预览消费的浏览器标题图标配置；不声明
@@ -29,7 +31,7 @@
 ./src/index.ts：
 PortraitSurfaceDeclarations、SampleAssembly、SurfaceCreationInput、SurfaceDeclarations、
 SurfaceForm、SurfaceOrientation、SurfaceSize、TerminalSurfaces、createSampleAssembly、
-createSampleConsoleModule、createSampleDefinedParts、createSurfaceForDisplayIndex、
+createSampleConsoleModule、四个 `selectSampleConsole*` selector、createSurfaceForDisplayIndex、
 dependencyModuleNames、devDependencyModuleNames、moduleKind、moduleName、
 getSurfaceDeclarations、readTerminalSurfaces、surfaceFormForOrientation、terminalSurfaces。
 导出映射另提供 @catering-v2s/ui-integration-sample-console/theme/global.css →
@@ -39,7 +41,6 @@ getSurfaceDeclarations、readTerminalSurfaces、surfaceFormForOrientation、term
 - `moduleName`、`moduleKind`、`dependencyModuleNames`、`devDependencyModuleNames`：包图元数据；
   `createSampleConsoleModule` 是该 integration 的运行期模块工厂。
 - `createSampleAssembly`、`SampleAssembly`：唯一的真实组装入口及其返回契约；
-  `createSampleDefinedParts` 是测试/装配对账使用的定义部件工厂，不能替代 assembly 入口。
 - `createSurfaceForDisplayIndex`：接收一个既有 `SampleAssembly` 与 `0 | 1` 的物理屏序，
   从该 assembly 的 runtime 读取 display role 与 instance mode，统一调用
   `display-context.resolveSurfaceDisplayMode` 后再委托给该 assembly 的 `createSurface`。
@@ -51,12 +52,13 @@ getSurfaceDeclarations、readTerminalSurfaces、surfaceFormForOrientation、term
 
 ## 用法
 
-库消费者只通过 `createSampleAssembly({platformPorts, surfaceForm, persistenceKey?})` 取得已启动的
+库消费者只通过 `createSampleAssembly({platformPorts, nativeLoadingCapability, surfaceForm, persistenceKey?})` 取得已启动的
 `SampleAssembly`。按物理屏挂载时使用
 `createSurfaceForDisplayIndex(assembly, displayIndex)`；该入口保证 displayMode 的推导回到
 `display-context` owner，不在 assembly consumer 内复制 `PRIMARY`/`SECONDARY` 映射。底层
 `assembly.createSurface({displayIndex, displayMode, surfaceForm})` 仍是通用宿主按已确定模式挂载
 surface 的闭包入口。
+`nativeLoadingCapability` 是必填项，由应用宿主从 Android platform binding 提供；本包不在组件内部创建原生能力。
 `persistenceKey` 仅用于测试隔离；生产端口由 assembly 的消费者注入。
 本包 `package.json.serverSpaces` 是 Expo Web integration 默认配置；未显式传入 `serverSpaces` 时，
 `createSampleAssembly` 将其作为不可变 defaults 注入 `server-config`。Android application 会显式传入
@@ -94,10 +96,34 @@ Native 不读取这份 Web 预览配置。
 `terminalSurfaces.orientations.portrait.PRIMARY`，不挂载 SECONDARY。该选择只属于 TER 的
 Expo Web 开发宿主，与后台 DEV 环境无关。
 
-## 迭代指引
+应用宿主通过包根 assembly 创建 Runtime，再按物理屏创建 surface：
+
+```tsx
+import {
+  createSampleAssembly,
+  createSurfaceForDisplayIndex,
+} from '@catering-v2s/ui-integration-sample-console'
+
+const assembly = await createSampleAssembly({
+  platformPorts,
+  nativeLoadingCapability,
+  surfaceForm: 'laptop',
+})
+const primary = createSurfaceForDisplayIndex(assembly, 0)
+```
+
+`platformPorts` 和 `nativeLoadingCapability` 由 Android application 的 platform binding 注入。
+
+## 在这个包上迭代时
 
 先在真实 feature 旅途中看见重复，再判断是否下沉到已有 base toolkit；不要预先为假设的
 业务形态扩展本包。任何需要 adapter、Android 双屏承载、浏览器自动化或 automation backend
 的变化，必须进入对应的后续 CP 与授权边界，不在此处用开发外壳绕过。
 
 虚拟键盘的中性色与 focus token 也由本 integration 提供；shared primitives 只消费同名 `keyboard-*` 语义 token，因此本应用可以保持自己的 focus 色而不把应用色下沉到 base。
+
+```sh
+yarn workspace @catering-v2s/ui-integration-sample-console typecheck
+yarn workspace @catering-v2s/ui-integration-sample-console test
+yarn workspace @catering-v2s/ui-integration-sample-console lint
+```

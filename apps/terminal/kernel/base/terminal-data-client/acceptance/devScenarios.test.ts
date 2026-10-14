@@ -33,6 +33,7 @@ import {
 } from '@catering-v2s/kernel-base-platform-ports';
 import {moduleName as stateModuleName, type StateJsonValue} from '@catering-v2s/kernel-base-state';
 import {
+  createRuntimeModule,
   createRuntime,
   type CommandDefinition,
   type Runtime,
@@ -50,14 +51,20 @@ import {
   selectConnectionLatency,
   selectConnectionState,
 } from '@catering-v2s/kernel-base-terminal-data-client';
-import {createServerConfigModule, setServerOverrideCommand} from '@catering-v2s/kernel-base-server-config';
+import {
+  createServerConfigModule,
+  parseServerConfigEnvironmentJson,
+  setServerOverrideCommand,
+} from '@catering-v2s/kernel-base-server-config';
 import {resolveServerNetworkSnapshot} from '@catering-v2s/kernel-base-server-config/network-adapter';
 import {
   createTransportModule,
-  type TransportConnectionEvent,
-  type TransportManagedConnection,
-  type TransportNetworkAdapter,
 } from '@catering-v2s/kernel-base-transport';
+import type {
+  TransportConnectionEvent,
+  TransportManagedConnection,
+  TransportNetworkAdapter,
+} from '@catering-v2s/kernel-base-platform-ports';
 import {
   completeTopologySlaveUnpairStateClearCommand,
   moduleName as topologyModuleName,
@@ -68,7 +75,6 @@ import {
   readManagedTdsLatestState,
 } from '../../../../../../scripts/dev/r5-dev-runner.mjs';
 
-const workspaceKey = 'aurora';
 const storeCode = 'S-OP';
 const storeName = '河畔茶里店';
 const clientMaxPayloadBytes = 65_536;
@@ -84,14 +90,35 @@ const requestId = () => createRequestId();
 const scenarioRunId = () => required('V2S_TERMINAL_DEV_ACCEPTANCE_RUN_ID');
 const managedDevRunId = () => required('V2S_TERMINAL_DEV_MANAGED_DEV_RUN_ID');
 const devManifestPath = () => required('V2S_TERMINAL_DEV_MANIFEST');
-const httpBaseUrl = () => required('V2S_TERMINAL_DEV_HTTP_BASE_URL');
-const entryOneUrl = () => required('V2S_TERMINAL_DEV_TDS_ENTRY_ONE_WS_URL');
-const entryTwoUrl = () => required('V2S_TERMINAL_DEV_TDS_ENTRY_TWO_WS_URL');
 const required = (name: string): string => {
   const value = process.env[name];
   if (!value) throw new Error(`TERMINAL_DEV_ACCEPTANCE_ENV_MISSING:${name}`);
   return value;
 };
+
+type ManagedServerConfigEnvironment = ReturnType<typeof parseServerConfigEnvironmentJson>;
+
+const serverConfigEnvironment = (): ManagedServerConfigEnvironment =>
+  parseServerConfigEnvironmentJson(required('EXPO_PUBLIC_TER_SERVER_CONFIG_ENVIRONMENT_JSON'));
+
+const serverConfigAddress = (serverName: string, addressName: string) => {
+  const server = serverConfigEnvironment().servers.find(candidate => candidate.serverName === serverName);
+  const matches = server?.addresses.filter(candidate => candidate.addressName === addressName) ?? [];
+  if (matches.length !== 1) throw new Error('TERMINAL_DEV_SERVER_CONFIG_ADDRESS_MISSING');
+  return matches[0]!;
+};
+
+const tdsAddressUrl = (addressName: string): string =>
+  serverConfigAddress('terminal-data-server', addressName).baseUrl;
+
+const groupWorkspaceKey = (): string => {
+  const url = new URL(serverConfigAddress('business', 'primary').baseUrl);
+  const match = /^\/api\/terminal\/group-workspaces\/([A-Za-z0-9_-]{1,64})$/u.exec(url.pathname);
+  if (match === null) throw new Error('TERMINAL_DEV_GROUP_WORKSPACE_ADDRESS_INVALID');
+  return match[1]!;
+};
+
+const httpBaseUrl = (): string => new URL(serverConfigAddress('business', 'primary').baseUrl).origin;
 
 const toolkit = (name: string, dependencies: readonly string[]): RuntimeModule => ({
   moduleName: name,
@@ -99,13 +126,10 @@ const toolkit = (name: string, dependencies: readonly string[]): RuntimeModule =
   dependencies: dependencies.map(moduleName => ({moduleName})),
 });
 
-const topologyCommandModule: RuntimeModule = Object.freeze({
+const topologyCommandModule: RuntimeModule = createRuntimeModule({
   moduleName: topologyModuleName,
   kind: 'owner',
   dependencies: [{moduleName: 'kernel.base.runtime'}, {moduleName: 'kernel.base.transport'}],
-  commands: [requestTopologySlaveUnpairStateClearCommand, completeTopologySlaveUnpairStateClearCommand].map(
-    definition => ({name: definition.commandName, visibility: definition.visibility}),
-  ),
   commandDefinitions: [requestTopologySlaveUnpairStateClearCommand, completeTopologySlaveUnpairStateClearCommand],
 });
 
@@ -294,33 +318,24 @@ const createWebSocketConnection = async (
 };
 
 const createScenarioClient = async (alias: string, requireCompression = false): Promise<ScenarioClient> => {
-  const httpUrl = httpBaseUrl();
-  const wsOne = entryOneUrl();
-  const wsTwo = entryTwoUrl();
+  const environment = serverConfigEnvironment();
   const defaults: TransportServerConfig = Object.freeze({
-    selectedSpace: 'managed-dev',
+    selectedSpace: environment.spaceName,
     spaces: Object.freeze([
       Object.freeze({
-        name: 'managed-dev',
-        servers: Object.freeze([
-          Object.freeze({
-            serverName: 'terminal-business-api',
-            addresses: Object.freeze([
-              {
-                addressName: 'business-http',
-                baseUrl: `${httpUrl}/api/terminal/group-workspaces/${workspaceKey}`,
-                timeoutMs: 5_000,
-              },
-            ]),
-          }),
-          Object.freeze({
-            serverName: 'terminal-data-server',
-            addresses: Object.freeze([
-              {addressName: 'tds-entry-one', baseUrl: wsOne, timeoutMs: 5_000},
-              {addressName: 'tds-entry-two', baseUrl: wsTwo, timeoutMs: 5_000},
-            ]),
-          }),
-        ]),
+        name: environment.spaceName,
+        servers: Object.freeze(
+          environment.servers.map(server =>
+            Object.freeze({
+              serverName: server.serverName,
+              addresses: Object.freeze(
+                server.addresses.map(address =>
+                  Object.freeze({...address, timeoutMs: address.timeoutMs ?? 5_000}),
+                ),
+              ),
+            }),
+          ),
+        ),
       }),
     ]),
   });
@@ -372,7 +387,7 @@ const createScenarioClient = async (alias: string, requireCompression = false): 
   const plainStorage = createProcessMemoryStateStoragePort();
   const protectedStorage = createProcessMemoryStateStoragePort();
   const terminalModule = createTerminalDataClientModule({
-    businessServerName: 'terminal-business-api',
+    businessServerName: 'business',
     transport: transportModule.commandGateway,
     createCredentialSecret: () => randomBytes(32).toString('base64url'),
     createProtocolUuid: randomUUID,
@@ -498,7 +513,7 @@ type OperationsSession = OperationsFixtureSession;
 const operationsFixtureClient = () =>
   createOperationsFixtureClient({
     httpBaseUrl: httpBaseUrl(),
-    workspaceKey,
+    workspaceKey: groupWorkspaceKey(),
     storeCode,
     loginName: 'r5-account-multi-role',
     password: required('V2S_SEED_OPERATIONS_DEFAULT_PASSWORD'),
@@ -683,19 +698,19 @@ describe('terminal-data-client managed DEV end-to-end scenarios', () => {
     const activated = await activate(client, 1, session);
     await setTdsAddresses(client, [
       {addressName: 'blackhole', baseUrl: `ws://127.0.0.1:${address.port}`, timeoutMs: 2_500},
-      {addressName: 'tds-entry-one', baseUrl: entryOneUrl(), timeoutMs: 5_000},
+      {addressName: 'haproxy-entry-one', baseUrl: tdsAddressUrl('haproxy-entry-one'), timeoutMs: 5_000},
     ]);
     const startedAt = Date.now();
     const connected = await connect(client, 20_000);
     expect(Date.now() - startedAt).toBeLessThan(20_000);
-    expect(connected.addressName).toBe('tds-entry-one');
+    expect(connected.addressName).toBe('haproxy-entry-one');
     const state = await recordLatestState(
       activated.terminalRef,
       value => value.disconnected_at_epoch_millis === null,
       'E2_CONNECTED',
     );
     expect(state.node_id).toBe(connected.nodeId);
-    expect(selectConnectionState(client.runtime.getState()).addressName).toBe('tds-entry-one');
+    expect(selectConnectionState(client.runtime.getState()).addressName).toBe('haproxy-entry-one');
   }, 60_000);
 
   it('terminal-data-client managed DEV preserves an offline credential until backend cancellation and rebinds across devices', async () => {
@@ -753,7 +768,7 @@ describe('terminal-data-client managed DEV end-to-end scenarios', () => {
       })),
     });
     const expectedNodeIds = manifestNodeIds();
-    expect(initial.every(value => value.addressName === 'tds-entry-one')).toBe(true);
+    expect(initial.every(value => value.addressName === 'haproxy-entry-one')).toBe(true);
     expect(initial.map(value => value.nodeId).every(value => expectedNodeIds.includes(value))).toBe(true);
     expect(initial.some(value => value.nodeId === nodeIdFor('tds-a'))).toBe(true);
     expect(initial.some(value => value.nodeId === nodeIdFor('tds-b'))).toBe(true);
@@ -876,7 +891,7 @@ describe('terminal-data-client managed DEV end-to-end scenarios', () => {
         expect(selectConnectionState(clients[index]!.runtime.getState())).toMatchObject({
           status: 'connected',
           nodeId: nodeIdFor('tds-c'),
-          addressName: 'tds-entry-two',
+          addressName: 'haproxy-entry-two',
         });
         const state = await recordLatestState(
           activations[index]!.terminalRef,
@@ -923,7 +938,7 @@ describe('terminal-data-client managed DEV end-to-end scenarios', () => {
         expect(selectConnectionState(clients[index]!.runtime.getState())).toMatchObject({
           status: 'connected',
           nodeId: nodeIdFor('tds-c'),
-          addressName: 'tds-entry-two',
+          addressName: 'haproxy-entry-two',
         });
         const state = await recordLatestState(
           activations[index]!.terminalRef,

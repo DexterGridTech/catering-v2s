@@ -1,11 +1,9 @@
 import {describe, expect, it} from 'vitest';
 import {createStateRuntime, defineStateRuntimeSlice} from '@catering-v2s/kernel-base-state';
 import {createFakeLogger, createFakeStorage} from '../../state/test/testSupport';
-import {
-  selectActivationState,
-  selectConnectionLatency,
-  selectConnectionState,
-} from '../src/selectors/selectTerminalDataClientState';
+import {selectActivationState} from '../src/selectors/selectActivationState';
+import {selectConnectionLatency} from '../src/selectors/selectConnectionLatency';
+import {selectConnectionState} from '../src/selectors/selectConnectionState';
 import {
   terminalDataClientSliceName,
   terminalDataClientActions,

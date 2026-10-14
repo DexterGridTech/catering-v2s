@@ -1,7 +1,7 @@
 import {selectRuntimeInstanceMode, onCommand, defineActor} from '@catering-v2s/kernel-base-runtime';
 import type {ActorDefinition} from '@catering-v2s/kernel-base-runtime';
 import {moduleName} from '../../moduleName';
-import {switchDisplayRoleCommand} from '../commands/switchDisplayRole';
+import {switchDisplayRoleCommand} from '../../declarations/commands';
 import {setDisplayRoleAction} from '../slices/displayRole';
 import {selectDisplayRole} from '../../selectors/selectDisplayRole';
 import {getDisplayRoleChangeEligibility} from '../../foundations/displayDerivation';

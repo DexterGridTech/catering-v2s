@@ -19,10 +19,12 @@
 **所有平台能力只能经此进入** —— 有唯一入口，才谈得上守住。
 它也是 `TR-05` 规则句原文点名的两个包之一。
 
-它有**十个端口**：
+它有**十一个运行时端口**：
 
 `logger` · `persistKv` · `persistSecure` · `device` · `appControl` ·
-`script` · `connector` · `update` · `logUpload` · `topologyHost`
+`script` · `connector` · `update` · `logUpload` · `topologyHost` · `remoteControl`
+
+网络适配另有纯类型契约 `TransportNetworkAdapter`，供通用 transport 注入平台网络实现；它不增加 `PlatformPorts` 运行时端口。
 
 ## 2 · 它不是什么
 
@@ -69,8 +71,10 @@ src/
     connector.ts     外设通道 call/subscribe/unsubscribe/on
     update.ts     热更新包与 boot/active/rollback marker
     logUpload.ts     按日期上传日志
-    topologyHost.ts  跨机 host 服务（含 HTTP 与 WS 地址）
-    platformPorts.ts LoggerBinding · 十键 bindings · PlatformPorts · factory 入参
+    topologyHost.ts  跨机 host 服务（含 HTTP 地址）
+    topologyPeerChannel.ts  配对 WebSocket 通道契约（由 platform adapter 实现）
+    transportNetwork.ts    transport 注入网络适配器的纯类型契约
+    platformPorts.ts LoggerBinding · 十一个键 bindings · PlatformPorts · factory 入参
   foundations/
     sensitiveData.ts        **唯一**的脱敏漏斗，不导出
     createPlatformPorts.ts  central logger 包装 · 穷尽装配 · 冻结根对象
@@ -94,14 +98,14 @@ test/
 
 ## 5 · 用法
 
-### 5.1 装配：十个键必须写全，漏一个编译不过
+### 5.1 装配：十一个键必须写全，漏一个编译不过
 
 ```ts
 import {
   createPlatformPorts, consoleLoggerBinding, createProcessMemoryStateStoragePort,
   unavailablePersistSecurePort, unavailableDevicePort, unavailableAppControlPort,
   unavailableScriptPort, unavailableConnectorPort, unavailableUpdatePort,
-  unavailableLogUploadPort, unavailableTopologyHostPort,
+  unavailableLogUploadPort, unavailableTopologyHostPort, unavailableRemoteControlPort,
 } from '@catering-v2s/kernel-base-platform-ports';
 
 const ports = createPlatformPorts({
@@ -117,6 +121,7 @@ const ports = createPlatformPorts({
     update: unavailableUpdatePort,
     logUpload: unavailableLogUploadPort,
     topologyHost: unavailableTopologyHostPort,
+    remoteControl: unavailableRemoteControlPort,
   },
 });
 ```

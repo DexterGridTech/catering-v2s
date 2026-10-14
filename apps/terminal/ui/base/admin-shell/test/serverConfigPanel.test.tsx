@@ -214,6 +214,38 @@ describe('server-config admin panel', () => {
     expect(JSON.stringify(screen.toJSON())).not.toContain('default-proxy-secret');
   });
 
+  it('keeps the add-address action available after four addresses', async () => {
+    stateFor('MASTER', null);
+    const fiveAddressDefaults: TransportServerConfig = Object.freeze({
+      ...defaults,
+      spaces: Object.freeze([
+        Object.freeze({
+          name: 'dev',
+          servers: Object.freeze([
+            Object.freeze({
+              serverName: 'business',
+              addresses: Object.freeze(
+                Array.from({length: 5}, (_, index) => ({
+                  addressName: `edge-${index + 1}`,
+                  baseUrl: `https://edge-${index + 1}.example.test/api`,
+                  timeoutMs: 10000,
+                })),
+              ),
+            }),
+          ]),
+        }),
+      ]),
+    });
+    const screen = await render(<ServerConfigPanel defaults={fiveAddressDefaults} context={context} />);
+
+    expect(screen.getByTestId(testIds.addAddress)).toBeTruthy();
+    await act(async () => {
+      screen.getByTestId(testIds.addAddress).props.onPress();
+    });
+    expect(screen.getByTestId(testIds.addressCard(6))).toBeTruthy();
+    expect(screen.getByTestId(testIds.addressField(6, 'name')).props.children).toContain('address-6');
+  });
+
   it('remounts real input state from the newly selected server draft before allowing save', async () => {
     stateFor('MASTER', null);
     const twoServiceDefaults: TransportServerConfig = Object.freeze({

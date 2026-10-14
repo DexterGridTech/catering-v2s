@@ -3,7 +3,7 @@ import {unavailableUpdatePort, type UpdatePort} from '@catering-v2s/kernel-base-
 import type {RuntimeModuleContext} from '@catering-v2s/kernel-base-runtime';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {createTerminalUpdateModule} from '../src/application/createTerminalUpdateModule';
-import {reconcileTerminalUpdateCommand, updatePresentationChangedCommand} from '../src/features/commands/commands';
+import {reconcileTerminalUpdateCommand, updatePresentationChangedCommand} from '../src/declarations/commands';
 import {terminalUpdateSliceName} from '../src/features/slices/terminalUpdate';
 
 describe('terminal-update presentation lifecycle', () => {

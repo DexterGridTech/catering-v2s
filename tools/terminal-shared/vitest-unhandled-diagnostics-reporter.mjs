@@ -1,3 +1,5 @@
+import {inspect} from 'node:util';
+
 const validReason = new Set(['passed', 'interrupted', 'failed']);
 const validErrorName = /^[A-Za-z][A-Za-z0-9_$]{0,63}$/;
 const validErrorCode = /^[A-Z][A-Z0-9_]{1,63}$/;
@@ -19,8 +21,11 @@ export const formatUnhandledDiagnostics = (errors, reason) => {
   boundedErrors.forEach((error, index) => {
     const name = typeof error?.name === 'string' && validErrorName.test(error.name) ? error.name : 'UnknownError';
     const code = typeof error?.code === 'string' && validErrorCode.test(error.code) ? error.code : 'none';
+    const detail = typeof error?.message === 'string' ? error.message : inspect(error, {depth: 6, maxArrayLength: 50});
     const frames = safeFrames(error?.stack);
-    lines.push(`VITEST_UNHANDLED_ERROR index=${index} type=${name} code=${code} frames=${frames.join('>') || 'unavailable'}`);
+    lines.push(
+      `VITEST_UNHANDLED_ERROR index=${index} type=${name} code=${code} detail=${JSON.stringify(detail)} frames=${frames.join('>') || 'unavailable'}`,
+    );
   });
   if (Array.isArray(errors) && errors.length > boundedErrors.length)
     lines.push(`VITEST_UNHANDLED_ERROR_TRUNCATED count=${errors.length - boundedErrors.length}`);

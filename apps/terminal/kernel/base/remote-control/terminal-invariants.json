@@ -2,33 +2,49 @@
   "schemaVersion": 1,
   "package": "@catering-v2s/kernel-base-remote-control",
   "owned": {
-    "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/kernel-base-remote-control", "runner": "vitest"},
-    "lint": {"kind": "OWNED", "owner": "@catering-v2s/kernel-base-remote-control", "runner": "eslint"},
-    "clean": {"kind": "ABSENT"}
+    "test": {
+      "kind": "REAL_TESTS",
+      "owner": "@catering-v2s/kernel-base-remote-control",
+      "runner": "vitest"
+    },
+    "lint": {
+      "kind": "OWNED",
+      "owner": "@catering-v2s/kernel-base-remote-control",
+      "runner": "eslint"
+    },
+    "clean": {
+      "kind": "ABSENT"
+    }
   },
   "publicExports": [
+    "InputResultBody",
+    "InputResultMessage",
+    "KeepaliveAckBody",
+    "KeepaliveAckMessage",
+    "KeepaliveBody",
+    "KeepaliveMessage",
+    "PointerBody",
+    "PointerMessage",
     "RemoteControlEnvelope",
     "RemoteControlMessage",
     "RemoteControlMessageType",
     "ScreenReadyBody",
     "ScreenReadyMessage",
-    "PointerBody",
-    "PointerMessage",
-    "InputResultBody",
-    "InputResultMessage",
-    "KeepaliveBody",
-    "KeepaliveMessage",
-    "KeepaliveAckBody",
-    "KeepaliveAckMessage",
     "SessionEndBody",
     "SessionEndMessage",
+    "createRemoteControlModule",
     "dependencyModuleNames",
     "devDependencyModuleNames",
+    "joinRemoteControlCommand",
     "moduleKind",
     "moduleName",
     "remoteControlMessageTypes",
     "remoteControlProtocolMaxMessageBytes",
     "remoteControlTopic",
-    "runtimeModuleDependencyNames"
+    "runtimeModuleDependencyNames",
+    "selectRemoteControlScreen",
+    "selectRemoteControlStatus",
+    "startRemoteControlCommand",
+    "stopRemoteControlCommand"
   ]
 }

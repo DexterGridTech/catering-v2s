@@ -59,6 +59,8 @@ export type TerminalAutomationManifest = Readonly<{
   readonly resource?: Readonly<{readonly at: string; readonly ownedTreeRssKiB: number; readonly budgetKiB: number}>;
   readonly logs: readonly string[];
   readonly firstFailure: string | null;
+  readonly lastKnownGood: string | null;
+  readonly brokenBoundary: string | null;
   readonly business: 'NOT_RUN' | 'PASS' | 'FAIL';
   readonly cleanup: 'NOT_RUN' | 'PASS' | 'FAIL';
   readonly diagnostics?: 'NOT_RUN' | 'PASS' | 'FAIL' | 'N/A';
@@ -86,6 +88,21 @@ export type TerminalAutomationManifest = Readonly<{
     readonly bindingGeneration?: number;
   }>;
 }>;
+
+export const markManagedRunCheckpoint = (
+  manifest: TerminalAutomationManifest,
+  checkpoint: string,
+): TerminalAutomationManifest => Object.freeze({...manifest, lastKnownGood: checkpoint});
+
+export const markManagedRunFailure = (
+  manifest: TerminalAutomationManifest,
+  reason: string,
+  boundary: string,
+): TerminalAutomationManifest => Object.freeze({
+  ...manifest,
+  firstFailure: manifest.firstFailure ?? reason,
+  brokenBoundary: manifest.brokenBoundary ?? boundary,
+});
 
 export type TerminalAutomationExecution = Readonly<{
   readonly phase: string;
@@ -250,6 +267,8 @@ export const createManagedRun = (
     processes: Object.freeze([owner]),
     logs: Object.freeze([]),
     firstFailure: null,
+    lastKnownGood: null,
+    brokenBoundary: null,
     business: 'NOT_RUN',
     cleanup: 'NOT_RUN',
     diagnostics:

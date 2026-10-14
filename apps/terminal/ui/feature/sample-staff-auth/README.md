@@ -27,10 +27,9 @@ resolved 的 `SYSTEM`/timeout/partial failure 与 Promise rejection 统一观察
   的两套机型 renderer；`StaffLoginOperatorNameInput.tsx` 与 `StaffLoginPasscodeInput.tsx`
   是真正共用的输入部件。
 - `src/hooks`：按职责拆分的共享认证行为；`src/types` 与 `src/foundations` 保存纯类型和提示映射。
-- `src/features/commands`：feature-owned UI 意图命令；`src/features/actors`：登录与失败观察 actor。
-- `src/features/variables`：记住工号等 UI variable 声明。
-- `src/parts/parts.ts`：part、layer identity 与呈现声明。
-- `src/assembly/assembly.ts`：feature assembly 与运行期模块接线；`src/application/module.ts`：模块工厂。
+- `src/declarations/commands.ts`、`variables.ts` 与 `parts.ts`：本包的 UI 意图命令、UI variable、part/layer identity 和呈现声明。
+- `src/features/actors/authResultActor.ts`、`authNavigationActor.ts`、`authNoticeActor.ts` 与 `authSystemNoticeActor.ts`：按结果、导航和两类提示职责拆分的 actor；纯共享判定放在 `actors/shared/staffAuthActorSupport.ts`。
+- `src/application/module.ts`：模块工厂，将 parts、variables 与 layer dismissals 作为自身呈现贡献返回。
 - `src/foundations/systemFailureDismissal.ts`：系统失败层关闭动作的 feature-owned 转接。
 
 ## 用法
@@ -40,13 +39,13 @@ resolved 的 `SYSTEM`/timeout/partial failure 与 Promise rejection 统一观察
 实际渲染在 `InputScrollArea` 内的 hook-bearing 输入组件注册，使字段测量使用该滚动区的
 content 坐标；虚拟键盘是叠加层，不收缩登录表单布局。
 
-通过公开 assembly 取得 parts，并在 integration 装配时取得真实运行期模块：
+通过公开模块工厂取得运行模块及其呈现贡献：
 
 ```ts
-import {sampleStaffAuthAssembly} from '@catering-v2s/ui-feature-sample-staff-auth'
+import {createSampleStaffAuthModule} from '@catering-v2s/ui-feature-sample-staff-auth'
 
-const module = sampleStaffAuthAssembly.createModule()
-const authParts = sampleStaffAuthAssembly.parts
+const module = createSampleStaffAuthModule()
+const authParts = module.presentationContributions.parts
 void module
 void authParts
 ```
@@ -54,8 +53,8 @@ void authParts
 ## 公共包入口
 
 包根 @catering-v2s/ui-feature-sample-staff-auth 当前公开以下符号（含类型）：
-StaffAuthAssembly、dependencyModuleNames、devDependencyModuleNames、moduleKind、moduleName、
-needToLoginStaffCommand、sampleStaffAuthAssembly。唯一包导出映射为 . → ./src/index.ts；包内实现深路径不是包级导入入口。
+createSampleStaffAuthModule、dependencyModuleNames、devDependencyModuleNames、moduleKind、moduleName、
+needToLoginStaffCommand。唯一包导出映射为 . → ./src/index.ts；包内实现深路径不是包级导入入口。
 该清单与 terminal-invariants.json 的 publicExports / publicExportMap 及
 test/publicSurface.test.ts 对齐。
 

@@ -2,12 +2,17 @@ import packageJson from '../../package.json';
 import * as Crypto from 'expo-crypto';
 import type {ReactNode} from 'react';
 import {moduleName as integrationModuleName} from '../moduleName';
-import type {EnvironmentMode, NativeLoadingCapability, PlatformPorts} from '@catering-v2s/kernel-base-platform-ports';
+import type {
+  EnvironmentMode,
+  NativeLoadingCapability,
+  PlatformPorts,
+  TransportNetworkAdapter,
+  TransportNetworkSnapshot,
+} from '@catering-v2s/kernel-base-platform-ports';
 import {type SurfaceHostMeasurementSource} from '@catering-v2s/ui-base-render';
 import {
   createCredentialSecret,
   createTerminalActivationModule,
-  createTerminalActivationParts,
 } from '@catering-v2s/ui-base-terminal-activation';
 import {
   createTerminalDataClientModule,
@@ -20,18 +25,16 @@ import {
   createSurfaceForDisplayIndex as createSharedSurfaceForDisplayIndex,
   createBrowserTransportNetworkAdapter,
   PairReadinessInterlock,
-  selectStateSyncSlices,
   type IntegrationAssembly,
   type AutomationAgentConfig,
 } from '@catering-v2s/ui-base-integration-assembly';
-import {sampleStaffAuthAssembly} from '@catering-v2s/ui-feature-sample-staff-auth';
-import {sampleWallpaperPickerAssembly, WallpaperBackground} from '@catering-v2s/ui-feature-sample-wallpaper-picker';
+import {createSampleStaffAuthModule} from '@catering-v2s/ui-feature-sample-staff-auth';
+import {createSampleWallpaperPickerModule, WallpaperBackground} from '@catering-v2s/ui-feature-sample-wallpaper-picker';
 import {createSampleStaffSessionModule} from '@catering-v2s/kernel-feature-sample-staff-session';
 import {createStoreBasicModule, selectStoreBasicBinding} from '@catering-v2s/kernel-feature-store-basic';
 import {
   createProjectBasicModule,
-  fixedTargetFromProjectCandidate,
-  selectProjectTerminalUpdateCandidate,
+  selectCurrentProjectTerminalUpdateTarget,
   selectProjectTerminalUpdateContextFacts,
   selectProjectFixedTerminalUpdateContextFacts,
 } from '@catering-v2s/kernel-feature-project-basic';
@@ -39,7 +42,7 @@ import {createSampleWallpaperModule} from '@catering-v2s/kernel-feature-sample-w
 import {createServerConfigModule} from '@catering-v2s/kernel-base-server-config';
 import {createTerminalUpdateModule, type UpdateTargetSourceProvider} from '@catering-v2s/kernel-base-terminal-update';
 import {createRemoteControlModule} from '@catering-v2s/kernel-base-remote-control';
-import {resolveServerNetworkSnapshot, selectServerConfiguration} from '@catering-v2s/kernel-base-server-config';
+import {resolveServerNetworkSnapshot} from '@catering-v2s/kernel-base-server-config';
 import type {TransportServerConfig} from '@catering-v2s/kernel-base-contracts';
 import {
   createTopologyAdminCapability,
@@ -50,23 +53,18 @@ import {
 import {
   createTopologyIdentityClient,
   createTransportModule,
-  type TopologyPeerChannel,
-  type TransportNetworkAdapter,
-  type TransportNetworkSnapshot,
 } from '@catering-v2s/kernel-base-transport';
+import type {TopologyPeerChannel} from '@catering-v2s/kernel-base-platform-ports';
 import {
   createSampleWallpaperConsoleModule,
-  selectSampleWallpaperConsoleBusinessInterlockActive,
-  selectSampleWallpaperConsoleBusinessMutationAllowed,
-  selectSampleWallpaperConsoleStaffLoginAllowed,
-  startupReadyCommand,
-  type SampleWallpaperConsoleReadyPayload,
 } from '../application/module';
-export {selectSampleWallpaperConsoleBusinessInterlockActive} from '../application/module';
-import {parts as wallpaperConsoleParts} from '../parts/parts';
+import {selectSampleWallpaperConsoleBusinessInterlockActive} from '../selectors/selectSampleWallpaperConsoleBusinessInterlockActive';
+import {selectSampleWallpaperConsoleBusinessMutationAllowed} from '../selectors/selectSampleWallpaperConsoleBusinessMutationAllowed';
+import {selectSampleWallpaperConsoleStaffLoginAllowed} from '../selectors/selectSampleWallpaperConsoleStaffLoginAllowed';
+import {startupReadyCommand, type SampleWallpaperConsoleReadyPayload} from '../declarations/commands';
+export {selectSampleWallpaperConsoleBusinessInterlockActive} from '../selectors/selectSampleWallpaperConsoleBusinessInterlockActive';
 import {
-  createServerConfigPanelParts,
-  createTerminalUpdateInstallReminderParts,
+  createAdminShellModule,
 } from '@catering-v2s/ui-base-admin-shell';
 import {
   getSurfaceDeclarations,
@@ -132,25 +130,12 @@ export async function createSampleWallpaperConsoleAssembly(
     showAdminPassword: input.showAdminPassword ?? packageJson.showAdminPassword,
     selectBusinessInterlockActive: selectSampleWallpaperConsoleBusinessInterlockActive,
     renderBusinessInterlock: () => <PairReadinessInterlock />,
-    parts: [
-      ...sampleStaffAuthAssembly.parts,
-      ...sampleWallpaperPickerAssembly.parts,
-      ...createTerminalActivationParts(input.serverSpaces ?? (packageJson.serverSpaces as TransportServerConfig)),
-      ...createServerConfigPanelParts(input.serverSpaces ?? (packageJson.serverSpaces as TransportServerConfig)),
-      ...createTerminalUpdateInstallReminderParts(),
-      ...wallpaperConsoleParts,
-    ],
-    layerDismissals: Object.freeze({
-      ...sampleStaffAuthAssembly.layerDismissals,
-      ...sampleWallpaperPickerAssembly.layerDismissals,
-    }),
-    variables: [...sampleStaffAuthAssembly.variables],
     surfaceHostSourcesByDisplayIndex: input.surfaceHostSourcesByDisplayIndex,
     startupReadyCommand,
     createStartupReadyPayload,
     resolveCommandTarget: resolveTopologyCommandTarget,
     createTopologyAdminCapability,
-    createApplicationModules: ({uiStateModule}) => {
+    createApplicationModules: () => {
       const staffSessionModule = createSampleStaffSessionModule({
         canLogin: selectSampleWallpaperConsoleStaffLoginAllowed,
       });
@@ -191,14 +176,14 @@ export async function createSampleWallpaperConsoleAssembly(
           sourceProvider: input.terminalUpdateSourceProvider,
           readTerminalUpdateContextFacts: selectProjectTerminalUpdateContextFacts,
           readFixedTerminalUpdateContextFacts: selectProjectFixedTerminalUpdateContextFacts,
-          readCurrentTarget: (state, requested) => {
-            const binding = selectStoreBasicBinding(state);
-            if (binding === null) return null;
-            const candidate = selectProjectTerminalUpdateCandidate(state, requested.applicationId, binding.storeRef);
-            if (candidate === null) return null;
-            const target = fixedTargetFromProjectCandidate(candidate);
-            return JSON.stringify(target) === JSON.stringify(requested) ? target : null;
-          },
+          readCurrentTarget: (state, requested) =>
+            selectCurrentProjectTerminalUpdateTarget(
+              state,
+              requested.applicationId,
+              requested.ruleRef,
+              requested.collectionHash,
+              requested.selectionContext.contextIdentity,
+            ),
           readNetworkSnapshot: (state, serverName) => resolveServerNetworkSnapshot(state, serverSpaces, serverName),
         }),
         createTopologyModule({
@@ -215,34 +200,22 @@ export async function createSampleWallpaperConsoleAssembly(
               (connection.status === 'stopped' || connection.status === 'disconnected')
             );
           },
-          stateSyncSlices: selectStateSyncSlices([
-            ...(uiStateModule.stateSlices ?? []),
-            ...(staffSessionModule.stateSlices ?? []),
-            ...(wallpaperModule.stateSlices ?? []),
-            ...(serverConfigModule.stateSlices ?? []),
-            ...(terminalDataClientModule.stateSlices ?? []),
-            ...(storeBasicModule.stateSlices ?? []),
-            ...(projectBasicModule.stateSlices ?? []),
-          ]),
         }),
         createRemoteControlModule({
           topologyModuleName: integrationModuleName,
           port: input.platformPorts.remoteControl,
-          readSignalConfiguration: state => {
-            const snapshot = resolveServerNetworkSnapshot(state, serverSpaces, 'livekit');
-            const url = snapshot.addresses[0]?.baseUrl;
-            return url === undefined ? null : Object.freeze({url, identity: `${selectServerConfiguration(state, serverSpaces).selectedSpace}:${snapshot.revision}`});
-          },
+          serverSpaces,
         }),
         createSampleWallpaperConsoleModule(surfaceForm),
-        createTerminalActivationModule(),
+        createTerminalActivationModule(serverSpaces, surfaceForm),
+        createAdminShellModule(serverSpaces),
         terminalDataClientModule,
         storeBasicModule,
         projectBasicModule,
         staffSessionModule,
         wallpaperModule,
-        sampleStaffAuthAssembly.createModule(),
-        sampleWallpaperPickerAssembly.createModule(),
+        createSampleStaffAuthModule(),
+        createSampleWallpaperPickerModule(),
       ];
     },
     renderChildren: () => (

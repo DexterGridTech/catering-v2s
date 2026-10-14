@@ -2,9 +2,19 @@
   "schemaVersion": 1,
   "package": "@catering-v2s/kernel-base-state",
   "owned": {
-    "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/kernel-base-state", "runner": "vitest"},
-    "lint": {"kind": "OWNED", "owner": "@catering-v2s/kernel-base-state", "runner": "eslint"},
-    "clean": {"kind": "ABSENT"}
+    "test": {
+      "kind": "REAL_TESTS",
+      "owner": "@catering-v2s/kernel-base-state",
+      "runner": "vitest"
+    },
+    "lint": {
+      "kind": "OWNED",
+      "owner": "@catering-v2s/kernel-base-state",
+      "runner": "eslint"
+    },
+    "clean": {
+      "kind": "ABSENT"
+    }
   },
   "publicExports": [
     "CreateStateRuntimeInput",
@@ -26,6 +36,7 @@
     "StateJsonPrimitive",
     "StateJsonValue",
     "StateResetActor",
+    "StateResetIntent",
     "StateRoot",
     "StateRuntime",
     "StateRuntimePersistenceDescriptor",
@@ -33,11 +44,11 @@
     "StateRuntimePersistenceRecordDescriptor",
     "StateRuntimeSliceDescriptor",
     "StateRuntimeSliceRegistration",
-    "StateResetIntent",
     "StateRuntimeSyncDescriptor",
     "StateRuntimeSyncRecordDescriptor",
     "StateSyncApplyResult",
     "StateSyncPayloadResult",
+    "StateSyncQualification",
     "StateSyncSkipReason",
     "SyncDiffOptions",
     "SyncIntent",
@@ -64,13 +75,23 @@
     "devDependencyModuleNames",
     "moduleName",
     "readPartitionedState",
+    "stateParameters",
     "toPartitionedStateDescriptors",
     "toWorkspaceStateDescriptors"
   ],
   "closedUnionDefinitions": {
-    "WorkspaceKey": ["MAIN", "BRANCH"],
-    "PersistIntent": ["never", "owner-only"],
-    "StateResetIntent": ["clear", "retain"]
+    "WorkspaceKey": [
+      "MAIN",
+      "BRANCH"
+    ],
+    "PersistIntent": [
+      "never",
+      "owner-only"
+    ],
+    "StateResetIntent": [
+      "clear",
+      "retain"
+    ]
   },
   "closedUnionConsumerCount": 8,
   "closedUnionConsumers": [
@@ -141,13 +162,13 @@
   ],
   "tr01Exceptions": [
     {
-      "sourceFile": "src/foundations/createStateRuntime.ts",
+      "sourceFile": "src/application/createStateRuntime.ts",
       "declarationId": "createStateRuntime",
       "dispatchExpression": "store.dispatch",
       "reasonCategory": "state-runtime-store-owner"
     },
     {
-      "sourceFile": "src/foundations/createStateRuntime.ts",
+      "sourceFile": "src/application/createStateRuntime.ts",
       "declarationId": "createStateRuntime",
       "dispatchExpression": "store.dispatch",
       "reasonCategory": "state-runtime-sync-owner"

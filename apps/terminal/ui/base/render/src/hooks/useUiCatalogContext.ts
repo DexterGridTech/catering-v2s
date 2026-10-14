@@ -1,7 +1,7 @@
 import {useMemo} from 'react';
 import type {DisplayMode, UiCatalogContext} from '@catering-v2s/kernel-base-ui-state';
 import type {WorkspaceKey} from '@catering-v2s/kernel-base-state';
-import {useRenderContext} from '../contexts/RenderContext';
+import {useRenderContext} from './useRenderContext';
 import {createCatalogContext} from '../foundations/createCatalogContext';
 import {useUiStateSelector} from './useUiStateSelector';
 import type {RenderProviderProps} from '../types/props';

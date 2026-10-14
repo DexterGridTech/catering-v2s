@@ -1,4 +1,5 @@
 export {moduleName} from './moduleName';
+export {stateParameters} from './declarations/parameters';
 export {dependencyModuleNames, devDependencyModuleNames} from './dependencies';
 
 export type {StateJsonPrimitive, StateJsonValue, StateJsonObject} from './types/value';
@@ -49,6 +50,7 @@ export {
 
 export type {
   StateResetActor,
+  StateSyncQualification,
   StateSyncSkipReason,
   StateSyncPayloadResult,
   StateSyncApplyResult,
@@ -56,7 +58,7 @@ export type {
   StateRoot,
   StateRuntime,
 } from './types/runtime';
-export {createStateRuntime} from './foundations/createStateRuntime';
+export {createStateRuntime} from './application/createStateRuntime';
 
 export type {
   WorkspaceKey,

@@ -5,5 +5,17 @@
     "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/adapter-android-dual-screen", "runner": "vitest"},
     "lint": {"kind": "OWNED", "owner": "@catering-v2s/adapter-android-dual-screen", "runner": "eslint"},
     "clean": {"kind": "ABSENT"}
-  }
+  },
+  "publicExports": [
+    "AndroidSurfaceHostAvailability",
+    "AndroidSurfaceHostEventInput",
+    "AndroidSurfaceHostMeasurementSnapshot",
+    "AndroidSurfaceHostSnapshot",
+    "AndroidSurfaceHostSourceInput",
+    "createAndroidSurfaceHostSource",
+    "dependencyModuleNames",
+    "devDependencyModuleNames",
+    "moduleName",
+    "readAndroidSurfaceHostWindow"
+  ]
 }

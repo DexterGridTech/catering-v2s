@@ -12,8 +12,13 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {afterAll, beforeAll, expect, it} from 'vitest';
 import type {Client} from '@devicefarmer/adbkit';
-import {topologyTransportConfig, type CommandRouteContext} from '@catering-v2s/kernel-base-contracts';
-import {serverConfigSliceName} from '@catering-v2s/kernel-base-server-config';
+import {topologyTransportConfig, type CommandRouteContext, type TransportServerConfig} from '@catering-v2s/kernel-base-contracts';
+import {
+  parseServerConfigEnvironmentJson,
+  resolveServerConfigEnvironment,
+  serverConfigSliceName,
+  type ServerConfigEnvironment,
+} from '@catering-v2s/kernel-base-server-config';
 import {pairByHostTopologyCommand, setTopologyHostEnabledCommand} from '@catering-v2s/kernel-base-topology';
 import {projectBasicSliceName} from '@catering-v2s/kernel-feature-project-basic';
 import {storeBasicSliceName} from '@catering-v2s/kernel-feature-store-basic';
@@ -48,6 +53,11 @@ import {
   createTerminalUpdateSupplyUi,
   type TerminalUpdateSupplyUi,
 } from './terminalUpdateSupplyUi.ts';
+import {
+  assertFixedUpdateTaskMatchesCandidate,
+  assertOwnerFlowReportAccepted,
+  assertProjectUpdateCandidate,
+} from './updateOwnerFlow.ts';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const runId = process.env.TERMINAL_AUTOMATION_RUN_ID;
@@ -57,7 +67,7 @@ const sample = terminalUpdateSampleConfig(selectedSample);
 const appName = selectedSample === 'console' ? 'sample-terminal' : 'sample-wallpaper-terminal';
 const updateCase = process.env.TERMINAL_AUTOMATION_CASE;
 const isPairCase = updateCase === 'update.pair';
-const isSupplyChainCase = updateCase === 'update.supply-chain' || isPairCase;
+const isSupplyChainCase = updateCase === 'update.supply-chain' || updateCase === 'update.owner-flow' || isPairCase;
 const projectTerminalUpdateCandidateSelector = 'kernel.feature.project-basic.selectProjectTerminalUpdateCandidate';
 const projectOrganizationPathSelector = 'kernel.feature.project-basic.selectProjectOrganizationPath';
 const adbPath = process.env.ADB_PATH || 'adb';
@@ -94,19 +104,43 @@ type UpdateTarget = Readonly<{
 }>;
 
 const sha256 = (value: Buffer): string => createHash('sha256').update(value).digest('hex');
-const managedLoopbackPort = (key: string): number => {
-  const raw = process.env[key];
-  if (!raw) throw new Error(`TERMINAL_AUTOMATION_ENV_MISSING_${key}`);
-  const parsed = new URL(raw);
+const currentServerConfigEnvironment = (): ServerConfigEnvironment => {
+  const packagePath = path.join(root, 'apps/terminal/application/android', appName, 'package.json');
+  const packageJson = JSON.parse(readFileSync(packagePath, 'utf8')) as {
+    readonly serverSpaces: TransportServerConfig;
+  };
+  const defaults = packageJson.serverSpaces;
+  const raw = process.env.EXPO_PUBLIC_TER_SERVER_CONFIG_ENVIRONMENT_JSON;
+  const environment = raw
+    ? parseServerConfigEnvironmentJson(raw)
+    : (() => {
+        const selected = defaults.spaces.find(space => space.name === defaults.selectedSpace);
+        if (!selected) throw new Error('TERMINAL_AUTOMATION_ANDROID_SERVER_CONFIG_DEFAULT_SPACE_MISSING');
+        return {spaceName: defaults.selectedSpace, servers: selected.servers};
+      })();
+  const resolved = resolveServerConfigEnvironment(defaults, environment);
+  const selected = resolved.spaces.find(space => space.name === resolved.selectedSpace);
+  if (!selected) throw new Error('TERMINAL_AUTOMATION_ANDROID_SERVER_CONFIG_SPACE_MISSING');
+  return {spaceName: resolved.selectedSpace, servers: selected.servers};
+};
+const serverConfigAddress = (environment: ServerConfigEnvironment, serverName: string, addressName: string) => {
+  const server = environment.servers.find(candidate => candidate.serverName === serverName);
+  const matches = server?.addresses.filter(candidate => candidate.addressName === addressName) ?? [];
+  if (matches.length !== 1) throw new Error('TERMINAL_AUTOMATION_ANDROID_SERVER_CONFIG_ADDRESS_MISSING');
+  return matches[0]!;
+};
+const serverAddressPort = (address: Readonly<{readonly baseUrl: string}>, protocol: 'http:' | 'ws:'): number => {
+  const parsed = new URL(address.baseUrl);
   if (
-    (parsed.protocol !== 'ws:' && parsed.protocol !== 'wss:') ||
-    (parsed.hostname !== '127.0.0.1' && parsed.hostname !== 'localhost') ||
+    parsed.protocol !== protocol ||
+    parsed.hostname !== '127.0.0.1' ||
     parsed.port.length === 0
-  )
-    throw new Error(`TERMINAL_AUTOMATION_MANAGED_TDS_URL_INVALID_${key}`);
+  ) {
+    throw new Error('TERMINAL_AUTOMATION_ANDROID_SERVER_CONFIG_ENDPOINT_INVALID');
+  }
   const port = Number(parsed.port);
   if (!Number.isInteger(port) || port < 1 || port > 65535)
-    throw new Error(`TERMINAL_AUTOMATION_MANAGED_TDS_PORT_INVALID_${key}`);
+    throw new Error('TERMINAL_AUTOMATION_ANDROID_SERVER_CONFIG_PORT_INVALID');
   return port;
 };
 const sha256File = async (filePath: string): Promise<string> => {
@@ -398,8 +432,7 @@ let installAttempted = false;
 let peerPackageWasAbsent = false;
 let peerInstallAttempted = false;
 let httpServer: HttpServer | undefined;
-let tdsOneSink: NetServer | undefined;
-let tdsTwoSink: NetServer | undefined;
+let tdsSinks: NetServer[] = [];
 let supplyUi: TerminalUpdateSupplyUi | undefined;
 let supplyStoreRef: string | undefined;
 let supplyTerminalRef: string | undefined;
@@ -613,7 +646,7 @@ const waitForCommandResult = (
   timeoutMs: number,
 ): Readonly<{promise: Promise<Record<string, unknown>>; cancel: () => void}> => {
   let unsubscribe = (): void => undefined;
-  let timer: NodeJS.Timeout | undefined;
+  let timer: ReturnType<typeof setTimeout> | undefined;
   let settled = false;
   let resolveResult: (value: Record<string, unknown>) => void = () => undefined;
   let rejectResult: (reason: Error) => void = () => undefined;
@@ -710,7 +743,7 @@ const waitForWallpaperAssets = async (
   const subscriptionId = `wallpaper-assets-${randomUUID().replaceAll('-', '').slice(0, 20)}`;
   let subscribed = false;
   let unsubscribeMessages = (): void => undefined;
-  let timer: NodeJS.Timeout | undefined;
+  let timer: ReturnType<typeof setTimeout> | undefined;
   let resolveLoaded: () => void = () => undefined;
   let rejectLoaded: (error: Error) => void = () => undefined;
   const loaded = new Promise<void>((resolve, reject) => {
@@ -842,11 +875,9 @@ const buildArtifact = (
     EXPO_PUBLIC_TER_AUTOMATION_RUN_ID: runId,
     EXPO_PUBLIC_TER_AUTOMATION_SURFACE_FORM: surfaceForm,
     EXPO_PUBLIC_TER_AUTOMATION_ANDROID_PACKAGE_ID: packageId,
-    EXPO_PUBLIC_TER_MANAGED_GROUP_WORKSPACE_BASE_URL: 'http://127.0.0.1:28080/api/terminal/group-workspaces/aurora',
-    EXPO_PUBLIC_TER_MANAGED_TDS_ENTRY_ONE_WS_URL: 'ws://127.0.0.1:28180',
-    EXPO_PUBLIC_TER_MANAGED_TDS_ENTRY_TWO_WS_URL: 'ws://127.0.0.1:28181',
+    EXPO_PUBLIC_TER_SERVER_CONFIG_ENVIRONMENT_JSON: JSON.stringify(currentServerConfigEnvironment()),
   };
-  if (updateCase !== 'update.supply-chain' && !isPairCase) {
+  if (updateCase !== 'update.supply-chain' && updateCase !== 'update.owner-flow' && !isPairCase) {
     environment.EXPO_PUBLIC_TER_AUTOMATION_UPDATE_TARGET_URL = 'http://127.0.0.1:28080/update-target';
     environment.EXPO_PUBLIC_TER_AUTOMATION_UPDATE_REVISION = kind;
   }
@@ -1005,6 +1036,7 @@ beforeAll(
       updateCase !== 'update.compatibility' &&
       updateCase !== 'update.rollback' &&
       updateCase !== 'update.supply-chain' &&
+      updateCase !== 'update.owner-flow' &&
       !isPairCase
     )
       return;
@@ -1104,16 +1136,18 @@ beforeAll(
       response.end();
     });
     const businessLocalPort = await listen(httpServer);
-    let tdsOneLocalPort: number;
-    let tdsTwoLocalPort: number;
-    if (isSupplyChainCase) {
-      tdsOneLocalPort = managedLoopbackPort('V2S_TERMINAL_DEV_TDS_ENTRY_ONE_WS_URL');
-      tdsTwoLocalPort = managedLoopbackPort('V2S_TERMINAL_DEV_TDS_ENTRY_TWO_WS_URL');
-    } else {
-      tdsOneSink = createNetServer(socket => socket.destroy());
-      tdsTwoSink = createNetServer(socket => socket.destroy());
-      tdsOneLocalPort = await listen(tdsOneSink);
-      tdsTwoLocalPort = await listen(tdsTwoSink);
+    if (isSupplyChainCase && process.env.EXPO_PUBLIC_TER_MANAGED_DEV_CONFIG_REQUIRED !== 'true') {
+      throw new Error('TERMINAL_AUTOMATION_MANAGED_DEV_CONFIG_REQUIRED');
+    }
+    const serverConfig = currentServerConfigEnvironment();
+    const businessPort = serverAddressPort(serverConfigAddress(serverConfig, 'business', 'primary'), 'http:');
+    const tdsAddresses = serverConfig.servers.find(server => server.serverName === 'terminal-data-server')?.addresses ?? [];
+    if (tdsAddresses.length === 0) throw new Error('TERMINAL_AUTOMATION_ANDROID_TDS_ADDRESSES_MISSING');
+    const tdsPorts = tdsAddresses.map(address => serverAddressPort(address, 'ws:'));
+    let tdsLocalPorts = tdsPorts;
+    if (!isSupplyChainCase) {
+      tdsSinks = tdsAddresses.map(() => createNetServer(socket => socket.destroy()));
+      tdsLocalPorts = await Promise.all(tdsSinks.map(sink => listen(sink)));
     }
 
     adb = createAndroidAdbClient({adbPath, timeoutMs: 10_000});
@@ -1125,9 +1159,8 @@ beforeAll(
       shape: deviceShape,
       token: sessionToken,
       managedServicePorts: [
-        {remotePort: 28080, localPort: businessLocalPort},
-        {remotePort: 28180, localPort: tdsOneLocalPort},
-        {remotePort: 28181, localPort: tdsTwoLocalPort},
+        {remotePort: businessPort, localPort: businessLocalPort},
+        ...tdsPorts.map((remotePort, index) => ({remotePort, localPort: tdsLocalPorts[index]!})),
       ],
       fixtureFactory: server =>
         createManagedActivationFixtureApi({
@@ -1302,7 +1335,7 @@ beforeAll(
         adbPath,
         shape: deviceShape,
         token: sessionToken,
-        managedServicePorts: [{remotePort: 28_080, localPort: businessLocalPort}],
+        managedServicePorts: [{remotePort: businessPort, localPort: businessLocalPort}],
       });
       await prepareAndroidJourneySurface(peerConnection, deviceShape);
       const peerApiLevel = await peerConnection.readApiLevel();
@@ -1525,6 +1558,7 @@ afterAll(async () => {
     updateCase !== 'update.compatibility' &&
     updateCase !== 'update.rollback' &&
     updateCase !== 'update.supply-chain' &&
+    updateCase !== 'update.owner-flow' &&
     !isPairCase
   )
     return;
@@ -1602,7 +1636,7 @@ afterAll(async () => {
       errors.push('SUPPLY_BROWSER_CLEANUP_FAILED');
     }
   }
-  for (const server of [httpServer, tdsOneSink, tdsTwoSink]) {
+  for (const server of [httpServer, ...tdsSinks]) {
     try {
       await closeServer(server);
     } catch {
@@ -1625,6 +1659,7 @@ it.skipIf(
     updateCase !== 'update.compatibility' &&
     updateCase !== 'update.rollback' &&
     updateCase !== 'update.supply-chain' &&
+    updateCase !== 'update.owner-flow' &&
     !isPairCase,
 )(
   'installs FULL then loads HOT on the same Android identity and verifies wallpaper images',
@@ -1965,6 +2000,7 @@ it.skipIf(
     }
     let updateOutcome: unknown;
     let updateIdentity: string | undefined;
+    let supplyCandidate: unknown;
     let installerReadbackDeferred = false;
     let installButton: Awaited<ReturnType<AndroidAutomationConnection['systemUi']['waitForButton']>> | undefined;
     if (isSupplyChainCase) {
@@ -2115,7 +2151,15 @@ it.skipIf(
         !isRecord(candidate.rule)
       )
         throw new Error('TERMINAL_AUTOMATION_SUPPLY_RULE_CANDIDATE_INVALID');
-      const rule = candidate.rule;
+      const validatedCandidate = assertProjectUpdateCandidate(candidate, {
+        applicationId: packageId,
+        storeRef: supplyStoreRef,
+        ruleRef: supplyUi.ruleRef,
+        fullArtifactRef: supplyUi.full.artifactRef,
+        hotArtifactRef: supplyUi.hot.artifactRef,
+      });
+      supplyCandidate = validatedCandidate;
+      const rule = validatedCandidate.rule;
       if (
         !isRecord(rule) ||
         rule.applicationId !== packageId ||
@@ -2687,7 +2731,7 @@ it.skipIf(
         throw error;
       }
     }
-    let hotRequestTimeout: NodeJS.Timeout | undefined;
+    let hotRequestTimeout: ReturnType<typeof setTimeout> | undefined;
     try {
       if (installerReadbackDeferred) {
         const taskSelector = 'kernel.base.terminal-update.selectTerminalUpdateTask';
@@ -3185,6 +3229,10 @@ it.skipIf(
     if (isSupplyChainCase) {
       if (!supplyUi || !supplyTerminalRef || !supplyTerminalName)
         throw new Error('TERMINAL_AUTOMATION_SUPPLY_REPORT_CONTEXT_MISSING');
+      if (updateCase === 'update.owner-flow') {
+        if (supplyCandidate === undefined) throw new Error('TERMINAL_AUTOMATION_OWNER_FLOW_CANDIDATE_MISSING');
+        assertFixedUpdateTaskMatchesCandidate(supplyCandidate, task);
+      }
       const recentStatusTaskMatches = isRecord(status) && status.taskId === task.taskId;
       process.stdout.write(
         `TERMINAL_AUTOMATION_SUPPLY run=${runId} stage=report.task-identity taskIdPresent=${typeof task.taskId === 'string' ? 1 : 0} recentStatusTaskIdPresent=${isRecord(status) && typeof status.taskId === 'string' ? 1 : 0} matches=${recentStatusTaskMatches ? 1 : 0}\n`,
@@ -3265,6 +3313,9 @@ it.skipIf(
         reportDelivery.latestDeliveryFailure !== null
       )
         throw new Error('TERMINAL_AUTOMATION_SUPPLY_REPORT_DELIVERY_NOT_ACCEPTED');
+      if (updateCase === 'update.owner-flow') {
+        assertOwnerFlowReportAccepted({task, recentStatus: status, reportDelivery});
+      }
       process.stdout.write(`TERMINAL_AUTOMATION_SUPPLY run=${runId} stage=report.delivery.accepted pending=0\n`);
       if (isPairCase) {
         try {

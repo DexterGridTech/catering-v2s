@@ -44,7 +44,8 @@ export type {
 export {aggregateCommandStatus} from './foundations/aggregateCommandStatus';
 export type {RequestExecutionCandidate, RequestExecutionCommandView, RequestExecutionView} from './types/requestLedger';
 export {selectRequestExecutionView} from './selectors/selectRequestExecutionView';
-export {selectRequestExecutionViews, selectRequestExecutionCommands} from './selectors/selectRequestExecutionViews';
+export {selectRequestExecutionViews} from './selectors/selectRequestExecutionViews';
+export {selectRequestExecutionCommands} from './selectors/selectRequestExecutionCommands';
 export {selectRequestExecutionCandidates} from './selectors/selectRequestExecutionCandidates';
 
 export type {PeerDispatchOptions, PeerDispatchGateway} from './types/peer';
@@ -66,13 +67,14 @@ export {
   resetRuntimeAfterSystemFailureCommand,
   primarySurfaceReadyCommand,
   recordLocalInteractionCommand,
-} from './features/commands';
-export type {PrimarySurfaceReadyPayload} from './features/commands/primarySurfaceReady';
+} from './declarations/commands';
+export type {PrimarySurfaceReadyPayload} from './declarations/commands';
 export {selectRuntimeInstanceMode} from './selectors/selectRuntimeInstanceMode';
 export {selectLastLocalInteraction} from './selectors/selectLastLocalInteraction';
 
 export type {RuntimeLimits} from './types/limits';
 export {
+  runtimeParameters,
   defaultMaxCommandDepth,
   defaultMaxCommandsPerRequest,
   defaultMaxActorResultBytes,
@@ -81,7 +83,7 @@ export {
   defaultMaxJournalRecords,
   defaultCommandTimeoutMs,
   defaultRuntimeLimits,
-} from './types/limits';
+} from './declarations/parameters';
 
 export type {RuntimeJournalEvent, RuntimeLifecycleObserver, RuntimeJournal} from './types/journal';
 
@@ -93,3 +95,4 @@ export type {
   Runtime,
 } from './types/runtime';
 export {createRuntime} from './application/createRuntime';
+export {createRuntimeModule} from './application/createRuntimeModule';

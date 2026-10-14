@@ -1,8 +1,8 @@
 import {onCommand, defineActor} from '../../foundations/defineActor';
 import {findExpiredRequestLedgerIds} from '../../foundations/findExpiredRequestLedgerIds';
 import {moduleName} from '../../moduleName';
-import {cleanupRequestLedgerCommand} from '../commands/cleanupRequestLedger';
-import {requestLedgerActionsForMode} from '../slices/requestLedger';
+import {cleanupRequestLedgerCommand} from '../../declarations/commands';
+import {requestLedgerActionsForMode} from '../slices/requestLedgerActions';
 import {selectRuntimeInstanceMode} from '../../selectors/selectRuntimeInstanceMode';
 import type {ActorDefinition} from '../../types/actor';
 import type {RuntimeLimits} from '../../types/limits';

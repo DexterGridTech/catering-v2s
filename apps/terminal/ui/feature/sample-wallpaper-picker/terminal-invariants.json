@@ -2,36 +2,43 @@
   "schemaVersion": 1,
   "package": "@catering-v2s/ui-feature-sample-wallpaper-picker",
   "owned": {
-    "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/ui-feature-sample-wallpaper-picker", "runner": "vitest"},
-    "lint": {"kind": "OWNED", "owner": "@catering-v2s/ui-feature-sample-wallpaper-picker", "runner": "eslint"},
-    "clean": {"kind": "ABSENT"}
+    "test": {
+      "kind": "REAL_TESTS",
+      "owner": "@catering-v2s/ui-feature-sample-wallpaper-picker",
+      "runner": "vitest"
+    },
+    "lint": {
+      "kind": "OWNED",
+      "owner": "@catering-v2s/ui-feature-sample-wallpaper-picker",
+      "runner": "eslint"
+    },
+    "clean": {
+      "kind": "ABSENT"
+    }
   },
   "ownerKind": "owner",
   "publicExports": [
     "WallpaperBackground",
-    "branchWallpaperOptionTestId",
-    "branchWallpaperPickerTestIds",
-    "branchWallpaperThumbnailTestId",
-    "WallpaperPickerAssembly",
     "WallpaperId",
     "WallpaperPickerCommandPayload",
     "assetsById",
+    "branchWallpaperOptionTestId",
+    "branchWallpaperPickerTestIds",
+    "branchWallpaperThumbnailTestId",
     "confirmWallpaperRequestedCommand",
     "createSampleWallpaperPickerModule",
     "dependencyModuleNames",
     "devDependencyModuleNames",
     "moduleKind",
     "moduleName",
-    "parts",
-    "sampleWallpaperPickerAssembly",
-    "wallpaperOptionTestId",
-    "wallpaperThumbnailTestId",
+    "startWallpaperPickerCommand",
     "wallpaperContentTestIds",
+    "wallpaperOptionSelectedCommand",
+    "wallpaperOptionTestId",
+    "wallpaperPickerExitRequestedCommand",
     "wallpaperPickerTestIds",
     "wallpaperSystemNoticeTestIds",
-    "wallpaperPickerExitRequestedCommand",
-    "startWallpaperPickerCommand",
-    "wallpaperOptionSelectedCommand"
+    "wallpaperThumbnailTestId"
   ],
   "publicExportMap": {
     ".": "./src/index.ts",

@@ -2,19 +2,30 @@
   "schemaVersion": 1,
   "package": "@catering-v2s/kernel-base-topology",
   "owned": {
-    "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/kernel-base-topology", "runner": "vitest"},
-    "lint": {"kind": "OWNED", "owner": "@catering-v2s/kernel-base-topology", "runner": "eslint"},
-    "clean": {"kind": "ABSENT"}
+    "test": {
+      "kind": "REAL_TESTS",
+      "owner": "@catering-v2s/kernel-base-topology",
+      "runner": "vitest"
+    },
+    "lint": {
+      "kind": "OWNED",
+      "owner": "@catering-v2s/kernel-base-topology",
+      "runner": "eslint"
+    },
+    "clean": {
+      "kind": "ABSENT"
+    }
   },
   "publicExports": [
     "CreateTopologyModuleInput",
     "TopologyAdminRuntime",
     "TopologyDisplayChangedPayload",
     "TopologyEligibilityInput",
-    "TopologyState",
     "TopologySlaveUnpairTransition",
     "TopologySlaveUnpairTransitionPayload",
+    "TopologyState",
     "areTopologyFactsEqual",
+    "completeTopologySlaveUnpairStateClearCommand",
     "createTopologyAdminCapability",
     "createTopologyModule",
     "dependencyModuleNames",
@@ -24,11 +35,11 @@
     "moduleKind",
     "moduleName",
     "pairByHostTopologyCommand",
-    "requestTopologySlaveUnpairStateClearCommand",
-    "completeTopologySlaveUnpairStateClearCommand",
     "reconcileTopologyHostCommand",
     "reconcileTopologyPeerCommand",
     "refreshTopologyDisplayCommand",
+    "requestTopologySlaveUnpairStateClearCommand",
+    "resolveTopologyCommandTarget",
     "runtimeModuleDependencyNames",
     "selectTopologyFacts",
     "selectTopologyRequiredProjectionsReady",
@@ -43,25 +54,25 @@
   ],
   "tr01Exceptions": [
     {
-      "sourceFile": "src/features/actors/actors.ts",
+      "sourceFile": "src/features/actors/topologyActorSupport.ts",
       "declarationId": "completeLocalUnpair",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "unpair-clear-locator"
     },
     {
-      "sourceFile": "src/features/actors/actors.ts",
+      "sourceFile": "src/features/actors/topologyActorSupport.ts",
       "declarationId": "completeLocalUnpair",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "unpair-clear-repair-pending"
     },
     {
-      "sourceFile": "src/features/actors/actors.ts",
+      "sourceFile": "src/features/actors/topologyActorSupport.ts",
       "declarationId": "completeLocalUnpair",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "unpair-failure-repair-pending"
     },
     {
-      "sourceFile": "src/features/actors/actors.ts",
+      "sourceFile": "src/features/actors/topologyActorSupport.ts",
       "declarationId": "completeLocalUnpair",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "unpair-stop-host"

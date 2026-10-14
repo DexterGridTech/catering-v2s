@@ -30,7 +30,7 @@
 | ui/base/primitives | semanticnode/TestId、真实native事件/focus/rnr/theme；所有UI | keeptoolkit无业务slice；只可用现TestIdfactory；node注册surface来自provider不App名单 |
 | ui/base/input | inputfield/focus/selection/scroll/keyboardhandoff→UI；components消费 | keep唯一InputProvider registry/presentationclock；五hook分文件；frame/presenter/overlay具名拆，无perfieldtimer |
 | ui/base/render | catalog+UI-state→surface/layer tree、requestobserve/readiness/errorpage；integration | keeprender；纯规则foundation，Reacthooks/components具名；不借根state直接取其他owner |
-| ui/base/admin-shell | launcher/password/adminsection→本机admin；任何topology可恢复 | keep标准容器、gesture与catalogsections；server-config呈现迁真实config-panel贡献；update提醒/状态单一UI归属见§2；不加section registry |
+| ui/base/admin-shell | launcher/password/adminsection→本机admin；任何topology可恢复 | keep标准容器、gesture、服务配置及catalogsections；自身module提供全部section贡献，配置写读经kernel owner command/selector；update提醒/状态单一UI归属见§2；不加section registry |
 | ui/base/terminal-activation | code/activeview→TDCcommand及MMP/LMP/LMS/LSPguides；integrationstage | parts/route actor自包；active-success仅文案，由integration后续路由，取消当前space行为保留 |
 | ui/base/automation-agent | opt-in config→WSsession/controls/selectors/requests；driver | toolkitruntime modulekeep；session绑定、晚到有限观察、最新waitFor、JSONbudget同source；UI编译开关隔离不改 |
 | ui/base/dev-host | Webports/storage/surfacepreview/loading/automationtestbridge→Expo host | keep调试host与Web unavailableports；大App具名拆，不能成为业务Runtime第二owner |
@@ -50,7 +50,7 @@
 | application/android/sample-terminal | consoleApp身份/版本/defaults/resources+surface；系统启动 | keepnamespace+Application/Activity+signedbundlemetadata；envresolver复用，不One/Two和group硬写 |
 | application/android/sample-wallpaper-terminal | wallpaper独立App入口同上 | keep独立applicationId/namespace/defaults；不mergeconsole版本和persist数据 |
 
-新增目标 `ui/base/server-config-panel`不是当前39包之一：从admin-shell的`src/components/serverConfig/{ServerConfigPanel,ConfigField}.tsx`和`src/parts/serverConfigParts.tsx`迁入同名呈现/输入helper、`declarations/parts.tsx`与`application/module.ts`；只读kernel/server-config，写ownercommand。依赖admin-shell的公共section类型与key，不再由admin-shell引用新包，所以无循环。package/index/dependencies/invariants/README/直接测试沿真实UIbase模板；现TestId/文案/readonlyslave语义保持。
+服务配置保留admin-shell：`src/components/serverConfig/{ServerConfigPanel,ConfigField}.tsx`仍属该包；`src/parts/serverConfigParts.tsx`迁本包`declarations/serverConfigParts.tsx`，自身`application/module.ts`返回贡献；只读kernel/server-config并发其command。现TestId/文案/readonlyslave语义保持，直接测试仍admin-shell/test/serverConfigPanel.test.tsx。不新增ui/base/server-config-panel。当前39功能包仅新增两个有实际native资源的adapter/android/transport、topology，目标41功能包；不把目标数当当前枚举或业务验收证明。
 
 ## 2 · 定义与大单元的确切迁移
 
@@ -78,7 +78,7 @@
 | input/contexts/context.ts 的多hook | hooks/useInputController/useInputPendingFocusCommit/useInputKeyboardState/useInputFieldKeyboardState/useInputScrollAncestor.ts；context只创建/types |
 | render/hooks/useRequest.ts | useRequestInFlight.ts、useTrackedRequest.ts；RenderContext多个hook各具名 |
 
-所有现commands与parts/variables/foundations错误迁declarations；保留身份字符串。命令无需一cmd一文件。现FeatureAssembly三UI包的assembly/assembly.ts转发迁`application/module.ts`完整模块返回，旧公开factory从实际消费者迁完后删。admin-shell的服务配置parts迁server-config-panel/declarations/parts.tsx并由其module返回；update安装提示继续admin-shell呈现、只读update selector并发updateownercommand，不顺手建新update UI包。activation自己的admin status不留admin-shell重复名单。
+所有现commands与parts/variables/foundations错误迁declarations；保留身份字符串。命令无需一cmd一文件。现FeatureAssembly三UI包的assembly/assembly.ts转发迁`application/module.ts`完整模块返回，旧公开factory从实际消费者迁完后删。admin-shell服务配置parts迁本包declarations/serverConfigParts.tsx并由自身module返回；update安装提示继续admin-shell呈现、只读update selector并发updateownercommand，不顺手建新UI包。activation自己的admin status不留admin-shell重复名单。
 
 ### 2.2 · 大actor/基础设施
 
@@ -92,7 +92,7 @@
 | project/features/actors/actors.ts | projectBasicActor.ts；actors/shared/loadProjectContext.ts、refreshProjectRuleSnapshot.ts、reconcileProjectTopicSubscriptions.ts；候选matching纯selector私有helper |
 | runtime/foundations/createCommandDispatcher.ts | 运行协调移application/createCommandDispatcher.ts；application/createRequestLedgerWriter.ts共享ledger，actor/peer dispatchpureaggregates保留现责任；删具体UIcmd diagnostic特判改通用journalobserver |
 | runtime lifecycle大单元 | application/createRuntimeLifecycle.ts保留现资源registry、setup/reset/cleanup顺序；无第二失败存储 |
-| state/foundations/PersistenceEngine.ts | purecodec/keyspacehelper保留；IOengine移application/PersistenceEngine.ts；共享唯一Promise/cache/dirty/blocked；createPersistenceFlushScheduler.ts单timerdispose |
+| state/foundations/persistenceEngine.ts | purecodec/keyspacehelper保留；IOengine移application/persistenceEngine.ts；共享唯一Promise/cache/dirty/blocked；createPersistenceFlushScheduler.ts单timerdispose |
 | input/components/InputSurfaceFrame.tsx | 保留frame/provider/layout；components/InputSurfaceFrameContents.tsx、InputKeyboardOverlay.tsx；hooks/useKeyboardPresentation.ts持唯一animationserial；types/keyboardPresentation.ts、puregeometryfoundations |
 | render内startup/failure组件 | components/ScreenReadyBoundary.tsx、StartupFailurePage.tsx、StandaloneStartupFailurePage.tsx，唯一readycompletionowner不复制 |
 | admin-shell/TopologySection.tsx | 保留组件，hooks/useTopologyAdminForm.ts收draft+request观察；pureviewfoundation；adminFrameRegistry保留唯一输入/lease事实，puregeometry具名提取 |
@@ -179,10 +179,10 @@ defaults值按**当前真实声明逐点机械提取而不改值**；本设计�
 ## 6 · 地址producer→consumer闭包
 
 1. 两AndroidApp `package.json`、两integration `package.json`各一份自己的serverSpacesdefaults；不合并或全局fallback。
-2. server-config `resolveServerConfigEnvironment.ts`纯具名全service地址替换；defaults validator、actornormalize、slicehydrate/sync使用同地址合法性规则并取消>4；原admin-shell/components/serverConfig/ServerConfigPanel.tsx的add按钮`draft.addresses.length < 4`同根移除，迁新panel后1/2/10都能新增/编辑/保存。
+2. server-config `resolveServerConfigEnvironment.ts`纯具名全service地址替换；defaults validator、actornormalize、slicehydrate/sync使用同地址合法性规则并取消>4；admin-shell/components/serverConfig/ServerConfigPanel.tsx的add按钮`draft.addresses.length < 4`同根移除，组件仍在本包，1/2/10都能新增/编辑/保存。
 3. 两App `src/assembly/managedServerSpaces.ts`变薄读取自己的defaults及统一environment resolver；两`platformPorts.ts`删除One/Two型inputs；两`test-expo/App.tsx`同型；appversion/defaults从真实入口一个输入传出。
 4. `scripts/dev/r5-dev-runner.mjs`及`.d.mts`明确输出clientserverSpacesEnvironment（具名space/service/完整addresses）；HAProxy受管one/two与三TDSnodes数量保持。当前managedfixture的workspaceprefix由source构造，不Android/runner硬写aurora。
-5. `tools/terminal-automation/src/runner.ts`读取该集合；androidBuild/entry child env用单`TER_SERVER_CONFIG_ENVIRONMENT_JSON`（Web打包沿同输入Vite允许前缀）；只当前run构建注入，prod无fixturedefaults。
+5. `tools/terminal-automation/src/runner.ts`读取该集合；内部统一typed environment，Android/Expo子进程变量均用`EXPO_PUBLIC_TER_SERVER_CONFIG_ENVIRONMENT_JSON`，入口先JSON.parse再调用同resolver；只当前run构建注入，prod无fixturedefaults。
 6. `scripts/test/terminal-client-dev-acceptance.mjs`、TDC acceptance/devScenarios.test.ts、driver fixtures/terminalActivation.ts消费同集合；保留bindinggeneration/deviceownership验证。此runner日志受当前规范，不字段级遮盖原stdout/stderr。
 7. transport `resolveTransportServerAddresses`不按index继承addressName/timeout，现profilecache/address偏好/configRevision/readback与networkfactory保持；update native首地址download策略不借此改failover。
 
@@ -190,7 +190,7 @@ defaults值按**当前真实声明逐点机械提取而不改值**；本设计�
 
 ## 7 · 正本、生成器、门及文档影响面
 
-未来实施同步，当前未修改：`doc/platform/terminal-coding-standard.md`目录/公开边界/参数/装配条款；对应TERpackage模板、`.agents/skills/cs-terminal-automation/SKILL.md`、routed `terminal-coding-standard`指针；`tools/terminal-skeleton/check-static.mjs`、`tools/terminal-runtime/check-static.mjs`及现fixtures；每真实影响包package exports/dependencies/terminal-invariants/README；runtime/ui/state/TDC/API公共使用文档；`scripts/README.md`配置与现CLI；真实generator和target文件。
+Dexter补充授权后已同步`doc/platform/terminal-coding-standard.md` §7.1/TR-R06/§8及现routed memory指针，都是已确认需求基线，不是实现PASS。仍待未来实施：实际TERpackage模板、`.agents/skills/cs-terminal-automation/SKILL.md`；`tools/terminal-skeleton/check-static.mjs`、`tools/terminal-runtime/check-static.mjs`及fixtures；每影响包exports/dependencies/invariants/README；公共API文档；`scripts/README.md`环境/现CLI；真实generator/targets。接口落地需同步正本中的“尚未实施”说明，仅修改受影响条款，不另复制规范正文。
 
 机械规则只负责：合法目录、indexbarrel、publicexport、foreignprivateimports/reexports（root/alias/relative/require/dynamic）、品牌factory/声明归属、重复身份、nativeclasspath/module登记、schema/pathrootclosure。每新机械形状给生产red；语义归属不做万能数据流AST。实现开始重读模板path和nodealiases，改实际文件，不对不存在模板硬建空框。retired compliance/hash台账不恢复。
 
@@ -228,3 +228,16 @@ zero-use API、private client公开、dead转发assembly、unuseddefinitionsmeta
 | reportTerminalRemoteControl | POST /remote-control-sessions/{sessionId}/status |
 
 platform-ports承接真正平台网络/peer接口，transport消费这份定义不另定义同名副本；profile/command/retry仍transportowner。新adapter无需import transport/runtime/contracts实现，纯protocol描述由generator私有输出。真实network snapshot读取函数由App现factory绑定owner公开selector，不让adapter读业务store。
+
+## 10 · 新平台包的明确consumer与删除
+
+platform-ports/types/transportNetwork.ts持TransportConnection/Event/ManagedConnection、TransportNetworkSnapshot/Adapter、TransportHttpAttemptResult；topologyPeerChannel.ts持TopologyPeerChannel/Event。同定义由transport/TDC/topology、Androidnetwork/topology、Webnetwork和driver引用；原transport/types/runtimeControl.ts对应重复定义与types/channel.ts迁出后删除，保留command/profile/ModuleOptions/HttpExecutionResult在transport。不长期做old type re-export兼容层，所有根exports/invariants与测试同CP04迁移。
+
+新native Expo config：transport仅com.catering.v2s.terminal.adapter.android.transport.TerminalNetworkModule；topology仅com.catering.v2s.terminal.adapter.android.topology.TerminalTopologyHostModule；既有update增加com.catering.v2s.terminal.adapter.android.update.TerminalAppControlModule。application/base config只保留TerminalNativeLoadingModule；update原Module/Package和ReactHost绑定继续。adapter Gradle不依赖另adapter，ports-only TS图红例保持；原Appcontrol在update包内复用同进程reload。
+
+补全selector单文件迁移：TDC旧selectTerminalDataClientState.ts的selectActivationState/selectConnectionState/selectConnectionLatency/selectTerminalTopicSubscriptions各单文件；staff-session的selectHostStaffQualification/selectSessionState各单文件；member的selectMembers/selectPendingMember/selectHostPendingMember/selectBranchPendingMember各单文件；update的ActualVersions/Task/RecentStatus/Invitation/ReportDelivery各同exportname文件。其他多定义目录按当前导出defineStateSelector符号逐个同名迁移，不改selectorName/arguments/schema；private readState支持仍owner本包。
+
+## 11 · 第二轮确认接缝的实施住址
+
+- CP02：UI feature-assembly拥有带键layerDismissals类型；三个sample UI feature在declarations/parts保留其partKey→自身owner command回调；会员MAIN与BRANCH系统失败两个partKey均绑定现deskSystemFailureDismissedCommand，不改layerId。integration-assembly只收集并拒绝重复键，与完整Runtime bundle一起替换；render LayerStack保留现partKey查表，不自创无键转换或App第二名单。memberDesk.test.tsx/layerStack.test.tsx分别证明按钮/back/backdrop层关闭及pending/list保留，runtimeOwner.test.ts证明retry新回调。服务配置由admin-shell自己的module提供，不额外workspace。
+- CP03：现kernel/base/terminal-update/src/testing/automationFixture.ts负责平台替身的preparedId/kind→真实传入artifact关联、action身份、精确release；现fixture/direct tests先验证非synthetic publication和FULL/HOT区分。tools/terminal-automation/journeys/updateOwnerFlow.ts负责真实CBS/project/grant/report/运营读回，两个test-expo只绑定fixture.port。sourceProvider不进入本case；没有第二fixture工厂、生产校验豁免或native boot证明。其余配置/呈现调用者在CP05适配，CP06才运行W/D。

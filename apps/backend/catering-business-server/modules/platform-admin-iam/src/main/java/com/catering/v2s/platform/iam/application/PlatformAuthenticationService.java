@@ -10,6 +10,7 @@ import com.catering.v2s.platform.foundation.time.TimeProvider;
 import com.catering.v2s.platform.iam.api.PlatformDiagnosticBootstrap;
 import com.catering.v2s.platform.iam.api.PlatformGovernanceAuthorization;
 import com.catering.v2s.platform.iam.api.PlatformSessionReadback;
+import com.catering.v2s.platform.iam.api.PlatformUatRootBootstrap;
 import com.catering.v2s.platform.iam.application.persistence.PlatformAuthenticationPersistence;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
@@ -28,7 +29,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 /** Platform credential/session owner. It has no default principal and stores only token hashes. */
 @Service
-public class PlatformAuthenticationService implements PlatformGovernanceAuthorization, PlatformDiagnosticBootstrap {
+public class PlatformAuthenticationService implements
+        PlatformGovernanceAuthorization, PlatformDiagnosticBootstrap, PlatformUatRootBootstrap {
     private static final long SESSION_TTL_MILLIS = 8 * 60 * 60 * 1000L;
     private static final int CREDENTIAL_FAILURE_LIMIT = 10;
     private static final long CREDENTIAL_LOCK_MILLIS = 15 * 60 * 1000L;
@@ -42,6 +44,8 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
     private static final int OTP_VERIFY_LIMIT = 10;
     private static final AuditChangePolicy ADMIN_CREATED =
             new AuditChangePolicy("PLATFORM_ADMIN", "PLATFORM_ADMIN_CREATED", Set.of("displayName"));
+    private static final AuditChangePolicy UAT_ROOT_BOOTSTRAPPED =
+            new AuditChangePolicy("PLATFORM_ADMIN", "PLATFORM_UAT_ROOT_BOOTSTRAPPED", Set.of("displayName"));
     private static final AuditChangePolicy ADMIN_STATUS_CHANGED =
             new AuditChangePolicy("PLATFORM_ADMIN", "PLATFORM_ADMIN_STATUS_CHANGED", Set.of("status"));
     private static final AuditChangePolicy ADMIN_PROFILE_UPDATED =
@@ -473,32 +477,70 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
         persistence.lockBootstrapAdministratorTable();
         Long existing = persistence.countBootstrapAdministrators();
         if (existing == null || existing != 0L) throw new DiagnosticBootstrapUnavailableException();
-        PlatformAdminReadback created =
-                createAdministratorForDiagnosticBootstrap(loginName, displayName, initialPassword);
+        PlatformAdminReadback created = createBootstrapAdministrator(
+                UUID.randomUUID(), loginName, displayName, initialPassword, false,
+                "PLATFORM_DIAGNOSTIC_ADMIN_BOOTSTRAPPED", ADMIN_CREATED);
         return new DiagnosticAdministrator(created.id(), created.loginName());
     }
 
-    private PlatformAdminReadback createAdministratorForDiagnosticBootstrap(
-            String loginName, String displayName, char[] initialPassword) {
+    @Override
+    @Transactional
+    public BootstrapReadback bootstrapUatRootAdministrator(
+            UUID administratorId,
+            String loginName,
+            String displayName,
+            char[] initialPassword,
+            String idempotencyKey) {
+        if (administratorId == null || !"root".equals(loginName) || displayName == null
+                || displayName.isBlank() || initialPassword == null || initialPassword.length < 8) {
+            throw new InvalidAdministratorInputException();
+        }
+        String request = String.join("|", "PLATFORM_UAT_ROOT_BOOTSTRAP", administratorId.toString(),
+                loginName, displayName.trim(), Sha256Hex.digest(new String(initialPassword)));
+        PlatformAdminReadback receipt = receipts.execute(idempotencyKey, request, () -> {
+            persistence.lockBootstrapAdministratorTable();
+            Long existing = persistence.countBootstrapAdministrators();
+            if (existing == null || existing != 0L) throw new UatBootstrapUnavailableException();
+            return createBootstrapAdministrator(administratorId, loginName, displayName, initialPassword, true,
+                    "PLATFORM_UAT_ROOT_BOOTSTRAPPED", UAT_ROOT_BOOTSTRAPPED);
+        });
+        PlatformAdminReadback actual = requireAdministrator(administratorId);
+        if (!actual.id().equals(receipt.id()) || !actual.builtIn() || !"ENABLED".equals(actual.status())
+                || !"root".equals(actual.loginName())
+                || !displayName.trim().equals(actual.displayName())
+                || !"PLATFORM_UAT_ROOT_BOOTSTRAPPED".equals(actual.auditSummary())) {
+            throw new UatBootstrapReadbackMismatchException();
+        }
+        return new BootstrapReadback(actual.id(), actual.loginName(), actual.displayName(), actual.status(),
+                actual.builtIn(), actual.auditSummary());
+    }
+
+    private PlatformAdminReadback createBootstrapAdministrator(
+            UUID id,
+            String loginName,
+            String displayName,
+            char[] initialPassword,
+            boolean builtIn,
+            String auditAction,
+            AuditChangePolicy auditPolicy) {
         String normalized = normalize(loginName);
         if (displayName == null
                 || displayName.trim().isEmpty()
                 || initialPassword == null
                 || initialPassword.length < 8) throw new InvalidAdministratorInputException();
-        UUID id = UUID.randomUUID();
         long now = timeProvider.currentEpochMillis();
         try {
-            persistence.insertBootstrapAdministrator(id, loginName.trim(), normalized, displayName.trim(), now);
+            persistence.insertBootstrapAdministrator(id, loginName.trim(), normalized, displayName.trim(), now, builtIn);
             persistence.insertBootstrapCredential(id, passwordEncoder.encode(new String(initialPassword)), now);
         } catch (org.springframework.dao.DuplicateKeyException exception) {
             throw new LoginNameConflictException(exception);
         }
         audit(
                 id,
-                "PLATFORM_DIAGNOSTIC_ADMIN_BOOTSTRAPPED",
+                auditAction,
                 now,
                 AuditActor.system(),
-                ADMIN_CREATED.allow(List.of(AuditChange.forNullableScalar("displayName", null, displayName.trim()))));
+                auditPolicy.allow(List.of(AuditChange.forNullableScalar("displayName", null, displayName.trim()))));
         return requireAdministrator(id);
     }
 
@@ -964,6 +1006,10 @@ public class PlatformAuthenticationService implements PlatformGovernanceAuthoriz
      * typed HTTP-problem denominator cannot mistake it for a contract-visible failure.
      */
     static final class DiagnosticBootstrapUnavailableException extends RuntimeException {}
+
+    static final class UatBootstrapUnavailableException extends RuntimeException {}
+
+    static final class UatBootstrapReadbackMismatchException extends RuntimeException {}
 
     public static final class CredentialLockedException extends RuntimeException {}
 

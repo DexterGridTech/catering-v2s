@@ -3,6 +3,7 @@ import {promisify} from 'node:util';
 import {realpathSync, statSync} from 'node:fs';
 import path from 'node:path';
 import type {Client, DeviceClient} from '@devicefarmer/adbkit';
+import type {ServerConfigEnvironment} from '@catering-v2s/kernel-base-server-config';
 import {
   collectAndroidRemoteControlDiagnostics,
   collectAndroidRuntimeFailureDiagnostics,
@@ -24,50 +25,43 @@ export type ManagedHostForwardLifecycle = Readonly<{
   readonly onAttached?: (mapping: ManagedHostForward) => void;
   readonly onReleased?: (mapping: ManagedHostForward) => void;
 }>;
-export type ManagedDevServiceUrls = Readonly<{
-  readonly businessBaseUrl: string;
-  readonly tdsEntryOneUrl: string;
-  readonly tdsEntryTwoUrl: string;
-}>;
-
-export const managedDevServiceReverses = (urls: ManagedDevServiceUrls): readonly ManagedServiceReverse[] => {
-  let business: URL;
-  let entryOne: URL;
-  let entryTwo: URL;
-  try {
-    business = new URL(urls.businessBaseUrl);
-    entryOne = new URL(urls.tdsEntryOneUrl);
-    entryTwo = new URL(urls.tdsEntryTwoUrl);
-  } catch {
+export const managedDevServiceReverses = (
+  environment: ServerConfigEnvironment,
+): readonly ManagedServiceReverse[] => {
+  const businessAddresses = environment.servers.find(server => server.serverName === 'business')?.addresses ?? [];
+  const tdsAddresses =
+    environment.servers.find(server => server.serverName === 'terminal-data-server')?.addresses ?? [];
+  if (businessAddresses.length === 0 || tdsAddresses.length === 0) {
     return fail('TERMINAL_AUTOMATION_MANAGED_DEV_URL_INVALID');
   }
-  if (
-    business.protocol !== 'http:' ||
-    business.hostname !== '127.0.0.1' ||
-    business.pathname !== '/api/terminal/group-workspaces/aurora' ||
-    business.port === '' ||
-    entryOne.protocol !== 'ws:' ||
-    entryTwo.protocol !== 'ws:' ||
-    entryOne.hostname !== '127.0.0.1' ||
-    entryTwo.hostname !== '127.0.0.1' ||
-    entryOne.port === '' ||
-    entryTwo.port === '' ||
-    entryOne.port === entryTwo.port ||
-    new Set([business.port, entryOne.port, entryTwo.port]).size !== 3 ||
-    [business, entryOne, entryTwo].some(
-      url => url.username !== '' || url.password !== '' || url.search !== '' || url.hash !== '',
-    ) ||
-    (entryOne.pathname !== '' && entryOne.pathname !== '/') ||
-    (entryTwo.pathname !== '' && entryTwo.pathname !== '/')
-  ) {
-    fail('TERMINAL_AUTOMATION_MANAGED_DEV_URL_INVALID');
+  const ports = [...businessAddresses, ...tdsAddresses].map((address, index) => {
+      const expectedProtocol = index < businessAddresses.length ? 'http:' : 'ws:';
+      let url: URL;
+      try {
+        url = new URL(address.baseUrl);
+      } catch {
+        return fail('TERMINAL_AUTOMATION_MANAGED_DEV_URL_INVALID');
+      }
+      if (
+        url.protocol !== expectedProtocol ||
+        url.hostname !== '127.0.0.1' ||
+        url.port === '' ||
+        !/^[0-9]{4,5}$/u.test(url.port) ||
+        url.username !== '' ||
+        url.password !== '' ||
+        url.search !== '' ||
+        url.hash !== '' ||
+        (expectedProtocol === 'ws:' && url.pathname !== '' && url.pathname !== '/') ||
+        (expectedProtocol === 'http:' && !/^\/api\/terminal\/group-workspaces\/[A-Za-z0-9_-]{1,64}$/u.test(url.pathname))
+      ) {
+        return fail('TERMINAL_AUTOMATION_MANAGED_DEV_URL_INVALID');
+      }
+      return Number(url.port);
+    });
+  if (ports.length === 0 || new Set(ports).size !== ports.length) {
+    return fail('TERMINAL_AUTOMATION_MANAGED_DEV_URL_INVALID');
   }
-  return Object.freeze(
-    [business, entryOne, entryTwo].map(url => {
-      const port = Number(url.port);
-      return Object.freeze({remotePort: port, localPort: port});
-    }),
-  );
+  return Object.freeze(ports.map(port => Object.freeze({remotePort: port, localPort: port})));
 };
 
 export type AndroidDeviceSession = Readonly<{
@@ -163,7 +157,7 @@ const listDeviceReverses = async (device: DeviceClient): Promise<readonly Revers
 
 const validateManagedServicePorts = (ports: readonly ManagedServiceReverse[]): void => {
   if (
-    (ports.length !== 1 && ports.length !== 3) ||
+    ports.length === 0 ||
     ports.some(
       value =>
         !Number.isSafeInteger(value.remotePort) ||

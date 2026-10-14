@@ -56,17 +56,19 @@ assert.throws(
 
 const help = spawnSync(process.execPath, [checkStaticPath, '--help'], {cwd: repoRoot, encoding: 'utf8'});
 assert.equal(help.status, 0, help.stderr);
-assert.match(help.stdout, /eleven TER static rule gates/);
+assert.match(help.stdout, /thirteen TER static rule gates/);
 
 const realStatic = spawnSync(process.execPath, [checkStaticPath], {cwd: repoRoot, encoding: 'utf8'});
 assert.equal(realStatic.status, 0, realStatic.stderr);
-assert.match(realStatic.stdout, /RULE_GATES=11/);
+assert.match(realStatic.stdout, /RULE_GATES=13/);
 assert.match(realStatic.stdout, /SUPPORT_CHECKS=1/);
 for (const rule of [
   'GRAPH_COMPARISON',
   'TRIPLE_NAMING',
   'DEPENDENCY_DIRECTION',
   'DEPENDENCY_DECLARATION_COMPLETENESS',
+  'SOURCE_LAYOUT',
+  'PUBLIC_EXPORT_INVARIANTS',
   'RUNTIME_DEPENDENCY_CONTRACT',
   'TR01_REDUCER_BOUNDARY',
   'STATE_RESET_RETENTION_ONLY',
@@ -213,6 +215,49 @@ try {
   );
   assert.equal(cleanReport.hygiene.status, 'PASS', cleanReport.hygiene.error);
 
+  const sourceLayoutRedCases = [
+    {
+      relativePath: 'src/features/commands/index.ts',
+      expected: /kernel\.base\.runtime:src\/features\/commands/,
+    },
+    {
+      relativePath: 'src/features/variables/index.ts',
+      expected: /kernel\.base\.runtime:src\/features\/variables/,
+    },
+    {
+      relativePath: 'src/parts/serverConfigParts.tsx',
+      expected: /kernel\.base\.runtime:src\/parts/,
+    },
+    {
+      relativePath: 'src/unclassified.ts',
+      expected: /kernel\.base\.runtime:src\/unclassified\.ts/,
+    },
+  ];
+  for (const redCase of sourceLayoutRedCases) {
+    const misplacedPath = path.join(
+      fixtureRoot,
+      'apps/terminal/kernel/base/runtime',
+      redCase.relativePath,
+    );
+    fs.mkdirSync(path.dirname(misplacedPath), {recursive: true});
+    fs.writeFileSync(misplacedPath, 'export {}\n');
+    const sourceLayoutRed = runStaticChecks({root: fixtureRoot, batch: 2});
+    assertGateVector(sourceLayoutRed, ['source-layout']);
+    assert.match(gate(sourceLayoutRed, 'source-layout').error, redCase.expected);
+    fs.rmSync(misplacedPath, {force: true});
+    const sourceRoot = path.join(fixtureRoot, 'apps/terminal/kernel/base/runtime/src');
+    let createdDirectory = path.dirname(misplacedPath);
+    while (createdDirectory !== sourceRoot && createdDirectory.startsWith(`${sourceRoot}${path.sep}`)) {
+      try {
+        fs.rmdirSync(createdDirectory);
+        createdDirectory = path.dirname(createdDirectory);
+      } catch {
+        break;
+      }
+    }
+  }
+  console.log('TERMINAL_SKELETON_RED_SOURCE_DIRECTORY_VOCABULARY=PASS');
+
   const selectorModulePath = path.join(
     fixtureRoot,
     'apps/terminal/ui/base/terminal-activation/src/application/module.ts',
@@ -358,6 +403,178 @@ try {
       for (const change of originals) fs.writeFileSync(change.filePath, change.original);
     }
   }
+
+  const serverConfigInvariantPath = path.join(
+    fixtureRoot,
+    'apps/terminal/kernel/base/server-config/terminal-invariants.json',
+  );
+  const androidDeviceInvariantPath = path.join(
+    fixtureRoot,
+    'apps/terminal/adapter/android/device/terminal-invariants.json',
+  );
+  withJsonMutation(
+    androidDeviceInvariantPath,
+    invariant => {
+      delete invariant.publicExports;
+    },
+    report => {
+      assertGateVector(report, ['public-export-invariants']);
+      assert.match(
+        gate(report, 'public-export-invariants').error,
+        /adapter\.android\.device: terminal-invariants\.json must declare publicExports/,
+      );
+      printGateVector('TERMINAL_SKELETON_RED_PUBLIC_EXPORTS_REQUIRED', report);
+    },
+  );
+
+  withJsonMutation(
+    serverConfigInvariantPath,
+    invariant => {
+      invariant.publicExports = invariant.publicExports.filter(name => name !== 'resolveServerNetworkSnapshot');
+    },
+    report => {
+      assertGateVector(report, ['public-export-invariants']);
+      assert.match(
+        gate(report, 'public-export-invariants').error,
+        /kernel\.base\.server-config: publicExports mismatch; missing=\["resolveServerNetworkSnapshot"\]/,
+      );
+      printGateVector('TERMINAL_SKELETON_RED_PUBLIC_EXPORT_INVARIANT', report);
+    },
+  );
+
+  const remoteControlIndexPath = path.join(
+    fixtureRoot,
+    'apps/terminal/kernel/base/remote-control/src/index.ts',
+  );
+  withTextMutation(
+    remoteControlIndexPath,
+    source =>
+      replaceRequired(
+        source,
+        "export {\n  remoteControlTopic,\n  remoteControlProtocolMaxMessageBytes,\n  remoteControlMessageTypes,\n} from './generated/terminalRemoteControlProtocol';",
+        "export * from './generated/terminalRemoteControlProtocol';",
+      ),
+    report => {
+      assertGateVector(report, ['public-export-invariants']);
+      assert.match(
+        gate(report, 'public-export-invariants').error,
+        /kernel\.base\.remote-control: src\/index\.ts must use explicit named re-exports/,
+      );
+      printGateVector('TERMINAL_SKELETON_RED_PUBLIC_EXPORT_WILDCARD', report);
+    },
+  );
+
+  withTextMutation(
+    path.join(fixtureRoot, 'apps/terminal/adapter/android/device/src/index.ts'),
+    source => `${source}const accidentalImplementation = true;\n`,
+    report => {
+      assertGateVector(report, ['public-export-invariants']);
+      assert.match(
+        gate(report, 'public-export-invariants').error,
+        /adapter\.android\.device: src\/index\.ts must contain only explicit re-export declarations/,
+      );
+      printGateVector('TERMINAL_SKELETON_RED_PUBLIC_BARREL_IMPLEMENTATION', report);
+    },
+  );
+
+  const storeActorsPath = path.join(
+    fixtureRoot,
+    'apps/terminal/kernel/feature/store-basic/src/features/actors/storeBasicActor.ts',
+  );
+  const terminalDataClientGenerated =
+    '@catering-v2s/kernel-base-terminal-data-client/src/generated/terminalApi';
+  function assertPrivateGeneratedClientViolation(report) {
+    assertGateVector(report, ['graph-comparison']);
+    assert.match(
+      gate(report, 'graph-comparison').error,
+      /(?:imports foreign private generated client|imports undeclared workspace export)/,
+    );
+  }
+
+  for (const [label, source] of [
+    [
+      'TERMINAL_SKELETON_RED_FOREIGN_GENERATED_CLIENT_IMPORT',
+      `import {createTerminalApiClient as privateClient} from '${terminalDataClientGenerated}';\n`,
+    ],
+    [
+      'TERMINAL_SKELETON_RED_FOREIGN_GENERATED_CLIENT_REEXPORT',
+      `export {createTerminalApiClient as privateClient} from '${terminalDataClientGenerated}';\n`,
+    ],
+    [
+      'TERMINAL_SKELETON_RED_FOREIGN_GENERATED_CLIENT_DYNAMIC_IMPORT',
+      `void import('${terminalDataClientGenerated}');\n`,
+    ],
+    [
+      'TERMINAL_SKELETON_RED_FOREIGN_GENERATED_CLIENT_REQUIRE',
+      `require('${terminalDataClientGenerated}');\n`,
+    ],
+  ]) {
+    withTextMutation(
+      storeActorsPath,
+      current => `${source}${current}`,
+      report => {
+        assertPrivateGeneratedClientViolation(report);
+        console.log(`${label}=graph-comparison:FAIL`);
+      },
+    );
+  }
+
+  const storePackageDirectory = path.dirname(path.dirname(path.dirname(path.dirname(storeActorsPath))));
+  const tdcGeneratedPath = path.join(
+    fixtureRoot,
+    'apps/terminal/kernel/base/terminal-data-client/src/generated/terminalApi.ts',
+  );
+  const storeGeneratedRelativePath = path.relative(path.dirname(storeActorsPath), tdcGeneratedPath)
+    .replace(/\.ts$/, '');
+  withTextMutation(
+    storeActorsPath,
+    current => `import {createTerminalApiClient as privateClient} from '${storeGeneratedRelativePath}';\n${current}`,
+    report => {
+      assertPrivateGeneratedClientViolation(report);
+      console.log('TERMINAL_SKELETON_RED_FOREIGN_GENERATED_CLIENT_RELATIVE=graph-comparison:FAIL');
+    },
+  );
+
+  const storeTsconfigPath = path.join(storePackageDirectory, 'tsconfig.json');
+  const privateAlias = '@private-terminal-client';
+  withMutations(
+    [
+      {
+        filePath: storeTsconfigPath,
+        mutate(source) {
+          const value = JSON.parse(source);
+          value.compilerOptions.paths = {
+            ...value.compilerOptions.paths,
+            [privateAlias]: ['../../base/terminal-data-client/src/generated/terminalApi'],
+          };
+          return `${JSON.stringify(value, null, 2)}\n`;
+        },
+      },
+      {
+        filePath: storeActorsPath,
+        mutate: source => `import {createTerminalApiClient as privateClient} from '${privateAlias}';\n${source}`,
+      },
+    ],
+    report => {
+      assertPrivateGeneratedClientViolation(report);
+      console.log('TERMINAL_SKELETON_RED_FOREIGN_GENERATED_CLIENT_PATH_ALIAS=graph-comparison:FAIL');
+    },
+  );
+
+  const terminalDataClientIndexPath = path.join(
+    fixtureRoot,
+    'apps/terminal/kernel/base/terminal-data-client/src/index.ts',
+  );
+  withTextMutation(
+    terminalDataClientIndexPath,
+    source => `${source}\nexport * from './generated/terminalApi';\n`,
+    report => {
+      assertGateVector(report, ['graph-comparison', 'public-export-invariants']);
+      assert.match(gate(report, 'graph-comparison').error, /public root exposes generated client implementation/);
+      assert.match(gate(report, 'public-export-invariants').error, /kernel\.base\.terminal-data-client: src\/index\.ts must use explicit named re-exports/);
+      console.log('TERMINAL_SKELETON_RED_PUBLIC_ROOT_GENERATED_CLIENT_REEXPORT=graph-comparison:FAIL');
+    },
+  );
 
   const secondRetainerPath = path.join(
     fixtureRoot,
@@ -690,7 +907,7 @@ try {
       },
     ],
     report => {
-      assertGateVector(report, ['dependency-direction', 'runtime-dependency-contract']);
+      assertGateVector(report, ['dependency-direction', 'public-export-invariants', 'runtime-dependency-contract']);
       assert.match(
         gate(report, 'dependency-direction').error,
         /application\.base\.android may not depend on ui\.feature\.sample-staff-auth/,
@@ -819,7 +1036,7 @@ try {
   const crossPlatformAssemblyDependenciesSource = fs.readFileSync(crossPlatformAssemblyDependenciesPath, 'utf8');
   const crossPlatformAndroidPlatformPath = path.join(
     fixtureRoot,
-    'apps/terminal/application/base/android/src/foundations/androidPlatform.ts',
+    'apps/terminal/application/base/android/src/implementations/androidPlatformBinding.ts',
   );
   const crossPlatformAndroidPlatformSource = fs.readFileSync(crossPlatformAndroidPlatformPath, 'utf8');
   fs.mkdirSync(path.dirname(electronDeviceFixtureRoot), {recursive: true});
@@ -1212,6 +1429,37 @@ try {
     fs.rmSync(actorHelperPath, {force: true});
   }
 
+  const actorCommandInstallerPath = path.join(
+    fixtureRoot,
+    'apps/terminal/kernel/base/runtime/src/features/actors/shared/installFixtureCommands.ts',
+  );
+  fs.mkdirSync(path.dirname(actorCommandInstallerPath), {recursive: true});
+  fs.writeFileSync(
+    actorCommandInstallerPath,
+    [
+      "import {onCommand} from '../../../foundations/defineActor'",
+      "import type {ActorExecutionContext} from '../../../types/actor'",
+      'const commands = [onCommand(command, (context: ActorExecutionContext) => {',
+      '  context.dispatchAction(action)',
+      '  return undefined',
+      '})]',
+      'export const installFixtureCommands = () => commands',
+      '',
+    ].join('\n'),
+  );
+  try {
+    const actorCommandInstallerReport = runStaticChecks({root: fixtureRoot, batch: 2});
+    assertGateVector(actorCommandInstallerReport);
+    printGateVector('A2_TR01_ACTOR_COMMAND_INSTALLER_GREEN', actorCommandInstallerReport);
+    fs.appendFileSync(actorCommandInstallerPath, '\nconst stray = (context: any) => context.dispatchAction(action)\n');
+    const actorCommandInstallerStrayReport = runStaticChecks({root: fixtureRoot, batch: 2});
+    assertGateVector(actorCommandInstallerStrayReport, ['tr01-reducer-boundary']);
+    assert.match(gate(actorCommandInstallerStrayReport, 'tr01-reducer-boundary').error, /reducer call/);
+    printGateVector('A2_TR01_ACTOR_COMMAND_INSTALLER_STRAY_RED', actorCommandInstallerStrayReport);
+  } finally {
+    fs.rmSync(actorCommandInstallerPath, {force: true});
+  }
+
   const roleActorPath = path.join(
     fixtureRoot,
     'apps/terminal/kernel/base/runtime/src/features/actors/setRuntimeInstanceModeActor.ts',
@@ -1278,7 +1526,7 @@ try {
 
   const stateRuntimePath = path.join(
     fixtureRoot,
-    'apps/terminal/kernel/base/state/src/foundations/createStateRuntime.ts',
+    'apps/terminal/kernel/base/state/src/application/createStateRuntime.ts',
   );
   const stateRuntimeReturn = '  return Object.freeze(runtime);\n';
   withTextMutation(

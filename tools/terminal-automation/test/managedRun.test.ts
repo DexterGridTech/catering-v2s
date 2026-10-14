@@ -12,7 +12,13 @@ import {
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {afterEach, describe, expect, it} from 'vitest';
-import {attachAndroidDeviceIdentity, createManagedRun, persistManagedRun} from '../src/managedRun.js';
+import {
+  attachAndroidDeviceIdentity,
+  createManagedRun,
+  markManagedRunCheckpoint,
+  markManagedRunFailure,
+  persistManagedRun,
+} from '../src/managedRun.js';
 
 const roots: string[] = [];
 const execution = Object.freeze({phase: 'journey', platform: 'web', shape: 'mobile', case: 'normal', age: 'empty'});
@@ -33,6 +39,8 @@ describe('createManagedRun', () => {
     expect(manifest.owner.pgid).toBeGreaterThan(0);
     expect(manifest.owner.startToken.length).toBeGreaterThan(0);
     expect(manifest.processes).toEqual([manifest.owner]);
+    expect(manifest.lastKnownGood).toBeNull();
+    expect(manifest.brokenBoundary).toBeNull();
   });
 
   it('records both explicitly named pair devices with their MASTER and SLAVE roles', () => {
@@ -206,11 +214,10 @@ describe('createManagedRun', () => {
     roots.push(root);
     const manifest = createManagedRun(root, execution, 'run-1');
     const next = Object.freeze({
-      ...manifest,
+      ...markManagedRunFailure(markManagedRunCheckpoint(manifest, 'business'), 'JOURNEY_ASSERTION_FAILED', 'test-execution'),
       stage: 'FINISHED',
       business: 'FAIL' as const,
       cleanup: 'PASS' as const,
-      firstFailure: 'JOURNEY_ASSERTION_FAILED',
     });
     persistManagedRun(root, next);
 
@@ -222,8 +229,25 @@ describe('createManagedRun', () => {
       business: 'FAIL',
       cleanup: 'PASS',
       firstFailure: 'JOURNEY_ASSERTION_FAILED',
+      lastKnownGood: 'business',
+      brokenBoundary: 'test-execution',
     });
     expect(Date.parse(saved.updatedAt)).toBeGreaterThanOrEqual(Date.parse(manifest.updatedAt));
+  });
+
+  it('retains the last successful boundary and records the first failed boundary', () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'terminal-automation-'));
+    roots.push(root);
+    const manifest = createManagedRun(root, execution, 'run-progress');
+    const preflight = markManagedRunCheckpoint(manifest, 'resource-preflight');
+    const failed = markManagedRunFailure(preflight, 'VITEST_EXIT_1', 'test-execution');
+    const laterFailure = markManagedRunFailure(failed, 'CLEANUP_FAILED', 'cleanup');
+
+    expect(laterFailure).toMatchObject({
+      lastKnownGood: 'resource-preflight',
+      firstFailure: 'VITEST_EXIT_1',
+      brokenBoundary: 'test-execution',
+    });
   });
 
   it('does not overwrite a manifest symlink outside the run root', () => {

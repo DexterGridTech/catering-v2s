@@ -12,15 +12,13 @@ export {
   deferTerminalUpdateInstallCommand,
   reconcileTerminalUpdateCommand,
   terminalUpdateDeadlineCommand,
-} from './features/commands/commands';
-export {
-  selectTerminalUpdateActualVersions,
-  selectTerminalUpdateRecentStatus,
-  selectTerminalUpdateTask,
-  selectTerminalUpdateInvitation,
-  selectTerminalUpdateReportDelivery,
-} from './selectors/selectors';
-export type {TerminalUpdateInstallDecision} from './features/commands/commands';
+} from './declarations/commands';
+export {selectTerminalUpdateActualVersions} from './selectors/selectTerminalUpdateActualVersions';
+export {selectTerminalUpdateRecentStatus} from './selectors/selectTerminalUpdateRecentStatus';
+export {selectTerminalUpdateTask} from './selectors/selectTerminalUpdateTask';
+export {selectTerminalUpdateInvitation} from './selectors/selectTerminalUpdateInvitation';
+export {selectTerminalUpdateReportDelivery} from './selectors/selectTerminalUpdateReportDelivery';
+export type {TerminalUpdateInstallDecision} from './declarations/commands';
 export type {
   FixedUpdateTarget,
   RequestTerminalUpdatePayload,

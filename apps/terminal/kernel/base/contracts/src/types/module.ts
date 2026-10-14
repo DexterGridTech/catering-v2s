@@ -1,6 +1,3 @@
-import type {ErrorDefinition} from './error';
-import type {ParameterDescriptor} from './parameter';
-
 export type AppModuleKind = 'owner' | 'toolkit';
 
 export interface AppModuleDependency {
@@ -29,8 +26,6 @@ export interface AppModule {
   readonly packageVersion?: string;
   readonly protocolVersion?: string;
   readonly dependencies?: readonly AppModuleDependency[];
-  readonly errorDefinitions?: readonly ErrorDefinition[];
-  readonly parameterDefinitions?: readonly ParameterDescriptor[];
   readonly commands?: readonly AppModuleCommandDescriptor[];
   readonly actors?: readonly AppModuleActorDescriptor[];
   readonly slices?: readonly AppModuleSliceDescriptor[];

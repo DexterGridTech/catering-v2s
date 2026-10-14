@@ -39,6 +39,10 @@ sourceRefs: ["doc/platform/terminal-coding-standard.md"]
 - `TERMINAL_STANDARD_POINTERS_ONLY`：项目记忆、skill、评审文档**只写"见正本"**，不复述规则内容。
   通用工作纪律（`currentData`/`isFetching`、`initiate` 义务、同一事实一个住址、幂等键、
   否定式全称命题、finding 带业务场景、动笔前查五处）由正本 §0 指针引用前端规范，同样不复述。
+  Dexter 2026-10-13确认：后续新建或整改TER包，必须回读正本
+  **§8 · T1 新建包与后续维护的长期基线**及§7.1/`TR-R06`的目录生效说明。
+  T1正式需求、设计入口和未实施边界均在该节引用；本记忆不复制declarations、owner、私有API、
+  sync、地址或身份细则，也不把拟议factory/认证接口当成当前可调用能力。
 - `TERMINAL_HARD_RULES_NUMBERING_STABLE`：硬规则**编号只增不改**，`TR-01` 起（门的名字、红夹具、
   review checklist 都引用该编号）。⚠️ **条数不在此处复述** —— 2026-09-02 加 `TR-11` 时，
   这里写死的「十条」与正本标题里的数量一起使路由失败。**要查有几条、各是什么，去读正本**：

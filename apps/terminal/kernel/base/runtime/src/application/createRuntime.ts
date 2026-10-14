@@ -11,19 +11,20 @@ import {
   type StateRoot,
   type StateRuntime,
 } from '@catering-v2s/kernel-base-state';
-import {defaultCommandTimeoutMs, defaultRuntimeLimits, type RuntimeLimits} from '../types/limits';
+import {defaultCommandTimeoutMs, defaultRuntimeLimits, runtimeParameters} from '../declarations/parameters';
+import type {RuntimeLimits} from '../types/limits';
 import type {CommandDefinition, CommandDispatchOptions, RegisteredCommandDefinition} from '../types/command';
 import type {CommandDispatchResult} from '../types/execution';
 import type {Runtime, CreateRuntimeInput, RuntimeStatus, RuntimeSubscriptionListener} from '../types/runtime';
 import type {RuntimeUnknownAction, RuntimeStore} from '../types/runtime';
 import type {RuntimeModule, RuntimeRoleChangeSignal} from '../types/module';
 import {moduleName} from '../moduleName';
-import {initializeCommand} from '../features/commands';
+import {initializeCommand} from '../declarations/commands';
 import {createInternalRuntimeModule} from './createInternalRuntimeModule';
 import {describeRuntimeModule} from './moduleManifest';
 import {resolveModuleOrder} from '../foundations/resolveModuleOrder';
-import {createRuntimeLifecycle} from '../foundations/createRuntimeLifecycle';
-import {createCommandDispatcher} from '../foundations/createCommandDispatcher';
+import {createRuntimeLifecycle} from './createRuntimeLifecycle';
+import {createCommandDispatcher} from './createCommandDispatcher';
 import {createRuntimeJournal} from '../foundations/createRuntimeJournal';
 import {createActorRegistry} from '../foundations/createActorRegistry';
 import {assertNonEmptyString} from '../foundations/assertNonEmptyString';
@@ -66,9 +67,6 @@ const lifecycleError = (message: string, cause?: unknown): AppError =>
     cause,
   });
 
-const isPositiveInteger = (value: unknown): value is number =>
-  typeof value === 'number' && Number.isFinite(value) && value > 0 && Number.isInteger(value);
-
 const resolveLimits = (
   requested: Partial<RuntimeLimits> | undefined,
   maxRegisteredCommandTimeoutMs: number,
@@ -77,16 +75,16 @@ const resolveLimits = (
     ...defaultRuntimeLimits,
     ...(requested ?? {}),
   });
-  const entries: readonly (keyof RuntimeLimits)[] = [
-    'maxCommandDepth',
-    'maxCommandsPerRequest',
-    'maxActorResultBytes',
-    'requestRetentionMs',
-    'requestMaxResidenceMs',
-    'maxJournalRecords',
-  ];
-  for (const key of entries) {
-    if (!isPositiveInteger(limits[key])) {
+  const definitions = {
+    maxCommandDepth: runtimeParameters.maxCommandDepth,
+    maxCommandsPerRequest: runtimeParameters.maxCommandsPerRequest,
+    maxActorResultBytes: runtimeParameters.maxActorResultBytes,
+    requestRetentionMs: runtimeParameters.requestRetentionMs,
+    requestMaxResidenceMs: runtimeParameters.requestMaxResidenceMs,
+    maxJournalRecords: runtimeParameters.maxJournalRecords,
+  } satisfies Readonly<Record<keyof RuntimeLimits, (typeof runtimeParameters)[keyof typeof runtimeParameters]>>;
+  for (const key of Object.keys(definitions) as (keyof RuntimeLimits)[]) {
+    if (!definitions[key].validate?.(limits[key])) {
       throw new Error(`Runtime limit ${key} must be a positive integer`);
     }
   }
@@ -109,18 +107,15 @@ const validateModuleShape = (modules: readonly RuntimeModule[]): ReadonlyMap<str
   const definitions = new Map<string, RegisteredCommandDefinition>();
   const moduleNames = new Set<string>();
   for (const module of modules) {
+    if ('commands' in module || 'actors' in module || 'slices' in module) {
+      throw commandDefinitionError(
+        `Runtime module accepts concrete definitions, not parallel descriptors: ${module.moduleName}`,
+      );
+    }
     if (moduleNames.has(module.moduleName)) {
       throw new Error(`Duplicate runtime module: ${module.moduleName}`);
     }
     moduleNames.add(module.moduleName);
-    const declared = new Map<string, 'public' | 'internal'>();
-    for (const command of module.commands ?? []) {
-      if (declared.has(command.name)) {
-        throw new Error(`Duplicate runtime command declaration: ${module.moduleName}.${command.name}`);
-      }
-      declared.set(command.name, command.visibility ?? 'public');
-    }
-    const definedCommandNames = new Set<string>();
     for (const definition of module.commandDefinitions ?? []) {
       if (typeof definition !== 'object' || definition === null || !(commandDefinitionBrand in definition)) {
         throw commandDefinitionError(`Definition was not created by defineCommand: ${module.moduleName}`);
@@ -128,17 +123,9 @@ const validateModuleShape = (modules: readonly RuntimeModule[]): ReadonlyMap<str
       if (definition.moduleName !== module.moduleName) {
         throw commandDefinitionError(`Definition does not belong to owning module: ${definition.commandName}`);
       }
-      const declarationVisibility = declared.get(definition.commandName);
-      if (declarationVisibility === undefined) {
-        throw commandDefinitionError(`Owning module did not declare command: ${definition.commandName}`);
-      }
-      if (declarationVisibility !== definition.visibility) {
-        throw commandDefinitionError(`Command visibility mismatch: ${definition.commandName}`);
-      }
       if (definitions.has(definition.commandName)) {
         throw commandDefinitionError(`Duplicate runtime command: ${definition.commandName}`);
       }
-      definedCommandNames.add(definition.commandName);
       definitions.set(definition.commandName, {
         definition,
         moduleName: definition.moduleName,
@@ -149,11 +136,6 @@ const validateModuleShape = (modules: readonly RuntimeModule[]): ReadonlyMap<str
         allowReentry: definition.allowReentry,
         defaultTarget: definition.defaultTarget,
       });
-    }
-    for (const declaredCommandName of declared.keys()) {
-      if (!definedCommandNames.has(declaredCommandName)) {
-        throw commandDefinitionError(`Runtime command declaration has no definition: ${declaredCommandName}`);
-      }
     }
   }
   return definitions;
@@ -421,6 +403,8 @@ export const createRuntime = (input: CreateRuntimeInput): Runtime => {
           persistenceDebounceMs: input.state.persistenceDebounceMs,
           storeEnhancers: input.state.storeEnhancers,
         });
+        const stateRuntimeForCleanup = stateRuntime;
+        resources.registerAsync(() => stateRuntimeForCleanup.dispose());
         attachStateSubscription();
         dispatcher = createCommandDispatcher({
           runtimeId,
@@ -472,10 +456,21 @@ export const createRuntime = (input: CreateRuntimeInput): Runtime => {
           data: {
             status,
             ...(isAppError(failure.cause)
-              ? {causeName: failure.cause.name, causeCode: failure.cause.code}
+              ? {
+                  causeName: failure.cause.name,
+                  causeCode: failure.cause.code,
+                  causeMessage: failure.cause.message,
+                  ...(failure.cause.stack ? {causeStack: failure.cause.stack} : {}),
+                }
               : failure.cause instanceof Error
-                ? {causeName: failure.cause.name}
-                : {}),
+                ? {
+                    causeName: failure.cause.name,
+                    causeMessage: failure.cause.message,
+                    ...(failure.cause.stack ? {causeStack: failure.cause.stack} : {}),
+                  }
+                : failure.cause === undefined
+                  ? {}
+                  : {causeMessage: String(failure.cause)}),
           },
           error: {
             name: failure.name,

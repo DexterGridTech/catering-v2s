@@ -13,10 +13,23 @@ const outputRoot = path.join(repositoryRoot, '.runtime/ter-third-party-usage-rem
 const moduleAliases = new Map([
   ['adapter-android-device', 'apps/terminal/adapter/android/device/android'],
   ['adapter-android-dual-screen', 'apps/terminal/adapter/android/dual-screen/android'],
+  ['adapter-android-remote', 'apps/terminal/adapter/android/remote/android'],
+  ['adapter-android-topology', 'apps/terminal/adapter/android/topology/android'],
+  ['adapter-android-transport', 'apps/terminal/adapter/android/transport/android'],
   ['adapter-android-update', 'apps/terminal/adapter/android/update/android'],
   ['adapter-android-persist-kv', 'apps/terminal/adapter/android/persist-kv/android'],
   ['application-base-android', 'apps/terminal/application/base/android/android'],
 ]);
+const expectedModuleRootPaths = [
+  'apps/terminal/adapter/android/device/android',
+  'apps/terminal/adapter/android/dual-screen/android',
+  'apps/terminal/adapter/android/persist-kv/android',
+  'apps/terminal/adapter/android/remote/android',
+  'apps/terminal/adapter/android/topology/android',
+  'apps/terminal/adapter/android/transport/android',
+  'apps/terminal/adapter/android/update/android',
+  'apps/terminal/application/base/android/android',
+];
 
 function parseModuleSelection(argumentsList) {
   const moduleIndex = argumentsList.indexOf('--module');
@@ -26,6 +39,16 @@ function parseModuleSelection(argumentsList) {
   const alias = argumentsList[moduleIndex + 1];
   if (!moduleAliases.has(alias)) throw new Error('TERMINAL_ANDROID_TESTS_MODULE_UNKNOWN');
   return alias;
+}
+
+function discoverAndroidTestModuleRoots() {
+  const testSourceFiles = walk(terminalRoot).filter(file => /\/android\/src\/test\/.*\.kt$/.test(file));
+  return {
+    testSourceFiles,
+    moduleRoots: [
+      ...new Set(testSourceFiles.map(file => file.slice(0, file.indexOf('/android/src/test')) + '/android')),
+    ].sort(),
+  };
 }
 
 function repositoryOwnedPath(inputPath, logicalRoot, label) {
@@ -685,6 +708,16 @@ function fixtureInitScript(fixtureDirectory) {
 function selfTest() {
   if (parseModuleSelection(['--module', 'adapter-android-update']) !== 'adapter-android-update')
     throw new Error('TERMINAL_ANDROID_TESTS_MODULE_SELF_TEST_FAILED');
+  if (
+    moduleAliases.get('adapter-android-topology') !== 'apps/terminal/adapter/android/topology/android' ||
+    moduleAliases.get('adapter-android-transport') !== 'apps/terminal/adapter/android/transport/android'
+  ) throw new Error('TERMINAL_ANDROID_TESTS_MODULE_SELF_TEST_FAILED');
+  const discovered = discoverAndroidTestModuleRoots();
+  const expected = expectedModuleRootPaths.map(relative => path.join(repositoryRoot, relative)).sort();
+  if (
+    JSON.stringify(discovered.moduleRoots) !== JSON.stringify(expected) ||
+    discovered.testSourceFiles.length === 0
+  ) throw new Error('TERMINAL_ANDROID_TESTS_MODULE_DISCOVERY_SELF_TEST_FAILED');
   for (const invalid of [
     ['--module'],
     ['--module', 'unknown'],
@@ -933,20 +966,9 @@ async function main() {
   const runId = `ter-a3-${process.pid}-${Date.now()}`;
   const logPath = path.join(outputRoot, `${runId}.jsonl`);
   const manifestPath = path.join(outputRoot, `${runId}.manifest.json`);
-  const testSourceFiles = walk(terminalRoot).filter(file => /\/android\/src\/test\/.*\.kt$/.test(file));
-  const moduleRoots = [
-    ...new Set(testSourceFiles.map(file => file.slice(0, file.indexOf('/android/src/test')) + '/android')),
-  ].sort();
+  const {testSourceFiles, moduleRoots} = discoverAndroidTestModuleRoots();
   const classesByModule = new Map(moduleRoots.map(moduleRoot => [moduleRoot, discoverKotlinTestClasses(moduleRoot)]));
-  const expectedModuleRoots = [
-    'apps/terminal/adapter/android/device/android',
-    'apps/terminal/adapter/android/dual-screen/android',
-    'apps/terminal/adapter/android/update/android',
-    'apps/terminal/adapter/android/persist-kv/android',
-    'apps/terminal/application/base/android/android',
-  ]
-    .map(relative => path.join(repositoryRoot, relative))
-    .sort();
+  const expectedModuleRoots = expectedModuleRootPaths.map(relative => path.join(repositoryRoot, relative)).sort();
   if (
     classesByModule.size !== expectedModuleRoots.length ||
     moduleRoots.some((moduleRoot, index) => moduleRoot !== expectedModuleRoots[index]) ||
@@ -1120,10 +1142,10 @@ async function runA9LockRedFixture() {
   const runId = `ter-a9-lock-red-${process.pid}-${Date.now()}`;
   const logPath = path.join(outputRoot, `${runId}.jsonl`);
   const manifestPath = path.join(outputRoot, `${runId}.manifest.json`);
-  const moduleRoot = path.join(terminalRoot, 'application/base/android/android');
+  const moduleRoot = path.join(terminalRoot, 'adapter/android/topology/android');
   const mainRoot = path.join(moduleRoot, 'src/main');
-  const serverRelative = 'java/com/catering/v2s/terminal/application/base/android/TerminalTopologyServer.kt';
-  const registryRelative = 'java/com/catering/v2s/terminal/application/base/android/TerminalTopologyHostRegistry.kt';
+  const serverRelative = 'java/com/catering/v2s/terminal/adapter/android/topology/TerminalTopologyServer.kt';
+  const registryRelative = 'java/com/catering/v2s/terminal/adapter/android/topology/TerminalTopologyHostRegistry.kt';
   const lockOrderMethod = 'production registry lock paths complete without a reverse lock cycle in ten fresh JVMs';
   const testClass = findKotlinTestClassByMethod(moduleRoot, lockOrderMethod);
   const value = {
@@ -1346,7 +1368,7 @@ async function runRedFixtures() {
   const runId = `ter-a3-red-${process.pid}-${Date.now()}`;
   const logPath = path.join(outputRoot, `${runId}.jsonl`);
   const manifestPath = path.join(outputRoot, `${runId}.manifest.json`);
-  const baseModule = path.join(terminalRoot, 'application/base/android/android');
+  const baseModule = path.join(terminalRoot, 'adapter/android/topology/android');
   const sourceFiles = [
     ...walk(path.join(baseModule, 'src/main')).filter(file => file.endsWith('.kt')),
     ...walk(path.join(baseModule, 'src/test')).filter(file => file.endsWith('.kt')),
@@ -1376,7 +1398,7 @@ async function runRedFixtures() {
     const fixtureLogRoot = path.join(outputRoot, 'red-fixture-logs');
     fs.mkdirSync(fixtureLogRoot, {recursive: true});
     const [baseTest] = discoverKotlinTestClasses(baseModule);
-    if (!baseTest) throw new Error('application-base Android test class is required for TP-A4 red fixtures');
+    if (!baseTest) throw new Error('Android topology test class is required for TP-A4 red fixtures');
     const relativeTestPath = path.relative(path.join(baseModule, 'src/test'), baseTest.file);
     const fixtureSourceDirectory = path.join(fixtureRoot, 'src/test', path.dirname(relativeTestPath));
     fs.mkdirSync(fixtureSourceDirectory, {recursive: true});
@@ -1400,7 +1422,7 @@ async function runRedFixtures() {
       ([, location]) => fs.existsSync(location) && fs.realpathSync(location) === fs.realpathSync(baseModule),
     );
     if (!baseProject)
-      throw new Error('Gradle project path for application-base Android test source was not discovered');
+      throw new Error('Gradle project path for topology Android test source was not discovered');
     const [baseProjectPath] = baseProject;
     const fixtureSourceRoot = path.join(fixtureRoot, 'src/test');
     const projectArgs = [

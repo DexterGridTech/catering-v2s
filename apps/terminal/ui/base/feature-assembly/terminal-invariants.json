@@ -2,16 +2,25 @@
   "schemaVersion": 1,
   "package": "@catering-v2s/ui-base-feature-assembly",
   "owned": {
-    "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/ui-base-feature-assembly", "runner": "vitest"},
-    "lint": {"kind": "OWNED", "owner": "@catering-v2s/ui-base-feature-assembly", "runner": "eslint"},
-    "clean": {"kind": "ABSENT"}
+    "test": {
+      "kind": "REAL_TESTS",
+      "owner": "@catering-v2s/ui-base-feature-assembly",
+      "runner": "vitest"
+    },
+    "lint": {
+      "kind": "OWNED",
+      "owner": "@catering-v2s/ui-base-feature-assembly",
+      "runner": "eslint"
+    },
+    "clean": {
+      "kind": "ABSENT"
+    }
   },
   "publicExports": [
-    "CreateFeatureAssemblyInput",
-    "CreateFeatureAssemblyModuleInput",
-    "FeatureAssembly",
-    "createFeatureAssembly",
-    "createFeatureAssemblyModule",
+    "UiDefinedPart",
+    "UiPresentationContributions",
+    "UiRuntimeModule",
+    "createUiRuntimeModule",
     "dependencyModuleNames",
     "devDependencyModuleNames",
     "moduleName"

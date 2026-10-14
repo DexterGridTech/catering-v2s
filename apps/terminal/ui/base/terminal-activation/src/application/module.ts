@@ -1,20 +1,24 @@
-import type {RuntimeModule} from '@catering-v2s/kernel-base-runtime';
+import {createUiRuntimeModule} from '@catering-v2s/ui-base-feature-assembly';
 import {runtimeModuleDependencyNames} from '../dependencies';
-import {needToActivateTerminalCommand} from '../features/commands/commands';
-import {moduleName} from '../moduleName';
+import type {SurfaceForm, TransportServerConfig} from '@catering-v2s/kernel-base-contracts';
+import {needToActivateTerminalCommand} from '../declarations/commands';
+import {moduleKind, moduleName} from '../moduleName';
 import {selectActivationStatusView} from '../selectors/selectActivationStatusView';
+import {createTerminalActivationParts} from '../declarations/parts';
+import {createTerminalActivationRouteActor} from '../features/actors/terminalActivationRouteActor';
 
-/** Registers the public UI intent; the composing integration owns its route actor. */
-export const createTerminalActivationModule = (): RuntimeModule =>
-  Object.freeze({
+/** The activation owner routes its public UI intent using its own declared presentation parts. */
+export const createTerminalActivationModule = (serverSpaces: TransportServerConfig, surfaceForm: SurfaceForm) => {
+  const parts = createTerminalActivationParts(serverSpaces);
+  const activationRouteActor = createTerminalActivationRouteActor(parts, surfaceForm);
+
+  return createUiRuntimeModule({
     moduleName,
-    kind: 'toolkit',
+    kind: moduleKind,
     dependencies: runtimeModuleDependencyNames.map(name => ({moduleName: name})),
-    commands: [{name: needToActivateTerminalCommand.commandName, visibility: needToActivateTerminalCommand.visibility}],
     commandDefinitions: [needToActivateTerminalCommand],
     selectorDefinitions: [selectActivationStatusView],
-    actors: [],
-    actorDefinitions: [],
-    slices: [],
+    actorDefinitions: [activationRouteActor],
     stateSlices: [],
-  });
+  }, {parts});
+};

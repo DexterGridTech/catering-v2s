@@ -18,7 +18,7 @@ import {
 } from '@catering-v2s/kernel-base-platform-ports';
 
 describe('A: platform port assembly', () => {
-  it('assembles all ten keys, preserves injected identities, and freezes the root', () => {
+  it('assembles all eleven keys, preserves injected identities, and freezes the root', () => {
     const persistKv = createProcessMemoryStateStoragePort();
     const sink = vi.fn();
     const bindings: PlatformPortBindings = {
@@ -49,6 +49,7 @@ describe('A: platform port assembly', () => {
       'update',
       'logUpload',
       'topologyHost',
+      'remoteControl',
     ]);
     expect(Object.isFrozen(ports)).toBe(true);
     expect(ports.persistKv).toBe(persistKv);
@@ -88,7 +89,7 @@ describe('A: platform port assembly', () => {
     });
 
     const descriptors = describePlatformPortCapabilities(ports);
-    expect(descriptors).toHaveLength(10);
+    expect(descriptors).toHaveLength(11);
     expect(Object.isFrozen(descriptors)).toBe(true);
     expect(descriptors.every(descriptor => descriptor.descriptorStatus === 'complete')).toBe(true);
     expect(descriptors.find(descriptor => descriptor.port === 'device')).toMatchObject({

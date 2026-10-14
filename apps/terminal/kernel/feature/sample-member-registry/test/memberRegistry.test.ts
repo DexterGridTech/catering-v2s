@@ -6,11 +6,7 @@ import {
   type Runtime,
   type RuntimeModule,
 } from '@catering-v2s/kernel-base-runtime';
-import {
-  releaseRuntimeForTest,
-  releaseRuntimeForTestAsync,
-  runtimeStateSyncForTest,
-} from '@catering-v2s/kernel-base-runtime/testing';
+import {releaseRuntimeForTestAsync, runtimeStateSyncForTest} from '@catering-v2s/kernel-base-runtime/testing';
 import {
   confirmMemberCommand,
   createSampleMemberRegistryModule,
@@ -28,13 +24,10 @@ import {
   withdrawMemberCommand,
 } from '../src/index';
 import {createEventRecorderModule, createMemoryStorageForTest, createTestRuntime, type RecordedEvent} from './support';
-import {memberSliceName} from '../src/features/slices/slice';
+import {memberSliceName} from '../src/features/slices/memberRegistry';
 import {setRuntimeInstanceModeAction} from '../../../base/runtime/src/features/slices/runtimeInstanceMode';
 
-const peerGatewayModule = (
-  peer: Runtime,
-  afterDispatch?: (commandName: string) => Promise<void>,
-): RuntimeModule => {
+const peerGatewayModule = (peer: Runtime, afterDispatch?: (commandName: string) => Promise<void>): RuntimeModule => {
   const gateway: PeerDispatchGateway = {
     dispatchCommand: async (command, options) => {
       const result = await peer.dispatchCommand(command.definition, command.payload, {
@@ -56,13 +49,25 @@ const peerGatewayModule = (
   });
 };
 
+const syncMemberProjectionBeforePeerReply = (master: Runtime, slave: () => Runtime) => async (
+  commandName: string,
+): Promise<void> => {
+  if (commandName !== registerBranchConfirmedMemberCommand.commandName) return;
+  const payload = runtimeStateSyncForTest(master).createFullSyncPayload(memberSliceName);
+  expect(payload.status).toBe('ready');
+  if (payload.status !== 'ready') return;
+  expect(runtimeStateSyncForTest(slave()).applyAuthoritativeSync(memberSliceName, payload.payload)).toMatchObject({
+    status: 'applied',
+  });
+};
+
 describe('sample member registry owner module', () => {
   it('describes the owner commands, actors, slice, and isolated persistence contract', () => {
     const module = createSampleMemberRegistryModule();
     expect(module.moduleName).toBe('kernel.feature.sample-member-registry');
     expect(module.kind).toBe('owner');
     expect(module.dependencies?.map(dependency => dependency.moduleName)).toEqual(['kernel.base.runtime']);
-    expect(module.commands?.map(command => [command.name, command.visibility])).toEqual([
+    expect(module.commandDefinitions?.map(command => [command.commandName, command.visibility])).toEqual([
       ['kernel.feature.sample-member-registry.submit-member', 'public'],
       ['kernel.feature.sample-member-registry.confirm-member', 'public'],
       ['kernel.feature.sample-member-registry.reject-member', 'public'],
@@ -73,13 +78,13 @@ describe('sample member registry owner module', () => {
       ['kernel.feature.sample-member-registry.member-withdrawn', 'public'],
       ['kernel.feature.sample-member-registry.register-branch-confirmed-member', 'public'],
     ]);
-    expect(module.actors?.map(actor => actor.name)).toEqual([
+    expect(module.actorDefinitions?.map(actor => actor.actorName)).toEqual([
       'submit',
       'confirm',
       'reject',
       'register-branch-confirmed',
     ]);
-    expect(module.slices).toEqual([
+    expect(module.stateSlices?.map(slice => ({name: slice.name, persistIntent: slice.persistIntent}))).toEqual([
       {
         name: 'kernel.feature.sample-member-registry.members',
         persistIntent: 'owner-only',
@@ -188,8 +193,8 @@ describe('sample member registry owner module', () => {
         phone: '010-1111-2222',
       });
     } finally {
-      releaseRuntimeForTest(source);
-      releaseRuntimeForTest(target);
+      await releaseRuntimeForTestAsync(source);
+      await releaseRuntimeForTestAsync(target);
     }
   });
 
@@ -234,15 +239,19 @@ describe('sample member registry owner module', () => {
         }),
       ]);
     } finally {
-      releaseRuntimeForTest(slave);
-      releaseRuntimeForTest(master);
+      await releaseRuntimeForTestAsync(slave);
+      await releaseRuntimeForTestAsync(master);
     }
   });
 
   it('routes LSP confirmation to the MASTER list owner and deduplicates by operation identity', async () => {
     const master = createTestRuntime([createSampleMemberRegistryModule()]);
     await master.start();
-    const slave = createTestRuntime([createSampleMemberRegistryModule(), peerGatewayModule(master)]);
+    let slave: Runtime;
+    slave = createTestRuntime([
+      createSampleMemberRegistryModule(),
+      peerGatewayModule(master, syncMemberProjectionBeforePeerReply(master, () => slave)),
+    ]);
     try {
       await slave.start();
       slave.getStore().dispatch(setRuntimeInstanceModeAction('SLAVE'));
@@ -276,26 +285,17 @@ describe('sample member registry owner module', () => {
       );
       expect(selectMembers(master.getState())).toHaveLength(1);
     } finally {
-      releaseRuntimeForTest(slave);
-      releaseRuntimeForTest(master);
+      await releaseRuntimeForTestAsync(slave);
+      await releaseRuntimeForTestAsync(master);
     }
   });
 
   it('does not reconcile a branch confirmation again while its peer registration is still returning', async () => {
     const master = createTestRuntime([createSampleMemberRegistryModule()]);
     let slave: Runtime;
-    const syncMemberProjectionBeforePeerReply = async (commandName: string): Promise<void> => {
-      if (commandName !== registerBranchConfirmedMemberCommand.commandName) return;
-      const payload = runtimeStateSyncForTest(master).createFullSyncPayload(memberSliceName);
-      expect(payload.status).toBe('ready');
-      if (payload.status !== 'ready') return;
-      expect(runtimeStateSyncForTest(slave).applyAuthoritativeSync(memberSliceName, payload.payload)).toMatchObject({
-        status: 'applied',
-      });
-    };
     slave = createTestRuntime([
       createSampleMemberRegistryModule(),
-      peerGatewayModule(master, syncMemberProjectionBeforePeerReply),
+      peerGatewayModule(master, syncMemberProjectionBeforePeerReply(master, () => slave)),
     ]);
     try {
       await master.start();
@@ -321,9 +321,7 @@ describe('sample member registry owner module', () => {
       const confirmationRoots = selectRequestExecutionViews(slave.getState())
         .flatMap(view => view.commands)
         .filter(
-          command =>
-            command.commandName === confirmMemberCommand.commandName &&
-            command.parentCommandId === null,
+          command => command.commandName === confirmMemberCommand.commandName && command.parentCommandId === null,
         );
       expect(confirmationRoots).toHaveLength(1);
     } finally {
@@ -358,8 +356,8 @@ describe('sample member registry owner module', () => {
       ]);
       expect(selectBranchPendingMember(slave.getState())).toBeNull();
     } finally {
-      releaseRuntimeForTest(slave);
-      releaseRuntimeForTest(master);
+      await releaseRuntimeForTestAsync(slave);
+      await releaseRuntimeForTestAsync(master);
     }
   });
 
@@ -453,7 +451,7 @@ describe('sample member registry owner module', () => {
       ]);
       expect(selectPendingMember(runtime.getState())).toBeNull();
     } finally {
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     }
   });
 

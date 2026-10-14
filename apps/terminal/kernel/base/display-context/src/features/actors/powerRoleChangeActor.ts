@@ -1,7 +1,11 @@
 import {defineActor, onCommand, selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
 import type {ActorDefinition, ActorExecutionContext} from '@catering-v2s/kernel-base-runtime';
 import {moduleName} from '../../moduleName';
-import {cancelPowerRoleChangeCommand, confirmPowerRoleChangeCommand, requestPowerRoleChangeCommand} from '../commands';
+import {
+  cancelPowerRoleChangeCommand,
+  confirmPowerRoleChangeCommand,
+  requestPowerRoleChangeCommand,
+} from '../../declarations/commands';
 import {clearPowerConfirmationAction, setDisplayRoleAction, setPowerConfirmationAction} from '../slices/displayRole';
 import {selectDisplayRole} from '../../selectors/selectDisplayRole';
 import {selectPowerConfirmation} from '../../selectors/selectPowerConfirmation';

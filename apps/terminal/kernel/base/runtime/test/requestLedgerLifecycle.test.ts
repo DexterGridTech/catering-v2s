@@ -1,6 +1,7 @@
 import {describe, expect, it, vi} from 'vitest';
 import {createCommandId, createRequestId, type RequestId} from '@catering-v2s/kernel-base-contracts';
 import {
+  createRuntimeModule,
   createRuntime,
   defineActor,
   defineCommand,
@@ -11,8 +12,8 @@ import {
 } from '../src/index';
 import type {CommandExecutionObservation, ActorExecutionRecord} from '../src/types/execution';
 import type {RequestExecutionRecord} from '../src/types/requestLedger';
-import {runtimeRequestLedgerMasterSliceName} from '../src/features/slices/requestLedger';
-import {requestLedgerActionsForMode} from '../src/features/slices/requestLedger';
+import {runtimeRequestLedgerMasterSliceName} from '../src/features/slices/requestLedgerMaster';
+import {requestLedgerActionsForMode} from '../src/features/slices/requestLedgerActions';
 import {createTestRuntimeInput, deferred} from './testSupport';
 
 type CommandSpec = NonNullable<RuntimeModule['commandDefinitions']>[number];
@@ -22,13 +23,11 @@ const moduleFor = (
   commands: readonly CommandSpec[],
   actors: readonly ReturnType<typeof defineActor>[],
 ): RuntimeModule =>
-  Object.freeze({
+  createRuntimeModule({
     moduleName,
     kind: 'owner' as const,
     dependencies: [{moduleName: 'kernel.base.runtime'}],
-    commands: commands.map(command => ({name: command.commandName, visibility: command.visibility})),
     commandDefinitions: commands,
-    actors: actors.map(actor => ({name: actor.actorName})),
     actorDefinitions: actors,
   });
 

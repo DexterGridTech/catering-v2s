@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {releaseRuntimeForTest} from '../src/testing';
+import {releaseRuntimeForTestAsync} from '../src/testing';
 import {createRuntime, defineCommand, moduleName as runtimeModuleName} from '../src/index';
 import {createCommandModule, createTestRuntimeInput, createTestSlice} from './testSupport';
 import type {LogEvent} from '@catering-v2s/kernel-base-platform-ports';
@@ -97,7 +97,7 @@ describe('runtime startup diagnostics', () => {
         }),
       );
     } finally {
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     }
   });
 
@@ -125,7 +125,7 @@ describe('runtime startup diagnostics', () => {
       code: 'ERR_TER_RUNTIME_LIFECYCLE_FAILED',
       message: 'Runtime startup failed',
     });
-    expect(failureEvent?.data).toMatchObject({causeName: 'Error'});
+    expect(failureEvent?.data).toMatchObject({causeName: 'Error', causeMessage: 'startup fixture failure'});
     expect(events.find(event => event.event === 'runtime.module.hook.failed')?.data).toMatchObject({
       moduleName: 'test.startup.failure',
       phase: 'pre-setup',
@@ -133,7 +133,7 @@ describe('runtime startup diagnostics', () => {
     });
     if (!__DEV__) {
       expect(events.some(event => event.category === 'startup.failed')).toBe(false);
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
       return;
     }
     expect(
@@ -141,10 +141,10 @@ describe('runtime startup diagnostics', () => {
       'DEV_STARTUP_FAILURE_FACT_MISSING',
     ).toBe(true);
     expect(events.some(event => event.category === 'startup.complete')).toBe(false);
-    releaseRuntimeForTest(runtime);
+    await releaseRuntimeForTestAsync(runtime);
   });
 
-  it('identifies the failing install owner without logging the thrown message', async () => {
+  it('identifies the failing install owner and preserves the thrown diagnostic', async () => {
     const events: LogEvent[] = [];
     const fixtureModuleName = 'test.startup.install-failure';
     const command = defineCommand<Readonly<{}>>(fixtureModuleName, {name: 'known', visibility: 'internal'});
@@ -172,10 +172,11 @@ describe('runtime startup diagnostics', () => {
         phase: 'install',
         causeName: 'Error',
         causeCode: 'ERR_FIXTURE_INSTALL',
+        causeMessage: 'private fixture payload',
       });
-      expect(JSON.stringify(hookFailure)).not.toContain('private fixture payload');
+      expect(JSON.stringify(hookFailure)).toContain('private fixture payload');
     } finally {
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     }
   });
 
@@ -213,7 +214,7 @@ describe('runtime startup diagnostics', () => {
       });
       expect(JSON.stringify(failure)).not.toContain('private fixture payload');
     } finally {
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     }
   });
 });

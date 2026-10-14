@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {parts} from '../src/parts/parts';
+import {parts} from '../src/declarations/parts';
 import {adminTestIds} from '../src/foundations/adminTestIds';
 
 const normalizeCatalogEntry = (entry: (typeof parts)[number]['catalogEntry']) => ({

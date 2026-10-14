@@ -15,9 +15,11 @@ import {moduleName as staffAuth} from '@catering-v2s/ui-feature-sample-staff-aut
 import {moduleName as memberDesk} from '@catering-v2s/ui-feature-sample-member-desk';
 import {moduleName as devHost} from '@catering-v2s/ui-base-dev-host';
 import {moduleName as adminShell} from '@catering-v2s/ui-base-admin-shell';
+import {moduleName as featureAssembly} from '@catering-v2s/ui-base-feature-assembly';
 import {moduleName as terminalActivation} from '@catering-v2s/ui-base-terminal-activation';
 import {moduleName as terminalDataClient} from '@catering-v2s/kernel-base-terminal-data-client';
 import {moduleName as terminalUpdate} from '@catering-v2s/kernel-base-terminal-update';
+import {moduleName as remoteControl} from '@catering-v2s/kernel-base-remote-control';
 import {moduleName as storeBasic} from '@catering-v2s/kernel-feature-store-basic';
 import {moduleName as projectBasic} from '@catering-v2s/kernel-feature-project-basic';
 import {moduleName as integrationAssembly} from '@catering-v2s/ui-base-integration-assembly';
@@ -40,9 +42,11 @@ export const dependencyModuleNames = [
   staffAuth,
   memberDesk,
   adminShell,
+  featureAssembly,
   terminalActivation,
   terminalDataClient,
   terminalUpdate,
+  remoteControl,
   storeBasic,
   projectBasic,
   integrationAssembly,
@@ -61,8 +65,10 @@ export const runtimeModuleDependencyNames = [
   memberRegistry,
   staffAuth,
   memberDesk,
+  terminalActivation,
   terminalDataClient,
   terminalUpdate,
+  remoteControl,
   storeBasic,
   projectBasic,
 ] as const;

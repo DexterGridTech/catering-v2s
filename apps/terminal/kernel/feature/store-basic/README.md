@@ -17,15 +17,21 @@ owner-only slice 持久化绑定、门店、营业规则、合同、区域和服
 ```text
 src/
 ├── application/module.ts                 # 注册 actor、公开 command/selector 与持久化 slice
-├── features/actors/actors.ts              # 读取门店事实、刷新 topic、处理服务点加载
-├── features/commands/commands.ts          # 初始化、资料就绪通知、服务点及 topic command
-├── features/slices/slice.ts                # 门店 owner 状态、持久化和 MASTER→SLAVE 投影
-├── selectors/selectors.ts                  # 门店资料、绑定、就绪状态和 topic 状态读取
-├── types/types.ts                          # 绑定、事实包装和读取状态类型
+├── features/actors/storeBasicActor.ts     # 唯一 actor；保有当前绑定和加载资源闭包
+├── features/actors/shared/
+│   ├── loadStore.ts                        # 当前绑定门店与营业规则的初始读取闭包
+│   ├── refreshStoreCollections.ts         # 合同、区域、服务点集合写入与详情订阅协调
+│   ├── refreshStoreDetails.ts              # 单条合同、区域和服务点变更
+│   └── reconcileStoreTopicSubscriptions.ts # 按 owner 当前集合协调本包 topic 订阅
+├── declarations/commands.ts                # 初始化、资料就绪通知、服务点及 topic command
+├── features/slices/storeBasicState.ts               # 门店 owner 状态、持久化和 MASTER→SLAVE 投影
+├── foundations/readStoreBasicState.ts     # owner slice 读取与形状校验
+├── selectors/select*.ts                   # 每个公开 selector 的定义
+├── types/types.ts                         # 绑定、事实包装和读取状态类型
 ├── dependencies.ts / moduleName.ts         # 依赖声明及目录派生身份
 └── index.ts                                # 包的唯一公开导出面
 test/
-└── storeBasic.test.ts                      # 读取、持久化、topic、投影和竞态行为
+└── storeBasic.test.ts                     # 读取、持久化、topic、投影和竞态行为
 terminal-invariants.json                    # 公开导出和包级机械约束
 ```
 

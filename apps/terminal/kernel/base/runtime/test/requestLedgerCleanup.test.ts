@@ -3,6 +3,7 @@ import {createCommandId, createRequestId, type RequestId} from '@catering-v2s/ke
 import type {StateJsonValue} from '@catering-v2s/kernel-base-state';
 import type {StateStoragePort} from '@catering-v2s/kernel-base-platform-ports';
 import {
+  createRuntimeModule,
   createRuntime,
   defineActor,
   defineCommand,
@@ -15,13 +16,11 @@ import {
   type CommandDefinition,
   type RuntimeModule,
 } from '../src/index';
-import {cleanupRequestLedgerCommand} from '../src/features/commands/cleanupRequestLedger';
-import {
-  runtimeRequestLedgerMasterSliceName,
-  requestLedgerActionsForMode,
-  runtimeRequestLedgerSlaveSliceName,
-} from '../src/features/slices/requestLedger';
-import {releaseRuntimeForTest} from '../src/testing/releaseRuntimeForTest';
+import {cleanupRequestLedgerCommand} from '../src/declarations/commands';
+import {requestLedgerActionsForMode} from '../src/features/slices/requestLedgerActions';
+import {runtimeRequestLedgerMasterSliceName} from '../src/features/slices/requestLedgerMaster';
+import {runtimeRequestLedgerSlaveSliceName} from '../src/features/slices/requestLedgerSlave';
+import {releaseRuntimeForTestAsync} from '../src/testing/releaseRuntimeForTest';
 import {createSharedMemoryStoragePort, createTestRuntimeInput, deferred} from './testSupport';
 import type {CommandExecutionObservation, ActorExecutionRecord} from '../src/types/execution';
 import type {RequestExecutionRecord} from '../src/types/requestLedger';
@@ -35,13 +34,11 @@ const moduleFor = (
   actors: readonly ReturnType<typeof defineActor>[],
   extra: Partial<RuntimeModule> = {},
 ): RuntimeModule =>
-  Object.freeze({
+  createRuntimeModule({
     moduleName,
     kind: 'owner' as const,
     dependencies: [{moduleName: 'kernel.base.runtime'}],
-    commands: commands.map(command => ({name: command.commandName, visibility: command.visibility})),
     commandDefinitions: commands,
-    actors: actors.map(actor => ({name: actor.actorName})),
     actorDefinitions: actors,
     ...extra,
   });
@@ -158,7 +155,7 @@ describe('runtime request ledger cleanup', () => {
       const result = await runtime.dispatchCommand(cleanupRequestLedgerCommand, {});
       expect(result.status).toBe('completed');
       expect(selectRequestExecutionView(runtime.getState(), requestId)).toBeNull();
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     } finally {
       vi.useRealTimers();
     }
@@ -182,7 +179,7 @@ describe('runtime request ledger cleanup', () => {
       expect(selectRequestExecutionView(runtime.getState(), requestId)?.status).toBe('started');
       blocked.resolve({done: true});
       await pending;
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     } finally {
       vi.useRealTimers();
     }
@@ -219,7 +216,7 @@ describe('runtime request ledger cleanup', () => {
       expect(selectRequestExecutionView(runtime.getState(), localRequestId)).toBeNull();
       expect(selectRequestExecutionView(runtime.getState(), peerRequestId)).not.toBeNull();
       expect(selectRequestExecutionView(runtime.getState(), peerRequestId)?.timeSource).toBe('peer');
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     } finally {
       vi.useRealTimers();
     }
@@ -248,7 +245,7 @@ describe('runtime request ledger cleanup', () => {
       expect(selectRequestExecutionView(runtime.getState(), requestId)?.status).toBe('started');
       await runtime.dispatchCommand(cleanupRequestLedgerCommand, {});
       expect(selectRequestExecutionView(runtime.getState(), requestId)).not.toBeNull();
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     } finally {
       vi.useRealTimers();
     }
@@ -290,7 +287,7 @@ describe('runtime request ledger cleanup', () => {
         timeSource: 'peer',
         status: 'started',
       });
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     } finally {
       vi.useRealTimers();
     }
@@ -318,7 +315,7 @@ describe('runtime request ledger cleanup', () => {
       await fast.dispatchCommand(cleanupRequestLedgerCommand, {});
       expect(selectRequestExecutionView(fast.getState(), fastRequestId)?.timeSource).toBe('local');
       expect(selectRequestExecutionView(fast.getState(), fastRequestId)).not.toBeNull();
-      releaseRuntimeForTest(fast);
+      await releaseRuntimeForTestAsync(fast);
 
       vi.setSystemTime(100);
       const {module: slowModule} = makeCommandModule('test.cleanup.peer-clock-slow', () => null);
@@ -332,7 +329,7 @@ describe('runtime request ledger cleanup', () => {
       vi.setSystemTime(110);
       await slow.dispatchCommand(cleanupRequestLedgerCommand, {});
       expect(selectRequestExecutionView(slow.getState(), slowRequestId)).toBeNull();
-      releaseRuntimeForTest(slow);
+      await releaseRuntimeForTestAsync(slow);
     } finally {
       vi.useRealTimers();
     }
@@ -353,7 +350,7 @@ describe('runtime request ledger cleanup', () => {
       expect(selectRuntimeInstanceMode(runtime.getState())).toBe('SLAVE');
       expect(runtime.getState()[runtimeRequestLedgerMasterSliceName]).toEqual({});
       expect(selectRequestExecutionView(runtime.getState(), requestId)).toBeNull();
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     } finally {
       vi.useRealTimers();
     }
@@ -396,7 +393,7 @@ describe('runtime request ledger cleanup', () => {
       expect(parent?.parentCommandId).toBeNull();
       expect(child?.parentCommandId).toBe(parent?.commandId);
       expect(runtime.getState()[runtimeRequestLedgerSlaveSliceName]).toHaveProperty(String(requestId));
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     } finally {
       vi.useRealTimers();
     }
@@ -411,7 +408,6 @@ describe('runtime request ledger cleanup', () => {
     const {module} = makeCommandModule('test.cleanup.role-consumer-failure', () => ({done: true}));
     const runtime = runtimeWith({
       ...module,
-      actors: [{name: 'handler'}, {name: 'consumer'}],
       actorDefinitions: [...(module.actorDefinitions ?? []), failingConsumer],
     });
     await runtime.start();
@@ -427,7 +423,7 @@ describe('runtime request ledger cleanup', () => {
         expect.objectContaining({commandName: 'kernel.base.runtime.instance-mode-changed', kind: 'actor.error'}),
       ]),
     );
-    releaseRuntimeForTest(runtime);
+    await releaseRuntimeForTestAsync(runtime);
   });
 
   it('E-4 keeps role and ledger when the role action cannot dispatch', async () => {
@@ -446,7 +442,7 @@ describe('runtime request ledger cleanup', () => {
       expect(selectRequestExecutionView(runtime.getState(), requestId)).not.toBeNull();
     } finally {
       dispatch.mockRestore();
-      expect(releaseRuntimeForTest(runtime)).toBe(0);
+      await releaseRuntimeForTestAsync(runtime);
     }
   });
 
@@ -475,7 +471,7 @@ describe('runtime request ledger cleanup', () => {
       await runtime.dispatchCommand(command, {}, {requestId: newRequestId});
       expect(selectRequestExecutionView(runtime.getState(), expiredRequestId)).toBeNull();
       expect(selectRequestExecutionView(runtime.getState(), newRequestId)).not.toBeNull();
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     } finally {
       vi.useRealTimers();
     }
@@ -495,7 +491,7 @@ describe('runtime request ledger cleanup', () => {
     await first.dispatchCommand('test.cleanup.restart.run', {}, {requestId: createRequestId()});
     await Promise.resolve();
     await Promise.resolve();
-    releaseRuntimeForTest(first);
+    await releaseRuntimeForTestAsync(first);
 
     const second = runtimeWith(module, {
       runtimeName: 'cleanup-restart-second',
@@ -506,6 +502,6 @@ describe('runtime request ledger cleanup', () => {
     expect(selectRuntimeInstanceMode(second.getState())).toBe('SLAVE');
     expect(Object.keys(second.getState()[runtimeRequestLedgerMasterSliceName] ?? {})).toHaveLength(0);
     expect(Object.keys(second.getState()[runtimeRequestLedgerSlaveSliceName] ?? {})).toHaveLength(0);
-    releaseRuntimeForTest(second);
+    await releaseRuntimeForTestAsync(second);
   });
 });

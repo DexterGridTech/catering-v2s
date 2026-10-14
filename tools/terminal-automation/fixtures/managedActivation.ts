@@ -6,6 +6,7 @@ import {
   writeTerminalActivationCompletion,
   writeTerminalActivationIntent,
 } from './terminalActivation.js';
+import {groupWorkspaceKeyFromServerConfig, parseServerConfigEnvironment} from '../src/serverConfigEnvironment.ts';
 
 type ManagedBindingReader = typeof import('../../../scripts/dev/r5-dev-runner.mjs').readManagedTerminalBindingByName;
 
@@ -28,10 +29,14 @@ export const createManagedActivationFixtureApi = (
       const sessionId = input.sessionId();
       const manifestPath = process.env.V2S_TERMINAL_DEV_MANIFEST;
       const httpBaseUrl = process.env.V2S_TERMINAL_DEV_HTTP_BASE_URL;
+      const serverConfigEnvironmentJson = process.env.EXPO_PUBLIC_TER_SERVER_CONFIG_ENVIRONMENT_JSON;
       const operationsPassword = process.env.V2S_SEED_OPERATIONS_DEFAULT_PASSWORD;
-      if (!sessionId || !manifestPath || !httpBaseUrl || !operationsPassword) {
+      if (!sessionId || !manifestPath || !httpBaseUrl || !serverConfigEnvironmentJson || !operationsPassword) {
         throw new Error('TERMINAL_AUTOMATION_MANAGED_ACTIVATION_INPUT_MISSING');
       }
+      const workspaceKey = groupWorkspaceKeyFromServerConfig(
+        parseServerConfigEnvironment(serverConfigEnvironmentJson),
+      );
       const {readManagedTerminalBindingByName} = (await import('../../../scripts/dev/r5-dev-runner.mjs')) as {
         readonly readManagedTerminalBindingByName: ManagedBindingReader;
       };
@@ -41,6 +46,7 @@ export const createManagedActivationFixtureApi = (
         deviceId,
         ...(input.androidDeviceSerial === undefined ? {} : {androidDeviceSerial: input.androidDeviceSerial}),
         httpBaseUrl,
+        workspaceKey,
         operationsPassword,
         managedDevRunId: input.managedDevRunId,
         sessionId,

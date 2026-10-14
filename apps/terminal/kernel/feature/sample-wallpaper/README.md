@@ -15,9 +15,9 @@ UI 通过 selector 读取对应承载实例的确认值决定背景，通过自�
 
 ## 结构
 
-- `src/features/slices/`：本地确认/待确认字段使用既有 owner-only field persistence；拓扑只同步主机确认值，SLAVE apply 保留本地确认和pending；
-- `src/features/commands/`：公开选择与确认命令；
-- `src/features/actors/`：闭合集合校验、pending 保护与 reducer action 派发；
+- `src/features/slices/wallpaperSelection.ts`：本地确认/待确认字段使用既有 owner-only field persistence；拓扑只同步主机确认值，SLAVE apply 保留本地确认和pending；
+- `src/declarations/commands.ts`：公开选择、确认和取消命令声明；
+- `src/features/actors/wallpaperSelectionActor.ts`：校验选择、保护 pending 确认并派发 owner action；
 - `src/selectors/`：读取本机确认、本机pending与当前主机确认投影；
 - `src/application/`：声明 owner module；
 - `terminal-invariants.json`：公共导出与测试 owner 的同步清单。
@@ -51,3 +51,9 @@ await runtime.dispatchCommand(confirmWallpaperCommand, {})
 新增字段或命令前先重开需求与详设，确认它仍是 kernel 事实而不是 UI 资产或布局知识；同步
 `src/index.ts`、invariant、测试与本 README。不要在这里添加图片资产、React 组件或第二份
 选择状态。
+
+```sh
+yarn workspace @catering-v2s/kernel-feature-sample-wallpaper typecheck
+yarn workspace @catering-v2s/kernel-feature-sample-wallpaper test
+yarn workspace @catering-v2s/kernel-feature-sample-wallpaper lint
+```

@@ -1,5 +1,5 @@
 import type {WallpaperId} from '@catering-v2s/kernel-feature-sample-wallpaper';
-import type {WallpaperSystemFailurePhase, WallpaperSystemOperation} from '../features/commands/commands';
+import type {WallpaperSystemFailurePhase, WallpaperSystemOperation} from '../declarations/commands';
 
 export type WallpaperSnapshot = Readonly<{
   readonly confirmed: WallpaperId | undefined;

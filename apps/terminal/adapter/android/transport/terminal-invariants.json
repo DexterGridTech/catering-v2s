@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "package": "@catering-v2s/adapter-android-transport",
+  "owned": {
+    "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/adapter-android-transport", "runner": "vitest"},
+    "lint": {"kind": "OWNED", "owner": "@catering-v2s/adapter-android-transport", "runner": "eslint"},
+    "clean": {"kind": "ABSENT"}
+  },
+  "publicExports": [
+    "createAndroidTransportNetworkAdapter",
+    "dependencyModuleNames",
+    "devDependencyModuleNames",
+    "moduleName"
+  ]
+}

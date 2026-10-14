@@ -1,6 +1,6 @@
 import {useMemo} from 'react';
 import {useSyncExternalStoreWithSelector} from 'use-sync-external-store/with-selector';
-import {useRenderSubscriptionContext} from '../contexts/RenderContext';
+import {useRenderSubscriptionContext} from './useRenderSubscriptionContext';
 import type {RenderSnapshot} from '../foundations/createRenderSnapshotReader';
 import type {RenderProviderProps} from '../types/props';
 

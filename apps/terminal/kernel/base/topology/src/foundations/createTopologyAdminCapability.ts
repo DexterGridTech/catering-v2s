@@ -17,7 +17,7 @@ import {
   pairByHostTopologyCommand,
   setTopologyHostEnabledCommand,
   unpairTopologyCommand,
-} from '../features/commands/commands';
+} from '../declarations/commands';
 
 export type TopologyAdminRuntime = Pick<Runtime, 'getState' | 'dispatchCommand'>;
 

@@ -4,7 +4,8 @@ import {AutomationSurfaceProvider, useAutomationNode} from '@catering-v2s/ui-bas
 import {LayerStack} from './LayerStack';
 import {ScreenContainer} from './ScreenContainer';
 import {SurfaceContext} from '../contexts/SurfaceContext';
-import {RenderContext, useRenderContext, type RenderContextValue} from '../contexts/RenderContext';
+import {RenderContext, type RenderContextValue} from '../contexts/RenderContext';
+import {useRenderContext} from '../hooks/useRenderContext';
 import {SurfaceHostController} from './SurfaceHostController';
 import {useSurfaceHostAvailability, useSurfaceHostSnapshot} from './SurfaceHostController';
 import {useUiStateSelector} from '../hooks/useUiStateSelector';

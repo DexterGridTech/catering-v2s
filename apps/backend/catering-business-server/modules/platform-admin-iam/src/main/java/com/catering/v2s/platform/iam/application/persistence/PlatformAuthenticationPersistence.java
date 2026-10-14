@@ -307,7 +307,7 @@ public class PlatformAuthenticationPersistence {
     }
 
     public int insertBootstrapAdministrator(
-            UUID id, String loginName, String normalizedLoginName, String displayName, long now) {
+            UUID id, String loginName, String normalizedLoginName, String displayName, long now, boolean builtIn) {
         return jdbc.update(
                 PlatformAuthenticationServiceSql.BOOTSTRAP_INSERT_ADMIN,
                 id,
@@ -315,7 +315,8 @@ public class PlatformAuthenticationPersistence {
                 normalizedLoginName,
                 displayName,
                 now,
-                now);
+                now,
+                builtIn);
     }
 
     public int insertBootstrapCredential(UUID administratorId, String passwordHash, long now) {

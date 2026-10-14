@@ -1,12 +1,17 @@
+import {isIP} from 'node:net';
+
 const validPort = value => Number.isInteger(value) && value >= 1024 && value <= 65535;
 
 export const TDS_CLUSTER_NODE_NAMES = Object.freeze(['a', 'b', 'c']);
 export const HAPROXY_IMAGE_TAG = '3.4.6';
 export const HAPROXY_MEMORY_BUDGET_MIB = 128;
 
-export function createHaproxyConfiguration({entryOnePort, entryTwoPort, nodePorts}) {
+export function createHaproxyConfiguration({entryOnePort, entryTwoPort, nodePorts, bindAddress = '127.0.0.1', controlSocketPath = '/run/haproxy-control/admin.sock'}) {
   if (!validPort(entryOnePort) || !validPort(entryTwoPort) || entryOnePort === entryTwoPort) {
     throw new Error('R5_TDS_TOPOLOGY_ENTRY_PORTS_INVALID');
+  }
+  if (typeof bindAddress !== 'string' || isIP(bindAddress) !== 4) {
+    throw new Error('R5_TDS_TOPOLOGY_BIND_ADDRESS_INVALID');
   }
   if (!nodePorts || typeof nodePorts !== 'object' || TDS_CLUSTER_NODE_NAMES.some(name => !validPort(nodePorts[name]))) {
     throw new Error('R5_TDS_TOPOLOGY_NODE_PORTS_INVALID');
@@ -18,7 +23,7 @@ export function createHaproxyConfiguration({entryOnePort, entryTwoPort, nodePort
     'global',
     '  log stdout format raw local0',
     '  maxconn 128',
-    '  stats socket /run/haproxy-control/admin.sock mode 600 level admin',
+    `  stats socket ${controlSocketPath} mode 600 level admin`,
     '',
     'defaults',
     '  log global',
@@ -31,14 +36,14 @@ export function createHaproxyConfiguration({entryOnePort, entryTwoPort, nodePort
     '  timeout check 1s',
     '',
     'frontend terminal_entry_one',
-    `  bind 127.0.0.1:${entryOnePort}`,
+    `  bind ${bindAddress}:${entryOnePort}`,
     '  acl actuator_root path /actuator',
     '  acl actuator_tree path_beg /actuator/',
     '  http-request deny deny_status 403 if actuator_root or actuator_tree',
     '  default_backend terminal_nodes_ab',
     '',
     'frontend terminal_entry_two',
-    `  bind 127.0.0.1:${entryTwoPort}`,
+    `  bind ${bindAddress}:${entryTwoPort}`,
     '  acl actuator_root path /actuator',
     '  acl actuator_tree path_beg /actuator/',
     '  http-request deny deny_status 403 if actuator_root or actuator_tree',

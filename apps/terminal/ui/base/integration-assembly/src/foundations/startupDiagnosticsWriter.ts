@@ -1,4 +1,5 @@
 import type {LogFields, LoggerPort} from '@catering-v2s/kernel-base-platform-ports';
+import type {RuntimeLifecycleObserver} from '@catering-v2s/kernel-base-runtime';
 import type {ContentFailureReason} from '@catering-v2s/ui-base-render';
 
 export const startupRequiredGroups = Object.freeze([
@@ -31,6 +32,25 @@ export type StartupDiagnosticsWriterInput = Readonly<{
 export type StartupDiagnosticsWriter = Readonly<{
   readonly writeComplete: () => boolean;
 }>;
+
+export const createStartupCommandObserver = (logger: LoggerPort, appName: string): RuntimeLifecycleObserver =>
+  event => {
+    logger.info({
+      category: 'startup.command-lifecycle',
+      event: `startup.command.${event.kind}`,
+      message: 'Startup command lifecycle transition observed',
+      data: {
+        appName,
+        requestId: event.requestId === null ? null : String(event.requestId),
+        commandId: event.commandId === null ? null : String(event.commandId),
+        commandName: event.commandName,
+        kind: event.kind,
+        ...('actorKey' in event ? {actorKey: event.actorKey} : {}),
+        ...('status' in event ? {status: event.status} : {}),
+        ...('errorKey' in event ? {errorKey: event.errorKey} : {}),
+      },
+    });
+  };
 
 const readinessIsComplete = (readiness: StartupDiagnosticsReadiness): boolean =>
   startupRequiredGroups.every(group => readiness.groups[group]) &&

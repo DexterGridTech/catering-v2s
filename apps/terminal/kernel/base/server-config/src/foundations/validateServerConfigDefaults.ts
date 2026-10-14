@@ -12,7 +12,7 @@ const nonEmpty = (value: unknown): value is string => typeof value === 'string' 
 type ConfigServer = TransportServerConfig['spaces'][number]['servers'][number];
 
 const validateServer = (server: ConfigServer): void => {
-  if (!Array.isArray(server.addresses) || server.addresses.length < 1 || server.addresses.length > 4) {
+  if (!Array.isArray(server.addresses) || server.addresses.length < 1) {
     fail('DEFAULT_ADDRESS_COUNT_INVALID');
   }
   const addressNames = new Set<string>();

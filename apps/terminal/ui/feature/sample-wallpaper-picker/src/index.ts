@@ -7,10 +7,8 @@ export {
   wallpaperOptionSelectedCommand,
   wallpaperPickerExitRequestedCommand,
   startWallpaperPickerCommand,
-} from './features/commands/commands';
+} from './declarations/commands';
 export {createSampleWallpaperPickerModule} from './application/module';
-export {parts} from './parts/parts';
-export {sampleWallpaperPickerAssembly} from './assembly/assembly';
 export {
   branchWallpaperOptionTestId,
   branchWallpaperThumbnailTestId,
@@ -21,6 +19,5 @@ export {
   wallpaperContentTestIds,
   wallpaperSystemNoticeTestIds,
 } from './foundations/wallpaperPickerTestIds';
-export type {WallpaperPickerAssembly} from './assembly/assembly';
-export type {WallpaperPickerCommandPayload} from './features/commands/commands';
+export type {WallpaperPickerCommandPayload} from './declarations/commands';
 export type {WallpaperId} from '@catering-v2s/kernel-feature-sample-wallpaper';

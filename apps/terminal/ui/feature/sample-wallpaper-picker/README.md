@@ -9,7 +9,7 @@
 ## 作用
 
 本包把稳定的用户选择控件、confirmed/pending 的选中投影、确认动作和 wallpaper background
-映射组织成可由 integration 组装的 parts 与真实运行期 module；业务事实、图片原始资源和
+映射组织成自身模块的呈现贡献；业务事实、图片原始资源和
 设备 surface 归属仍由各自 owner 保持。
 
 ## 结构
@@ -24,25 +24,27 @@
   frozen-journey runner 通过工具 adapter 读取同一数据源。
 - `src/components/WallpaperBackground.tsx`：只读取 confirmed `wallpaperId`，通过同一映射
   解析背景 source；`none` 或缺失 source 返回空节点。
-- `src/features/actors` 与 `src/features/commands`：交互命令及其 actor。相同 effective
-  值不会向 kernel 派发；不同选择只派发 kernel `selectWallpaperCommand`；确认只派发
-  kernel `confirmWallpaperCommand`。
-- `src/parts/parts.ts`：声明 PRIMARY/MAIN、laptop/mobile 可用的选择器 part。
+- `src/features/actors/wallpaperPickerActor.ts` 与 `wallpaperPickerEntryActor.ts`：分别处理
+  选择/确认/失败提示，以及按当前 routeContext 打开对应选择页面。相同 effective 值不会向
+  kernel 派发；不同选择只派发 kernel `selectWallpaperCommand`；确认只派发 kernel
+  `confirmWallpaperCommand`。
+- `src/declarations/commands.ts` 与 `parts.ts`：本包的交互命令及 PRIMARY/MAIN、laptop/mobile
+  可用的选择器 part。
 
 ## 用法
 
-业务编排包应从 `sampleWallpaperPickerAssembly.parts` 合并 part，从同一个 assembly 取得
-`createModule()` 返回的真实运行期模块，并在两个屏幕需要显示壁纸时使用 `WallpaperBackground`。
+业务编排包加载 `createSampleWallpaperPickerModule()` 返回的模块，其 parts 与 dismissal 随模块一并进入
+integration catalog；在两个屏幕需要显示壁纸时使用 `WallpaperBackground`。
 不要复制图片列表、wallpaper state 或打开第二条命令路径。picker 的四个稳定动作 testID 由
 `wallpaperPickerTestIds` 与 `wallpaperOptionTestId` 提供。`wallpaperPickerTestIds.optionsScroll`
 是承载选项与确认按钮的真实滚动节点；业务测试应通过该节点的滚动动作到达确认按钮，
 不得依赖固定屏幕坐标或截断的按钮边缘。
 
 ```ts
-import {sampleWallpaperPickerAssembly} from '@catering-v2s/ui-feature-sample-wallpaper-picker'
+import {createSampleWallpaperPickerModule} from '@catering-v2s/ui-feature-sample-wallpaper-picker'
 
-const module = sampleWallpaperPickerAssembly.createModule()
-const pickerParts = sampleWallpaperPickerAssembly.parts
+const module = createSampleWallpaperPickerModule()
+const pickerParts = module.presentationContributions.parts
 void module
 void pickerParts
 ```
@@ -60,10 +62,10 @@ integration 或 assembly。
 ## 公共包入口
 
 包根 @catering-v2s/ui-feature-sample-wallpaper-picker 当前公开以下符号（含类型）：
-WallpaperBackground、WallpaperPickerAssembly、WallpaperId、WallpaperPickerCommandPayload、
+WallpaperBackground、WallpaperId、WallpaperPickerCommandPayload、
 assetsById、confirmWallpaperRequestedCommand、createSampleWallpaperPickerModule、
-dependencyModuleNames、devDependencyModuleNames、moduleKind、moduleName、parts、
-sampleWallpaperPickerAssembly、wallpaperOptionTestId、wallpaperPickerTestIds、
+dependencyModuleNames、devDependencyModuleNames、moduleKind、moduleName、
+wallpaperOptionTestId、wallpaperPickerTestIds、
 wallpaperOptionSelectedCommand。唯一包导出映射为 . → ./src/index.ts；
 parts 与 module factory 本批保持原样，任何后续收窄须先经 Dexter 逐项裁定。该清单与
 terminal-invariants.json 和 test/publicSurface.test.ts 对齐。

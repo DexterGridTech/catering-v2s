@@ -1,12 +1,15 @@
-# TER admin shell
+# 终端本机管理界面壳（admin-shell）
 
 本包承载终端本地的 admin console shell。它负责管理员入口、身份口令纯函数、
 section 导航与诊断内容组合；不拥有业务 feature 或业务事实，也不直接写业务数据，也不创建第二套
 layer、catalog 或输入管线。
 
+这是被两个 sample integration 加载的 UI toolkit；直接依赖为 contracts/display-context/platform-ports/runtime/server-config/state/terminal-update/topology/ui-state 与 feature-assembly/input/primitives/render。它消费 kernel owner 的 command/selector，不被业务包当作事实 owner 使用。
+
 当前结构：
 
 - `src/foundations/`：身份、口令、section 选择和真实控件 test ID 等无 UI 规则；
+- `src/hooks/useTopologyAdminForm.ts`：拓扑主机地址草稿、操作 busy/反馈状态及 command 请求观察；
 - `src/components/`：console layer、登录、诊断和拓扑 section 的 React Native 呈现；`AdminLauncher` 是包住业务内容的普通 `View` 观察器，不是会吞掉业务触摸的独立 `Pressable`；
 - `src/foundations/adminTestIds.ts`：真实控件与 focused/L2 绑定共用的 test ID 单源。
 
@@ -22,7 +25,7 @@ public-surface focused test，不得让 README 或 invariant 漂移。
 观察器没有自己的 press responder、绝对定位覆盖层或业务控件回调，阈值以下的业务后代仍由原控件处理。
 
 使用时由 integration assembly 注入真实的 platform/runtime/display facts，并把本包的
-`adminShellAssembly` 合并到同一个 `UiCatalog`。调试态只读 assembly/runtime facts；迭代时先扩展既有 owner API 或契约，
+由 `createAdminShellModule(serverSpaces)` 返回的 UI 贡献随已加载模块进入同一个 `UiCatalog`。调试态只读 assembly/runtime facts；迭代时先扩展既有 owner API 或契约，
 再修改本包的呈现；不得引入业务 feature import、持久化认证、第二个注册表或新的
 navigation/input owner。
 
@@ -52,6 +55,20 @@ suspend/restore 接缝清除焦点与键盘；关层不会隐式恢复先前字�
 
 - 服务配置面板接收 composition 注入的不可变默认值，只读 `server-config` selector，并通过其 command 保存、清除或恢复配置；它不持有配置事实。`addresses[].baseUrl` 是完整服务 URL 前缀。代理密码不回显；SLAVE 在主机配置投影就绪前保持待同步，并且只读。
 - 更新提醒只读取 `terminal-update` owner 的邀请、任务和实际版本 selector；“稍后/安装”分别调用 owner command。是否提醒、当前目标、时限与安装状态仍由 `terminal-update` 判定和持有，本包不创建更新计时器、不访问网络或原生安装 API。
-- 两套 integration assembly 将相应 parts 与 `adminShellAssembly` 放入各自现有目录。渲染位置遵循 render 的 `local-primary` 规则；新增 App 时无需创建新的提醒或服务配置包。
+- `createAdminShellModule` 同时贡献基础管理页、服务配置和安装提醒；integration 只加载模块，不再单独登记其 parts。渲染位置遵循 render 的 `local-primary` 规则；新增 App 时无需创建新的提醒或服务配置包。
 
 本包 focused proof 与类型检查使用 `yarn test` 和 `yarn typecheck`；local-primary 放置行为由 `ui-base-render` 包自身的 focused test 验证。
+
+## 用法
+
+Integration 使用当前入口默认值创建本包 module，并把该 module 放入同一 Runtime 的加载集合：
+
+```ts
+const adminShellModule = createAdminShellModule(serverSpaces)
+```
+
+该工厂是本包真实公开面；服务配置和更新提醒的 parts 随 module 一起提供，不由 integration 再维护 parts 名单。
+
+## 在这个包上迭代时
+
+先检查目标能力是否属于 admin shell、既有 owner command/selector 是否可用，再修改本包组件或声明。不要引入第二个注册表、业务 API 或键盘/焦点管线。改动后运行 `yarn workspace @catering-v2s/ui-base-admin-shell typecheck`、`test`、`lint`；跨 render/input 的放置与焦点行为由对应 owner 的测试验证。

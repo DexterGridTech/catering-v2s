@@ -216,6 +216,65 @@ export function validateManagedDevManifest(
   ) {
     fail('TERMINAL_CLIENT_ACCEPTANCE_DEV_MANIFEST_INVALID');
   }
+  const addressOverrides = manifest.terminalServerConfigAddressOverrides;
+  if (
+    !addressOverrides ||
+    typeof addressOverrides !== 'object' ||
+    !Array.isArray(addressOverrides.servers)
+  ) {
+    fail('TERMINAL_CLIENT_ACCEPTANCE_SERVER_CONFIG_OVERRIDES_INVALID');
+  }
+  const businessServers = addressOverrides.servers.filter(server => server?.serverName === 'business');
+  const tdsServers = addressOverrides.servers.filter(server => server?.serverName === 'terminal-data-server');
+  if (businessServers.length !== 1 || tdsServers.length !== 1) {
+    fail('TERMINAL_CLIENT_ACCEPTANCE_SERVER_CONFIG_SERVICES_INVALID');
+  }
+  const businessAddresses = businessServers[0]?.addresses;
+  const tdsAddresses = tdsServers[0]?.addresses;
+  if (!Array.isArray(businessAddresses) || !Array.isArray(tdsAddresses) || tdsAddresses.length === 0) {
+    fail('TERMINAL_CLIENT_ACCEPTANCE_SERVER_CONFIG_ADDRESSES_INVALID');
+  }
+  const primaryBusiness = businessAddresses.filter(address => address?.addressName === 'primary');
+  if (primaryBusiness.length !== 1 || typeof primaryBusiness[0]?.baseUrl !== 'string') {
+    fail('TERMINAL_CLIENT_ACCEPTANCE_BUSINESS_ADDRESS_INVALID');
+  }
+  let businessUrl;
+  try {
+    businessUrl = new URL(primaryBusiness[0].baseUrl);
+  } catch {
+    fail('TERMINAL_CLIENT_ACCEPTANCE_BUSINESS_ADDRESS_INVALID');
+  }
+  if (
+    businessUrl.protocol !== 'http:' ||
+    businessUrl.hostname !== '127.0.0.1' ||
+    businessUrl.origin !== manifest.localHttpBaseUrl ||
+    !/^\/api\/terminal\/group-workspaces\/[A-Za-z0-9_-]{1,64}$/.test(businessUrl.pathname)
+  ) {
+    fail('TERMINAL_CLIENT_ACCEPTANCE_BUSINESS_ADDRESS_INVALID');
+  }
+  const addressNames = new Set();
+  const tdsPorts = new Set();
+  for (const address of tdsAddresses) {
+    if (
+      !address ||
+      typeof address.addressName !== 'string' ||
+      addressNames.has(address.addressName) ||
+      typeof address.baseUrl !== 'string'
+    ) {
+      fail('TERMINAL_CLIENT_ACCEPTANCE_TDS_ADDRESS_INVALID');
+    }
+    addressNames.add(address.addressName);
+    let url;
+    try {
+      url = new URL(address.baseUrl);
+    } catch {
+      fail('TERMINAL_CLIENT_ACCEPTANCE_TDS_ADDRESS_INVALID');
+    }
+    if (url.protocol !== 'ws:' || url.hostname !== '127.0.0.1' || !url.port || tdsPorts.has(url.port)) {
+      fail('TERMINAL_CLIENT_ACCEPTANCE_TDS_ADDRESS_INVALID');
+    }
+    tdsPorts.add(url.port);
+  }
   const absoluteManifest = realpathSync(manifestPath);
   if (
     !within(path.join(root, '.runtime/r5'), absoluteManifest) ||
@@ -498,9 +557,10 @@ async function runSelectedScenario(scenarioId) {
       V2S_TERMINAL_DEV_ACCEPTANCE_RUN_ID: runId,
       V2S_TERMINAL_DEV_MANAGED_DEV_RUN_ID: manifestData.runId,
       V2S_TERMINAL_DEV_ACCEPTANCE_SCENARIO: scenarioId,
-      V2S_TERMINAL_DEV_HTTP_BASE_URL: manifestData.localHttpBaseUrl,
-      V2S_TERMINAL_DEV_TDS_ENTRY_ONE_WS_URL: manifestData.localTdsWebSocketBaseUrl,
-      V2S_TERMINAL_DEV_TDS_ENTRY_TWO_WS_URL: manifestData.localTdsEntryTwoWebSocketBaseUrl,
+      EXPO_PUBLIC_TER_SERVER_CONFIG_ENVIRONMENT_JSON: JSON.stringify({
+        spaceName: 'managed-dev',
+        servers: manifestData.terminalServerConfigAddressOverrides.servers,
+      }),
       V2S_TERMINAL_DEV_ACCEPTANCE_SCENARIO_EVENTS: path.join(runDirectory, 'scenario-events.jsonl'),
       V2S_SEED_OPERATIONS_DEFAULT_PASSWORD: readOperationsPassword(),
     };

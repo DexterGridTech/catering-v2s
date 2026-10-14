@@ -5,5 +5,11 @@
     "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/adapter-android-device", "runner": "vitest"},
     "lint": {"kind": "OWNED", "owner": "@catering-v2s/adapter-android-device", "runner": "eslint"},
     "clean": {"kind": "ABSENT"}
-  }
+  },
+  "publicExports": [
+    "createAndroidDevicePort",
+    "dependencyModuleNames",
+    "devDependencyModuleNames",
+    "moduleName"
+  ]
 }

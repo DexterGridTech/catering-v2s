@@ -23,9 +23,11 @@
     "selectProjectBasicLoadReadiness",
     "selectProjectBasicState",
     "selectProjectBasicTopicState",
+    "selectProjectFixedTerminalUpdateContextFacts",
     "selectProjectOrganizationPath",
     "selectProjectTerminalUpdateContextFacts",
     "selectProjectTerminalUpdateCandidate",
+    "selectCurrentProjectTerminalUpdateTarget",
     "selectProjectTerminalUpdateRules",
     "selectRegion",
     "ProjectBasicState",
@@ -34,67 +36,73 @@
   ],
   "tr01Exceptions": [
     {
-      "sourceFile": "src/features/actors/actors.ts",
-      "declarationId": "failRuleRefresh",
+      "sourceFile": "src/features/actors/shared/refreshProjectRuleSnapshot.ts",
+      "declarationId": "failRefresh",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "project-basic-failed-rule-snapshot"
     },
     {
-      "sourceFile": "src/features/actors/actors.ts",
-      "declarationId": "persistRuleSnapshot",
+      "sourceFile": "src/features/actors/shared/refreshProjectRuleSnapshot.ts",
+      "declarationId": "failRefresh",
+      "dispatchExpression": "context.dispatchAction",
+      "reasonCategory": "project-basic-failed-rule-topic-status"
+    },
+    {
+      "sourceFile": "src/features/actors/shared/refreshProjectRuleSnapshot.ts",
+      "declarationId": "persistSnapshot",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "project-basic-persist-rule-snapshot"
     },
     {
-      "sourceFile": "src/features/actors/actors.ts",
+      "sourceFile": "src/features/actors/projectBasicActor.ts",
       "declarationId": "setTopic",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "project-basic-topic-read-status"
     },
     {
-      "sourceFile": "src/features/actors/actors.ts",
+      "sourceFile": "src/features/actors/projectBasicActor.ts",
       "declarationId": "setReadiness",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "project-basic-load-readiness"
     },
     {
-      "sourceFile": "src/features/actors/actors.ts",
-      "declarationId": "refreshRules",
+      "sourceFile": "src/features/actors/shared/refreshProjectRuleSnapshot.ts",
+      "declarationId": "createProjectRuleSnapshotRefresher",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "project-basic-rule-refresh-loading-status"
     },
     {
-      "sourceFile": "src/features/actors/actors.ts",
-      "declarationId": "refreshRules",
+      "sourceFile": "src/features/actors/shared/refreshProjectRuleSnapshot.ts",
+      "declarationId": "createProjectRuleSnapshotRefresher",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "project-basic-rule-refresh-status"
     },
     {
-      "sourceFile": "src/features/actors/actors.ts",
-      "declarationId": "loadProject",
+      "sourceFile": "src/features/actors/shared/refreshProjectRuleSnapshot.ts",
+      "declarationId": "createProjectRuleSnapshotRefresher",
       "dispatchExpression": "context.dispatchAction",
-      "reasonCategory": "project-basic-binding"
+      "reasonCategory": "project-basic-rule-refresh-topic-status"
     },
     {
-      "sourceFile": "src/features/actors/actors.ts",
-      "declarationId": "loadProject",
+      "sourceFile": "src/features/actors/shared/reconcileProjectTopicSubscriptions.ts",
+      "declarationId": "reconcileProjectTopicSubscriptions",
       "dispatchExpression": "context.dispatchAction",
-      "reasonCategory": "project-basic-organization-path"
+      "reasonCategory": "project-basic-organization-topic-subscription-status"
     },
     {
-      "sourceFile": "src/features/actors/actors.ts",
+      "sourceFile": "src/features/actors/projectBasicActor.ts",
       "declarationId": "onTopicChanged",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "project-basic-topic-organization-path"
     },
     {
-      "sourceFile": "src/features/actors/actors.ts",
+      "sourceFile": "src/features/actors/projectBasicActor.ts",
       "declarationId": "onTopicChanged",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "project-basic-topic-rule-snapshot"
     },
     {
-      "sourceFile": "src/features/actors/actors.ts",
+      "sourceFile": "src/features/actors/projectBasicActor.ts",
       "declarationId": "onTopicChanged",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "project-basic-topic-rule-snapshot-status"

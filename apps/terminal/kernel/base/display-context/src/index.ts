@@ -26,5 +26,5 @@ export {
   requestPowerRoleChangeCommand,
   switchDisplayRoleCommand,
   switchInstanceModeCommand,
-} from './features/commands';
+} from './declarations/commands';
 export {createDisplayContextModule} from './application/createDisplayContextModule';

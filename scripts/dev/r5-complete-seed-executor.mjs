@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
  * Public r5-full seed composition. The owner-specific child executors retain their
- * owner-specific reports; this runner only proves that a complete DEV seed
- * has run both components in their required order for one managed DEV run.
+ * owner-specific reports; this runner only proves that a complete seed
+ * has run both components in their required order for one managed environment run.
  */
 import {createHash, randomBytes, randomUUID} from "node:crypto";
 import {spawn, spawnSync} from "node:child_process";
@@ -11,11 +11,12 @@ import os from "node:os";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
 import {renderSeedReportMarkdown} from "../test/seed-report.mjs";
+import {seedEnvironmentKind, seedRunIdentity, seedRuntimeRoot, managedEnvironmentRunId, reportManagedEnvironmentRunId, preservedSeedStateLabels} from './managed-seed-target.mjs';
 import {availabilityReceiptFacts, validateAvailabilityReceiptAgainstPlan} from "./catalog-availability-receipt.mjs";
 import {validateFixtureContract, validateFixtureSeedStages} from "./r5-fixture-contract.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const runtimeRoot = path.resolve(process.env.V2S_RUNTIME_DIR || path.join(root, ".runtime/r5"));
+const runtimeRoot = seedRuntimeRoot(root);
 const fixturePath = path.join(root, "doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json");
 export const COMPLETE_SEED_STAGE_IDS = Object.freeze(["owner-command", "external-collaboration-business-channel", "catalog-inventory", "sales-menu"]);
 
@@ -120,15 +121,17 @@ export function projectPostStepReceipt(step) {
 }
 
 /** Pure boundary validation; unit tests exercise every red case without DEV. */
-export function validateCompleteSeedEvidence({managedDevRunId, stages, fixture = null, postSteps = []}) {
+export function validateCompleteSeedEvidence({managedEnvironmentRunId = null, managedDevRunId = null, environmentKind = 'dev', stages, fixture = null, postSteps = []}) {
   if (fixture) validateFixtureSeedStages(fixture);
-  if (typeof managedDevRunId !== "string" || !managedDevRunId) throw failure("COMPLETE_SEED_MANAGED_RUN_ID_REQUIRED");
+  const managedRunId = managedEnvironmentRunId ?? managedDevRunId;
+  if (typeof managedRunId !== "string" || !managedRunId || !['dev', 'uat'].includes(environmentKind)) throw failure("COMPLETE_SEED_MANAGED_RUN_ID_REQUIRED");
+  const stageRunId = value => { try { return reportManagedEnvironmentRunId(value); } catch { return null; } };
   if (!Array.isArray(stages) || stages.length !== COMPLETE_SEED_STAGE_IDS.length) throw failure("COMPLETE_SEED_STAGE_DENOMINATOR_INVALID");
   if (stages.map((stage) => stage.id).join(",") !== COMPLETE_SEED_STAGE_IDS.join(",")) throw failure("COMPLETE_SEED_STAGE_ORDER_INVALID");
   for (const stage of stages) {
     if (stage.exitStatus !== 0) throw failure(`COMPLETE_SEED_STAGE_EXIT_NONZERO:${stage.id}`);
     if (!stage.manifest || !stage.report) throw failure(`COMPLETE_SEED_STAGE_RECEIPT_MISSING:${stage.id}`);
-    if (stage.manifest.managedDevRunId !== managedDevRunId || stage.report.managedDevRunId !== managedDevRunId) throw failure(`COMPLETE_SEED_MANAGED_RUN_MISMATCH:${stage.id}`);
+    if (stageRunId(stage.manifest) !== managedRunId || stageRunId(stage.report) !== managedRunId) throw failure(`COMPLETE_SEED_MANAGED_RUN_MISMATCH:${stage.id}`);
     requirePass(stage.manifest.business, `COMPLETE_SEED_MANIFEST_NOT_PASS:${stage.id}`);
     requireCleanupPass(stage.manifest.cleanup, `COMPLETE_SEED_MANIFEST_CLEANUP_NOT_PASS:${stage.id}`);
     requirePass(stage.report.status, `COMPLETE_SEED_REPORT_NOT_PASS:${stage.id}`);
@@ -168,7 +171,7 @@ export function validateCompleteSeedEvidence({managedDevRunId, stages, fixture =
   const terminalDetailReadback = terminalPostStep.report?.detailReadback;
   const terminalListReadback = terminalPostStep.report?.listReadback;
   if (terminalPostStep.exitStatus !== 0 || !terminalPostStep.reportPath || !terminalPostStep.report
-      || terminalPostStep.report.managedDevRunId !== managedDevRunId
+      || stageRunId(terminalPostStep.report) !== managedRunId
       || terminalPostStep.report.business !== "PASS"
       || !String(terminalPostStep.report.cleanup ?? "").startsWith("PASS")
       || terminalPostStep.report.created !== 8
@@ -194,7 +197,7 @@ export function validateCompleteSeedEvidence({managedDevRunId, stages, fixture =
   const artifactRows = updateReport?.createdArtifacts;
   const ruleRows = updateReport?.createdRules;
   if (updatePostStep.exitStatus !== 0 || !updatePostStep.reportPath || !updateReport
-      || updateReport.managedDevRunId !== managedDevRunId
+      || stageRunId(updateReport) !== managedRunId
       || updateReport.business !== "PASS"
       || updateReport.cleanup !== "PASS_SOURCE_ARTIFACT_INPUTS_REMOVED"
       || typeof updateReport.sourceArtifactRunId !== "string"
@@ -211,12 +214,12 @@ export function validateCompleteSeedEvidence({managedDevRunId, stages, fixture =
       || ruleRows.some((entry) => !expectedRules.some((source) => source.key === entry?.key) || !uuid.test(String(entry?.ruleRef ?? "")))) {
     throw failure("COMPLETE_SEED_TERMINAL_UPDATE_POST_STEP_INVALID");
   }
-  return Object.freeze({managedDevRunId, sourceItems, eligibleItems, excludedItems, availabilityItemCount: availability.length,
+  return Object.freeze({environmentKind, managedEnvironmentRunId: managedRunId, ...(environmentKind === 'dev' ? {managedDevRunId: managedRunId} : {}), sourceItems, eligibleItems, excludedItems, availabilityItemCount: availability.length,
     terminalUpdateArtifacts: artifactRows.length, terminalUpdateRules: ruleRows.length,
     stageIds: [...COMPLETE_SEED_STAGE_IDS], postStepIds: ["store-terminal", "terminal-update"]});
 }
 
-function issueChildContext({directory, runId, managedDevRunId, stageId, catalogAvailabilityReceipt = null}) {
+function issueChildContext({directory, runId, environmentKind, managedEnvironmentRunId, stageId, catalogAvailabilityReceipt = null}) {
   const token = randomBytes(32).toString("hex");
   const contextPath = path.join(directory, `${stageId}-context.json`);
   atomicWrite(contextPath, `${JSON.stringify({
@@ -225,7 +228,9 @@ function issueChildContext({directory, runId, managedDevRunId, stageId, catalogA
     profile: "r5-full",
     stageId,
     runId,
-    managedDevRunId,
+    environmentKind,
+    managedEnvironmentRunId,
+    ...(environmentKind === 'dev' ? {managedDevRunId: managedEnvironmentRunId} : {}),
     tokenSha256: createHash("sha256").update(token).digest("hex"),
     ...(catalogAvailabilityReceipt ? {catalogAvailabilityReceipt} : {}),
   }, null, 2)}\n`);
@@ -234,7 +239,7 @@ function issueChildContext({directory, runId, managedDevRunId, stageId, catalogA
 
 function managedRun() {
   const manifest = readJson(path.join(runtimeRoot, "run-manifest.json"), "COMPLETE_SEED_MANAGED_RUN_MANIFEST");
-  if (manifest.kind !== "r5-dev-run-manifest" || manifest.freshDatabase !== true || typeof manifest.runId !== "string") throw failure("COMPLETE_SEED_MANAGED_RUN_INVALID");
+  if (seedEnvironmentKind(manifest) !== (manifest.environmentKind === 'uat' ? 'uat' : 'dev') || manifest.freshDatabase !== true || typeof manifest.runId !== "string") throw failure("COMPLETE_SEED_MANAGED_RUN_INVALID");
   return manifest;
 }
 
@@ -299,7 +304,7 @@ function loadComponentReports(report) {
     if (!component.reportPath) return {component, error: "COMPLETE_SEED_COMPONENT_REPORT_PATH_MISSING"};
     try {
       const childReport = readJson(component.reportPath, "COMPLETE_SEED_COMPONENT_REPORT");
-      if (childReport.managedDevRunId !== report.managedDevRunId) {
+      if (reportManagedEnvironmentRunId(childReport) !== reportManagedEnvironmentRunId(report)) {
         return {component, error: "COMPLETE_SEED_COMPONENT_MANAGED_RUN_MISMATCH"};
       }
       return {component, report: childReport};
@@ -342,14 +347,14 @@ export function renderCompleteSeedMarkdown(report, componentDetails = loadCompon
   const finishedAt = new Date(report.finishedAt).getTime();
   const durationMs = Number.isFinite(startedAt) && Number.isFinite(finishedAt) ? Math.max(0, finishedAt - startedAt) : null;
   const lines = [
-    "# 完整 DEV Seed 报告",
+    `# 完整 ${report.environmentKind?.toUpperCase() ?? "ENVIRONMENT"} Seed 报告`,
     "",
     "> 这是完整 `r5-full` seed 的可读投影；机器校验真相是同目录 `seed-report.json`，接口/数据库计量真相保留在各 owner 子报告中。",
     "",
     `## 结论：${report.business}`,
     "",
     `- Seed profile：\`${escapeMarkdown(report.profile)}\``,
-    `- Managed DEV Run ID：\`${escapeMarkdown(report.managedDevRunId)}\``,
+    `- Managed ${report.environmentKind?.toUpperCase() ?? 'ENVIRONMENT'} Run ID：\`${escapeMarkdown(report.managedEnvironmentRunId ?? report.managedDevRunId)}\``,
     `- 完整 Seed Run ID：\`${escapeMarkdown(report.runId)}\``,
     `- Business：\`${escapeMarkdown(report.business)}\``,
     `- Cleanup：\`${escapeMarkdown(report.cleanup)}\``,
@@ -394,7 +399,7 @@ export function renderCompleteSeedMarkdown(report, componentDetails = loadCompon
     "## 证据边界",
     "",
     "- `Business=PASS` 与 `Cleanup=PASS*` 是本次 seed 的受管执行结果，不替代浏览器 L2、UAT 或完整业务验收。",
-    "- API 请求与 backend request-completed event 已按 managed DEV run、correlation id、request id 关联；未关联事件在各子报告总览中单独列出。",
+    `- API 请求与 backend request-completed event 已按 managed ${report.environmentKind?.toUpperCase() ?? "environment"} run、correlation id、request id 关联；未关联事件在各子报告总览中单独列出。`,
     "- 报告只展示 route、operation、计数和耗时，不展示 SQL、bind value、raw payload、密码、token、cookie、Authorization 或账号敏感信息。",
     "",
   );
@@ -437,6 +442,10 @@ function dryRun() {
 
 async function execute() {
   const manifest = managedRun();
+  const environmentIdentity = seedRunIdentity(manifest);
+  const environmentKind = environmentIdentity.environmentKind;
+  const preservedState = preservedSeedStateLabels(environmentKind);
+  const environmentRunId = environmentIdentity.managedEnvironmentRunId;
   const fixture = readJson(fixturePath, "COMPLETE_SEED_FIXTURE_CONTRACT");
   validateFixtureContract(fixture);
   const runId = `complete-seed-${randomUUID()}`;
@@ -451,10 +460,10 @@ async function execute() {
   let business = "RUNNING";
   let cleanup = "RUNNING";
   let firstFailure = null;
-  const persist = () => atomicWrite(manifestPath, `${JSON.stringify({schemaVersion: 1, kind: "r5-complete-seed-manifest", runId, profile: "r5-full", managedDevRunId: manifest.runId, startedAt, business, cleanup, firstFailure, components, postSteps: postSteps.map(projectPostStepReceipt), phases}, null, 2)}\n`);
+  const persist = () => atomicWrite(manifestPath, `${JSON.stringify({schemaVersion: 2, kind: "r5-complete-seed-manifest", runId, profile: "r5-full", ...environmentIdentity, startedAt, business, cleanup, firstFailure, components, postSteps: postSteps.map(projectPostStepReceipt), phases}, null, 2)}\n`);
   const phase = (stage, status, detail = {}) => { phases.push({at: new Date().toISOString(), stage, status, ...detail}); persist(); };
   const finish = () => {
-    const report = {schemaVersion: 1, kind: "r5-complete-seed-report", runId, profile: "r5-full", managedDevRunId: manifest.runId, startedAt, finishedAt: new Date().toISOString(), business, cleanup, firstFailure, components, postSteps: postSteps.map(projectPostStepReceipt)};
+    const report = {schemaVersion: 2, kind: "r5-complete-seed-report", runId, profile: "r5-full", ...environmentIdentity, startedAt, finishedAt: new Date().toISOString(), business, cleanup, firstFailure, components, postSteps: postSteps.map(projectPostStepReceipt)};
     persist();
     writeCompositeReport(reportPath, report);
   };
@@ -477,7 +486,7 @@ async function execute() {
     phase("owner-command", "PASS", {durationMs: owner.durationMs});
 
     phase("external-collaboration-business-channel", "RUNNING");
-    const businessChannelContext = issueChildContext({directory, runId, managedDevRunId: manifest.runId, stageId: "external-collaboration-business-channel"});
+    const businessChannelContext = issueChildContext({directory, runId, environmentKind, managedEnvironmentRunId: environmentRunId, stageId: "external-collaboration-business-channel"});
     const businessChannelResult = await runChild({name: "external-collaboration-business-channel", script: "scripts/dev/external-collaboration-business-channel-seed-executor.mjs", environment: {...process.env, R5_COMPLETE_SEED_CHILD_CONTEXT: businessChannelContext.contextPath, R5_COMPLETE_SEED_CHILD_TOKEN: businessChannelContext.token}, phase});
     const businessChannelOutput = `${businessChannelResult.stdout}\n${businessChannelResult.stderr}`;
     const businessChannel = {id: "external-collaboration-business-channel", ...businessChannelResult, manifestPath: resultPath(businessChannelOutput, "RUN_MANIFEST"), reportPath: resultPath(businessChannelOutput, "REPORT")};
@@ -510,7 +519,7 @@ async function execute() {
     phase("catalog-inventory", "PASS", {durationMs: catalog.durationMs, sourceItems: plan.sourceItems.length});
 
     phase("sales-menu", "RUNNING");
-    const salesMenuContext = issueChildContext({directory, runId, managedDevRunId: manifest.runId, stageId: "sales-menu", catalogAvailabilityReceipt});
+    const salesMenuContext = issueChildContext({directory, runId, environmentKind, managedEnvironmentRunId: environmentRunId, stageId: "sales-menu", catalogAvailabilityReceipt});
     const salesMenuResult = await runChild({name: "sales-menu", script: "scripts/dev/sales-menu-seed-executor.mjs", environment: {...process.env, R5_COMPLETE_SEED_CHILD_CONTEXT: salesMenuContext.contextPath, R5_COMPLETE_SEED_CHILD_TOKEN: salesMenuContext.token, R5_CATALOG_AVAILABILITY_RECEIPT: catalog.reportPath}, phase});
     const salesMenuOutput = `${salesMenuResult.stdout}\n${salesMenuResult.stderr}`;
     const salesMenu = {id: "sales-menu", ...salesMenuResult, manifestPath: resultPath(salesMenuOutput, "RUN_MANIFEST"), reportPath: resultPath(salesMenuOutput, "REPORT")};
@@ -552,16 +561,16 @@ async function execute() {
     postSteps.push(updatePostStep);
     if (updatePostStep.exitStatus !== 0) throw failure(`COMPLETE_SEED_TERMINAL_UPDATE_POST_STEP_FAILED:${updatePostStep.report?.firstFailure ?? updatePostStep.exitStatus}`);
     phase("terminal-update-post-step", "PASS", {artifacts: updatePostStep.artifacts, rules: updatePostStep.rules});
-    validateCompleteSeedEvidence({managedDevRunId: manifest.runId, stages: [owner, businessChannel, catalog, salesMenu], fixture, postSteps});
+    validateCompleteSeedEvidence({environmentKind, managedEnvironmentRunId: environmentRunId, stages: [owner, businessChannel, catalog, salesMenu], fixture, postSteps});
     business = "PASS";
-    cleanup = "PASS_PRESERVED_DEV_STATE";
-    phase("COMPLETE_SEED_CLEANUP", "PASS", {policy: "PRESERVE_DEV_EXPERIENCE_STATE", destructiveCleanupOwner: "r5-reset", persistentSeedProcess: false});
+    cleanup = preservedState.cleanup;
+    phase("COMPLETE_SEED_CLEANUP", "PASS", {policy: preservedState.policy, ...(environmentKind === 'dev' ? {destructiveCleanupOwner: "r5-reset"} : {}), persistentSeedProcess: false});
   } catch (error) {
     firstFailure ??= error.code ?? compact(error.message);
     business = "FAIL";
-    cleanup = "PASS_PRESERVED_DEV_STATE";
+    cleanup = preservedState.cleanup;
     phase("COMPLETE_SEED", "FAIL", {reason: firstFailure});
-    phase("COMPLETE_SEED_CLEANUP", "PASS", {policy: "PRESERVE_DEV_EXPERIENCE_STATE", destructiveCleanupOwner: "r5-reset", persistentSeedProcess: false, resetRequiredBeforeRerun: true});
+    phase("COMPLETE_SEED_CLEANUP", "PASS", {policy: preservedState.policy, ...(environmentKind === 'dev' ? {destructiveCleanupOwner: "r5-reset"} : {}), persistentSeedProcess: false, resetRequiredBeforeRerun: true});
   }
   finish();
   process.stdout.write(`R5_COMPLETE_SEED=${business}; CLEANUP=${cleanup}; RUN_MANIFEST=${manifestPath}; REPORT=${reportPath}; MARKDOWN=${completeSeedMarkdownPath(reportPath)}; FIRST_FAILURE=${firstFailure ?? "NONE"}\n`);

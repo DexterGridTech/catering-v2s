@@ -2,11 +2,23 @@
   "schemaVersion": 1,
   "package": "@catering-v2s/ui-base-dev-host",
   "owned": {
-    "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/ui-base-dev-host", "runner": "vitest"},
-    "lint": {"kind": "OWNED", "owner": "@catering-v2s/ui-base-dev-host", "runner": "eslint"},
-    "clean": {"kind": "ABSENT"}
+    "test": {
+      "kind": "REAL_TESTS",
+      "owner": "@catering-v2s/ui-base-dev-host",
+      "runner": "vitest"
+    },
+    "lint": {
+      "kind": "OWNED",
+      "owner": "@catering-v2s/ui-base-dev-host",
+      "runner": "eslint"
+    },
+    "clean": {
+      "kind": "ABSENT"
+    }
   },
   "publicExports": [
+    "SurfaceCreationInput",
+    "SurfaceForm",
     "SurfaceMode",
     "SurfaceSize",
     "TerminalSurfaces",
@@ -15,12 +27,17 @@
     "TestExpoRuntimeStatus",
     "WebPlatformOptions",
     "WebStoragePortName",
+    "WebSurfaceHostSize",
+    "WebSurfaceHostSnapshot",
+    "WebSurfaceHostSource",
     "createTestExpoApp",
     "createWebDevicePort",
     "createWebPlatformPorts",
     "createWebStateStoragePort",
+    "createWebSurfaceHostSource",
     "dependencyModuleNames",
     "devDependencyModuleNames",
-    "moduleName"
+    "moduleName",
+    "testExpoTestIds"
   ]
 }

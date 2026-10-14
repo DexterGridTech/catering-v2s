@@ -643,25 +643,37 @@ describe('createAndroidDeviceSession', () => {
     expect(JSON.stringify(diagnostics)).not.toMatch(/private-url|secret|endpoint|reason"/u);
   });
 
-  it('maps only the three managed loopback DEV services to matching Android reverse ports', () => {
-    expect(
-      managedDevServiceReverses({
-        businessBaseUrl: 'http://127.0.0.1:28080/api/terminal/group-workspaces/aurora',
-        tdsEntryOneUrl: 'ws://127.0.0.1:28180',
-        tdsEntryTwoUrl: 'ws://127.0.0.1:28181',
-      }),
-    ).toEqual([
+  it('maps the configured business and TDS address sets to Android reverse ports', () => {
+    const environment = (tdsPorts: readonly number[]) => ({
+      spaceName: 'development',
+      servers: [
+        {
+          serverName: 'business',
+          addresses: [{addressName: 'primary', baseUrl: 'http://127.0.0.1:28080/api/terminal/group-workspaces/aurora'}],
+        },
+        {
+          serverName: 'terminal-data-server',
+          addresses: tdsPorts.map((port, index) => ({
+            addressName: `haproxy-entry-${index + 1}`,
+            baseUrl: `ws://127.0.0.1:${port}`,
+          })),
+        },
+        {serverName: 'livekit', addresses: [{addressName: 'primary', baseUrl: 'ws://47.106.121.27:7880'}]},
+      ],
+    });
+    expect(managedDevServiceReverses(environment([28180, 28181]))).toEqual([
       {remotePort: 28_080, localPort: 28_080},
       {remotePort: 28_180, localPort: 28_180},
       {remotePort: 28_181, localPort: 28_181},
     ]);
-    expect(() =>
-      managedDevServiceReverses({
-        businessBaseUrl: 'http://127.0.0.1:28080/api/terminal/group-workspaces/aurora',
-        tdsEntryOneUrl: 'ws://127.0.0.1:28180',
-        tdsEntryTwoUrl: 'ws://127.0.0.1:28080',
-      }),
-    ).toThrow('TERMINAL_AUTOMATION_MANAGED_DEV_URL_INVALID');
+    expect(managedDevServiceReverses(environment([28180, 28181, 28182, 28183, 28184, 28185, 28186, 28187, 28188, 28189])))
+      .toHaveLength(11);
+    expect(() => managedDevServiceReverses(environment([28180, 28080]))).toThrow(
+      'TERMINAL_AUTOMATION_MANAGED_DEV_URL_INVALID',
+    );
+    const invalid = environment([28180]);
+    invalid.servers[0]!.addresses[0]!.baseUrl = 'http://example.com:28080/api/terminal/group-workspaces/aurora';
+    expect(() => managedDevServiceReverses(invalid)).toThrow('TERMINAL_AUTOMATION_MANAGED_DEV_URL_INVALID');
   });
 
   it('binds install, launch, and reverse operations to the selected ready serial', async () => {

@@ -131,8 +131,8 @@ public final class PlatformAuthenticationServiceSql {
     public static final String BOOTSTRAP_COUNT = "SELECT COUNT(*) FROM platform_iam.platform_admin";
     public static final String BOOTSTRAP_INSERT_ADMIN =
             "INSERT INTO platform_iam.platform_admin (id, login_name, login_name_normalized, display_name, "
-                    + "status, version, created_at_epoch_millis, updated_at_epoch_millis) VALUES (?, ?, ?, ?, "
-                    + "'ENABLED', 1, ?, ?)";
+                    + "status, version, created_at_epoch_millis, updated_at_epoch_millis, is_builtin) "
+                    + "VALUES (?, ?, ?, ?, 'ENABLED', 1, ?, ?, ?)";
     public static final String BOOTSTRAP_INSERT_CREDENTIAL =
             "INSERT INTO platform_iam.platform_credential (platform_admin_id, password_hash, algorithm, "
                     + "changed_at_epoch_millis, version) VALUES (?, ?, 'bcrypt', ?, 1)";

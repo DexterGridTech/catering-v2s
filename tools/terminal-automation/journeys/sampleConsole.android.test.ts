@@ -27,6 +27,7 @@ import {
 import {createManagedActivationFixtureApi} from '../fixtures/managedActivation.ts';
 import {runMainSampleJourney} from './mainSampleJourney.ts';
 import type {TerminalAutomationProcessIdentity} from '../src/managedRun.js';
+import {parseServerConfigEnvironment} from '../src/serverConfigEnvironment.ts';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const selectedSample = parseMainSample(process.env.TERMINAL_AUTOMATION_SAMPLE);
@@ -119,11 +120,9 @@ describe(`TER automation ${appName} main journey on Android`, () => {
     }
 
     adb = createAndroidAdbClient({adbPath, timeoutMs: 10_000});
-    const services = managedDevServiceReverses({
-      businessBaseUrl: readRequiredEnv('EXPO_PUBLIC_TER_MANAGED_GROUP_WORKSPACE_BASE_URL'),
-      tdsEntryOneUrl: readRequiredEnv('V2S_TERMINAL_DEV_TDS_ENTRY_ONE_WS_URL'),
-      tdsEntryTwoUrl: readRequiredEnv('V2S_TERMINAL_DEV_TDS_ENTRY_TWO_WS_URL'),
-    });
+    const services = managedDevServiceReverses(
+      parseServerConfigEnvironment(readRequiredEnv('EXPO_PUBLIC_TER_SERVER_CONFIG_ENVIRONMENT_JSON')),
+    );
     connection = await createAndroidAutomationConnection({
       client: adb,
       serial,
@@ -186,19 +185,49 @@ describe(`TER automation ${appName} main journey on Android`, () => {
 
   afterAll(async () => {
     const errors: string[] = [];
-    if (connection !== undefined && packageId !== undefined) {
+    const cleanupRunId = selectedJourney?.runId ?? process.env.TERMINAL_AUTOMATION_RUN_ID ?? null;
+    const cleanupStage = async <TValue,>(stage: string, action: () => Promise<TValue>): Promise<TValue> => {
+      const emit = (status: 'STARTED' | 'COMPLETE' | 'FAILED', error?: unknown): void => {
+        const details = error instanceof Error
+          ? {errorName: error.name, errorMessage: error.message, errorStack: error.stack ?? null}
+          : error === undefined ? {} : {errorName: 'NON_ERROR_THROWN', errorMessage: String(error)};
+        process.stdout.write(`TERMINAL_AUTOMATION_DEVICE_CLEANUP ${JSON.stringify({
+          at: new Date().toISOString(),
+          runId: cleanupRunId,
+          role: 'MAIN',
+          stage,
+          status,
+          ...details,
+        })}\n`);
+      };
+      emit('STARTED');
       try {
-        if (packageWasAbsent && (installAttempted || (await connection.isInstalled(packageId)))) {
-          await connection.forceStop(packageId);
-          await connection.uninstall(packageId);
+        const result = await action();
+        emit('COMPLETE');
+        return result;
+      } catch (error) {
+        emit('FAILED', error);
+        throw error;
+      }
+    };
+    const cleanupConnection = connection;
+    const cleanupPackageId = packageId;
+    if (cleanupConnection !== undefined && cleanupPackageId !== undefined) {
+      try {
+        const installed = await cleanupStage('package-presence', () => cleanupConnection.isInstalled(cleanupPackageId));
+        if (packageWasAbsent && (installAttempted || installed)) {
+          await cleanupStage('force-stop', () => cleanupConnection.forceStop(cleanupPackageId));
+          await cleanupStage('uninstall', () => cleanupConnection.uninstall(cleanupPackageId));
         }
-        if (await connection.isInstalled(packageId)) errors.push('ANDROID_RUN_PACKAGE_REMAINS');
+        await cleanupStage('package-readback', async () => {
+          if (await cleanupConnection.isInstalled(cleanupPackageId)) throw new Error('ANDROID_RUN_PACKAGE_REMAINS');
+        });
       } catch {
         errors.push('ANDROID_RUN_PACKAGE_CLEANUP_FAILED');
       }
     }
     try {
-      await connection?.close();
+      if (cleanupConnection !== undefined) await cleanupStage('connection-close', () => cleanupConnection.close());
     } catch {
       errors.push('ANDROID_CONNECTION_CLEANUP_FAILED');
     }
@@ -234,7 +263,7 @@ describe(`TER automation ${appName} main journey on Android`, () => {
               },
               storeBasicProof: {
                 runId: journey.runId,
-                httpBaseUrl: readRequiredEnv('EXPO_PUBLIC_TER_MANAGED_GROUP_WORKSPACE_BASE_URL'),
+                httpBaseUrl: readRequiredEnv('V2S_TERMINAL_DEV_HTTP_BASE_URL'),
                 operationsPassword: readRequiredEnv('V2S_SEED_OPERATIONS_DEFAULT_PASSWORD'),
                 platformRootPassword: readRequiredEnv('V2S_SEED_PLATFORM_ROOT_PASSWORD'),
               },

@@ -22,9 +22,13 @@ import {
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createConnection} from 'node:net';
+import {resolveServerConfigEnvironment, type ServerConfigEnvironment} from '@catering-v2s/kernel-base-server-config/environment';
+import type {TransportServerConfig} from '@catering-v2s/kernel-base-contracts';
 import {
   attachAndroidDeviceIdentity,
   createManagedRun,
+  markManagedRunCheckpoint,
+  markManagedRunFailure,
   persistManagedRun,
   type TerminalAutomationExecution,
   type TerminalAutomationManifest,
@@ -39,6 +43,12 @@ import {
   parseAndroidReverseList,
   resolveFailedAndroidRunCleanupTarget,
 } from './androidCleanupRecovery.ts';
+import {
+  groupWorkspaceKeyFromServerConfig,
+  parseServerConfigEnvironment,
+  serverConfigAddress,
+  serverConfigOrigin,
+} from './serverConfigEnvironment.ts';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const driverRoot = path.join(root, 'tools/terminal-automation');
@@ -88,18 +98,24 @@ const updateCases = new Set([
   // journey or owner-focused tests; they are not CLI cases.
   'update.pair',
   'update.supply-chain',
+  'update.owner-flow',
 ]);
 const updateCasesRequiringManagedDev = new Set([
   'update.supply-chain',
   'update.pair',
+  'update.owner-flow',
 ]);
 const isSupportedSupplyChainRun = (execution: TerminalAutomationExecution): boolean =>
   execution.platform === 'android' &&
   ((execution.shape === 'dual' && (execution.sample === undefined || execution.sample === 'console')) ||
     (execution.shape === 'mobile' && execution.sample === 'wallpaper'));
+const isSupportedOwnerFlowRun = (execution: TerminalAutomationExecution): boolean =>
+  execution.platform === 'web'
+    ? execution.shape === 'mobile' && (execution.sample === 'console' || execution.sample === 'wallpaper')
+    : isSupportedSupplyChainRun(execution);
 const implementedUpdateCases: Readonly<Record<AutomationPlatform, ReadonlySet<string>>> = Object.freeze({
-  web: new Set(['update.artifacts']),
-  android: new Set(['update.supply-chain', 'update.pair']),
+  web: new Set(['update.artifacts', 'update.owner-flow']),
+  android: new Set(['update.supply-chain', 'update.pair', 'update.owner-flow']),
 });
 const phaseSuite: Readonly<Record<AutomationPlatform, Readonly<Partial<Record<AutomationPhase, string>>>>> =
   Object.freeze({
@@ -439,7 +455,11 @@ export const updateCaseImplemented = (execution: TerminalAutomationRunOptions): 
   execution.phase !== 'update' ||
   (execution.case !== undefined &&
     implementedUpdateCases[execution.platform as AutomationPlatform]?.has(execution.case) === true &&
-    (execution.case !== 'update.supply-chain' || isSupportedSupplyChainRun(execution)));
+    (execution.case === 'update.supply-chain'
+      ? isSupportedSupplyChainRun(execution)
+      : execution.case === 'update.owner-flow'
+        ? isSupportedOwnerFlowRun(execution)
+        : true));
 
 export const updateScenarioAssertionsObserved = (
   execution: TerminalAutomationRunOptions,
@@ -472,6 +492,97 @@ export const createAndroidDeviceCleanupTracker = () => {
     finish: (): 'PASS' | 'FAIL' | 'UNKNOWN' => (failed ? 'FAIL' : completed ? 'PASS' : 'UNKNOWN'),
   });
 };
+
+export type ManagedWebHarnessSuite =
+  | 'journey.console'
+  | 'journey.wallpaper'
+  | 'remote.console'
+  | 'remote.wallpaper'
+  | 'update.owner-flow.console'
+  | 'update.owner-flow.wallpaper';
+
+export type ManagedWebHarnessOutcome = Readonly<{
+  business: 'PASS' | 'UNKNOWN';
+  cleanup: 'PASS' | 'FAIL' | 'UNKNOWN';
+  cleanupFailures: readonly string[];
+}>;
+
+export const managedWebHarnessSuite = (
+  execution: TerminalAutomationExecution,
+): ManagedWebHarnessSuite | null => {
+  if (execution.platform !== 'web') return null;
+  const sample = execution.sample ?? 'console';
+  if (execution.phase === 'journey' || execution.phase === 'skill') return `journey.${sample}`;
+  if (execution.phase === 'remote') return `remote.${sample}`;
+  if (execution.phase === 'update' && execution.case === 'update.owner-flow')
+    return `update.owner-flow.${sample}`;
+  return null;
+};
+
+export const parseManagedWebHarnessOutcome = (
+  output: string,
+  runId: string,
+  suite: ManagedWebHarnessSuite,
+): ManagedWebHarnessOutcome => {
+  const businessPasses: string[] = [];
+  const cleanupResults: {status: 'PASS' | 'FAIL'; failures: string[]}[] = [];
+  for (const rawLine of output.split(/\r?\n/u)) {
+    const line = rawLine.replace(/^(?:stdout|stderr) /u, '');
+    if (!line.startsWith('TERMINAL_AUTOMATION_WEB_HARNESS_')) continue;
+    const business = line.match(
+      /^TERMINAL_AUTOMATION_WEB_HARNESS_BUSINESS_PASS runId=([A-Za-z0-9._-]+) suite=([A-Za-z0-9._-]+)$/u,
+    );
+    if (business !== null) {
+      if (business[1] === runId && business[2] === suite) businessPasses.push(line);
+      continue;
+    }
+    const cleanup = line.match(
+      /^TERMINAL_AUTOMATION_WEB_HARNESS_CLEANUP_(PASS|FAIL) runId=([A-Za-z0-9._-]+) suite=([A-Za-z0-9._-]+)(?: failures=([A-Z0-9_,.-]+))?$/u,
+    );
+    if (cleanup !== null && cleanup[2] === runId && cleanup[3] === suite) {
+      cleanupResults.push({
+        status: cleanup[1] as 'PASS' | 'FAIL',
+        failures: cleanup[4] === undefined ? [] : cleanup[4].split(','),
+      });
+    }
+  }
+  const cleanup = cleanupResults.length === 1 ? cleanupResults[0] : undefined;
+  return Object.freeze({
+    business: businessPasses.length === 1 ? 'PASS' : 'UNKNOWN',
+    cleanup: cleanup?.status ?? 'UNKNOWN',
+    cleanupFailures: Object.freeze(cleanup?.failures ?? []),
+  });
+};
+
+export const createManagedWebHarnessOutcomeTracker = (
+  runId: string,
+  suite: ManagedWebHarnessSuite,
+) => {
+  const tails = new Map<'stdout' | 'stderr', string>([
+    ['stdout', ''],
+    ['stderr', ''],
+  ]);
+  const markers: string[] = [];
+  return Object.freeze({
+    accept: (stream: 'stdout' | 'stderr', chunk: string, final = false): void => {
+      const lines = `${tails.get(stream) ?? ''}${chunk}`.split('\n');
+      const remainder = final ? '' : (lines.pop() ?? '');
+      tails.set(stream, remainder);
+      if (final && remainder.length > 0) lines.push(remainder);
+      for (const rawLine of lines) {
+        const line = rawLine.endsWith('\r') ? rawLine.slice(0, -1) : rawLine;
+        if (line.startsWith('TERMINAL_AUTOMATION_WEB_HARNESS_')) markers.push(line);
+      }
+    },
+    finish: (): ManagedWebHarnessOutcome =>
+      parseManagedWebHarnessOutcome(markers.join('\n'), runId, suite),
+  });
+};
+
+export const webHarnessCleanupExplainsNonzeroExit = (
+  exitCode: number,
+  outcome: ManagedWebHarnessOutcome,
+): boolean => exitCode !== 0 && outcome.business === 'PASS' && outcome.cleanup === 'FAIL';
 
 const managedArtifactBytes = (target: string): number => {
   const stat = lstatSync(target);
@@ -911,6 +1022,35 @@ export const parseAutomationRunArguments = (argv: readonly string[]): TerminalAu
   }
   if (
     phase === 'update' &&
+    caseName === 'update.owner-flow' &&
+    (sample !== 'console' && sample !== 'wallpaper')
+  ) {
+    fail('TERMINAL_AUTOMATION_UPDATE_OWNER_FLOW_SAMPLE_REQUIRED');
+  }
+  if (
+    phase === 'update' &&
+    caseName === 'update.owner-flow' &&
+    checkedPlatform === 'web' &&
+    checkedShape !== 'mobile'
+  ) {
+    fail('TERMINAL_AUTOMATION_UPDATE_OWNER_FLOW_WEB_REQUIRES_MOBILE');
+  }
+  if (
+    phase === 'update' &&
+    caseName === 'update.owner-flow' &&
+    checkedPlatform === 'android' &&
+    !isSupportedSupplyChainRun({
+      phase,
+      platform: checkedPlatform,
+      shape: checkedShape,
+      case: caseName,
+      ...(sample === undefined ? {} : {sample: sample as 'console' | 'wallpaper'}),
+    })
+  ) {
+    fail('TERMINAL_AUTOMATION_UPDATE_OWNER_FLOW_SAMPLE_SHAPE_INVALID');
+  }
+  if (
+    phase === 'update' &&
     caseName === 'update.pair' &&
     (checkedPlatform !== 'android' || checkedShape !== 'mobile' || (sample !== 'console' && sample !== 'wallpaper'))
   ) {
@@ -979,8 +1119,7 @@ type ManagedDevContext = Readonly<{
   readonly manifestPath: string;
   readonly manifestSha256: string;
   readonly httpBaseUrl: string;
-  readonly tdsEntryOneUrl: string;
-  readonly tdsEntryTwoUrl: string;
+  readonly serverConfigEnvironment: ServerConfigEnvironment;
   readonly webOrigin: string;
   readonly platformAdminOrigin: string;
   readonly operationsAdminOrigin: string;
@@ -996,7 +1135,35 @@ type ManagedDevContext = Readonly<{
   }>;
 }>;
 
-const readManagedDevContext = async (): Promise<ManagedDevContext> => {
+const managedServerConfigDefaults = (execution: TerminalAutomationExecution): TransportServerConfig => {
+  const sample = execution.sample === 'wallpaper' ? 'wallpaper' : 'console';
+  const packagePath =
+    execution.platform === 'android'
+      ? path.join(
+          root,
+          'apps/terminal/application/android',
+          sample === 'console' ? 'sample-terminal' : 'sample-wallpaper-terminal',
+          'package.json',
+        )
+      : path.join(
+          root,
+          'apps/terminal/ui/integration',
+          sample === 'console' ? 'sample-console' : 'sample-wallpaper-console',
+          'package.json',
+        );
+  const packageValue: unknown = JSON.parse(readFileSync(packagePath, 'utf8'));
+  if (!isRecord(packageValue) || !isRecord(packageValue.serverSpaces)) {
+    throw new Error('TERMINAL_AUTOMATION_SERVER_CONFIG_DEFAULTS_INVALID');
+  }
+  const serverSpaces = packageValue.serverSpaces;
+  if (typeof serverSpaces.selectedSpace !== 'string' || !Array.isArray(serverSpaces.spaces)) {
+    throw new Error('TERMINAL_AUTOMATION_SERVER_CONFIG_DEFAULTS_INVALID');
+  }
+  const defaults = serverSpaces as unknown as TransportServerConfig;
+  return resolveServerConfigEnvironment(defaults, {spaceName: defaults.selectedSpace, servers: []});
+};
+
+const readManagedDevContext = async (execution: TerminalAutomationExecution): Promise<ManagedDevContext> => {
   const expectedDirectory = path.join(root, '.runtime/r5');
   const manifestPath = path.join(expectedDirectory, 'run-manifest.json');
   const manifestStat = lstatSync(manifestPath);
@@ -1020,13 +1187,27 @@ const readManagedDevContext = async (): Promise<ManagedDevContext> => {
     unknown
   >;
   const localHttpBaseUrl = validated.localHttpBaseUrl;
-  const tdsEntryOneUrl = validated.localTdsWebSocketBaseUrl;
-  const tdsEntryTwoUrl = validated.localTdsEntryTwoWebSocketBaseUrl;
+  const defaults = managedServerConfigDefaults(execution);
+  const addressOverrides = validated.terminalServerConfigAddressOverrides;
+  if (!isRecord(addressOverrides) || !Array.isArray(addressOverrides.servers)) {
+    throw new Error('TERMINAL_AUTOMATION_SERVER_CONFIG_ENVIRONMENT_MISSING');
+  }
+  const addressOverrideJson = JSON.stringify({
+    spaceName: defaults.selectedSpace,
+    servers: addressOverrides.servers,
+  });
+  if (addressOverrideJson === undefined) throw new Error('TERMINAL_AUTOMATION_SERVER_CONFIG_ENVIRONMENT_MISSING');
+  const serverConfigEnvironment = parseServerConfigEnvironment(addressOverrideJson);
+  resolveServerConfigEnvironment(defaults, serverConfigEnvironment);
+  const businessAddress = serverConfigAddress(serverConfigEnvironment, 'business', 'primary');
+  const tdsAddresses =
+    serverConfigEnvironment.servers.find(server => server.serverName === 'terminal-data-server')?.addresses ?? [];
+  const configuredHttpOrigin = serverConfigOrigin(serverConfigEnvironment);
   const webOrigin = selectManagedTerminalBrowserOrigin(validated.terminalBrowserAllowedOrigins);
   const adminOrigins = selectManagedDevAdminOrigins(validated);
-  const safeWebSocketUrl = (value: unknown): value is string => {
-    if (typeof value !== 'string') return false;
-    const url = new URL(value);
+  const businessUrl = new URL(businessAddress.baseUrl);
+  const safeTdsAddresses = tdsAddresses !== undefined && tdsAddresses.length > 0 && tdsAddresses.every(address => {
+    const url = new URL(address.baseUrl);
     return (
       url.protocol === 'ws:' &&
       url.hostname === '127.0.0.1' &&
@@ -1037,15 +1218,18 @@ const readManagedDevContext = async (): Promise<ManagedDevContext> => {
       url.search === '' &&
       url.hash === ''
     );
-  };
+  });
   if (
     typeof validated.runId !== 'string' ||
     webOrigin === undefined ||
     adminOrigins === undefined ||
     !isManagedDevHttpBaseUrl(localHttpBaseUrl) ||
-    !safeWebSocketUrl(tdsEntryOneUrl) ||
-    !safeWebSocketUrl(tdsEntryTwoUrl) ||
-    new URL(tdsEntryOneUrl).port === new URL(tdsEntryTwoUrl).port
+    configuredHttpOrigin !== localHttpBaseUrl ||
+    businessUrl.protocol !== 'http:' ||
+    businessUrl.hostname !== '127.0.0.1' ||
+    groupWorkspaceKeyFromServerConfig(serverConfigEnvironment).length === 0 ||
+    !safeTdsAddresses ||
+    new Set(tdsAddresses.map(address => new URL(address.baseUrl).port)).size !== tdsAddresses.length
   ) {
     throw new Error('TERMINAL_AUTOMATION_DEV_ENDPOINTS_INVALID');
   }
@@ -1065,8 +1249,7 @@ const readManagedDevContext = async (): Promise<ManagedDevContext> => {
     manifestPath: resolvedManifest,
     manifestSha256: createHash('sha256').update(manifestBytes).digest('hex'),
     httpBaseUrl: localHttpBaseUrl,
-    tdsEntryOneUrl,
-    tdsEntryTwoUrl,
+    serverConfigEnvironment,
     webOrigin,
     platformAdminOrigin: adminOrigins.platformAdmin,
     operationsAdminOrigin: adminOrigins.operationsAdmin,
@@ -1178,10 +1361,13 @@ const failRun = (
   manifest: TerminalAutomationManifest,
   reason: string,
   cleanup: TerminalAutomationManifest['cleanup'] = manifest.cleanup,
+  boundary: string = manifest.stage,
 ): TerminalAutomationManifest => {
-  const next = save(manifest, {
+  const failed = markManagedRunFailure(manifest, reason, boundary);
+  const next = save(failed, {
     stage: 'FAILED',
-    firstFailure: manifest.firstFailure ?? reason,
+    firstFailure: failed.firstFailure,
+    brokenBoundary: failed.brokenBoundary,
     business: 'FAIL',
     cleanup,
   });
@@ -1199,7 +1385,7 @@ const managedDiagnosticsFailureCode = (error: unknown): string => {
 const printRunSummary = (manifest: TerminalAutomationManifest): void => {
   const runDirectory = path.join(root, '.runtime/terminal-automation', manifest.runId);
   process.stdout.write(
-    `TERMINAL_AUTOMATION_RUN runId=${manifest.runId} business=${manifest.business} diagnostics=${manifest.diagnostics ?? 'N/A'} cleanup=${manifest.cleanup} manifest=${path.relative(root, path.join(runDirectory, 'run-manifest.json'))}\n`,
+    `TERMINAL_AUTOMATION_RUN runId=${manifest.runId} stage=${manifest.stage} firstFailure=${manifest.firstFailure ?? 'NONE'} lastKnownGood=${manifest.lastKnownGood ?? 'NONE'} brokenBoundary=${manifest.brokenBoundary ?? 'NONE'} business=${manifest.business} diagnostics=${manifest.diagnostics ?? 'N/A'} cleanup=${manifest.cleanup} manifest=${path.relative(root, path.join(runDirectory, 'run-manifest.json'))}\n`,
   );
 };
 
@@ -1209,7 +1395,46 @@ const readProcessIdentity = (pid: number): TerminalAutomationProcessIdentity => 
   return Object.freeze({pid: process.pid, pgid: process.pgid, startToken: process.startToken});
 };
 
-const runRecoveryAdb = (adbPath: string, args: readonly string[], failureCode: string): string => {
+export const serializeRecoveryAdbFailure = (
+  adbPath: string,
+  args: readonly string[],
+  failureCode: string,
+  result: Readonly<{
+    readonly status: number | null;
+    readonly signal: NodeJS.Signals | null;
+    readonly error?: Error | null;
+    readonly stdout: string | null;
+    readonly stderr: string | null;
+  }>,
+): string => {
+  const error = result.error as (NodeJS.ErrnoException & {readonly path?: string}) | null;
+  return JSON.stringify({
+    command: [adbPath, ...args],
+    failureCode,
+    status: result.status,
+    signal: result.signal,
+    error: error
+      ? {
+          name: error.name,
+          message: error.message,
+          code: error.code,
+          errno: error.errno,
+          syscall: error.syscall,
+          path: error.path,
+          stack: error.stack,
+        }
+      : null,
+    stdout: result.stdout ?? '',
+    stderr: result.stderr ?? '',
+  });
+};
+
+const runRecoveryAdb = (
+  adbPath: string,
+  args: readonly string[],
+  failureCode: string,
+  onFailure: (diagnosticJson: string) => void,
+): string => {
   const result = spawnSync(adbPath, [...args], {
     cwd: root,
     encoding: 'utf8',
@@ -1217,7 +1442,10 @@ const runRecoveryAdb = (adbPath: string, args: readonly string[], failureCode: s
     maxBuffer: 64 * 1024,
     windowsHide: true,
   });
-  if (result.error || result.status !== 0) fail(failureCode);
+  if (result.error || result.status !== 0) {
+    onFailure(serializeRecoveryAdbFailure(adbPath, args, failureCode, result));
+    fail(failureCode);
+  }
   return result.stdout;
 };
 
@@ -1320,10 +1548,18 @@ const runFailedAndroidCleanupRecovery = async (runId: string, serial: string): P
       {mode: 0o600},
     );
   };
+  const recordRecoveryAdbFailure = (diagnosticJson: string): void => {
+    recordRecovery('adb.command.failed', {diagnosticJson});
+  };
   recordRecovery('source.run.verified', {sourceRunId: sourceTarget.runId, deviceSerial: sourceTarget.serial});
   try {
     const adbPath = process.env.ADB_PATH || 'adb';
-    const devices = runRecoveryAdb(adbPath, ['devices'], 'TERMINAL_AUTOMATION_RECOVERY_DEVICE_DISCOVERY_FAILED');
+    const devices = runRecoveryAdb(
+      adbPath,
+      ['devices'],
+      'TERMINAL_AUTOMATION_RECOVERY_DEVICE_DISCOVERY_FAILED',
+      recordRecoveryAdbFailure,
+    );
     const readySerials = devices
       .split(/\r?\n/u)
       .filter(line => /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}\s+device(?:\s|$)/u.test(line));
@@ -1334,6 +1570,7 @@ const runFailedAndroidCleanupRecovery = async (runId: string, serial: string): P
         adbPath,
         ['-s', sourceTarget.serial, 'shell', 'pm', 'list', 'packages', '--user', '0', packageId],
         'TERMINAL_AUTOMATION_RECOVERY_PACKAGE_READ_FAILED',
+        recordRecoveryAdbFailure,
       );
       const matching = output.split(/\r?\n/u).filter(line => line.trim() === `package:${packageId}`);
       if (matching.length > 1) fail('TERMINAL_AUTOMATION_RECOVERY_PACKAGE_READBACK_AMBIGUOUS');
@@ -1347,6 +1584,7 @@ const runFailedAndroidCleanupRecovery = async (runId: string, serial: string): P
           adbPath,
           ['-s', sourceTarget.serial, 'shell', 'am', 'force-stop', packageId],
           'TERMINAL_AUTOMATION_RECOVERY_FORCE_STOP_FAILED',
+          recordRecoveryAdbFailure,
         );
       },
       uninstall: async packageId => {
@@ -1354,6 +1592,7 @@ const runFailedAndroidCleanupRecovery = async (runId: string, serial: string): P
           adbPath,
           ['-s', sourceTarget.serial, 'uninstall', packageId],
           'TERMINAL_AUTOMATION_RECOVERY_UNINSTALL_FAILED',
+          recordRecoveryAdbFailure,
         );
       },
     });
@@ -1370,6 +1609,7 @@ const runFailedAndroidCleanupRecovery = async (runId: string, serial: string): P
             adbPath,
             ['-s', sourceTarget.serial, 'reverse', '--list'],
             'TERMINAL_AUTOMATION_RECOVERY_REVERSE_LIST_FAILED',
+            recordRecoveryAdbFailure,
           ),
         ),
       isLocalPortListening: isLocalTcpPortListening,
@@ -1378,6 +1618,7 @@ const runFailedAndroidCleanupRecovery = async (runId: string, serial: string): P
           adbPath,
           ['-s', sourceTarget.serial, 'reverse', '--remove', remote],
           'TERMINAL_AUTOMATION_RECOVERY_REVERSE_REMOVE_FAILED',
+          recordRecoveryAdbFailure,
         );
       },
     });
@@ -1391,7 +1632,10 @@ const runFailedAndroidCleanupRecovery = async (runId: string, serial: string): P
             ? 'LEGACY_RUN_LOG'
             : 'NONE',
     });
-    const finished = Object.freeze({...cleanupManifest, stage: 'FINISHED', business: 'PASS', cleanup: 'PASS'});
+    const finished = markManagedRunCheckpoint(
+      Object.freeze({...cleanupManifest, stage: 'FINISHED', business: 'PASS', cleanup: 'PASS'}),
+      'cleanup',
+    );
     persistManagedRun(root, finished);
     recordRecovery('cleanup.passed', {sourceRunId: sourceTarget.runId, packageReadback: 'ABSENT'});
     printRunSummary(finished);
@@ -1401,10 +1645,12 @@ const runFailedAndroidCleanupRecovery = async (runId: string, serial: string): P
       error instanceof Error && /^TERMINAL_AUTOMATION_[A-Z0-9_]+$/u.test(error.message)
         ? error.message
         : 'TERMINAL_AUTOMATION_RECOVERY_DEVICE_CLEANUP_FAILED';
+    const failureState = markManagedRunFailure(cleanupManifest, code, 'android-cleanup-recovery');
     const failed = Object.freeze({
-      ...cleanupManifest,
+      ...failureState,
       stage: 'CLEANUP_FAILED',
-      firstFailure: code,
+      firstFailure: failureState.firstFailure,
+      brokenBoundary: failureState.brokenBoundary,
       business: 'FAIL',
       cleanup: 'FAIL',
     });
@@ -1492,12 +1738,19 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
     execution.platform === 'android'
       ? androidAutomationBuildIdentity(manifest.runId, execution.sample ?? 'console')
       : undefined;
+  const ownerFlowWebApplicationId =
+    execution.platform === 'web' && execution.phase === 'update' && execution.case === 'update.owner-flow'
+      ? androidAutomationBuildIdentity(manifest.runId, execution.sample ?? 'console').packageId
+      : undefined;
   if (androidBuildIdentity !== undefined) manifest = save(manifest, {androidPackageId: androidBuildIdentity.packageId});
   manifest = save(manifest, {processes: Object.freeze([manifest.owner, wrapperIdentity])});
   const runDirectory = path.join(root, '.runtime/terminal-automation', manifest.runId);
   const logPath = path.join(runDirectory, 'runner.log');
   const logFile = path.relative(root, logPath);
-  manifest = save(manifest, {stage: 'PREFLIGHT_PASS', logs: Object.freeze([logFile])});
+  manifest = save(markManagedRunCheckpoint(manifest, 'resource-preflight'), {
+    stage: 'PREFLIGHT_PASS',
+    logs: Object.freeze([logFile]),
+  });
   record(manifest.runId, 'resource.preflight.pass', {profile: 'ter-validation-with-dev'});
   writeFileSync(logPath, '', {mode: 0o600, flag: 'wx'});
 
@@ -1525,7 +1778,7 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
             qemu: identity.qemu,
             code,
           });
-          manifest = failRun(manifest, code, 'PASS');
+          manifest = failRun(manifest, code, 'PASS', 'android-device-identity');
           printRunSummary(manifest);
           process.stderr.write(`${code}\n`);
           return 1;
@@ -1548,7 +1801,7 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
         ? error.message
         : 'TERMINAL_AUTOMATION_ANDROID_DEVICE_IDENTITY_READ_FAILED';
       record(manifest.runId, 'android.device.identity.failed', {serial: identitySerial, code});
-      manifest = failRun(manifest, code, 'PASS');
+      manifest = failRun(manifest, code, 'PASS', 'android-device-identity');
       printRunSummary(manifest);
       process.stderr.write(`${code}\n`);
       return 1;
@@ -1562,7 +1815,7 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
     } catch (error) {
       const reason =
         error instanceof Error ? error.message : 'TERMINAL_AUTOMATION_ANDROID_INTERMEDIATE_PREFLIGHT_FAILED';
-      manifest = failRun(manifest, reason, 'PASS');
+      manifest = failRun(manifest, reason, 'PASS', 'android-intermediate-preflight');
       record(manifest.runId, 'android.intermediate.preflight.failed', {code: reason});
       printRunSummary(manifest);
       process.stderr.write(`${reason}\n`);
@@ -1579,7 +1832,7 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
     remoteRequiresManagedDev(execution)
   ) {
     try {
-      managedDevContext = await readManagedDevContext();
+      managedDevContext = await readManagedDevContext(execution);
       manifest = save(manifest, {
         managedDev: Object.freeze({
           runId: managedDevContext.runId,
@@ -1594,7 +1847,7 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
       record(manifest.runId, 'managed-dev.livekit-resident.verified', managedDevContext.livekitResident);
     } catch (error) {
       const reason = error instanceof Error ? error.message : 'TERMINAL_AUTOMATION_DEV_PREREQUISITE_FAILED';
-      manifest = failRun(manifest, reason, 'PASS');
+      manifest = failRun(manifest, reason, 'PASS', 'managed-dev-prerequisite');
       printRunSummary(manifest);
       process.stderr.write(`${reason}\n`);
       return 1;
@@ -1604,7 +1857,7 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
   const suiteRelative = resolveAutomationSuite(execution);
   const suite = path.join(driverRoot, suiteRelative);
   if (!existsSync(suite)) {
-    manifest = failRun(manifest, 'TERMINAL_AUTOMATION_PHASE_SUITE_NOT_IMPLEMENTED', 'PASS');
+    manifest = failRun(manifest, 'TERMINAL_AUTOMATION_PHASE_SUITE_NOT_IMPLEMENTED', 'PASS', 'suite-resolution');
     printRunSummary(manifest);
     process.stderr.write('TERMINAL_AUTOMATION_PHASE_SUITE_NOT_IMPLEMENTED\n');
     return 1;
@@ -1663,7 +1916,12 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
         managedDevRunId: managedDevContext.runId,
         code,
       });
-      manifest = failRun(manifest, 'TERMINAL_AUTOMATION_MANAGED_DIAGNOSTICS_PREFLIGHT_FAILED', 'PASS');
+      manifest = failRun(
+        manifest,
+        'TERMINAL_AUTOMATION_MANAGED_DIAGNOSTICS_PREFLIGHT_FAILED',
+        'PASS',
+        'managed-dev-diagnostics-preflight',
+      );
       printRunSummary(manifest);
       process.stderr.write(`TERMINAL_AUTOMATION_MANAGED_DIAGNOSTICS_PREFLIGHT_FAILED code=${code}\n`);
       return 1;
@@ -1693,6 +1951,8 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
           TERMINAL_AUTOMATION_ANDROID_APPLICATION_ID_SUFFIX: androidBuildIdentity.applicationIdSuffix,
         }),
     ...(execution.case === undefined ? {} : {TERMINAL_AUTOMATION_CASE: execution.case}),
+    ...(execution.case === undefined ? {} : {EXPO_PUBLIC_TER_AUTOMATION_CASE: execution.case}),
+    EXPO_PUBLIC_TER_AUTOMATION_PHASE: execution.phase,
     ...(execution.age === undefined ? {} : {TERMINAL_AUTOMATION_AGE: execution.age}),
     ...(execution.sample === undefined ? {} : {TERMINAL_AUTOMATION_SAMPLE: execution.sample}),
     ...(execution.phase === 'update' &&
@@ -1700,6 +1960,15 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
       ? {
           EXPO_PUBLIC_TER_AUTOMATION_RUN_ID: manifest.runId,
           EXPO_PUBLIC_TER_AUTOMATION_CASE: execution.case ?? '',
+        }
+      : {}),
+    ...(execution.phase === 'update' && execution.case === 'update.owner-flow' && execution.platform === 'web'
+      ? {
+          EXPO_PUBLIC_TER_AUTOMATION_BUILD: 'true',
+          EXPO_PUBLIC_TER_AUTOMATION_RUN_ID: manifest.runId,
+          EXPO_PUBLIC_TER_AUTOMATION_CASE: execution.case,
+          EXPO_PUBLIC_TER_UPDATE_OWNER_FLOW: '1',
+          EXPO_PUBLIC_TER_AUTOMATION_ANDROID_PACKAGE_ID: ownerFlowWebApplicationId!,
         }
       : {}),
     ...(execution.phase === 'remote' && execution.platform === 'web'
@@ -1725,16 +1994,15 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
           TERMINAL_AUTOMATION_MANAGED_DEV_RUN_ID: managedDevContext.runId,
           TERMINAL_AUTOMATION_RUN_DIRECTORY: runDirectory,
           V2S_TERMINAL_DEV_HTTP_BASE_URL: managedDevContext.httpBaseUrl,
-          V2S_TERMINAL_DEV_TDS_ENTRY_ONE_WS_URL: managedDevContext.tdsEntryOneUrl,
-          V2S_TERMINAL_DEV_TDS_ENTRY_TWO_WS_URL: managedDevContext.tdsEntryTwoUrl,
+          EXPO_PUBLIC_TER_MANAGED_DEV_CONFIG_REQUIRED: 'true',
+          EXPO_PUBLIC_TER_SERVER_CONFIG_ENVIRONMENT_JSON: JSON.stringify(
+            managedDevContext.serverConfigEnvironment,
+          ),
           TERMINAL_AUTOMATION_WEB_ORIGIN: managedDevContext.webOrigin,
           TERMINAL_AUTOMATION_PLATFORM_ADMIN_ORIGIN: managedDevContext.platformAdminOrigin,
           TERMINAL_AUTOMATION_OPERATIONS_ADMIN_ORIGIN: managedDevContext.operationsAdminOrigin,
           V2S_SEED_OPERATIONS_DEFAULT_PASSWORD: managedDevContext.operationsPassword,
           V2S_SEED_PLATFORM_ROOT_PASSWORD: managedDevContext.platformRootPassword,
-          EXPO_PUBLIC_TER_MANAGED_GROUP_WORKSPACE_BASE_URL: `${managedDevContext.httpBaseUrl}/api/terminal/group-workspaces/aurora`,
-          EXPO_PUBLIC_TER_MANAGED_TDS_ENTRY_ONE_WS_URL: managedDevContext.tdsEntryOneUrl,
-          EXPO_PUBLIC_TER_MANAGED_TDS_ENTRY_TWO_WS_URL: managedDevContext.tdsEntryTwoUrl,
           ...(execution.platform === 'web' ? {EXPO_PUBLIC_TER_MANAGED_DEVICE_ID: `ter-auto-${manifest.runId}`} : {}),
           EXPO_PUBLIC_TER_AUTOMATION_SURFACE_FORM:
             execution.phase === 'remote'
@@ -1773,13 +2041,16 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
   try {
     if (!child.pid) throw new Error('TERMINAL_AUTOMATION_CHILD_PID_UNAVAILABLE');
     childIdentity = readProcessIdentity(child.pid);
-    manifest = save(manifest, {processes: Object.freeze([...manifest.processes, childIdentity])});
+    manifest = save(markManagedRunCheckpoint(manifest, 'test-process-owned'), {
+      stage: 'TEST_RUNNING',
+      processes: Object.freeze([...manifest.processes, childIdentity]),
+    });
     record(manifest.runId, 'test.process.owned', {pid: childIdentity.pid, pgid: childIdentity.pgid});
   } catch (error) {
     if (!child.pid && childSpawnFailure !== null) {
       await new Promise<void>(resolve => child.once('close', () => resolve()));
       const reason = childSpawnFailure;
-      manifest = failRun(manifest, reason, 'PASS');
+      manifest = failRun(manifest, reason, 'PASS', 'test-process-start');
       printRunSummary(manifest);
       process.stderr.write(`${reason}\n`);
       return 1;
@@ -1787,7 +2058,8 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
     child.kill('SIGTERM');
     await new Promise<void>(resolve => child.once('close', () => resolve()));
     const reason = error instanceof Error ? error.message : 'TERMINAL_AUTOMATION_CHILD_PROCESS_IDENTITY_UNAVAILABLE';
-    failRun(manifest, reason, 'FAIL');
+    manifest = failRun(manifest, reason, 'FAIL', 'test-process-ownership');
+    printRunSummary(manifest);
     process.stderr.write(`${reason}\n`);
     return 1;
   }
@@ -1797,9 +2069,13 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
     ['stderr', ''],
   ]);
   const androidDeviceCleanup = createAndroidDeviceCleanupTracker();
+  const webHarnessSuite = managedWebHarnessSuite(execution);
+  const webHarnessTracker =
+    webHarnessSuite === null ? undefined : createManagedWebHarnessOutcomeTracker(manifest.runId, webHarnessSuite);
   const writeOutput = (stream: 'stdout' | 'stderr', chunk: Buffer, final = false): void => {
     const raw = chunk.toString('utf8');
     if (execution.platform === 'android') androidDeviceCleanup.accept(stream, raw);
+    webHarnessTracker?.accept(stream, raw, final);
     const buffered = `${streamBuffers.get(stream) ?? ''}${raw}`;
     const lines = buffered.split('\n');
     const remainder = final ? '' : (lines.pop() ?? '');
@@ -1981,7 +2257,8 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
   let generatedArtifactCleanup: 'PASS' | 'FAIL' = 'PASS';
   let artifactCleanup: ReturnType<typeof cleanupManagedRunArtifacts> | undefined;
   const cleanUpdateArtifacts =
-    execution.phase === 'update' && (execution.case === 'update.artifacts' || execution.platform === 'android');
+    execution.phase === 'update' &&
+    (execution.case === 'update.artifacts' || execution.case === 'update.owner-flow' || execution.platform === 'android');
   try {
     artifactCleanup = cleanupManagedRunArtifacts(
       runDirectory,
@@ -2014,15 +2291,62 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
     if (scenarioProofFailure !== null)
       record(manifest.runId, 'update.scenario-proof.failed', {code: scenarioProofFailure});
   }
+  let webHarnessOutcome: ManagedWebHarnessOutcome | undefined;
+  let webHarnessCleanupStatus: ManagedWebHarnessOutcome['cleanup'] | 'N/A' = 'N/A';
+  if (webHarnessSuite !== null) {
+    try {
+      webHarnessOutcome = webHarnessTracker?.finish();
+      if (webHarnessOutcome === undefined) throw new Error('TERMINAL_AUTOMATION_WEB_HARNESS_TRACKER_UNAVAILABLE');
+      webHarnessCleanupStatus = webHarnessOutcome.cleanup;
+      if (webHarnessOutcome.business !== 'PASS') {
+        scenarioProofFailure = 'TERMINAL_AUTOMATION_WEB_BUSINESS_PASS_NOT_OBSERVED';
+      }
+      record(manifest.runId, 'web.harness.outcome.read', {
+        suite: webHarnessSuite,
+        business: webHarnessOutcome.business,
+        cleanup: webHarnessOutcome.cleanup,
+        cleanupFailureCount: webHarnessOutcome.cleanupFailures.length,
+      });
+      if (webHarnessOutcome.cleanup !== 'PASS') {
+        record(manifest.runId, 'web.harness.cleanup.not-passed', {
+          suite: webHarnessSuite,
+          status: webHarnessOutcome.cleanup,
+          failures: webHarnessOutcome.cleanupFailures,
+        });
+      }
+    } catch (error) {
+      webHarnessCleanupStatus = 'UNKNOWN';
+      scenarioProofFailure = 'TERMINAL_AUTOMATION_WEB_HARNESS_LOG_READ_FAILED';
+      record(manifest.runId, 'web.harness.outcome.unavailable', {
+        suite: webHarnessSuite,
+        code: error instanceof Error ? error.message : 'TERMINAL_AUTOMATION_WEB_HARNESS_OUTCOME_INVALID',
+      });
+    }
+  }
   const cleanupStatus =
-    treeReadback.length === 0 && generatedArtifactCleanup === 'PASS' && deviceCleanupPassed ? 'PASS' : 'FAIL';
+    treeReadback.length === 0 &&
+    generatedArtifactCleanup === 'PASS' &&
+    deviceCleanupPassed &&
+    (webHarnessCleanupStatus === 'N/A' || webHarnessCleanupStatus === 'PASS')
+      ? 'PASS'
+      : 'FAIL';
   if (androidDeviceCleanupStatus === 'FAIL') {
     record(manifest.runId, 'android.device.cleanup.failed', {code: androidDeviceCleanupMarker});
   } else if (androidDeviceCleanupStatus === 'UNKNOWN') {
     record(manifest.runId, 'android.device.cleanup.unknown', {code: 'ANDROID_DEVICE_CLEANUP_COMPLETION_NOT_OBSERVED'});
   }
+  const webCleanupExplainsVitestExit =
+    webHarnessSuite !== null &&
+    webHarnessOutcome !== undefined &&
+    webHarnessCleanupExplainsNonzeroExit(exitCode, webHarnessOutcome) &&
+    !budgetExceeded &&
+    monitorFailure === null &&
+    fixtureIntentFailure === null &&
+    scenarioProofFailure === null &&
+    requestedSignal === null &&
+    childSpawnFailure === null;
   const businessStatus =
-    exitCode === 0 &&
+    (exitCode === 0 || webCleanupExplainsVitestExit) &&
     !budgetExceeded &&
     monitorFailure === null &&
     fixtureIntentFailure === null &&
@@ -2044,10 +2368,23 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
           : `VITEST_EXIT_${exitCode}`);
     manifest = failRun(manifest, failure, cleanupStatus);
   } else {
-    manifest = save(manifest, {stage: 'TEST_PASS', business: 'PASS'});
+    manifest = save(markManagedRunCheckpoint(manifest, 'business'), {stage: 'TEST_PASS', business: 'PASS'});
     record(manifest.runId, 'test.passed', {phase: execution.phase});
   }
-  manifest = save(manifest, {stage: cleanupStatus === 'PASS' ? 'FINISHED' : 'CLEANUP_FAILED', cleanup: cleanupStatus});
+  if (cleanupStatus === 'PASS') {
+    manifest = save(
+      businessStatus === 'PASS' ? markManagedRunCheckpoint(manifest, 'cleanup') : manifest,
+      {stage: 'FINISHED', cleanup: cleanupStatus},
+    );
+  } else {
+    const failed = markManagedRunFailure(manifest, 'TERMINAL_AUTOMATION_CLEANUP_FAILED', 'cleanup');
+    manifest = save(failed, {
+      stage: 'CLEANUP_FAILED',
+      firstFailure: failed.firstFailure,
+      brokenBoundary: failed.brokenBoundary,
+      cleanup: cleanupStatus,
+    });
+  }
   record(manifest.runId, cleanupStatus === 'PASS' ? 'cleanup.passed' : 'cleanup.failed', {
     processReadback: treeReadback.length === 0 ? 'EMPTY' : 'OWNED_PROCESS_REMAINS',
     generatedArtifactCleanup,
@@ -2056,6 +2393,10 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
   });
   const managedDevDiagnosticsStatus =
     managedDevContext === undefined ? 'N/A' : managedDevDiagnosticsUnavailable === null ? 'PASS' : 'FAIL';
+  if (managedDevDiagnosticsStatus === 'FAIL') {
+    const failed = markManagedRunFailure(manifest, 'TERMINAL_AUTOMATION_MANAGED_DIAGNOSTICS_FAILED', 'managed-dev-diagnostics');
+    manifest = save(failed, {firstFailure: failed.firstFailure, brokenBoundary: failed.brokenBoundary});
+  }
   record(manifest.runId, 'managed-dev.diagnostics.result', {
     status: managedDevDiagnosticsStatus,
     code: managedDevDiagnosticsUnavailable,
@@ -2065,11 +2406,29 @@ const run = async (execution: TerminalAutomationRunOptions): Promise<number> => 
     try {
       const diagnostics = evaluateAndroidDiagnostics(execution, manifest.runId, readBoundedLogTail(logPath));
       androidDiagnosticsStatus = diagnostics.status;
-      manifest = save(manifest, {diagnostics: diagnostics.status});
+      if (diagnostics.status === 'FAIL') {
+        const failed = markManagedRunFailure(manifest, 'TERMINAL_AUTOMATION_ANDROID_DIAGNOSTICS_INCOMPLETE', 'android-diagnostics');
+        manifest = save(failed, {
+          diagnostics: diagnostics.status,
+          firstFailure: failed.firstFailure,
+          brokenBoundary: failed.brokenBoundary,
+        });
+      } else {
+        manifest = save(manifest, {diagnostics: diagnostics.status});
+      }
       record(manifest.runId, 'android.diagnostics.result', diagnostics);
     } catch {
       androidDiagnosticsStatus = 'FAIL';
-      manifest = save(manifest, {diagnostics: 'FAIL'});
+      const failed = markManagedRunFailure(
+        manifest,
+        'TERMINAL_AUTOMATION_ANDROID_DIAGNOSTIC_LOG_READ_FAILED',
+        'android-diagnostics',
+      );
+      manifest = save(failed, {
+        diagnostics: 'FAIL',
+        firstFailure: failed.firstFailure,
+        brokenBoundary: failed.brokenBoundary,
+      });
       record(manifest.runId, 'android.diagnostics.result', {
         status: 'FAIL',
         code: 'TERMINAL_AUTOMATION_ANDROID_DIAGNOSTIC_LOG_READ_FAILED',

@@ -7,12 +7,19 @@
       "owner": "@catering-v2s/ui-integration-sample-console",
       "runner": "vitest"
     },
-    "lint": {"kind": "OWNED", "owner": "@catering-v2s/ui-integration-sample-console", "runner": "eslint"},
-    "clean": {"kind": "ABSENT"}
+    "lint": {
+      "kind": "OWNED",
+      "owner": "@catering-v2s/ui-integration-sample-console",
+      "runner": "eslint"
+    },
+    "clean": {
+      "kind": "ABSENT"
+    }
   },
   "publicExports": [
     "PortraitSurfaceDeclarations",
     "SampleAssembly",
+    "SampleConsoleReadyPayload",
     "SurfaceCreationInput",
     "SurfaceDeclarations",
     "SurfaceForm",
@@ -21,14 +28,18 @@
     "TerminalSurfaces",
     "createSampleAssembly",
     "createSampleConsoleModule",
-    "createSampleDefinedParts",
     "createSurfaceForDisplayIndex",
     "dependencyModuleNames",
     "devDependencyModuleNames",
+    "getSurfaceDeclarations",
     "moduleKind",
     "moduleName",
-    "getSurfaceDeclarations",
     "readTerminalSurfaces",
+    "startupReadyCommand",
+    "selectSampleConsoleBusinessInterlockActive",
+    "selectSampleConsoleBusinessMutationAllowed",
+    "selectSampleConsoleRouteStage",
+    "selectSampleConsoleStaffLoginAllowed",
     "surfaceFormForOrientation",
     "terminalSurfaces"
   ],

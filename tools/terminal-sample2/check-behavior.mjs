@@ -78,12 +78,12 @@ expectBaseline('integration')
 expectBaseline('primitives')
 
 runAdmissionMutation('F_A5', 'kernel', [[
-  'apps/terminal/kernel/feature/sample-wallpaper/src/features/slices/slice.ts',
+  'apps/terminal/kernel/feature/sample-wallpaper/src/features/slices/wallpaperSelection.ts',
   source => replaceExactly(source, "persistIntent: 'owner-only'", "persistIntent: 'never'", 'F-A5 persistIntent'),
 ]], 'state-runtime-descriptor-invariant')
 
 runMutation('F_A5_RUNTIME', 'kernel', [[
-  'apps/terminal/kernel/feature/sample-wallpaper/src/features/slices/slice.ts',
+  'apps/terminal/kernel/feature/sample-wallpaper/src/features/slices/wallpaperSelection.ts',
   source => replaceExactly(
     source,
     "    {kind: 'field', stateKey: 'wallpaperId'},",
@@ -93,7 +93,7 @@ runMutation('F_A5_RUNTIME', 'kernel', [[
 ]])
 
 runMutation('F_A5B', 'kernel', [[
-  'apps/terminal/kernel/feature/sample-wallpaper/src/features/slices/slice.ts',
+  'apps/terminal/kernel/feature/sample-wallpaper/src/features/slices/wallpaperSelection.ts',
   source => replaceExactly(source, `    {
       kind: 'field',
       stateKey: 'pendingWallpaperId',
@@ -103,7 +103,7 @@ runMutation('F_A5B', 'kernel', [[
 ]])
 
 runMutation('F_A5D', 'kernel', [[
-  'apps/terminal/kernel/feature/sample-wallpaper/src/features/slices/slice.ts',
+  'apps/terminal/kernel/feature/sample-wallpaper/src/features/slices/wallpaperSelection.ts',
   source => replaceExactly(source, 'return {wallpaperId: state.pendingWallpaperId}', 'return {wallpaperId: state.pendingWallpaperId, pendingWallpaperId: state.pendingWallpaperId}', 'F-A5d pending clear'),
 ]])
 
@@ -178,7 +178,7 @@ runMutation('F_A7B', 'integration', [[
 ]])
 
 runAdmissionMutation('F_A9', 'integration', [[
-  'apps/terminal/ui/base/integration-assembly/src/foundations/integrationAssembly.tsx',
+  'apps/terminal/ui/base/integration-assembly/src/application/integrationAssembly.tsx',
   source => replaceExactly(
     replaceExactly(source, "if (displayMode === 'SECONDARY' && assembly.surfaceDeclarations.SECONDARY === undefined) {", 'if (false) {', 'F-A9 display index guard'),
     'if (declaredSize === undefined) {', 'if (false) {', 'F-A9 declared size guard',

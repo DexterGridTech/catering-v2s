@@ -55,7 +55,7 @@ const waitForRegisteredNode = async (
 ): Promise<void> => {
   const subscriptionId = `android-node-${randomUUID()}`;
   let subscribed = false;
-  let timeoutId: NodeJS.Timeout | undefined;
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
   let resolveNode!: () => void;
   let rejectNode!: (error: Error) => void;
   const nodeAppeared = new Promise<void>((resolve, reject) => {

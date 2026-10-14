@@ -17,38 +17,63 @@
   "targets": [
     {
       "targetPackage": "apps/terminal/kernel/base/terminal-data-client",
-      "tags": [
-        "terminal-binding",
-        "organization",
-        "store-contract",
-        "terminal-update",
-        "TERMINAL_UPDATE_RULE",
-        "TERMINAL_UPDATE_REPORT",
-        "remote-control",
-        "TERMINAL_REMOTE_CONTROL"
-      ],
+      "tags": ["terminal-binding"],
       "includeOperationIds": [
         "activateTerminal",
-        "cancelTerminalActivation",
+        "cancelTerminalActivation"
+      ],
+      "excludeOperationIds": ["downloadTerminalUpdateArtifact"],
+      "stripPathPrefix": "/api/terminal/group-workspaces/{groupWorkspaceKey}",
+      "output": "apps/terminal/kernel/base/terminal-data-client/src/generated/terminalApi.ts"
+    },
+    {
+      "targetPackage": "apps/terminal/kernel/feature/store-basic",
+      "tags": ["organization", "store-contract"],
+      "includeOperationIds": [
         "terminalReadStoreBasic",
-        "terminalReadStoreOrganizationPath",
         "terminalReadStoreActiveContracts",
         "terminalReadContract",
         "terminalReadStoreServicePointAreas",
         "terminalReadServicePointArea",
         "terminalReadStoreServicePoints",
-        "terminalReadServicePoint",
-        "terminalReadProjectUpdateRuleSnapshotPage",
+        "terminalReadServicePoint"
+      ],
+      "excludeOperationIds": [],
+      "stripPathPrefix": "/api/terminal/group-workspaces/{groupWorkspaceKey}",
+      "output": "apps/terminal/kernel/feature/store-basic/src/generated/terminalApi.ts"
+    },
+    {
+      "targetPackage": "apps/terminal/kernel/feature/project-basic",
+      "tags": ["organization", "TERMINAL_UPDATE_RULE"],
+      "includeOperationIds": [
+        "terminalReadStoreOrganizationPath",
+        "terminalReadProjectUpdateRuleSnapshotPage"
+      ],
+      "excludeOperationIds": [],
+      "stripPathPrefix": "/api/terminal/group-workspaces/{groupWorkspaceKey}",
+      "output": "apps/terminal/kernel/feature/project-basic/src/generated/terminalApi.ts"
+    },
+    {
+      "targetPackage": "apps/terminal/kernel/base/terminal-update",
+      "tags": ["TERMINAL_UPDATE_RULE", "TERMINAL_UPDATE_REPORT"],
+      "includeOperationIds": [
         "issueTerminalUpdateArtifactDownloadGrant",
-        "submitTerminalUpdateReport",
+        "submitTerminalUpdateReport"
+      ],
+      "excludeOperationIds": [],
+      "stripPathPrefix": "/api/terminal/group-workspaces/{groupWorkspaceKey}",
+      "output": "apps/terminal/kernel/base/terminal-update/src/generated/terminalApi.ts"
+    },
+    {
+      "targetPackage": "apps/terminal/kernel/base/remote-control",
+      "tags": ["remote-control", "TERMINAL_REMOTE_CONTROL"],
+      "includeOperationIds": [
         "registerTerminalRemoteControl",
         "reportTerminalRemoteControl"
       ],
-      "excludeOperationIds": [
-        "downloadTerminalUpdateArtifact"
-      ],
+      "excludeOperationIds": [],
       "stripPathPrefix": "/api/terminal/group-workspaces/{groupWorkspaceKey}",
-      "output": "apps/terminal/kernel/base/terminal-data-client/src/generated/terminalApi.ts"
+      "output": "apps/terminal/kernel/base/remote-control/src/generated/terminalApi.ts"
     }
   ]
 }

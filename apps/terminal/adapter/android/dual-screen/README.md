@@ -101,3 +101,10 @@ callback 不得同步等待 JS 或跨线程任务，也不得把 carrier owner �
 
 JS 事件订阅直接使用 Expo module 的 `addListener(eventName, listener)` 返回值移除订阅；
 不要再经 `LegacyEventEmitter` 包装本模块事件。
+
+`src/index.ts` 与 `terminal-invariants.json.publicExports` 一致，只公开
+`moduleName`、`dependencyModuleNames`、`devDependencyModuleNames`、
+`createAndroidSurfaceHostSource`、`readAndroidSurfaceHostWindow`，以及
+`AndroidSurfaceHostEventInput`、`AndroidSurfaceHostAvailability`、
+`AndroidSurfaceHostMeasurementSnapshot`、`AndroidSurfaceHostSnapshot`、
+`AndroidSurfaceHostSourceInput` 五个公开类型；native carrier 与 host registry 保持包内实现。

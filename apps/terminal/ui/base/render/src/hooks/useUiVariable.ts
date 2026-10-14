@@ -1,7 +1,7 @@
 import {useMemo} from 'react';
 import type {StateJsonValue} from '@catering-v2s/kernel-base-state';
 import type {UiVariableDeclaration} from '@catering-v2s/kernel-base-ui-state';
-import {useRenderContext} from '../contexts/RenderContext';
+import {useRenderContext} from './useRenderContext';
 import {useUiStateSelector} from './useUiStateSelector';
 import type {RenderProviderProps} from '../types/props';
 

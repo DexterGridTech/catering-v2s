@@ -31,6 +31,8 @@ export const RULE_NAMES = Object.freeze([
   'triple-naming',
   'dependency-direction',
   'dependency-declaration-completeness',
+  'source-layout',
+  'public-export-invariants',
   'runtime-dependency-contract',
   'tr01-reducer-boundary',
   'state-reset-retention-only',
@@ -91,6 +93,7 @@ const RETIRED_UI_SOURCE_ROOTS = Object.freeze([
   'apps/terminal/application/android/sample-wallpaper-terminal',
 ]);
 const SOURCE_EXTENSIONS = new Set(['.cjs', '.java', '.js', '.json', '.md', '.mjs', '.ts', '.tsx']);
+const rootWorkspacePackageCache = new Map();
 
 function sorted(values) {
   return [...new Set(values)].sort();
@@ -657,6 +660,48 @@ function workspacePatternMatches(pattern, relativePath) {
   return match(0, 0);
 }
 
+function readRootWorkspacePackages(root) {
+  const cached = rootWorkspacePackageCache.get(root);
+  if (cached) return cached;
+  const rootPackagePath = path.join(root, 'package.json');
+  const rootPackage = JSON.parse(fs.readFileSync(rootPackagePath, 'utf8'));
+  const patterns = Array.isArray(rootPackage.workspaces)
+    ? rootPackage.workspaces
+    : rootPackage.workspaces?.packages;
+  if (!Array.isArray(patterns)) throw new Error('root package.json workspaces must be declared');
+  const includedPatterns = patterns.filter(pattern => typeof pattern === 'string' && !pattern.startsWith('!'));
+  const excludedPatterns = patterns.filter(pattern => typeof pattern === 'string' && pattern.startsWith('!')).map(value => value.slice(1));
+  const ignoredDirectories = new Set([
+    '.git', '.runtime', '.yarn', '.cache', '.gradle', '.kotlin', 'node_modules', '.turbo', '.expo', '.vite',
+    'build', 'coverage', 'dist',
+  ]);
+  const packageJsonPaths = [];
+  const visit = directory => {
+    for (const entry of fs.readdirSync(directory, {withFileTypes: true})) {
+      if (entry.isDirectory()) {
+        if (!ignoredDirectories.has(entry.name)) visit(path.join(directory, entry.name));
+      } else if (entry.isFile() && entry.name === 'package.json') {
+        packageJsonPaths.push(path.join(directory, entry.name));
+      }
+    }
+  };
+  visit(root);
+  const packages = new Map();
+  for (const packageJsonPath of packageJsonPaths) {
+    const relativePath = path.relative(root, path.dirname(packageJsonPath)).split(path.sep).join('/');
+    if (
+      !includedPatterns.some(pattern => workspacePatternMatches(pattern, relativePath)) ||
+      excludedPatterns.some(pattern => workspacePatternMatches(pattern, relativePath))
+    ) continue;
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+    if (typeof packageJson.name !== 'string') continue;
+    if (packages.has(packageJson.name)) throw new Error(`duplicate root workspace package name: ${packageJson.name}`);
+    packages.set(packageJson.name, {packageDirectory: path.dirname(packageJsonPath), package: packageJson});
+  }
+  rootWorkspacePackageCache.set(root, packages);
+  return packages;
+}
+
 function runRootWorkspaceEnumeration(root) {
   const rootPackagePath = path.join(root, 'package.json');
   if (!fs.existsSync(rootPackagePath)) throw new Error('root package.json is missing');
@@ -684,6 +729,134 @@ function runRootWorkspaceEnumeration(root) {
   }
 }
 
+function exportedTargets(value) {
+  if (typeof value === 'string') return [value];
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return [];
+  return Object.values(value).flatMap(exportedTargets);
+}
+
+function generatedClientPackageForPath(packageRecords, candidatePath) {
+  const resolved = path.resolve(candidatePath);
+  return packageRecords.find(entry => {
+    if (!isWithin(entry.packageDirectory, resolved)) return false;
+    const relative = path.relative(entry.packageDirectory, resolved).split(path.sep).join('/');
+    const withoutExtension = relative.replace(/\.(?:[cm]?[jt]sx?)$/, '');
+    return withoutExtension === 'src/generated/terminalApi' || withoutExtension === 'generated/terminalApi';
+  });
+}
+
+function generatedClientPackageForSpecifier(packageRecords, moduleSpecifier, filePath, sourcePackage) {
+  for (const entry of packageRecords) {
+    const packageName = entry.package.name;
+    if (moduleSpecifier.startsWith(`${packageName}/`)) {
+      const subpath = moduleSpecifier.slice(packageName.length + 1).replace(/\.(?:[cm]?[jt]sx?)$/, '');
+      if (subpath === 'src/generated/terminalApi' || subpath === 'generated/terminalApi') return entry;
+    }
+  }
+
+  const candidates = [];
+  if (moduleSpecifier.startsWith('.')) {
+    candidates.push(path.resolve(path.dirname(filePath), moduleSpecifier));
+  } else {
+    for (const configPath of boundaryTsconfigFiles(sourcePackage.packageDirectory)) {
+      if (!isWithin(path.dirname(configPath), filePath)) continue;
+      const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      const compilerOptions = config.compilerOptions ?? {};
+      const paths = compilerOptions.paths;
+      if (!paths || typeof paths !== 'object') continue;
+      const baseUrl = typeof compilerOptions.baseUrl === 'string'
+        ? path.resolve(path.dirname(configPath), compilerOptions.baseUrl)
+        : path.dirname(configPath);
+      for (const [pattern, targets] of Object.entries(paths)) {
+        if (!Array.isArray(targets)) continue;
+        const wildcardIndex = pattern.indexOf('*');
+        let wildcardValue = null;
+        if (wildcardIndex < 0) {
+          if (pattern !== moduleSpecifier) continue;
+        } else {
+          const prefix = pattern.slice(0, wildcardIndex);
+          const suffix = pattern.slice(wildcardIndex + 1);
+          if (!moduleSpecifier.startsWith(prefix) || !moduleSpecifier.endsWith(suffix)) continue;
+          wildcardValue = moduleSpecifier.slice(prefix.length, moduleSpecifier.length - suffix.length);
+        }
+        for (const target of targets) {
+          if (typeof target !== 'string') continue;
+          const resolvedTarget = wildcardIndex < 0 ? target : target.replace('*', wildcardValue);
+          candidates.push(path.resolve(baseUrl, resolvedTarget));
+        }
+      }
+    }
+  }
+  return candidates.map(candidate => generatedClientPackageForPath(packageRecords, candidate)).find(Boolean);
+}
+
+function capabilityIsTypeOnly(capability) {
+  const {kind, node} = capability;
+  if (kind === 'type') return true;
+  if (ts.isImportDeclaration(node)) {
+    if (!node.importClause) return false;
+    if (node.importClause.isTypeOnly) return true;
+    const bindings = node.importClause.namedBindings;
+    return ts.isNamedImports(bindings) && bindings.elements.length > 0 && bindings.elements.every(element => element.isTypeOnly);
+  }
+  if (ts.isExportDeclaration(node)) {
+    if (node.isTypeOnly) return true;
+    return Boolean(node.exportClause && ts.isNamedExports(node.exportClause)
+      && node.exportClause.elements.length > 0
+      && node.exportClause.elements.every(element => element.isTypeOnly));
+  }
+  if (ts.isImportEqualsDeclaration(node)) return node.isTypeOnly;
+  return false;
+}
+
+function assertPrivateGeneratedClientBoundary(root, packageRecords) {
+  for (const sourcePackage of packageRecords) {
+    const capabilities = collectBoundaryImportCapabilities(sourcePackage.packageDirectory);
+    const packageExports = sourcePackage.package.exports;
+    const rootTargets = exportedTargets(packageExports?.['.']);
+    for (const target of Object.values(packageExports ?? {}).flatMap(exportedTargets)) {
+      const candidate = target.includes('*')
+        ? target.replace('*', 'generated/terminalApi')
+        : target;
+      const exposedPackage = generatedClientPackageForPath(packageRecords, path.resolve(sourcePackage.packageDirectory, candidate));
+      if (exposedPackage?.moduleName === sourcePackage.moduleName) {
+        throw new Error(`${sourcePackage.moduleName} public export map exposes generated client implementation (${target})`);
+      }
+    }
+
+    for (const target of rootTargets) {
+      const entryPath = path.resolve(sourcePackage.packageDirectory, target);
+      if (!fs.existsSync(entryPath)) continue;
+      for (const capability of capabilities) {
+        if (path.resolve(capability.filePath) !== entryPath) continue;
+        const generatedPackage = generatedClientPackageForSpecifier(
+          packageRecords,
+          capability.moduleName,
+          capability.filePath,
+          sourcePackage,
+        );
+        if (generatedPackage?.moduleName === sourcePackage.moduleName && !capabilityIsTypeOnly(capability)) {
+          throw new Error(`${sourcePackage.moduleName} public root exposes generated client implementation`);
+        }
+      }
+    }
+
+    for (const {filePath, sourceFile, ...capability} of capabilities) {
+      const targetPackage = generatedClientPackageForSpecifier(
+        packageRecords,
+        capability.moduleName,
+        filePath,
+        sourcePackage,
+      );
+      if (targetPackage && targetPackage.moduleName !== sourcePackage.moduleName) {
+        throw new Error(
+          `${sourcePackage.moduleName} imports foreign private generated client ${targetPackage.moduleName} via ${capability.kind} at ${path.relative(root, filePath).split(path.sep).join('/')}:${sourceLine(capability.node, sourceFile)}`,
+        );
+      }
+    }
+  }
+}
+
 function runGraphComparison(context) {
   const {spec, projected, root} = context;
   runRootWorkspaceEnumeration(root);
@@ -697,13 +870,32 @@ function runGraphComparison(context) {
   assertAcyclic(projected);
   const entries = leafPackageEntries(readPackageCensus(root), root);
   if (!entries.length) throw new Error('TER leaf package census is empty at CP-1; package graph is not built yet');
+  assertPrivateGeneratedClientBoundary(root, entries);
+  const rootWorkspacePackages = readRootWorkspacePackages(root);
+  const externalRootWorkspaceImports = new Set();
   const resolveSourceImport = (specifier, importingModule) => {
     const exactModule = packageNameToModuleName(specifier, spec);
     if (exactModule) return exactModule;
     const owningPackage = entries.find(
       candidate => typeof candidate.package.name === 'string' && specifier.startsWith(`${candidate.package.name}/`),
     );
-    if (!owningPackage) return null;
+    if (!owningPackage) {
+      const packageName = specifier.startsWith('@') ? specifier.split('/').slice(0, 2).join('/') : specifier.split('/')[0];
+      const externalPackage = rootWorkspacePackages.get(packageName);
+      if (!externalPackage) return null;
+      const importingEntry = entries.find(entry => entry.moduleName === importingModule);
+      const declaredRange = importingEntry?.package.dependencies?.[packageName] ?? importingEntry?.package.devDependencies?.[packageName];
+      if (typeof declaredRange !== 'string' || !declaredRange.startsWith('workspace:')) {
+        throw new Error(`${importingModule} imports root workspace package ${packageName} without a workspace dependency`);
+      }
+      const publicSubpath = `.${specifier.slice(packageName.length)}`;
+      const exports = externalPackage.package.exports;
+      if (typeof exports !== 'object' || exports === null || !Object.hasOwn(exports, publicSubpath)) {
+        throw new Error(`${importingModule} imports undeclared root workspace export ${specifier}`);
+      }
+      externalRootWorkspaceImports.add(specifier);
+      return null;
+    }
     const packageName = owningPackage.package.name;
     const publicSubpath = `.${specifier.slice(packageName.length)}`;
     const exports = owningPackage.package.exports;
@@ -736,7 +928,10 @@ function runGraphComparison(context) {
         : [];
     const sourceImports = sourceSpecifiers.map(value => resolveSourceImport(value, moduleName));
     const nonRootWorkspaceImports = sourceSpecifiers.filter(
-      (value, index) => value.startsWith(packageScope) && sourceImports[index] === null,
+      (value, index) =>
+        value.startsWith(packageScope) &&
+        sourceImports[index] === null &&
+        !externalRootWorkspaceImports.has(value),
     );
     if (nonRootWorkspaceImports.length) {
       throw new Error(
@@ -918,6 +1113,107 @@ function runDependencyDeclarationCompleteness(context) {
       }
     }
   }
+}
+
+function runSourceLayout(context) {
+  const allowedSourceDirectories = new Set([
+    'application',
+    'assembly',
+    'components',
+    'contexts',
+    'declarations',
+    'defaults',
+    'features',
+    'foundations',
+    'generated',
+    'hooks',
+    'implementations',
+    'selectors',
+    'testing',
+    'theme',
+    'types',
+    'vendor',
+  ]);
+  const allowedSourceFiles = new Set(['dependencies.ts', 'index.ts', 'moduleName.ts']);
+  const allowedFeatureDirectories = new Set(['actors', 'slices']);
+  const violations = [];
+  for (const moduleName of Object.keys(context.projected)) {
+    const packageDirectory = moduleNameToPath(moduleName, context.root);
+    const sourceRoot = path.join(packageDirectory, 'src');
+    if (!fs.existsSync(sourceRoot)) {
+      violations.push(`${moduleName}:src:MISSING`);
+      continue;
+    }
+    for (const entry of fs.readdirSync(sourceRoot, {withFileTypes: true})) {
+      if (entry.isDirectory() && allowedSourceDirectories.has(entry.name)) continue;
+      if (entry.isFile() && allowedSourceFiles.has(entry.name)) continue;
+      violations.push(`${moduleName}:src/${entry.name}`);
+    }
+    const featuresRoot = path.join(sourceRoot, 'features');
+    if (fs.existsSync(featuresRoot)) {
+      for (const entry of fs.readdirSync(featuresRoot, {withFileTypes: true})) {
+        if (!entry.isDirectory() || !allowedFeatureDirectories.has(entry.name))
+          violations.push(`${moduleName}:src/features/${entry.name}`);
+      }
+    }
+  }
+  if (violations.length) throw new Error(`TER source directory vocabulary violated=${violations.sort().join(',')}`);
+}
+
+function runPublicExportInvariants(context) {
+  const analysis = analysisFor(context);
+  const checker = analysis.program.getTypeChecker();
+  const violations = [];
+  for (const moduleName of Object.keys(context.projected).sort()) {
+    const packageRoot = moduleNameToPath(moduleName, context.root);
+    const invariantPath = path.join(packageRoot, 'terminal-invariants.json');
+    if (!fs.existsSync(invariantPath)) continue;
+    const invariant = readPackageInvariant(packageRoot, moduleNameToPackageName(moduleName));
+    if (!Array.isArray(invariant.publicExports)) {
+      violations.push(`${moduleName}: terminal-invariants.json must declare publicExports`);
+      continue;
+    }
+
+    const indexPath = path.join(packageRoot, 'src/index.ts');
+    const indexSourceFile = analysis.program.getSourceFile(indexPath);
+    if (!indexSourceFile) {
+      violations.push(`${moduleName}: publicExports declared without src/index.ts`);
+      continue;
+    }
+    const nonReExport = indexSourceFile.statements.find(
+      statement => !ts.isExportDeclaration(statement) || statement.moduleSpecifier === undefined,
+    );
+    if (nonReExport) {
+      violations.push(`${moduleName}: src/index.ts must contain only explicit re-export declarations`);
+      continue;
+    }
+    const wildcard = indexSourceFile.statements.find(
+      statement =>
+        ts.isExportDeclaration(statement) &&
+        statement.moduleSpecifier !== undefined &&
+        (statement.exportClause === undefined || !ts.isNamedExports(statement.exportClause)),
+    );
+    if (wildcard) {
+      violations.push(`${moduleName}: src/index.ts must use explicit named re-exports`);
+      continue;
+    }
+
+    const moduleSymbol = checker.getSymbolAtLocation(indexSourceFile);
+    if (!moduleSymbol) {
+      violations.push(`${moduleName}: src/index.ts has no TypeScript module symbol`);
+      continue;
+    }
+    const actual = checker.getExportsOfModule(moduleSymbol).map(symbol => symbol.name).sort();
+    const expected = [...invariant.publicExports].sort();
+    const missing = actual.filter(name => !expected.includes(name));
+    const extra = expected.filter(name => !actual.includes(name));
+    if (missing.length || extra.length || new Set(actual).size !== actual.length) {
+      violations.push(
+        `${moduleName}: publicExports mismatch; missing=${JSON.stringify(missing)} extra=${JSON.stringify(extra)}`,
+      );
+    }
+  }
+  if (violations.length) throw new Error(violations.join('; '));
 }
 
 function hasAncestorTypeAlias(node, aliasName) {
@@ -1113,9 +1409,13 @@ function runTr01Boundary(context) {
           );
         });
       });
+      // A composed actor can install its command handlers in shared installer
+      // helpers, so its owning file need not call onCommand directly.
       const isActorSource =
         actorPath.test(relativeSource) &&
-        (exportedActorDefinition || (actorFactoryNames.has('defineActor') && actorFactoryNames.has('onCommand')));
+        (exportedActorDefinition || actorFactoryNames.has('defineActor'));
+      const actorCommandInstallerSource =
+        /(?:^|\/)features\/actors\/shared\/install[A-Z][A-Za-z0-9]*Commands\.ts$/.test(relativeSource);
       const scopeStack = [];
       const scanSource = typedSourceFile ?? sourceFile;
       const functionScopeName = node => {
@@ -1206,7 +1506,13 @@ function runTr01Boundary(context) {
                 ? undefined
                 : exceptionBuckets.get(matchingExceptionBaseKey)?.[occurrence];
             if (matchingException) consumedExceptions.add(tr01ExceptionKey(matchingException));
-            const actorAllowed = actorDispatchCall && isActorSource && insideOnCommandHandler;
+            // TR-01 grants reducer writes to actor implementation files. A
+            // private helper in that same actor file does not create a second
+            // command entry point; passing dispatchAction out of the actor is
+            // still rejected by the argument check below.
+            const actorAllowed =
+              actorDispatchCall &&
+              (isActorSource || (actorCommandInstallerSource && insideOnCommandHandler));
             if (!matchingException && !actorAllowed) {
               const lineSource = node.getSourceFile();
               throw new Error(
@@ -1508,6 +1814,8 @@ export function runStaticChecks({root = repoRoot, batch} = {}) {
     ['triple-naming', () => runTripleNaming(context)],
     ['dependency-direction', () => runDependencyDirection(context)],
     ['dependency-declaration-completeness', () => runDependencyDeclarationCompleteness(context)],
+    ['source-layout', () => runSourceLayout(context)],
+    ['public-export-invariants', () => runPublicExportInvariants(context)],
     ['runtime-dependency-contract', () => runRuntimeDependencyContract(context)],
     ['tr01-reducer-boundary', () => runTr01Boundary(context)],
     ['state-reset-retention-only', () => runStateResetRetentionOnly(context)],
@@ -1537,7 +1845,7 @@ export function runStaticChecks({root = repoRoot, batch} = {}) {
 
 function printUsage() {
   console.log('Usage: node tools/terminal-skeleton/check-static.mjs [--root <repo-root>] [--help]');
-  console.log('Runs eleven TER static rule gates and one separately reported scaffold hygiene check.');
+  console.log('Runs thirteen TER static rule gates and one separately reported scaffold hygiene check.');
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

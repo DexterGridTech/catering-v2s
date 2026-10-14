@@ -1,7 +1,8 @@
 import {describe, expect, it} from 'vitest';
 import {definePart} from '@catering-v2s/ui-base-render';
-import {adminShellAssembly} from '@catering-v2s/ui-base-admin-shell';
-import {assertSecondaryPartsCanBeProjected, selectPartsForSurfaceForm} from '../src/foundations/integrationAssembly';
+import {createAdminShellModule} from '@catering-v2s/ui-base-admin-shell';
+import type {TransportServerConfig} from '@catering-v2s/kernel-base-contracts';
+import {assertSecondaryPartsCanBeProjected, selectPartsForSurfaceForm} from '../src/application/integrationAssembly';
 
 const makePart = (partKey: string, surfaceForm: readonly ('laptop' | 'mobile')[], rendererKey: string) =>
   definePart({
@@ -94,7 +95,11 @@ describe('console assembly surface-form admission', () => {
   });
 
   it('rejects overlap in the real R-10a admin sibling fixture for either requested form', () => {
-    const siblings = adminShellAssembly.parts.filter(
+    const serverSpaces: TransportServerConfig = {
+      selectedSpace: 'development',
+      spaces: [{name: 'development', servers: []}],
+    };
+    const siblings = (createAdminShellModule(serverSpaces).presentationContributions.parts ?? []).filter(
       part => part.catalogEntry.partKey === 'admin.console.platform-ports',
     );
     expect(siblings).toHaveLength(2);

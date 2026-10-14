@@ -21,13 +21,13 @@ describe('sample wallpaper owner module', () => {
     expect(module.moduleName).toBe('kernel.feature.sample-wallpaper');
     expect(module.kind).toBe('owner');
     expect(module.dependencies?.map(dependency => dependency.moduleName)).toEqual(['kernel.base.runtime']);
-    expect(module.commands?.map(command => [command.name, command.visibility])).toEqual([
+    expect(module.commandDefinitions?.map(command => [command.commandName, command.visibility])).toEqual([
       ['kernel.feature.sample-wallpaper.select-wallpaper', 'public'],
       ['kernel.feature.sample-wallpaper.confirm-wallpaper', 'public'],
       ['kernel.feature.sample-wallpaper.cancel-wallpaper-selection', 'public'],
     ]);
-    expect(module.actors?.map(actor => actor.name)).toEqual(['selection']);
-    expect(module.slices).toEqual([
+    expect(module.actorDefinitions?.map(actor => actor.actorName)).toEqual(['selection']);
+    expect(module.stateSlices?.map(slice => ({name: slice.name, persistIntent: slice.persistIntent}))).toEqual([
       {
         name: 'kernel.feature.sample-wallpaper.selection',
         persistIntent: 'owner-only',

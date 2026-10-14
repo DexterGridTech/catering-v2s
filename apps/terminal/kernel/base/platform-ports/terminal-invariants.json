@@ -2,9 +2,19 @@
   "schemaVersion": 1,
   "package": "@catering-v2s/kernel-base-platform-ports",
   "owned": {
-    "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/kernel-base-platform-ports", "runner": "vitest"},
-    "lint": {"kind": "OWNED", "owner": "@catering-v2s/kernel-base-platform-ports", "runner": "eslint"},
-    "clean": {"kind": "ABSENT"}
+    "test": {
+      "kind": "REAL_TESTS",
+      "owner": "@catering-v2s/kernel-base-platform-ports",
+      "runner": "vitest"
+    },
+    "lint": {
+      "kind": "OWNED",
+      "owner": "@catering-v2s/kernel-base-platform-ports",
+      "runner": "eslint"
+    },
+    "clean": {
+      "kind": "ABSENT"
+    }
   },
   "publicExports": [
     "AppControlCall",
@@ -38,25 +48,6 @@
     "EnvironmentMode",
     "ExitApplicationInput",
     "ExitTransitionObservation",
-    "PrepareUpdateArtifactInput",
-    "TerminalUpdateApkIdentity",
-    "TerminalUpdateArtifact",
-    "TerminalUpdateArtifactFile",
-    "TerminalUpdateMinimumFull",
-    "UpdateAction",
-    "UpdateActionInput",
-    "UpdateActualVersions",
-    "UpdateCall",
-    "UpdateFailureCode",
-    "UpdateFacts",
-    "UpdateInstallerConfirmationResult",
-    "UpdateInstallerConfirmationTrigger",
-    "UpdateNetworkSnapshot",
-    "UpdatePreparedArtifact",
-    "UpdatePort",
-    "UpdatePresentation",
-    "UpdatePresentationListener",
-    "UpdateSource",
     "LogContext",
     "LogError",
     "LogEvent",
@@ -88,6 +79,8 @@
     "NetworkStatus",
     "NetworkStatusChanged",
     "NetworkStatusListener",
+    "NetworkStatusSubscriptionInput",
+    "NetworkStatusUnsubscribeInput",
     "NoOutput",
     "PlatformPortBindings",
     "PlatformPortCapability",
@@ -109,9 +102,16 @@
     "PowerStatusListener",
     "PowerStatusSubscriptionInput",
     "PowerStatusUnsubscribeInput",
-    "NetworkStatusSubscriptionInput",
-    "NetworkStatusUnsubscribeInput",
+    "PrepareUpdateArtifactInput",
     "ProcessorStatus",
+    "RemoteControlCleanupFacts",
+    "RemoteControlLocalScreen",
+    "RemoteControlPointerInput",
+    "RemoteControlPointerPhase",
+    "RemoteControlPort",
+    "RemoteControlPortEvent",
+    "RemoteControlScreen",
+    "RemoteControlSessionInput",
     "RuntimeResetInput",
     "RuntimeTransitionObservation",
     "ScriptCall",
@@ -133,6 +133,10 @@
     "SurfaceActionInput",
     "SurfaceToggleInput",
     "SystemStatus",
+    "TerminalUpdateApkIdentity",
+    "TerminalUpdateArtifact",
+    "TerminalUpdateArtifactFile",
+    "TerminalUpdateMinimumFull",
     "ToggleState",
     "TopologyHostAddress",
     "TopologyHostCall",
@@ -144,6 +148,28 @@
     "TopologyHostState",
     "TopologyHostStats",
     "TopologyHostStatus",
+    "TopologyPeerChannel",
+    "TopologyPeerChannelEvent",
+    "TransportConnection",
+    "TransportConnectionEvent",
+    "TransportHttpAttemptResult",
+    "TransportManagedConnection",
+    "TransportNetworkAdapter",
+    "TransportNetworkSnapshot",
+    "UpdateAction",
+    "UpdateActionInput",
+    "UpdateActualVersions",
+    "UpdateCall",
+    "UpdateFacts",
+    "UpdateFailureCode",
+    "UpdateInstallerConfirmationResult",
+    "UpdateInstallerConfirmationTrigger",
+    "UpdateNetworkSnapshot",
+    "UpdatePort",
+    "UpdatePreparedArtifact",
+    "UpdatePresentation",
+    "UpdatePresentationListener",
+    "UpdateSource",
     "UploadedLogFile",
     "consoleLoggerBinding",
     "createPlatformPorts",
@@ -157,11 +183,12 @@
     "unavailableAppControlPort",
     "unavailableConnectorPort",
     "unavailableDevicePort",
-    "unavailableUpdatePort",
     "unavailableLogUploadPort",
     "unavailablePersistSecurePort",
+    "unavailableRemoteControlPort",
     "unavailableScriptPort",
-    "unavailableTopologyHostPort"
+    "unavailableTopologyHostPort",
+    "unavailableUpdatePort"
   ],
   "portKeys": [
     "logger",
@@ -188,10 +215,28 @@
     "logUpload",
     "topologyHost"
   ],
-  "platformPortsOptionalKeys": ["startupRunId"],
+  "platformPortsOptionalKeys": [
+    "startupRunId"
+  ],
   "portMethods": {
-    "LoggerPort": ["debug", "info", "warn", "error", "scope", "withContext"],
-    "StateStoragePort": ["read", "write", "remove", "readMany", "writeMany", "removeMany", "listKeys", "clear"],
+    "LoggerPort": [
+      "debug",
+      "info",
+      "warn",
+      "error",
+      "scope",
+      "withContext"
+    ],
+    "StateStoragePort": [
+      "read",
+      "write",
+      "remove",
+      "readMany",
+      "writeMany",
+      "removeMany",
+      "listKeys",
+      "clear"
+    ],
     "DevicePort": [
       "getDeviceInfo",
       "getDisplayInfo",
@@ -214,8 +259,17 @@
       "showNativeLoading",
       "hideNativeLoading"
     ],
-    "ScriptPort": ["execute", "getStats", "clearStats"],
-    "ConnectorPort": ["call", "subscribe", "unsubscribe", "on"],
+    "ScriptPort": [
+      "execute",
+      "getStats",
+      "clearStats"
+    ],
+    "ConnectorPort": [
+      "call",
+      "subscribe",
+      "unsubscribe",
+      "on"
+    ],
     "UpdatePort": [
       "readFacts",
       "readPresentation",
@@ -227,7 +281,14 @@
       "presentInstallerConfirmation",
       "releasePrepared"
     ],
-    "LogUploadPort": ["uploadLogsForDate"],
-    "TopologyHostPort": ["start", "stop", "getStatus", "getDiagnosticsSnapshot"]
+    "LogUploadPort": [
+      "uploadLogsForDate"
+    ],
+    "TopologyHostPort": [
+      "start",
+      "stop",
+      "getStatus",
+      "getDiagnosticsSnapshot"
+    ]
   }
 }

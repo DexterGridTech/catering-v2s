@@ -9,13 +9,11 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import {spawnSync} from "node:child_process";
 import {fileURLToPath} from "node:url";
 import {acceptanceScenarioIds, plan as seedPlan, validate as validateSeedPlan} from "./external-collaboration-business-channel-seed-plan.mjs";
-import {FormalSeedFailure, managedSeedEnvironment} from "./owner-command-seed-executor.mjs";
-import {canonicalStartToken} from "./managed-process-tree.mjs";
-import {validateRemoteJavaControl} from "./r5-remote-java.mjs";
-import {buildManagedDiagnosticHeaders, measurementMetadataForReport, readManagedDiagnosticEvents, validateManagedDiagnosticTransport} from "./managed-diagnostic-protocol.mjs";
+import {FormalSeedFailure, managedRuntime, managedSeedEnvironment} from "./owner-command-seed-executor.mjs";
+import {preservedSeedStateLabels, seedRunIdentity} from './managed-seed-target.mjs';
+import {buildManagedDiagnosticHeaders, measurementMetadataForReport, readManagedDiagnosticEvents} from "./managed-diagnostic-protocol.mjs";
 import {buildSeedReport, loadGeneratedOperationRegistry, materializeGeneratedOperationPath, resolveGeneratedOperationById, writeSeedReportPair} from "../test/seed-report.mjs";
 import {createSeedHttpClient} from "./seed-http-client.mjs";
 
@@ -86,22 +84,11 @@ function writeJsonAtomically(file, value) {
 }
 
 function loadManagedRun() {
-  const manifest = readJson(path.join(runtimeRoot, "run-manifest.json"), "EXTERNAL_BUSINESS_CHANNEL_SEED_MANAGED_RUN_MANIFEST");
-  if (manifest.kind !== "r5-dev-run-manifest" || manifest.freshDatabase !== true || typeof manifest.runId !== "string") fail("EXTERNAL_BUSINESS_CHANNEL_SEED_MANAGED_RUN_INVALID");
-  if (typeof manifest.localHttpBaseUrl !== "string" || !/^http:\/\/127\.0\.0\.1:\d{4,5}$/.test(manifest.localHttpBaseUrl)) fail("EXTERNAL_BUSINESS_CHANNEL_SEED_MANAGED_HTTP_INVALID");
-  try { validateRemoteJavaControl(manifest.remoteJava); validateManagedDiagnosticTransport(manifest); }
-  catch { fail("EXTERNAL_BUSINESS_CHANNEL_SEED_MANAGED_BINDING_INVALID"); }
-  for (const process of manifest.processes ?? []) {
-    const probe = spawnSync("ps", ["-o", "lstart=", "-p", String(process.pid)], {encoding: "utf8"});
-    if (probe.status !== 0 || canonicalStartToken(probe.stdout) !== canonicalStartToken(process.startToken)) fail(`EXTERNAL_BUSINESS_CHANNEL_SEED_MANAGED_PROCESS_INVALID:${process.name}`);
-  }
-  const credentialsFile = manifest.credentialsFile;
-  if (!credentialsFile || !fs.existsSync(credentialsFile) || (fs.statSync(credentialsFile).mode & 0o777) !== 0o600) fail("EXTERNAL_BUSINESS_CHANNEL_SEED_MANAGED_CREDENTIALS_INVALID");
-  const credentials = Object.fromEntries(fs.readFileSync(credentialsFile, "utf8").split("\n").filter(Boolean).map((line) => line.split("=", 2)));
+  const {manifest, credentials} = managedRuntime();
   let environment;
   try { environment = managedSeedEnvironment(manifest, credentials); }
   catch (error) { fail(error instanceof FormalSeedFailure ? error.code : "EXTERNAL_BUSINESS_CHANNEL_SEED_MANAGED_ENVIRONMENT_INVALID"); }
-  return Object.freeze({manifest, credentials, environment});
+  return Object.freeze({manifest, credentials, environment, identity: seedRunIdentity(manifest)});
 }
 
 /** Parent-only runtime admission. Static plan modes do not require this context. */
@@ -109,12 +96,14 @@ export function validateParentSeedContext({context, parentManifest, contextPath,
   const resolvedRoot = path.resolve(parentRuntimeRoot);
   const resolvedContext = path.resolve(contextPath ?? "");
   if (!resolvedContext.startsWith(`${resolvedRoot}${path.sep}`)) fail("EXTERNAL_BUSINESS_CHANNEL_SEED_PARENT_CONTEXT_PATH_INVALID");
-  if (context?.schemaVersion !== 1 || context?.kind !== "r5-complete-seed-child-context" || context?.profile !== "r5-full" || context?.stageId !== stageId || typeof context?.runId !== "string" || !context.runId || typeof context?.managedDevRunId !== "string" || !context.managedDevRunId || !/^[0-9a-f]{64}$/.test(context?.tokenSha256 ?? "")) fail("EXTERNAL_BUSINESS_CHANNEL_SEED_PARENT_CONTEXT_INVALID");
+  const environmentKind = context?.environmentKind ?? 'dev';
+  const managedEnvironmentRunId = context?.managedEnvironmentRunId ?? context?.managedDevRunId;
+  if (context?.schemaVersion !== 1 || context?.kind !== "r5-complete-seed-child-context" || context?.profile !== "r5-full" || context?.stageId !== stageId || typeof context?.runId !== "string" || !context.runId || !['dev', 'uat'].includes(environmentKind) || typeof managedEnvironmentRunId !== "string" || !managedEnvironmentRunId || !/^[0-9a-f]{64}$/.test(context?.tokenSha256 ?? "")) fail("EXTERNAL_BUSINESS_CHANNEL_SEED_PARENT_CONTEXT_INVALID");
   const expectedPath = path.join(resolvedRoot, "seed", "complete", context.runId, `${stageId}-context.json`);
   if (resolvedContext !== expectedPath) fail("EXTERNAL_BUSINESS_CHANNEL_SEED_PARENT_CONTEXT_PATH_INVALID");
-  if (parentManifest?.kind !== "r5-complete-seed-manifest" || parentManifest?.profile !== "r5-full" || parentManifest?.runId !== context.runId || parentManifest?.managedDevRunId !== context.managedDevRunId) fail("EXTERNAL_BUSINESS_CHANNEL_SEED_PARENT_MANIFEST_INVALID");
+  if (parentManifest?.kind !== "r5-complete-seed-manifest" || parentManifest?.profile !== "r5-full" || parentManifest?.runId !== context.runId || parentManifest?.environmentKind !== environmentKind || (parentManifest?.managedEnvironmentRunId ?? parentManifest?.managedDevRunId) !== managedEnvironmentRunId) fail("EXTERNAL_BUSINESS_CHANNEL_SEED_PARENT_MANIFEST_INVALID");
   if (!parentManifest.phases?.some((entry) => entry?.stage === stageId && entry?.status === "RUNNING")) fail("EXTERNAL_BUSINESS_CHANNEL_SEED_PARENT_STAGE_NOT_RUNNING");
-  return Object.freeze({runId: context.runId, managedDevRunId: context.managedDevRunId, contextPath: resolvedContext});
+  return Object.freeze({runId: context.runId, environmentKind, managedEnvironmentRunId, ...(environmentKind === 'dev' ? {managedDevRunId: managedEnvironmentRunId} : {}), contextPath: resolvedContext});
 }
 
 function loadParentSeedContext() {
@@ -228,7 +217,7 @@ async function executeManagedSeed() {
   const startedAt = new Date().toISOString();
   const phases = []; const calls = [];
   let parent = null; let managed = null; let inputs = null; let measurement = null; let business = "RUNNING"; let cleanup = "RUNNING"; let firstFailure = null;
-  const persist = () => writeJsonAtomically(manifestPath, {schemaVersion: 2, kind: "external-collaboration-business-channel-seed-manifest", runId, stageId, parentSeedRunId: parent?.runId ?? null, managedDevRunId: managed?.manifest?.runId ?? null, startedAt, business, cleanup, firstFailure, noDirectDatabaseWrites: true, phases});
+  const persist = () => writeJsonAtomically(manifestPath, {schemaVersion: 3, kind: "external-collaboration-business-channel-seed-manifest", runId, stageId, parentSeedRunId: parent?.runId ?? null, ...(managed?.identity ?? {}), startedAt, business, cleanup, firstFailure, noDirectDatabaseWrites: true, phases});
   const phase = (name, status, detail = {}) => { phases.push({at: new Date().toISOString(), stage: name, status, ...detail}); persist(); };
   // Publish both receipt paths before any runtime work.  A child that fails
   // while finalizing its report must remain discoverable by the parent.
@@ -236,18 +225,21 @@ async function executeManagedSeed() {
   process.stdout.write(`EXTERNAL_COLLABORATION_BUSINESS_CHANNEL_SEED_STARTED; RUN_MANIFEST=${manifestPath}; REPORT=${reportPath}\n`);
   try {
     parent = loadParentSeedContext(); inputs = loadStaticInputs(); managed = loadManagedRun(); measurement = measurementMetadataForReport(managed.manifest);
-    if (parent.managedDevRunId !== managed.manifest.runId) fail("EXTERNAL_BUSINESS_CHANNEL_SEED_PARENT_MANAGED_RUN_MISMATCH");
-    phase("PREFLIGHT", "PASS", {parentSeedRunId: parent.runId, managedDevRunId: managed.manifest.runId, runtimePlanDigest: inputs.planDigest});
+    if (parent.managedEnvironmentRunId !== managed.identity.managedEnvironmentRunId || parent.environmentKind !== managed.identity.environmentKind) fail("EXTERNAL_BUSINESS_CHANNEL_SEED_PARENT_MANAGED_RUN_MISMATCH");
+    phase("PREFLIGHT", "PASS", {parentSeedRunId: parent.runId, ...managed.identity, runtimePlanDigest: inputs.planDigest});
   } catch (error) {
-    firstFailure = error.code ?? compact(error.message); business = "FAIL"; cleanup = "PASS_PRESERVED_DEV_STATE";
-    phase("PREFLIGHT", "FAIL", {reason: firstFailure}); phase("SEED_CLEANUP", "PASS", {policy: "PRESERVE_DEV_EXPERIENCE_STATE", persistentSeedProcess: false, resetRequiredBeforeRerun: true});
-    const report = {schemaVersion: 2, kind: "external-collaboration-business-channel-seed-report", runId, stageId, parentSeedRunId: parent?.runId ?? null, managedDevRunId: null, startedAt, finishedAt: new Date().toISOString(), status: business, business, cleanup, firstFailure, phases, calls, noDirectDatabaseWrites: true};
+    const preservedState = parent?.environmentKind
+      ? preservedSeedStateLabels(parent.environmentKind)
+      : {cleanup: "PASS_NO_PERSISTENT_SEED_PROCESS", policy: "NO_SEED_MUTATIONS_STARTED"};
+    firstFailure = error.code ?? compact(error.message); business = "FAIL"; cleanup = preservedState.cleanup;
+    phase("PREFLIGHT", "FAIL", {reason: firstFailure}); phase("SEED_CLEANUP", "PASS", {policy: preservedState.policy, persistentSeedProcess: false, resetRequiredBeforeRerun: true});
+    const report = {schemaVersion: 3, kind: "external-collaboration-business-channel-seed-report", runId, stageId, parentSeedRunId: parent?.runId ?? null, ...(managed?.identity ?? {}), startedAt, finishedAt: new Date().toISOString(), status: business, business, cleanup, firstFailure, phases, calls, noDirectDatabaseWrites: true};
     try { writeSeedReportPair(reportPath, report); } catch { /* preserve primary preflight failure */ }
     process.stderr.write(`EXTERNAL_COLLABORATION_BUSINESS_CHANNEL_SEED=REFUSED; REASON=${firstFailure}; RUN_MANIFEST=${manifestPath}; REPORT=${reportPath}\n`); process.exitCode = 2; return;
   }
   const requestKey = (name) => `r5-external-${sha256(`${runId}:${name}`).slice(0, 48)}`;
   const request = createSeedHttpClient({
-    baseUrl: managed.environment.V2S_DEV_HTTP_BASE_URL,
+    baseUrl: managed.environment.V2S_SEED_HTTP_BASE_URL,
     resolveOperation: operationId => resolveGeneratedOperationById(inputs.registry, operationId),
     materializeOperationPath: materializeGeneratedOperationPath,
     buildDiagnosticHeaders: buildManagedDiagnosticHeaders,
@@ -262,7 +254,7 @@ async function executeManagedSeed() {
     onFailure: code => { firstFailure ??= code; },
     onPhase: phase,
     decorateCall: (call, {operation}) => ({
-      managedDevRunId: managed.manifest.runId,
+      ...managed.identity,
       owner: operation.owner,
       consumerFace: operation.consumerFaces?.join(',') ?? null,
     }),
@@ -471,26 +463,28 @@ async function executeManagedSeed() {
     if (JSON.stringify(actualEligible) !== JSON.stringify(expectedEligible)) fail("EXTERNAL_BUSINESS_CHANNEL_SEED_ELIGIBLE_READBACK_INVALID");
     const projectReadback = await request("project-channel-readback", "getOperationsProjectBusinessChannels", {groupWorkspaceKey: "aurora", projectRef: project.ref}, {cookie: project.cookie});
     if (!(dataOf(projectReadback.json)?.items ?? []).some((entry) => entry.channelCode === "CHANNEL-PROJECT-INTERNAL-TAKEAWAY")) fail("EXTERNAL_BUSINESS_CHANNEL_SEED_PROJECT_READBACK_INVALID");
-    business = "PASS"; cleanup = "PASS_PRESERVED_DEV_STATE";
+    const preservedState = preservedSeedStateLabels(managed.identity.environmentKind);
+    business = "PASS"; cleanup = preservedState.cleanup;
     phase("SEED_BUSINESS_READBACK", "PASS", {templates: templates.size, channels: channels.size, eligibleSalesMenuChannels: expectedEligible.length});
-    phase("SEED_CLEANUP", "PASS", {policy: "PRESERVE_DEV_EXPERIENCE_STATE", persistentSeedProcess: false, destructiveCleanupOwner: "r5-reset"});
+    phase("SEED_CLEANUP", "PASS", {policy: preservedState.policy, ...(managed.identity.environmentKind === 'dev' ? {destructiveCleanupOwner: "r5-reset"} : {}), persistentSeedProcess: false});
   } catch (error) {
-    firstFailure ??= error.code ?? compact(error.message); business = "FAIL"; cleanup = "PASS_PRESERVED_DEV_STATE";
+    const preservedState = preservedSeedStateLabels(managed.identity.environmentKind);
+    firstFailure ??= error.code ?? compact(error.message); business = "FAIL"; cleanup = preservedState.cleanup;
     phase("SEED_BUSINESS", "FAIL", {reason: firstFailure});
-    phase("SEED_CLEANUP", "PASS", {policy: "PRESERVE_DEV_EXPERIENCE_STATE", persistentSeedProcess: false, destructiveCleanupOwner: "r5-reset", resetRequiredBeforeRerun: true});
+    phase("SEED_CLEANUP", "PASS", {policy: preservedState.policy, ...(managed.identity.environmentKind === 'dev' ? {destructiveCleanupOwner: "r5-reset"} : {}), persistentSeedProcess: false, resetRequiredBeforeRerun: true});
   }
   let events = [];
   try { events = readManagedDiagnosticEvents(managed.manifest); }
   catch (error) { firstFailure ??= error.code ?? compact(error.message); business = "FAIL"; phase("SEED_DIAGNOSTICS", "FAIL", {reason: firstFailure}); }
   let reportError = null;
   try {
-    const report = {...buildSeedReport({runId, managedDevRunId: managed.manifest.runId, measurement, seedProfile: stageId, startedAt, finishedAt: new Date().toISOString(), status: business, businessStatus: business, cleanupStatus: cleanup, fixtureIdentity: {path: path.relative(root, fixturePath), version: inputs.fixture.profile.version, sha256: sha256(fs.readFileSync(fixturePath))}, calls, events, firstFailure}), schemaVersion: 2, kind: "external-collaboration-business-channel-seed-report", stageId, parentSeedRunId: parent.runId, business, cleanup, firstFailure, phases, noDirectDatabaseWrites: true, planDigest: inputs.planDigest, templateCount: inputs.dataset.entities.templates.length, channelCount: inputs.dataset.entities.channels.length};
+  const report = {...buildSeedReport({runId, ...managed.identity, measurement, seedProfile: stageId, startedAt, finishedAt: new Date().toISOString(), status: business, businessStatus: business, cleanupStatus: cleanup, fixtureIdentity: {path: path.relative(root, fixturePath), version: inputs.fixture.profile.version, sha256: sha256(fs.readFileSync(fixturePath))}, calls, events, firstFailure}), schemaVersion: 3, kind: "external-collaboration-business-channel-seed-report", stageId, parentSeedRunId: parent.runId, ...managed.identity, business, cleanup, firstFailure, phases, noDirectDatabaseWrites: true, planDigest: inputs.planDigest, templateCount: inputs.dataset.entities.templates.length, channelCount: inputs.dataset.entities.channels.length};
     writeSeedReportPair(reportPath, report);
   } catch (error) {
     // Preserve the primary business failure and emit a safe, machine-readable
     // finalization failure instead of leaving the parent without a receipt.
     reportError = error?.code ?? "SEED_REPORT_FINALIZATION_FAILED";
-    const fallback = {schemaVersion: 2, kind: "external-collaboration-business-channel-seed-report", runId, stageId, parentSeedRunId: parent.runId, managedDevRunId: managed.manifest.runId, startedAt, finishedAt: new Date().toISOString(), status: "FAIL", business, cleanup, firstFailure, reportError, phases, calls, noDirectDatabaseWrites: true};
+    const fallback = {schemaVersion: 3, kind: "external-collaboration-business-channel-seed-report", runId, stageId, parentSeedRunId: parent.runId, ...(managed?.identity ?? {}), startedAt, finishedAt: new Date().toISOString(), status: "FAIL", business, cleanup, firstFailure, reportError, phases, calls, noDirectDatabaseWrites: true};
     try { writeSeedReportPair(reportPath, fallback); } catch { reportError = "SEED_REPORT_FINALIZATION_FAILED"; }
   }
   persist();

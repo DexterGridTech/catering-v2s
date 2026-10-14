@@ -28,27 +28,10 @@ android {
   }
 }
 
-// The JVM socket tests read production topology timing from this checkout only;
-// do not discover matching config files by searching parent/sibling directories.
-tasks.withType(org.gradle.api.tasks.testing.Test).configureEach {
-  systemProperty 'ter.repositoryRoot', rootProject.projectDir.toPath()
-    .resolve('../../../../../../')
-    .toFile()
-    .canonicalPath
-}
-
 dependencies {
   implementation("com.facebook.react:react-android")
-  // resetRuntime is an application-control entry into the update adapter's
-  // existing process reload capability; the adapter depends only on ports.
-  implementation(project(":catering-v2s-adapter-android-update"))
   // Compile against Expo's single autolinked splash-screen implementation;
   // the consuming App remains the runtime owner of that module.
   compileOnly("host.exp.exponent:expo.modules.splashscreen:57.0.9")
-  // The base module owns the Android HTTP/WS host adapter. Keeping the
-  // dependency here makes the module's compile contract truthful; app-level
-  // declarations remain explicit for the two Expo hosts.
-  implementation("org.nanohttpd:nanohttpd-websocket:2.3.1")
   testImplementation 'junit:junit:4.13.2'
-  testImplementation 'org.json:json:20260719'
 }

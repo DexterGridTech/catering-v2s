@@ -333,6 +333,7 @@ export const ensureTerminalActivated = async (
     readonly deviceId: string;
     readonly androidDeviceSerial?: string;
     readonly httpBaseUrl: string;
+    readonly workspaceKey: string;
     readonly operationsPassword: string;
     readonly managedDevRunId: string;
     readonly sessionId: string;
@@ -348,7 +349,7 @@ export const ensureTerminalActivated = async (
   const fixture = readTerminalSeedFixture(input.repositoryRoot, input.shape);
   const operations = createOperationsFixtureClient({
     httpBaseUrl: input.httpBaseUrl,
-    workspaceKey: 'aurora',
+    workspaceKey: input.workspaceKey,
     storeCode: 'S-OP',
     loginName: 'r5-account-multi-role',
     password: input.operationsPassword,

@@ -609,7 +609,7 @@ admin parts、状态或入口更小且能保持 owner 边界的方案。
 把 `.laptop.tsx` 或 `.mobile.tsx` 当作平台扩展名解析。该规则只适用于组件实现文件，不改变
 partKey、rendererKey 或调用方的 partKey-only API。
 
-**仓内实例**：`apps/terminal/ui/base/admin-shell/src/parts/parts.ts` 将为同一 admin partKey
+**仓内实例**：`apps/terminal/ui/base/admin-shell/src/declarations/parts.ts` 将为同一 admin partKey
 注册 laptop/mobile 两个 renderer；实现文件必须能从文件名直接看出形态。
 
 **验证边界**：这是 review-only 规则。`tools/code-layout/cli.mjs` 的目录词表不覆盖组件文件名，
@@ -1179,22 +1179,23 @@ projection 仓库、MQ、通用 outbox、持久消息队列或常态轮询，也
 | `types/` | 只有 `type`/`interface`/类型级常量，零运行时值 | 任何有运行时行为的东西 |
 | `foundations/` | 纯函数与纯工厂；共享注册表与无副作用基础设施 | store、网络、平台 API、有副作用的东西、React |
 | `implementations/` | 已声明端口的真实实现，可触达平台 API | 端口以外的业务逻辑 |
-| `features/` | command 驱动的业务单元；固定子目录 `actors/`、`commands/`、`slices/`、`variables/` | 纯函数、React |
+| `features/` | command 驱动的业务单元；直接子目录只用 `actors/`、`slices/` | 纯函数、React |
 | `selectors/` | 跨包读的唯一入口（状态读取与派生 selector） | 写操作 |
 | `application/` | 包的组装与入口：module descriptor、runtime 工厂 | 业务逻辑 |
 | `components/` | React 组件，以及直接产出 `ReactNode` 的渲染函数 | 不产出 `ReactNode` 的东西 |
 | `hooks/` | React hooks；一文件一 hook，`useX` 命名 | 非 hook |
 | `contexts/` | React context 定义及其 Provider | 消费 context 的业务组件 |
 | `defaults/` | 已声明端口的默认/不可用实现 | 真实实现、普通配置 |
-| `parts/` | part 声明（`definePart` 的产物） | 组件实现、renderer |
 | `assembly/` | 装配：把 module、catalog、surface 拼起来 | 业务逻辑 |
 | `theme/` | 设计 token | 组件 |
 | `vendor/` | 外部代码的仓内拷贝，原样保留不改写 | 自己写的代码 |
 | `generated/` | 仓内生成器的输出；必须能追溯到唯一生产者与输入 | 手工维护的业务逻辑 |
 | `testing/` | 把生产设施暴露给测试的逃生口 | 测试本身（去 `test/`）、生产逻辑 |
+| `declarations/` | 包内 commands、errors、静态 parameters、parts、variables 及具名声明集合；作为统一声明目录，见§8 | actor 行为、slice 实现、selector 求值、组件、网络或平台执行 |
 
-`features/` 的直接子目录只允许 `actors/`、`commands/`、`slices/`、`variables/`；更深层目录由所属
-feature 自己组织，不由本条目录词表递归猜测职责。`testing/` 不得从生产 `src/index.ts` 公开导出，且
+`features/` 的直接子目录只允许 `actors/`、`slices/`；commands、errors、parameters、parts 与 variables
+等包内静态声明放在 `declarations/`。更深层目录由所属 feature 自己组织，不由本条目录词表递归猜测职责。
+`testing/` 不得从生产 `src/index.ts` 公开导出，且
 不得进入生产 import graph。
 
 ### 7.2 规则档位
@@ -1256,12 +1257,16 @@ checker 必须报告调用点。
 ### `TR-R06` · source 根与 features 直接子目录必须闭合
 
 **规则（L）**：逐 package 枚举 `src/` 根 direct children；根文件只允许三个法定文件，根目录必须来自
-本节 15 项词表。若存在 `src/features/`，其 direct children 目录只允许 `actors`、`commands`、`slices`、
-`variables`；`features/` 更深层目录不由本条约束。
+本节闭合词表。若存在 `src/features/`，其 direct children 只允许 `actors/`、`slices/`；静态声明放在
+`declarations/`，不得在 `features/` 直接放文件或旧 `commands/`、`variables/` 子目录。更深层目录由所属
+feature 自己组织，本条不递归限制。
 
-**仓内实例**：35 个散文件与 3 个旧目录名需要归位。
+**仓内实例**：`tools/terminal-skeleton/check-static.mjs#runSourceLayout` 检查每个 TER 包的 source 根、法定根文件
+和 `features/` 直接子目录；`tools/terminal-skeleton/check-static.test.mjs` 对旧 `features/commands`、
+`features/variables`、根 `parts/` 及未分类根文件提供红例。
 
-**反例栏**：在根增加 `misc.ts`、`src/unknown/` 或 `src/features/misc/`；路径 checker 必须分别报告。
+**反例栏**：在根增加 `misc.ts`、`src/unknown/`、`src/parts/`、`src/features/commands/` 或
+`src/features/variables/`；只应使 `source-layout` 失败，不连带触发无关规则。
 
 ### `TR-R07` · testing 不得进入生产 import graph
 
@@ -1275,3 +1280,37 @@ registry 与注册函数移入 `foundations/`。
 
 **反例栏**：生产 entry 直接 import `src/testing/startupDiagnostics.ts`，即便该文件没有任何
 `startup.` 字面量，graph checker 仍必须变红。
+
+## 8 · T1 新建包与后续维护的长期基线（Dexter 2026-10-13）
+
+来源：已获需求静态GO的`doc/plans/platform/2026-10-13-ter-key-code-structure-t1-formal-requirements-codex.md`及Dexter本轮“形成记忆和规范，后续新建包必须遵守”的明确指派。以下是规范约束；API 是否可用以当前生产定义、注册和导出为准，不能从详设或规范文字推定。既有产品/Journey/身份不由结构规范改写。
+
+### 8.1 · 声明与具名定义
+
+- 集合声明按需放`src/declarations/{commands,errors,parameters,parts,variables}.ts`；有JSX的part声明可.tsx。一个集合文件可声明本包多个command/part，不每个command另建文件。
+- 每个actor、slice、公开selector及hook有具名责任文件；同资源、同生命周期的actor可处理多个commands。短private helper可以同文件；有独立责任再提包内helper，不按行数切分、不强制空文件。
+- moduleName/dependencies/index仍独立；index只作明确公开barrel。策略采用现静态ParameterDefinition，必须真正消费默认/合法覆盖；协议固定值、算法常量、command payload、selector参数schema、UI样式及serverSpaces分开，不建动态catalog。
+- 可预期业务/输入拒绝用本owner错误定义或typed结果并保留现ErrorCategory；平台失败保留PortResult，构造不变量可用Error；不为每个包强建errors.ts。
+
+### 8.2 · owner自闭环、加载与跨包调用
+
+- 各包声明自己的定义、行为、状态、公开selector、实际UI贡献与资源释放；模块描述从真实定义派生，不能手写第二份command/actor/slice名单。纯toolkit没有Runtime贡献时不伪造空module。
+- integration只显式选择加载包、提供包自身不能取得的App/平台/环境输入，并保留本App的阶段/优先级政策；不复制业务owner的资格、路径、缓存、同步名单和失败判定。
+- 每个外部API消费owner拥有包内canonical生成描述/client，只供自身actor使用。包A通过B的command/selector使用B能力，不从B根导出或deep import调用B client。公共业务类型可按真正使用显式type导出，不公开callable API。
+- transport继续拥有通用传输与资源，不因API归包变toolkit。TDC继续唯一凭证与TDP基础服务owner；认证复用其窄command，业务路径/DTO/规则留消费包，不复制凭证或第二HTTP/WS执行器。当前源码尚无的接口仍是实现缺口，不能按文档假装可调用。
+
+### 8.3 · 同步、配置与身份
+
+- 可同步资格由实际已加载、已验证的State registration派生；State拥有projection产生/应用，Topology传递与关联，不读其他owner raw slice。同步方向用现SyncIntent，MAIN/BRANCH不能代替方向。业务required projection仍由相应业务政策决定，不等待所有sync资格。
+- 入口各自package.json.serverSpaces是其内置配置来源，不合并为全局defaults；环境消费具名service/address完整集合，不用One/Two或固定数量上限，不按位置猜名/timeout，不残留同service默认DEV地址。server-config拥有有效覆盖/同步/合法性，transport消费；不新增服务发现或DEV节点。
+- module/command/actor/slice/part/topic/error与native持久身份引用owning定义/canonical，不能移动文件就静默改key、清凭证/任务。App/package/native/protocol/Runtime/boot身份各自保留来源；不按名称相似合并。重启、解绑、root reset分别按既有owner/descriptor边界处理。
+
+### 8.4 · 交付检查及生效边界
+
+每次结构调整须同步当前 owning source、公开面、依赖、invariant、中文 README、适用模板和真实机械门/红例；不存在的脚手架不得虚构，也不能以旧模板复制双写真相、API旁路或另造 registry。规则文字本身不证明某个包已经完成迁移、类型检查或动态验收。
+
+责任由合理性/owner review判断；机械门只判目录、import/export、品牌、真实注册和确定类型结构，不做万能流分析或 hash 台账。动态执行仍沿现唯一 automation driver、TR-16、逐点双读/完整 CP 对账及动态前日志和两轮 TEST_CHAIN_PREFLIGHT；按当前任务授权和实际结果记录，不重复对账或重跑未修改且未受影响内容。
+
+反例：仅移动actors.ts但仍由App维护同步/parts第二名单；A deep import B client；复制credential；用protocol cap当可调策略；为每个helper建actor；为不存在能力填空module/errors/parameters；改变slice/native key后用reset掩盖数据损失。合法反例：同actor处理同资源多个command、纯toolkit无module、constructor Error、真正共享公共type、State为persist/sync读取descriptor。
+
+后续包与维护改动遵守本节；若实现、模板、README或机械门发生漂移，按当前差异修复并验证。规范正文仅此处，项目记忆和skill只放指针。

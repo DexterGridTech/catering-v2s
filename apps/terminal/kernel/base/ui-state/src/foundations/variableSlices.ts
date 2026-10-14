@@ -1,4 +1,4 @@
-import {createSlice, type PayloadAction, type UnknownAction} from '@reduxjs/toolkit';
+import type {UnknownAction} from '@reduxjs/toolkit';
 import {
   createWorkspaceStateKeys,
   toWorkspaceStateDescriptors,
@@ -19,11 +19,8 @@ type VariableState = Readonly<{
   readonly values: Readonly<Record<string, StateJsonValue>>;
 }>;
 
-type MutableVariableState = {
-  values: Record<string, StateJsonValue>;
-};
-
-const variableBaseName = `${moduleName}.ui-variables`;
+export const variableBaseName = `${moduleName}.ui-variables`;
+export const variableStateKeys = createWorkspaceStateKeys(variableBaseName);
 
 const readObject = (value: unknown): Record<string, unknown> | undefined =>
   typeof value === 'object' && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : undefined;
@@ -37,7 +34,7 @@ const readStateJsonValue = (value: unknown): StateJsonValue | undefined => {
   }
 };
 
-const readVariableWriteEntries = (value: unknown): readonly UiVariableWrite<StateJsonValue>[] | undefined => {
+export const readVariableWriteEntries = (value: unknown): readonly UiVariableWrite<StateJsonValue>[] | undefined => {
   const record = readObject(value);
   const rawEntries = record?.entries;
   if (!Array.isArray(rawEntries)) return undefined;
@@ -52,54 +49,13 @@ const readVariableWriteEntries = (value: unknown): readonly UiVariableWrite<Stat
   return Object.freeze(entries);
 };
 
-const readVariableClearKeys = (value: unknown): readonly string[] | undefined => {
+export const readVariableClearKeys = (value: unknown): readonly string[] | undefined => {
   const record = readObject(value);
   const rawKeys = record?.keys;
   if (!Array.isArray(rawKeys)) return undefined;
   if (rawKeys.some(key => typeof key !== 'string' || key.trim().length === 0)) return undefined;
   return Object.freeze([...rawKeys]);
 };
-
-type VariableCaseReducers = {
-  readonly setUiVariables: (state: MutableVariableState, action: PayloadAction<unknown>) => void;
-  readonly clearUiVariables: (state: MutableVariableState, action: PayloadAction<unknown>) => void;
-};
-
-const createVariableReducers = (): VariableCaseReducers => ({
-  setUiVariables: (state, action): void => {
-    const entries = readVariableWriteEntries(action.payload);
-    if (entries === undefined) return;
-    for (const entry of entries) state.values[entry.key] = entry.value;
-  },
-  clearUiVariables: (state, action): void => {
-    const keys = readVariableClearKeys(action.payload);
-    if (keys === undefined) return;
-    for (const key of keys) Reflect.deleteProperty(state.values, key);
-  },
-});
-
-type GeneratedVariableActionCreator = (payload: unknown) => UnknownAction;
-type GeneratedVariableSlice = Readonly<{
-  readonly reducer: (state: VariableState | undefined, action: UnknownAction) => VariableState;
-  readonly actions: Readonly<Record<string, GeneratedVariableActionCreator>>;
-}>;
-
-type CreateVariableSliceInput = Readonly<{
-  readonly name: string;
-  readonly initialState: VariableState;
-  readonly reducers: VariableCaseReducers;
-}>;
-
-const createTypedSlice = createSlice as (input: CreateVariableSliceInput) => GeneratedVariableSlice;
-
-const createInitialVariableState = (): VariableState => ({values: {}});
-
-const createVariableSlice = (name: string): GeneratedVariableSlice =>
-  createTypedSlice({
-    name,
-    initialState: createInitialVariableState(),
-    reducers: createVariableReducers(),
-  });
 
 const serializeVariableEntries = (state: Readonly<VariableState>): Readonly<Partial<Record<string, StateJsonValue>>> =>
   state.values;
@@ -142,21 +98,24 @@ const createVariableDescriptor = (
 
 export type VariableStateFamily = Readonly<{
   readonly stateKeys: WorkspaceStateKeys;
-  readonly actions: Readonly<Record<string, GeneratedVariableActionCreator>>;
+  readonly actions: Readonly<Record<string, VariableActionCreator>>;
   readonly registrations: readonly StateRuntimeSliceRegistration[];
 }>;
 
-export const createVariableStateFamily = (registry: VariableRegistry): VariableStateFamily => {
-  const stateKeys = createWorkspaceStateKeys(variableBaseName);
-  const canonicalSlice = createVariableSlice(variableBaseName);
-  const mainSlice = createVariableSlice(stateKeys.MAIN);
-  const branchSlice = createVariableSlice(stateKeys.BRANCH);
+export type VariableActionCreator = (payload: unknown) => UnknownAction;
+
+export const createVariableStateFamily = (
+  registry: VariableRegistry,
+  reducers: Readonly<{
+    readonly MAIN: StateRuntimeSliceDescriptor<VariableState>['reducer'];
+    readonly BRANCH: StateRuntimeSliceDescriptor<VariableState>['reducer'];
+  }>,
+  actions: Readonly<Record<string, VariableActionCreator>>,
+): VariableStateFamily => {
+  const stateKeys = variableStateKeys;
   const registrations = toWorkspaceStateDescriptors<VariableState>({
     baseName: variableBaseName,
-    reducers: {
-      MAIN: mainSlice.reducer,
-      BRANCH: branchSlice.reducer,
-    },
+    reducers,
     createDescriptor: (_workspace, sliceName, reducer) =>
       createVariableDescriptor({
         registry,
@@ -167,7 +126,7 @@ export const createVariableStateFamily = (registry: VariableRegistry): VariableS
   });
   return Object.freeze({
     stateKeys,
-    actions: canonicalSlice.actions,
+    actions,
     registrations,
   });
 };

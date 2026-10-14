@@ -16,11 +16,12 @@ import {canonicalStartToken} from './managed-process-tree.mjs';
 import {validateRemoteJavaControl} from './r5-remote-java.mjs';
 import {validateFixtureContract} from './r5-fixture-contract.mjs';
 import {createSeedHttpClient} from './seed-http-client.mjs';
+import {seedEnvironmentKind, seedEnvironmentProjection, seedRunIdentity, seedRuntimeRoot, seedTargetBaseUrl} from './managed-seed-target.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const fixturePath = path.join(root, 'doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json');
 const registryPath = path.join(root, 'apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json');
-const runtimeRoot = path.join(root, '.runtime/r5');
+const runtimeRoot = path.resolve(seedRuntimeRoot(root));
 const environmentScript = path.join(root, 'scripts/dev/r5-dev-environment.mjs');
 const bootstrapScript = path.join(root, 'scripts/dev/r5-seed-bootstrap.mjs');
 const terminalFixtureScript = path.join(root, 'scripts/dev/terminal-fixture-state.mjs');
@@ -391,7 +392,7 @@ export function validateFormalSeedStaticInputs({fixture, registry}) {
   }
   const catalogInventoryPrerequisite = validateCatalogInventorySeedPrerequisite(fixture);
   const operations = Array.isArray(registry) ? registry : [];
-  for (const operationId of ['platformPasswordLogin', 'getCurrentPlatformSession', 'createWorkspaceInvitation', 'getWorkspaceInvitations', 'cancelWorkspaceInvitation', 'reissueWorkspaceInvitation', 'acceptPublicInvitation', 'sendPublicInvitationOtp', 'verifyPublicInvitationOtp', 'savePublicInvitationCredentials', 'completePublicInvitation', 'revokePlatformWorkspaceAssignment', 'transitionWorkspaceRoleStatus', 'getOperationsWorkspaceSessionEntry', 'selectOperationsWorkspaceSessionContext', 'selectOperationsWorkspaceSessionDataNode', 'createOperationsOrganizationStore', 'transitionOperationsOrganizationStoreStatus', 'createOperationsContract', 'invalidateOperationsContract', 'getOperationsStoreServicePointAreas', 'postOperationsStoreServicePointArea', 'postOperationsStoreServicePoint', 'postOperationsStoreServicePointStatus', 'postOperationsStoreServicePointAreaStatus', 'getOperationsStoreServicePoint', 'stageStoreServicePointImage', 'getOperationsStoreQrConfiguration', 'getOperationsStoreTerminals', 'getOperationsStoreTerminal', 'getOperationsStoreTerminalAreaCandidates', 'getOperationsStoreTerminalTagCandidates', 'postOperationsStoreTerminal', 'putOperationsStoreTerminal', 'postOperationsStoreTerminalStatus', 'stagePlatformTerminalUpdateArtifact', 'registerPlatformTerminalUpdateArtifact', 'getPlatformTerminalUpdateArtifactDetail', 'operationsWorkspacePasswordLogin', 'createOperationsProjectTerminalUpdateRule', 'getOperationsProjectTerminalUpdateRuleDetail', 'releasePlatformTerminalUpdateArtifactStage']) {
+  for (const operationId of ['platformPasswordLogin', 'getCurrentPlatformSession', 'createWorkspaceInvitation', 'getWorkspaceInvitation', 'getWorkspaceInvitations', 'cancelWorkspaceInvitation', 'reissueWorkspaceInvitation', 'acceptPublicInvitation', 'sendPublicInvitationOtp', 'verifyPublicInvitationOtp', 'savePublicInvitationCredentials', 'completePublicInvitation', 'revokePlatformWorkspaceAssignment', 'transitionWorkspaceRoleStatus', 'getOperationsWorkspaceSessionEntry', 'selectOperationsWorkspaceSessionContext', 'selectOperationsWorkspaceSessionDataNode', 'createOperationsOrganizationStore', 'transitionOperationsOrganizationStoreStatus', 'createOperationsContract', 'invalidateOperationsContract', 'getOperationsStoreServicePointAreas', 'postOperationsStoreServicePointArea', 'postOperationsStoreServicePoint', 'postOperationsStoreServicePointStatus', 'postOperationsStoreServicePointAreaStatus', 'getOperationsStoreServicePoint', 'stageStoreServicePointImage', 'getOperationsStoreQrConfiguration', 'getOperationsStoreTerminals', 'getOperationsStoreTerminal', 'getOperationsStoreTerminalAreaCandidates', 'getOperationsStoreTerminalTagCandidates', 'postOperationsStoreTerminal', 'putOperationsStoreTerminal', 'postOperationsStoreTerminalStatus', 'stagePlatformTerminalUpdateArtifact', 'registerPlatformTerminalUpdateArtifact', 'getPlatformTerminalUpdateArtifactDetail', 'operationsWorkspacePasswordLogin', 'createOperationsProjectTerminalUpdateRule', 'getOperationsProjectTerminalUpdateRuleDetail', 'releasePlatformTerminalUpdateArtifactStage']) {
     if (operations.filter((entry) => entry.operationId === operationId).length !== 1) fail(`SEED_OPERATION_REGISTRY_MISSING:${operationId}`);
   }
   return Object.freeze({invitationPlan: resolveInvitationCreationPlan(fixture), catalogInventoryPrerequisite, servicePointSeed});
@@ -452,16 +453,23 @@ export function managedRuntime() {
   const manifestPath = path.join(runtimeRoot, 'run-manifest.json');
   if (!existsSync(manifestPath)) throw new FormalSeedFailure('SEED_MANAGED_RUN_MANIFEST_REQUIRED');
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
-  if (manifest.kind !== 'r5-dev-run-manifest' || manifest.freshDatabase !== true || manifest.otpDebugExposure !== true) throw new FormalSeedFailure('SEED_MANAGED_RUN_INVALID');
+  const kind = seedEnvironmentKind(manifest);
+  if (manifest.freshDatabase !== true || manifest.profile !== 'r5-full') throw new FormalSeedFailure('SEED_MANAGED_RUN_INVALID');
   try {
-    validateRemoteJavaControl(manifest.remoteJava);
+    if (kind === 'dev') {
+      if (manifest.otpDebugExposure !== true) throw new Error('OTP_DEBUG_EXPOSURE_REQUIRED');
+      validateRemoteJavaControl(manifest.remoteJava);
+      for (const process of managedSeedProcessValidationTargets(manifest.processes ?? [])) {
+        const probe = spawnSync('ps', ['-o', 'lstart=', '-p', String(process.pid)], {encoding: 'utf8'});
+        if (probe.status !== 0 || canonicalStartToken(probe.stdout) !== canonicalStartToken(process.startToken)) throw new Error(`PROCESS_IDENTITY_INVALID:${process.name}`);
+      }
+    } else if (manifest.status !== 'READY' || manifest.seedAllowed !== true || !manifest.remoteDiagnostic) {
+      throw new Error('UAT_ENVIRONMENT_NOT_READY');
+    }
     validateManagedDiagnosticTransport(manifest);
+    seedTargetBaseUrl(manifest);
   } catch {
-    throw new FormalSeedFailure('SEED_MANAGED_REMOTE_JAVA_BINDING_INVALID');
-  }
-  for (const process of managedSeedProcessValidationTargets(manifest.processes ?? [])) {
-    const probe = spawnSync('ps', ['-o', 'lstart=', '-p', String(process.pid)], {encoding: 'utf8'});
-    if (probe.status !== 0 || canonicalStartToken(probe.stdout) !== canonicalStartToken(process.startToken)) throw new FormalSeedFailure(`SEED_MANAGED_PROCESS_INVALID:${process.name}`);
+    throw new FormalSeedFailure('SEED_MANAGED_ENVIRONMENT_BINDING_INVALID');
   }
   return {manifest, credentials: readEnv(requireValue(manifest.credentialsFile, 'SEED_CREDENTIALS_PATH_REQUIRED'))};
 }
@@ -482,36 +490,22 @@ function managedHttpBaseUrl(manifest) {
   return value;
 }
 export function managedSeedEnvironment(manifest, credentials) {
-  const database = requireValue(manifest?.database, 'SEED_MANAGED_DATABASE_BINDING_INVALID');
-  const httpBaseUrl = managedHttpBaseUrl(manifest);
-  const name = databaseName(database);
-  const match = name.match(/^catering_v2s_dev_([a-z0-9_]{3,32})$/);
-  if (!match) fail('SEED_MANAGED_DATABASE_BINDING_INVALID');
-  const namespace = `v2s-dev-${match[1].replaceAll('_', '-')}`;
-  if (!/^v2s-dev-[a-z0-9-]{3,32}$/.test(namespace)) fail('SEED_MANAGED_NAMESPACE_BINDING_INVALID');
-  const trust = manifest.remoteHostTrust;
-  if (!trust || !/^[a-z0-9._-]{3,128}$/i.test(trust.host ?? '') || !/^[a-f0-9]{64}$/i.test(trust.fingerprint ?? '')
-    || !trust.allowlistVersion || !trust.maintainer || !trust.rotatedAt) {
-    fail('SEED_MANAGED_REMOTE_HOST_BINDING_INVALID');
-  }
-  return {
-    ...process.env,
-    ...credentials,
-    V2S_RUNTIME_DIR: runtimeRoot,
-    V2S_DEV_DATABASE_URL: database,
-    V2S_DEV_HTTP_BASE_URL: httpBaseUrl,
-    V2S_DEV_NAMESPACE: namespace,
+  const projection = seedEnvironmentProjection(manifest, credentials, runtimeRoot);
+  const kind = seedEnvironmentKind(manifest);
+  return kind === 'dev' ? {
+    ...projection,
+    V2S_DEV_DATABASE_URL: projection.V2S_SEED_DATABASE_URL,
+    V2S_DEV_HTTP_BASE_URL: projection.V2S_SEED_HTTP_BASE_URL,
+    V2S_DEV_NAMESPACE: projection.V2S_SEED_NAMESPACE,
     V2S_DEV_PROFILE: 'r5-full',
-    V2S_RUNTIME_ENVIRONMENT: 'non-production',
-    V2S_DEV_REMOTE_HOST: trust.host,
-    V2S_DEV_REMOTE_HOST_SHA256: trust.fingerprint,
-    V2S_DEV_REMOTE_HOST_ALLOWLIST_VERSION: trust.allowlistVersion,
-    V2S_DEV_REMOTE_HOST_MAINTAINER: trust.maintainer,
-    V2S_DEV_REMOTE_HOST_ROTATED_AT: trust.rotatedAt,
     V2S_DEV_ASSET_ROOT: 's3://catering-v2s-r5-assets',
-  };
+  } : projection;
 }
 function topology(environment) {
+  if (environment.V2S_SEED_ENVIRONMENT_KIND === 'uat') {
+    if (environment.V2S_SEED_PROFILE !== 'r5-full' || environment.V2S_RUNTIME_ENVIRONMENT !== 'uat') throw new FormalSeedFailure('SEED_ENVIRONMENT_PROFILE_INVALID');
+    return {environment, namespace: environment.V2S_SEED_NAMESPACE};
+  }
   const result = spawnSync(process.execPath, [environmentScript, 'seed', '--json'], {cwd: root, encoding: 'utf8', env: environment});
   if (result.status !== 0) throw new FormalSeedFailure('SEED_ENVIRONMENT_REFUSED');
   const parsed = JSON.parse(result.stdout);
@@ -627,7 +621,7 @@ async function executeFormalSeed() {
   const {manifest, credentials} = managedRuntime();
   const managedEnvironment = managedSeedEnvironment(manifest, credentials);
   const env = topology(managedEnvironment);
-  // Backend metrics are correlated to the managed DEV run id injected at
+  // Backend metrics are correlated to the managed environment run id injected at
   // startup.  The formal seed report must use that exact id, otherwise a
   // superficially successful HTTP sequence would have zero matched DB events.
   const runId = requireValue(manifest.runId, 'SEED_MANAGED_RUN_ID_REQUIRED');
@@ -642,11 +636,12 @@ async function executeFormalSeed() {
   const startedAt = new Date().toISOString();
   let firstFailure = null;
   const measurement = measurementMetadataForReport(manifest);
-  const persist = (business = 'RUNNING', cleanup = 'RUNNING') => writeFileSync(runManifest, `${JSON.stringify({kind: 'r5-formal-seed-manifest', schemaVersion: 2, runId, profile: 'r5-full', managedDevRunId: manifest.runId, measurement, fixtureIdentity, startedAt, business, cleanup, firstFailure, phases}, null, 2)}\n`, {mode: 0o600});
+  const environmentIdentity = seedRunIdentity(manifest);
+  const persist = (business = 'RUNNING', cleanup = 'RUNNING') => writeFileSync(runManifest, `${JSON.stringify({kind: 'r5-formal-seed-manifest', schemaVersion: 3, runId, profile: 'r5-full', ...environmentIdentity, measurement, fixtureIdentity, startedAt, business, cleanup, firstFailure, phases}, null, 2)}\n`, {mode: 0o600});
   const phase = (stage, status, extra = {}) => { phases.push({atEpochMillis: Date.now(), stage, status, ...extra}); persist(); };
   const seedEvents = () => readManagedDiagnosticEvents(manifest);
   const finalize = (business, cleanup) => {
-    const report = buildSeedReport({runId, managedDevRunId: manifest.runId, measurement, seedProfile: 'r5-full', startedAt, finishedAt: new Date().toISOString(), status: business, businessStatus: business, cleanupStatus: cleanup, fixtureIdentity, calls, events: seedEvents(), nonApiStages, expectedNonApiStageIds, firstFailure});
+    const report = buildSeedReport({runId, ...environmentIdentity, measurement, seedProfile: 'r5-full', startedAt, finishedAt: new Date().toISOString(), status: business, businessStatus: business, cleanupStatus: cleanup, fixtureIdentity, calls, events: seedEvents(), nonApiStages, expectedNonApiStageIds, firstFailure});
     writeSeedReportPair(reportPath, report);
     // A terminal PASS is valid only after the report pair is durable.  If the
     // report writer fails the caller records FAIL_REPORT_FINALIZATION instead
@@ -654,7 +649,7 @@ async function executeFormalSeed() {
     persist(business, cleanup);
   };
   const request = createSeedHttpClient({
-    baseUrl: managedEnvironment.V2S_DEV_HTTP_BASE_URL,
+    baseUrl: managedEnvironment.V2S_SEED_HTTP_BASE_URL,
     resolveOperation: operationId => resolveGeneratedOperationById(registry, operationId),
     materializeOperationPath: materializeGeneratedOperationPath,
     buildDiagnosticHeaders: buildManagedDiagnosticHeaders,
@@ -668,14 +663,16 @@ async function executeFormalSeed() {
     onFailure: code => { firstFailure ??= code; },
     onPhase: phase,
     decorateCall: (call, {operation}) => ({
-      managedDevRunId: manifest.runId,
+      ...seedRunIdentity(manifest),
       owner: operation.owner,
       consumerFace: operation.consumerFaces?.join(',') ?? null,
     }),
   }).request;
   try {
     const bootstrapStarted = Date.now();
-    const bootstrap = spawnSync(process.execPath, [bootstrapScript], {cwd: root, encoding: 'utf8', env: managedEnvironment});
+    const bootstrap = seedEnvironmentKind(manifest) === 'uat'
+      ? spawnSync(process.execPath, [path.join(root, 'scripts/uat/uat-environment.mjs'), 'bootstrap'], {cwd: root, encoding: 'utf8', env: managedEnvironment})
+      : spawnSync(process.execPath, [bootstrapScript], {cwd: root, encoding: 'utf8', env: managedEnvironment});
     if (bootstrap.status !== 0) throw new FormalSeedFailure('SEED_BOOTSTRAP_FAILED');
     nonApiStages.push({stageId: 'bootstrap', status: 'PASS', durationMs: Date.now() - bootstrapStarted, summary: 'allowed-root-bootstrap'}); phase('bootstrap', 'PASS');
     const login = await request('platform-login', 'platformPasswordLogin', {}, {body: {accountName: 'root', password: credentials.V2S_SEED_PLATFORM_ROOT_PASSWORD}});
@@ -888,10 +885,28 @@ async function executeFormalSeed() {
     const reissued = await request('invitation-reissued', 'reissueWorkspaceInvitation', {groupWorkspaceKey: aurora, invitationId: requireValue(cancelledResult.json?.id, 'SEED_CANCELLED_INVITATION_ID')}, {cookie: platformCookie, body: {expectedVersion: requireValue(cancelledResult.json?.revision, 'SEED_CANCELLED_INVITATION_VERSION')}});
     ids.invitation['inv-reissued'] = reissued.json;
     const expiredPlan = invitationPlan.find((entry) => entry.invitationKey === 'inv-expired');
+    const expiredInvitationId = requireValue(ids.invitation['inv-expired']?.id, 'SEED_EXPIRED_INVITATION_ID');
+    const expiredRoleName = requireValue(fixture.stableFixtures.workspaceIam.roles.find((entry) => entry.key === expiredPlan.roleKey)?.name, 'SEED_EXPIRED_ROLE_NAME');
+    const expiredNodeId = nodeIdFor(expiredPlan);
     const terminalStarted = Date.now();
-    const terminal = spawnSync(process.execPath, [terminalFixtureScript], {cwd: root, encoding: 'utf8', input: JSON.stringify({fixtureKey: 'inv-expired', groupWorkspaceKey: aurora, invitationId: requireValue(ids.invitation['inv-expired']?.id, 'SEED_EXPIRED_INVITATION_ID'), roleId: requireValue(ids.role[expiredPlan.roleKey]?.id, 'SEED_EXPIRED_ROLE_ID'), serviceNodeType: expiredPlan.targetOrganizationType, serviceNodeId: nodeIdFor(expiredPlan), createdAtEpochMillis: Date.now() - 120_000, expiresAtEpochMillis: Date.now() - 60_000}), env: managedEnvironment});
+    const terminal = spawnSync(process.execPath, [terminalFixtureScript], {cwd: root, encoding: 'utf8', input: JSON.stringify({fixtureKey: 'inv-expired', groupWorkspaceKey: aurora, invitationId: expiredInvitationId, roleId: requireValue(ids.role[expiredPlan.roleKey]?.id, 'SEED_EXPIRED_ROLE_ID'), serviceNodeType: expiredPlan.targetOrganizationType, serviceNodeId: expiredNodeId, createdAtEpochMillis: Date.now() - 120_000, expiresAtEpochMillis: Date.now() - 60_000}), env: managedEnvironment});
     if (terminal.status !== 0) throw new FormalSeedFailure('SEED_TERMINAL_INVITATION_EXPIRED_FAILED');
     nonApiStages.push({stageId: 'terminal-inv-expired', status: 'PASS', durationMs: Date.now() - terminalStarted, summary: 'allowlisted-invitation-expired'}); phase('terminal-inv-expired', 'PASS');
+    const expiredReadback = await request('terminal-inv-expired-owner-readback', 'getWorkspaceInvitation', {groupWorkspaceKey: aurora, invitationId: expiredInvitationId}, {cookie: platformCookie, idempotency: false});
+    const intentNodes = Array.isArray(expiredReadback.json?.targetOrganizationPathNodes)
+      ? expiredReadback.json.targetOrganizationPathNodes.filter((node) => node?.ref === expiredNodeId && node?.nodeType === expiredPlan.targetOrganizationType)
+      : [];
+    if (expiredReadback.json?.id !== expiredInvitationId
+      || expiredReadback.json?.groupWorkspaceKey !== aurora
+      || expiredReadback.json?.status !== 'EXPIRED'
+      || expiredReadback.json?.targetOrganizationType !== expiredPlan.targetOrganizationType
+      || expiredReadback.json?.roleNames?.length !== 1
+      || expiredReadback.json.roleNames[0] !== expiredRoleName
+      || intentNodes.length !== 1) {
+      throw new FormalSeedFailure('SEED_EXPIRED_INVITATION_OWNER_READBACK_INVALID');
+    }
+    ids.invitation['inv-expired'] = expiredReadback.json;
+    phase('terminal-inv-expired-owner-readback-assertion', 'PASS', {invitationKey: 'inv-expired', status: 'EXPIRED', roleIntentCount: 1, serviceNodeIntentCount: 1});
     const accountByKey = new Map(fixture.stableFixtures.workspaceIam.accounts.map((account) => [account.key, account]));
     for (const account of fixture.stableFixtures.workspaceIam.accounts) {
       const page = await request(`account-read-${account.key}`, 'getWorkspaceAccounts', {groupWorkspaceKey: aurora}, {cookie: platformCookie, idempotency: false, queryParameters: {loginName: canonicalLogin(account.key), page: 1, pageSize: 5}});
@@ -971,10 +986,10 @@ async function executeFormalSeed() {
       }
       ids.extensionDefinition[`${definition.workspace}:${definition.hostType}`] = readback.json;
     }
-    // The public list face is intentionally a UI query surface.  Each invitation
-    // is already read back by its lifecycle response, while account reads above
-    // are the owner facts needed for assignments and account states; do not add
-    // a redundant collection scrape merely to manufacture a seed denominator.
+    // The public list face is intentionally a UI query surface.  Invitation
+    // lifecycle responses provide their readback; inv-expired is additionally
+    // read after its guarded time-state fixture mutation above.  Account reads
+    // above are the owner facts needed for assignments and account states.
     phase('owner-readback', 'PASS', {accounts: Object.keys(ids.account).length, invitations: Object.keys(ids.invitation).length, contracts: Object.keys(contracts).length, extensionDefinitions: fixture.stableFixtures.extensionDefinitions.length, extensionValueEntities: Object.values(extensionReadback).reduce((total, count) => total + count, 0), extensionHosts: Object.keys(extensionReadback), servicePointAreas: Object.keys(ids.servicePoint.areas).length, servicePoints: Object.keys(ids.servicePoint.points).length});
     finalize('PASS', 'PASS_NO_PERSISTENT_SEED_PROCESS');
   } catch (error) {
@@ -1008,8 +1023,14 @@ function selfTest() {
   const plan = resolveInvitationCreationPlan(fixture);
   if (plan.length !== 2 || plan[0].targetOrganizationType !== 'STORE') throw new Error('SELF_TEST_PLAN_RESOLUTION_FAILED');
   const validManagedManifest = {
+    kind: 'r5-dev-run-manifest',
+    runId: 'owner-command-self-test',
+    profile: 'r5-full',
+    freshDatabase: true,
+    namespace: 'v2s-dev-r5-full',
     database: 'jdbc:postgresql://127.0.0.1:5432/catering_v2s_dev_r5_full',
     localHttpBaseUrl: 'http://127.0.0.1:28080',
+    assetRoot: 's3://catering-v2s-r5-assets',
     remoteHostTrust: {host: 'catering-remote-dev', fingerprint: 'a'.repeat(64), allowlistVersion: 'r5-test-v1', maintainer: 'Dexter', rotatedAt: '2026-08-05'},
   };
   const managedEnvironment = managedSeedEnvironment(validManagedManifest, {V2S_SEED_PLATFORM_ROOT_PASSWORD: 'test-only'});

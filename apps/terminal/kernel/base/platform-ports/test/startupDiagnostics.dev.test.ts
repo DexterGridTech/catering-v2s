@@ -108,7 +108,7 @@ describe('platform-ports startup diagnostics', () => {
       expect(events.map(event => event.data?.sequence)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
       expect(events.some(event => event.category === 'startup.complete')).toBe(false);
       const portsEvent = events[0];
-      expect(portsEvent.data).toMatchObject({portCount: 10, descriptorStatus: 'complete'});
+      expect(portsEvent.data).toMatchObject({portCount: 11, descriptorStatus: 'complete'});
       const descriptors = portsEvent.data?.descriptors;
       expect(Array.isArray(descriptors)).toBe(true);
       expect(descriptors).toEqual(

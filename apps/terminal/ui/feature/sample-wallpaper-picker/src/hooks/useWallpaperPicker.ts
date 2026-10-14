@@ -6,7 +6,7 @@ import {
   wallpaperOptionSelectedCommand,
   type WallpaperSystemFailurePhase,
   type WallpaperSystemOperation,
-} from '../features/commands/commands';
+} from '../declarations/commands';
 import {logoutCommand} from '@catering-v2s/kernel-feature-sample-staff-session';
 import {
   cancelWallpaperSelectionCommand,

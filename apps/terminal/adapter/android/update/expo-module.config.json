@@ -1,7 +1,10 @@
 {
   "platforms": ["android"],
   "android": {
-    "modules": ["com.catering.v2s.terminal.adapter.android.update.TerminalUpdateModule"],
+    "modules": [
+      "com.catering.v2s.terminal.adapter.android.update.TerminalUpdateModule",
+      "com.catering.v2s.terminal.adapter.android.update.TerminalAppControlModule"
+    ],
     "packages": ["com.catering.v2s.terminal.adapter.android.update.TerminalUpdatePackage"]
   }
 }

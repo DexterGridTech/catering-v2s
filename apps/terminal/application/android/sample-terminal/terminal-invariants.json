@@ -5,5 +5,10 @@
     "test": {"kind": "ABSENT"},
     "lint": {"kind": "OWNED", "owner": "@catering-v2s/application-android-sample-terminal", "runner": "eslint"},
     "clean": {"kind": "ABSENT"}
-  }
+  },
+  "publicExports": [
+    "dependencyModuleNames",
+    "devDependencyModuleNames",
+    "moduleName"
+  ]
 }

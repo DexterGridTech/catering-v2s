@@ -1,9 +1,8 @@
-export {moduleName} from './moduleName';
+export {moduleKind, moduleName} from './moduleName';
 export {createCredentialSecret} from './foundations/createCredentialSecret';
 export {dependencyModuleNames, devDependencyModuleNames, runtimeModuleDependencyNames} from './dependencies';
-export {needToActivateTerminalCommand} from './features/commands/commands';
+export {needToActivateTerminalCommand} from './declarations/commands';
 export {createTerminalActivationModule} from './application/module';
-export {createTerminalActivationParts} from './parts/parts';
 export {ActivationCodeForm} from './components/ActivationCodeForm';
 export {ActivationGuide} from './components/ActivationGuide';
 export {ActivationStatusSection} from './components/ActivationStatusSection';

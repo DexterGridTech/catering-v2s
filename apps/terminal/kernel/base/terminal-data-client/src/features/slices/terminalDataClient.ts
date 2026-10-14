@@ -2,6 +2,7 @@ import {createSlice, type PayloadAction} from '@reduxjs/toolkit';
 import {defineStateRuntimeSlice, type StateRuntimeSliceRegistration} from '@catering-v2s/kernel-base-state';
 import type {RuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
 import {moduleName} from '../../moduleName';
+import {terminalDataClientParameters} from '../../declarations/parameters';
 import type {
   PendingTerminalActivation,
   TerminalClientState,
@@ -185,8 +186,9 @@ const definition = createSlice({
         sessionId: action.payload.sessionId,
       };
       state.heartbeatIntervalMs = action.payload.heartbeatIntervalMs;
-      const maxSamples = Math.floor(7_200_000 / action.payload.heartbeatIntervalMs);
-      const cutoff = action.payload.observedAt - 7_200_000;
+      const windowMs = terminalDataClientParameters.latencyWindowMs.defaultValue;
+      const maxSamples = Math.floor(windowMs / action.payload.heartbeatIntervalMs);
+      const cutoff = action.payload.observedAt - windowMs;
       state.latencySamples = state.latencySamples.filter(sample => sample.observedAt >= cutoff).slice(-maxSamples);
     },
     nextPing: state => {
@@ -194,8 +196,11 @@ const definition = createSlice({
     },
     recordRtt: (state, action: PayloadAction<TerminalLatencySample>) => {
       state.lastRttMs = action.payload.rttMs;
-      const maxSamples = state.heartbeatIntervalMs === null ? 0 : Math.floor(7_200_000 / state.heartbeatIntervalMs);
-      const cutoff = action.payload.observedAt - 7_200_000;
+      const maxSamples =
+        state.heartbeatIntervalMs === null
+          ? 0
+          : Math.floor(terminalDataClientParameters.latencyWindowMs.defaultValue / state.heartbeatIntervalMs);
+      const cutoff = action.payload.observedAt - terminalDataClientParameters.latencyWindowMs.defaultValue;
       state.latencySamples =
         maxSamples === 0
           ? []

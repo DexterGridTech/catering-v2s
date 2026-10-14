@@ -17,15 +17,16 @@ import {
   runtimeInstanceModeSlice,
   runtimeInstanceModeSliceName,
 } from '../src/features/slices/runtimeInstanceMode';
+import {requestLedgerActionsForMode} from '../src/features/slices/requestLedgerActions';
+import {readLiveRequestEnvelope, type RuntimeRequestLedgerState} from '../src/foundations/requestLedgerState';
 import {
-  requestLedgerActionsForMode,
-  readLiveRequestEnvelope,
   runtimeRequestLedgerMasterSlice,
   runtimeRequestLedgerMasterSliceName,
+} from '../src/features/slices/requestLedgerMaster';
+import {
   runtimeRequestLedgerSlaveSlice,
   runtimeRequestLedgerSlaveSliceName,
-  type RuntimeRequestLedgerState,
-} from '../src/features/slices/requestLedger';
+} from '../src/features/slices/requestLedgerSlave';
 import {
   selectRequestExecutionCandidates,
   selectRequestExecutionCommands,

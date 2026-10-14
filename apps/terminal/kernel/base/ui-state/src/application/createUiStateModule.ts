@@ -1,5 +1,5 @@
 import {resolveWorkspace, selectDisplayRole} from '@catering-v2s/kernel-base-display-context';
-import {selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
+import {createRuntimeModule, selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
 import type {StateJsonValue, StateRoot} from '@catering-v2s/kernel-base-state';
 import {
   createClearLayersActor,
@@ -20,16 +20,22 @@ import {
   pruneHydratedLayersCommand,
   setUiVariablesCommand,
   showScreenCommand,
-} from '../features/commands';
+} from '../declarations/commands';
 import {createContentStateRegistrations, type ContentHydrationDiagnostic} from '../foundations/workspaceSlices';
 import {createVariableStateFamily, readVariableState} from '../foundations/variableSlices';
+import {contentBranchSlice} from '../features/slices/contentBranch';
+import {contentMainSlice} from '../features/slices/contentMain';
+import {variablesBranchSlice} from '../features/slices/variablesBranch';
+import {variablesMainSlice} from '../features/slices/variablesMain';
+import {variableActions} from '../features/slices/variableActions';
 import {createSurfaceFormSlice} from '../features/slices/surfaceForm';
 import {selectSurfaceForm as selectSurfaceFormFromState} from '../selectors/selectSurfaceForm';
 import {assertUiVariableDeclaration} from '../foundations/uiVariable';
 import {runtimeModuleDependencyNames} from '../dependencies';
 import {moduleKind, moduleName} from '../moduleName';
-import {isCurrentWorkspaceOwnedByInstance} from '../foundations/workspaceOwnership';
-import {selectLayers, selectScreen} from '../selectors/selectContent';
+import {isCurrentWorkspaceOwnedByInstance} from '../selectors/isCurrentWorkspaceOwnedByInstance';
+import {selectLayers} from '../selectors/selectLayers';
+import {selectScreen} from '../selectors/selectScreen';
 import {selectSurfaceForm} from '../selectors/selectSurfaceForm';
 import {isSurfaceForm, type SurfaceForm, type UiCatalog} from '../types/catalog';
 import type {UiStateModule} from '../types/module';
@@ -65,12 +71,18 @@ export const createUiStateModule = (input: CreateUiStateModuleInput): UiStateMod
   if (typeof input.catalog !== 'object' || input.catalog === null) throw new Error('[ui-state] catalog is required');
   if (!isSurfaceForm(input.surfaceForm)) throw new Error('[ui-state] surfaceForm is required');
   const registry = createVariableRegistry(input.variables);
-  const variableFamily = createVariableStateFamily(registry);
+  const variableFamily = createVariableStateFamily(registry, {
+    MAIN: variablesMainSlice.reducer,
+    BRANCH: variablesBranchSlice.reducer,
+  }, variableActions);
   const surfaceFormSlice = createSurfaceFormSlice(input.surfaceForm);
   const hydrationDiagnostics: ContentHydrationDiagnostic[] = [];
-  const contentStateRegistrations = createContentStateRegistrations(diagnostic => {
-    hydrationDiagnostics.push(diagnostic);
-  });
+  const contentStateRegistrations = createContentStateRegistrations(
+    {MAIN: contentMainSlice.reducer, BRANCH: contentBranchSlice.reducer},
+    diagnostic => {
+      hydrationDiagnostics.push(diagnostic);
+    },
+  );
   const actors = [
     createShowScreenActor(),
     createOpenLayerActor({catalog: input.catalog, selectSurfaceForm: selectSurfaceFormFromState}),
@@ -109,19 +121,13 @@ export const createUiStateModule = (input: CreateUiStateModuleInput): UiStateMod
     return (value === undefined ? declaration.defaultValue : value) as TValue;
   };
 
-  const module: UiStateModule = {
+  const module: UiStateModule = createRuntimeModule({
     moduleName,
     kind: moduleKind,
     dependencies: runtimeModuleDependencyNames.map(name => ({moduleName: name})),
-    commands: commands.map(command => ({name: command.commandName, visibility: command.visibility})),
     commandDefinitions: commands,
     selectorDefinitions: [selectSurfaceForm, selectLayers, selectScreen, isCurrentWorkspaceOwnedByInstance],
-    actors: actors.map(actor => ({name: actor.actorName})),
     actorDefinitions: actors,
-    slices: stateSlices.map(registration => ({
-      name: registration.name,
-      persistIntent: registration.persistIntent,
-    })),
     stateSlices,
     catalog: input.catalog,
     selectSurfaceForm: selectSurfaceFormFromState,
@@ -149,6 +155,6 @@ export const createUiStateModule = (input: CreateUiStateModuleInput): UiStateMod
         throw new Error(`UI state hydrated-layer membership cleanup failed: ${pruning.status}`);
       }
     },
-  };
+  });
   return Object.freeze(module);
 };

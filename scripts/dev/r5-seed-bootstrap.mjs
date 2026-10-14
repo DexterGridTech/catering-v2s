@@ -10,7 +10,10 @@ const root = path.resolve(import.meta.dirname, '../..');
 const runtime = path.resolve(process.env.V2S_RUNTIME_DIR ?? path.join(root, '.runtime/r5'));
 const credentialsPath = path.join(runtime, 'credentials.env');
 const environmentScript = path.join(root, 'scripts/dev/r5-dev-environment.mjs');
-const rootId = '00000000-0000-4000-8000-000000000001';
+const fixtureContractPath = path.join(root, 'doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json');
+const fixtureContract = JSON.parse(readFileSync(fixtureContractPath, 'utf8'));
+const rootFixture = fixtureContract.stableFixtures?.platformAdmins?.find((entry) => entry.key === 'pa-bootstrap');
+const rootId = rootFixture?.id;
 const auditId = '00000000-0000-4000-8000-000000000002';
 const receiptKey = 'r5-v1-bootstrap-root';
 const fixedEpochMillis = 1784908800000;
@@ -27,6 +30,7 @@ const command = (binary, args, options = {}) => {
 const sqlLiteral = (value) => `'${String(value).replaceAll("'", "''")}'`;
 
 if (!existsSync(credentialsPath)) fail('MANAGED_CREDENTIALS_REQUIRED');
+if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(rootId ?? '')) fail('R5_SEED_CANONICAL_PLATFORM_ROOT_ID_INVALID');
 const credentials = Object.fromEntries(readFileSync(credentialsPath, 'utf8').trim().split('\n').filter(Boolean).map((line) => line.split('=', 2)));
 if (credentials.V2S_SEED_PLATFORM_ROOT_PASSWORD !== 'root') fail('ROOT_PASSWORD_MUST_BE_FIXED_ROOT');
 const environment = JSON.parse(command(process.execPath, [environmentScript, 'seed', '--json'], {env: {...process.env, ...credentials}}));

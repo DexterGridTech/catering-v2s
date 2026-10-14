@@ -9,6 +9,8 @@ test('terminal API generation closes the face/tag operation set and rejects poli
     'activateTerminal',
     'cancelTerminalActivation',
     'issueTerminalUpdateArtifactDownloadGrant',
+    'registerTerminalRemoteControl',
+    'reportTerminalRemoteControl',
     'submitTerminalUpdateReport',
     'terminalReadContract',
     'terminalReadProjectUpdateRuleSnapshotPage',
@@ -23,7 +25,21 @@ test('terminal API generation closes the face/tag operation set and rejects poli
   assert.deepEqual(result.operationIds, expectedOperationIds);
   assert.deepEqual(
     result.outputs.map(output => output.operationIds),
-    [expectedOperationIds],
+    [
+      ['activateTerminal', 'cancelTerminalActivation'],
+      [
+        'terminalReadContract',
+        'terminalReadServicePoint',
+        'terminalReadServicePointArea',
+        'terminalReadStoreActiveContracts',
+        'terminalReadStoreBasic',
+        'terminalReadStoreServicePointAreas',
+        'terminalReadStoreServicePoints',
+      ],
+      ['terminalReadProjectUpdateRuleSnapshotPage', 'terminalReadStoreOrganizationPath'],
+      ['issueTerminalUpdateArtifactDownloadGrant', 'submitTerminalUpdateReport'],
+      ['registerTerminalRemoteControl', 'reportTerminalRemoteControl'],
+    ],
   );
   for (const output of result.outputs) {
     const source = fs.readFileSync(output.output, 'utf8');
@@ -34,14 +50,16 @@ test('terminal API generation closes the face/tag operation set and rejects poli
     assert.match(source, /category: "unknown-business-rejection"/);
     assert.match(source, /TerminalOperationDescriptor/);
     assert.match(source, /createTerminalApiClient/);
+    assert.match(source, /buildTerminalHttpCommandRequest/);
+    assert.match(source, /TerminalExecutionMetadata/);
   }
   const generatedApi = fs.readFileSync(result.outputs[0].output, 'utf8');
-  assert.match(generatedApi, /readonly "Authorization": string/);
-  assert.match(generatedApi, /readonly "X-Terminal-Ref": string/);
+  assert.doesNotMatch(generatedApi, /readonly "Authorization": string/);
+  assert.doesNotMatch(generatedApi, /readonly "X-Terminal-Ref": string/);
   assert.doesNotMatch(generatedApi, /readonly "X-Terminal-Device-Id": string/);
   assert.match(generatedApi, /readonly "deviceId": string/);
   assert.match(generatedApi, /isTerminalActivationResult/);
-  assert.match(generatedApi, /"submitTerminalUpdateReport": \{[\s\S]*?idempotencyRequired: true/);
+  assert.match(generatedApi, /"cancelTerminalActivation": \{[\s\S]*?authorizationMode: "TERMINAL_CREDENTIAL"/);
   const generatedProtocol = fs.readFileSync(
     new URL(
       '../../apps/terminal/kernel/base/terminal-data-client/src/generated/terminalConnectionProtocol.ts',

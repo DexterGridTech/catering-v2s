@@ -112,8 +112,9 @@
     "activationConditions": [
       "active seed profile is exactly r5-full",
       "runtime environment marker is explicitly non-production",
-      "namespace matches profile.requiredNamespacePattern",
-      "target database is the exact profile.resetAllowlist.database derivation",
+      "environmentKind is exactly dev or uat and its managed environment manifest is valid",
+      "namespace and database match the exact target-specific manifest identity",
+      "for uat, host, boot id, PostgreSQL container, database, namespace and unique seed intent all match the same UAT manifest",
       "the invitation was first created through the normal owner HTTP command"
     ],
     "inv-expired": {
@@ -134,10 +135,11 @@
         "frontend control",
         "default profile",
         "production marker",
-        "ordinary DEV namespace",
+        "any namespace, database, container or host not owned by the exact DEV or UAT manifest",
         "generic direct seed write"
       ],
-      "readback": "existing invitation management read API must return the exact EXPIRED state and its role/node intent"
+    "readback": "existing invitation management read API must return the exact EXPIRED state and its role/node intent",
+    "uatScope": "The only UAT direct-SQL exception is this inv-expired fixture. First create the exact PENDING invitation through owner HTTP; bind the single mutation to the UAT host, container, database, namespace, run identity and unique intent; update expiry state/time/version and write audit plus receipt in one restricted transaction; then read back through the same owner HTTP API. No other fixture, owner write or generic SQL path is permitted."
     }
   },
   "secretBindings": [
@@ -244,6 +246,7 @@
     "platformAdmins": [
       {
         "key": "pa-bootstrap",
+        "id": "00000000-0000-4000-8000-000000000001",
         "login": "root",
         "displayName": "平台超级管理员",
         "builtIn": true,

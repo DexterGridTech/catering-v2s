@@ -1,7 +1,7 @@
-import {render, waitFor, type RenderResult} from '@testing-library/react-native';
+import {act, render, waitFor, type RenderResult} from '@testing-library/react-native';
 import {createElement, type ComponentType, type ReactElement} from 'react';
-import {describe, expect, it} from 'vitest';
-import {Text, View} from 'react-native';
+import {afterEach, describe, expect, it, vi} from 'vitest';
+import {BackHandler, Text, View} from 'react-native';
 import type {LogEvent, LogWriteInput, LogWriteResult, LoggerPort} from '@catering-v2s/kernel-base-platform-ports';
 import {
   createCatalogContext,
@@ -153,7 +153,80 @@ const physicalSurfaceHost = (input: Readonly<{displayIndex: 0 | 1; isPrimary: bo
 
 const mount = (element: ReactElement): Promise<RenderResult> => render(element);
 
+afterEach(() => vi.restoreAllMocks());
+
 describe('LayerStack filtered hydration behavior', () => {
+  it.each(['backdrop', 'android-back'] as const)('closes an owner-dismissed layer through %s', async input => {
+    const source = createSource();
+    const part = definePart({
+      partKey: 'sample.dismissible-owner-layer',
+      rendererKey: 'sample.dismissible-owner-layer.renderer',
+      containerKeys: [],
+      displayModes: ['PRIMARY'] as const,
+      workspaces: ['MAIN'] as const,
+      instanceModes: ['MASTER'] as const,
+      surfaceForm: ['laptop'] as const,
+      title: 'Dismissible owner layer',
+      description: 'Dismissible owner layer',
+      layerTier: 'standard',
+      layerGuard: 'dismissible',
+      component: () => createElement(Text, {testID: 'dismissible-owner-layer'}, 'owner layer'),
+    });
+    source.setRoot(
+      rootWithLayers([
+        {layerId: 'owner-layer', partKey: part.catalogEntry.partKey, openedAt: 1},
+      ]),
+    );
+    const dismissals: string[] = [];
+    const backHandlers: Parameters<typeof BackHandler.addEventListener>[1][] = [];
+    const addBackHandler = vi.spyOn(BackHandler, 'addEventListener');
+    addBackHandler.mockImplementation((_eventName, handler) => {
+      backHandlers.push(handler);
+      return {remove: () => undefined} as ReturnType<typeof BackHandler.addEventListener>;
+    });
+    const renderer = await mount(
+      createElement(
+        RenderProvider,
+        {
+          ...unusedRenderProviderBindings,
+          stateSource: source.stateSource,
+          uiCatalog: createUiCatalog([part.catalogEntry]),
+          rendererCatalog: createRendererCatalog([part.rendererBinding]),
+          logger: createLogger(),
+          layerDismissals: {
+            [part.catalogEntry.partKey]: async () => {
+              dismissals.push(part.catalogEntry.partKey);
+              source.setRoot(rootWithLayers([]));
+              source.notify();
+            },
+          },
+        },
+        createElement(SurfaceRoot, {displayMode: 'PRIMARY', containerKey: 'main'}),
+      ),
+    );
+
+    try {
+      expect(renderer.getByTestId('dismissible-owner-layer')).toBeDefined();
+      await act(async () => {
+        if (input === 'backdrop') {
+          const onPress = renderer.getByTestId(renderTestIds.layerBackdrop).props.onPress;
+          if (typeof onPress !== 'function') throw new Error('layer backdrop must be pressable');
+          onPress();
+        } else {
+          const handler = backHandlers[0];
+          if (handler === undefined) throw new Error('dismissible layer must register Android back handling');
+          expect(handler({type: 'hardwareBackPress', timeStamp: 0})).toBe(true);
+        }
+        await waitFor(() => expect(selectLayers(source.stateSource.getState(), 'PRIMARY')).toEqual([]));
+      });
+
+      expect(dismissals).toEqual([part.catalogEntry.partKey]);
+      expect(renderer.queryByTestId('dismissible-owner-layer')).toBeNull();
+    } finally {
+      await renderer.unmount();
+    }
+  });
+
   it('keeps a local-primary reminder above the business interlock on a VICE physical primary', async () => {
     const source = createSource();
     const reminder = definePart({

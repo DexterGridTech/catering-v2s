@@ -5,7 +5,7 @@ import {resolveWorkspace, selectDisplayRole} from '@catering-v2s/kernel-base-dis
 import {selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
 import type {DisplayMode} from '@catering-v2s/kernel-base-ui-state';
 import type {WorkspaceKey} from '@catering-v2s/kernel-base-state';
-import {useRenderContext} from '../contexts/RenderContext';
+import {useRenderContext} from '../hooks/useRenderContext';
 import {useSurfaceContext} from '../contexts/SurfaceContext';
 import {useSurfaceFocusBoundary} from '../contexts/SurfaceFocusBoundaryContext';
 import {dispatchWithRequestId} from '../foundations/dispatchWithRequestId';

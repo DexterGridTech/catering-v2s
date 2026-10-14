@@ -60,10 +60,11 @@ src/
     defineStateRuntimeSlice.ts  四条双向校验 + WeakMap 支撑的 opaque registration
     keyspace.ts                 key 语法、解析、冲突检查（**唯一**产生存储键的地方）
     persistenceCodec.ts         JSON-safe 校验、canonical 编解码（**唯一**的 canonical 实现）
-    createStateStore.ts         preloaded store 与两个**私有** root action
     persistencePrimitives.ts    descriptor · keyspace grouping · failure helpers
     persistenceHydration.ts     hydrate · migration discovery · initial health
     persistenceEngine.ts        差量 flush · 迁移 · reset · 队列 · health
+  application/
+    createStateStore.ts         preloaded store 与两个**私有** root action
     createStateRuntime.ts       async 装配，唯一对外 facade
   foundations/
     sync.ts       summary / diff / full payload / apply / tombstone（**纯函数，零状态**）

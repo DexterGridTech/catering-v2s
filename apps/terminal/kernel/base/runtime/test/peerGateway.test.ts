@@ -1,6 +1,7 @@
 import {describe, expect, it} from 'vitest';
 import {createCommandId, createRequestId} from '@catering-v2s/kernel-base-contracts';
 import {
+  createRuntimeModule,
   createRuntime,
   defineCommand,
   type CommandDispatchResult,
@@ -12,11 +13,10 @@ import {createTestRuntimeInput, deferred} from './testSupport';
 type CommandSpec = NonNullable<RuntimeModule['commandDefinitions']>[number];
 
 const moduleFor = (moduleName: string, commands: readonly CommandSpec[]): RuntimeModule =>
-  Object.freeze({
+  createRuntimeModule({
     moduleName,
     kind: 'owner' as const,
     dependencies: [{moduleName: 'kernel.base.runtime'}],
-    commands: commands.map(command => ({name: command.commandName, visibility: command.visibility})),
     commandDefinitions: commands,
   });
 

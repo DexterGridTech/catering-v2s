@@ -7,6 +7,7 @@ import {moduleName as transport} from '@catering-v2s/kernel-base-transport';
 import {moduleName as uiState} from '@catering-v2s/kernel-base-ui-state';
 import {moduleName as automationAgent} from '@catering-v2s/ui-base-automation-agent';
 import {moduleName as adminShell} from '@catering-v2s/ui-base-admin-shell';
+import {moduleName as featureAssembly} from '@catering-v2s/ui-base-feature-assembly';
 import {moduleName as input} from '@catering-v2s/ui-base-input';
 import {moduleName as primitives} from '@catering-v2s/ui-base-primitives';
 import {moduleName as render} from '@catering-v2s/ui-base-render';
@@ -21,6 +22,7 @@ export const dependencyModuleNames = [
   uiState,
   automationAgent,
   adminShell,
+  featureAssembly,
   input,
   primitives,
   render,

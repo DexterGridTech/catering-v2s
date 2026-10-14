@@ -1,6 +1,11 @@
 import {describe, expect, it} from 'vitest';
 import {createCommandId, createRequestId, type RequestId} from '@catering-v2s/kernel-base-contracts';
-import {defineCommand, type CommandDispatchResult, type CommandIntent} from '@catering-v2s/kernel-base-runtime';
+import {
+  defineCommand,
+  type CommandDispatchOptions,
+  type CommandDispatchResult,
+  type CommandIntent,
+} from '@catering-v2s/kernel-base-runtime';
 import type {StateJsonValue} from '@catering-v2s/kernel-base-state';
 import {dispatchWithRequestId} from '../src/index';
 import type {RenderProviderProps} from '../src/types/props';
@@ -23,6 +28,7 @@ type CapturedCall = Readonly<{
   commandName: string;
   payload: StateJsonValue;
   requestId: RequestId;
+  onLifecycleEvent?: CommandDispatchOptions['onLifecycleEvent'];
 }>;
 
 const createDispatchSpy = (): Readonly<{
@@ -32,12 +38,13 @@ const createDispatchSpy = (): Readonly<{
   const calls: CapturedCall[] = [];
   const dispatchCommand: RenderProviderProps['dispatchCommand'] = async <TPayload extends StateJsonValue>(
     command: CommandIntent<TPayload>,
-    options: Readonly<{readonly requestId: RequestId}>,
+    options: Readonly<{readonly requestId: RequestId; readonly onLifecycleEvent?: CommandDispatchOptions['onLifecycleEvent']}>,
   ): Promise<CommandDispatchResult> => {
     calls.push({
       commandName: command.definition.commandName,
       payload: command.payload,
       requestId: options.requestId,
+      onLifecycleEvent: options.onLifecycleEvent,
     });
     return result;
   };
@@ -74,5 +81,20 @@ describe('render request helpers', () => {
     });
 
     expect(spy.calls[0]?.requestId).toBe(requestId);
+  });
+
+  it('forwards the lifecycle observer with the generated request id', async () => {
+    const spy = createDispatchSpy();
+    const onLifecycleEvent: NonNullable<CommandDispatchOptions['onLifecycleEvent']> = () => undefined;
+
+    await dispatchWithRequestId({
+      dispatchCommand: spy.dispatchCommand,
+      definition,
+      payload: {value: 'observed'},
+      onLifecycleEvent,
+    });
+
+    expect(spy.calls[0]?.requestId).toMatch(/^req_/);
+    expect(spy.calls[0]?.onLifecycleEvent).toBe(onLifecycleEvent);
   });
 });

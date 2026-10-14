@@ -20,10 +20,20 @@ assembly、运行时状态读取器与 Web 平台端口接到一个可切换 lap
 
 ## 公共面与结构
 
-公共面只包含宿主工厂、平台适配工厂、宿主配置类型和 TER 模块图元数据。`src/components/testExpoApp.tsx`
-持有宿主生命周期、状态摘要、surface canvas 与切换；`src/implementations/webPlatform.ts` 绑定 Web 端口；
-`src/implementations/webStorage.ts` 负责真实 Web Storage 的 namespace 与失败诊断；`test/` 由本包拥有宿主自身
-的 focused tests。
+公共面只包含宿主工厂、平台适配工厂、宿主配置类型和 TER 模块图元数据。本包不声明业务 command 或 selector。
+`src/components/testExpoApp.tsx` 持有 assembly 初始化、surface 决策和宿主状态；`SurfaceCanvas.tsx` 负责固定逻辑画布的 Web 预览；
+`SurfaceFormSwitcher.tsx`、`SurfaceModeSwitcher.tsx`、`SurfaceWidthControl.tsx` 分别呈现宿主控制；
+`HeaderStatus.tsx` 与 `HostStateCard.tsx` 呈现状态；`surfaceGroup.ts` 解析本宿主的尺寸声明，`testExpoAppStyles.ts`
+集中样式，`src/types/testExpoApp.ts` 保存宿主配置类型。组件文件仅在本包内部使用，不增加 package root export。
+`src/implementations/webPlatform.ts` 绑定 Web 端口；`src/implementations/webStorage.ts` 负责真实 Web Storage 的 namespace 与失败诊断；
+`test/` 由本包拥有宿主自身的 focused tests。
+
+## 外部输入、生命周期与失败
+
+Integration 通过 `createTestExpoApp` 提供自己的 `appName`、标题、surface 尺寸、`createAssembly`、运行状态读取器，
+以及可选 Web 平台配置和 surface mode 刷新回调。宿主保留 assembly 初始化、PRIMARY/SECONDARY surface 挂载和 Web 视角重载；
+业务 state、command、selector、surface 内容和业务失败仍由传入的 assembly 与其 owner 负责。启动与显示决策失败记录在注入的 logger，
+不会在本包创建第二份业务状态或恢复机制。
 
 宿主只通过 `TestExpoAssembly.createSurface({displayIndex, displayMode, surfaceForm})` 接收业务 surface，调用方不传入 store，
 本包也不向业务 UI 暴露 store、dispatch 或完整 runtime。surface 使用 `terminalSurfaces` 声明的
@@ -71,9 +81,15 @@ radio group 提供互斥的 `laptop` 与 `mobile` 选项：`laptop` 使用 lands
 它与视角选择互不替代：视角仍通过 URL reload 选择 laptop/mobile，radio 只决定 laptop 是否挂载客显。
 宽度 range、视角 radio 和屏幕模式 radio 共用标题下方的独立居中控制行，不与标题节点共用布局容器。
 
-## 迭代指引
+## 在这个包上迭代时
 
 新增宿主行为必须同步公共面、`terminal-invariants.json`、测试与本 README。新增 integration
 只应增加自己的薄入口与 assembly 配置；不要把业务 part、变量、命令、屏幕判断或布局尺寸
 下沉到本包。需要 NativeWind、React Native Reusables、automation backend、真实浏览器自动化
 或 Android 双屏承载时，必须进入对应的独立授权范围。
+
+```sh
+yarn workspace @catering-v2s/ui-base-dev-host typecheck
+yarn workspace @catering-v2s/ui-base-dev-host test
+yarn workspace @catering-v2s/ui-base-dev-host lint
+```

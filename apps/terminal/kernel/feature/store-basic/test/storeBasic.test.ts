@@ -2,12 +2,26 @@ import {describe, expect, it} from 'vitest';
 import type {ActorExecutionContext, RuntimeModuleContext} from '@catering-v2s/kernel-base-runtime';
 import type {StateJsonValue, StateRoot} from '@catering-v2s/kernel-base-state';
 import {
-  readTerminalDataCommand,
+  executeTerminalHttpCommand,
   selectActivationState,
   selectTerminalTopicSubscriptions,
   terminalTopicChangedCommand,
-  type TerminalReadOperationId,
 } from '@catering-v2s/kernel-base-terminal-data-client';
+import type {TerminalOperationId} from '../src/generated/terminalApi';
+
+type TerminalReadOperationId = Extract<TerminalOperationId, `terminalRead${string}`>;
+const operationForPayload = (payload: unknown): TerminalReadOperationId => {
+  const request = (payload as {request: {pathAndQuery: string}}).request;
+  const path = request.pathAndQuery.split('?', 1)[0];
+  if (/^\/stores\/[^/]+\/basic$/.test(path)) return 'terminalReadStoreBasic';
+  if (/^\/stores\/[^/]+\/contracts$/.test(path)) return 'terminalReadStoreActiveContracts';
+  if (/^\/stores\/[^/]+\/service-point-areas$/.test(path)) return 'terminalReadStoreServicePointAreas';
+  if (/^\/stores\/[^/]+\/service-points$/.test(path)) return 'terminalReadStoreServicePoints';
+  if (/^\/contracts\/[^/]+$/.test(path)) return 'terminalReadContract';
+  if (/^\/service-point-areas\/[^/]+$/.test(path)) return 'terminalReadServicePointArea';
+  if (/^\/service-points\/[^/]+$/.test(path)) return 'terminalReadServicePoint';
+  throw new Error(`Unexpected store owner path: ${path}`);
+};
 import {
   createStoreBasicModule,
   initializeStoreBasicCommand,
@@ -20,7 +34,7 @@ import {
   selectStoreBasicState,
   selectStoreBasicLoadReadiness,
 } from '../src/index';
-import {storeBasicReducer, storeBasicSliceName, storeBasicStateRegistration} from '../src/features/slices/slice';
+import {storeBasicReducer, storeBasicSliceName, storeBasicStateRegistration} from '../src/features/slices/storeBasicState';
 import type {StoreBasicState} from '../src/types/types';
 
 const binding = {
@@ -29,47 +43,97 @@ const binding = {
   groupWorkspaceKey: 'workspace-1',
   bindingGeneration: 4,
 };
+const areaRef = '00000000-0000-4000-8000-000000000001';
+const pointRef = '00000000-0000-4000-8000-000000000002';
+const serviceStoreRef = '00000000-0000-4000-8000-000000000003';
+const operatingRules = {
+  catalogManagementEnabled: true,
+  externalCatalogSyncEnabled: false,
+  openPlatformDeveloperCode: '',
+  reservationEnabled: false,
+  reservationDepositEnabled: false,
+  queueCallEnabled: false,
+  tableManagementEnabled: false,
+  tableStatusEnabled: false,
+  tableWaitCallEnabled: false,
+  banquetOrderEnabled: false,
+  pickupCallEnabled: false,
+  receivableEnabled: false,
+};
+const contractBody = (id: string, status: 'VALID' | 'INVALID', updatedAt: number) => ({
+  id,
+  groupWorkspaceKey: 'workspace-1',
+  project: {id: 'project-1', code: 'PROJECT', name: 'Project'},
+  store: {id: 'store-1', code: 'STORE', name: 'Sample'},
+  tenant: {id: 'tenant-1', code: 'TENANT', name: 'Tenant'},
+  phaseName: null,
+  contractNo: `CONTRACT-${id}`,
+  effectiveFrom: '2026-01-01',
+  effectiveTo: null,
+  extensionValues: {},
+  extensionRuleRevision: 0,
+  status,
+  revision: updatedAt,
+  source: 'MANUAL' as const,
+  createdAt: 1,
+  updatedAt,
+  items: [{code: 'ITEM', name: 'Item'}],
+});
 const readBody = (operationId: TerminalReadOperationId): unknown => {
   switch (operationId) {
     case 'terminalReadStoreBasic':
       return {
         store: {
           id: 'store-1',
-          name: 'Sample',
           groupWorkspaceKey: 'workspace-1',
-          project: {id: 'project-1', name: 'Project'},
+          code: 'STORE',
+          name: 'Sample',
+          project: {id: 'project-1', code: 'PROJECT', name: 'Project'},
+          brand: {id: 'brand-1', code: 'BRAND', name: 'Brand'},
+          tenant: {id: 'tenant-1', code: 'TENANT', name: 'Tenant'},
+          status: 'ENABLED',
+          extensionValues: {},
+          extensionRuleRevision: 0,
+          revision: 1,
+          createdAt: 1,
+          updatedAt: 10,
+          contractDerivedStatus: 'OPERATING',
+          operatingRuleSwitches: operatingRules,
         },
-        operatingRules: {catalogManagementEnabled: true},
+        operatingRules,
         storeUpdatedAtEpochMillis: 10,
         operatingRulesUpdatedAtEpochMillis: 11,
       };
     case 'terminalReadStoreActiveContracts':
       return {
-        items: [{id: 'contract-1', updatedAt: 15}],
+        items: [contractBody('contract-1', 'VALID', 15)],
         collectionUpdatedAtEpochMillis: 15,
       };
     case 'terminalReadStoreServicePointAreas':
       return {
-        items: [{areaRef: 'area-1', updatedAt: 16}],
+        items: [{areaRef, storeRef: serviceStoreRef, name: 'Area', code: 'AREA', areaType: 'TABLE_AREA', status: 'ENABLED', displayOrder: 0, version: 1, createdAt: 1, updatedAt: 16}],
         collectionUpdatedAtEpochMillis: 16,
       };
     case 'terminalReadStoreServicePoints':
       return {
-        items: [{pointRef: 'point-1', updatedAt: 17}],
+        items: [{pointRef, storeRef: serviceStoreRef, areaRef, name: 'Point', code: 'POINT', pointType: 'TABLE', status: 'ENABLED', displayOrder: 0, extensionValues: {}, version: 1, createdAt: 1, updatedAt: 17}],
         collectionUpdatedAtEpochMillis: 17,
       };
     case 'terminalReadContract':
-      return {contract: {id: 'contract-1', updatedAt: 15}, updatedAtEpochMillis: 15};
+      return {contract: contractBody('contract-1', 'VALID', 15), updatedAtEpochMillis: 15};
     case 'terminalReadServicePointArea':
-      return {area: {areaRef: 'area-1', updatedAt: 16}, updatedAtEpochMillis: 16};
+      return {area: {areaRef, storeRef: serviceStoreRef, name: 'Area', code: 'AREA', areaType: 'TABLE_AREA', status: 'ENABLED', displayOrder: 0, version: 1, createdAt: 1, updatedAt: 16}, updatedAtEpochMillis: 16};
     case 'terminalReadServicePoint':
-      return {servicePoint: {pointRef: 'point-1', updatedAt: 17}, updatedAtEpochMillis: 17};
+      return {servicePoint: {pointRef, storeRef: serviceStoreRef, areaRef, name: 'Point', code: 'POINT', pointType: 'TABLE', status: 'ENABLED', displayOrder: 0, extensionValues: {}, version: 1, createdAt: 1, updatedAt: 17}, updatedAtEpochMillis: 17};
   }
 };
 
 const activeCredential = () => {
   const state = {
     credential: {...binding, deviceId: 'device-1', credentialSecret: 'A'.repeat(43)},
+    credentialRevision: 1,
+    credentialReadyRevision: 1,
+    credentialReadyInstanceMode: 'MASTER',
     activationStatus: 'active',
     connection: {status: 'stopped', addressName: null, nodeId: null, lastCloseReason: null},
     pendingActivations: {},
@@ -151,6 +215,7 @@ const createActorHarness = (
       ({
         'kernel.base.runtime.instance-mode': {instanceMode},
         'kernel.base.terminal-data-client.client': tdcState,
+        'kernel.base.server-config.configuration': {selectedSpace: 'development', serviceRevisions: {business: 0}},
         [storeBasicSliceName]: storeState,
       }) as StateRoot,
     dispatchAction: (action: unknown) => {
@@ -177,8 +242,8 @@ const createActorHarness = (
   ): Promise<unknown> => {
     calls.push(Object.freeze({name: definition.commandName, payload, options: dispatchOptions}));
     timeline.push({kind: 'command', name: definition.commandName});
-    if (definition.commandName === readTerminalDataCommand.commandName) {
-      const operationId = (payload as {operationId: TerminalReadOperationId}).operationId;
+    if (definition.commandName === executeTerminalHttpCommand.commandName) {
+      const operationId = operationForPayload(payload);
       const callIndex = readCounts.get(operationId) ?? 0;
       readCounts.set(operationId, callIndex + 1);
       if (options.deferredRead?.operationId === operationId && options.deferredRead.callIndex === callIndex) {
@@ -199,7 +264,10 @@ const createActorHarness = (
       }
       const sequence = options.readBodySequences?.[operationId];
       const body = sequence?.[Math.min(callIndex, sequence.length - 1)] ?? readBody(operationId);
-      return {status: 'completed', actorResults: [{status: 'completed', result: {kind: 'success', status: 200, body}}]};
+      return {
+        status: 'completed',
+        actorResults: [{status: 'completed', result: {kind: 'response', status: 200, body}}],
+      };
     }
     if (definition.commandName.endsWith('.subscribe-topic')) {
       const request = payload as {
@@ -342,8 +410,9 @@ describe('store-basic feature owner', () => {
     expect(
       harness.calls.some(
         call =>
-          call.name === readTerminalDataCommand.commandName &&
-          (call.payload as {operationId?: string}).operationId === 'terminalReadStoreOrganizationPath',
+          call.name === executeTerminalHttpCommand.commandName &&
+          (call.payload as {request?: {pathAndQuery?: string}}).request?.pathAndQuery ===
+            '/stores/store-1/organization-path',
       ),
     ).toBe(false);
   });
@@ -361,8 +430,7 @@ describe('store-basic feature owner', () => {
 
     const storeReads = harness.calls.filter(
       call =>
-        call.name === readTerminalDataCommand.commandName &&
-        (call.payload as {operationId?: string}).operationId === 'terminalReadStoreBasic',
+        call.name === executeTerminalHttpCommand.commandName && operationForPayload(call.payload) === 'terminalReadStoreBasic',
     );
     expect(storeReads).toHaveLength(2);
     expect(selectStoreBasicLoadReadiness(harness.getState())).toMatchObject({
@@ -381,8 +449,8 @@ describe('store-basic feature owner', () => {
     const state = harness.getState();
     expect(selectStore(state)).toMatchObject({value: {id: 'store-1', name: 'Sample'}, updatedAtEpochMillis: 10});
     expect(selectActiveContracts(state)?.value.map(item => item.id)).toEqual(['contract-1']);
-    expect(selectServicePointAreas(state)?.value.map(item => item.areaRef)).toEqual(['area-1']);
-    expect(selectServicePoints(state)?.value.map(item => item.pointRef)).toEqual(['point-1']);
+    expect(selectServicePointAreas(state)?.value.map(item => item.areaRef)).toEqual([areaRef]);
+    expect(selectServicePoints(state)?.value.map(item => item.pointRef)).toEqual([pointRef]);
     const subscriptions = harness.calls.filter(call => call.name.endsWith('.subscribe-topic'));
     expect(harness.calls.every(call => call.options?.requestId === 'initialize')).toBe(true);
     expect(subscriptions.map(call => (call.payload as {topicKey: string}).topicKey).sort()).toEqual([
@@ -448,8 +516,8 @@ describe('store-basic feature owner', () => {
     if (handler === undefined) throw new Error('store-basic initialize handler missing');
     await expect(handler.handle(harness.context)).resolves.toEqual({status: 'store-read-failed'});
     const operationIds = harness.calls
-      .filter(call => call.name === readTerminalDataCommand.commandName)
-      .map(call => (call.payload as {operationId: string}).operationId);
+      .filter(call => call.name === executeTerminalHttpCommand.commandName)
+      .map(call => operationForPayload(call.payload));
     expect(operationIds).not.toContain('terminalReadStoreServicePointAreas');
     expect(operationIds).not.toContain('terminalReadStoreServicePoints');
     expect(
@@ -469,12 +537,12 @@ describe('store-basic feature owner', () => {
 
     const state = harness.getState();
     expect(selectStore(state)).toMatchObject({value: {id: 'store-1', name: 'Sample'}});
-    expect(selectServicePointAreas(state)?.value.map(item => item.areaRef)).toEqual(['area-1']);
+    expect(selectServicePointAreas(state)?.value.map(item => item.areaRef)).toEqual([areaRef]);
     expect(selectServicePoints(state)).toBeNull();
   });
 
   it('replaces a range and unsubscribes only the removed detail without refetching returned details', async () => {
-    const contract = (id: string, updatedAt: number) => ({id, status: 'VALID', updatedAt});
+    const contract = (id: string, updatedAt: number) => contractBody(id, 'VALID', updatedAt);
     const range = (items: readonly ReturnType<typeof contract>[], collectionUpdatedAtEpochMillis: number) => ({
       items,
       collectionUpdatedAtEpochMillis,
@@ -530,13 +598,13 @@ describe('store-basic feature owner', () => {
     ).toEqual(['C']);
     expect(
       deltaCalls
-        .filter(call => call.name === readTerminalDataCommand.commandName)
-        .map(call => (call.payload as {operationId: string}).operationId),
+        .filter(call => call.name === executeTerminalHttpCommand.commandName)
+        .map(call => operationForPayload(call.payload)),
     ).toEqual(['terminalReadStoreActiveContracts']);
   });
 
   it('keeps a failed detail unsubscribe visible when the aggregate command completed', async () => {
-    const contract = (id: string, updatedAt: number) => ({id, status: 'VALID', updatedAt});
+    const contract = (id: string, updatedAt: number) => contractBody(id, 'VALID', updatedAt);
     const harness = createActorHarness({
       topicUnsubscribeResult: {status: 'failed', reason: 'PERSISTENCE_FAILED'},
       readBodySequences: {
@@ -585,9 +653,9 @@ describe('store-basic feature owner', () => {
       topicUnsubscribeResult: {status: 'failed', reason: 'PERSISTENCE_FAILED'},
       readBodySequences: {
         terminalReadStoreActiveContracts: [
-          {items: [{id: 'A', status: 'VALID', updatedAt: 15}], collectionUpdatedAtEpochMillis: 16},
+          {items: [contractBody('A', 'VALID', 15)], collectionUpdatedAtEpochMillis: 16},
         ],
-        terminalReadContract: [{contract: {id: 'A', status: 'VOIDED', updatedAt: 20}, updatedAtEpochMillis: 20}],
+        terminalReadContract: [{contract: contractBody('A', 'INVALID', 20), updatedAtEpochMillis: 20}],
       },
     });
     const initialize = harness.actor.handlers.find(
@@ -671,15 +739,12 @@ describe('store-basic feature owner', () => {
       readBodySequences: {
         terminalReadStoreActiveContracts: [
           {
-            items: [
-              {id: 'A', status: 'VALID', updatedAt: 15},
-              {id: 'B', status: 'VALID', updatedAt: 16},
-            ],
+            items: [contractBody('A', 'VALID', 15), contractBody('B', 'VALID', 16)],
             collectionUpdatedAtEpochMillis: 16,
           },
-          {items: [{id: 'A', status: 'VALID', updatedAt: 15}], collectionUpdatedAtEpochMillis: 17},
+          {items: [contractBody('A', 'VALID', 15)], collectionUpdatedAtEpochMillis: 17},
         ],
-        terminalReadContract: [{contract: {id: 'B', status: 'VALID', updatedAt: 16}, updatedAtEpochMillis: 16}],
+        terminalReadContract: [{contract: contractBody('B', 'VALID', 16), updatedAtEpochMillis: 16}],
       },
     });
     const initialize = harness.actor.handlers.find(
@@ -796,8 +861,8 @@ describe('store-basic feature owner', () => {
     await startupDispatch;
 
     const reads = restarted.calls
-      .filter(call => call.name === readTerminalDataCommand.commandName)
-      .map(call => (call.payload as {operationId: string}).operationId);
+      .filter(call => call.name === executeTerminalHttpCommand.commandName)
+      .map(call => operationForPayload(call.payload));
     expect(reads).toContain('terminalReadStoreBasic');
     expect(reads).toContain('terminalReadStoreServicePoints');
     expect(restarted.getState()[storeBasicSliceName]).toMatchObject(persistedState);
@@ -820,8 +885,8 @@ describe('store-basic feature owner', () => {
     expect(result.actorResults[0]?.result).toEqual({status: 'store-prerequisite-missing'});
     expect(
       restarted.calls
-        .filter(call => call.name === readTerminalDataCommand.commandName)
-        .map(call => (call.payload as {operationId: string}).operationId),
+        .filter(call => call.name === executeTerminalHttpCommand.commandName)
+        .map(call => operationForPayload(call.payload)),
     ).not.toContain('terminalReadStoreServicePoints');
     expect(selectStore(restarted.getState())?.value).not.toBeNull();
   });
@@ -836,11 +901,11 @@ describe('store-basic feature owner', () => {
     await initialize.handle(harness.context);
 
     const reads = harness.calls
-      .filter(call => call.name === readTerminalDataCommand.commandName)
-      .map(call => (call.payload as {operationId: string}).operationId);
+      .filter(call => call.name === executeTerminalHttpCommand.commandName)
+      .map(call => operationForPayload(call.payload));
     expect(reads.filter(operationId => operationId === 'terminalReadStoreBasic')).toHaveLength(1);
     expect(reads.filter(operationId => operationId === 'terminalReadStoreServicePoints')).toHaveLength(2);
-    expect(selectServicePoints(harness.getState())?.value.map(item => item.pointRef)).toEqual(['point-1']);
+    expect(selectServicePoints(harness.getState())?.value.map(item => item.pointRef)).toEqual([pointRef]);
     expect(selectStoreBasicState(harness.getState()).failures.SERVICE_POINT_COLLECTION).toBeUndefined();
   });
 
@@ -853,9 +918,13 @@ describe('store-basic feature owner', () => {
     const olderReadStarted = new Promise<void>(resolve => {
       markOlderReadStarted = resolve;
     });
+    const currentStoreBody = readBody('terminalReadStoreBasic') as {
+      store: Readonly<Record<string, unknown>>;
+      operatingRules: typeof operatingRules;
+    };
     const newerStoreBody = {
-      store: {id: 'store-1', name: 'Latest'},
-      operatingRules: {catalogManagementEnabled: true},
+      ...currentStoreBody,
+      store: {...currentStoreBody.store, name: 'Latest'},
       storeUpdatedAtEpochMillis: 40,
       operatingRulesUpdatedAtEpochMillis: 41,
     };
@@ -921,7 +990,7 @@ describe('store-basic feature owner', () => {
     const olderFlushStarted = new Promise<void>(resolve => {
       markOlderFlushStarted = resolve;
     });
-    const contract = (id: string, updatedAt: number) => ({id, status: 'VALID', updatedAt});
+    const contract = (id: string, updatedAt: number) => contractBody(id, 'VALID', updatedAt);
     const harness = createActorHarness({
       deferredFlush: {
         shouldDefer: state => state.activeContracts?.value.some(item => item.id === 'contract-old') ?? false,
@@ -993,7 +1062,7 @@ describe('store-basic feature owner', () => {
     const olderFlushStarted = new Promise<void>(resolve => {
       markOlderFlushStarted = resolve;
     });
-    const contract = (id: string, updatedAt: number) => ({id, status: 'VALID', updatedAt});
+    const contract = (id: string, updatedAt: number) => contractBody(id, 'VALID', updatedAt);
     const body = {
       items: [contract('contract-1', 15), contract('contract-new', 17)],
       collectionUpdatedAtEpochMillis: 17,

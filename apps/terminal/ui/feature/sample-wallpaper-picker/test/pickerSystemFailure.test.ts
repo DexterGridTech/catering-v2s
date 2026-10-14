@@ -11,7 +11,7 @@ import type {
   LoggerPort,
   NativeLoadingCapability,
 } from '@catering-v2s/kernel-base-platform-ports';
-import {defineActor, onCommand, type RuntimeModule} from '@catering-v2s/kernel-base-runtime';
+import {createRuntimeModule, defineActor, onCommand, type RuntimeModule} from '@catering-v2s/kernel-base-runtime';
 import {
   confirmWallpaperCommand,
   createSampleWallpaperModule,
@@ -20,16 +20,15 @@ import {
   selectWallpaperId,
 } from '@catering-v2s/kernel-feature-sample-wallpaper';
 import {createSampleStaffSessionModule} from '@catering-v2s/kernel-feature-sample-staff-session';
-import {createSampleWallpaperPickerModule} from '../src/application/module';
 import {WallpaperPicker} from '../src/components/laptop/WallpaperPicker';
 import {
   confirmWallpaperRequestedCommand,
   wallpaperOptionSelectedCommand,
   wallpaperSystemFailureObservedCommand,
-} from '../src/features/commands/commands';
-import {sampleWallpaperPickerAssembly} from '../src/assembly/assembly';
+} from '../src/declarations/commands';
+import {createSampleWallpaperPickerModule} from '../src/application/module';
 import {createTestRuntime} from '../../../../kernel/feature/sample-wallpaper/test/support';
-import {releaseRuntimeForTest} from '../../../../kernel/base/runtime/src/testing';
+import {releaseRuntimeForTestAsync} from '../../../../kernel/base/runtime/src/testing';
 import {createRendererCatalog, RenderProvider, type RenderProviderProps} from '@catering-v2s/ui-base-render';
 import {wallpaperOptionTestId} from '../src/foundations/wallpaperPickerTestIds';
 
@@ -94,15 +93,12 @@ const failureInjectionModule = (): RuntimeModule => {
       ),
     ),
   ]);
-  return Object.freeze({
+  return createRuntimeModule({
     moduleName: injectionModuleName,
     kind: 'owner' as const,
     dependencies: [{moduleName: 'kernel.base.runtime'}],
-    commands: [],
     commandDefinitions: [],
-    actors: [{name: actor.actorName}],
     actorDefinitions: [actor],
-    slices: [],
     stateSlices: [],
   });
 };
@@ -132,7 +128,6 @@ const beforeWriteFailureWallpaperModule = (): RuntimeModule => {
   ]);
   return Object.freeze({
     ...createSampleWallpaperModule(),
-    actors: [{name: actor.actorName}],
     actorDefinitions: [actor],
   });
 };
@@ -163,10 +158,12 @@ const mountPicker = async (runtime: TestRuntime, catalog: ReturnType<typeof crea
   );
 };
 
+const sampleWallpaperPickerModule = createSampleWallpaperPickerModule();
+
 describe('sample wallpaper picker production failure boundary', () => {
   it('propagates a real child write-after select failure through the production picker actor', async () => {
     const catalog = createUiCatalog(
-      sampleWallpaperPickerAssembly.parts
+      (sampleWallpaperPickerModule.presentationContributions.parts ?? [])
         .filter(part => part.catalogEntry.surfaceForm.includes('mobile'))
         .map(part => part.catalogEntry),
     );
@@ -210,13 +207,13 @@ describe('sample wallpaper picker production failure boundary', () => {
         }),
       ]);
     } finally {
-      releaseRuntimeForTest(injectedRuntime);
+      await releaseRuntimeForTestAsync(injectedRuntime);
     }
   });
 
   it('propagates a real child write-after confirm failure without rolling back confirmed state', async () => {
     const catalog = createUiCatalog(
-      sampleWallpaperPickerAssembly.parts
+      (sampleWallpaperPickerModule.presentationContributions.parts ?? [])
         .filter(part => part.catalogEntry.surfaceForm.includes('mobile'))
         .map(part => part.catalogEntry),
     );
@@ -241,13 +238,13 @@ describe('sample wallpaper picker production failure boundary', () => {
       expect(selectWallpaperId(runtime.getState())).toBe('w2');
       expect(selectPendingWallpaperId(runtime.getState())).toBeUndefined();
     } finally {
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     }
   });
 
   it('closes the real picker UI to child result readback and system notice without a manual notice dispatch', async () => {
     const catalog = createUiCatalog(
-      sampleWallpaperPickerAssembly.parts
+      (sampleWallpaperPickerModule.presentationContributions.parts ?? [])
         .filter(part => part.catalogEntry.surfaceForm.includes('mobile'))
         .map(part => part.catalogEntry),
     );
@@ -279,13 +276,13 @@ describe('sample wallpaper picker production failure boundary', () => {
       ]);
     } finally {
       await renderer?.unmount();
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     }
   });
 
   it('closes the real picker UI to a truthful before-write notice from a runtime child failure', async () => {
     const catalog = createUiCatalog(
-      sampleWallpaperPickerAssembly.parts
+      (sampleWallpaperPickerModule.presentationContributions.parts ?? [])
         .filter(part => part.catalogEntry.surfaceForm.includes('mobile'))
         .map(part => part.catalogEntry),
     );
@@ -313,7 +310,7 @@ describe('sample wallpaper picker production failure boundary', () => {
       ]);
     } finally {
       await renderer?.unmount();
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     }
   });
 });

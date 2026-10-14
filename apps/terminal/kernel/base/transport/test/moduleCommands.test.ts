@@ -6,12 +6,19 @@ import {
   transportNetworkStatusChangedCommand,
   transportRetryDueCommand,
   transportStartCommand,
+  transportParameters,
 } from '../src/index';
-import type {TransportConnectionEvent, TransportManagedConnection} from '../src/index';
+import type {TransportConnectionEvent, TransportManagedConnection} from '@catering-v2s/kernel-base-platform-ports';
 import type {RuntimeModuleContext} from '@catering-v2s/kernel-base-runtime';
 import type {StateJsonValue} from '@catering-v2s/kernel-base-state';
 
 describe('transport module command facade', () => {
+  it('declares the existing bounded network observation request timeout', () => {
+    expect(transportParameters.networkStatusRequestTimeoutMs.defaultValue).toBe(5_000);
+    expect(transportParameters.networkStatusRequestTimeoutMs.validate?.(5_000)).toBe(true);
+    expect(transportParameters.networkStatusRequestTimeoutMs.validate?.(0)).toBe(false);
+  });
+
   it('executes generic HTTP only through the owner command and keeps request data out of command payloads', async () => {
     const sent: unknown[] = [];
     const warnings: unknown[] = [];

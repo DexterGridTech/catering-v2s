@@ -5,7 +5,8 @@ import type {StateJsonValue} from '@catering-v2s/kernel-base-state';
 import {classifyRequestResult, type RequestOutcome} from '../foundations/requestOutcome';
 import {dispatchWithRequestId} from '../foundations/dispatchWithRequestId';
 import {useDispatchCommand} from './useDispatchCommand';
-import {useRequestInFlight, useTrackedRequest} from './useRequest';
+import {useRequestInFlight} from './useRequestInFlight';
+import {useTrackedRequest} from './useTrackedRequest';
 import type {RenderProviderProps} from '../types/props';
 
 type DispatchCommand = RenderProviderProps['dispatchCommand'];

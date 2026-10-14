@@ -133,15 +133,16 @@ function normalizeFixtureIdentity(value) {
   return Object.freeze({path: value.path, version: value.version, sha256: value.sha256});
 }
 
-export function buildSeedReport({runId, managedDevRunId = runId, measurement = null, seedProfile, startedAt, finishedAt, status, businessStatus = status, cleanupStatus = null, fixtureIdentity = null, calls, events, nonApiStages = [], expectedNonApiStageIds = null, firstFailure = null}) {
-  const effectiveManagedDevRunId = nonEmpty(managedDevRunId, 'SEED_REPORT_MANAGED_DEV_RUN_ID_INVALID');
+export function buildSeedReport({runId, environmentKind = 'dev', managedEnvironmentRunId = null, managedDevRunId = null, measurement = null, seedProfile, startedAt, finishedAt, status, businessStatus = status, cleanupStatus = null, fixtureIdentity = null, calls, events, nonApiStages = [], expectedNonApiStageIds = null, firstFailure = null}) {
+  const effectiveManagedEnvironmentRunId = nonEmpty(managedEnvironmentRunId ?? managedDevRunId ?? runId, 'SEED_REPORT_MANAGED_ENVIRONMENT_RUN_ID_INVALID');
+  if (!['dev', 'uat'].includes(environmentKind) || (environmentKind === 'dev' && managedDevRunId !== null && managedEnvironmentRunId !== null && managedDevRunId !== managedEnvironmentRunId)) throw new Error('SEED_REPORT_ENVIRONMENT_IDENTITY_INVALID');
   const normalizedFixtureIdentity = normalizeFixtureIdentity(fixtureIdentity);
-  const eventRun = (event) => event?.managedDevRunId ?? event?.runId;
-  const keyFor = (event) => `${effectiveManagedDevRunId}:${event.correlationId}:${event.requestId}`;
-  const expectedRequestKeys = new Set(calls.map((call) => `${call.managedDevRunId ?? effectiveManagedDevRunId}:${call.correlationId ?? 'missing'}:${call.requestId ?? 'missing'}`));
-  // Multiple independent seed executors share one managed DEV run.  Only an exact request tuple
+  const eventRun = (event) => event?.managedEnvironmentRunId ?? event?.managedDevRunId ?? event?.runId;
+  const keyFor = (event) => `${effectiveManagedEnvironmentRunId}:${event.correlationId}:${event.requestId}`;
+  const expectedRequestKeys = new Set(calls.map((call) => `${call.managedEnvironmentRunId ?? call.managedDevRunId ?? effectiveManagedEnvironmentRunId}:${call.correlationId ?? 'missing'}:${call.requestId ?? 'missing'}`));
+  // Multiple independent seed executors share one managed environment run. Only an exact request tuple
   // belongs to this report; same-run activity from another executor is preserved as out of scope.
-  const scopedEvents = events.filter((event) => eventRun(event) === effectiveManagedDevRunId && expectedRequestKeys.has(keyFor(event)));
+  const scopedEvents = events.filter((event) => eventRun(event) === effectiveManagedEnvironmentRunId && expectedRequestKeys.has(keyFor(event)));
   const outOfScopeEvents = events.filter((event) => !scopedEvents.includes(event));
   const inferredMeasurements = [...new Map(scopedEvents.map((event) => [JSON.stringify({schemaVersion: event.measurementSchemaVersion, basis: event.measurementBasis}), {schemaVersion: event.measurementSchemaVersion, basis: event.measurementBasis}])).values()];
   const effectiveMeasurement = measurement ?? (inferredMeasurements.length === 1 && Number.isInteger(inferredMeasurements[0].schemaVersion) && typeof inferredMeasurements[0].basis === 'string' ? inferredMeasurements[0] : null);
@@ -150,8 +151,8 @@ export function buildSeedReport({runId, managedDevRunId = runId, measurement = n
   const unmatchedDatabaseEvents = [];
   const groups = new Map();
   for (const call of calls) {
-    const callManagedDevRunId = call.managedDevRunId ?? effectiveManagedDevRunId;
-    const key = `${callManagedDevRunId}:${call.correlationId ?? 'missing'}:${call.requestId ?? 'missing'}`;
+    const callManagedEnvironmentRunId = call.managedEnvironmentRunId ?? call.managedDevRunId ?? effectiveManagedEnvironmentRunId;
+    const key = `${callManagedEnvironmentRunId}:${call.correlationId ?? 'missing'}:${call.requestId ?? 'missing'}`;
     const event = byRequest.get(key);
     if (!event) { unmatchedHttpEvents.push(call.operationId ?? 'operation.unresolved'); continue; }
     if (event.operationId !== call.operationId || event.method !== call.method || event.routeTemplate !== call.routeTemplate) {
@@ -193,9 +194,10 @@ export function buildSeedReport({runId, managedDevRunId = runId, measurement = n
   const actualNonApiStageIds = nonApiStages.map((stage) => stage.stageId).sort();
   const expectedStages = expectedNonApiStageIds ? [...expectedNonApiStageIds].sort() : null;
   const nonApiStagesMatch = !expectedStages || JSON.stringify(actualNonApiStageIds) === JSON.stringify(expectedStages);
-  const complete = unmatchedHttpEvents.length === 0 && unmatchedDatabaseEvents.length === 0 && calls.length === scopedEvents.length && calls.every((call) => (call.managedDevRunId ?? effectiveManagedDevRunId) === effectiveManagedDevRunId && call.correlationId && call.requestId) && nonApiStagesMatch;
+  const complete = unmatchedHttpEvents.length === 0 && unmatchedDatabaseEvents.length === 0 && calls.length === scopedEvents.length && calls.every((call) => (call.managedEnvironmentRunId ?? call.managedDevRunId ?? effectiveManagedEnvironmentRunId) === effectiveManagedEnvironmentRunId && call.correlationId && call.requestId) && nonApiStagesMatch;
   const report = {
-    kind: 'r5-full-seed-report', reportKind: 'SEED', schemaVersion: 4, runId, managedDevRunId: effectiveManagedDevRunId, measurement: effectiveMeasurement, seedProfile, fixtureIdentity: normalizedFixtureIdentity, businessStatus, cleanupStatus, status: status === 'PASS' && complete ? 'PASS' : 'FAIL',
+    kind: 'r5-full-seed-report', reportKind: 'SEED', schemaVersion: 5, runId, environmentKind, managedEnvironmentRunId: effectiveManagedEnvironmentRunId,
+    ...(environmentKind === 'dev' ? {managedDevRunId: effectiveManagedEnvironmentRunId} : {}), measurement: effectiveMeasurement, seedProfile, fixtureIdentity: normalizedFixtureIdentity, businessStatus, cleanupStatus, status: status === 'PASS' && complete ? 'PASS' : 'FAIL',
     startedAt, finishedAt, durationMs: Math.max(0, new Date(finishedAt).getTime() - new Date(startedAt).getTime()),
     apiEndpoints, kindCounts: aggregateKindCounts(scopedEvents), nonApiStages,
     completeness: {apiCallCount: calls.length, reportedApiCallCount: scopedEvents.length, outOfScopeDatabaseEventCount: outOfScopeEvents.length, endpointGroupCount: apiEndpoints.length, unmatchedHttpEvents, unmatchedDatabaseEvents, nonApiStageIds: actualNonApiStageIds, expectedNonApiStageIds: expectedStages},
@@ -254,7 +256,7 @@ export function renderSeedReportMarkdown(report) {
     '',
     `- Seed profile：\`${escapeMarkdown(report.seedProfile)}\``,
     `- Run ID：\`${escapeMarkdown(report.runId)}\``,
-    `- Managed DEV Run ID：\`${escapeMarkdown(report.managedDevRunId)}\``,
+    `- Managed ${escapeMarkdown(report.environmentKind?.toUpperCase() ?? 'ENVIRONMENT')} Run ID：\`${escapeMarkdown(report.managedEnvironmentRunId ?? report.managedDevRunId)}\``,
     `- 报告类型：\`${escapeMarkdown(report.reportKind)}\``,
     `- 计量口径：${report.measurement ? `v${report.measurement.schemaVersion} / \`${escapeMarkdown(report.measurement.basis)}\`` : '未声明'}`,
     `- Fixture：${report.fixtureIdentity ? `\`${escapeMarkdown(report.fixtureIdentity.path)}\` v${report.fixtureIdentity.version} / \`${escapeMarkdown(report.fixtureIdentity.sha256)}\`` : '未声明'}`,

@@ -1,5 +1,5 @@
 import type {LoggerPort} from '@catering-v2s/kernel-base-platform-ports';
-import {useRenderContext} from '../contexts/RenderContext';
+import {useRenderContext} from './useRenderContext';
 
 /**
  * Exposes only the render owner's structured logger to a rendered part.

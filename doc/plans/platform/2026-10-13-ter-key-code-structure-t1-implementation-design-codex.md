@@ -6,7 +6,7 @@ SKILL_USED=cs-writing-plans@72190c88b2b5a67a96b91d66aa72b9161913e10e8769da3f28a2
 
 BUSINESS_SOURCE=`2026-10-13-ter-key-code-structure-t1-formal-requirements-codex.md`，当前 SHA-256 `b92a34101871a53341b334d02235bd301e03ebbebe840d39438302e21712443e`。原话来源为同目录讨论稿 §1/§11/§13.1；源码导航 JSON 仅用于找文件，不证明语义。
 
-本次授权仅为详设、计划、责任附件和审查/处置记录。`IMPLEMENTATION_AUTHORITY=false`。需求、规范、记忆、源码、测试、脚本、依赖均未修改；生成、编译、测试、verify、Web、Android、DEV、reset/seed、L2、UAT、部署与 cleanup 均 `NOT_RUN`。需求 GO 及设计审查均不授予运行权。
+初始授权为详设、计划、责任附件和审查/处置记录；Dexter随后明确要求本次优化形成记忆与规范、后续新建包必须遵守，因此已同步terminal-coding-standard §7.1/TR-R06/§8与其既有routed memory指针。2026-10-13最新指派：确认问题修订完成后，授权Codex按本详设/计划实施全部T1目标与必要验证，最后交Dexter和Claude review；`IMPLEMENTATION_AUTHORITY=DEXTER_AUTHORIZED_AFTER_DOCUMENT_FIXES`，不是作者自判设计GO。本编写/修订会话仍只改文档，正式需求、源码、测试、脚本、依赖未改；模板/机械门/拟议接口仍未实施，所有生成/编译/测试/verify/Web/Android/DEV及cleanup仍NOT_RUN。新增运行授权仅覆盖本批必要C/F/W/D与受管DEV；reset/seed、后台L2/UAT/部署不是自动附带权。
 
 本设计是结构整改，不新增用户页面或改变业务语义。`JOURNEY_REFS/IA_REF/INTERACTION_REF`：重开 `doc/decisions/2026-10-02-ter-terminal-activation-interaction-pair-topology-{journey,ia,ui-interaction}-codex.md`、`2026-10-09-ter-update-automatic-execution-and-pair-{journey,ia,ui-interaction}-claude.md`、`2026-10-10-ter-remote-control-{journey,ia,ui-interaction}-claude.md` 的既有任务。没有新 UI，所以新 Journey/IA/线框模板 `N/A_WITH_REASON`；其既有行为回归见 §3a/§11，不能因此省略。MMP/LMP/LMS/LSP、主副机、MAIN/BRANCH、单 VM 双屏、断链遮罩与本机 admin 恢复继续按上述正本。
 
@@ -60,14 +60,14 @@ BUSINESS_SOURCE=`2026-10-13-ter-key-code-structure-t1-formal-requirements-codex.
 | 日志/诊断 | platform logger、Runtime journal、automation诊断 | command/request/context/address/boot/task/surface身份可关联；开发诊断保留原始错误，不新增脱敏 | 所有实际改动边界及driver |
 | 迁移/回填可逆性 | State persistedFields、native records | 纯路径重构无需迁移，key/descriptor identity保留；有实际shape变更先列明确读写转换 | owner持久化与原生记录，DB migration N/A |
 | 共享Drawer/list/form lifecycle | admin-ui-foundation | N/A：无后台页面改动；TER admin-shell/primitives/input复用原容器 | 既有 TER admin/config/activation |
-| admin交互一致性 | admin.sections parts、两App stage | pack加载即贡献，不加第二admin registry；只读slave限制/本机恢复保持 | admin-shell/activation/config-panel/topology |
-| 候选/dropdown | 现server-config空间选择 | N/A：无后台candidate API；spaceName选择走原command | server-config-panel |
+| admin交互一致性 | admin.sections parts、两App stage | pack加载即贡献，不加第二admin registry；只读slave限制/本机恢复保持 | admin-shell（含服务配置）/activation/topology |
+| 候选/dropdown | 现server-config空间选择 | N/A：无后台candidate API；spaceName选择走原command | admin-shell服务配置section |
 | 编码/name格式 | moduleName、canonical、brands | 保留现身份；流程号只文档，代码按能力命名 | 全包/生成器/测试 |
 | 原子字段组 | credential、task/action、report/snapshot context | 不拆关键组合为可部分提交的多个slice；一次owner reducer/flush提交 | TDC/update/project/member/config |
 
 ## 3a · 既有 UI 控件和执行控制面
 
-没有新用户操作，既有 Journey/IA/UI 文案、控件、TestId 不因文件移动改名。现 controls 按 owner 常量取：activation 的 code/input/submit/status；admin-shell launcher、tab；server-config-panel space/addresses/proxy/save；staff-auth staffId/password/login；member-desk member list/add/confirm；wallpaper picker gallery/confirm。PRIMARY/SECONDARY、MMP/LMP/LMS/LSP 均保持 renderer catalog 的既有声明。实施只改 import/包内贡献来源，不能编造同名不可点击节点。
+没有新用户操作，既有 Journey/IA/UI 文案、控件、TestId 不因文件移动改名。现 controls 按 owner 常量取：activation 的 code/input/submit/status；admin-shell launcher、tab及服务配置space/addresses/proxy/save；staff-auth staffId/password/login；member-desk member list/add/confirm；wallpaper picker gallery/confirm。PRIMARY/SECONDARY、MMP/LMP/LMS/LSP 均保持 renderer catalog 的既有声明。实施只改 import/包内贡献来源，不能编造同名不可点击节点。
 
 | 回归任务 | 控件来源/真实脚本 | 业务观察 |
 |---|---|---|
@@ -80,6 +80,25 @@ BUSINESS_SOURCE=`2026-10-13-ter-key-code-structure-t1-formal-requirements-codex.
 `L2_SCRIPT_ADMISSION=BLOCKED`（NOT_APPLICABLE_WITH_REASON）：T1不改变两个管理后台页面或operation，不新增 browser-l2；TER automation Web不是browser L2。若未来授权意外扩大后台UI，须先修详设§3a并取得该范围授权，不借现有driver绕过。
 
 实际执行控制面全集（不包括已退役入口）：`scripts/test/terminal-automation.mjs`；`tools/terminal-automation/src/{runner,driver,androidBuild,androidDevice,androidInput,androidAutomationConnection,androidCleanupRecovery,journeyUiPort,journeyFailureDiagnostics}.ts`；同目录fixtures中的terminalActivation、operations、update、remote；上述journeys；`.agents/skills/cs-terminal-automation/SKILL.md`；`scripts/env/check-runtime-resource-budget`；`tools/terminal-shared/run-owned-android-tests.mjs`；`scripts/dev/r5-dev-runner.mjs`及其类型声明。新增场景只能在当前driver/suites注册，不新造受管入口。附件给各字段和CLI的精确落点。
+
+### 3a.1 · 既有实际动作常量与迁移控制
+
+此表是TER automation操作导航，不是browserL2 PASS。输入沿现input完成/submit，request observer先订阅再点击；动态地址行用现函数生产TestId，不手写字符串。
+
+| action | owning constant/source（apps/terminal/） | 实际节点/业务oracle |
+|---|---|---|
+| 激活输入/提交 | ui/base/terminal-activation/src/foundations/terminalActivationTestIds.ts:codeInput/submit | Registered输入及Button；TDC active与terminal/store身份 |
+| admin开启/登录/tab | ui/base/admin-shell/src/foundations/adminTestIds.ts:launcher/login及section | AdminLauncher/登录输入/真实tab；本机admin可用 |
+| 空间/服务/地址/保存 | 同文件serverConfig.space/service/addAddress/addressField/removeAddress/save/clear/restore | admin-shell内ServerConfigPanel真实Input/Button；effective目标/拒绝分类 |
+| 店员输入/登录 | ui/feature/sample-staff-auth的sampleStaffAuthTestIds:operatorName/passcode/loginSubmit | Login控件；host qualification及operatorName |
+| 会员新增/表单/确认 | ui/feature/sample-member-desk的sampleMemberDeskTestId；driver src/mainSampleTestIds.ts对应member字段 | 真控件＋operationId/list；LMS与LSP不同确认owner |
+| 壁纸选择/确认 | wallpaperOptionTestId/branchWallpaperOptionTestId、picker confirm | 主副各本机背景、不互相覆盖 |
+| 配对/解绑/电源确认 | adminTestIds.topology.formField/pair/unpair/powerConfirmation.confirm/cancel | TopologySection；peer/readiness/role selector |
+| 安装邀请 | adminTestIds.installReminder.confirmInstall/deferInstall | 本机PRIMARY；update action；系统UI仅driver现窄例外 |
+
+admin-shell的`declarations/testIds.ts`承接现adminTestIds全部声明，serverConfig组仍在同一owner及namespace中，值不变；UI/driver消费本包公开test-ids，不另复制serverConfig表。服务配置作为本包section而非新workspace，其moduleName不另立；现brandfactory必用，不添加legacy执行层。
+
+
 
 ## 4 · 各 CP 的不变量与反例
 
@@ -134,7 +153,7 @@ CBS/TDS operation、数据库权限、Flyway和验收目录本批不改；WS连�
 
 ### 8.1 · 目录、声明及事实
 
-`src/moduleName.ts`、`dependencies.ts`、`index.ts`保留原职责；index仅barrel。每包命令集合移到`declarations/commands.ts`；错误/参数/parts/variables按需要`declarations/{errors,parameters,parts,variables}.ts`。actor一个具名文件、slice一个具名文件、公开selector一个具名文件；文件内短private helpers可以保留。types不等于parameters；generated不搬成手写declarations。
+`src/moduleName.ts`、`dependencies.ts`、`index.ts`保留原职责；index仅barrel。每包命令集合移到`declarations/commands.ts`；错误/参数/parts/variables按需要`declarations/{errors,parameters,parts,variables}.ts`。actor一个具名文件、slice一个具名文件、公开selector一个具名文件；文件内短private helpers可以保留。types不等于parameters；generated不搬成手写declarations。业务session/命令helper在features/actors/shared，application仅工厂/组装；Runtime/State通用生命周期是其基础设施入口，不把feature业务迁入application。
 
 State registration仍从真实slice的descriptor构造；commands factory产生brand、actor factory产生handler、selector factory产生参数元数据，不能从strings推导业务实现。AppModule中未消费的errors/parameters metadata字段，迁移真实消费者后删除；定义本身由使用方直接引用。不为这些静态定义加Runtime catalog。
 
@@ -144,11 +163,11 @@ State registration仍从真实slice的descriptor构造；commands factory产生b
 
 `RuntimeModule`改为`Omit<AppModule,'commands'|'actors'|'slices'>`加已有concrete arrays和生命周期hooks。`createRuntime/validateModuleShape/describeRuntimeModule`从数组派生命令名/visibility、actor键、slice名、selector参数；原数组均可为空但没有双写descriptors输入。保留owner、brand、重复、internal命令、依赖排序检查；冲突fail closed，不能后者覆盖。
 
-在Runtime现module factory位置增加`createRuntimeModule`（pure validation/clone/freeze，types仍RuntimeModule）；现`createFeatureAssemblyModule`复用它，仅加UI模块类型/前缀约束。**不是一套新注册体系**：最终只传RuntimeModule数组到createRuntime。
+在Runtime现module factory位置增加`createRuntimeModule`（pure validation/clone/freeze，types仍RuntimeModule）；现`createFeatureAssemblyModule`迁为`ui/base/feature-assembly/src/foundations/createUiRuntimeModule.ts`：复用createRuntimeModule，再冻结presentationContributions，接受ui.base/ui.feature/ui.integration及其实际owner/toolkit kind。当前只接受ui.feature的旧factory和createFeatureAssembly转发在CP02迁完消费者后删除；不让旧prefix限制新admin/panel模块。无真实Runtime贡献的primitives/input/render不伪造module。**不是一套新注册体系**：最终只传RuntimeModule数组到createRuntime。
 
-UI扩展类型由`ui/base/feature-assembly/src/types/featureAssembly.ts`拥有：`UiRuntimeModule = RuntimeModule & {presentationContributions?: {parts: readonly DefinedPart[]; variables: readonly UiVariableDeclaration[]; layerDismissals: readonly RenderLayerDismissal[]}}`。依赖UI types留UI，kernel不import它。使用现definedPart/catalogEntry/rendererBinding形状；admin.sections就是part.containerKeys，不新增admin registry。UI base/feature包自定义贡献，integration只显式加载factory。
+UI扩展类型由`ui/base/feature-assembly/src/types/featureAssembly.ts`拥有：`UiRuntimeModule = RuntimeModule & {presentationContributions?: {parts: readonly DefinedPart[]; variables: readonly UiVariableDeclaration[]; layerDismissals: Readonly<Record<string, RenderLayerDismissal>>}}`。沿现RenderProvider的partKey→owner dismissal函数表；函数本身没有partKey，不能改成无键数组。收集时逐键合并，重复partKey fail closed，不用spread静默覆盖；键必须对应该包实际声明的part。依赖UI types留UI，kernel不import它。使用现definedPart/catalogEntry/rendererBinding形状；admin.sections就是part.containerKeys，不新增admin registry。UI base/feature包自定义贡献，integration只显式加载factory。
 
-每次createRuntimeBundle/retry：重建明确module实例→收它们的UI贡献→构造uiCatalog/rendererCatalog→createUiStateModule→加入display-context/ui-state/automation module→createRuntime。catalog、layerDismissals、Runtime、uiStateModule、automation node sink成为同一个bundle；replaceRuntime同时替换，释放旧bundle所有订阅。两App显式包选择不同，主题/surface/ports/versions/namespace/environment参数保留入口。删除App的parts/variables/dismissals第二份列表及`createApplicationModules({uiStateModule})`同步白名单循环依赖。
+每次createRuntimeBundle/retry：重建明确module实例→收它们的UI贡献→构造uiCatalog/rendererCatalog→createUiStateModule→加入display-context/ui-state/automation module→createRuntime。catalog、layerDismissals、Runtime、uiStateModule、automation node sink成为同一个bundle；replaceRuntime同时替换，释放旧bundle所有订阅。两App显式包选择不同，主题/surface/ports/versions/namespace/environment参数保留入口。删除App的parts/variables/dismissals第二份列表及`createApplicationModules({uiStateModule})`同步白名单循环依赖。现LayerStack仍按topLayer.partKey查本owner回调；有回调不得落到通用closeLayerCommand。CP02补三feature失败层完整变体：会员sample.desk.system-notice与sample.desk.branch.system-notice两个partKey分别映射同一deskSystemFailureDismissedCommand，layerId保持现sample.desk.system-notice，由当前workspace处理。按钮、back/backdrop均沿同owner关闭对应层；不假设存在另一个待清业务失败slice，不重置合法pending或会员数据。具体文件为sample-member-desk/test/memberDesk.test.tsx与render/test/layerStack.test.tsx，另在integration-assembly/test/runtimeOwner.test.ts覆盖重复键拒绝/retry后新bundle。每个变体分别验证层已关闭、pending/list未被额外清理，不能只断言表长度。
 
 activation包新增自身presentation actor处理needToActivateTerminalCommand；staff/member/picker同理保留各自具名UI actor。integration保留“断链遮罩 > 未激活 > 未登录 > 当前业务”的应用阶段协调、startup-ready转发；它只发ownercommand。stage selector由integration公开，不下放base变通用业务router。
 
@@ -166,7 +185,7 @@ State auto-flush调度从createStateRuntime提`application/createPersistenceFlus
 
 详见附件§3逐operation表。policy targets为TDC2、store7、project2、update2、remote2，output均`<owner>/src/generated/terminalApi.ts`，package exports只有允许的公开command/selector/types，**不导出callableclient/operation descriptors**。包内application/actor可导入自己的generated；foreign root re-export与deep import在现dependency checker拒绝。type-only业务DTO在确有公开command/read面消费者时显式导出允许；禁止`export * generated`。
 
-generation policy保留canonical全集，实际targets的union必须覆盖且仅覆盖15operation；不要求每operation只分配一次，只有当前真实多消费者才可重复生成同源private类型，本方案当前没有重复分配。生成器已有路径/符号链接escape红例保持。生成模板共同生产path formatting、status/problem/schema decoder及下面executor binding，不能15份手写endpoint/认证。
+generation policy保留canonical全集，实际targets的union必须覆盖且仅覆盖15operation；不要求每operation只分配一次，只有当前真实多消费者才可重复生成同源private类型，本方案当前没有重复分配。生成器已有路径/符号链接escape红例保持。生成模板共同生产path formatting、status/problem/schema decoder；四个非TDC消费包各有私有`features/actors/shared/createOwnerHttpClient.ts`，仅绑定当前ActorExecutionContext到executeTerminalHttpCommand，不解释operation/path/body。TDC自身client绑定现私有bootstrap/cancel执行，不生成对自身包根的import自环。不能15份手写endpoint/认证。
 
 TDC新增一个public `executeTerminalHttpCommand`，`defaultTarget:'local'`，`allowReentry:true`（不同request独立，既有transport pending机制关联）。参数为JSON对象：`{expectedContext, request:{method,pathAndQuery,headers,body:{kind:'empty'}|{kind:'json';value:StateJsonValue},safeRetryable}}`。只允许同一configured CBS service，suffix相对path；拒绝绝对URL、`//`、前缀逃逸、用户提供Authorization/X-Terminal-Ref；header大小/值沿现HTTP约束。它不认识operationId、store path rewrites、grant/report DTO或topic业务。激活/cancel的私有client在TDC内部使用原credentialbootstrap执行，不伪装成已认证请求。
 
@@ -190,7 +209,7 @@ errors本包声明只存本owner可预期拒绝；createAppError或typedresult�
 
 ### 8.6 · 原生能力与App边界
 
-长期归属按资源而非现路径：另新增`ui/base/server-config-panel`承接当前admin-shell中服务配置的独立呈现，不新增用户页面、业务slice或权限。它自己返回admin.sections贡献，沿admin-shell公开的section props/key和现容器，admin-shell不反依赖它；两App仅显式load。当前不存在此包，禁止把目标当现有能力。
+服务配置呈现保留在`ui/base/admin-shell`内部：ServerConfigPanel/ConfigField是本机admin section的控件，不拥有独立资源或业务事实；通过kernel/server-config command/selector消费配置能力即可。admin-shell将现src/parts/serverConfigParts.tsx迁入本包declarations/serverConfigParts.tsx，并由自身module返回admin.sections贡献；两App只加载admin-shell，不另加载panel。相同目录迁移及职责自闭环已满足R08，拆新workspace只会增加依赖/模块/TestId接线，不新增能力，因此撤回独立server-config-panel包方案。配置事实仍由kernel owner唯一维护，admin-shell不得复制资格或配置cache。
 
 新增两个实际能力包 `adapter/android/{transport,topology}`，分别承接现application/base/android的网络HTTP/WS、NanoHTTPD拓扑host/peer，有实际平台实现和资源，不是空转发包；不建泛化host-runtime。AppControl的唯一reload已有真实owner，复用现adapter/update，见下文。TS native调用在implementations，纯wire/parser在foundations，platform-ports类型不反依赖adapter。
 
@@ -204,7 +223,7 @@ errors本包声明只存本owner可预期拒绝；createAppError或typedresult�
 
 四入口package.json各自内置defaults，不合并。server-config新增pure `resolveServerConfigEnvironment(defaults,overrides)`；overrides=`{spaceName,servers:[{serverName,addresses:[{addressName,baseUrl,timeoutMs}]}]}`。每个声明替换的service采用**完整地址集合**；保留未声明service明确定义，不保留同service旧DEV地址。未知space/service、重复名、空集/非法URL整次拒绝。timeout若输入省略，只按defaults的同名address继承；新名无timeout则拒绝，不按index猜。
 
-defaults/actornormalize/hydrate/sync共用地址规则，去掉4cap；原admin-shell ServerConfigPanel的`draft.addresses.length < 4` add按钮限制同根删除，迁到新panel后仍无固定cap，名字唯一/有效输入不放宽；纯constructor invalid defaults抛Error，用户command AppError。transport resolver按addressName消费，成功偏好仍name+configRevision，现retry/轮转预算不变；1/2/10都遍历，不新增探测/服务发现。update adapter的首地址下载行为保持，downloadfailover非本批。
+defaults/actornormalize/hydrate/sync共用地址规则，去掉4cap；admin-shell ServerConfigPanel的`draft.addresses.length < 4` add按钮限制同根删除，呈现仍留本包，名字唯一/有效输入不放宽；纯constructor invalid defaults抛Error，用户command AppError。transport resolver按addressName消费，成功偏好仍name+configRevision，现retry/轮转预算不变；1/2/10都遍历，不新增探测/服务发现。update adapter的首地址下载行为保持，downloadfailover非本批。
 
 DEV manifest producer输出具名space/service/addresses集合，保留既有三个TDS/两个HAProxy的受管one/two内部拓扑；automation/acceptance转换该producer到统一resolver，不能硬写aurora或两个URL。Android构建注入及Webtest输入采用单个JSON字符串environment配置，集团prefix来自当前fixture/managedidentity而非猜默认。删除入口`tdsEntryOneUrl/tdsEntryTwoUrl`型参数及对应client数量假设，详见附件§6全链。
 
@@ -252,7 +271,7 @@ store-operating、dual term-front、mobile term-handheld按seed key读取，code
 
 当前无任何运行/数据操作授权。未来计划明确请求existingDEV/tunnel、端侧App临时安装/覆盖与清理、seed终端拥有性核验后的activation cancel/re-activate；console主Journey现有project role补权及store notes修改/恢复、版本/远控fixture操作。角色：platform root与operations `r5-account-multi-role`；password由受管reader读取`V2S_SEED_PLATFORM_ROOT_PASSWORD`/`V2S_SEED_OPERATIONS_DEFAULT_PASSWORD`，无值落文档/CLI。术语与face不可互换。
 
-这些是`ESTABLISHED_SOURCE`；native新增包/生成fixtures是`IN_SCOPE_PRODUCED`；未来设备serial与运行/data授权是`EXTERNAL_PREREQUISITE_DEXTER_DECISION`（不阻断静态计划，但阻断实际运行）。managedDEV/readiness、seed缺失不能自动seed。无例行reset：确需reset/seed先单列授权并做动态前整体准入（所有CP/6b、适用§3a、当前完整seed dry-run），不拿文档授权代替。
+这些是`ESTABLISHED_SOURCE`；native新增包/生成fixtures是`IN_SCOPE_PRODUCED`；设备serial/API及managedDEV/有效fixture是实际运行前提，Codex先从受管配置/身份读回核实，不按设备顺序或猜账号。必要C/F/W/D及DEV已由最新会话授权，不再把常规执行上报成待批；前提不存在或不兼容才说明具体缺口交Dexter。seed缺失不能自动seed。无例行reset：确需reset/seed先单列授权并做动态前整体准入（所有CP/6b、适用§3a、当前完整seed dry-run），不拿实施授权扩大数据清除范围。
 
 ## 11 · 验证场景与执行范围
 
@@ -295,32 +314,46 @@ store-operating、dual term-front、mobile term-handheld按seed key读取，code
 | R-16 | 完整§0～14、附件、计划 | V01～18，静态各判据 |
 | R-17 | §11/§13/计划CP6日志和顺序 | V16/17/18，C/F/W/D |
 
-| V | 场景 | 执行文件与实际oracle |
-|---|---|---|
-| V-01 | 全包责任 | 附件§1/2，所有当前源逻辑owner/caller/资源/keep-move逐项读回，无generated混入 |
-| V-02 | module-load/persistence | runtime/state及各owner现tests，handlers资源数量/command结果保持 |
-| V-03 | module-load/owner-boundary | tools/terminal-skeleton及runtime checker真实非法declaration路径/foreign定义红 |
-| V-04 | error-parameter | config/test、Render requestOutcome；validation/DOMAIN/nonJSON/native/constructor各分类 |
-| V-05 | error-parameter | 各strategy production tests，值/单位/非法override，而非metadata存在 |
-| V-06 | owner-boundary | terminal-client-generation tests及package dependency红，private正常/foreign拒绝 |
-| V-07 | auth-context/sample | store/project/update/remote tests调用实际generated/TDC/transport而非fixture另造HTTP；A读Bselector |
-| V-08 | owner-boundary | 15op输出调用图、TDCown2；无oldbusinessfacade，无slaveTDS |
-| V-09 | module-load | feature/integration tests，加入/移除包parts+actors+selectors和无孤立变量 |
-| V-10 | module-load | duplicate/module-owner/brand mismatch断言；无双写描述 |
-| V-11 | sync-registration | State/topology tests，loaded/unloaded/isolated/方向/自动收新增fixture |
-| V-12 | sync-registration/sample | 两integration businessInterlock tests＋pair Journey；required缺失遮罩/admin保留 |
-| V-13 | address-collection | config/transport tests＋W同resolver1/2/10，无数量猜测 |
-| V-14 | address-collection | entry resolver/driver tests＋W/D当前空间/代理/group/request目标相同 |
-| V-15 | persistence-lifecycle | state/TDC/topology/update restart tests，正常restore/explicitunpair/cancelroot分别正反oracle |
-| V-16 | sample清单 | mainSampleJourney及console/wallpaper共享步骤，真实command result+业务selector两端比对 |
-| V-17 | auth-context/update/remote | topic通知HTTP差量、FULL/HOT boot与report、remote实际input/释放各范围明列 |
-| V-18 | docs/generator/driver | 附件§7全部标准/README/exports/gates示例读回、实际C/F，不旧runner |
+以下为唯一验收落点表；case名称是本批应扩展的具名断言，不表示当前已实现。`现有扩例`＝在精确现文件扩展并调整迁移imports；`拟新增`＝实施时先建测试/步骤并注册到现runner，当前不存在。C=生成/类型，F=focused，W=受管Expo Web，D=受管Android，均NOT_RUN。源码责任语义保留独立review，不伪装成自动计数门。文件字段不以泛称或另节引用替代。
+
+| V判据及真实oracle | 测试或场景ID | 执行档位 | 所在文件与本批动作 |
+|---|---|---|---|
+| V-01：全包每逻辑的owner/caller/资源/keep-move有依据，手写/generated/vendor分开；枚举不代替语义 | package-responsibility/source-readback | 静态独立review＋C/F（结构部分） | `doc/plans/platform/2026-10-13-ter-key-code-structure-t1-owner-and-source-appendix-codex.md`逐责任行；`tools/terminal-skeleton/check-static.test.mjs`现有扩例；源码语义对读记录 `doc/review/platform/2026-10-13-ter-t1-implementation-source-review-codex.md`，逐源码语义判定，不是机器门 |
+| V-02：拆定义后相同command/state；资源释放一次；两Runtime恢复ephemeral不持久 | module-load/persistence/resource-disposal | F | `apps/terminal/kernel/base/runtime/test/moduleSystem.test.ts`、`apps/terminal/kernel/base/runtime/test/lifecycle.test.ts`、`apps/terminal/kernel/base/state/test/persistence.test.ts`现有扩例 |
+| V-03：declarations法定路径及foreign定义红，不以文件数量判断责任 | declaration-layout/foreign-definition | C/F | `tools/terminal-skeleton/check-static.mjs`、`tools/terminal-skeleton/check-static.test.mjs`、`tools/terminal-runtime/check-static.mjs`、`tools/terminal-runtime/check-static.test.mjs`、`tools/terminal-layering/check-static.test.mjs`现有规则/红例同步 |
+| V-04：配置/host-only/业务拒绝类别保持；constructor、nonJSON、native PortResult不误类，界面可继续 | error-parameter/owner-rejection-recovery | F/W | `apps/terminal/kernel/base/server-config/test/serverConfig.test.ts`、`apps/terminal/kernel/base/runtime/test/actorResult.test.ts`、`apps/terminal/ui/base/render/test/requestOutcome.test.ts`、`apps/terminal/kernel/base/topology/test/topology.test.ts`现有扩例，调用真实owner而非仅构造结果；`tools/terminal-automation/journeys/mainSampleJourney.ts`扩既有admin配置拒绝/恢复步骤，`tools/terminal-automation/journeys/sampleConsole.test.ts`注册W |
+| V-05：静态策略真实消费默认/合法覆盖、单位正确，非法覆盖拒绝，协议cap不改 | error-parameter/strategy-consumption | F | `apps/terminal/kernel/base/contracts/test/contracts.test.ts`、`apps/terminal/kernel/base/transport/test/transportPrimitives.test.ts`、`apps/terminal/kernel/base/transport/test/connectionOwner.test.ts`现有扩例；`apps/terminal/kernel/base/transport/test/parameters.test.ts`拟新增真实策略消费正反例，不只factory metadata |
+| V-06：五owner私有生成可包内用，root/deep/alias/relative/reexport/require/dynamic越界拒绝 | owner-boundary/private-client-generation | C/F | `scripts/test/terminal-client-generation.test.mjs`现有单输出/13op断言迁五targets/完整15op；`tools/terminal-skeleton/check-static.test.mjs`扩私有client边界红；`scripts/generate/terminal-client-api.mjs`为该测试实际调用生成器 |
+| V-07：A发B command，B真实generated→TDC→transport，A读selector；拒绝/取消/关联不旁路 | auth-context/owner-http-command | F/W | `apps/terminal/kernel/feature/project-basic/test/projectBasicRuntime.test.ts`、`apps/terminal/kernel/feature/store-basic/test/storeBasic.test.ts`、`apps/terminal/kernel/feature/project-basic/test/projectBasic.test.ts`、`apps/terminal/kernel/base/terminal-update/test/terminalUpdate.test.ts`、`apps/terminal/kernel/base/remote-control/test/remoteControlActor.test.ts`、`apps/terminal/kernel/base/terminal-data-client/test/terminalDataClientActor.test.ts`现有扩例（mock仅network boundary）；`tools/terminal-automation/journeys/storeBasicDataChange.ts`真实HTTP步骤；`tools/terminal-automation/journeys/updateOwnerFlow.ts`拟新增真实CBS/grant/report步骤，由`tools/terminal-automation/journeys/update.test.ts`注册W |
+| V-08：15op只归五owner，TDC自身2op；无业务facade/重复credential，SLAVE CBS可读但不连TDS | owner-boundary/credential-http-only | C/F | `scripts/test/terminal-client-generation.test.mjs`、`tools/terminal-skeleton/check-static.test.mjs`、`apps/terminal/kernel/base/terminal-data-client/test/generatedTerminalApi.test.ts`、`apps/terminal/kernel/base/terminal-data-client/test/terminalDataClientActor.test.ts`、`apps/terminal/kernel/base/terminal-data-client/test/runtimeStartup.test.ts`现有扩例/移业务断言至消费owner |
+| V-09：加删完整module带入/释放actors/selectors/parts/variables/dismissals，无孤立贡献 | module-load/module-contributions | F/W | `apps/terminal/ui/base/feature-assembly/test/featureAssembly.test.ts`、`apps/terminal/ui/base/integration-assembly/test/runtimeOwner.test.ts`现有扩例；`apps/terminal/ui/base/integration-assembly/test/moduleContributions.test.ts`拟新增加删包/原子bundle proof；`tools/terminal-automation/journeys/sampleConsole.test.ts`、`tools/terminal-automation/journeys/mainSampleJourney.ts`现W加载后的真实UI command |
+| V-10：从concrete派生，真正重名/foreign/brand冲突拒绝并诊断 | module-load/definition-identity | C/F | `apps/terminal/kernel/base/runtime/test/moduleSystem.test.ts`、`apps/terminal/kernel/base/runtime/test/types.test.ts`、`apps/terminal/kernel/base/runtime/test/public-surface.typecheck.ts`、`apps/terminal/kernel/base/state/test/descriptor.test.ts`现有扩例 |
+| V-11：已加载/新增fixture自动eligible，删除不eligible，未知/isolated不应用，方向保持 | sync-registration/loaded-qualification | F | `apps/terminal/kernel/base/state/test/sync.test.ts`、`apps/terminal/kernel/base/state/test/descriptor.test.ts`、`apps/terminal/kernel/base/state/test/persistence.test.ts`现有扩例；`apps/terminal/kernel/base/state/test/syncRegistration.test.ts`拟新增registration→资格view proof；删除仅测显式名单的`apps/terminal/ui/base/integration-assembly/test/stateSyncSlices.test.ts`，其有效断言迁此，不另模拟sync |
+| V-12：eligible与required分开；无关sync不阻塞，断链/缺required遮罩而admin可恢复 | sync-registration/business-interlock | F/W适用部分/D配对部分 | `apps/terminal/ui/integration/sample-console/test/businessInterlock.test.ts`、`apps/terminal/ui/integration/sample-wallpaper-console/test/businessInterlock.test.ts`、`apps/terminal/kernel/base/topology/test/topology.test.ts`现有扩例；`tools/terminal-automation/journeys/mainSampleJourney.ts`＋`tools/terminal-automation/journeys/sampleConsole.test.ts`验证W非adapter准入；`tools/terminal-automation/journeys/update.pair.android.test.ts`扩实际D断链/投影/恢复 |
+| V-13：同解析1/2/10完整地址，duplicate/非法整次拒绝，UI无4cap、hydration/sync/轮转正确 | address-collection/configuration-edit | F/W | `apps/terminal/kernel/base/server-config/test/serverConfig.test.ts`、`apps/terminal/kernel/base/transport/test/transportPrimitives.test.ts`、`apps/terminal/kernel/base/transport/test/connectionOwner.test.ts`、`apps/terminal/ui/base/admin-shell/test/serverConfigPanel.test.tsx`现有扩例；`tools/terminal-automation/journeys/mainSampleJourney.ts`扩共享admin编辑/保存步骤，由`tools/terminal-automation/journeys/sampleConsole.test.ts`跑W。具名地址用现managed入口，不新部署节点 |
+| V-14：四入口/driver同resolver，当前space/group/proxy/目标一致，不残旧DEV地址 | address-collection/environment-wiring | F/W/D适用接线 | `apps/terminal/kernel/base/server-config/test/environmentResolver.test.ts`、`tools/terminal-automation/test/serverConfigEnvironmentWiring.test.ts`拟新增；`tools/terminal-automation/test/androidManagedServerSpaces.test.ts`、`tools/terminal-automation/test/mainSampleJourneyConfig.test.ts`、`apps/terminal/ui/base/integration-assembly/test/createBrowserTransportNetworkAdapter.test.ts`现有扩例；旧`apps/terminal/application/base/android/test/androidTransportNetworkAdapter.test.ts`迁目标`apps/terminal/adapter/android/transport/test/androidTransportNetworkAdapter.test.ts`；`tools/terminal-automation/journeys/sampleConsole.test.ts`与`tools/terminal-automation/journeys/sampleConsole.android.test.ts`运行同mainSampleJourney真实配置步骤 |
+| V-15：正常restore、角色切换、解绑/换主、取消root各有独立正反oracle；retain仅批准persist字段 | persistence-lifecycle/identity-cleanup | F/D适用native | `apps/terminal/kernel/base/state/test/persistence.test.ts`、`apps/terminal/kernel/base/runtime/test/reset.test.ts`、`apps/terminal/kernel/base/terminal-data-client/test/runtimeStartup.test.ts`、`apps/terminal/kernel/base/terminal-data-client/test/terminalDataClientActor.test.ts`、`apps/terminal/kernel/base/topology/test/topology.test.ts`、`apps/terminal/kernel/base/terminal-update/test/terminalUpdate.test.ts`、`apps/terminal/adapter/android/persist-kv/test/androidPersistKv.test.ts`现有扩例；`tools/terminal-automation/journeys/update.android.test.ts`与`tools/terminal-automation/journeys/update.pair.android.test.ts`验证D跨boot/解绑 |
+| V-16：两App激活→登录→会员确认或壁纸、本机admin，真实command/selector及权限保持 | sample-console/sample-wallpaper/main | F/W/D同清单 | `apps/terminal/ui/integration/sample-console/test/sampleAssembly.test.tsx`、`apps/terminal/ui/integration/sample-console/test/ownerStageRegression.test.tsx`、`apps/terminal/ui/integration/sample-wallpaper-console/test/sample2Assembly.test.tsx`、`apps/terminal/ui/integration/sample-wallpaper-console/test/ownerStageRegression.test.tsx`现有扩例；`tools/terminal-automation/journeys/mainSampleJourney.ts`、`tools/terminal-automation/journeys/sampleConsoleJourney.ts`、`tools/terminal-automation/journeys/sampleWallpaperJourney.ts`共享步骤；`tools/terminal-automation/journeys/sampleConsole.test.ts`/`tools/terminal-automation/journeys/sampleConsole.android.test.ts`按sample选择两App |
+| V-17：topic差量/订退/旧结果隔离，FULL/HOT固定/续接/report，remote输入/会员结果/释放各自断言 | store-basic.data-change-proof/update.owner-flow/update.supply-chain/update.pair/remote.main | F/W或D（系统adapter例外） | `apps/terminal/kernel/feature/store-basic/test/storeBasic.test.ts`、`apps/terminal/kernel/feature/project-basic/test/projectBasic.test.ts`、`apps/terminal/kernel/base/terminal-data-client/test/terminalDataClientActor.test.ts`、`apps/terminal/kernel/base/terminal-update/test/terminalUpdate.test.ts`、`apps/terminal/kernel/base/remote-control/test/remoteControlActor.test.ts`现有扩例；`tools/terminal-automation/journeys/storeBasicDataChange.ts`（现console主旅途调用，不宣称wallpaper也跑该子链）；`tools/terminal-automation/journeys/updateOwnerFlow.ts`拟新增，由`tools/terminal-automation/journeys/update.test.ts`/`tools/terminal-automation/journeys/update.android.test.ts`/`tools/terminal-automation/journeys/update.pair.android.test.ts`复用；`tools/terminal-automation/journeys/remote.web.test.ts`/`tools/terminal-automation/journeys/remote.android.test.ts`保留真实业务断言 |
+| V-18：README/public用法/模板/门/generated/driver与实际源码一致，未用机制合理删/说明、无旧runner | public-surface/documentation-consumers/retired-runner-absence | 静态review＋C/F | `tools/terminal-shared/package-invariants.test.mjs`、`tools/terminal-skeleton/check-static.test.mjs`、`tools/terminal-runtime/check-static.test.mjs`、`tools/terminal-layering/check-static.test.mjs`、`scripts/test/terminal-client-generation.test.mjs`、`tools/terminal-automation/test/runner.test.ts`、`tools/terminal-automation/test/requests.test.ts`、`tools/terminal-automation/test/mainSampleJourneyConfig.test.ts`现有扩例；真实README/源码语义对读记录见`doc/review/platform/2026-10-13-ter-t1-implementation-source-review-codex.md`，不由文件存在/总数代替 |
+
+以上表是未来proof落点，不是当前PASS。新参数消费、自动同步资格、bundle贡献、共享环境resolver、私有API生成及owner-flow在当前代码尚未成立，必须在所属CP先写直接测试/红例再退出CP。已有fixture与单例factory测试只供复用，不能据文件存在推导覆盖；全部实际场景状态逐行报告，不只N/N。S1关闭变体的文件/按钮及back/backdrop oracle另在§8.2写定，同为本表V09/V16的CP02扩例。
+
+### 11b · Web更新业务接缝的确切落点
+
+CP03/05修改当前`tools/terminal-automation/journeys/update.test.ts`并新增同目录`updateOwnerFlow.ts`共享步骤，在现update phase增加`update.owner-flow`（web/android都有真实suite注册，CLI未实现之前fail closed）。两个test-expo已有`createTerminalUpdateAutomationFixture`从kernel/base/terminal-update/testing注入，只automation-enabled构建使用；生产Web仍unavailable UpdatePort。本新case用`EXPO_PUBLIC_TER_UPDATE_OWNER_FLOW=1`选择**只注入fixture.port，不注入fixture.sourceProvider**，保留真实project candidate生产绑定；sourceProvider原其他测试用法不改。沿同fixture模拟平台readFacts/prepare/apply，不模拟CBS数据/认证/候选，不手写owner逻辑。
+
+CP03必须同时修改现`terminal-update/src/testing/automationFixture.ts`，不是直接复用当前固定publicationId的port。prepareArtifact在fixture闭包记录当前preparedId、kind和实际source.artifact；applyPrepared按preparedId/kind匹配后，用该artifact.publicationId生成同taskId/actionId的action；readAction只读回匹配身份，releasePrepared只释放对应prepared项，未知身份按现typed failure拒绝。本正常链串行准备，保留一个当前prepared记录即可，不建额外工厂/任务账本。owner-flow的模拟平台结果/readFacts须与同一实际artifact一致，不能夹用synthetic targetArtifact；这仅是Web平台替身，不证明真实安装或跨boot。原synthetic sourceProvider仍只服务原场景。CP03现fixture/direct tests用非全a的真实形状publicationId及不同FULL/HOT身份，验证prepare→apply→readAction→release和错prepared/kind拒绝；生产ACTION_PUBLICATION_IDENTITY_MISMATCH校验不放宽。CP05只适配其余UI/配置调用者，不把这个接缝留给首次W发现。
+
+共享步骤：真实seed激活→store-ready→project组织/规则snapshot ready→公开selector中app匹配candidate→真实project命令发update执行→selectTerminalUpdateTask.fixedTarget与选中rule/artifact身份相等→private grant命令经TDC/transport取真实CBS grant（不只HTTP200）→UpdatePort fixture只模拟平台动作→update report command取真实HTTP receipt→运营真实report/history task/binding读回同记录。no-candidate不发任务、刷新未完成不固定旧snapshot、canonical拒绝保留status/pending分类各落F；真实W只正常链。Android update.supply-chain/update.pair复用该非adapter步骤及原安装动作，不能把Wfixture当PackageInstaller/boot证明。
+
+将`node scripts/test/terminal-automation.mjs --phase update --platform web --shape mobile --sample console|wallpaper --case update.owner-flow`写入runner parser/suite和两App W调度，F及链logging/preflight在初次W之前完成；新case不是第二runner。fixture/授权仍§10b。
 
 ## 12 · 依赖、OPEN与禁止事项
 
 不新增第三方依赖或升级SDK。附件§8记录锁定/安装包静态版本与官方精确tag；native Gradle实际解析图未运行，`OPEN_DEPENDENCY_RESOLUTION`只能在未来受管classpath读取关闭，不把声明当解析PASS。使用现SDK API/资源顺序不因拆分改变；行为声明不足时停具体adapter点，不能按记忆补fallback。Web/Device、真实UI保真、资源及cleanup全NOT_RUN。
 
-目前无新增产品裁决：地址取消固定cap、declarations/staticparameter、privateclient与transportowner、credential/role/reset均已确定。设备/数据执行授权待Dexter。若新source与既有需求业务冲突，必须列具体差异，不能把结构整改授权变成产品改写。
+目前无新增产品裁决：地址取消固定cap、declarations/staticparameter、privateclient与transportowner、credential/role/reset均已确定。Codex实施及本批必要验证已授权；未具备的设备/数据前提和reset/seed等额外动作按§10b处理。若新source与既有需求业务冲突，必须列具体差异，不能把结构整改授权变成产品改写。
 
 ## 13 · 动态前诊断、失败和停止条件
 
@@ -342,11 +375,3 @@ store-operating、dual term-front、mobile term-handheld按seed key读取，code
 
 §0～14、3固定机制全行、3a既有控件与实际driver、9a六列、10b seed/角色、11a17R/18V、13b/13c均具名。新UI三模板不重绘有据N/A；原Journey保真非N/A；后台审计/HTTP新operation/DB迁移N/A明确。设计完成条件是两份主文、附件、两轮独立设计报告和逐条intake当前可复核；不是生成/测试/运行PASS。
 
-
-### 11b · Web更新业务接缝的确切落点
-
-CP03/05修改当前`tools/terminal-automation/journeys/update.test.ts`并新增同目录`updateOwnerFlow.ts`共享步骤，在现update phase增加`update.owner-flow`（web/android都有真实suite注册，CLI未实现之前fail closed）。两个test-expo已有`createTerminalUpdateAutomationFixture`从kernel/base/terminal-update/testing注入，只automation-enabled构建使用；生产Web仍unavailable UpdatePort。沿同fixture模拟平台readFacts/prepare/apply，不模拟CBS数据或认证，不手写owner逻辑。
-
-共享步骤：真实seed激活→store-ready→project组织/规则snapshot ready→公开selector中app匹配candidate→真实project命令发update执行→selectTerminalUpdateTask.fixedTarget与选中rule/artifact身份相等→private grant命令经TDC/transport取真实CBS grant（不只HTTP200）→UpdatePort fixture只模拟平台动作→update report command取真实HTTP receipt→运营真实report/history task/binding读回同记录。no-candidate不发任务、刷新未完成不固定旧snapshot、canonical拒绝保留status/pending分类各落F；真实W只正常链。Android update.supply-chain/update.pair复用该非adapter步骤及原安装动作，不能把Wfixture当PackageInstaller/boot证明。
-
-将`node scripts/test/terminal-automation.mjs --phase update --platform web --shape mobile --sample console|wallpaper --case update.owner-flow`写入runner parser/suite和两App W调度，F及链logging/preflight在初次W之前完成；新case不是第二runner。fixture/授权仍§10b。

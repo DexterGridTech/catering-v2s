@@ -1,7 +1,13 @@
 export {createAndroidAdbClient, requireReadyAndroidDevice} from './androidAdb.js';
 export {androidAutomationBuildIdentity, androidAutomationGradleArguments} from './androidBuild.js';
 export {createAndroidDeviceSession, managedDevServiceReverses} from './androidDevice.js';
-export type {AndroidDeviceSession, ManagedDevServiceUrls, ManagedServiceReverse} from './androidDevice.js';
+export type {AndroidDeviceSession, ManagedServiceReverse} from './androidDevice.js';
+export {
+  groupWorkspaceKeyFromServerConfig,
+  parseServerConfigEnvironment,
+  serverConfigAddress,
+  serverConfigOrigin,
+} from './serverConfigEnvironment.js';
 export {createAndroidAutomationConnection} from './androidAutomationConnection.js';
 export type {AndroidAutomationConnection} from './androidAutomationConnection.js';
 export {buildAndroidTapArguments, createAndroidInput} from './androidInput.js';

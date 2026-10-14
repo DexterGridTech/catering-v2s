@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
 import {managedRuntime, managedSeedEnvironment, invocationKey} from "./owner-command-seed-executor.mjs";
+import {seedRunIdentity} from './managed-seed-target.mjs';
 import {buildManagedDiagnosticHeaders} from "./managed-diagnostic-protocol.mjs";
 import {loadGeneratedOperationRegistry, materializeGeneratedOperationPath, resolveGeneratedOperationById} from "../test/seed-report.mjs";
 import {createSeedHttpClient} from "./seed-http-client.mjs";
@@ -234,7 +235,7 @@ async function execute() {
   const runId = required(manifest.runId, "STORE_TERMINAL_SEED_MANAGED_RUN_ID_REQUIRED");
   let sequence = 0;
   const request = createSeedHttpClient({
-    baseUrl: environment.V2S_DEV_HTTP_BASE_URL,
+    baseUrl: environment.V2S_SEED_HTTP_BASE_URL,
     resolveOperation: operationId => resolveGeneratedOperationById(registry, operationId),
     materializeOperationPath: materializeGeneratedOperationPath,
     buildDiagnosticHeaders: buildManagedDiagnosticHeaders,
@@ -496,7 +497,7 @@ async function execute() {
   fs.mkdirSync(path.dirname(output), {recursive: true, mode: 0o700});
   fs.writeFileSync(output, `${JSON.stringify({
     schemaVersion: 1,
-    managedDevRunId: runId,
+    ...seedRunIdentity(manifest),
     business: "PASS",
     cleanup: "PASS_NO_PERSISTENT_SEED_PROCESS",
     created,

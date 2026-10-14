@@ -1,7 +1,7 @@
 import {createSlice, type PayloadAction} from '@reduxjs/toolkit';
 import {defineStateRuntimeSlice} from '@catering-v2s/kernel-base-state';
-import type {TerminalRemoteControlDescription} from '@catering-v2s/kernel-base-terminal-data-client';
 import type {RemoteControlScreen} from '@catering-v2s/kernel-base-platform-ports';
+import type {TerminalRemoteControlDescription} from '../../generated/terminalApi';
 import {moduleName} from '../../moduleName';
 
 export const remoteControlSliceName = `${moduleName}.state` as const;

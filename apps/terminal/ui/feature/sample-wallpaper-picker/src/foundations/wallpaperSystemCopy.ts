@@ -1,4 +1,4 @@
-import type {WallpaperSystemFailurePhase, WallpaperSystemOperation} from '../features/commands/commands';
+import type {WallpaperSystemFailurePhase, WallpaperSystemOperation} from '../declarations/commands';
 
 export const wallpaperSystemMessage = (
   operation: WallpaperSystemOperation,

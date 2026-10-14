@@ -1,6 +1,6 @@
 import {useCallback} from 'react';
 import {closeLayerCommand} from '@catering-v2s/kernel-base-ui-state';
-import {memberDraftDiscardedCommand, type DraftDiscardIntent} from '../features/commands/commands';
+import {memberDraftDiscardedCommand, type DraftDiscardIntent} from '../declarations/commands';
 import {dispatchWithRequestId, useDispatchCommand} from '@catering-v2s/ui-base-render';
 
 export const useDiscardConfirm = (intent: DraftDiscardIntent) => {

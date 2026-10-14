@@ -34,109 +34,91 @@
   ],
   "tr01Exceptions": [
     {
-      "sourceFile": "src/features/actors/actors.ts",
+      "sourceFile": "src/features/actors/storeBasicActor.ts",
       "declarationId": "currentTopicStatus",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "store-basic-private-actor-command-helper"
     },
     {
-      "sourceFile": "src/features/actors/actors.ts",
+      "sourceFile": "src/features/actors/storeBasicActor.ts",
       "declarationId": "setLoaded",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "store-basic-private-actor-command-helper"
     },
     {
-      "sourceFile": "src/features/actors/actors.ts",
+      "sourceFile": "src/features/actors/storeBasicActor.ts",
       "declarationId": "withBinding",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "store-basic-private-actor-command-helper"
     },
     {
-      "sourceFile": "src/features/actors/actors.ts",
+      "sourceFile": "src/features/actors/storeBasicActor.ts",
       "declarationId": "updateLoadReadiness",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "store-basic-load-readiness-write"
     },
     {
-      "sourceFile": "src/features/actors/actors.ts",
-      "declarationId": "loadStore",
-      "dispatchExpression": "context.dispatchAction",
-      "reasonCategory": "store-basic-initial-load-status"
-    },
-    {
-      "sourceFile": "src/features/actors/actors.ts",
-      "declarationId": "loadStore",
-      "dispatchExpression": "context.dispatchAction",
-      "reasonCategory": "store-basic-initial-store-fact"
-    },
-    {
-      "sourceFile": "src/features/actors/actors.ts",
-      "declarationId": "loadStore",
-      "dispatchExpression": "context.dispatchAction",
-      "reasonCategory": "store-basic-initial-operating-rules"
-    },
-    {
-      "sourceFile": "src/features/actors/actors.ts",
+      "sourceFile": "src/features/actors/storeBasicActor.ts",
       "declarationId": "loadActiveContracts",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "store-basic-initial-active-contracts"
     },
     {
-      "sourceFile": "src/features/actors/actors.ts",
+      "sourceFile": "src/features/actors/storeBasicActor.ts",
       "declarationId": "loadServicePoints",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "store-basic-initial-service-areas"
     },
     {
-      "sourceFile": "src/features/actors/actors.ts",
+      "sourceFile": "src/features/actors/storeBasicActor.ts",
       "declarationId": "loadServicePoints",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "store-basic-initial-service-points"
     },
     {
-      "sourceFile": "src/features/actors/actors.ts",
+      "sourceFile": "src/features/actors/storeBasicActor.ts",
       "declarationId": "onTopicChanged",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "store-basic-refresh-store"
     },
     {
-      "sourceFile": "src/features/actors/actors.ts",
+      "sourceFile": "src/features/actors/storeBasicActor.ts",
       "declarationId": "onTopicChanged",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "store-basic-refresh-operating-rules"
     },
     {
-      "sourceFile": "src/features/actors/actors.ts",
-      "declarationId": "replaceContracts",
+      "sourceFile": "src/features/actors/shared/refreshStoreCollections.ts",
+      "declarationId": "refreshStoreContracts",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "store-basic-refresh-contract-collection"
     },
     {
-      "sourceFile": "src/features/actors/actors.ts",
-      "declarationId": "replaceAreas",
+      "sourceFile": "src/features/actors/shared/refreshStoreCollections.ts",
+      "declarationId": "refreshStoreAreas",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "store-basic-refresh-area-collection"
     },
     {
-      "sourceFile": "src/features/actors/actors.ts",
-      "declarationId": "replaceServicePoints",
+      "sourceFile": "src/features/actors/shared/refreshStoreCollections.ts",
+      "declarationId": "refreshStoreServicePoints",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "store-basic-refresh-service-point-collection"
     },
     {
-      "sourceFile": "src/features/actors/actors.ts",
+      "sourceFile": "src/features/actors/shared/refreshStoreDetails.ts",
       "declarationId": "applyContractDetail",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "store-basic-refresh-contract-detail"
     },
     {
-      "sourceFile": "src/features/actors/actors.ts",
+      "sourceFile": "src/features/actors/shared/refreshStoreDetails.ts",
       "declarationId": "applyAreaDetail",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "store-basic-refresh-area-detail"
     },
     {
-      "sourceFile": "src/features/actors/actors.ts",
+      "sourceFile": "src/features/actors/shared/refreshStoreDetails.ts",
       "declarationId": "applyServicePointDetail",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "store-basic-refresh-service-point-detail"

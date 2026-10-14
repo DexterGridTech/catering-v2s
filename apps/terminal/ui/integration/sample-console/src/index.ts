@@ -1,7 +1,13 @@
 export {moduleName, moduleKind} from './moduleName';
 export {dependencyModuleNames, devDependencyModuleNames} from './dependencies';
-export {createSampleAssembly, createSampleDefinedParts, createSurfaceForDisplayIndex} from './assembly/assembly';
+export {createSampleAssembly, createSurfaceForDisplayIndex} from './assembly/assembly';
 export {createSampleConsoleModule} from './application/module';
+export {startupReadyCommand} from './declarations/commands';
+export {selectSampleConsoleBusinessInterlockActive} from './selectors/selectSampleConsoleBusinessInterlockActive';
+export {selectSampleConsoleBusinessMutationAllowed} from './selectors/selectSampleConsoleBusinessMutationAllowed';
+export {selectSampleConsoleRouteStage} from './selectors/selectSampleConsoleRouteStage';
+export {selectSampleConsoleStaffLoginAllowed} from './selectors/selectSampleConsoleStaffLoginAllowed';
+export type {SampleConsoleReadyPayload} from './declarations/commands';
 export type {SampleAssembly} from './assembly/assembly';
 export {
   terminalSurfaces,

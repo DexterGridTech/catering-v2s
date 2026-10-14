@@ -65,8 +65,11 @@ import {terminalUpdateCandidateQuery} from '../model/terminalUpdateCandidateQuer
 import {terminalUpdateRuleFilters, type TerminalUpdateRuleFilterForm, type TerminalUpdateRuleFilters} from '../model/terminalUpdateRuleFilters';
 import {terminalUpdateActualUnknownReasonLabel} from '../model/terminalUpdateActualUnknownReason';
 import {remoteControlTestIds} from '../../../app/automation/remoteControlTestIds';
-import {RemoteControlWorkspace, type RemoteControlTarget} from '../../remote-control/ui/RemoteControlWorkspace';
-import {createRemoteControlUuid} from '../../remote-control/model/remoteControlIdentity';
+import {
+  createRemoteControlUuid,
+  RemoteControlWorkspace,
+  type RemoteControlTarget,
+} from '../../remote-control';
 import {
   isTerminalUpdateVersionConflict,
   terminalUpdateStatusActionLabel,
@@ -473,7 +476,7 @@ function ProjectTerminalUpdateContent({
       event: 'frontend.remote_control.start',
       phase: 'remote_control',
       outcome: 'STARTED',
-      operationId: 'startOperationsTerminalRemoteControl',
+      operationId: OPERATIONS_ADMIN_OPERATION_IDS.startOperationsTerminalRemoteControl,
       diagnostic: {projectRef: target.projectRef, terminalRef: target.terminalRef},
     });
     const started = await operationsClient.startOperationsTerminalRemoteControl(
@@ -491,7 +494,7 @@ function ProjectTerminalUpdateContent({
       event: 'frontend.remote_control.start',
       phase: 'remote_control',
       outcome: 'SUCCEEDED',
-      operationId: 'startOperationsTerminalRemoteControl',
+      operationId: OPERATIONS_ADMIN_OPERATION_IDS.startOperationsTerminalRemoteControl,
       diagnostic: {sessionId: started.sessionId, state: started.state},
     });
     return started;
@@ -512,7 +515,7 @@ function ProjectTerminalUpdateContent({
         event: 'frontend.remote_control.stale_start_closed',
         phase: 'remote_control',
         outcome: 'SUCCEEDED',
-        operationId: 'endOperationsTerminalRemoteControl',
+        operationId: OPERATIONS_ADMIN_OPERATION_IDS.endOperationsTerminalRemoteControl,
         diagnostic: {sessionId: start.sessionId},
       });
     } catch (error) {
@@ -521,7 +524,7 @@ function ProjectTerminalUpdateContent({
         event: 'frontend.remote_control.stale_start_close_failed',
         phase: 'cleanup',
         outcome: 'ERROR',
-        operationId: 'endOperationsTerminalRemoteControl',
+        operationId: OPERATIONS_ADMIN_OPERATION_IDS.endOperationsTerminalRemoteControl,
         errorCode: failure.errorCode,
         status: failure.status,
         diagnostic: {sessionId: start.sessionId},
@@ -566,7 +569,7 @@ function ProjectTerminalUpdateContent({
           event: 'frontend.remote_control.start_failed',
           phase: 'remote_control',
           outcome: 'ERROR',
-          operationId: 'startOperationsTerminalRemoteControl',
+          operationId: OPERATIONS_ADMIN_OPERATION_IDS.startOperationsTerminalRemoteControl,
           errorCode: failure.errorCode,
           status: failure.status,
           diagnostic: {terminalRef: requestedTerminalRef},

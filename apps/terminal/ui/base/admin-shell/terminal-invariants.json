@@ -2,9 +2,19 @@
   "schemaVersion": 1,
   "package": "@catering-v2s/ui-base-admin-shell",
   "owned": {
-    "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/ui-base-admin-shell", "runner": "vitest"},
-    "lint": {"kind": "OWNED", "owner": "@catering-v2s/ui-base-admin-shell", "runner": "eslint"},
-    "clean": {"kind": "ABSENT"}
+    "test": {
+      "kind": "REAL_TESTS",
+      "owner": "@catering-v2s/ui-base-admin-shell",
+      "runner": "vitest"
+    },
+    "lint": {
+      "kind": "OWNED",
+      "owner": "@catering-v2s/ui-base-admin-shell",
+      "runner": "eslint"
+    },
+    "clean": {
+      "kind": "ABSENT"
+    }
   },
   "ownerKind": "owner",
   "publicExports": [
@@ -15,41 +25,40 @@
     "ADMIN_GESTURE_REPETITIONS",
     "ADMIN_GESTURE_SIZE",
     "ADMIN_GESTURE_WINDOW_MS",
+    "ADMIN_PASSWORD_FALLBACK",
     "ADMIN_PLATFORM_PORTS_PAGE_PART_KEY",
     "ADMIN_RUNTIME_PAGE_PART_KEY",
     "ADMIN_SECTION_CONTAINER_KEY",
     "ADMIN_TOPOLOGY_SECTION_PART_KEY",
-    "ADMIN_PASSWORD_FALLBACK",
-    "AdminLauncher",
     "AdminGestureCoordinateSpace",
-    "adminLauncherPointFromEvent",
+    "AdminLauncher",
     "AdminNavigationRejectedError",
     "AdminPageKey",
     "AdminPageProjection",
     "AdminPageSpec",
+    "AdminPasswordDerivationInput",
+    "AdminPasswordVerificationInput",
     "AdminSectionComponent",
     "AdminSectionProps",
     "AdminSectionRenderContext",
-    "AdminShellAssembly",
     "SampleSection",
-    "adminShellAssembly",
+    "TerminalDeviceIdentity",
+    "adminLauncherPointFromEvent",
     "adminTestIds",
     "createAdminSectionCommandBoundary",
+    "createAdminShellModule",
     "createInitialAdminGestureState",
     "createServerConfigPanelParts",
     "createTerminalUpdateInstallReminderParts",
-    "AdminPasswordDerivationInput",
-    "AdminPasswordVerificationInput",
-    "TerminalDeviceIdentity",
     "dependencyModuleNames",
     "deriveAdminPassword",
     "devDependencyModuleNames",
+    "logicalPointFromWindow",
     "moduleName",
     "normalizeDeviceIdentity",
-    "verifyAdminPassword",
     "selectAdminPageProjections",
     "selectAdminSections",
     "trackAdminGesture",
-    "logicalPointFromWindow"
+    "verifyAdminPassword"
   ]
 }

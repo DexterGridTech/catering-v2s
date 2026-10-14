@@ -9,7 +9,7 @@ import {
   peerRequestLedgerSliceNameForMode,
   readLiveRequestEnvelope,
   requestLedgerSliceNameForMode,
-} from '../features/slices/requestLedger';
+} from '../foundations/requestLedgerState';
 import {selectRuntimeInstanceMode} from './selectRuntimeInstanceMode';
 import {readRequestLedgerState} from './readRequestLedgerState';
 import type {CommandExecutionObservation, LedgerError} from '../types/execution';

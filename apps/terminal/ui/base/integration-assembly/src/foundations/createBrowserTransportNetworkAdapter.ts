@@ -4,7 +4,7 @@ import type {
   TransportNetworkAdapter,
   TransportNetworkSnapshot,
   TransportHttpAttemptResult,
-} from '@catering-v2s/kernel-base-transport';
+} from '@catering-v2s/kernel-base-platform-ports';
 
 type SnapshotReader = (serverName: string) => Promise<TransportNetworkSnapshot>;
 const maximumHttpResponseBytes = 1_048_576;
@@ -151,7 +151,7 @@ const sendHttp = async (
       error instanceof Error && error.message === 'TRANSPORT_HTTP_RESPONSE_TOO_LARGE'
         ? 'BROWSER_HTTP_RESPONSE_TOO_LARGE'
         : 'BROWSER_HTTP_TRANSPORT_FAILED';
-    return Object.freeze({kind: 'failure', category: 'not-delivered', code});
+    return Object.freeze({kind: 'failure', category: 'delivered-failure', code});
   } finally {
     clearTimeout(timeout);
   }

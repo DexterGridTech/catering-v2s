@@ -17,10 +17,12 @@ surface 或 Android/App 壳。
 ## 结构
 
 - `src/types/types.ts`：SessionStatus、SessionState、登录 payload 类型。
-- `src/features/commands/commands.ts`：bootstrap、login、logout 及会话结果 command。
-- `src/features/actors/actors.ts`：会话验证、恢复、登录和登出处理者。
-- `src/features/slices/slice.ts`：owner session state、MASTER→SLAVE 的 status/operatorName 投影与本机持久化声明。
-- `src/selectors/selectors.ts`：公开本机会话和主机资格读取器。
+- `src/declarations/commands.ts`：bootstrap、login、logout 及会话结果 command 声明。
+- `src/features/actors/staffBootstrapActor.ts`：恢复持久会话并发布匿名或已认证事实。
+- `src/features/actors/staffLoginActor.ts`：校验本包 sample 凭证并提交登录事实。
+- `src/features/actors/staffLogoutActor.ts`：清除本包会话并发布登出结果。
+- `src/features/slices/staffSession.ts`：owner session state、MASTER→SLAVE 的 status/operatorName 投影与本机持久化声明。
+- `src/selectors/selectSessionState.ts`、`src/selectors/selectHostStaffQualification.ts`：分别读取本机会话和主机资格；共同状态校验由 `src/foundations/readSessionState.ts` 负责。
 - `src/foundations/errors.ts`：本包的 typed error 定义。
 - `src/application/module.ts`：真实 RuntimeModule 工厂；`src/index.ts`：公开面。
 

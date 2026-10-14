@@ -1,6 +1,8 @@
-import type {FaceOperationContracts} from '../../../app/api/generated/operations-edge';
+import {OPERATIONS_ADMIN_OPERATION_IDS, type FaceOperationContracts} from '../../../app/api/generated/operations-edge';
 
-type CandidateQuery = FaceOperationContracts['getOperationsTerminalUpdateArtifactCandidatePage']['query'];
+type CandidateQuery = FaceOperationContracts[
+  typeof OPERATIONS_ADMIN_OPERATION_IDS.getOperationsTerminalUpdateArtifactCandidatePage
+]['query'];
 
 type CandidateQueryInput = Pick<CandidateQuery, 'expectedContextVersion' | 'projectRef' | 'kind' | 'limit'> & {
   queryText?: string;

@@ -213,6 +213,22 @@ replacePackage({
 });
 assert.equal(ruleStatus('TR-R06').status, 'FAIL', 'an unlisted features child must be red');
 console.log('MODEL_TR_R06=PASS');
+assert.ok(VOCABULARY.includes('declarations'), 'T1 package declarations must be part of the TER source vocabulary');
+replacePackage({
+  'index.ts': 'export const indexValue = 1\n',
+  'moduleName.ts': 'export const moduleName = "kernel.base.demo" as const\n',
+  'dependencies.ts': 'export const dependencyModuleNames = [] as const\n',
+  'declarations/commands.ts': 'export const exampleCommand = {name: "demo"} as const\n',
+});
+assert.equal(ruleStatus('TR-R06').status, 'PASS', 'T1 declarations directory must be accepted');
+replacePackage({
+  'index.ts': 'export const indexValue = 1\n',
+  'moduleName.ts': 'export const moduleName = "kernel.base.demo" as const\n',
+  'dependencies.ts': 'export const dependencyModuleNames = [] as const\n',
+  'misc/value.ts': 'export const misplacedValue = 1\n',
+});
+assert.equal(ruleStatus('TR-R06').status, 'FAIL', 'an unlisted source root directory must be red');
+console.log('MODEL_TR_R06_DECLARATIONS=PASS');
 assert.ok(VOCABULARY.includes('generated'), 'generator-owned output directory must be part of the TER source vocabulary');
 replacePackage({
   'index.ts': 'export const indexValue = 1\n',
@@ -290,7 +306,7 @@ console.log('MODEL_RD12=PASS');
 
 assert.deepEqual(validateResponsibilityMatrix([
   {
-    ownerSource: 'apps/terminal/kernel/base/runtime/src/foundations/createCommandDispatcher.ts',
+    ownerSource: 'apps/terminal/kernel/base/runtime/src/application/createCommandDispatcher.ts',
     symbolOrTransition: 'dispatch result',
     responsibilityFactFromSource: 'returns the actor result and updates lifecycle state',
     testFile: 'apps/terminal/kernel/base/runtime/test/dispatcher.test.ts',

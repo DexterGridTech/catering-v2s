@@ -1,4 +1,4 @@
-import type {DeskSystemOperation, DraftDiscardIntent, RegistryNoticeReason} from '../features/commands/commands';
+import type {DeskSystemOperation, DraftDiscardIntent, RegistryNoticeReason} from '../declarations/commands';
 
 export type DeskSystemNoticeProps = Readonly<{readonly operation: DeskSystemOperation}>;
 export type DiscardConfirmProps = Readonly<{readonly intent: DraftDiscardIntent}>;

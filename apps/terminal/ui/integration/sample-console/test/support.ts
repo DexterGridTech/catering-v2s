@@ -24,10 +24,11 @@ import {
   type PortResult,
   type StateStoragePort,
   type UpdatePort,
+  type TransportNetworkAdapter,
+  type TransportConnectionEvent,
   type NativeLoadingCapability,
 } from '@catering-v2s/kernel-base-platform-ports';
-import type {TopologyPeerChannel, TopologyPeerChannelEvent} from '@catering-v2s/kernel-base-transport';
-import type {TransportNetworkAdapter, TransportConnectionEvent} from '@catering-v2s/kernel-base-transport';
+import type {TopologyPeerChannel, TopologyPeerChannelEvent} from '@catering-v2s/kernel-base-platform-ports';
 
 export const createReadyTerminalNetworkAdapter = (
   readSnapshot: TransportNetworkAdapter['readSnapshot'],

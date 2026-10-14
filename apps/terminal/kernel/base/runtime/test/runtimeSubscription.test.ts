@@ -68,9 +68,7 @@ describe('runtime facade subscription', () => {
       moduleName: 'test.runtime.subscription.failure',
       kind: 'owner',
       dependencies: [{moduleName: 'kernel.base.runtime'}],
-      commands: [],
       commandDefinitions: [],
-      actors: [],
       actorDefinitions: [],
       stateSlices: [createTestSlice('test.runtime.subscription.failure.state')],
       install: () => {
@@ -93,12 +91,12 @@ describe('runtime facade subscription', () => {
     const notificationCount = statuses.length;
     await expect(runtime.start()).rejects.toMatchObject({key: 'kernel.base.runtime.lifecycle_failed'});
     expect(statuses).toHaveLength(notificationCount);
-    const {releaseRuntimeForTest} = await import('../src/testing/releaseRuntimeForTest');
-    expect(releaseRuntimeForTest(runtime)).toBe(0);
+    const {releaseRuntimeForTestAsync} = await import('../src/testing/releaseRuntimeForTest');
+    expect(await releaseRuntimeForTestAsync(runtime)).toBe(0);
     runtime.subscribe(() => {
       throw new Error('failed runtime must not retain a late listener');
     });
-    expect(releaseRuntimeForTest(runtime)).toBe(0);
+    expect(await releaseRuntimeForTestAsync(runtime)).toBe(0);
     unsubscribe();
   });
 
@@ -146,8 +144,8 @@ describe('runtime facade subscription', () => {
     await runtime.dispatchCommand(incrementCommand, {});
     const beforeRelease = notifications;
 
-    const {releaseRuntimeForTest} = await import('../src/testing/releaseRuntimeForTest');
-    expect(releaseRuntimeForTest(runtime)).toBeGreaterThan(0);
+    const {releaseRuntimeForTestAsync} = await import('../src/testing/releaseRuntimeForTest');
+    expect(await releaseRuntimeForTestAsync(runtime)).toBeGreaterThan(0);
     await runtime.dispatchCommand(incrementCommand, {});
 
     expect(beforeRelease).toBeGreaterThan(0);

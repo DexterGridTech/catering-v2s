@@ -14,7 +14,7 @@ test('terminal update artifact builder proves publication integrity red cases', 
     'RED_BINARY_OUTPUT_OVER_DEFAULT=PASS',
     'STREAMED_OUTPUT_OVER_32_MIB=PASS',
     'RED_ZIP_ENTRY_SET=PASS',
-    'RED_UNDECLARED_EMPTY_RESOURCE_DIRECTORY=PASS',
+    'RED_ZIP_DIRECTORY_ENTRY=PASS',
     'RED_NATIVE_VERSION_IDENTITY=PASS',
     'RED_MISSING_INSTALL_PERMISSION=PASS',
     'RED_INVALID_PUBLICATION_ID=PASS',
@@ -39,4 +39,20 @@ test('Android Metro bundle tasks include Expo public environment identity withou
   assert.match(gradle, /createBundleReleaseJsAndAssets/u);
   assert.match(gradle, /createBundleDebugJsAndAssets/u);
   assert.doesNotMatch(gradle, /inputs\.property\([^\n]*(?:token|secret|password)/iu);
+});
+
+test('managed React Native autolinking reuses or stages the run-owned settings output', () => {
+  const gradle = fs.readFileSync('apps/terminal/application/base/android/terminal-update-artifact.gradle', 'utf8');
+  assert.match(gradle, /autolinkingAlreadyRunOwned\s*=\s*settingsAutolinkingDirectory\.path\s*==\s*projectAutolinkingDirectory\.path/u);
+  assert.match(gradle, /verifyTerminalAutomationReactNativeAutolinking/u);
+  assert.match(gradle, /stageTerminalAutomationReactNativeAutolinking/u);
+  assert.match(gradle, /org\.gradle\.api\.tasks\.Sync/u);
+  assert.match(gradle, /task\.dependsOn\(prepareAutolinkingInputs\)/u);
+  for (const consumer of [
+    'generateAutolinkingNewArchitectureFiles',
+    'generateAutolinkingPackageList',
+    'generateReactNativeEntryPoint',
+  ]) {
+    assert.ok(gradle.includes(`'${consumer}'`), `TERMINAL_AUTOLINKING_CONSUMER_NOT_GUARDED:${consumer}`);
+  }
 });

@@ -6,7 +6,7 @@ import {
 } from '@catering-v2s/kernel-base-runtime';
 import type {ActorDefinition} from '@catering-v2s/kernel-base-runtime';
 import {moduleName} from '../../moduleName';
-import {switchInstanceModeCommand} from '../commands/switchInstanceMode';
+import {switchInstanceModeCommand} from '../../declarations/commands';
 import {getSwitchInstanceModeEligibility} from '../../foundations/displayDerivation';
 import {createDisplayError, logDisplayDiagnostic} from '../../foundations/displayErrors';
 import {readDisplayInfo, toDisplayInfoDiagnostic} from '../../foundations/displayDevice';

@@ -29,7 +29,6 @@ const {registerGlobalsMock, connectMock, nativeModuleMock, rooms, nativeListener
 }));
 
 vi.mock('expo-modules-core', () => ({requireNativeModule: () => nativeModuleMock}));
-vi.mock('@catering-v2s/adapter-android-dual-screen', () => ({readAndroidSurfaceHostWindow: readWindowMock}));
 vi.mock('@livekit/react-native', () => ({registerGlobals: registerGlobalsMock}));
 vi.mock('@livekit/react-native-webrtc', () => ({
   MediaStreamTrack: class MediaStreamTrack {
@@ -96,8 +95,8 @@ describe('Android RemoteControlPort', () => {
   });
 
   it('describes each implemented capability as a real adapter binding', async () => {
-    const {createAndroidRemoteControlPort} = await import('../src/createAndroidRemoteControlPort');
-    const port = createAndroidRemoteControlPort({});
+    const {createAndroidRemoteControlPort} = await import('../src/implementations/createAndroidRemoteControlPort');
+    const port = createAndroidRemoteControlPort({readSurfaceHostWindow: readWindowMock});
     const descriptor = Reflect.get(port, Symbol.for('catering-v2s.platform-ports.descriptor')) as {
       port: string;
       capabilities: Array<{capability: string; state: string; source: string}>;
@@ -122,8 +121,8 @@ describe('Android RemoteControlPort', () => {
     'https://livekit.example.test',
   ])('passes the configured LiveKit endpoint to the SDK unchanged (%s)', async signalUrl => {
     connectMock.mockRejectedValueOnce(new Error('mock connection stop'));
-    const {createAndroidRemoteControlPort} = await import('../src/createAndroidRemoteControlPort');
-    const port = createAndroidRemoteControlPort({});
+    const {createAndroidRemoteControlPort} = await import('../src/implementations/createAndroidRemoteControlPort');
+    const port = createAndroidRemoteControlPort({readSurfaceHostWindow: readWindowMock});
 
     const result = await port.begin(sessionInput(signalUrl));
 
@@ -141,8 +140,8 @@ describe('Android RemoteControlPort', () => {
     });
     nativeModuleMock.cancelWindowTouch.mockResolvedValue('no-active-gesture');
     rooms.length = 0;
-    const {createAndroidRemoteControlPort} = await import('../src/createAndroidRemoteControlPort');
-    const port = createAndroidRemoteControlPort({});
+    const {createAndroidRemoteControlPort} = await import('../src/implementations/createAndroidRemoteControlPort');
+    const port = createAndroidRemoteControlPort({readSurfaceHostWindow: readWindowMock});
     const events: Array<{type: string; generation?: number}> = [];
     port.subscribeEvents(event => events.push(event));
 
@@ -178,8 +177,8 @@ describe('Android RemoteControlPort', () => {
       .mockImplementationOnce(() => secondCapture)
       .mockResolvedValueOnce(nativeTrack);
     nativeModuleMock.cancelWindowTouch.mockResolvedValue('no-active-gesture');
-    const {createAndroidRemoteControlPort} = await import('../src/createAndroidRemoteControlPort');
-    const port = createAndroidRemoteControlPort({});
+    const {createAndroidRemoteControlPort} = await import('../src/implementations/createAndroidRemoteControlPort');
+    const port = createAndroidRemoteControlPort({readSurfaceHostWindow: readWindowMock});
     await expect(port.begin(sessionInput('ws://47.106.121.27:7880'))).resolves.toMatchObject({status: 'succeeded'});
 
     const windowChanged = nativeListeners.get('onWindowHostChanged');

@@ -15,7 +15,8 @@
 
 ```text
 src/
-├── createAndroidRemoteControlPort.ts  # LiveKit Room、屏幕轨道、输入和端口描述
+├── implementations/
+│   └── createAndroidRemoteControlPort.ts  # LiveKit Room、屏幕轨道、输入和端口实现
 ├── dependencies.ts                    # TER 包依赖声明
 ├── index.ts                           # 公开导出
 └── moduleName.ts                      # 机器可读包标识
@@ -35,6 +36,10 @@ const remoteControl = createAndroidRemoteControlPort({getLogger: () => platformP
 ```
 
 composition 将 `remoteControl` 绑定到 `createPlatformPorts`。不要直接在 feature 或 integration 中创建本 adapter。
+包根公开面与 `terminal-invariants.json.publicExports` 一致：`moduleName`、
+`dependencyModuleNames`、`devDependencyModuleNames`、
+`createAndroidRemoteControlPort` 和类型 `AndroidRemoteControlPortOptions`；LiveKit/native
+binding 细节留在 `src/implementations/`。
 
 ## 在这个包上迭代时
 

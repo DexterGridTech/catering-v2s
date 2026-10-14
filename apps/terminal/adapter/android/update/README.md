@@ -12,7 +12,9 @@
 
 ## 结构
 
-- `src/index.ts`：创建并导出 `createAndroidUpdatePort`，连接 React Native 生命周期观察和 Expo 原生模块。
+- `src/index.ts`：只重导出包元数据、`createAndroidAppControlPort` 与 `createAndroidUpdatePort`。
+- `src/implementations/androidUpdatePort.ts`：连接 React Native 生命周期观察、UpdatePort 与 Expo 原生模块。
+- `src/implementations/androidAppControl.ts`：连接既有 Android AppControl 能力。
 - `src/dependencies.ts`：声明端口契约依赖。
 - `android/`：实现原生下载、摘要校验、安装、启动确认和受控资源释放。
 - `test/`：验证公开端口映射、参数传递及失败结果。
@@ -29,6 +31,10 @@ const updatePort = createAndroidUpdatePort();
 ```
 
 本包 public entry 是 `.` → `./src/index.ts`；调用者使用根导出，不导入 `src/` 深路径。
+包根公开面与 `terminal-invariants.json.publicExports` 一致：`moduleName`、
+`dependencyModuleNames`、`devDependencyModuleNames`、
+`createAndroidAppControlPort` 与 `createAndroidUpdatePort`；原生 binding 和端口实现留在
+`src/implementations/`。
 
 ## 在这个包上迭代时
 

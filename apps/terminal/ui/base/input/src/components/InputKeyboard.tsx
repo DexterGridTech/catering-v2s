@@ -6,7 +6,8 @@ import {
   calculateVirtualKeyboardDockWidth,
   INPUT_LAYOUT_CONSTANTS,
 } from '../foundations/keyboardHeight';
-import {useInputController, useInputKeyboardState} from '../contexts/context';
+import {useInputController} from '../hooks/useInputController';
+import {useInputKeyboardState} from '../hooks/useInputKeyboardState';
 import {VirtualKeyboard} from './VirtualKeyboard';
 import type {KeyboardLayout} from '../foundations/keyboardLayout';
 import type {KeyboardKey} from '../foundations/editText';

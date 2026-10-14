@@ -1,4 +1,4 @@
-import type {TerminalStoreOrganizationPathRead} from '@catering-v2s/kernel-base-terminal-data-client';
+import type {TerminalStoreOrganizationPathRead} from '../generated/terminalApi';
 import type {StoreBasicBinding, StoreFact} from '@catering-v2s/kernel-feature-store-basic';
 
 export type StoredTerminalUpdateArtifactSummary = Readonly<{

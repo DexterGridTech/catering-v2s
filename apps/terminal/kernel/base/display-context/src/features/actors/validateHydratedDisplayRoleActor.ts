@@ -1,7 +1,7 @@
 import {defineActor, onCommand} from '@catering-v2s/kernel-base-runtime';
 import type {ActorDefinition} from '@catering-v2s/kernel-base-runtime';
 import {moduleName} from '../../moduleName';
-import {validateHydratedDisplayRoleCommand} from '../commands/validateHydratedDisplayRole';
+import {validateHydratedDisplayRoleCommand} from '../../declarations/commands';
 import {setDisplayRoleAction} from '../slices/displayRole';
 import {selectDisplayRole} from '../../selectors/selectDisplayRole';
 import {logDisplayDiagnostic} from '../../foundations/displayErrors';

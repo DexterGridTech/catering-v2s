@@ -2,7 +2,7 @@ import {useMemo} from 'react';
 import type {CommandDispatchResult, CommandIntent} from '@catering-v2s/kernel-base-runtime';
 import type {StateJsonValue} from '@catering-v2s/kernel-base-state';
 import type {RenderProviderProps} from '../types/props';
-import {useRenderContext} from '../contexts/RenderContext';
+import {useRenderContext} from './useRenderContext';
 import {reportRenderCommandDispatchRejection} from '../foundations/diagnostics';
 
 type DispatchCommand = RenderProviderProps['dispatchCommand'];

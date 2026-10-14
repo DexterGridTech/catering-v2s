@@ -252,5 +252,16 @@ export function validateFixtureContract(fixture) {
   const stages = validateFixtureSeedStages(fixture);
   const phaseNames = validateFixtureContractPhaseNames(fixture);
   const terminalUpdate = validateTerminalUpdateSeedFixture(fixture);
-  return Object.freeze({...counts, ...stages, ...phaseNames, ...terminalUpdate});
+  const rootAdmin = fixture?.stableFixtures?.platformAdmins?.find(entry => entry?.key === 'pa-bootstrap');
+  if (
+    !rootAdmin ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(rootAdmin.id ?? '') ||
+    rootAdmin.login !== 'root' ||
+    rootAdmin.displayName !== '平台超级管理员' ||
+    rootAdmin.builtIn !== true ||
+    rootAdmin.status !== 'ENABLED'
+  ) {
+    throw new Error('R5_SEED_CANONICAL_PLATFORM_ROOT_INVALID');
+  }
+  return Object.freeze({...counts, ...stages, ...phaseNames, ...terminalUpdate, canonicalPlatformRoot: true});
 }

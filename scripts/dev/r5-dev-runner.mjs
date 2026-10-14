@@ -91,6 +91,84 @@ const delay = milliseconds => new Promise(resolve => setTimeout(resolve, millise
 const fail = reason => {
   throw new Error(`R5_DEV_RUNNER=REFUSED; REASON=${reason}`);
 };
+export function createManagedTerminalServerConfigAddressOverrides({httpBaseUrl, groupWorkspaceKey, tdsAddresses} = {}) {
+  const names = new Set();
+  const ports = new Set();
+  let businessOrigin;
+  try {
+    const parsed = new URL(httpBaseUrl);
+    if (
+      parsed.protocol !== 'http:' ||
+      parsed.hostname !== '127.0.0.1' ||
+      parsed.port === '' ||
+      parsed.pathname !== '' && parsed.pathname !== '/' ||
+      parsed.username !== '' ||
+      parsed.password !== '' ||
+      parsed.search !== '' ||
+      parsed.hash !== ''
+    ) fail('TERMINAL_SERVER_CONFIG_HTTP_ENDPOINT_INVALID');
+    businessOrigin = parsed.origin;
+    ports.add(parsed.port);
+  } catch {
+    fail('TERMINAL_SERVER_CONFIG_HTTP_ENDPOINT_INVALID');
+  }
+  if (!/^[A-Za-z0-9_-]{1,64}$/.test(groupWorkspaceKey ?? '') || !Array.isArray(tdsAddresses) || tdsAddresses.length === 0) {
+    fail('TERMINAL_SERVER_CONFIG_INPUT_INVALID');
+  }
+  const checkedTdsAddresses = tdsAddresses.map(address => {
+    if (
+      !address ||
+      typeof address.addressName !== 'string' ||
+      !/^[A-Za-z0-9_-]{1,64}$/.test(address.addressName) ||
+      names.has(address.addressName)
+    ) fail('TERMINAL_SERVER_CONFIG_ADDRESS_INVALID');
+    names.add(address.addressName);
+    let parsed;
+    try {
+      parsed = new URL(address.baseUrl);
+    } catch {
+      fail('TERMINAL_SERVER_CONFIG_ADDRESS_INVALID');
+    }
+    if (
+      parsed.protocol !== 'ws:' ||
+      parsed.hostname !== '127.0.0.1' ||
+      parsed.port === '' ||
+      parsed.pathname !== '' && parsed.pathname !== '/' ||
+      parsed.username !== '' ||
+      parsed.password !== '' ||
+      parsed.search !== '' ||
+      parsed.hash !== '' ||
+      ports.has(parsed.port)
+    ) fail('TERMINAL_SERVER_CONFIG_ADDRESS_INVALID');
+    ports.add(parsed.port);
+    return Object.freeze({addressName: address.addressName, baseUrl: parsed.toString()});
+  });
+  return Object.freeze({
+    servers: Object.freeze([
+      Object.freeze({
+        serverName: 'business',
+        addresses: Object.freeze([
+          Object.freeze({
+            addressName: 'primary',
+            baseUrl: `${businessOrigin}/api/terminal/group-workspaces/${groupWorkspaceKey}`,
+          }),
+        ]),
+      }),
+      Object.freeze({serverName: 'terminal-data-server', addresses: Object.freeze(checkedTdsAddresses)}),
+    ]),
+  });
+}
+const managedAutomationGroupWorkspaceKey = () => {
+  const fixturePath = path.join(root, 'doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json');
+  const fixture = JSON.parse(readFileSync(fixturePath, 'utf8'));
+  const candidates = fixture.stableFixtures?.groupWorkspaces?.filter(
+    entry => entry?.status === 'ENABLED' && typeof entry?.commercialGroup === 'string' && entry.commercialGroup.length > 0,
+  );
+  if (!Array.isArray(candidates) || candidates.length !== 1 || typeof candidates[0].groupWorkspaceKey !== 'string') {
+    fail('TERMINAL_SERVER_CONFIG_GROUP_WORKSPACE_FIXTURE_AMBIGUOUS');
+  }
+  return candidates[0].groupWorkspaceKey;
+};
 const quote = value => `'${String(value).replaceAll("'", "'\\''")}'`;
 const compact = value =>
   String(value ?? 'FAILED')
@@ -3029,8 +3107,14 @@ async function start() {
           remotePorts,
           localHttpBaseUrl: `http://127.0.0.1:${tunnelPorts.http}`,
           remoteHttpBaseUrl: `http://127.0.0.1:${env.environment.V2S_DEV_REMOTE_HTTP_PORT}`,
-          localTdsWebSocketBaseUrl: `ws://127.0.0.1:${tunnelPorts.tds}`,
-          localTdsEntryTwoWebSocketBaseUrl: `ws://127.0.0.1:${tunnelPorts.tdsSecondary}`,
+          terminalServerConfigAddressOverrides: createManagedTerminalServerConfigAddressOverrides({
+            httpBaseUrl: `http://127.0.0.1:${tunnelPorts.http}`,
+            groupWorkspaceKey: managedAutomationGroupWorkspaceKey(),
+            tdsAddresses: [
+              {addressName: 'haproxy-entry-one', baseUrl: `ws://127.0.0.1:${tunnelPorts.tds}`},
+              {addressName: 'haproxy-entry-two', baseUrl: `ws://127.0.0.1:${tunnelPorts.tdsSecondary}`},
+            ],
+          }),
           remoteTdsEntryWebSocketBaseUrls: {
             one: `ws://127.0.0.1:${env.environment.V2S_DEV_REMOTE_TDS_ENTRY_ONE_PORT}`,
             two: `ws://127.0.0.1:${env.environment.V2S_DEV_REMOTE_TDS_ENTRY_TWO_PORT}`,
@@ -3585,6 +3669,23 @@ function cleanupFailedStart(runId) {
 const mode = process.argv[2];
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url));
 if (isMain && mode === '--self-test') {
+  const configuredServers = createManagedTerminalServerConfigAddressOverrides({
+    httpBaseUrl: 'http://127.0.0.1:28080',
+    groupWorkspaceKey: 'managed-fixture',
+    tdsAddresses: [
+      {addressName: 'haproxy-entry-one', baseUrl: 'ws://127.0.0.1:28180'},
+      {addressName: 'haproxy-entry-two', baseUrl: 'ws://127.0.0.1:28181'},
+    ],
+  });
+  if (
+    configuredServers.servers.map(server => server.serverName).join(',') !== 'business,terminal-data-server' ||
+    configuredServers.servers[0].addresses[0].baseUrl !==
+      'http://127.0.0.1:28080/api/terminal/group-workspaces/managed-fixture' ||
+    configuredServers.servers[1].addresses.map(address => address.addressName).join(',') !==
+      'haproxy-entry-one,haproxy-entry-two'
+  ) {
+    fail('R5_DEV_MANAGED_SERVER_CONFIG_ADDRESS_SET_RED_NOT_DETECTED');
+  }
   const alternate = selectFirstAvailableTunnelPortPair(
     [
       {http: '28080', asset: '29000'},

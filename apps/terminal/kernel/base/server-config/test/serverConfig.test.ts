@@ -36,6 +36,7 @@ import {
   restoreServerDefaultsCommand,
   selectServerConfigSpaceCommand,
   selectServerConfiguration,
+  selectServerConfigServiceContext,
   setServerOverrideCommand,
 } from '../src/index';
 import {resolveServerNetworkSnapshot} from '../src/foundations/networkAdapter';
@@ -231,6 +232,17 @@ const dispatch = async <TPayload extends import('@catering-v2s/kernel-base-state
 const tick = async (): Promise<void> => new Promise(resolve => setTimeout(resolve, 0));
 
 describe('server-config owner commands, selectors, and required plain proxy persistence', () => {
+  it('exposes only selected space and service revision for owner HTTP qualification', async () => {
+    const fixture = createFixture();
+    runtimes.push(fixture.runtime);
+    await start(fixture.runtime);
+    expect(selectServerConfigServiceContext(fixture.runtime.getState(), {serviceName: 'business'})).toEqual({
+      selectedSpace: 'dev',
+      serviceRevision: 0,
+    });
+    expect(selectServerConfigServiceContext(fixture.runtime.getState(), {serviceName: 'missing'})).toBeNull();
+  });
+
   const runtimes: Runtime[] = [];
   afterEach(() => {
     runtimes.length = 0;
@@ -293,6 +305,32 @@ describe('server-config owner commands, selectors, and required plain proxy pers
     );
   });
 
+  it('accepts and synchronizes a complete ten-address service override', async () => {
+    const host = createFixture({persistenceKey: 'server-config-ten-address-host'});
+    const branch = createFixture({persistenceKey: 'server-config-ten-address-branch'});
+    runtimes.push(host.runtime, branch.runtime);
+    await start(host.runtime);
+    await start(branch.runtime);
+    await dispatch(branch.runtime, setRuntimeInstanceModeCommand, {instanceMode: 'SLAVE'});
+    const addresses = Array.from({length: 10}, (_, index) => ({
+      addressName: `edge-${index + 1}`,
+      baseUrl: `https://edge-${index + 1}.example.test`,
+      timeoutMs: 1000 + index,
+    }));
+    expect(
+      (await dispatch(host.runtime, setServerOverrideCommand, {serverName: 'business', addresses, proxy: null})).status,
+    ).toBe('completed');
+    expect(resolveServerNetworkSnapshot(host.runtime.getState(), defaults, 'business').addresses).toEqual(addresses);
+
+    const payload = runtimeStateSyncForTest(host.runtime).createFullSyncPayload(serverConfigSliceName);
+    expect(payload.status).toBe('ready');
+    if (payload.status !== 'ready') throw new Error('SERVER_CONFIG_TEN_ADDRESS_SYNC_NOT_READY');
+    expect(runtimeStateSyncForTest(branch.runtime).applyAuthoritativeSync(serverConfigSliceName, payload.payload).status).toBe(
+      'applied',
+    );
+    expect(resolveServerNetworkSnapshot(branch.runtime.getState(), defaults, 'business').addresses).toEqual(addresses);
+  });
+
   it('rejects incomplete address and proxy settings without changing the current configuration', async () => {
     const fixture = createFixture();
     runtimes.push(fixture.runtime);
@@ -313,6 +351,8 @@ describe('server-config owner commands, selectors, and required plain proxy pers
     });
     expect(duplicateAddressNames.status).toBe('error');
     expect(keepMissingPassword.status).toBe('error');
+    expect(duplicateAddressNames.actorResults[0]?.error?.category).toBe('VALIDATION');
+    expect(keepMissingPassword.actorResults[0]?.error?.category).toBe('VALIDATION');
     expect(selectServerConfiguration(fixture.runtime.getState(), defaults)).toEqual(before);
   });
 
@@ -336,6 +376,12 @@ describe('server-config owner commands, selectors, and required plain proxy pers
     ]);
 
     expect(rejected.map(result => result.status)).toEqual(['error', 'error', 'error', 'error']);
+    expect(rejected.map(result => result.actorResults[0]?.error?.category)).toEqual([
+      'AUTHORIZATION',
+      'AUTHORIZATION',
+      'AUTHORIZATION',
+      'AUTHORIZATION',
+    ]);
     expect(fixture.runtime.getState()[serverConfigSliceName]).toEqual(before);
   });
 

@@ -12,15 +12,21 @@ import {
   type TopologyStateFullMessage,
   type TopologyWireMessage,
 } from '@catering-v2s/kernel-base-contracts';
-import type {RuntimeModule, RuntimeModuleContext} from '@catering-v2s/kernel-base-runtime';
-import {selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
+import {
+  createRuntimeModule,
+  selectRuntimeInstanceMode,
+  type RuntimeModule,
+  type RuntimeModuleContext,
+} from '@catering-v2s/kernel-base-runtime';
 import {selectDisplayRole} from '@catering-v2s/kernel-base-display-context';
 import type {SyncStateDiff} from '@catering-v2s/kernel-base-state';
-import type {TopologyIdentityClient, TopologyPeerChannel} from '@catering-v2s/kernel-base-transport';
+import type {TopologyIdentityClient} from '@catering-v2s/kernel-base-transport';
+import type {TopologyPeerChannel} from '@catering-v2s/kernel-base-platform-ports';
 import {createTopologySession, type TopologySession} from '@catering-v2s/kernel-base-transport';
 import {runtimeModuleDependencyNames} from '../dependencies';
 import {moduleKind, moduleName} from '../moduleName';
-import {createTopologyActor} from '../features/actors/actors';
+import {createTopologyPairActor} from '../features/actors/topologyPairActor';
+import {createTopologyRoleActor} from '../features/actors/topologyRoleActor';
 import {
   pairByHostTopologyCommand,
   pairTopologyCommand,
@@ -35,7 +41,7 @@ import {
   topologyHostEventCommand,
   type TopologyHostEventPayload,
   unpairTopologyCommand,
-} from '../features/commands/commands';
+} from '../declarations/commands';
 import {createTopologySlice} from '../features/slices/topology';
 import {selectTopologyFacts} from '../selectors/selectTopologyFacts';
 import {selectTopologyRequiredProjectionsReady, selectTopologyState} from '../selectors/selectTopologyState';
@@ -53,10 +59,6 @@ export type CreateTopologyModuleInput = Readonly<{
   readonly identityClient?: TopologyIdentityClient;
   readonly peerChannel?: TopologyPeerChannel;
   readonly canPair?: (state: import('@catering-v2s/kernel-base-state').StateRoot) => boolean;
-  readonly stateSyncSlices?: readonly Readonly<{
-    readonly name: string;
-    readonly syncIntent: 'master-to-slave' | 'slave-to-master';
-  }>[];
 }>;
 
 const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
@@ -169,12 +171,13 @@ const topologyPeerAnomalyLog = (
 };
 
 export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeModule => {
-  const actor = createTopologyActor({
+  const actorInput = {
     identityClient: input.identityClient,
     peerChannel: input.peerChannel,
     moduleName: input.moduleName,
     canPair: input.canPair,
-  });
+  } as const;
+  const actors = [createTopologyPairActor(actorInput), createTopologyRoleActor(actorInput)] as const;
   const commands = [
     queryTopologyHostCommand,
     pairByHostTopologyCommand,
@@ -278,21 +281,11 @@ export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeM
     session.send(message);
   };
 
-  const topologyStateSync = createTopologyStateSyncController({
-    stateSyncSlices: input.stateSyncSlices,
-    getSession: () => currentSession,
-    isPeerAccepted: () => peerAccepted,
-    getConnectionId: () => currentConnectionId,
-    onStateSliceApplied: ({context, connectionId, sliceName, revision}) => {
-      dispatchTopologyEvent(context, {event: 'state-sync-slice-applied', connectionId, sliceName, revision});
-    },
-    onStateSliceApplyFailed: ({context, connectionId, sliceName, revision}) => {
-      dispatchTopologyEvent(context, {event: 'state-sync-slice-apply-failed', connectionId, sliceName, revision});
-    },
-    dispatchPayloadFailure,
-    clearPayloadFailure,
-    log: topologyPeerLog,
-  });
+  let topologyStateSync: ReturnType<typeof createTopologyStateSyncController> | undefined;
+  const requireTopologyStateSync = (): ReturnType<typeof createTopologyStateSyncController> => {
+    if (topologyStateSync === undefined) throw new Error('Topology state sync is not installed');
+    return topologyStateSync;
+  };
   const peerCommandController = createTopologyPeerCommandController({
     getSession: () => currentSession,
     isPeerAccepted: () => peerAccepted,
@@ -314,10 +307,20 @@ export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeM
     });
   };
 
+  const finishReconciliation = (context: RuntimeModuleContext): void => {
+    reconciling = false;
+    if (!active) return;
+    topologyStateSync?.sendStateSnapshots(context);
+    if (rerun) {
+      rerun = false;
+      schedule(context);
+    }
+  };
+
   const markPeerAccepted = (context: RuntimeModuleContext, peerIdentity?: TopologyIdentity): void => {
     peerAccepted = true;
     reconnectAttempt = 0;
-    topologyStateSync.resetReceived();
+    requireTopologyStateSync().resetReceived();
     topologyPeerLog(
       context,
       'accepted',
@@ -330,7 +333,7 @@ export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeM
     if (peerIdentity !== undefined)
       dispatchTopologyEvent(context, {event: 'peer-accepted', peerIdentity, connectionId: currentConnectionId});
     else dispatchTopologyEvent(context, {event: 'peer-accepted', connectionId: currentConnectionId});
-    topologyStateSync.sendStateSnapshots(context, true);
+    requireTopologyStateSync().sendStateSnapshots(context, true);
   };
 
   const handlePeerLoss = (context: RuntimeModuleContext, reason: string, connectionId?: string): void => {
@@ -542,7 +545,7 @@ export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeM
       return;
     }
     if (message.type === 'state-full') {
-      topologyStateSync.acceptStateFull({context, message, readDiff: readSyncStateDiff, sourceConnectionId});
+      requireTopologyStateSync().acceptStateFull({context, message, readDiff: readSyncStateDiff, sourceConnectionId});
       return;
     }
     if (message.type === 'command-request') {
@@ -675,39 +678,59 @@ export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeM
       lastHostSignature = hostSignature;
       lastPeerSignature = peerSignature;
       if (!needsHost && !needsPeer) {
-        topologyStateSync.sendStateSnapshots(context);
+        requireTopologyStateSync().sendStateSnapshots(context);
         return;
       }
       reconciling = true;
       void Promise.all([
         needsHost ? context.dispatchCommand(reconcileTopologyHostCommand, Object.freeze({})) : Promise.resolve(),
         needsPeer ? context.dispatchCommand(reconcileTopologyPeerCommand, Object.freeze({})) : Promise.resolve(),
-      ]).finally(() => {
-        reconciling = false;
-        topologyStateSync.sendStateSnapshots(context);
-        if (rerun) {
-          rerun = false;
-          schedule(context);
-        }
-      });
+      ]).then(
+        () => finishReconciliation(context),
+        error => {
+          if (active) {
+            topologyPeerAnomalyLog({
+              context,
+              event: 'reconciliation-failed',
+              data: {
+                errorType: error instanceof Error ? error.name : typeof error,
+                errorMessage: error instanceof Error ? error.message : typeof error === 'string' ? error : null,
+              },
+            });
+          }
+          finishReconciliation(context);
+        },
+      );
     });
   };
 
-  return Object.freeze({
+  return createRuntimeModule({
     moduleName,
     kind: moduleKind,
     dependencies: runtimeModuleDependencyNames.map(name => ({moduleName: name})),
-    commands: commands.map(command => ({name: command.commandName, visibility: command.visibility})),
     commandDefinitions: commands,
     selectorDefinitions: [selectTopologyFacts, selectTopologyRequiredProjectionsReady, selectTopologyState],
-    actors: [{name: actor.actorName}],
-    actorDefinitions: [actor],
-    slices: [{name: topologySliceName, persistIntent: slice.persistIntent}],
+    actorDefinitions: actors,
     stateSlices: [slice],
     install: async (context: RuntimeModuleContext) => {
+      topologyStateSync = createTopologyStateSyncController({
+        stateSyncSlices: context.getStateSyncQualifications(),
+        getSession: () => currentSession,
+        isPeerAccepted: () => peerAccepted,
+        getConnectionId: () => currentConnectionId,
+        onStateSliceApplied: ({context: activeContext, connectionId, sliceName, revision}) => {
+          dispatchTopologyEvent(activeContext, {event: 'state-sync-slice-applied', connectionId, sliceName, revision});
+        },
+        onStateSliceApplyFailed: ({context: activeContext, connectionId, sliceName, revision}) => {
+          dispatchTopologyEvent(activeContext, {event: 'state-sync-slice-apply-failed', connectionId, sliceName, revision});
+        },
+        dispatchPayloadFailure,
+        clearPayloadFailure,
+        log: topologyPeerLog,
+      });
       peerCommandController.installGateway(context);
       const unsubscribeState = context.subscribeState(() => {
-        topologyStateSync.sendStateSnapshots(context);
+        requireTopologyStateSync().sendStateSnapshots(context);
         schedule(context);
       });
       context.registerResource(() => {
@@ -719,6 +742,7 @@ export const createTopologyModule = (input: CreateTopologyModuleInput): RuntimeM
         const session = currentSession;
         currentSession = undefined;
         currentConnectionId = undefined;
+        topologyStateSync = undefined;
         session?.close('TOPOLOGY_MODULE_DISPOSED');
         unsubscribeState();
         void input.peerChannel?.dispose();

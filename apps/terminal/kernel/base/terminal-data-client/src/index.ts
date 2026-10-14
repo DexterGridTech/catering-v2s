@@ -1,12 +1,11 @@
 export {moduleName, moduleKind} from './moduleName';
 export {dependencyModuleNames, devDependencyModuleNames, runtimeModuleDependencyNames} from './dependencies';
+export {terminalDataClientParameters} from './declarations/parameters';
 export {createTerminalDataClientModule} from './application/createTerminalDataClientModule';
-export {
-  selectActivationState,
-  selectConnectionState,
-  selectConnectionLatency,
-  selectTerminalTopicSubscriptions,
-} from './selectors/selectTerminalDataClientState';
+export {selectActivationState} from './selectors/selectActivationState';
+export {selectConnectionState} from './selectors/selectConnectionState';
+export {selectConnectionLatency} from './selectors/selectConnectionLatency';
+export {selectTerminalTopicSubscriptions} from './selectors/selectTerminalTopicSubscriptions';
 export {selectTerminalClientStatusProjection} from './selectors/selectTerminalDataClientStatusProjection';
 export {terminalClientStatusProjectionSliceName} from './features/slices/terminalClientStatusProjection';
 export type {
@@ -18,20 +17,16 @@ export type {
   TerminalClientState,
   TerminalClientStatusProjection,
   TerminalCredential,
-  TerminalTransportCommands,
   TerminalTransportConnection,
   TerminalTransportEvent,
   SubscribeTerminalTopicPayload,
   UnsubscribeTerminalTopicPayload,
   AcceptTerminalTopicNotificationPayload,
-  TerminalDataReadPayload,
   TerminalDataHeartbeatPayload,
-  TerminalUpdateDownloadGrantPayload,
-  TerminalUpdateReportPayload,
-  TerminalRemoteControlRegisterPayload,
-  TerminalRemoteControlReportPayload,
   TerminalActivationSucceededPayload,
-  TerminalReadOperationId,
+  TerminalHttpContext,
+  TerminalHttpExpectedContext,
+  TerminalHttpCommandPayload,
   TerminalTopicChangedPayload,
   TerminalTopicNotification,
   TerminalTopicSubscription,
@@ -46,13 +41,10 @@ export {
   subscribeTerminalTopicCommand,
   unsubscribeTerminalTopicCommand,
   acceptTerminalTopicNotificationCommand,
-  readTerminalDataCommand,
-  requestTerminalUpdateDownloadGrantCommand,
-  submitTerminalUpdateReportCommand,
-  registerTerminalRemoteControlCommand,
-  reportTerminalRemoteControlCommand,
+  executeTerminalHttpCommand,
   terminalDataHeartbeatCommand,
   terminalTopicChangedCommand,
-} from './features/commands/terminalDataClientCommands';
-export * from './generated/terminalApi';
+} from './declarations/commands';
+export {selectTerminalHttpContext} from './selectors/selectTerminalHttpContext';
+export type {TerminalHttpCommandRequest, TerminalExecutionResult} from './generated/terminalApi';
 export type {TerminalTopicKey} from './generated/terminalConnectionProtocol';

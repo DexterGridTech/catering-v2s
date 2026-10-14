@@ -19,6 +19,10 @@
 - `android/.../TerminalDeviceModule.kt`：Expo `AsyncFunction` 与 `DisplayManager`；
 - `test/androidDevice.test.ts`：成功、桥失败及五个 unavailable 能力的 typed proof。
 
+`src/index.ts` 与 `terminal-invariants.json.publicExports` 一致，只公开
+`moduleName`、`dependencyModuleNames`、`devDependencyModuleNames` 和
+`createAndroidDevicePort`；实现细节不从包根导出。
+
 迭代指引：新增设备能力前先在 `platform-ports` 定义端口语义，再由 Android adapter
 实现对应能力并为 unavailable、失败、malformed（若适用）补 focused proof；不要在本包
 缓存设备事实或创建与 kernel 不同的端口契约。

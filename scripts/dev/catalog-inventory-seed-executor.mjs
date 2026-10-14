@@ -8,19 +8,18 @@ import {createHash, randomUUID} from "node:crypto";
 import {isDeepStrictEqual} from "node:util";
 import fs from "node:fs";
 import path from "node:path";
-import {spawnSync} from "node:child_process";
 import {fileURLToPath} from "node:url";
 import {buildSeedReport, loadGeneratedOperationRegistry, materializeGeneratedOperationPath, normalizeEdgePath, resolveGeneratedOperationById, writeSeedReportPair} from "../test/seed-report.mjs";
-import {buildManagedDiagnosticHeaders, measurementMetadataForReport, readManagedDiagnosticEvents, validateManagedDiagnosticTransport} from "./managed-diagnostic-protocol.mjs";
-import {canonicalStartToken} from "./managed-process-tree.mjs";
-import {validateRemoteJavaControl} from "./r5-remote-java.mjs";
+import {buildManagedDiagnosticHeaders, measurementMetadataForReport, readManagedDiagnosticEvents} from "./managed-diagnostic-protocol.mjs";
 import {createSeedHttpClient} from "./seed-http-client.mjs";
+import {managedRuntime, managedSeedEnvironment} from "./owner-command-seed-executor.mjs";
+import {preservedSeedStateLabels, seedRunIdentity, seedRuntimeRoot} from "./managed-seed-target.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const fixturePath = path.join(root, "contracts/policy/catalog-inventory-fixture-catalog.json");
 const profilePath = path.join(root, "scripts/dev/profiles/catalog-inventory.json");
 const planPath = process.env.CATALOG_INVENTORY_SEED_PLAN_OUTPUT || path.join(root, "doc/evidence/platform/2026-08-07-v2s-catalog-inventory-seed-plan-codex.json");
-const runtimeRoot = path.resolve(process.env.V2S_RUNTIME_DIR || path.join(root, ".runtime/r5"));
+const runtimeRoot = seedRuntimeRoot(root);
 const registryGeneralPath = path.join(root, "apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json");
 const registryCatalogPath = path.join(root, "apps/backend/catering-business-server/src/main/resources/generated/catalog-inventory-edge-route-registry.json");
 const readJson = (file) => JSON.parse(fs.readFileSync(file, "utf8"));
@@ -140,28 +139,15 @@ const mergeRegistry = () => {
 };
 const registry = mergeRegistry();
 
-const requiredCredentials = (manifest) => {
-  const file = manifest?.credentialsFile;
-  if (!file || !fs.existsSync(file) || (fs.statSync(file).mode & 0o777) !== 0o600) fail("SEED_MANAGED_CREDENTIALS_INVALID");
-  return Object.fromEntries(fs.readFileSync(file, "utf8").split("\n").filter(Boolean).map((line) => line.split("=", 2)));
-};
 const loadManagedRun = () => {
-  const manifestPath = path.join(runtimeRoot, "run-manifest.json");
-  if (!fs.existsSync(manifestPath)) fail("SEED_MANAGED_RUN_MANIFEST_REQUIRED");
-  const manifest = readJson(manifestPath);
-  if (manifest.kind !== "r5-dev-run-manifest" || manifest.freshDatabase !== true) fail("SEED_MANAGED_RUN_INVALID");
-  if (typeof manifest.localHttpBaseUrl !== "string" || !/^http:\/\/127\.0\.0\.1:\d{4,5}$/.test(manifest.localHttpBaseUrl)) fail("SEED_MANAGED_HTTP_ENDPOINT_INVALID");
+  const {manifest, credentials} = managedRuntime();
+  let environment;
   try {
-    validateRemoteJavaControl(manifest.remoteJava);
-    validateManagedDiagnosticTransport(manifest);
-  } catch {
-    fail("SEED_MANAGED_REMOTE_JAVA_BINDING_INVALID");
+    environment = managedSeedEnvironment(manifest, credentials);
+  } catch (error) {
+    fail(error?.code ?? "SEED_MANAGED_ENVIRONMENT_INVALID");
   }
-  for (const process of manifest.processes ?? []) {
-    const probe = spawnSync("ps", ["-o", "lstart=", "-p", String(process.pid)], {encoding: "utf8"});
-    if (probe.status !== 0 || canonicalStartToken(probe.stdout) !== canonicalStartToken(process.startToken)) fail(`SEED_MANAGED_PROCESS_INVALID:${process.name}`);
-  }
-  return {manifest, credentials: requiredCredentials(manifest), httpBaseUrl: manifest.localHttpBaseUrl};
+  return {manifest, credentials, environment, identity: seedRunIdentity(manifest), httpBaseUrl: environment.V2S_SEED_HTTP_BASE_URL};
 };
 
 const itemResult = (json) => json?.result ?? json?.data?.result ?? json?.data ?? json;
@@ -870,9 +856,9 @@ async function execute() {
   const reportPath = path.join(directory, "seed-report.json");
   const eventsPath = path.join(directory, "events.jsonl");
   const phases = []; const calls = []; let firstFailure = null; let business = "NOT_RUN"; let cleanup = "NOT_RUN";
-  let manifest = null; let credentials = null; let measurement = null; let salesMenuAvailabilityReceipt = null;
+  let manifest = null; let credentials = null; let environment = null; let identity = null; let httpBaseUrl = null; let measurement = null; let salesMenuAvailabilityReceipt = null;
   const startedAt = new Date().toISOString();
-  const persist = () => fs.writeFileSync(runManifestPath, `${JSON.stringify({schemaVersion: 2, kind: "catalog-inventory-seed-run-manifest", runId, managedDevRunId: manifest?.runId ?? null, measurement, profile: profile.profile, planDigest: plan?.planDigest ?? null, startedAt, firstFailure, business, cleanup, phases}, null, 2)}\n`, {mode: 0o600});
+  const persist = () => fs.writeFileSync(runManifestPath, `${JSON.stringify({schemaVersion: 2, kind: "catalog-inventory-seed-run-manifest", runId, ...(identity ?? {}), measurement, profile: profile.profile, planDigest: plan?.planDigest ?? null, startedAt, firstFailure, business, cleanup, phases}, null, 2)}\n`, {mode: 0o600});
   const phase = (stage, status, detail = {}) => { const event = {at: new Date().toISOString(), stage, status, ...detail}; phases.push(event); fs.appendFileSync(eventsPath, `${JSON.stringify(event)}\n`, {mode: 0o600}); persist(); };
   persist();
   try {
@@ -898,26 +884,28 @@ async function execute() {
       fail("SEED_CATALOG_LIFECYCLE_POLICY_INVALID");
     assertSeedBusinessLabels(plan);
     if (plan.eligibleSourceItems.length + plan.excludedSourceItems.length !== plan.sourceItems.length) fail("SEED_ELIGIBILITY_PLAN_INVALID");
-    ({manifest, credentials} = loadManagedRun());
+    ({manifest, credentials, environment, identity, httpBaseUrl} = loadManagedRun());
     measurement = measurementMetadataForReport(manifest);
     launcherLog("MANAGED_RUN_LOADED", {runId: manifest.runId});
-    if (process.env.V2S_DEV_PROFILE && process.env.V2S_DEV_PROFILE !== "r5-full") fail("SEED_DEV_PROFILE_MUST_REUSE_MANAGED_DEV");
-    phase("PREFLIGHT", "PASS", {managedDevRunId: manifest.runId});
+    if (environment.V2S_SEED_PROFILE !== "r5-full") fail("SEED_PROFILE_MUST_REUSE_MANAGED_ENVIRONMENT");
+    phase("PREFLIGHT", "PASS", {...identity});
   } catch (error) {
+    const preservedState = identity?.environmentKind
+      ? preservedSeedStateLabels(identity.environmentKind)
+      : {cleanup: "PASS_NO_PERSISTENT_SEED_PROCESS", policy: "NO_SEED_MUTATIONS_STARTED"};
     firstFailure = error.code || compact(error.message);
     business = "FAIL";
     phase("PREFLIGHT", "FAIL", {reason: firstFailure});
-    cleanup = "PASS_PRESERVED_DEV_STATE";
-    phase("SEED_CLEANUP", "PASS", {policy: "PRESERVE_DEV_EXPERIENCE_STATE", persistentSeedProcess: false, destructiveCleanupOwner: "r5-reset", resetRequiredBeforeRerun: true});
-    const report = {schemaVersion: 2, kind: "catalog-inventory-seed-report", runId, managedDevRunId: manifest?.runId ?? null, startedAt, finishedAt: new Date().toISOString(), status: "FAIL", business: "FAIL", cleanup, phases, calls, firstFailure, noDirectDatabaseWrites: true, preflight: true};
+    cleanup = preservedState.cleanup;
+    phase("SEED_CLEANUP", "PASS", {policy: preservedState.policy, ...(identity?.environmentKind === 'dev' ? {destructiveCleanupOwner: "r5-reset"} : {}), persistentSeedProcess: false, resetRequiredBeforeRerun: true});
+    const report = {schemaVersion: 2, kind: "catalog-inventory-seed-report", runId, ...(identity ?? {}), startedAt, finishedAt: new Date().toISOString(), status: "FAIL", business: "FAIL", cleanup, phases, calls, firstFailure, noDirectDatabaseWrites: true, preflight: true};
     try { writeSeedReportPair(reportPath, report); } catch { /* preserve the primary preflight failure */ }
     process.stderr.write(`CATALOG_INVENTORY_SEED=REFUSED; REASON=${firstFailure}; RUN_MANIFEST=${runManifestPath}; REPORT=${reportPath}\n`);
     process.exitCode = 2;
     return;
   }
   const combined = registry;
-  const baseUrl = manifest.localHttpBaseUrl.replace(/\/$/, "");
-  if (!/^http:\/\/127\.0\.0\.1:\d{4,5}$/.test(baseUrl)) fail("SEED_MANAGED_HTTP_ENDPOINT_INVALID");
+  const baseUrl = httpBaseUrl.replace(/\/$/, "");
   const cookies = (value) => value?.split(",").map((part) => part.split(";", 1)[0].trim()).filter(Boolean).join("; ") || null;
   const key = (stage) => `catalog-seed-${sha256(`${runId}:${stage}`).slice(0, 48)}`;
   const request = createSeedHttpClient({
@@ -943,7 +931,7 @@ async function execute() {
       status: details.httpStatus,
     }),
     decorateCall: (call, {operation}) => ({
-      managedDevRunId: manifest.runId,
+      ...identity,
       owner: operation.owner,
       consumerFace: operation.consumerFaces?.join(",") || null,
     }),
@@ -3254,20 +3242,18 @@ async function execute() {
       }
     }
     business = "PASS";
-    // This is the final DEV experience seed, not a disposable acceptance
-    // namespace.  The reset command owns destructive cleanup; once all
-    // readbacks pass, the seed process itself has no persistent worker to
-    // clean up and the created DEV facts intentionally remain available for
-    // Dexter's browser experience.
-    cleanup = "PASS_PRESERVED_DEV_STATE";
+    // Seed facts intentionally remain available in their target environment.
+    const preservedState = preservedSeedStateLabels(identity.environmentKind);
+    cleanup = preservedState.cleanup;
     phase("SEED_BUSINESS_READBACK", "PASS", {sourceCatalogItems: plan.sourceItems.length, createdCatalogItems: seedItems.length, excludedCatalogItems: plan.excludedSourceItems.length, mediaAssets: plan.mediaPlan.length});
-    phase("SEED_CLEANUP", "PASS", {policy: "PRESERVE_DEV_EXPERIENCE_STATE", persistentSeedProcess: false, destructiveCleanupOwner: "r5-reset"});
+    phase("SEED_CLEANUP", "PASS", {policy: preservedState.policy, ...(identity.environmentKind === 'dev' ? {destructiveCleanupOwner: "r5-reset"} : {}), persistentSeedProcess: false});
   } catch (error) {
-    firstFailure ??= error.code || compact(error.message); business = "FAIL"; cleanup = "PASS_PRESERVED_DEV_STATE";
+    const preservedState = preservedSeedStateLabels(identity.environmentKind);
+    firstFailure ??= error.code || compact(error.message); business = "FAIL"; cleanup = preservedState.cleanup;
     phase("SEED_BUSINESS", "FAIL", {reason: firstFailure});
-    phase("SEED_CLEANUP", "PASS", {policy: "PRESERVE_DEV_EXPERIENCE_STATE", persistentSeedProcess: false, destructiveCleanupOwner: "r5-reset", resetRequiredBeforeRerun: true});
+    phase("SEED_CLEANUP", "PASS", {policy: preservedState.policy, ...(identity.environmentKind === 'dev' ? {destructiveCleanupOwner: "r5-reset"} : {}), persistentSeedProcess: false, resetRequiredBeforeRerun: true});
   }
-  const report = {...buildSeedReport({runId, managedDevRunId: manifest.runId, measurement, seedProfile: profile.profile, startedAt, finishedAt: new Date().toISOString(), status: business, businessStatus: business, cleanupStatus: cleanup, calls, events: readManagedDiagnosticEvents(manifest), firstFailure}), schemaVersion: 2, kind: "catalog-inventory-seed-report", profile: profile.profile, planDigest: plan.planDigest, business, cleanup, phases, noDirectDatabaseWrites: true, mediaAssets: plan.mediaPlan.length, sourceItems: plan.sourceItems.length, createdItems: plan.eligibleSourceItems?.length ?? 0, excludedItems: plan.excludedSourceItems ?? [], salesMenuAvailabilityReceipt};
+  const report = {...buildSeedReport({runId, ...identity, measurement, seedProfile: profile.profile, startedAt, finishedAt: new Date().toISOString(), status: business, businessStatus: business, cleanupStatus: cleanup, calls, events: readManagedDiagnosticEvents(manifest), firstFailure}), schemaVersion: 2, kind: "catalog-inventory-seed-report", profile: profile.profile, planDigest: plan.planDigest, business, cleanup, phases, noDirectDatabaseWrites: true, mediaAssets: plan.mediaPlan.length, sourceItems: plan.sourceItems.length, createdItems: plan.eligibleSourceItems?.length ?? 0, excludedItems: plan.excludedSourceItems ?? [], salesMenuAvailabilityReceipt};
   writeSeedReportPair(reportPath, report);
   launcherLog("EXECUTE_FINISHED", {business, firstFailure});
   persist();

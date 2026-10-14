@@ -9,5 +9,10 @@
       "runner": "eslint"
     },
     "clean": {"kind": "ABSENT"}
-  }
+  },
+  "publicExports": [
+    "dependencyModuleNames",
+    "devDependencyModuleNames",
+    "moduleName"
+  ]
 }

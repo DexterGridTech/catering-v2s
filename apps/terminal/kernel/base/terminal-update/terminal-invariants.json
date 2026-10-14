@@ -2,67 +2,83 @@
   "schemaVersion": 1,
   "package": "@catering-v2s/kernel-base-terminal-update",
   "owned": {
-    "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/kernel-base-terminal-update", "runner": "vitest"},
-    "lint": {"kind": "OWNED", "owner": "@catering-v2s/kernel-base-terminal-update", "runner": "eslint"},
-    "clean": {"kind": "ABSENT"}
+    "test": {
+      "kind": "REAL_TESTS",
+      "owner": "@catering-v2s/kernel-base-terminal-update",
+      "runner": "vitest"
+    },
+    "lint": {
+      "kind": "OWNED",
+      "owner": "@catering-v2s/kernel-base-terminal-update",
+      "runner": "eslint"
+    },
+    "clean": {
+      "kind": "ABSENT"
+    }
   },
   "tr01Exceptions": [
     {
-      "sourceFile": "src/features/actors/terminalUpdateActor.ts",
+      "sourceFile": "src/features/actors/shared/createTerminalUpdateReportOwner.ts",
       "declarationId": "writeTaskWithOptions",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "terminal-update-command-task-write"
     },
     {
-      "sourceFile": "src/features/actors/terminalUpdateActor.ts",
+      "sourceFile": "src/features/actors/shared/createTerminalUpdateReportOwner.ts",
       "declarationId": "writeTaskWithOptions",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "terminal-update-command-status-write"
     },
     {
-      "sourceFile": "src/features/actors/terminalUpdateActor.ts",
+      "sourceFile": "src/features/actors/shared/createTerminalUpdateReportOwner.ts",
       "declarationId": "writeTaskWithOptions",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "terminal-update-command-report-descriptor-write"
     },
     {
-      "sourceFile": "src/features/actors/terminalUpdateActor.ts",
+      "sourceFile": "src/features/actors/shared/createTerminalUpdateReportOwner.ts",
       "declarationId": "writeTaskWithOptions",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "terminal-update-command-invitation-clear"
     },
     {
-      "sourceFile": "src/features/actors/terminalUpdateActor.ts",
+      "sourceFile": "src/features/actors/shared/createTerminalUpdateReportOwner.ts",
       "declarationId": "writeTaskWithOptions",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "terminal-update-command-task-rollback"
     },
     {
-      "sourceFile": "src/features/actors/terminalUpdateActor.ts",
+      "sourceFile": "src/features/actors/shared/createTerminalUpdateReportOwner.ts",
       "declarationId": "writeTaskWithOptions",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "terminal-update-command-status-rollback"
     },
     {
-      "sourceFile": "src/features/actors/terminalUpdateActor.ts",
+      "sourceFile": "src/features/actors/shared/createTerminalUpdateReportOwner.ts",
       "declarationId": "writeTaskWithOptions",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "terminal-update-command-report-descriptor-rollback"
     },
     {
-      "sourceFile": "src/features/actors/terminalUpdateActor.ts",
+      "sourceFile": "src/features/actors/shared/createTerminalUpdateReportOwner.ts",
       "declarationId": "writeTaskWithOptions",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "terminal-update-command-invitation-rollback"
     },
     {
-      "sourceFile": "src/features/actors/terminalUpdateActor.ts",
+      "sourceFile": "src/features/actors/shared/createTerminalUpdateArtifactExecutor.ts",
       "declarationId": "recordFailedArtifact",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "terminal-update-command-failed-artifact-record"
     },
     {
-      "sourceFile": "src/features/actors/terminalUpdateActor.ts",
+      "sourceFile": "src/features/actors/shared/createTerminalUpdateArtifactExecutor.ts",
+      "declarationId": "applyPreparedArtifact",
+      "dispatchExpression": "context.dispatchAction",
+      "reasonCategory": "terminal-update-command-actual-version-readback"
+    },
+    {
+      "sourceFile": "src/features/actors/shared/createTerminalUpdateArtifactExecutor.ts",
       "declarationId": "executeNextArtifact",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "terminal-update-command-actual-version-readback"
@@ -104,49 +120,49 @@
       "reasonCategory": "terminal-update-command-install-deferred-invitation-clear"
     },
     {
-      "sourceFile": "src/features/actors/terminalUpdateActor.ts",
+      "sourceFile": "src/features/actors/shared/createTerminalUpdateReportOwner.ts",
       "declarationId": "writeReportDescriptor",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "terminal-update-command-report-descriptor-write"
     },
     {
-      "sourceFile": "src/features/actors/terminalUpdateActor.ts",
+      "sourceFile": "src/features/actors/shared/createTerminalUpdateReportOwner.ts",
       "declarationId": "writeReportDescriptor",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "terminal-update-command-report-descriptor-rollback"
     },
     {
-      "sourceFile": "src/features/actors/terminalUpdateActor.ts",
+      "sourceFile": "src/features/actors/shared/createTerminalUpdateReportOwner.ts",
       "declarationId": "sendPendingReport",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "terminal-update-command-report-context-reset"
     },
     {
-      "sourceFile": "src/features/actors/terminalUpdateActor.ts",
+      "sourceFile": "src/features/actors/shared/createTerminalUpdateReportOwner.ts",
       "declarationId": "sendPendingReport",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "terminal-update-command-report-context-reset-rollback"
     },
     {
-      "sourceFile": "src/features/actors/terminalUpdateActor.ts",
+      "sourceFile": "src/features/actors/shared/createTerminalUpdateReportOwner.ts",
       "declarationId": "sendPendingReport",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "terminal-update-command-report-binding-reset"
     },
     {
-      "sourceFile": "src/features/actors/terminalUpdateActor.ts",
+      "sourceFile": "src/features/actors/shared/createTerminalUpdateReportOwner.ts",
       "declarationId": "sendPendingReport",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "terminal-update-command-report-acknowledgement"
     },
     {
-      "sourceFile": "src/features/actors/terminalUpdateActor.ts",
+      "sourceFile": "src/features/actors/shared/createTerminalUpdateReportOwner.ts",
       "declarationId": "sendPendingReport",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "terminal-update-command-report-acknowledgement-rollback"
     },
     {
-      "sourceFile": "src/features/actors/terminalUpdateActor.ts",
+      "sourceFile": "src/features/actors/shared/createTerminalUpdateReportOwner.ts",
       "declarationId": "sendPendingReport",
       "dispatchExpression": "context.dispatchAction",
       "reasonCategory": "terminal-update-command-report-rejection"
@@ -177,22 +193,34 @@
     }
   ],
   "publicExports": [
-    "requestTerminalUpdateCommand",
+    "CurrentUpdateTargetReader",
+    "FixedUpdateTarget",
+    "RequestTerminalUpdatePayload",
+    "TerminalUpdateContextFacts",
+    "TerminalUpdateInstallDecision",
+    "TerminalUpdateRecentStatus",
+    "TerminalUpdateState",
+    "TerminalUpdateTask",
+    "UpdateNetworkSnapshotReader",
+    "UpdateTargetSourceProvider",
     "confirmTerminalUpdateBootCommand",
+    "confirmTerminalUpdateInstallCommand",
+    "createRequestTerminalUpdatePayload",
     "createTerminalUpdateModule",
+    "deferTerminalUpdateInstallCommand",
     "dependencyModuleNames",
     "devDependencyModuleNames",
-    "FixedUpdateTarget",
     "moduleKind",
     "moduleName",
+    "reconcileTerminalUpdateCommand",
+    "requestTerminalUpdateCommand",
     "runtimeModuleDependencyNames",
     "selectTerminalUpdateActualVersions",
+    "selectTerminalUpdateInvitation",
     "selectTerminalUpdateRecentStatus",
+    "selectTerminalUpdateReportDelivery",
     "selectTerminalUpdateTask",
-    "TerminalUpdateRecentStatus",
-    "TerminalUpdateTask",
-    "TerminalUpdateState",
-    "UpdateTargetSourceProvider",
+    "terminalUpdateDeadlineCommand",
     "unavailableUpdateTargetSourceProvider"
   ]
 }

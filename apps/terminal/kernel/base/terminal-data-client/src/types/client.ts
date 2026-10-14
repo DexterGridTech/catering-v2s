@@ -1,17 +1,13 @@
 import type {SurfaceForm} from '@catering-v2s/kernel-base-contracts';
 import type {RuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
 import type {StateRoot} from '@catering-v2s/kernel-base-state';
-import type {
-  TransportCommandGateway,
-  TransportConnection,
-  TransportConnectionEvent,
-} from '@catering-v2s/kernel-base-transport';
+import type {TransportConnection, TransportConnectionEvent} from '@catering-v2s/kernel-base-platform-ports';
+import type {TransportCommandGateway} from '@catering-v2s/kernel-base-transport';
 import type {
   TerminalActivationRequest,
   TerminalExecutionResult,
-  TerminalOperationId,
   TerminalOperationResult,
-  TerminalRequestMap,
+  TerminalHttpCommandRequest,
 } from '../generated/terminalApi';
 import type {TerminalTopicKey} from '../generated/terminalConnectionProtocol';
 
@@ -150,30 +146,6 @@ export type AcceptTerminalTopicNotificationPayload = Readonly<{
   readonly notificationId: string;
 }>;
 
-export type TerminalReadOperationId = Extract<TerminalOperationId, `terminalRead${string}`>;
-/** Generated read operation and its exact path/query shape; TDC constructs credential headers itself. */
-export type TerminalDataReadPayload = {
-  readonly [OperationId in TerminalReadOperationId]: Readonly<{
-    readonly operationId: OperationId;
-    readonly pathParameters: TerminalRequestMap[OperationId]['pathParameters'];
-    readonly queryParameters?: TerminalRequestMap[OperationId]['queryParameters'];
-  }>;
-}[TerminalReadOperationId];
-
-export type TerminalUpdateDownloadGrantPayload = Readonly<{artifactRef: string}>;
-export type TerminalUpdateReportPayload = Readonly<{
-  readonly idempotencyKey: string;
-  readonly body: TerminalRequestMap['submitTerminalUpdateReport']['body'];
-}>;
-export type TerminalRemoteControlRegisterPayload = Readonly<{
-  readonly sessionId: string;
-  readonly body: TerminalRequestMap['registerTerminalRemoteControl']['body'];
-}>;
-export type TerminalRemoteControlReportPayload = Readonly<{
-  readonly sessionId: string;
-  readonly body: TerminalRequestMap['reportTerminalRemoteControl']['body'];
-}>;
-
 /** Shared Runtime command fanned out to feature actors; each consumer matches its own subscription. */
 export type TerminalTopicChangedPayload = Readonly<{
   readonly subscriberKey: string;
@@ -219,11 +191,32 @@ export type CancelTerminaActivationPayload = Readonly<{}>;
 
 export type TerminalTransportEvent = TransportConnectionEvent;
 export type TerminalTransportConnection = TransportConnection;
-/** Compatibility alias for the transport owner command facade. */
-export type TerminalTransportCommands = TransportCommandGateway;
+
+export type TerminalHttpContext = Readonly<{
+  readonly credentialRevision: number;
+  readonly groupWorkspaceKey: string;
+  readonly terminalRef: string;
+  readonly storeRef: string;
+  readonly bindingGeneration: number;
+  readonly instanceMode: RuntimeInstanceMode;
+  readonly selectedSpace: string;
+  readonly serviceName: string;
+  readonly serviceRevision: number;
+  readonly ready: boolean;
+}>;
+
+export type TerminalHttpExpectedContext = Readonly<{
+  readonly runtimeId: string;
+  readonly scope: TerminalHttpContext;
+}>;
+
+export type TerminalHttpCommandPayload = Readonly<{
+  readonly expectedContext: TerminalHttpExpectedContext;
+  readonly request: TerminalHttpCommandRequest;
+}>;
 
 export type TerminalDataClientDependencies = Readonly<{
-  readonly transport: TerminalTransportCommands;
+  readonly transport: TransportCommandGateway;
   readonly businessServerName: string;
   readonly createCredentialSecret: () => string | Promise<string>;
   /** Platform-provided RFC 4122 UUID generator for wire subscription identities. */

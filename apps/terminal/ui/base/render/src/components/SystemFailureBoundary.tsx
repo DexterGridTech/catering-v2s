@@ -4,7 +4,7 @@ import {useCallback, useEffect, useState, type ReactNode} from 'react';
 import {resetRuntimeAfterSystemFailureCommand} from '@catering-v2s/kernel-base-runtime';
 import {dispatchWithRequestId} from '../foundations/dispatchWithRequestId';
 import {useDispatchCommand} from '../hooks/useDispatchCommand';
-import {useRenderContext} from '../contexts/RenderContext';
+import {useRenderContext} from '../hooks/useRenderContext';
 import {SystemFailureNotice} from './SystemFailureNotice';
 import {renderTestIds} from '../foundations/renderTestIds';
 

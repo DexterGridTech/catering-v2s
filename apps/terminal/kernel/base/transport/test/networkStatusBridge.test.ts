@@ -1,6 +1,6 @@
 import {describe, expect, it, vi} from 'vitest';
 import type {DevicePort, NetworkStatusChanged, PortResult} from '@catering-v2s/kernel-base-platform-ports';
-import {createTransportNetworkStatusBridge} from '../src/index';
+import {createTransportNetworkStatusBridge} from '../src/application/createTransportNetworkStatusBridge';
 
 const unavailable = (capability: string) =>
   ({

@@ -7,7 +7,9 @@ import {
   type KeyboardKey,
 } from '../foundations/editText';
 import type {InputRegistrationToken} from '../foundations/snapshot';
-import {useInputController, useInputKeyboardState, useInputScrollAncestor} from '../contexts/context';
+import {useInputController} from './useInputController';
+import {useInputKeyboardState} from './useInputKeyboardState';
+import {useInputScrollAncestor} from './useInputScrollAncestor';
 import {useInputSurfaceGeometry} from '../contexts/InputSurfaceGeometryContext';
 import type {InputFieldOptions, InputFieldResult, InputVisibleAnchorHandle} from '../types/types';
 import type {PrimitiveInputHandle} from '@catering-v2s/ui-base-primitives';

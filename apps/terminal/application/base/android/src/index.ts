@@ -1,16 +1,10 @@
 export {moduleName} from './moduleName';
 export {dependencyModuleNames, devDependencyModuleNames} from './dependencies';
-export {createAndroidNativeLoadingCapability} from './foundations/nativeLoadingCapability';
-export {
-  createAndroidAppControlPort,
-  createAndroidTopologyHostPort,
-  createAndroidTopologyPeerChannel,
-} from './foundations/nativeTopology';
-export {createAndroidPlatformBinding} from './foundations/androidPlatform';
-export {createAndroidTransportNetworkAdapter} from './foundations/androidTransportNetworkAdapter';
-export {createAndroidAutomationUpdateTargetSourceProvider} from './foundations/androidAutomationUpdateTargetSourceProvider';
+export {createAndroidNativeLoadingCapability} from './implementations/nativeLoadingCapability';
+export {createAndroidPlatformBinding} from './implementations/androidPlatformBinding';
+export {createAndroidAutomationUpdateTargetSourceProvider} from './implementations/androidAutomationUpdateTargetSourceProvider';
 export {AndroidTerminalApp} from './components/AndroidTerminalApp';
-export type {AndroidPlatformBinding} from './foundations/androidPlatform';
+export type {AndroidPlatformBinding} from './implementations/androidPlatformBinding';
 export type {AndroidSurfaceForm, AndroidTerminalAppProps} from './components/AndroidTerminalApp';
 export type {
   NativeLoadingCapability,

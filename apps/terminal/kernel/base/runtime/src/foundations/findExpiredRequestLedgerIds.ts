@@ -3,7 +3,7 @@ import type {StateRoot} from '@catering-v2s/kernel-base-state';
 import {selectRequestExecutionView} from '../selectors/selectRequestExecutionView';
 import {selectRuntimeInstanceMode} from '../selectors/selectRuntimeInstanceMode';
 import {readRequestLedgerState} from '../selectors/readRequestLedgerState';
-import {readLiveRequestEnvelope, requestLedgerSliceNameForMode} from '../features/slices/requestLedger';
+import {readLiveRequestEnvelope, requestLedgerSliceNameForMode} from './requestLedgerState';
 import type {RuntimeLimits} from '../types/limits';
 import type {RuntimeInstanceMode} from '../types/role';
 

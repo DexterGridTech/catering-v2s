@@ -4,6 +4,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./environment": "./src/foundations/resolveServerConfigEnvironment.ts",
     "./network-adapter": "./src/foundations/networkAdapter.ts"
   },
   "scripts": {

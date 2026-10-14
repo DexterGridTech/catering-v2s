@@ -1,9 +1,11 @@
-import type {RuntimeModule, RuntimeModuleContext} from '@catering-v2s/kernel-base-runtime';
+import {createRuntimeModule, type RuntimeModule, type RuntimeModuleContext} from '@catering-v2s/kernel-base-runtime';
 import {createRequestId} from '@catering-v2s/kernel-base-contracts';
+import type {TransportNetworkAdapter} from '@catering-v2s/kernel-base-platform-ports';
 import {runtimeModuleDependencyNames} from '../dependencies';
 import {moduleKind, moduleName} from '../moduleName';
+import {transportParameters} from '../declarations/parameters';
 import {createTransportConnectionOwner} from '../foundations/createTransportConnectionOwner';
-import {createTransportNetworkStatusBridge} from '../foundations/createTransportNetworkStatusBridge';
+import {createTransportNetworkStatusBridge} from './createTransportNetworkStatusBridge';
 import {createTransportActor} from '../features/actors/transportActor';
 import {
   transportInvalidCommand,
@@ -16,13 +18,12 @@ import {
   transportStablePeriodElapsedCommand,
   transportStartCommand,
   transportStopCommand,
-} from '../features/commands/transportCommands';
+} from '../declarations/commands';
 import type {
   TransportCommandGateway,
   TransportHttpExecutionResult,
   TransportHttpRequest,
   TransportModuleOptions,
-  TransportNetworkAdapter,
 } from '../types/runtimeControl';
 
 type TransportRuntimeModule = RuntimeModule & Readonly<{readonly commandGateway: TransportCommandGateway}>;
@@ -199,21 +200,18 @@ export const createTransportModule = (options: TransportModuleOptions = {}): Tra
       dispatchThroughRuntime(transportHttpAddressAvailableCommand, accepted),
   });
 
-  return Object.freeze({
+  return createRuntimeModule({
     moduleName,
     kind: moduleKind,
     dependencies: runtimeModuleDependencyNames.map(name => ({moduleName: name})),
-    commands: commandDefinitions.map(command => ({name: command.commandName, visibility: command.visibility})),
     commandDefinitions,
-    actors: [{name: actor.actorName}],
     actorDefinitions: [actor],
-    slices: [],
     install: async (context: RuntimeModuleContext) => {
       runtimeContext = context;
       if (options.networkAdapterFactory !== undefined) activeNetworkAdapter = options.networkAdapterFactory(context);
       const bridge = await createTransportNetworkStatusBridge({
         device: context.platformPorts.device,
-        timeoutMs: 5_000,
+        timeoutMs: transportParameters.networkStatusRequestTimeoutMs.defaultValue,
         dispatchTransition: transition => dispatchThroughRuntime(transportNetworkStatusChangedCommand, transition),
         onObservationError: (source, code) =>
           report(context, {level: 'warn', event: 'network-observation-failed', data: {source, code}}),

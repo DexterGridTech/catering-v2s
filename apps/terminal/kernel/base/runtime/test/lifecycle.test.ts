@@ -1,6 +1,7 @@
 import {describe, expect, it} from 'vitest';
 import {createCommandId, createNodeId, createRuntimeInstanceId} from '@catering-v2s/kernel-base-contracts';
 import {
+  createRuntimeModule,
   createRuntime,
   defineActor,
   defineCommand,
@@ -20,13 +21,11 @@ const moduleFor = (
   actors: readonly ReturnType<typeof defineActor>[] = [],
   hooks: Pick<RuntimeModule, 'preSetup' | 'install'> = {},
 ): RuntimeModule =>
-  Object.freeze({
+  createRuntimeModule({
     moduleName,
     kind: 'owner' as const,
     dependencies: [{moduleName: 'kernel.base.runtime'}],
-    commands: commands.map(command => ({name: command.commandName, visibility: command.visibility})),
     commandDefinitions: commands,
-    actors: actors.map(actor => ({name: actor.actorName})),
     actorDefinitions: actors,
     ...hooks,
   });
@@ -320,7 +319,7 @@ describe('runtime journal and lifecycle', () => {
   });
 
   it('L-4 releases test-owned timeout resources without exporting cleanup', async () => {
-    const {releaseRuntimeForTest} = await import('../src/testing/releaseRuntimeForTest');
+    const {releaseRuntimeForTestAsync} = await import('../src/testing/releaseRuntimeForTest');
     const command = defineCommand<Readonly<{}>>('test.lifecycle.cleanup', {
       name: 'run',
       visibility: 'internal',
@@ -344,7 +343,7 @@ describe('runtime journal and lifecycle', () => {
     await runtime.start();
     const pending = runtime.dispatchCommand(command, {});
     await Promise.resolve();
-    const released = releaseRuntimeForTest(runtime);
+    const released = await releaseRuntimeForTestAsync(runtime);
     expect(released).toBeGreaterThan(0);
     // The pending actor is deliberately not cancelled by runtime policy; cleanup
     // only releases the test-owned timer. The promise is left outside the test.
@@ -368,9 +367,7 @@ describe('runtime journal and lifecycle', () => {
       moduleName: 'test.lifecycle.subscription',
       kind: 'owner',
       dependencies: [{moduleName: 'kernel.base.runtime'}],
-      commands: [{name: command.commandName, visibility: command.visibility}],
       commandDefinitions: [command],
-      actors: [{name: actor.actorName}],
       actorDefinitions: [actor],
       stateSlices: [createTestSlice('test.lifecycle.subscription.state')],
       install: context => {
@@ -384,8 +381,8 @@ describe('runtime journal and lifecycle', () => {
     await runtime.dispatchCommand(command, {});
     const beforeRelease = notifications;
     expect(beforeRelease).toBeGreaterThan(0);
-    const {releaseRuntimeForTest} = await import('../src/testing/releaseRuntimeForTest');
-    expect(releaseRuntimeForTest(runtime)).toBeGreaterThan(0);
+    const {releaseRuntimeForTestAsync} = await import('../src/testing/releaseRuntimeForTest');
+    expect(await releaseRuntimeForTestAsync(runtime)).toBeGreaterThan(0);
     await runtime.dispatchCommand(command, {});
     expect(notifications).toBe(beforeRelease);
   });
@@ -396,9 +393,7 @@ describe('runtime journal and lifecycle', () => {
       moduleName: 'test.lifecycle.module-resource',
       kind: 'owner',
       dependencies: [{moduleName: 'kernel.base.runtime'}],
-      commands: [],
       commandDefinitions: [],
-      actors: [],
       actorDefinitions: [],
       stateSlices: [createTestSlice('test.lifecycle.module-resource.state')],
       install: context => {
@@ -410,10 +405,10 @@ describe('runtime journal and lifecycle', () => {
     const runtime = createRuntime(createTestRuntimeInput({modules: [module]}));
     await runtime.start();
     expect(cleanupCount).toBe(0);
-    const {releaseRuntimeForTest} = await import('../src/testing/releaseRuntimeForTest');
-    expect(releaseRuntimeForTest(runtime)).toBeGreaterThan(0);
+    const {releaseRuntimeForTestAsync} = await import('../src/testing/releaseRuntimeForTest');
+    expect(await releaseRuntimeForTestAsync(runtime)).toBeGreaterThan(0);
     expect(cleanupCount).toBe(1);
-    expect(releaseRuntimeForTest(runtime)).toBe(0);
+    expect(await releaseRuntimeForTestAsync(runtime)).toBe(0);
     expect(cleanupCount).toBe(1);
   });
 
@@ -440,9 +435,7 @@ describe('runtime journal and lifecycle', () => {
       moduleName: 'test.lifecycle.actor-subscription',
       kind: 'owner',
       dependencies: [{moduleName: 'kernel.base.runtime'}],
-      commands: [{name: command.commandName, visibility: command.visibility}],
       commandDefinitions: [command],
-      actors: [{name: actor.actorName}],
       actorDefinitions: [actor],
       stateSlices: [createTestSlice('test.lifecycle.actor-subscription.state')],
     };
@@ -450,8 +443,8 @@ describe('runtime journal and lifecycle', () => {
     await runtime.start();
     await runtime.dispatchCommand(command, {});
     expect(notifications).toBe(1);
-    const {releaseRuntimeForTest} = await import('../src/testing/releaseRuntimeForTest');
-    expect(releaseRuntimeForTest(runtime)).toBeGreaterThan(0);
+    const {releaseRuntimeForTestAsync} = await import('../src/testing/releaseRuntimeForTest');
+    expect(await releaseRuntimeForTestAsync(runtime)).toBeGreaterThan(0);
     runtime.getStore().dispatch({type: 'test/increment'});
     expect(notifications).toBe(1);
   });

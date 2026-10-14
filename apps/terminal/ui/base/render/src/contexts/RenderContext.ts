@@ -1,4 +1,4 @@
-import {createContext, useContext} from 'react';
+import {createContext} from 'react';
 import type {LoggerPort, NativeLoadingCapability} from '@catering-v2s/kernel-base-platform-ports';
 import type {UiCatalog} from '@catering-v2s/kernel-base-ui-state';
 import type {RenderSnapshotReader} from '../foundations/createRenderSnapshotReader';
@@ -35,15 +35,3 @@ export type RenderSubscriptionContextValue = Readonly<{
 
 export const RenderContext = createContext<RenderContextValue | undefined>(undefined);
 export const RenderSubscriptionContext = createContext<RenderSubscriptionContextValue | undefined>(undefined);
-
-export const useRenderContext = (): RenderContextValue => {
-  const value = useContext(RenderContext);
-  if (value === undefined) throw new Error('[ui-base-render] RenderProvider is required');
-  return value;
-};
-
-export const useRenderSubscriptionContext = (): RenderSubscriptionContextValue => {
-  const value = useContext(RenderSubscriptionContext);
-  if (value === undefined) throw new Error('[ui-base-render] RenderProvider is required');
-  return value;
-};

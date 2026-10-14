@@ -5,7 +5,7 @@ import {describe, expect, it, vi} from 'vitest';
 import {createRequestId} from '@catering-v2s/kernel-base-contracts';
 import {activateTerminalCommand} from '@catering-v2s/kernel-base-terminal-data-client';
 import {createSampleAssembly as createProductionSampleAssembly, createSurfaceForDisplayIndex} from '../src';
-import {startupReadyCommand} from '../src/application/module';
+import {startupReadyCommand} from '../src/declarations/commands';
 import {releaseRuntimeForTestAsync} from '@catering-v2s/kernel-base-runtime/testing';
 import {createTestPlatformPorts, type TestPlatformPorts} from './support';
 

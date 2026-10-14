@@ -22,6 +22,23 @@ export type ManagedDevDiagnosticSource = Readonly<{
   events: readonly Readonly<Record<string, string>>[];
 }>;
 
+export type ManagedTerminalServerConfigAddressOverrides = Readonly<{
+  servers: readonly Readonly<{
+    serverName: string;
+    addresses: readonly Readonly<{
+      addressName: string;
+      baseUrl: string;
+      timeoutMs?: number;
+    }>[];
+  }>[];
+}>;
+
+export function createManagedTerminalServerConfigAddressOverrides(input: Readonly<{
+  httpBaseUrl: string;
+  groupWorkspaceKey: string;
+  tdsAddresses: readonly Readonly<{addressName: string; baseUrl: string}>[];
+}>): ManagedTerminalServerConfigAddressOverrides;
+
 export function readManagedDevDiagnosticEvents(
   input: Readonly<{
     manifestPath?: string;

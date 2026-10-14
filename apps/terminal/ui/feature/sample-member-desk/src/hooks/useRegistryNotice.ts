@@ -3,7 +3,7 @@ import {
   memberRegistrationAbandonedCommand,
   memberRegistrationRetryRequestedCommand,
   type RegistryNoticeReason,
-} from '../features/commands/commands';
+} from '../declarations/commands';
 import {dispatchWithRequestId, useDispatchCommand} from '@catering-v2s/ui-base-render';
 import {registryNoticeMessage} from '../foundations/registryNoticeCopy';
 

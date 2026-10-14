@@ -25,7 +25,7 @@ import {createPersistenceFieldKey} from '../../../../kernel/base/state/src/found
 import {terminalUpdateRegistration} from '../../../../kernel/base/terminal-update/src/features/slices/terminalUpdate';
 import {terminalDataClientActions} from '../../../../../terminal/kernel/base/terminal-data-client/src/features/slices/terminalDataClient';
 import {createSampleAssembly, createSurfaceForDisplayIndex} from '../src';
-import {startupReadyCommand} from '../src/application/module';
+import {startupReadyCommand} from '../src/declarations/commands';
 import {createReadyTerminalNetworkAdapter, createTestPlatformPorts, type TestPlatformPorts} from './support';
 import {adminTestIds} from '@catering-v2s/ui-base-admin-shell';
 import {
@@ -73,6 +73,12 @@ const stageServerSpaces: TransportServerConfig = Object.freeze({
               baseUrl: 'https://stage-test.invalid/api/terminal/group-workspaces/workspace-stage-test',
               timeoutMs: 10_000,
             }),
+          ]),
+        }),
+        Object.freeze({
+          serverName: 'livekit',
+          addresses: Object.freeze([
+            Object.freeze({addressName: 'primary', baseUrl: 'ws://127.0.0.1:7880', timeoutMs: 10_000}),
           ]),
         }),
         Object.freeze({

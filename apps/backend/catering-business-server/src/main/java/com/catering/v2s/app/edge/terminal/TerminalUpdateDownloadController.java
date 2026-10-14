@@ -98,6 +98,7 @@ public final class TerminalUpdateDownloadController {
                         .addKeyValue("artifactRef", artifactRef).addKeyValue("byteSize", authorized.byteSize())
                         .addKeyValue("elapsedMs", (System.nanoTime() - startedAtNanos) / 1_000_000L)
                         .addKeyValue("errorType", failure.getClass().getSimpleName())
+                        .setCause(failure)
                         .log("Terminal update package stream failed");
                 throw failure;
             }

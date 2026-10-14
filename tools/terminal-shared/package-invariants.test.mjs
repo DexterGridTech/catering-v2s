@@ -9,6 +9,8 @@ import {
   readAllPackageInvariants,
   readPackageInvariant,
 } from './package-invariants.mjs';
+import {formatUnhandledDiagnostics} from './vitest-unhandled-diagnostics-reporter.mjs';
+import {summarizeVitestFailureReport} from './vitest-json-report.mjs';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const packageRoot = path.join(repoRoot, 'apps/terminal/kernel/base/contracts');
@@ -42,6 +44,32 @@ try {
   assert.throws(() => readPackageInvariant(fixturePackageRoot, packageName), /publicExports must not contain duplicates/);
   mutate(value => { value.closedUnionConsumerCount = -1; });
   assert.throws(() => readPackageInvariant(fixturePackageRoot, packageName), /closedUnionConsumerCount/);
+
+  const diagnostics = formatUnhandledDiagnostics([new Error('topology reconciliation rejected')], 'failed');
+  assert.match(diagnostics[1], /detail="topology reconciliation rejected"/);
+  const nonError = Object.assign(Object.create(null), {name: 'Error', message: 'dispatch result object'});
+  const nonErrorDiagnostics = formatUnhandledDiagnostics([nonError], 'failed');
+  assert.match(nonErrorDiagnostics[1], /detail=.*dispatch result object/);
+
+  const failureDetail = summarizeVitestFailureReport({
+    testResults: [
+      {
+        name: '/repo/sample.test.ts',
+        status: 'failed',
+        assertionResults: [
+          {
+            title: 'preserves runtime cause details',
+            fullName: 'suite preserves runtime cause details',
+            status: 'failed',
+            failureMessages: ['outer failure\nCaused by: exact token=debug-value\ninner detail: broken adapter'],
+          },
+        ],
+      },
+    ],
+  });
+  assert.match(failureDetail, /Caused by: exact token=debug-value/);
+  assert.match(failureDetail, /inner detail: broken adapter/);
+  assert.doesNotMatch(failureDetail, /REDACTED/);
 } finally {
   fs.rmSync(fixtureRoot, {recursive: true, force: true});
 }

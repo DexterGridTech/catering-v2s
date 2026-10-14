@@ -1,7 +1,5 @@
-import {useCallback, useState} from 'react';
 import type {
   TopologyAdminCapability,
-  TopologyAdminCommandResult,
   TopologyFacts,
   TopologyOperation,
   TopologyOperationEligibility,
@@ -22,12 +20,12 @@ import {
   PrimitiveText,
   testIdProps,
 } from '@catering-v2s/ui-base-primitives';
-import {InputScrollArea, useInputField} from '@catering-v2s/ui-base-input';
-import {useRenderContext, useUiStateSelector} from '@catering-v2s/ui-base-render';
+import {InputScrollArea} from '@catering-v2s/ui-base-input';
+import {useUiStateSelector} from '@catering-v2s/ui-base-render';
 import type {AdminSectionProps} from '../../types/adminSection';
 import {topologyFrameId, useReportAdminFrame} from '../../foundations/adminFrameRegistry';
 import {adminTestIds} from '../../foundations/adminTestIds';
-import {ADMIN_CONSOLE_FOCUS_SCOPE_ID} from '../../foundations/adminIdentity';
+import {useTopologyAdminForm} from '../../hooks/useTopologyAdminForm';
 
 const sectionStyle = Object.freeze({flex: 1, minHeight: 0, minWidth: 0});
 const topologyIds = adminTestIds.topology;
@@ -41,14 +39,7 @@ const topologyScrollContentPaddingBottom = 192;
 // long enough for the user to perceive it and for the busy control contract to
 // remain true. This does not delay the owner command itself or change its
 // result/feedback semantics.
-const topologyOperationMinimumBusyMs = 2_000;
-const topologyOperationPreDispatchBusyMs = 800;
 type TopologyPageAvailability = ReturnType<TopologyAdminCapability['getPageAvailability']>;
-
-const waitForTopologyBusyWindow = async (startedAt: number): Promise<void> => {
-  const remaining = topologyOperationMinimumBusyMs - (Date.now() - startedAt);
-  if (remaining > 0) await new Promise<void>(resolve => setTimeout(resolve, remaining));
-};
 
 const unavailableEligibility = (operation: TopologyOperation): TopologyOperationEligibility =>
   Object.freeze({
@@ -56,13 +47,6 @@ const unavailableEligibility = (operation: TopologyOperation): TopologyOperation
     allowed: false,
     reasonCode: 'TOPOLOGY_UNAVAILABLE' as const,
   });
-
-const resultMessage = (operation: TopologyOperation, result: TopologyAdminCommandResult): string =>
-  result.reasonCode === undefined
-    ? result.status !== 'completed'
-      ? `${operation === 'pair' ? '配对' : operation === 'unpair' ? '解绑' : '主机服务'}操作未完成，请重试`
-      : ''
-    : topologyReasonMessages[result.reasonCode] || '拓扑操作未完成，请重试';
 
 const roleLabel = (facts: TopologyFacts | undefined): string =>
   facts?.instanceMode === 'SLAVE' ? '副机' : facts?.instanceMode === 'MASTER' ? '主机' : '角色未提供';
@@ -96,84 +80,10 @@ const TopologySectionLaptopContent = ({
   context,
   pageAvailability,
 }: AdminSectionProps & Readonly<{readonly pageAvailability: TopologyPageAvailability}>) => {
-  const {logger} = useRenderContext();
   const capability = context.topologyCapability;
   const facts = useUiStateSelector<TopologyFacts | undefined>(() => capability?.getSnapshot(), areTopologyFactsEqual);
-  const [busy, setBusy] = useState<TopologyOperation | null>(null);
-  const [feedback, setFeedback] = useState<Readonly<{readonly tone: 'ok' | 'warn'; readonly message: string}> | null>(
-    null,
-  );
-  const [showTargetChoice, setShowTargetChoice] = useState(false);
-  const hostField = useInputField({
-    fieldId: topologyIds.host,
-    testID: topologyIds.host,
-    accessibilityLabel: '主机地址',
-    editable: busy === null,
-    keyboardKind: 'virtual',
-    layout: 'financial',
-    focusScopeId: ADMIN_CONSOLE_FOCUS_SCOPE_ID,
-  });
-  const host = hostField.inputProps.value ?? '';
-
-  const eligibility = useCallback(
-    (operation: TopologyOperation): TopologyOperationEligibility =>
-      capability?.getOperationEligibility(operation) ?? unavailableEligibility(operation),
-    [capability],
-  );
-
-  const run = useCallback(
-    async (operation: TopologyOperation, action: () => Promise<TopologyAdminCommandResult>): Promise<void> => {
-      if (busy !== null || !eligibility(operation).allowed) return;
-      const startedAt = Date.now();
-      setBusy(operation);
-      setFeedback(null);
-      logger.info({
-        category: 'admin.topology',
-        event: 'admin.topology-operation-started',
-        message: 'Topology admin operation started',
-        data: {operation},
-      });
-      try {
-        // Pair success can reset the runtime and unmount this admin layer before
-        // the owner promise settles. Give the busy frame one bounded render
-        // window before dispatch so IA-22 remains a real user-visible state.
-        await new Promise<void>(resolve => setTimeout(resolve, topologyOperationPreDispatchBusyMs));
-        const result = await action();
-        const message = resultMessage(operation, result);
-        const nextFeedback =
-          message.length === 0
-            ? {
-                tone: 'ok' as const,
-                message:
-                  operation === 'pair'
-                    ? '配对提交完成，等待状态同步'
-                    : operation === 'unpair'
-                      ? '解绑提交完成，等待状态同步'
-                      : '主机服务操作已提交',
-              }
-            : {tone: 'warn' as const, message};
-        setFeedback(nextFeedback);
-        logger.info({
-          category: 'admin.topology',
-          event: 'admin.topology-operation-completed',
-          message: 'Topology admin operation completed',
-          data: {operation, status: result.status, reasonCode: result.reasonCode ?? null},
-        });
-      } catch {
-        setFeedback({tone: 'warn', message: '拓扑操作未完成，请重试'});
-        logger.error({
-          category: 'admin.topology',
-          event: 'admin.topology-operation-failed',
-          message: 'Topology admin operation failed',
-          data: {operation},
-        });
-      } finally {
-        await waitForTopologyBusyWindow(startedAt);
-        setBusy(null);
-      }
-    },
-    [busy, eligibility, logger],
-  );
+  const {busy, feedback, setFeedback, showTargetChoice, setShowTargetChoice, hostField, host, eligibility, run} =
+    useTopologyAdminForm(capability);
 
   const pairEligibility = pageAvailability.available ? eligibility('pair') : unavailableEligibility('pair');
   const unpairEligibility = pageAvailability.available ? eligibility('unpair') : unavailableEligibility('unpair');

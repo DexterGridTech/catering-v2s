@@ -1,30 +1,17 @@
 import {describe, expect, it} from 'vitest';
 import {
   createTerminalApiClient,
+  buildTerminalHttpCommandRequest,
   isTerminalActivationResult,
-  isTerminalStoreActiveContractsRead,
   terminalOperationContracts,
 } from '../src/generated/terminalApi';
 import type {TerminalRequestExecutor, TerminalResponseMap} from '../src/generated/terminalApi';
 
 describe('generated terminal API contract', () => {
-  it('selects the two terminal-binding operations and all canonical TDP reads with their wire metadata', () => {
+  it('keeps only the two terminal-binding operations in the credential owner client', () => {
     expect(Object.keys(terminalOperationContracts)).toEqual([
       'activateTerminal',
       'cancelTerminalActivation',
-      'issueTerminalUpdateArtifactDownloadGrant',
-      'registerTerminalRemoteControl',
-      'reportTerminalRemoteControl',
-      'submitTerminalUpdateReport',
-      'terminalReadContract',
-      'terminalReadProjectUpdateRuleSnapshotPage',
-      'terminalReadServicePoint',
-      'terminalReadServicePointArea',
-      'terminalReadStoreActiveContracts',
-      'terminalReadStoreBasic',
-      'terminalReadStoreOrganizationPath',
-      'terminalReadStoreServicePointAreas',
-      'terminalReadStoreServicePoints',
     ]);
     expect(terminalOperationContracts.activateTerminal.authorizationMode).toBe('NONE');
     expect(terminalOperationContracts.cancelTerminalActivation.authorizationMode).toBe('TERMINAL_CREDENTIAL');
@@ -33,36 +20,21 @@ describe('generated terminal API contract', () => {
     expect(terminalOperationContracts.activateTerminal.safeRetryable).toBe(true);
     expect(terminalOperationContracts.activateTerminal.errorCodes).toContain('TERMINAL_BINDING_ALREADY_BOUND');
     expect(terminalOperationContracts.cancelTerminalActivation.idempotencyRequired).toBe(false);
-    expect(terminalOperationContracts.terminalReadStoreActiveContracts.authorizationMode).toBe('TERMINAL_CREDENTIAL');
   });
 
-  it('validates nested owner schemas and array items instead of accepting a wrapper or rejecting every array', () => {
-    const contract = {
-      id: '00000000-0000-4000-8000-000000000001',
-      groupWorkspaceKey: 'mixc',
-      project: {id: 'project-1', code: 'P1', name: 'Project'},
-      store: {id: 'store-1', code: 'S1', name: 'Store'},
-      tenant: {id: 'tenant-1', code: 'T1', name: 'Tenant'},
-      phaseName: 'Current',
-      contractNo: 'C-1',
-      effectiveFrom: '2026-01-01',
-      effectiveTo: null,
-      extensionValues: {},
-      extensionRuleRevision: 1,
-      status: 'VALID',
-      revision: 1,
-      source: 'MANUAL',
-      createdAt: 1,
-      updatedAt: 2,
-      items: [{code: 'BASE', name: 'Base'}],
-    } as const;
-    expect(isTerminalStoreActiveContractsRead({items: [contract], collectionUpdatedAtEpochMillis: 2})).toBe(true);
-    expect(
-      isTerminalStoreActiveContractsRead({
-        items: [{...contract, items: [{code: 3, name: 'Base'}]}],
-        collectionUpdatedAtEpochMillis: 2,
-      }),
-    ).toBe(false);
+  it('builds relative HTTP requests from the generated descriptor without adding credential headers', () => {
+    const request = buildTerminalHttpCommandRequest(terminalOperationContracts.cancelTerminalActivation, {
+      pathParameters: {terminalRef: 'terminal/one'},
+      queryParameters: {},
+      headers: {},
+    });
+    expect(request).toEqual({
+      method: 'POST',
+      pathAndQuery: '/terminals/terminal%2Fone/activation/cancel',
+      headers: {},
+      body: {kind: 'empty'},
+      safeRetryable: true,
+    });
   });
 
   it('provides typed request parts and classifies success, business rejection, and delivery failures', async () => {
@@ -105,7 +77,7 @@ describe('generated terminal API contract', () => {
       expect(descriptor.path).toBe('/terminals/{terminalRef}/activation/cancel');
       expect(descriptor.owner).toBe('terminal-binding');
       expect(descriptor.idempotencyRequired).toBe(false);
-      expect(request.headers.Authorization).toBe('Terminal 1.' + 'A'.repeat(43));
+      expect(request.headers).toEqual({});
       expect(request).not.toHaveProperty('body');
       return {
         kind: 'response',
@@ -124,7 +96,7 @@ describe('generated terminal API contract', () => {
     const rejected = await cancellation.cancelTerminalActivation({
       pathParameters: {terminalRef: '00000000-0000-4000-8000-000000000001'},
       queryParameters: {},
-      headers: {Authorization: 'Terminal 1.' + 'A'.repeat(43)},
+      headers: {},
     });
     expect(rejected).toMatchObject({kind: 'business-rejection', errorCode: 'TERMINAL_BINDING_CREDENTIAL_INVALID'});
 

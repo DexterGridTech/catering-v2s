@@ -130,7 +130,7 @@ describe('useAdminSections form-independence contract', () => {
     expect(readComponent('AdminLayerMobile.tsx')).toContain('AdminLoginMobile');
     expect(readComponent('PowerRoleConfirmationLaptop.tsx')).toContain('usePowerRoleConfirmation');
     expect(readComponent('PowerRoleConfirmationMobile.tsx')).toContain('usePowerRoleConfirmation');
-    expect(readFileSync(resolve(sourceRoot, '..', 'parts', 'parts.ts'), 'utf8')).toContain(
+    expect(readFileSync(resolve(sourceRoot, '..', 'declarations', 'parts.tsx'), 'utf8')).toContain(
       'rendererKey: `${spec.partKey}.${surfaceForm}`',
     );
     const publicIndex = readFileSync(resolve(sourceRoot, '..', 'index.ts'), 'utf8');

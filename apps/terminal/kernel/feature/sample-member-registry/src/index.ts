@@ -11,13 +11,11 @@ export {
   submitMemberCommand,
   withdrawMemberCommand,
   registerBranchConfirmedMemberCommand,
-} from './features/commands/commands';
+} from './declarations/commands';
 export {createSampleMemberRegistryModule} from './application/module';
-export {
-  selectMembers,
-  selectPendingMember,
-  selectHostPendingMember,
-  selectBranchPendingMember,
-} from './selectors/selectors';
-export {memberSliceName} from './features/slices/slice';
+export {selectMembers} from './selectors/selectMembers';
+export {selectPendingMember} from './selectors/selectPendingMember';
+export {selectHostPendingMember} from './selectors/selectHostPendingMember';
+export {selectBranchPendingMember} from './selectors/selectBranchPendingMember';
+export {memberSliceName} from './features/slices/memberRegistry';
 export type {Member, MemberRejectedPayload, MemberState, PendingMember} from './types/types';

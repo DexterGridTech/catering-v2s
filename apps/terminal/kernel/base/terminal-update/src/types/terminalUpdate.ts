@@ -5,7 +5,12 @@ import type {
   UpdateNetworkSnapshot,
 } from '@catering-v2s/kernel-base-platform-ports';
 import type {StateJsonObject, StateRoot} from '@catering-v2s/kernel-base-state';
-import type {TerminalUpdateReportPayload} from '@catering-v2s/kernel-base-terminal-data-client';
+import type {TerminalUpdateReportRequest} from '../generated/terminalApi';
+
+export type TerminalUpdateReportPayload = Readonly<{
+  readonly idempotencyKey: string;
+  readonly body: TerminalUpdateReportRequest;
+}>;
 
 export interface UpdateArtifactSource {
   readonly sourceRef: string;

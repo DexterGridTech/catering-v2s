@@ -1,9 +1,8 @@
-export {
-  createClearLayersActor,
-  createCloseLayerActor,
-  createOpenLayerActor,
-  createPruneHydratedContainersActor,
-  createPruneHydratedLayersActor,
-  createShowScreenActor,
-} from './contentActors';
-export {createClearUiVariablesActor, createSetUiVariablesActor} from './variableActors';
+export {createClearLayersActor} from './clearLayersActor';
+export {createCloseLayerActor} from './closeLayerActor';
+export {createOpenLayerActor} from './openLayerActor';
+export {createPruneHydratedContainersActor} from './pruneHydratedContainersActor';
+export {createPruneHydratedLayersActor} from './pruneHydratedLayersActor';
+export {createShowScreenActor} from './showScreenActor';
+export {createClearUiVariablesActor} from './clearUiVariablesActor';
+export {createSetUiVariablesActor} from './setUiVariablesActor';

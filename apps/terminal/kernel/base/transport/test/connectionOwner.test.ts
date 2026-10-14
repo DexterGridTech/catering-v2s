@@ -1,5 +1,9 @@
 import {describe, expect, it, vi} from 'vitest';
-import type {TransportConnectionEvent, TransportManagedConnection, TransportNetworkAdapter} from '../src/index';
+import type {
+  TransportConnectionEvent,
+  TransportManagedConnection,
+  TransportNetworkAdapter,
+} from '@catering-v2s/kernel-base-platform-ports';
 import {createTransportConnectionOwner, transportReconnectDelayMs} from '../src/index';
 
 class ControlledTimers {

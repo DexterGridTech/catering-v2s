@@ -27,12 +27,17 @@ export const automationSurfaceForm = (() => {
 export const nativeLoadingCapability = androidPlatform.nativeLoadingCapability;
 export const nativeLoadingLogger = androidPlatform.platformPorts.logger;
 const serverSpaces = () =>
-  resolveManagedServerSpaces(packageJson.serverSpaces, {
-    automationBuild: process.env.EXPO_PUBLIC_TER_AUTOMATION_BUILD,
-    businessBaseUrl: process.env.EXPO_PUBLIC_TER_MANAGED_GROUP_WORKSPACE_BASE_URL,
-    tdsEntryOneUrl: process.env.EXPO_PUBLIC_TER_MANAGED_TDS_ENTRY_ONE_WS_URL,
-    tdsEntryTwoUrl: process.env.EXPO_PUBLIC_TER_MANAGED_TDS_ENTRY_TWO_WS_URL,
-  });
+  resolveManagedServerSpaces(
+    packageJson.serverSpaces,
+    process.env.EXPO_PUBLIC_TER_SERVER_CONFIG_ENVIRONMENT_JSON,
+  );
+
+if (
+  process.env.EXPO_PUBLIC_TER_MANAGED_DEV_CONFIG_REQUIRED === 'true' &&
+  process.env.EXPO_PUBLIC_TER_SERVER_CONFIG_ENVIRONMENT_JSON === undefined
+) {
+  throw new Error('TERMINAL_AUTOMATION_SERVER_CONFIG_ENVIRONMENT_REQUIRED');
+}
 
 export const createSampleWallpaperTerminalAssembly = (
   input: Readonly<{

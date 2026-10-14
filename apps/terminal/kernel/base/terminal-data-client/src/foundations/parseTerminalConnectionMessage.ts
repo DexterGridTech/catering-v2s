@@ -1,4 +1,6 @@
-const MAX_MESSAGE_BYTES = 65_536;
+import {terminalConnectionMaxCompleteDecompressedMessageBytes} from '../generated/terminalConnectionProtocol';
+
+const MAX_MESSAGE_BYTES = terminalConnectionMaxCompleteDecompressedMessageBytes;
 
 const utf8ByteLength = (value: string): number => {
   let length = 0;

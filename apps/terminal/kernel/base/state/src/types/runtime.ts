@@ -3,6 +3,12 @@ import type {EnvironmentMode, LoggerPort, StateStoragePort} from '@catering-v2s/
 import type {PersistenceHealth, PersistenceHealthListener, PersistenceOperationResult} from './persistence';
 import type {StateRuntimeSliceRegistration} from './slice';
 import type {SyncStateDiff} from './sync';
+import type {SyncIntent} from './sync';
+
+export type StateSyncQualification = Readonly<{
+  readonly name: string;
+  readonly syncIntent: Exclude<SyncIntent, 'isolated'>;
+}>;
 
 export interface StateResetActor {
   handleResetCommand(): Promise<PersistenceOperationResult>;
@@ -51,9 +57,11 @@ export interface StateRoot {
 }
 
 export interface StateRuntime {
+  dispose(): Promise<void>;
   getStore(): EnhancedStore<StateRoot>;
   getState(): StateRoot;
   getSlices(): readonly StateRuntimeSliceRegistration[];
+  getStateSyncQualifications(): readonly StateSyncQualification[];
   getPersistenceHealth(): PersistenceHealth;
   subscribePersistenceHealth(listener: PersistenceHealthListener): () => void;
   flushPersistence(): Promise<PersistenceOperationResult>;

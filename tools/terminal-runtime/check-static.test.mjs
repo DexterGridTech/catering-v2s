@@ -102,20 +102,24 @@ try {
   assertVector(cleanReport);
 
   withMutation(
-    'src/application/createInternalRuntimeModule.ts',
-    source => source.replace("visibility: 'public' as const", "visibility: 'unknown' as const"),
+    'src/declarations/commands.ts',
+    source =>
+      source.replace(
+        "name: 'instance-mode-changed',\n  visibility: 'internal'",
+        "name: 'instance-mode-changed',\n  visibility: 'public'",
+      ),
     report => {
       assertVector(report, ['command-mount-shape']);
-      assert.match(rule(report, 'command-mount-shape').error, /visibility must be internal or public/);
+      assert.match(rule(report, 'command-mount-shape').error, /internal command declarations exact member mismatch/);
     },
   );
 
   withMutation(
     'src/application/createInternalRuntimeModule.ts',
-    source => source.replace("visibility: 'public' as const", "visibility: 'internal' as const"),
+    source => source.replace('      cleanupRequestLedgerCommand,\n', ''),
     report => {
       assertVector(report, ['command-mount-shape']);
-      assert.match(rule(report, 'command-mount-shape').error, /internal command \d+\.name must be a string literal/);
+      assert.match(rule(report, 'command-mount-shape').error, /missing=\["kernel\.base\.runtime\.cleanup-request-ledger"\]/);
     },
   );
 
@@ -153,6 +157,19 @@ try {
     source => {
       const mutated = source.replace('  registerAsyncResource: (cleanup: () => Promise<void>) => () => void;\n', '');
       assert.notEqual(mutated, source, 'registerAsyncResource context mutation must apply');
+      return mutated;
+    },
+    report => {
+      assertVector(report, ['context-exact-set']);
+      assert.match(rule(report, 'context-exact-set').error, /RuntimeModuleContext/);
+    },
+  );
+
+  withMutation(
+    'src/types/module.ts',
+    source => {
+      const mutated = source.replace('  getStateSyncQualifications: () => readonly StateSyncQualification[];\n', '');
+      assert.notEqual(mutated, source, 'getStateSyncQualifications context mutation must apply');
       return mutated;
     },
     report => {
@@ -286,11 +303,10 @@ try {
 
   withMutation(
     'src/application/createInternalRuntimeModule.ts',
-    source =>
-      source.replace("      {name: `${moduleName}.cleanup-request-ledger`, visibility: 'internal' as const},\n", ''),
+    source => source.replace('    commandDefinitions: [', "    commands: [],\n    commandDefinitions: ["),
     report => {
       assertVector(report, ['command-mount-shape']);
-      assert.match(rule(report, 'command-mount-shape').error, /internal command declarations/);
+      assert.match(rule(report, 'command-mount-shape').error, /must not duplicate concrete definitions/);
     },
   );
 

@@ -1,7 +1,7 @@
 import {useInputField} from '@catering-v2s/ui-base-input';
 import {useUiVariable} from '@catering-v2s/ui-base-render';
 import {PrimitiveInput, PrimitiveLabel} from '@catering-v2s/ui-base-primitives';
-import {operatorNameVariable} from '../features/variables/variables';
+import {operatorNameVariable} from '../declarations/variables';
 import {operatorNameFieldId} from '../hooks/useStaffLogin';
 import {sampleStaffAuthTestIds} from './sampleStaffAuthTestIds';
 

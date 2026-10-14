@@ -1,11 +1,6 @@
 {
   "platforms": ["android"],
   "android": {
-    "modules": [
-      "com.catering.v2s.terminal.application.base.android.TerminalNativeLoadingModule",
-      "com.catering.v2s.terminal.application.base.android.TerminalTopologyHostModule",
-      "com.catering.v2s.terminal.application.base.android.TerminalAppControlModule",
-      "com.catering.v2s.terminal.application.base.android.TerminalNetworkModule"
-    ]
+    "modules": ["com.catering.v2s.terminal.application.base.android.TerminalNativeLoadingModule"]
   }
 }

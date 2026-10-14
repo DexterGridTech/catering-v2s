@@ -60,7 +60,7 @@ try {
   assertVector(runStateStaticChecks({statePackageRoot: fixtureRoot}));
 
   withMutation(
-    'src/foundations/createStateStore.ts',
+    'src/application/createStateStore.ts',
     source => "import {createSlice} from '@reduxjs/toolkit';\n" + source.replace(
       'export const createStateStore = (',
       "void createSlice({name: 'bad', initialState: {}, reducers: {}});\n\nexport const createStateStore = (",

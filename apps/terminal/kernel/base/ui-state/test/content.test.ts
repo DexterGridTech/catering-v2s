@@ -30,7 +30,7 @@ import {
   type UiCatalog,
 } from '../src/index';
 import {createDisplayPlatformPorts, FakeDevicePort} from '../../display-context/test/testSupport';
-import {releaseRuntimeForTest, runtimeStateSyncForTest} from '@catering-v2s/kernel-base-runtime/testing';
+import {releaseRuntimeForTestAsync, runtimeStateSyncForTest} from '@catering-v2s/kernel-base-runtime/testing';
 import {createFakeStorage} from '../../state/test/testSupport';
 import {parseLayerEntries, readContentState} from '../src/foundations/workspaceSlices';
 
@@ -192,8 +192,8 @@ describe('ui-state workspace content commands', () => {
     expect(isWorkspaceOwnedByInstanceMode({instanceMode: 'SLAVE', workspace: 'MAIN'})).toBe(false);
   });
 
-  afterEach(() => {
-    for (const runtime of runtimes.splice(0)) releaseRuntimeForTest(runtime);
+  afterEach(async () => {
+    for (const runtime of runtimes.splice(0)) await releaseRuntimeForTestAsync(runtime);
   });
 
   it('routes explicit displayMode independently from routeContext displayMode', async () => {
@@ -424,7 +424,7 @@ describe('ui-state workspace content commands', () => {
     expect(selectLayers(first.runtime.getState(), 'PRIMARY')).toHaveLength(1);
     const expectedLayers = selectLayers(first.runtime.getState(), 'PRIMARY');
 
-    releaseRuntimeForTest(first.runtime);
+    await releaseRuntimeForTestAsync(first.runtime);
     const second = await createFixture({
       plainStorage,
       protectedStorage,
@@ -457,7 +457,7 @@ describe('ui-state workspace content commands', () => {
       dispatchOptions('PRIMARY'),
     );
     expect(selectLayers(first.runtime.getState(), 'PRIMARY')[0]?.persistence).toBe('ephemeral');
-    releaseRuntimeForTest(first.runtime);
+    await releaseRuntimeForTestAsync(first.runtime);
 
     const second = await createFixture({plainStorage, protectedStorage, persistenceKey});
     runtimes.push(second.runtime);
@@ -547,7 +547,7 @@ describe('ui-state workspace content commands', () => {
     const expectedBranchPrimary = selectLayers(first.runtime.getState(), 'PRIMARY');
     const expectedBranchSecondary = selectLayers(first.runtime.getState(), 'SECONDARY');
 
-    releaseRuntimeForTest(first.runtime);
+    await releaseRuntimeForTestAsync(first.runtime);
     const second = await createFixture({plainStorage, protectedStorage, persistenceKey});
     runtimes.push(second.runtime);
     await second.runtime.dispatchCommand(
@@ -586,7 +586,7 @@ describe('ui-state workspace content commands', () => {
       },
       dispatchOptions('PRIMARY'),
     );
-    releaseRuntimeForTest(first.runtime);
+    await releaseRuntimeForTestAsync(first.runtime);
 
     const second = await createFixture({plainStorage, protectedStorage, persistenceKey});
     runtimes.push(second.runtime);
@@ -788,7 +788,7 @@ describe('ui-state workspace content commands', () => {
       },
       dispatchOptions('SECONDARY'),
     );
-    releaseRuntimeForTest(first.runtime);
+    await releaseRuntimeForTestAsync(first.runtime);
 
     const withoutStale = createTestLayerCatalog([
       'transient-layer',
@@ -912,7 +912,7 @@ describe('ui-state workspace content commands', () => {
       dispatchOptions('PRIMARY'),
     );
     const expected = selectLayers(first.runtime.getState(), 'PRIMARY');
-    releaseRuntimeForTest(first.runtime);
+    await releaseRuntimeForTestAsync(first.runtime);
 
     const mobileOnlyCatalog = createUiCatalog([
       {
@@ -924,7 +924,7 @@ describe('ui-state workspace content commands', () => {
     runtimes.push(second.runtime);
     expect(selectLayers(second.runtime.getState(), 'PRIMARY')).toEqual(expected);
     const writesAfterSecondStart = plainStorage.calls.write.length + protectedStorage.calls.write.length;
-    releaseRuntimeForTest(second.runtime);
+    await releaseRuntimeForTestAsync(second.runtime);
     const third = await createFixture({plainStorage, protectedStorage, persistenceKey, catalog: mobileOnlyCatalog});
     runtimes.push(third.runtime);
     expect(selectLayers(third.runtime.getState(), 'PRIMARY')).toEqual(expected);

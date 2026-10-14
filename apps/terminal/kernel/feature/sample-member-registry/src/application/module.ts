@@ -1,6 +1,10 @@
 import {createRequestId} from '@catering-v2s/kernel-base-contracts';
-import {selectRuntimeInstanceMode} from '@catering-v2s/kernel-base-runtime';
-import type {RuntimeModule, RuntimeModuleContext} from '@catering-v2s/kernel-base-runtime';
+import {
+  createRuntimeModule,
+  selectRuntimeInstanceMode,
+  type RuntimeModule,
+  type RuntimeModuleContext,
+} from '@catering-v2s/kernel-base-runtime';
 import type {StateRoot} from '@catering-v2s/kernel-base-state';
 import {runtimeModuleDependencyNames} from '../dependencies';
 import {
@@ -13,22 +17,17 @@ import {
   memberWithdrawnCommand,
   withdrawMemberCommand,
   registerBranchConfirmedMemberCommand,
-} from '../features/commands/commands';
-import {
-  createConfirmMemberActor,
-  createRejectMemberActor,
-  createRegisterBranchConfirmedMemberActor,
-  createSubmitMemberActor,
-} from '../features/actors/actors';
-import {memberErrorDefinitions} from '../foundations/errors';
+} from '../declarations/commands';
+import {createConfirmMemberActor} from '../features/actors/confirmMemberActor';
+import {createRejectMemberActor} from '../features/actors/rejectMemberActor';
+import {createRegisterBranchConfirmedMemberActor} from '../features/actors/registerBranchConfirmedMemberActor';
+import {createSubmitMemberActor} from '../features/actors/submitMemberActor';
 import {moduleKind, moduleName} from '../moduleName';
-import {memberStateRegistration} from '../features/slices/slice';
-import {
-  selectBranchPendingMember,
-  selectHostPendingMember,
-  selectMembers,
-  selectPendingMember,
-} from '../selectors/selectors';
+import {memberStateRegistration} from '../features/slices/memberRegistry';
+import {selectBranchPendingMember} from '../selectors/selectBranchPendingMember';
+import {selectHostPendingMember} from '../selectors/selectHostPendingMember';
+import {selectMembers} from '../selectors/selectMembers';
+import {selectPendingMember} from '../selectors/selectPendingMember';
 
 const commands = [
   submitMemberCommand,
@@ -63,17 +62,13 @@ export const createSampleMemberRegistryModule = (
     createRejectMemberActor(input.canMutate),
     createRegisterBranchConfirmedMemberActor(input.canMutate),
   ] as const;
-  return Object.freeze({
+  return createRuntimeModule({
     moduleName,
     kind: moduleKind,
     dependencies: runtimeModuleDependencyNames.map(name => ({moduleName: name})),
-    errorDefinitions: memberErrorDefinitions,
-    commands: commands.map(command => ({name: command.commandName, visibility: command.visibility})),
     commandDefinitions: commands,
     selectorDefinitions: [selectMembers, selectPendingMember, selectHostPendingMember, selectBranchPendingMember],
-    actors: actors.map(actor => ({name: actor.actorName})),
     actorDefinitions: actors,
-    slices: [{name: memberStateRegistration.name, persistIntent: memberStateRegistration.persistIntent}],
     stateSlices: [memberStateRegistration],
     install: (context: RuntimeModuleContext) => {
       active = true;

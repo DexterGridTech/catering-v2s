@@ -1,6 +1,6 @@
 import {useCallback} from 'react';
 import {selectPendingMember, submitMemberCommand} from '@catering-v2s/kernel-feature-sample-member-registry';
-import {deskSystemFailureObservedCommand, memberFormCancelledCommand} from '../features/commands/commands';
+import {deskSystemFailureObservedCommand, memberFormCancelledCommand} from '../declarations/commands';
 import {
   dispatchWithRequestId,
   useDispatchCommand,

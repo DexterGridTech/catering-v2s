@@ -1,6 +1,6 @@
 import {createRequestId} from '@catering-v2s/kernel-base-contracts';
 import {createRuntime} from '../src';
-import {helloWorldCommand} from '../src/features/commands/helloWorld';
+import {helloWorldCommand} from '../src/declarations/commands';
 import {createTestRuntimeInput} from './testSupport';
 import {describe, expect, it} from 'vitest';
 

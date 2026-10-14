@@ -1,12 +1,13 @@
 # `kernel.base.terminal-update`
 
-| 项目 | 内容 |
-|---|---|
-| workspace 包 | `@catering-v2s/kernel-base-terminal-update` |
-| 类型 | `owner`，拥有 terminal update 的任务状态与 command |
-| 层 | `apps/terminal/kernel/base` |
-| 依赖 | `kernel.base.contracts`、`kernel.base.platform-ports`、`kernel.base.runtime`、`kernel.base.state` |
-| 使用方 | `ui.integration.sample-console`、`ui.integration.sample-wallpaper-console` 的 composition |
+| 项目             | 内容                                                                                                                                  |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| workspace 包     | `@catering-v2s/kernel-base-terminal-update`                                                                                           |
+| 类型             | `owner`，拥有 terminal update 的任务状态与 command                                                                                    |
+| 层               | `apps/terminal/kernel/base`                                                                                                           |
+| workspace 依赖   | `kernel.base.contracts`、`kernel.base.platform-ports`、`kernel.base.runtime`、`kernel.base.state`、`kernel.base.terminal-data-client` |
+| Runtime 模块依赖 | `kernel.base.runtime`、`kernel.base.terminal-data-client`                                                                             |
+| 使用方           | `ui.integration.sample-console`、`ui.integration.sample-wallpaper-console` 的 composition                                             |
 
 ## 定位
 
@@ -16,17 +17,40 @@
 
 当逻辑需要复核、固定或推进一个终端更新任务，并且结果属于更新任务状态时，放在本 owner；项目、大区、集团资料与项目规则由 `kernel.feature.project-basic` 选择并通过 `requestTerminalUpdateCommand` 提交；当逻辑负责 Android 安装、文件加载或宿主生命周期时，放在 adapter/application；当逻辑只呈现状态或发起用户动作时，放在 UI/integration。command 不接受任意 artifact 路径。
 
-本包持久化 `currentTask`、`recentStatus` 与 `failedArtifactIds`，使用 owner-only persistence、slice retain 与 isolated sync。它不保存第二份 APK/HOT 文件账本，也不伪造 Web 上的原生事实。
+本包持久化 `currentTask`、`recentStatus` 与 `failedArtifactIds`，使用 owner-only persistence、slice retain 与 isolated sync。它通过依赖包 TDC 的公开 HTTP command/context selector 访问 CBS；本包生成的 HTTP operation client 保持内部使用，不由 TDC 集中暴露。它不保存第二份 APK/HOT 文件账本，也不伪造 Web 上的原生事实。
 
 ## 结构
 
 ```text
 src/
   application/createTerminalUpdateModule.ts  注册 owner、注入 port/provider，并在 initialize 时重协调
-  features/commands/commands.ts              声明 public command 与内部重协调 command
-  features/actors/terminalUpdateActor.ts     串行固定目标、持久化并编排更新端口
+  declarations/commands.ts                    声明 public command 与内部重协调 command
+  features/actors/terminalUpdateActor.ts     唯一 actor；持有编排 session 并组合各组 command handler
+  features/actors/shared/installUpdateAdmissionCommands.ts
+                                               注册更新请求，复核当前候选并固定任务
+  features/actors/shared/installUpdateReportCommands.ts
+                                               注册报告上下文清理和 TDC heartbeat 发送
+  features/actors/shared/installUpdateBootCommands.ts
+                                               注册安装提示、PRIMARY-ready 与 boot 确认
+  features/actors/shared/installUpdateArtifactCommands.ts
+                                               注册重协调、安装确认、延迟与 deadline command
+  features/actors/shared/createTerminalUpdateReportOwner.ts
+                                               同一 owner slice 的报告序号、待发送报告、receipt 与回滚
+  features/actors/shared/createTerminalUpdateArtifactExecutor.ts
+                                               同一 actor session 的工件准备、安装、版本读回和失败记录
+  features/actors/shared/createTerminalUpdateExecution.ts
+                                               同一 Runtime session 的提交、报告发送和呈现状态
+  foundations/updateDecisions.ts             纯版本比较、候选工件和报告状态投影
   features/slices/terminalUpdate.ts          唯一任务状态 slice 与持久化描述
-  selectors/selectors.ts                     对外读取实际版本、当前任务和最近状态
+  foundations/readTerminalUpdateState.ts     selectors 共用的纯状态读取校验
+  selectors/selectTerminalUpdateActualVersions.ts
+                                               读取设备实际版本
+  selectors/selectTerminalUpdateTask.ts       读取当前固定更新任务
+  selectors/selectTerminalUpdateRecentStatus.ts
+                                               读取最近更新状态
+  selectors/selectTerminalUpdateInvitation.ts 读取当前安装提示
+  selectors/selectTerminalUpdateReportDelivery.ts
+                                               读取报告发送状态
   types/terminalUpdate.ts                    目标、任务、状态与 provider 契约
   dependencies.ts、moduleName.ts             包依赖和 Runtime 模块身份
   index.ts                                   显式公共导出
@@ -45,11 +69,9 @@ import {
   selectTerminalUpdateTask,
 } from '@catering-v2s/kernel-base-terminal-update';
 
-const result = await runtime.dispatchCommand(
-  requestTerminalUpdateCommand,
-  createRequestTerminalUpdatePayload(target),
-  {requestId},
-);
+const result = await runtime.dispatchCommand(requestTerminalUpdateCommand, createRequestTerminalUpdatePayload(target), {
+  requestId,
+});
 const task = selectTerminalUpdateTask(runtime.getState());
 ```
 

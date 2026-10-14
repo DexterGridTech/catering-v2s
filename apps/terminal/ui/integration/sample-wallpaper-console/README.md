@@ -18,10 +18,12 @@
   都放置同一个 `WallpaperBackground`。
 - `src/application/terminalSurfaces.ts`：从本包 `package.json` 读取并校验逻辑画布；laptop 为
   `PRIMARY 1280×720`、`SECONDARY 1280×720`，mobile 只有 `PRIMARY 360×640`。
-- `src/features/actors/actors.ts`：唯一 placement owner。登录或恢复认证时显示主屏 picker、
+- `src/features/actors/ownerStageRouteActor.ts`：唯一 placement/stage owner。登录或恢复认证时显示主屏 picker、
   副屏 welcome；匿名或登出时显示副屏 waiting。副屏资格读取 topology 的公开事实（本机双屏或
   MASTER 已配对副机），不把物理屏 helper 当作跨机资格。
-- `src/parts/parts.ts` 与 `src/components/laptop/Waiting.tsx`、`src/components/laptop/Welcome.tsx`：
+- `src/features/actors/wallpaperConsoleExitActor.ts`：处理从 picker 离开后由本 integration 拥有的导航。
+- `src/selectors/`：分别定义业务互锁、店员登录资格、业务 mutation 资格和当前路由阶段；共享投影与激活判定只在 `selectors/shared/wallpaperConsoleState.ts` 实现一次。
+- `src/declarations/parts.ts` 与 `src/components/laptop/Waiting.tsx`、`src/components/laptop/Welcome.tsx`：
   副屏 waiting/welcome 两个透明、laptop-only 的 section part；不创建 mobile 对应实现。
 - `theme/`：本应用的 19 个语义 token；action 使用红色，error 仍是错误语义。
 - `app.json` 与 `assets/favicon.png`：仅供本包 Expo Web 预览消费的浏览器标题图标配置；不声明
@@ -31,8 +33,8 @@
 公共导出包括 `createSampleWallpaperConsoleAssembly`、`createSurfaceForDisplayIndex`、
 `WallpaperConsoleAssembly`、`createSampleWallpaperConsoleModule`、`parts`、
 `waitingPart`、`welcomePart`、`terminalSurfaces` 及带 package error-prefix 的
-`readTerminalSurfaces`、`getSurfaceDeclarations`、`surfaceFormForOrientation` adapter，另有
-module/dependency 元数据。具体导出集合由 `terminal-invariants.json` 与
+`readTerminalSurfaces`、`getSurfaceDeclarations`、`surfaceFormForOrientation` adapter，四个
+integration owner selector，以及 module/dependency 元数据。具体导出集合由 `terminal-invariants.json` 与
 `test/publicSurface.test.ts` 共同锁定。
 
 完整根导出集合（含类型）为：
@@ -41,6 +43,8 @@ SurfaceOrientation、SurfaceSize、TerminalSurfaces、WallpaperConsoleAssembly�
 createSampleWallpaperConsoleAssembly、createSampleWallpaperConsoleModule、
 createSurfaceForDisplayIndex、dependencyModuleNames、devDependencyModuleNames、
 getSurfaceDeclarations、moduleKind、moduleName、parts、readTerminalSurfaces、
+selectSampleWallpaperConsoleBusinessInterlockActive、selectSampleWallpaperConsoleBusinessMutationAllowed、
+selectSampleWallpaperConsoleRouteStage、selectSampleWallpaperConsoleStaffLoginAllowed、
 startupReadyCommand、surfaceFormForOrientation、terminalSurfaces、waitingPart、welcomePart。
 包主入口 . → ./src/index.ts；导出映射另提供 @catering-v2s/ui-integration-sample-wallpaper-console/theme/global.css →
 ./theme/global.css，供 Android 宿主与 Metro 读取本包主题。该集合与 terminal-invariants.json
@@ -51,11 +55,14 @@ startupReadyCommand、surfaceFormForOrientation、terminalSurfaces、waitingPart
 ```ts
 const assembly = await createSampleWallpaperConsoleAssembly({
   platformPorts,
+  nativeLoadingCapability,
   surfaceForm: 'laptop',
 })
 const primary = createSurfaceForDisplayIndex(assembly, 0)
 const secondary = createSurfaceForDisplayIndex(assembly, 1)
 ```
+
+`nativeLoadingCapability` 是必填项，由应用宿主从 Android platform binding 提供；本包不在组件内部创建原生能力。
 
 本包 `package.json.serverSpaces` 是 Expo Web integration 默认配置；未显式传入 `serverSpaces` 时，
 `createSampleWallpaperConsoleAssembly` 将其作为不可变 defaults 注入 `server-config`。Android application
@@ -89,7 +96,7 @@ admin console 的 laptop/mobile 版式与导航语义由 `ui.base.admin-shell` �
   恢复与未知 part 丢弃遵循对应 owner 的契约。
 - mobile 没有 SECONDARY；副屏 waiting/welcome 只对 laptop 的 SECONDARY catalog 可用。
 
-## 迭代指引
+## 在这个包上迭代时
 
 添加壁纸时，先在 picker 的 `WallpaperId`、静态 `assetsById`、资产类型声明、直接 import
 oracle、label/testID 和 focused/red test 中同步；不要在本包再建图片表。添加 section 时，
@@ -102,3 +109,9 @@ primitives、既有 LayerStack/Input 管线和 command/actor 写路径，不得�
 新增背景 stack、图片 seam、overlay 或隐藏的第二打开路径。
 
 虚拟键盘复用 shared primitives 的 `keyboard-*` 语义 token；键面与 dock 使用跨 integration 的中性色，focus 边框由本应用 theme 提供，避免键盘 renderer 持有 sample 身份色。
+
+```sh
+yarn workspace @catering-v2s/ui-integration-sample-wallpaper-console typecheck
+yarn workspace @catering-v2s/ui-integration-sample-wallpaper-console test
+yarn workspace @catering-v2s/ui-integration-sample-wallpaper-console lint
+```

@@ -9,12 +9,10 @@ import {
   terminalClientStatusProjectionSliceName,
 } from '@catering-v2s/kernel-base-terminal-data-client';
 import {topologySliceName} from '@catering-v2s/kernel-base-topology';
-import {
-  selectSampleWallpaperConsoleBusinessInterlockActive,
-  selectSampleWallpaperConsoleBusinessMutationAllowed,
-  selectSampleWallpaperConsoleRouteStage,
-  selectSampleWallpaperConsoleStaffLoginAllowed,
-} from '../src/application/module';
+import {selectSampleWallpaperConsoleBusinessInterlockActive} from '../src/selectors/selectSampleWallpaperConsoleBusinessInterlockActive';
+import {selectSampleWallpaperConsoleBusinessMutationAllowed} from '../src/selectors/selectSampleWallpaperConsoleBusinessMutationAllowed';
+import {selectSampleWallpaperConsoleRouteStage} from '../src/selectors/selectSampleWallpaperConsoleRouteStage';
+import {selectSampleWallpaperConsoleStaffLoginAllowed} from '../src/selectors/selectSampleWallpaperConsoleStaffLoginAllowed';
 
 const requiredSlices = [
   contentStateSliceName('MAIN'),

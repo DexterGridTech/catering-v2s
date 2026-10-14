@@ -9,10 +9,11 @@ import {spawnSync} from 'node:child_process';
 import {existsSync, mkdirSync, readFileSync, statSync, writeFileSync} from 'node:fs';
 import path from 'node:path';
 import {resolveTrustedRemoteHost} from './r5-remote-host-trust.mjs';
+import {seedEnvironmentKind} from './managed-seed-target.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const runtime = path.resolve(process.env.V2S_RUNTIME_DIR ?? path.join(root, '.runtime/r5'));
-const runtimeRoot = path.resolve(root, '.runtime/r5');
+const managedRuntimeRoots = [path.resolve(root, '.runtime/r5'), path.resolve(root, '.runtime/uat')];
 const environmentScript = path.join(root, 'scripts/dev/r5-dev-environment.mjs');
 const ALLOWLISTED_FIXTURE_KEYS = new Set(['inv-expired']);
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -38,7 +39,7 @@ function readCredentials(file) {
 }
 function withinRuntime(file) {
   const resolved = path.resolve(file);
-  return resolved === runtimeRoot || resolved.startsWith(`${runtimeRoot}${path.sep}`);
+  return managedRuntimeRoots.some(base => resolved === base || resolved.startsWith(`${base}${path.sep}`));
 }
 function command(binary, args, options = {}) {
   const result = spawnSync(binary, args, {cwd: root, encoding: 'utf8', ...options});
@@ -46,20 +47,36 @@ function command(binary, args, options = {}) {
   return result.stdout;
 }
 function loadManagedRuntime() {
+  if (!managedRuntimeRoots.includes(runtime)) fail('TERMINAL_FIXTURE_RUNTIME_ROOT_INVALID');
   const manifestPath = path.join(runtime, 'run-manifest.json');
   if (!withinRuntime(manifestPath) || !existsSync(manifestPath)) fail('TERMINAL_FIXTURE_MANIFEST_REQUIRED');
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
-  if (manifest.kind !== 'r5-dev-run-manifest' || manifest.freshDatabase !== true) fail('TERMINAL_FIXTURE_FRESH_MANAGED_DEV_REQUIRED');
+  const kind = seedEnvironmentKind(manifest);
+  if (manifest.freshDatabase !== true || manifest.profile !== 'r5-full') fail('TERMINAL_FIXTURE_FRESH_MANAGED_ENVIRONMENT_REQUIRED');
+  if (kind === 'dev' && manifest.kind !== 'r5-dev-run-manifest') fail('TERMINAL_FIXTURE_FRESH_MANAGED_DEV_REQUIRED');
+  if (kind === 'uat' && (manifest.status !== 'READY' || manifest.seedAllowed !== true)) fail('TERMINAL_FIXTURE_UAT_NOT_READY');
   if (!withinRuntime(required(manifest.credentialsFile, 'TERMINAL_FIXTURE_CREDENTIALS_PATH_REQUIRED'))) fail('TERMINAL_FIXTURE_CREDENTIALS_PATH_INVALID');
-  return {manifest, credentials: readCredentials(manifest.credentialsFile)};
+  return {manifest, kind, credentials: readCredentials(manifest.credentialsFile)};
 }
 
-export function validateTerminalEligibility({environment, expectedDatabase, namespace}) {
-  if (environment?.V2S_DEV_PROFILE !== 'r5-full') fail('TERMINAL_FIXTURE_PROFILE_REQUIRED');
-  if (environment?.V2S_RUNTIME_ENVIRONMENT !== 'non-production') fail('TERMINAL_FIXTURE_NON_PRODUCTION_REQUIRED');
-  if (!/^v2s-dev-[a-z0-9-]{3,32}$/.test(namespace ?? '')) fail('TERMINAL_FIXTURE_NAMESPACE_INVALID');
-  if (!/^catering_v2s_dev_[a-z0-9_]{3,32}$/.test(expectedDatabase ?? '')) fail('TERMINAL_FIXTURE_DATABASE_ALLOWLIST_INVALID');
-  try { resolveTrustedRemoteHost(environment); } catch { fail('TERMINAL_FIXTURE_REMOTE_BINDING_INVALID'); }
+export function validateTerminalEligibility({environment, expectedDatabase, namespace, kind = 'dev'}) {
+  if (kind === 'dev') {
+    if (environment?.V2S_DEV_PROFILE !== 'r5-full') fail('TERMINAL_FIXTURE_PROFILE_REQUIRED');
+    if (environment?.V2S_RUNTIME_ENVIRONMENT !== 'non-production') fail('TERMINAL_FIXTURE_NON_PRODUCTION_REQUIRED');
+    if (!/^v2s-dev-[a-z0-9-]{3,32}$/.test(namespace ?? '')) fail('TERMINAL_FIXTURE_NAMESPACE_INVALID');
+    if (!/^catering_v2s_dev_[a-z0-9_]{3,32}$/.test(expectedDatabase ?? '')) fail('TERMINAL_FIXTURE_DATABASE_ALLOWLIST_INVALID');
+    try { resolveTrustedRemoteHost(environment); } catch { fail('TERMINAL_FIXTURE_REMOTE_BINDING_INVALID'); }
+    return;
+  }
+  if (kind !== 'uat' || environment?.V2S_SEED_PROFILE !== 'r5-full' || environment?.V2S_RUNTIME_ENVIRONMENT !== 'uat') fail('TERMINAL_FIXTURE_PROFILE_REQUIRED');
+  if (!/^v2s-uat-[a-z0-9-]{3,32}$/.test(namespace ?? '')) fail('TERMINAL_FIXTURE_NAMESPACE_INVALID');
+  if (!/^catering_v2s_uat_[a-z0-9_]{3,32}$/.test(expectedDatabase ?? '')) fail('TERMINAL_FIXTURE_DATABASE_ALLOWLIST_INVALID');
+  try {
+    resolveTrustedRemoteHost({
+      V2S_DEV_REMOTE_HOST: environment?.V2S_SEED_REMOTE_HOST,
+      V2S_DEV_REMOTE_HOST_SHA256: environment?.V2S_SEED_REMOTE_HOST_SHA256,
+    });
+  } catch { fail('TERMINAL_FIXTURE_REMOTE_BINDING_INVALID'); }
 }
 
 export function validateTerminalFixtureInput(input, now = Date.now()) {
@@ -78,7 +95,12 @@ export function validateTerminalFixtureInput(input, now = Date.now()) {
   return Object.freeze({...input});
 }
 
-export function buildInvitationExpiredSql(input, auditId = crypto.randomUUID()) {
+export function buildInvitationExpiredSql(input, auditId = crypto.randomUUID(), environmentKind = 'dev') {
+  const auditAction = environmentKind === 'dev'
+    ? 'DEV_SEED_TERMINAL_INVITATION_EXPIRED'
+    : environmentKind === 'uat'
+      ? 'UAT_SEED_TERMINAL_INVITATION_EXPIRED'
+      : fail('TERMINAL_FIXTURE_ENVIRONMENT_KIND_INVALID');
   const receiptKey = `r5-terminal-inv-expired-${input.invitationId}`;
   const receiptHash = sha256(`r5-terminal-inv-expired-v1:${input.groupWorkspaceKey}:${input.invitationId}:${input.createdAtEpochMillis}:${input.expiresAtEpochMillis}`);
   const auditChanges = JSON.stringify([
@@ -115,7 +137,7 @@ BEGIN
      SET status='EXPIRED', created_at_epoch_millis=${input.createdAtEpochMillis}, expires_at_epoch_millis=${input.expiresAtEpochMillis}, version=version+1
    WHERE id=${sqlLiteral(input.invitationId)}::uuid AND workspace_uuid=resolved_workspace_uuid AND group_workspace_key=${sqlLiteral(input.groupWorkspaceKey)} AND status='PENDING';
   INSERT INTO workspace_iam.audit_event (id, workspace_uuid, group_workspace_key, entity_type, entity_ref_text, actor_type, actor_id, actor_display_snapshot, action, occurred_at_epoch_millis, changes_json)
-  VALUES (${sqlLiteral(auditId)}::uuid, resolved_workspace_uuid, ${sqlLiteral(input.groupWorkspaceKey)}, 'WORKSPACE_INVITATION', ${sqlLiteral(input.invitationId)}, 'SYSTEM', NULL, '系统', 'DEV_SEED_TERMINAL_INVITATION_EXPIRED', ${input.expiresAtEpochMillis}, ${sqlLiteral(auditChanges)}::jsonb);
+  VALUES (${sqlLiteral(auditId)}::uuid, resolved_workspace_uuid, ${sqlLiteral(input.groupWorkspaceKey)}, 'WORKSPACE_INVITATION', ${sqlLiteral(input.invitationId)}, 'SYSTEM', NULL, '系统', ${sqlLiteral(auditAction)}, ${input.expiresAtEpochMillis}, ${sqlLiteral(auditChanges)}::jsonb);
   INSERT INTO workspace_iam.workspace_command_receipt (workspace_uuid, idempotency_key, request_hash, response_json, created_at_epoch_millis)
   VALUES (resolved_workspace_uuid, ${sqlLiteral(receiptKey)}, ${sqlLiteral(receiptHash)}, jsonb_build_object('invitationId', ${sqlLiteral(input.invitationId)}, 'terminalFixtureKey', 'inv-expired', 'status', 'EXPIRED'), ${input.expiresAtEpochMillis});
 END $$;
@@ -132,15 +154,43 @@ export function verifyTerminalTranscript(stdout) {
   }
 }
 
-function runRemoteTerminal(topology, input) {
-  const sql = buildInvitationExpiredSql(input);
+function runRemoteTerminal(topology, input, environmentKind) {
+  const sql = buildInvitationExpiredSql(input, crypto.randomUUID(), environmentKind);
+  if (topology.kind === 'uat') {
+    const {manifest} = topology;
+    const host = manifest.remoteHostTrust?.host;
+    const fingerprint = manifest.remoteHostTrust?.fingerprint;
+    const bootId = manifest.remoteHostIdentity?.bootId;
+    const containerId = manifest.resources?.containers?.postgresql?.id;
+    const database = manifest.databaseName;
+    if (!host || !fingerprint || !bootId || !/^[a-f0-9]{64}$/.test(containerId ?? '')
+      || !/^catering_v2s_uat_[a-z0-9_]{3,32}$/.test(database ?? '')
+      || manifest.namespace !== topology.namespace) fail('TERMINAL_FIXTURE_UAT_IDENTITY_INVALID');
+    const sqlBase64 = Buffer.from(sql, 'utf8').toString('base64');
+    const remote = [
+      'set -euo pipefail',
+      `expected_boot=${sqlLiteral(bootId)}`,
+      `container_id=${sqlLiteral(containerId)}`,
+      `expected_root=${sqlLiteral('/srv/catering-v2s/uat')}`,
+      `expected_namespace=${sqlLiteral(manifest.namespace)}`,
+      `expected_fingerprint=${sqlLiteral(fingerprint)}`,
+      'test "$(cat /proc/sys/kernel/random/boot_id)" = "$expected_boot"',
+      'actual=$(docker inspect --format "{{.Id}}|{{.State.Running}}|{{index .Config.Labels \\\"com.catering-v2s.uat-root\\\"}}|{{index .Config.Labels \\\"com.catering-v2s.uat-namespace\\\"}}|{{index .Config.Labels \\\"com.catering-v2s.host-fingerprint\\\"}}|{{index .Config.Labels \\\"com.catering-v2s.service\\\"}}" "$container_id")',
+      'test "$actual" = "$container_id|true|$expected_root|$expected_namespace|$expected_fingerprint|postgresql"',
+      `printf '%s' '${sqlBase64}' | base64 -d | docker exec -i "$container_id" psql -U postgres -d ${database} -v ON_ERROR_STOP=1 -q`,
+    ].join('\n');
+    const result = spawnSync('ssh', ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10', '-o', 'StrictHostKeyChecking=yes', host, 'bash', '-s'], {cwd: root, encoding: 'utf8', input: remote, maxBuffer: 4 * 1024 * 1024});
+    if (result.status !== 0) fail(`TERMINAL_FIXTURE_UAT_EXECUTION_FAILED:${safeFailure(result.stderr || result.stdout)}`);
+    verifyTerminalTranscript(result.stdout);
+    return;
+  }
   const result = spawnSync('ssh', ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10', topology.environment.V2S_DEV_REMOTE_HOST, `docker exec -i catering-postgres psql -U catering -d ${topology.expectedDatabase} -v ON_ERROR_STOP=1 -q`], {cwd: root, encoding: 'utf8', input: sql});
   if (result.status !== 0) fail(`TERMINAL_FIXTURE_REMOTE_EXECUTION_FAILED:${safeFailure(result.stderr || result.stdout)}`);
   verifyTerminalTranscript(result.stdout);
 }
 
 function writeRunRecord(status, extra = {}) {
-  const directory = path.join(runtimeRoot, 'terminal-fixtures', crypto.randomUUID());
+  const directory = path.join(runtime, 'terminal-fixtures', crypto.randomUUID());
   mkdirSync(directory, {recursive: true, mode: 0o700});
   const manifestPath = path.join(directory, 'run-manifest.json');
   writeFileSync(manifestPath, `${JSON.stringify({kind: 'r5-terminal-fixture-manifest', status, atEpochMillis: Date.now(), cleanup: 'PASS_NO_PERSISTENT_TERMINAL_PROCESS', ...extra}, null, 2)}\n`, {mode: 0o600});
@@ -169,17 +219,35 @@ export function selfTest() {
 
 function main() {
   if (process.argv.includes('--self-test')) return selfTest();
-  const {manifest, credentials} = loadManagedRuntime();
-  const topology = JSON.parse(command(process.execPath, [environmentScript, 'seed', '--json'], {env: {...process.env, ...credentials}}));
-  validateTerminalEligibility(topology);
+  const {manifest, kind, credentials} = loadManagedRuntime();
+  const topology = kind === 'dev'
+    ? JSON.parse(command(process.execPath, [environmentScript, 'seed', '--json'], {env: {...process.env, ...credentials}}))
+    : {
+        kind,
+        manifest,
+        namespace: manifest.namespace,
+        expectedDatabase: manifest.databaseName,
+        environment: {
+          V2S_SEED_PROFILE: manifest.profile,
+          V2S_RUNTIME_ENVIRONMENT: 'uat',
+          V2S_SEED_NAMESPACE: manifest.namespace,
+          V2S_SEED_REMOTE_HOST: manifest.remoteHostTrust?.host,
+          V2S_SEED_REMOTE_HOST_SHA256: manifest.remoteHostTrust?.fingerprint,
+        },
+      };
+  validateTerminalEligibility({...topology, kind});
+  if (kind === 'uat') {
+    const targetDatabase = new URL(String(manifest.database).replace(/^jdbc:/, '')).pathname.slice(1);
+    if (targetDatabase !== topology.expectedDatabase || !manifest.endpoints?.business?.startsWith(`http://${manifest.remoteHostTrust.host}:`)) fail('TERMINAL_FIXTURE_UAT_TARGET_MISMATCH');
+  }
   const input = validateTerminalFixtureInput(parseInput());
-  if (manifest.database !== topology.environment.V2S_DEV_DATABASE_URL) fail('TERMINAL_FIXTURE_MANIFEST_DATABASE_MISMATCH');
+  if (kind === 'dev' && manifest.database !== topology.environment.V2S_DEV_DATABASE_URL) fail('TERMINAL_FIXTURE_MANIFEST_DATABASE_MISMATCH');
   try {
-    runRemoteTerminal(topology, input);
-    const record = writeRunRecord('PASS', {fixtureKey: input.fixtureKey, managedDevRunId: manifest.runId, business: 'PASS', firstFailure: null});
+    runRemoteTerminal(topology, input, kind);
+    const record = writeRunRecord('PASS', {fixtureKey: input.fixtureKey, environmentKind: kind, managedEnvironmentRunId: manifest.runId, ...(kind === 'dev' ? {managedDevRunId: manifest.runId} : {}), business: 'PASS', firstFailure: null});
     process.stdout.write(`R5_TERMINAL_FIXTURE=PASS; KEY=${input.fixtureKey}; RUN_MANIFEST=${record}; CLEANUP=PASS\n`);
   } catch (error) {
-    const record = writeRunRecord('FAIL', {fixtureKey: input.fixtureKey, managedDevRunId: manifest.runId, business: 'FAIL', firstFailure: safeFailure(error.code ?? error.message)});
+    const record = writeRunRecord('FAIL', {fixtureKey: input.fixtureKey, environmentKind: kind, managedEnvironmentRunId: manifest.runId, ...(kind === 'dev' ? {managedDevRunId: manifest.runId} : {}), business: 'FAIL', firstFailure: safeFailure(error.code ?? error.message)});
     process.stderr.write(`R5_TERMINAL_FIXTURE=REFUSED; REASON=${safeFailure(error.code ?? error.message)}; RUN_MANIFEST=${record}\n`);
     process.exitCode = 2;
   }

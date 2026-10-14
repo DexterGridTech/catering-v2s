@@ -19,6 +19,8 @@
     "@catering-v2s/adapter-android-dual-screen": "workspace:*",
     "@catering-v2s/adapter-android-persist-kv": "workspace:*",
     "@catering-v2s/adapter-android-remote": "workspace:*",
+    "@catering-v2s/adapter-android-topology": "workspace:*",
+    "@catering-v2s/adapter-android-transport": "workspace:*",
     "@catering-v2s/adapter-android-update": "workspace:*",
     "@catering-v2s/kernel-base-platform-ports": "workspace:*",
     "@catering-v2s/kernel-base-terminal-update": "workspace:*",

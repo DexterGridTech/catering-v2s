@@ -20,6 +20,8 @@ For the wallpaper main journey, use `--sample wallpaper` and omit `--case` and `
 
 The app connects to the driver through the build-only `EXPO_PUBLIC_TER_AUTOMATION_URL` and `EXPO_PUBLIC_TER_AUTOMATION_TOKEN` inputs. Web receives them from the managed runner. Android uses `EXPO_PUBLIC_TER_AUTOMATION_BUILD=true` with run-scoped build inputs. Product package configuration keeps automation disabled by default. Do not add runtime toggles or read secrets from application business state.
 
+For a managed Expo Web suite that calls DEV endpoints protected by an exact browser CORS allowlist, start Expo on the injected `TERMINAL_AUTOMATION_WEB_ORIGIN` port and navigate to that same origin. Do not substitute an ephemeral port for such a suite; an ephemeral port is valid only for a suite that does not call those CORS-protected DEV endpoints. Log the chosen browser origin with the managed run identity.
+
 ## Public driver shape
 
 The package is `@catering-v2s/terminal-automation`, exported from `tools/terminal-automation/src/index.ts`. Create a driver with `createTerminalAutomationDriver({token, host, port, fixtureFactory?})`, wait using `driver.waitForSession(...)`, use `driver.transport` for protocol requests/events, and always `await driver.close()` in `finally`. A managed journey should normally reuse the existing Web/Android setup in `tools/terminal-automation/journeys/sampleConsole.test.ts` and `sampleConsole.android.test.ts` rather than creating another process lifecycle.
@@ -56,6 +58,8 @@ Use `mainSampleTestIds` or the owning package's exported `*TestIds` constants. A
 ## Writing and running a journey
 
 Keep each journey about its business fixture and expected result. Reuse `loginSampleStaff`, `runSampleConsoleJourney` or `runSampleWallpaperJourney`, `mainSampleTestIds`, `createWebJourneyUiPort`/`createAndroidJourneyUiPort`, selector helpers and `clickObservedJourneyCommand`. The existing complete flow is `tools/terminal-automation/journeys/sampleConsoleJourney.ts`; its Web and Android managed harnesses are `sampleConsole.test.ts` and `sampleConsole.android.test.ts`. It demonstrates a real login, registered-node input/click, exact request tracking, and business selector readback without duplicating device lifecycle in the journey. The wallpaper counterpart is `sampleWallpaperJourney.ts`.
+
+For the approved update supply-chain journey, use the same managed entry with `update.owner-flow` rather than fabricating project rules, grants, reports or terminal outcomes in the driver. The shared flow is `tools/terminal-automation/journeys/updateOwnerFlow.ts`; `update.test.ts` and `update.android.test.ts` provide the Web and Android harnesses. It follows the current project candidate through the real grant/download and terminal-update owner path, then reads the CBS report/history result. Reuse the managed DEV fixture and assert actual owner selectors and backend readback.
 
 Use `terminalAutomationMemberFixture(runId)` from `tools/terminal-automation/fixtures/member.ts` for the sample member; the managed harness supplies the run identity and shared fixture. A new journey should add only its own business fixture setup and oracle, then use the same platform-neutral port. Do not duplicate runner startup, activation, authentication, keyboard timing, Android tap geometry or cleanup in a journey.
 

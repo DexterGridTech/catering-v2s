@@ -1,8 +1,8 @@
 import {onCommand, defineActor} from '../../foundations/defineActor';
 import {moduleName} from '../../moduleName';
 import type {ActorDefinition} from '../../types/actor';
-import {runtimeInstanceModeChangedCommand} from '../commands/runtimeInstanceModeChanged';
-import {requestLedgerActionsForMode} from '../slices/requestLedger';
+import {runtimeInstanceModeChangedCommand} from '../../declarations/commands';
+import {requestLedgerActionsForMode} from '../slices/requestLedgerActions';
 import {isRuntimeInstanceMode} from '../../types/role';
 
 export const createRequestLedgerRoleChangedActor = (): ActorDefinition =>

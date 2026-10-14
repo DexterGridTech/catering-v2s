@@ -15,7 +15,7 @@ import {
   type UiStateModule,
 } from '../src/index';
 import {createDisplayPlatformPorts, FakeDevicePort} from '../../display-context/test/testSupport';
-import {releaseRuntimeForTest} from '@catering-v2s/kernel-base-runtime/testing';
+import {releaseRuntimeForTestAsync} from '@catering-v2s/kernel-base-runtime/testing';
 import {createFakeStorage, type FakeStoragePort} from '../../state/test/testSupport';
 
 const createDependencies = (): readonly RuntimeModule[] => [
@@ -88,8 +88,8 @@ const createTestModule = (variables: ReturnType<typeof createVariables>): UiStat
 describe('ui-state workspace variables', () => {
   const runtimes: Runtime[] = [];
 
-  afterEach(() => {
-    for (const runtime of runtimes.splice(0)) releaseRuntimeForTest(runtime);
+  afterEach(async () => {
+    for (const runtime of runtimes.splice(0)) await releaseRuntimeForTestAsync(runtime);
   });
 
   it('uses registered declarations, preserves workspace isolation, and rejects forged or duplicate writes', async () => {
@@ -186,7 +186,7 @@ describe('ui-state workspace variables', () => {
     expect(storageKeys.some(key => key.includes(variables.persisted.key))).toBe(true);
     expect(storageKeys.some(key => key.includes(variables.transient.key))).toBe(false);
 
-    releaseRuntimeForTest(first.runtime);
+    await releaseRuntimeForTestAsync(first.runtime);
     const second = await createFixture({module, plainStorage, protectedStorage, persistenceKey});
     runtimes.push(second.runtime);
     expect(module.selectUiVariable(second.runtime.getState(), variables.persisted)).toBe(99);

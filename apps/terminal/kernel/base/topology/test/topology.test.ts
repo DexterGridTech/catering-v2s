@@ -79,7 +79,7 @@ import {
   unpairTopologyCommand,
   topologyReasonMessages,
 } from '../src/index';
-import {pairTopologyCommand} from '../src/features/commands/commands';
+import {pairTopologyCommand} from '../src/declarations/commands';
 import {moduleName as topologyModuleName} from '../src/moduleName';
 import {
   createTopologySession,
@@ -90,9 +90,8 @@ import {
 import {moduleName as displayContextModuleName} from '@catering-v2s/kernel-base-display-context';
 import type {
   TopologyIdentityClient,
-  TopologyPeerChannel,
-  TopologyPeerChannelEvent,
 } from '@catering-v2s/kernel-base-transport';
+import type {TopologyPeerChannel, TopologyPeerChannelEvent} from '@catering-v2s/kernel-base-platform-ports';
 import {evaluateTopologyOperation, hasTopologySecondarySurface} from '../src/foundations/evaluateTopologyOperation';
 import {createTopologyStateSyncController} from '../src/application/createTopologyStateSyncController';
 import {serializeTopologyWireMessage} from '@catering-v2s/kernel-base-contracts';
@@ -145,7 +144,6 @@ const createTestMembersModule = (): RuntimeModule => {
     moduleName: 'kernel.feature.sample-member-registry',
     kind: 'owner' as const,
     dependencies: [{moduleName: 'kernel.base.runtime'}],
-    slices: [{name: membersSyncSliceName, persistIntent: registration.persistIntent}],
     stateSlices: [registration],
     getSyncBuildCount: (): number => syncBuildCount,
   }) as RuntimeModule & Readonly<{readonly getSyncBuildCount: () => number}>;
@@ -205,6 +203,7 @@ class FakeTopologyHost implements TopologyHostPort {
   state: TopologyHostStatus['state'] = 'stopped';
   currentAddress: TopologyHostAddress | undefined;
   startFailureCode: string | undefined;
+  startGate: Promise<void> | undefined;
 
   async start(input: TopologyHostConfig): Promise<PortResult<TopologyHostAddress>> {
     this.startCalls.push(input);
@@ -216,6 +215,7 @@ class FakeTopologyHost implements TopologyHostPort {
         error: Object.freeze({code: this.startFailureCode, message: 'test host failure', retryable: true}),
       });
     }
+    await this.startGate;
     this.state = 'running';
     this.currentAddress = address;
     return succeeded(address);
@@ -325,9 +325,7 @@ const createDisplayChangedObserverModule = (observed: number[]): RuntimeModule =
     moduleName: 'test.topology.display-observer',
     kind: 'owner' as const,
     dependencies: [{moduleName: 'kernel.base.runtime'}],
-    commands: [],
     commandDefinitions: [],
-    actors: [{name: actor.actorName}],
     actorDefinitions: [actor],
   });
 };
@@ -378,9 +376,7 @@ const createTdcUnpairHandshakeTestModule = (
     moduleName: actor.moduleName,
     kind: 'owner',
     dependencies: [{moduleName: 'kernel.base.runtime'}, {moduleName: topologyModuleName}],
-    commands: [],
     commandDefinitions: [],
-    actors: [{name: actor.actorName}],
     actorDefinitions: [actor],
   });
 };
@@ -412,7 +408,6 @@ const createTopologyRuntime = (
     nodeId: 'node-master',
     identityClient: input.identityClient,
     peerChannel: input.peer,
-    stateSyncSlices: [{name: membersSyncSliceName, syncIntent: 'master-to-slave'}],
   });
   const runtime = createRuntime({
     localNodeId: createNodeId(),
@@ -819,19 +814,22 @@ describe('topology pairing facts', () => {
     }
   });
 
-  it('locks a deterministic sender payload failure until the members reference changes', async () => {
-    const members = Object.freeze({members: Object.freeze([{memberId: 'MOV00000001', name: '会员'}]), pending: null});
+  it('locks a deterministic sender payload failure until State returns a changed projection', async () => {
     let state = {
       'kernel.base.runtime.instance-mode': {instanceMode: 'MASTER'},
       [topologySliceName]: Object.freeze({}),
-      [membersSyncSliceName]: members,
     };
+    let projection: SyncStateDiff = Object.freeze({
+      mode: 'authoritative' as const,
+      replaceMissing: true as const,
+      entries: Object.freeze([]),
+    });
     const context = {
       getState: () => state,
       createFullSyncPayload: vi.fn((sliceName: string) => ({
         status: 'ready' as const,
         sliceName,
-        payload: {mode: 'authoritative' as const, replaceMissing: true as const, entries: []},
+        payload: projection,
       })),
     } as unknown as RuntimeModuleContext;
     const overflow = Object.freeze({
@@ -870,13 +868,11 @@ describe('topology pairing facts', () => {
     await waitForReconciliation();
     expect(session.sendStateFull).toHaveBeenCalledOnce();
 
-    state = {
-      ...state,
-      [membersSyncSliceName]: Object.freeze({
-        members: Object.freeze([{memberId: 'MOV00000002', name: '新会员'}]),
-        pending: null,
-      }),
-    };
+    projection = Object.freeze({
+      mode: 'authoritative' as const,
+      replaceMissing: true as const,
+      entries: [Object.freeze({key: 'member.example', value: Object.freeze({value: 'updated', updatedAt: 1})})],
+    });
     controller.sendStateSnapshots(context);
     await waitForReconciliation();
     expect(session.sendStateFull).toHaveBeenCalledTimes(2);
@@ -1783,9 +1779,7 @@ describe('topology lifecycle integration', () => {
       moduleName: 'test.topology.receiver',
       kind: 'owner',
       dependencies: [{moduleName: 'kernel.base.runtime'}],
-      commands: [{name: command.commandName, visibility: command.visibility}],
       commandDefinitions: [command],
-      actors: [{name: actor.actorName}],
       actorDefinitions: [actor],
     });
     const appControl: AppControlPort = {
@@ -1889,9 +1883,7 @@ describe('topology lifecycle integration', () => {
       moduleName: 'test.topology.late-result',
       kind: 'owner',
       dependencies: [{moduleName: 'kernel.base.runtime'}],
-      commands: [command, oversizedCommand].map(item => ({name: item.commandName, visibility: item.visibility})),
       commandDefinitions: [command, oversizedCommand],
-      actors: [actor, completedActor, oversizedActor].map(item => ({name: item.actorName})),
       actorDefinitions: [actor, completedActor, oversizedActor],
     });
     const {runtime} = createTopologyRuntime({host, peer, appControl, extraModules: [receiverModule]});
@@ -2031,7 +2023,6 @@ describe('topology lifecycle integration', () => {
       moduleName: 'test.topology.peer-late-result',
       kind: 'owner',
       dependencies: [{moduleName: 'kernel.base.runtime'}],
-      commands: [{name: command.commandName, visibility: command.visibility}],
       commandDefinitions: [command],
     });
     const appControl: AppControlPort = {
@@ -2219,9 +2210,7 @@ describe('topology lifecycle integration', () => {
       moduleName: 'test.topology.concurrent',
       kind: 'owner',
       dependencies: [{moduleName: 'kernel.base.runtime'}],
-      commands: [{name: command.commandName, visibility: command.visibility}],
       commandDefinitions: [command],
-      actors: [{name: actor.actorName}],
       actorDefinitions: [actor],
     });
     const {runtime} = createTopologyRuntime({host, peer, extraModules: [module]});
@@ -2328,14 +2317,7 @@ describe('topology lifecycle integration', () => {
       moduleName: 'test.topology.statuses',
       kind: 'owner',
       dependencies: [{moduleName: 'kernel.base.runtime'}],
-      commands: [completed, partial, timedOut, errored].map(item => ({
-        name: item.commandName,
-        visibility: item.visibility,
-      })),
       commandDefinitions: [completed, partial, timedOut, errored],
-      actors: [completedActor, partialSuccessActor, partialErrorActor, timedOutActor, errorActor].map(item => ({
-        name: item.actorName,
-      })),
       actorDefinitions: [completedActor, partialSuccessActor, partialErrorActor, timedOutActor, errorActor],
     });
     const {runtime} = createTopologyRuntime({host, peer, extraModules: [module]});
@@ -2423,7 +2405,6 @@ describe('topology lifecycle integration', () => {
       moduleName: 'test.topology.peer-pressure',
       kind: 'owner',
       dependencies: [{moduleName: 'kernel.base.runtime'}],
-      commands: [{name: command.commandName, visibility: command.visibility}],
       commandDefinitions: [command],
     });
     const {runtime} = createTopologyRuntime({host, peer, extraModules: [module]});
@@ -2473,7 +2454,6 @@ describe('topology lifecycle integration', () => {
       moduleName: 'test.topology.disconnect',
       kind: 'owner',
       dependencies: [{moduleName: 'kernel.base.runtime'}],
-      commands: [{name: command.commandName, visibility: command.visibility}],
       commandDefinitions: [command],
     });
     const {runtime} = createTopologyRuntime({host, peer, extraModules: [module]});
@@ -2905,5 +2885,25 @@ describe('topology lifecycle integration', () => {
       hostErrorCode: null,
       hostAddress: {host: '192.0.2.10', port: 43172, basePath: '/terminal-topology'},
     });
+  });
+
+  it('does not access cleared topology state-sync when host reconciliation finishes after disposal', async () => {
+    const host = new FakeTopologyHost();
+    const startGate = deferred<void>();
+    host.startGate = startGate.promise;
+    const {runtime} = createTopologyRuntime({host});
+    await runtime.start();
+
+    await runtime.dispatchCommand(
+      setTopologyHostEnabledCommand,
+      {enabled: true},
+      {requestId: createRequestId()},
+    );
+    await waitForReconciliation();
+    expect(host.startCalls).toHaveLength(1);
+
+    await releaseRuntimeForTestAsync(runtime);
+    startGate.resolve();
+    await waitForReconciliation();
   });
 });

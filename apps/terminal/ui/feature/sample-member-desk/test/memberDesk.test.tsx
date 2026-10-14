@@ -30,8 +30,7 @@ import {
 } from '../../../../../../tools/terminal-shared/react-native-vitest-entry';
 import type {RenderProviderProps} from '@catering-v2s/ui-base-render';
 import {createUiCatalog, createUiStateModule, selectLayers, selectScreen} from '@catering-v2s/kernel-base-ui-state';
-import {sampleMemberDeskAssembly, startMemberDeskCommand} from '../src/index';
-import {createSampleMemberDeskModule} from '../src/application/module';
+import {createSampleMemberDeskModule, startMemberDeskCommand} from '../src/index';
 import {CustomerMember} from '../src/components/laptop/CustomerMember';
 import {DeskSystemNotice} from '../src/components/laptop/DeskSystemNotice';
 import {DeskSystemNotice as MobileDeskSystemNotice} from '../src/components/mobile/DeskSystemNotice';
@@ -46,12 +45,12 @@ import {
   memberConfirmedCommand,
   submitMemberCommand,
 } from '@catering-v2s/kernel-feature-sample-member-registry';
-import {memberActions as memberStateActions} from '../../../../kernel/feature/sample-member-registry/src/features/slices/slice';
+import {memberActions as memberStateActions} from '../../../../kernel/feature/sample-member-registry/src/features/slices/memberRegistry';
 import {
   deskSystemFailureDismissedCommand,
   deskSystemFailureObservedCommand,
   memberFormOpenedCommand,
-} from '../src/features/commands/commands';
+} from '../src/declarations/commands';
 import {createTestRuntime} from '../../../../kernel/feature/sample-member-registry/test/support';
 import {releaseRuntimeForTestAsync} from '../../../../kernel/base/runtime/src/testing';
 import {setDisplayRoleAction} from '../../../../kernel/base/display-context/src/features/slices/displayRole';
@@ -451,6 +450,8 @@ const runningActor = (): object => ({
   error: null,
 });
 
+const sampleMemberDeskModule = createSampleMemberDeskModule();
+
 describe('sample member desk UI feature', () => {
   it('exports laptop/mobile renderer siblings with exact metadata and no transient variables', async () => {
     const expectedPair = (
@@ -470,7 +471,7 @@ describe('sample member desk UI feature', () => {
         rendererKey: `${part.partKey}.${surfaceForm}`,
         surfaceForm: [surfaceForm],
       }));
-    const metadata = sampleMemberDeskAssembly.parts.map(({catalogEntry, rendererBinding}) => ({
+    const metadata = (sampleMemberDeskModule.presentationContributions.parts ?? []).map(({catalogEntry, rendererBinding}) => ({
       partKey: catalogEntry.partKey,
       rendererKey: catalogEntry.rendererKey,
       containerKeys: [...catalogEntry.containerKeys],
@@ -644,12 +645,12 @@ describe('sample member desk UI feature', () => {
         layerGuard: 'dismissible',
       }),
     ]);
-    expect(sampleMemberDeskAssembly).not.toHaveProperty('variables');
+    expect(sampleMemberDeskModule.presentationContributions.variables).toBeUndefined();
   });
 
   it('uses the topology secondary fact for member navigation on a paired single-screen master', async () => {
     const catalog = createUiCatalog(
-      sampleMemberDeskAssembly.parts
+      (sampleMemberDeskModule.presentationContributions.parts ?? [])
         .filter(part => part.catalogEntry.surfaceForm.includes('laptop'))
         .map(part => part.catalogEntry),
     );
@@ -729,7 +730,7 @@ describe('sample member desk UI feature', () => {
 
   it('keeps the customer surface on a paired single-screen slave before staff login', async () => {
     const catalog = createUiCatalog(
-      sampleMemberDeskAssembly.parts
+      (sampleMemberDeskModule.presentationContributions.parts ?? [])
         .filter(part => part.catalogEntry.surfaceForm.includes('laptop'))
         .map(part => part.catalogEntry),
     );
@@ -780,7 +781,7 @@ describe('sample member desk UI feature', () => {
 
   it('keeps SLAVE VICE from writing host-owned screen placement during state-transfer recovery', async () => {
     const catalog = createUiCatalog(
-      sampleMemberDeskAssembly.parts
+      (sampleMemberDeskModule.presentationContributions.parts ?? [])
         .filter(part => part.catalogEntry.surfaceForm.includes('laptop'))
         .map(part => part.catalogEntry),
     );
@@ -845,7 +846,7 @@ describe('sample member desk UI feature', () => {
 
   it('stores completed branch navigation while VICE is showing the host projection', async () => {
     const catalog = createUiCatalog(
-      sampleMemberDeskAssembly.parts
+      (sampleMemberDeskModule.presentationContributions.parts ?? [])
         .filter(part => part.catalogEntry.surfaceForm.includes('laptop'))
         .map(part => part.catalogEntry),
     );
@@ -893,7 +894,7 @@ describe('sample member desk UI feature', () => {
 
   it('routes the paired branch member desk from list to local form and local confirmation', async () => {
     const catalog = createUiCatalog(
-      sampleMemberDeskAssembly.parts
+      (sampleMemberDeskModule.presentationContributions.parts ?? [])
         .filter(part => part.catalogEntry.surfaceForm.includes('laptop'))
         .map(part => part.catalogEntry),
     );
@@ -1600,6 +1601,106 @@ describe('sample member desk UI feature', () => {
     });
   });
 
+  it('maps MAIN and BRANCH system notices to the member-desk-owned dismissal command', async () => {
+    const dismissals = sampleMemberDeskModule.presentationContributions.layerDismissals ?? {};
+    expect(Object.keys(dismissals).sort()).toEqual([
+      'sample.desk.branch.system-notice',
+      'sample.desk.system-notice',
+    ]);
+    const commandNames: string[] = [];
+    const dispatchCommand = (async command => {
+      commandNames.push(command.definition.commandName);
+      return completedResult();
+    }) as RenderProviderProps['dispatchCommand'];
+
+    for (const [layerId, dismiss] of Object.entries(dismissals)) {
+      await dismiss({dispatchCommand, displayMode: 'PRIMARY', layerId});
+    }
+
+    expect(commandNames).toEqual([
+      deskSystemFailureDismissedCommand.commandName,
+      deskSystemFailureDismissedCommand.commandName,
+    ]);
+  });
+
+  it.each([
+    {
+      workspace: 'MAIN',
+      instanceMode: 'MASTER' as const,
+      displayRole: 'CHIEF' as const,
+      partKey: 'sample.desk.system-notice',
+    },
+    {
+      workspace: 'BRANCH',
+      instanceMode: 'SLAVE' as const,
+      displayRole: 'CHIEF' as const,
+      partKey: 'sample.desk.branch.system-notice',
+    },
+  ])('$workspace system-notice dismissal closes the owned layer without changing member data', async scenario => {
+    const catalog = createUiCatalog(
+      (sampleMemberDeskModule.presentationContributions.parts ?? [])
+        .filter(part => part.catalogEntry.surfaceForm.includes('laptop'))
+        .map(part => part.catalogEntry),
+    );
+    const runtime = createTestRuntime([
+      createDisplayContextModule(),
+      createTransportModule(),
+      createTopologyModule({
+        displayName: 'sample member desk dismissal test',
+        moduleName: 'ui.integration.sample-console',
+        surfaceForm: 'laptop',
+      }),
+      createUiStateModule({catalog, variables: [], surfaceForm: 'laptop'}),
+      createSampleStaffSessionModule(),
+      createSampleMemberRegistryModule(),
+      createSampleMemberDeskModule(),
+    ]);
+    try {
+      await runtime.start();
+      runtime.getStore().dispatch(setRuntimeInstanceModeAction(scenario.instanceMode));
+      runtime.getStore().dispatch(setDisplayRoleAction(scenario.displayRole));
+      runtime.getStore().dispatch(
+        memberStateActions.setBranchPending({
+          operationId: `${scenario.workspace.toLowerCase()}-pending`,
+          name: 'Pending member',
+          phone: '010-1234-5678',
+        }),
+      );
+      runtime.getStore().dispatch(
+        memberStateActions.registerConfirmedMember({
+          memberId: `${scenario.workspace.toLowerCase()}-member`,
+          operationId: `${scenario.workspace.toLowerCase()}-member-operation`,
+          name: 'Confirmed member',
+          phone: '010-8765-4321',
+          registeredAt: 1,
+        }),
+      );
+      const membersBeforeDismissal = runtime.getState()['kernel.feature.sample-member-registry.members'];
+
+      const observed = await runtime.dispatchCommand(
+        deskSystemFailureObservedCommand,
+        {operation: 'submit-member'},
+        {requestId: createRequestId()},
+      );
+      expect(observed.status).toBe('completed');
+      expect(selectLayers(runtime.getState(), 'PRIMARY')).toEqual([
+        expect.objectContaining({partKey: scenario.partKey, layerId: 'sample.desk.system-notice'}),
+      ]);
+
+      const dismissed = await runtime.dispatchCommand(
+        deskSystemFailureDismissedCommand,
+        {},
+        {requestId: createRequestId()},
+      );
+
+      expect(dismissed.status).toBe('completed');
+      expect(selectLayers(runtime.getState(), 'PRIMARY')).toEqual([]);
+      expect(runtime.getState()['kernel.feature.sample-member-registry.members']).toBe(membersBeforeDismissal);
+    } finally {
+      await releaseRuntimeForTestAsync(runtime);
+    }
+  });
+
   it('keeps the complete member list while mounting at most 24 rows and scrolling to the last member', async () => {
     const {logger} = createLogger();
     const members = Array.from({length: 30}, (_value, index) => ({
@@ -2085,7 +2186,7 @@ describe('sample member desk UI feature', () => {
 
   it('treats a repeated system failure observation as an idempotent existing notice', async () => {
     const catalog = createUiCatalog(
-      sampleMemberDeskAssembly.parts
+      (sampleMemberDeskModule.presentationContributions.parts ?? [])
         .filter(part => part.catalogEntry.surfaceForm.includes('mobile'))
         .map(part => part.catalogEntry),
     );

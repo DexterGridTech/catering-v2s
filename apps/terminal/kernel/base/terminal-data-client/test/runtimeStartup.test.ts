@@ -15,7 +15,10 @@ import {
   type DevicePort,
 } from '@catering-v2s/kernel-base-platform-ports';
 import {moduleName as stateModuleName} from '@catering-v2s/kernel-base-state';
+import {createServerConfigModule} from '@catering-v2s/kernel-base-server-config';
+import type {TransportServerConfig} from '@catering-v2s/kernel-base-contracts';
 import {
+  createRuntimeModule,
   createRuntime,
   selectRuntimeInstanceMode,
   setRuntimeInstanceModeCommand,
@@ -24,13 +27,13 @@ import {
 } from '@catering-v2s/kernel-base-runtime';
 import {releaseRuntimeForTestAsync} from '@catering-v2s/kernel-base-runtime/testing';
 import {createTerminalDataClientModule} from '../src/application/createTerminalDataClientModule';
-import {selectActivationState, selectConnectionState} from '../src/selectors/selectTerminalDataClientState';
-import {activateTerminalCommand, readTerminalDataCommand} from '../src/features/commands/terminalDataClientCommands';
+import {selectActivationState} from '../src/selectors/selectActivationState';
+import {selectConnectionState} from '../src/selectors/selectConnectionState';
+import {activateTerminalCommand} from '../src/declarations/commands';
 import {
   createTransportModule,
-  type TransportManagedConnection,
-  type TransportNetworkAdapter,
 } from '@catering-v2s/kernel-base-transport';
+import type {TransportManagedConnection, TransportNetworkAdapter} from '@catering-v2s/kernel-base-platform-ports';
 import {
   completeTopologySlaveUnpairStateClearCommand,
   moduleName as topologyModuleName,
@@ -43,15 +46,25 @@ const toolkit = (name: string, dependencies: readonly string[]): RuntimeModule =
   dependencies: dependencies.map(moduleName => ({moduleName})),
 });
 
-const topologyCommandModule: RuntimeModule = Object.freeze({
+const topologyCommandModule: RuntimeModule = createRuntimeModule({
   moduleName: topologyModuleName,
   kind: 'owner',
   dependencies: [{moduleName: 'kernel.base.runtime'}, {moduleName: 'kernel.base.transport'}],
-  commands: [requestTopologySlaveUnpairStateClearCommand, completeTopologySlaveUnpairStateClearCommand].map(
-    definition => ({name: definition.commandName, visibility: definition.visibility}),
-  ),
   commandDefinitions: [requestTopologySlaveUnpairStateClearCommand, completeTopologySlaveUnpairStateClearCommand],
 });
+
+const serverConfig = createServerConfigModule({
+  selectedSpace: 'development',
+  spaces: [
+    {
+      name: 'development',
+      servers: ['business', 'terminal-business-api'].map(serverName => ({
+        serverName,
+        addresses: [{addressName: 'primary', baseUrl: 'http://127.0.0.1:8080', timeoutMs: 1_000}],
+      })),
+    },
+  ],
+} satisfies TransportServerConfig);
 
 const createComposition = (
   input: Readonly<{
@@ -109,6 +122,7 @@ const createComposition = (
     toolkit(contractsModuleName, []),
     toolkit(platformPortsModuleName, [contractsModuleName]),
     toolkit(stateModuleName, [contractsModuleName, platformPortsModuleName]),
+    serverConfig,
     transportModule,
     topologyCommandModule,
     terminalDataClientModule,
@@ -210,15 +224,6 @@ describe('terminal-data-client runtime startup', () => {
         expect(selectConnectionState(restored.runtime.getState()).status).toBe('awaiting-ready');
         expect(selectActivationState(restored.runtime.getState()).status).toBe('active');
         expect(restored.getBusinessRequestAttempts()).toBe(0);
-        await restored.runtime.dispatchCommand(
-          readTerminalDataCommand,
-          {
-            operationId: 'terminalReadStoreBasic',
-            pathParameters: {storeRef: '00000000-0000-4000-8000-000000000002'},
-          },
-          {requestId: createRequestId()},
-        );
-        expect(restored.getBusinessRequestAttempts()).toBe(1);
       } finally {
         if (restoredStarted) await releaseRuntimeForTestAsync(restored.runtime);
       }
@@ -227,7 +232,7 @@ describe('terminal-data-client runtime startup', () => {
     }
   });
 
-  it('restores a shared credential as inactive on SLAVE and permits local CBS reads without connecting TDS', async () => {
+  it('restores a shared credential as inactive on SLAVE without connecting TDS', async () => {
     const protectedStorage = createProcessMemoryStateStoragePort();
     const plainStorage = createProcessMemoryStateStoragePort();
     const first = createComposition({
@@ -274,16 +279,7 @@ describe('terminal-data-client runtime startup', () => {
           status: 'inactive',
           terminalRef: '00000000-0000-4000-8000-000000000001',
         });
-        const read = await restoredSlave.runtime.dispatchCommand(
-          readTerminalDataCommand,
-          {
-            operationId: 'terminalReadStoreBasic',
-            pathParameters: {storeRef: 'caller-store'},
-          },
-          {requestId: createRequestId()},
-        );
-        expect(read.status).toBe('completed');
-        expect(restoredSlave.getBusinessRequestAttempts()).toBe(1);
+        expect(restoredSlave.getBusinessRequestAttempts()).toBe(0);
         expect(restoredSlave.getConnectionAttempts()).toBe(0);
       } finally {
         if (slaveStarted) await releaseRuntimeForTestAsync(restoredSlave.runtime);

@@ -27,9 +27,8 @@ import {
 import type {RenderProviderProps} from '@catering-v2s/ui-base-render';
 import {createUiCatalog, createUiStateModule, selectLayers} from '@catering-v2s/kernel-base-ui-state';
 import {loginCommand} from '@catering-v2s/kernel-feature-sample-staff-session';
-import {sampleStaffAuthAssembly, sampleStaffAuthTestIds} from '../src/index';
-import {createSampleStaffAuthModule} from '../src/application/module';
-import {createAuthNavigationActor} from '../src/features/actors/actors';
+import {createSampleStaffAuthModule, sampleStaffAuthTestIds} from '../src/index';
+import {createAuthNavigationActor} from '../src/features/actors/authNavigationActor';
 import {AuthSystemNotice} from '../src/components/laptop/AuthSystemNotice';
 import {AuthSystemNotice as MobileAuthSystemNotice} from '../src/components/mobile/AuthSystemNotice';
 import {StaffLogin} from '../src/components/laptop/StaffLogin';
@@ -38,10 +37,10 @@ import {
   authSystemFailureDismissedCommand,
   authSystemFailureObservedCommand,
   needToLoginStaffCommand,
-} from '../src/features/commands/commands';
-import {operatorNameVariable} from '../src/features/variables/variables';
+} from '../src/declarations/commands';
+import {operatorNameVariable} from '../src/declarations/variables';
 import {createTestRuntime} from '../../../../kernel/feature/sample-staff-session/test/support';
-import {releaseRuntimeForTest} from '../../../../kernel/base/runtime/src/testing';
+import {releaseRuntimeForTestAsync} from '../../../../kernel/base/runtime/src/testing';
 import {
   resetNativeTestRefFactory,
   setNativeTestRefFactory,
@@ -304,6 +303,8 @@ const expectTextValue = (renderer: RenderResult, testID: string, value: string):
 
 afterEach(resetNativeTestRefFactory);
 
+const sampleStaffAuthModule = createSampleStaffAuthModule();
+
 describe('sample staff auth UI feature', () => {
   it('exports one assembly description with the approved parts and variables', async () => {
     const expectedPair = (
@@ -323,7 +324,7 @@ describe('sample staff auth UI feature', () => {
         rendererKey: `${part.partKey}.${surfaceForm}`,
         surfaceForm: [surfaceForm],
       }));
-    const metadata = sampleStaffAuthAssembly.parts.map(({catalogEntry, rendererBinding}) => ({
+    const metadata = (sampleStaffAuthModule.presentationContributions.parts ?? []).map(({catalogEntry, rendererBinding}) => ({
       partKey: catalogEntry.partKey,
       rendererKey: catalogEntry.rendererKey,
       containerKeys: [...catalogEntry.containerKeys],
@@ -387,11 +388,16 @@ describe('sample staff auth UI feature', () => {
         layerGuard: 'dismissible',
       }),
     ]);
-    expect(sampleStaffAuthAssembly.variables).toEqual([operatorNameVariable]);
-    expect(sampleStaffAuthAssembly.variables.map(variable => [variable.key, variable.persistIntent])).toEqual([
+    expect((sampleStaffAuthModule.presentationContributions.variables ?? [])).toEqual([operatorNameVariable]);
+    expect((sampleStaffAuthModule.presentationContributions.variables ?? []).map(variable => [variable.key, variable.persistIntent])).toEqual([
       ['sample.login.operator-name', 'owner-only'],
     ]);
-    expect(sampleStaffAuthAssembly.createModule().commands).toEqual([
+    expect(
+      sampleStaffAuthModule.commandDefinitions?.map(({commandName, visibility}) => ({
+        name: commandName,
+        visibility,
+      })),
+    ).toEqual([
       {
         name: authNoticeDismissedCommand.commandName,
         visibility: 'public',
@@ -409,13 +415,13 @@ describe('sample staff auth UI feature', () => {
   });
 
   it('keeps the notice layer-only and the login screen on PRIMARY', async () => {
-    const login = sampleStaffAuthAssembly.parts.find(
+    const login = (sampleStaffAuthModule.presentationContributions.parts ?? []).find(
       part => part.catalogEntry.rendererKey === 'sample.auth.login.laptop',
     );
-    const notice = sampleStaffAuthAssembly.parts.find(
+    const notice = (sampleStaffAuthModule.presentationContributions.parts ?? []).find(
       part => part.catalogEntry.rendererKey === 'sample.auth.notice.laptop',
     );
-    const systemNotice = sampleStaffAuthAssembly.parts.find(
+    const systemNotice = (sampleStaffAuthModule.presentationContributions.parts ?? []).find(
       part => part.catalogEntry.rendererKey === 'sample.auth.system-notice.laptop',
     );
     expect(login?.catalogEntry).toMatchObject({
@@ -741,7 +747,7 @@ describe('sample staff auth UI feature', () => {
 
   it('treats a repeated system failure observation as an idempotent existing notice', async () => {
     const catalog = createUiCatalog(
-      sampleStaffAuthAssembly.parts
+      (sampleStaffAuthModule.presentationContributions.parts ?? [])
         .filter(part => part.catalogEntry.surfaceForm.includes('mobile'))
         .map(part => part.catalogEntry),
     );
@@ -749,7 +755,7 @@ describe('sample staff auth UI feature', () => {
     const runtime = createTestRuntime(
       [
         createDisplayContextModule(),
-        createUiStateModule({catalog, variables: sampleStaffAuthAssembly.variables, surfaceForm: 'mobile'}),
+        createUiStateModule({catalog, variables: (sampleStaffAuthModule.presentationContributions.variables ?? []), surfaceForm: 'mobile'}),
         createSampleStaffSessionModule(),
         createSampleStaffAuthModule(),
       ],
@@ -790,7 +796,7 @@ describe('sample staff auth UI feature', () => {
           ),
       ).toBe(false);
     } finally {
-      releaseRuntimeForTest(runtime);
+      await releaseRuntimeForTestAsync(runtime);
     }
   });
 

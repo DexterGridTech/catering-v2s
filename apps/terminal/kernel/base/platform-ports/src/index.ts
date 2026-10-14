@@ -31,6 +31,15 @@ export type {
   LogWriteResult,
   LoggerPort,
 } from './types/logging';
+export type {TopologyPeerChannel, TopologyPeerChannelEvent} from './types/topologyPeerChannel';
+export type {
+  TransportConnection,
+  TransportConnectionEvent,
+  TransportHttpAttemptResult,
+  TransportManagedConnection,
+  TransportNetworkAdapter,
+  TransportNetworkSnapshot,
+} from './types/transportNetwork';
 export type {
   StateStorageCall,
   StateStorageReadInput,

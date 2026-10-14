@@ -6,6 +6,7 @@ import {openAsBlob} from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {managedRuntime, managedSeedEnvironment, invocationKey} from './owner-command-seed-executor.mjs';
+import {seedRunIdentity} from './managed-seed-target.mjs';
 import {buildManagedDiagnosticHeaders} from './managed-diagnostic-protocol.mjs';
 import {
   loadGeneratedOperationRegistry,
@@ -111,7 +112,7 @@ async function execute() {
   const phases = [];
   let platformCookie = null;
   const request = createSeedHttpClient({
-    baseUrl: environment.V2S_DEV_HTTP_BASE_URL,
+    baseUrl: environment.V2S_SEED_HTTP_BASE_URL,
     resolveOperation: operationId => resolveGeneratedOperationById(registry, operationId),
     materializeOperationPath: materializeGeneratedOperationPath,
     buildDiagnosticHeaders: buildManagedDiagnosticHeaders,
@@ -407,7 +408,7 @@ async function execute() {
     const output = reportFile(runId);
     writeReport(output, {
       schemaVersion: 1,
-      managedDevRunId: runId,
+      ...seedRunIdentity(manifest),
       status: 'PASS',
       business: 'PASS',
       cleanup,
@@ -453,7 +454,7 @@ async function execute() {
     const output = reportFile(runId);
     writeReport(output, {
       schemaVersion: 1,
-      managedDevRunId: runId,
+      ...seedRunIdentity(manifest),
       status: 'FAIL',
       business: 'FAIL',
       cleanup,

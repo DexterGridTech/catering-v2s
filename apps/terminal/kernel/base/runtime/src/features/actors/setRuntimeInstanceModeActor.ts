@@ -1,6 +1,6 @@
 import {onCommand, defineActor} from '../../foundations/defineActor';
-import {setRuntimeInstanceModeCommand} from '../commands/setRuntimeInstanceMode';
-import {runtimeInstanceModeChangedCommand} from '../commands/runtimeInstanceModeChanged';
+import {setRuntimeInstanceModeCommand} from '../../declarations/commands';
+import {runtimeInstanceModeChangedCommand} from '../../declarations/commands';
 import {setRuntimeInstanceModeAction} from '../slices/runtimeInstanceMode';
 import {selectRuntimeInstanceMode} from '../../selectors/selectRuntimeInstanceMode';
 import {moduleName} from '../../moduleName';

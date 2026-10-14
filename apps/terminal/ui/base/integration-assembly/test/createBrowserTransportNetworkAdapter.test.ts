@@ -131,6 +131,23 @@ describe('browser transport adapter', () => {
     });
 
     expect(cancelled).toBe(true);
-    expect(result).toEqual({kind: 'failure', category: 'not-delivered', code: 'BROWSER_HTTP_RESPONSE_TOO_LARGE'});
+    expect(result).toEqual({kind: 'failure', category: 'delivered-failure', code: 'BROWSER_HTTP_RESPONSE_TOO_LARGE'});
+  });
+
+  it('classifies a fetch rejection as an uncertain delivered attempt so unsafe requests are not replayed', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('connection closed after request write'); }));
+    const adapter = createBrowserTransportNetworkAdapter(async serverName =>
+      Object.freeze({serverName, revision: 1, addresses: Object.freeze([{addressName: 'selected', baseUrl: 'https://api.example.test'}])}),
+    );
+    const snapshot = await adapter.readSnapshot('business');
+    const result = await adapter.sendHttp!({
+      address: snapshot.addresses[0]!,
+      method: 'POST',
+      pathAndQuery: '/terminal/activation/cancel',
+      headers: {},
+      body: {confirmation: true},
+      timeoutMs: 1_000,
+    });
+    expect(result).toMatchObject({kind: 'failure', category: 'delivered-failure', code: 'BROWSER_HTTP_TRANSPORT_FAILED'});
   });
 });

@@ -1,4 +1,3 @@
-import {createSlice, type PayloadAction, type UnknownAction} from '@reduxjs/toolkit';
 import type {DisplayMode} from '@catering-v2s/kernel-base-display-context';
 import {
   createWorkspaceStateKeys,
@@ -16,7 +15,7 @@ import type {LayerEntry, ScreenPlacement, UiContentState} from '../types/content
 import {nowTimestampMs} from '@catering-v2s/kernel-base-contracts';
 import type {SyncRecordState, SyncValueEnvelope} from '@catering-v2s/kernel-base-state';
 
-const contentBaseName = `${moduleName}.content`;
+export const contentBaseName = `${moduleName}.content`;
 const displayModes: readonly DisplayMode[] = ['PRIMARY', 'SECONDARY'];
 
 export type ContentHydrationDiagnosticReason =
@@ -71,14 +70,14 @@ const readLayerPersistence = (value: unknown): 'durable' | 'ephemeral' | undefin
 const hasInvalidOptionalProps = (record: Record<string, unknown>): boolean =>
   record.props !== undefined && readOptionalProps(record) === undefined;
 
-const createInitialContentState = (): UiContentState => ({
+export const createInitialContentState = (): UiContentState => ({
   contentSets: {
     PRIMARY: {containers: {}, layers: []},
     SECONDARY: {containers: {}, layers: []},
   },
 });
 
-const readShowPayload = (
+export const readShowPayload = (
   value: unknown,
 ):
   | Readonly<{
@@ -111,7 +110,7 @@ const readShowPayload = (
   });
 };
 
-const readOpenLayerPayload = (
+export const readOpenLayerPayload = (
   value: unknown,
 ):
   | Readonly<{
@@ -143,7 +142,7 @@ const readOpenLayerPayload = (
   return Object.freeze({displayMode: record.displayMode, layer});
 };
 
-const readCloseLayerPayload = (
+export const readCloseLayerPayload = (
   value: unknown,
 ):
   | Readonly<{
@@ -158,7 +157,7 @@ const readCloseLayerPayload = (
   return Object.freeze({displayMode: record.displayMode, layerId: record.layerId});
 };
 
-const readRemoveScreenPayload = (
+export const readRemoveScreenPayload = (
   value: unknown,
 ):
   | Readonly<{
@@ -173,90 +172,12 @@ const readRemoveScreenPayload = (
   return Object.freeze({displayMode: record.displayMode, containerKey: record.containerKey});
 };
 
-const readClearLayersPayload = (value: unknown): Readonly<{displayMode: DisplayMode}> | undefined => {
+export const readClearLayersPayload = (value: unknown): Readonly<{displayMode: DisplayMode}> | undefined => {
   const record = readObject(value);
   return record !== undefined && isDisplayMode(record.displayMode)
     ? Object.freeze({displayMode: record.displayMode})
     : undefined;
 };
-
-type MutableContentState = {
-  contentSets: Record<
-    DisplayMode,
-    {
-      containers: Record<string, ScreenPlacement>;
-      layers: LayerEntry[];
-    }
-  >;
-};
-
-type ContentCaseReducers = {
-  readonly showScreen: (state: MutableContentState, action: PayloadAction<unknown>) => void;
-  readonly removeScreen: (state: MutableContentState, action: PayloadAction<unknown>) => void;
-  readonly openLayer: (state: MutableContentState, action: PayloadAction<unknown>) => void;
-  readonly closeLayer: (state: MutableContentState, action: PayloadAction<unknown>) => void;
-  readonly clearLayers: (state: MutableContentState, action: PayloadAction<unknown>) => void;
-};
-
-const createContentReducers = (): ContentCaseReducers => ({
-  showScreen: (state, action): void => {
-    const payload = readShowPayload(action.payload);
-    if (payload === undefined) return;
-    state.contentSets[payload.displayMode].containers[payload.containerKey] = payload.placement;
-  },
-  removeScreen: (state, action): void => {
-    const payload = readRemoveScreenPayload(action.payload);
-    if (payload === undefined) return;
-    delete state.contentSets[payload.displayMode].containers[payload.containerKey];
-  },
-  openLayer: (state, action): void => {
-    const payload = readOpenLayerPayload(action.payload);
-    if (payload === undefined) return;
-    const contentSet = state.contentSets[payload.displayMode];
-    if (contentSet.layers.some(layer => layer.layerId === payload.layer.layerId)) return;
-    contentSet.layers.push(payload.layer);
-  },
-  closeLayer: (state, action): void => {
-    const payload = readCloseLayerPayload(action.payload);
-    if (payload === undefined) return;
-    const contentSet = state.contentSets[payload.displayMode];
-    const index = contentSet.layers.findIndex(layer => layer.layerId === payload.layerId);
-    if (index < 0) return;
-    contentSet.layers.splice(index, 1);
-  },
-  clearLayers: (state, action): void => {
-    const payload = readClearLayersPayload(action.payload);
-    if (payload === undefined) return;
-    const contentSet = state.contentSets[payload.displayMode];
-    contentSet.layers.splice(0, contentSet.layers.length);
-  },
-});
-
-type GeneratedContentActionCreator = (payload: unknown) => UnknownAction;
-type GeneratedContentSlice = Readonly<{
-  reducer: (state: UiContentState | undefined, action: UnknownAction) => UiContentState;
-  actions: Readonly<Record<string, GeneratedContentActionCreator>>;
-}>;
-type CreateContentSliceInput = Readonly<{
-  name: string;
-  initialState: UiContentState;
-  reducers: ContentCaseReducers;
-}>;
-
-const createTypedSlice = createSlice as (input: CreateContentSliceInput) => GeneratedContentSlice;
-
-const createContentSlice = (name: string): GeneratedContentSlice =>
-  createTypedSlice({
-    name,
-    initialState: createInitialContentState(),
-    reducers: createContentReducers(),
-  });
-
-const canonicalContentSlice = createContentSlice(contentBaseName);
-const mainContentSlice = createContentSlice(contentStateKeys.MAIN);
-const branchContentSlice = createContentSlice(contentStateKeys.BRANCH);
-
-export const contentActions = canonicalContentSlice.actions;
 
 const serializePlacement = (placement: ScreenPlacement): StateJsonObject => {
   const result: Record<string, StateJsonValue> = {partKey: placement.partKey};
@@ -650,14 +571,15 @@ const createContentDescriptor = (
 };
 
 export const createContentStateRegistrations = (
+  reducers: Readonly<{
+    readonly MAIN: StateRuntimeSliceDescriptor<UiContentState>['reducer'];
+    readonly BRANCH: StateRuntimeSliceDescriptor<UiContentState>['reducer'];
+  }>,
   onHydrationDiagnostic: ContentHydrationDiagnosticSink = () => undefined,
 ): readonly StateRuntimeSliceRegistration[] =>
   toWorkspaceStateDescriptors<UiContentState>({
     baseName: contentBaseName,
-    reducers: {
-      MAIN: mainContentSlice.reducer,
-      BRANCH: branchContentSlice.reducer,
-    },
+    reducers,
     createDescriptor: (workspace, sliceName, reducer) =>
       createContentDescriptor({
         workspace,

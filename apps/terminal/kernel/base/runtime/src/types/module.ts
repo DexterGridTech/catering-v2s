@@ -6,6 +6,7 @@ import type {
   StateRoot,
   StateSyncApplyResult,
   StateSyncPayloadResult,
+  StateSyncQualification,
   StateRuntimeSliceRegistration,
   SyncStateDiff,
 } from '@catering-v2s/kernel-base-state';
@@ -83,14 +84,15 @@ export type RuntimeModuleContext = Readonly<{
   registerAsyncResource: (cleanup: () => Promise<void>) => () => void;
   createFullSyncPayload: (sliceName: string) => StateSyncPayloadResult;
   applyAuthoritativeSync: (sliceName: string, payload: SyncStateDiff) => StateSyncApplyResult;
+  getStateSyncQualifications: () => readonly StateSyncQualification[];
   dispatchCommand: RuntimeModuleDispatch;
   evaluateSelector: (name: string, argsTuple: readonly unknown[]) => unknown;
   installPeerDispatchGateway: (gateway: PeerDispatchGateway) => void;
 }>;
 
 export type RuntimeModule = Readonly<
-  AppModule & {
-    /** Concrete definitions are kept separately from the AppModule declarations. */
+  Omit<AppModule, 'commands' | 'actors' | 'slices'> & {
+    /** Runtime descriptions are derived from these concrete owner definitions. */
     commandDefinitions?: readonly RuntimeCommandDefinition[];
     selectorDefinitions?: readonly AnyStateSelector[];
     actorDefinitions?: readonly ActorDefinition[];

@@ -1,48 +1,39 @@
-# `ui.base.feature-assembly`
+# UI Runtime 模块贡献工厂（`ui.base.feature-assembly`）
 
 ## 定位
 
-`ui.base.feature-assembly` 是 `ui/feature` owner 共用的 module/assembly 结构工具包，
-不是业务 feature、App assembly 或 runtime state owner。
+本包提供 UI Runtime module 工厂，把模块的运行期定义与 parts、variables、按 partKey 关联的
+layer dismissals 一起冻结。它不拥有业务事实、App assembly 或 Runtime state。
 
-## 作用
-
-它负责把 feature 自己提供的 owner 定义规范化为真实 `RuntimeModule`。
-业务 operation、part identity、state、用户文案和 testID 仍由各自 feature 保有；该包不
-创建这些事实，也不使用 descriptor、optional dependency 或完整依赖数组伪造运行期模块。
+这是 UI toolkit，直接依赖 contracts/runtime/state/ui-state/render，由 UI owner modules 使用；它不反向依赖具体 feature 或 integration。
 
 ## 结构
 
-- `src/types/featureAssembly.ts`：描述 feature module 与 assembly 的公开类型。
-- `src/foundations/createFeatureAssemblyModule.ts`：校验 owner module，并派生冻结的 runtime module 描述。
-- `src/foundations/createFeatureAssembly.ts`：组合 feature 的 parts、可选 variables 与 module 工厂。
-- `src/moduleName.ts`：公开模块身份。
-- `src/dependencies.ts`：workspace runtime 依赖声明。
-- `src/index.ts`：唯一公共出口，只重导出工厂、类型与包身份。
+- `src/types/uiRuntimeModule.ts`：UI module 与呈现贡献类型。
+- `src/foundations/createUiRuntimeModule.ts`：为 `ui.base`、`ui.feature`、`ui.integration` 模块附加呈现贡献。
+- `src/index.ts`：包的唯一公共导出。
 - `terminal-invariants.json`：公开面与包边界不变量。
-- `test/featureAssembly.test.ts`：从公共入口验证 assembly 保留 feature identity 并生成 owner module。
+- `test/featureAssembly.test.ts`：验证 Runtime module 与呈现贡献冻结。
 
 ## 用法
 
-feature 先提供自己的模块工厂，再交给本包的 assembly 工厂：
+UI owner 在自己的模块工厂中调用本包公开的 `createUiRuntimeModule` 返回呈现贡献；integration 只加载模块并收集这些贡献：
 
 ```ts
-const assembly = createFeatureAssembly({
-  parts,
-  createModule: createSampleWallpaperPickerModule,
-})
-
-const module = assembly.createModule()
-void module
+const module = createUiRuntimeModule(runtimeModule, {parts, layerDismissals})
 ```
 
-`createFeatureAssemblyModule` 只接受 `moduleName` 以 `ui.feature.` 开头且 `kind` 为
-`owner` 的真实 `RuntimeModule`，并返回冻结的依赖、command、actor 和 slice 列表。
+feature、base 与 integration owner 都使用 `createUiRuntimeModule` 声明本包实际的
+Runtime definitions 和呈现贡献。没有真实 Runtime 行为的 primitives/input/render 不伪造 module。
+
+## 边界
+
+本包不得依赖具体 feature、integration 或 App。业务身份、状态、文案和测试标识由各自 owner
+声明；integration 不重复维护第二份 parts、variables 或 dismissal 名单。
+
+修改时同步 `package.json`、`src/dependencies.ts`、graph、public exports、README 与
+`terminal-invariants.json`，并运行本包 focused typecheck/test 及对应 terminal static checker。
 
 ## 在这个包上迭代时
 
-先同步详设 D-13A、计划 B4 与 feature owner 的 dependency census，再检查
-`package.json`、`src/dependencies.ts`、graph、public exports 和 README。新增能力必须
-保持 base 不反向依赖 feature/integration/App，并为“未把真实运行期模块交给 resolver
-确实缺模块”保留 focused red mutation；改完至少运行本包 typecheck/test 和对应的
-terminal static checker。不要把业务身份、全量依赖数组或不可撤销的测试替身搬进这里。
+只为真实 UI Runtime module 附加本包 owner 提供的 presentation contributions；纯 toolkit 不伪造业务 module。修改后运行 `yarn workspace @catering-v2s/ui-base-feature-assembly typecheck`、`test`、`lint`，并用 integration-assembly 的消费者测试确认新增 parts、variables 或 dismissal 被实际收集。

@@ -111,7 +111,7 @@ export const createServerConfigSlice = (
           )
             throw new Error('SERVER_CONFIG_SYNC_INVALID');
           const override = rawOverride as Record<string, unknown>;
-          if (!Array.isArray(override.addresses) || override.addresses.length < 1 || override.addresses.length > 4)
+          if (!Array.isArray(override.addresses) || override.addresses.length < 1)
             throw new Error('SERVER_CONFIG_SYNC_INVALID');
           for (const address of override.addresses) {
             if (typeof address !== 'object' || address === null || Array.isArray(address))

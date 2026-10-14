@@ -17,7 +17,7 @@ import {
   type DevicePort,
 } from '@catering-v2s/kernel-base-platform-ports';
 import {moduleName as stateModuleName} from '@catering-v2s/kernel-base-state';
-import {createRuntime, type Runtime, type RuntimeModule} from '@catering-v2s/kernel-base-runtime';
+import {createRuntimeModule, createRuntime, type Runtime, type RuntimeModule} from '@catering-v2s/kernel-base-runtime';
 import {releaseRuntimeForTestAsync} from '@catering-v2s/kernel-base-runtime/testing';
 import {
   activateTerminalCommand,
@@ -28,10 +28,12 @@ import {
 } from '@catering-v2s/kernel-base-terminal-data-client';
 import {
   createTransportModule,
-  type TransportConnectionEvent,
-  type TransportManagedConnection,
-  type TransportNetworkAdapter,
 } from '@catering-v2s/kernel-base-transport';
+import type {
+  TransportConnectionEvent,
+  TransportManagedConnection,
+  TransportNetworkAdapter,
+} from '@catering-v2s/kernel-base-platform-ports';
 import {
   completeTopologySlaveUnpairStateClearCommand,
   moduleName as topologyModuleName,
@@ -76,13 +78,10 @@ const toolkit = (name: string, dependencies: readonly string[]): RuntimeModule =
   dependencies: dependencies.map(moduleName => ({moduleName})),
 });
 
-const topologyCommandModule: RuntimeModule = Object.freeze({
+const topologyCommandModule: RuntimeModule = createRuntimeModule({
   moduleName: topologyModuleName,
   kind: 'owner',
   dependencies: [{moduleName: 'kernel.base.runtime'}, {moduleName: 'kernel.base.transport'}],
-  commands: [requestTopologySlaveUnpairStateClearCommand, completeTopologySlaveUnpairStateClearCommand].map(
-    definition => ({name: definition.commandName, visibility: definition.visibility}),
-  ),
   commandDefinitions: [requestTopologySlaveUnpairStateClearCommand, completeTopologySlaveUnpairStateClearCommand],
 });
 

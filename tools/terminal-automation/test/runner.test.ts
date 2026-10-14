@@ -34,6 +34,11 @@ import {
   readBoundedLogTail,
   summarizeManagedDiagnosticEvents,
   terminalAutomationExitCode,
+  managedWebHarnessSuite,
+  parseManagedWebHarnessOutcome,
+  createManagedWebHarnessOutcomeTracker,
+  webHarnessCleanupExplainsNonzeroExit,
+  serializeRecoveryAdbFailure,
 } from '../src/runner.ts';
 import journeyConfig from '../vitest.journeys.config.ts';
 import unitConfig from '../vitest.config.ts';
@@ -133,6 +138,49 @@ describe('Android update diagnostics result', () => {
         managedDevDiagnostics: 'N/A',
       }),
     ).toBe(0);
+  });
+});
+
+describe('failed Android cleanup recovery diagnostics', () => {
+  it('retains the ADB command result and raw output alongside the stable failure code', () => {
+    const spawnError = Object.assign(new Error('spawnSync adb ETIMEDOUT'), {
+      code: 'ETIMEDOUT',
+      errno: -60,
+      syscall: 'spawnSync adb',
+      path: 'adb',
+    });
+    const diagnostic = JSON.parse(
+      serializeRecoveryAdbFailure(
+        'adb',
+        ['-s', 'emulator-5558', 'shell', 'pm', 'list', 'packages', 'com.example.run'],
+        'TERMINAL_AUTOMATION_RECOVERY_PACKAGE_READ_FAILED',
+        {
+          status: null,
+          signal: 'SIGTERM',
+          error: spawnError,
+          stdout: 'partial package output',
+          stderr: 'device shell stopped responding',
+        },
+      ),
+    );
+
+    expect(diagnostic).toMatchObject({
+      command: ['adb', '-s', 'emulator-5558', 'shell', 'pm', 'list', 'packages', 'com.example.run'],
+      failureCode: 'TERMINAL_AUTOMATION_RECOVERY_PACKAGE_READ_FAILED',
+      status: null,
+      signal: 'SIGTERM',
+      error: {
+        name: 'Error',
+        message: 'spawnSync adb ETIMEDOUT',
+        code: 'ETIMEDOUT',
+        errno: -60,
+        syscall: 'spawnSync adb',
+        path: 'adb',
+      },
+      stdout: 'partial package output',
+      stderr: 'device shell stopped responding',
+    });
+    expect(diagnostic.error.stack).toContain('spawnSync adb ETIMEDOUT');
   });
 });
 
@@ -367,6 +415,93 @@ describe('managed Android cleanup result', () => {
     cleanup.accept('stdout', 'TERMINAL_AUTOMATION_DEVICE_CLEANUP_COMPLETE\n');
     cleanup.accept('stderr', 'TERMINAL_AUTOMATION_DEVICE_CLEANUP_FAILED:REVERSE');
     expect(cleanup.finish()).toBe('FAIL');
+  });
+});
+
+describe('managed Web harness outcome', () => {
+  it('keeps a completed business proof separate when Vitest exits only because harness cleanup failed', () => {
+    const output = [
+      'stdout TERMINAL_AUTOMATION_WEB_HARNESS_BUSINESS_PASS runId=run-1 suite=journey.console',
+      'stderr TERMINAL_AUTOMATION_WEB_HARNESS_CLEANUP_FAIL runId=run-1 suite=journey.console failures=BROWSER_CLOSE_FAILED',
+    ].join('\n');
+    const outcome = parseManagedWebHarnessOutcome(output, 'run-1', 'journey.console');
+    expect(outcome).toEqual({
+      business: 'PASS',
+      cleanup: 'FAIL',
+      cleanupFailures: ['BROWSER_CLOSE_FAILED'],
+    });
+    expect(webHarnessCleanupExplainsNonzeroExit(1, outcome)).toBe(true);
+    expect(webHarnessCleanupExplainsNonzeroExit(0, outcome)).toBe(false);
+  });
+
+  it('retains run-scoped outcome markers when unrelated output exceeds the bounded log tail', () => {
+    const tracker = createManagedWebHarnessOutcomeTracker('large-run', 'journey.console');
+    tracker.accept('stdout', 'TERMINAL_AUTOMATION_WEB_HARNESS_BUSINESS_PASS runId=large-run suite=journey.console\n');
+    tracker.accept('stderr', `${'x'.repeat(1_048_577)}\n`);
+    tracker.accept('stdout', 'TERMINAL_AUTOMATION_WEB_HARNESS_CLEANUP_FAIL runId=large-run suite=journey.console failures=BROWSER_CLOSE_FAILED\n');
+    const outcome = tracker.finish();
+
+    expect(outcome).toEqual({
+      business: 'PASS',
+      cleanup: 'FAIL',
+      cleanupFailures: ['BROWSER_CLOSE_FAILED'],
+    });
+    expect(webHarnessCleanupExplainsNonzeroExit(1, outcome)).toBe(true);
+  });
+
+  it('keeps split marker lines isolated by output stream while streaming', () => {
+    const tracker = createManagedWebHarnessOutcomeTracker('split-run', 'remote.wallpaper');
+    tracker.accept('stdout', 'TERMINAL_AUTOMATION_WEB_HARNESS_BUSINESS_');
+    tracker.accept('stderr', 'ordinary stderr output\n');
+    tracker.accept('stdout', 'PASS runId=split-run suite=remote.wallpaper\n');
+    tracker.accept('stderr', 'TERMINAL_AUTOMATION_WEB_HARNESS_CLEANUP_PASS runId=split-run suite=remote.wallpaper');
+    tracker.accept('stderr', '', true);
+
+    expect(tracker.finish()).toEqual({business: 'PASS', cleanup: 'PASS', cleanupFailures: []});
+  });
+
+  it('fails closed for missing, mismatched, or duplicate run-scoped outcome markers', () => {
+    const mismatched = [
+      'TERMINAL_AUTOMATION_WEB_HARNESS_BUSINESS_PASS runId=old-run suite=remote.wallpaper',
+      'TERMINAL_AUTOMATION_WEB_HARNESS_CLEANUP_PASS runId=old-run suite=remote.wallpaper',
+    ].join('\n');
+    const duplicate = [
+      'TERMINAL_AUTOMATION_WEB_HARNESS_BUSINESS_PASS runId=run-2 suite=remote.wallpaper',
+      'TERMINAL_AUTOMATION_WEB_HARNESS_BUSINESS_PASS runId=run-2 suite=remote.wallpaper',
+      'TERMINAL_AUTOMATION_WEB_HARNESS_CLEANUP_PASS runId=run-2 suite=remote.wallpaper',
+    ].join('\n');
+    expect(parseManagedWebHarnessOutcome('', 'run-2', 'remote.wallpaper')).toMatchObject({
+      business: 'UNKNOWN', cleanup: 'UNKNOWN',
+    });
+    expect(parseManagedWebHarnessOutcome(mismatched, 'run-2', 'remote.wallpaper')).toMatchObject({
+      business: 'UNKNOWN', cleanup: 'UNKNOWN',
+    });
+    expect(parseManagedWebHarnessOutcome(duplicate, 'run-2', 'remote.wallpaper')).toMatchObject({
+      business: 'UNKNOWN', cleanup: 'PASS',
+    });
+    expect(webHarnessCleanupExplainsNonzeroExit(1, parseManagedWebHarnessOutcome(mismatched, 'run-2', 'remote.wallpaper'))).toBe(false);
+  });
+
+  it('requires explicit Web harness outcome only for the managed Web suites that own cleanup hooks', () => {
+    expect(managedWebHarnessSuite({phase: 'journey', platform: 'web', shape: 'mobile', sample: 'console'})).toBe(
+      'journey.console',
+    );
+    expect(managedWebHarnessSuite({phase: 'skill', platform: 'web', shape: 'mobile', sample: 'wallpaper'})).toBe(
+      'journey.wallpaper',
+    );
+    expect(managedWebHarnessSuite({phase: 'remote', platform: 'web', shape: 'mobile', sample: 'console'})).toBe(
+      'remote.console',
+    );
+    expect(
+      managedWebHarnessSuite({
+        phase: 'update', platform: 'web', shape: 'mobile', sample: 'wallpaper', case: 'update.owner-flow',
+      }),
+    ).toBe('update.owner-flow.wallpaper');
+    expect(
+      managedWebHarnessSuite({
+        phase: 'update', platform: 'web', shape: 'mobile', sample: 'console', case: 'update.artifacts',
+      }),
+    ).toBeNull();
   });
 });
 
@@ -1456,6 +1591,38 @@ describe('resolveAutomationSuite', () => {
         'TERMINAL_AUTOMATION_UPDATE_CASE_ASSERTIONS_PASS case=update.interruption run=run-2\n',
       ),
     ).toBe(true);
+  });
+
+  it('registers owner-flow only on managed DEV Web and the existing supply-chain Android shapes', () => {
+    const web = parseAutomationRunArguments([
+      '--phase', 'update', '--platform', 'web', '--shape', 'mobile', '--sample', 'console', '--case', 'update.owner-flow',
+    ]);
+    const wallpaperWeb = parseAutomationRunArguments([
+      '--phase', 'update', '--platform', 'web', '--shape', 'mobile', '--sample', 'wallpaper', '--case', 'update.owner-flow',
+    ]);
+    const consoleAndroid = parseAutomationRunArguments([
+      '--phase', 'update', '--platform', 'android', '--shape', 'dual', '--sample', 'console', '--case', 'update.owner-flow',
+      '--device-serial', 'managed-device-01',
+    ]);
+    const wallpaperAndroid = parseAutomationRunArguments([
+      '--phase', 'update', '--platform', 'android', '--shape', 'mobile', '--sample', 'wallpaper', '--case', 'update.owner-flow',
+      '--device-serial', 'managed-device-02',
+    ]);
+
+    for (const execution of [web, wallpaperWeb, consoleAndroid, wallpaperAndroid]) {
+      expect(updateCaseImplemented(execution)).toBe(true);
+      expect(updateRequiresManagedDev(execution)).toBe(true);
+    }
+    expect(() => parseAutomationRunArguments([
+      '--phase', 'update', '--platform', 'web', '--shape', 'dual', '--sample', 'console', '--case', 'update.owner-flow',
+    ])).toThrow('TERMINAL_AUTOMATION_UPDATE_OWNER_FLOW_WEB_REQUIRES_MOBILE');
+    expect(() => parseAutomationRunArguments([
+      '--phase', 'update', '--platform', 'android', '--shape', 'dual', '--sample', 'wallpaper', '--case', 'update.owner-flow',
+      '--device-serial', 'managed-device-03',
+    ])).toThrow('TERMINAL_AUTOMATION_UPDATE_OWNER_FLOW_SAMPLE_SHAPE_INVALID');
+    expect(() => parseAutomationRunArguments([
+      '--phase', 'update', '--platform', 'web', '--shape', 'mobile', '--case', 'update.owner-flow',
+    ])).toThrow('TERMINAL_AUTOMATION_UPDATE_OWNER_FLOW_SAMPLE_REQUIRED');
   });
 
   it.each([

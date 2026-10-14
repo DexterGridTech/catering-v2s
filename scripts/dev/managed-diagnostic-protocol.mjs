@@ -2,6 +2,7 @@ import {chmodSync, existsSync, mkdirSync, readFileSync, renameSync, statSync, wr
 import {spawnSync} from 'node:child_process';
 import path from 'node:path';
 import {isOwnedRemoteDevRoot} from './r5-remote-java.mjs';
+import {seedEnvironmentKind} from './managed-seed-target.mjs';
 
 export class ManagedDiagnosticProtocolFailure extends Error {
   constructor(code) { super(code); this.code = code; }
@@ -73,7 +74,11 @@ export function measurementMetadataForReport(manifest) {
 function remoteDiagnosticFor(manifest) {
   const remote = manifest?.remoteDiagnostic;
   if (!remote) return null;
-  if (remote.kind !== REMOTE_DIAGNOSTIC_KIND || !isOwnedRemoteDevRoot(remote.remoteRoot)) {
+  const environmentKind = seedEnvironmentKind(manifest);
+  const ownedRoot = environmentKind === 'dev'
+    ? isOwnedRemoteDevRoot(remote.remoteRoot)
+    : typeof remote.remoteRoot === 'string' && remote.remoteRoot === `/srv/catering-v2s/uat/runs/${manifest.runId}`;
+  if (remote.kind !== REMOTE_DIAGNOSTIC_KIND || !ownedRoot) {
     fail('SEED_DIAGNOSTIC_REMOTE_TRANSPORT_INVALID');
   }
   const host = manifest?.remoteHostTrust?.host;

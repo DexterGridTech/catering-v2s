@@ -6,7 +6,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/** Fail-closed DEV-only seed aids. They are absent unless the exact r5-full runtime is selected. */
+/** Fail-closed non-production seed aid. It is absent unless the exact r5-full runtime is selected. */
 @Configuration
 @ConditionalOnProperty(name = "v2s.dev-profile", havingValue = "r5-full")
 public class DevSeedRuntimeConfiguration {
@@ -25,10 +25,14 @@ public class DevSeedRuntimeConfiguration {
     }
 
     static void validate(String runtimeEnvironment, String profile, String namespace, String fixedOtp) {
-        if (!"non-production".equals(runtimeEnvironment)
+        boolean validTarget = "non-production".equals(runtimeEnvironment)
+                && namespace != null
+                && namespace.matches("^v2s-dev-[a-z0-9-]{3,32}$");
+        validTarget |= "uat".equals(runtimeEnvironment)
+                && namespace != null
+                && namespace.matches("^v2s-uat-[a-z0-9-]{3,32}$");
+        if (!validTarget
                 || !"r5-full".equals(profile)
-                || namespace == null
-                || !namespace.matches("^v2s-dev-[a-z0-9-]{3,32}$")
                 || fixedOtp == null
                 || !fixedOtp.matches("^[0-9]{6}$")) {
             throw new IllegalStateException("DEV_FIXED_SEED_RUNTIME_CONDITIONS_INVALID");

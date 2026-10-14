@@ -1,5 +1,6 @@
 export {moduleName} from './moduleName';
 export {dependencyModuleNames, devDependencyModuleNames} from './dependencies';
+export {createAdminShellModule} from './application/module';
 export {
   ADMIN_CONSOLE_FOCUS_SCOPE_ID,
   ADMIN_CONSOLE_LAYER_ID,
@@ -30,10 +31,8 @@ export type {AdminPageKey, AdminPageProjection, AdminPageSpec} from './foundatio
 export {adminTestIds} from './foundations/adminTestIds';
 export {AdminLauncher} from './components/AdminLauncher';
 export {SampleSection} from './components/sections/SampleSection';
-export {adminShellAssembly} from './parts/parts';
-export type {AdminShellAssembly} from './parts/parts';
-export {createServerConfigPanelParts} from './parts/serverConfigParts';
-export {createTerminalUpdateInstallReminderParts} from './parts/terminalUpdateInstallReminderParts';
+export {createServerConfigPanelParts} from './declarations/parts';
+export {createTerminalUpdateInstallReminderParts} from './declarations/parts';
 export type {AdminSectionComponent, AdminSectionProps, AdminSectionRenderContext} from './types/adminSection';
 export {
   ADMIN_PASSWORD_FALLBACK,

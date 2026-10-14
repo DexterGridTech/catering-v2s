@@ -30,7 +30,7 @@ describe('classifyRequestResult', () => {
     ['partial-failed', ['AUTHENTICATION'], 'business-failure'],
     ['timed-out', ['BUSINESS'], 'business-failure'],
     ['error', ['VALIDATION'], 'business-failure'],
-    ['partial-failed', ['AUTHORIZATION'], 'system-failure'],
+    ['partial-failed', ['AUTHORIZATION'], 'business-failure'],
     ['timed-out', ['NETWORK'], 'system-failure'],
     ['error', ['DATABASE'], 'system-failure'],
     ['error', ['EXTERNAL_API'], 'system-failure'],

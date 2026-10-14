@@ -536,7 +536,11 @@ describe(`TER remote control ${sample} on Expo Web`, () => {
     } catch {
       cleanupFailures.push('REMOTE_WORKSPACE_RELEASE_FAILED');
     }
-    diagnostics?.close();
+    try {
+      diagnostics?.close();
+    } catch {
+      cleanupFailures.push('JOURNEY_DIAGNOSTICS_CLEANUP_FAILED');
+    }
     try {
       await browser?.close();
     } catch {
@@ -578,6 +582,9 @@ describe(`TER remote control ${sample} on Expo Web`, () => {
       status: cleanupFailures.length === 0 ? 'PASS' : 'FAIL',
       failureCount: cleanupFailures.length,
     });
+    process.stdout.write(
+      `TERMINAL_AUTOMATION_WEB_HARNESS_CLEANUP_${cleanupFailures.length === 0 ? 'PASS' : 'FAIL'} runId=${runId} suite=remote.${sample}${cleanupFailures.length === 0 ? '' : ` failures=${cleanupFailures.join(',')}`}\n`,
+    );
     if (cleanupFailures.length > 0) throw new Error(`TERMINAL_AUTOMATION_REMOTE_CLEANUP_${cleanupFailures.join('_')}`);
   });
 
@@ -718,5 +725,8 @@ describe(`TER remote control ${sample} on Expo Web`, () => {
       safeLog('business.failed', {errorCode: sanitizedErrorCode(error)});
       throw error;
     }
+    process.stdout.write(
+      `TERMINAL_AUTOMATION_WEB_HARNESS_BUSINESS_PASS runId=${runId} suite=remote.${sample}\n`,
+    );
   }, 120_000);
 });

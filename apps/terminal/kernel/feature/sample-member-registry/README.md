@@ -16,14 +16,18 @@ pending；已清除 pending 后再次收到同一竞争动作必须是幂等 no-
 ## 结构
 
 - `src/types/types.ts`：Member、pending 和登记状态类型。
-- `src/features/commands/commands.ts`：提交、确认、拒绝、撤回及结果事件 command。
-- `src/features/actors/actors.ts`：登记业务命令的唯一处理者。
-- `src/features/slices/slice.ts`：owner state slice 与持久化字段声明。
-- `src/selectors/selectors.ts`：公开状态读取器。
+- `src/declarations/commands.ts`：提交、确认、拒绝、撤回及结果事件 command 声明。
+- `src/features/actors/submitMemberActor.ts`：创建 MAIN/BRANCH pending 并发出 pending 事件。
+- `src/features/actors/confirmMemberActor.ts`：按 operationId 在本机确认或请求 MASTER 登记。
+- `src/features/actors/registerBranchConfirmedMemberActor.ts`：MASTER 登记来自 BRANCH 的确认结果。
+- `src/features/actors/rejectMemberActor.ts`：处理拒绝与撤回命令。
+- `src/features/actors/shared/memberActorSupport.ts`：共享输入校验、host资格和确认生命周期类型。
+- `src/features/slices/memberRegistry.ts`：owner state slice 与持久化字段声明。
+- `src/selectors/selectMembers.ts`、`selectPendingMember.ts`、`selectHostPendingMember.ts`、`selectBranchPendingMember.ts`：分别读取成员列表、当前待处理、主机待处理和副机待处理事实；共享状态校验在 `src/foundations/readMemberState.ts`。
 - `src/foundations/errors.ts`：本包的 typed error 定义。
 - `src/application/module.ts`：真实 RuntimeModule 工厂；`src/index.ts`：公开面。
 
-MASTER→SLAVE 的同步 payload 只包含已确认 `members`。SLAVE apply 保留本机 `pending`，不发送、覆盖或清理分支登记草稿；双机 LMS 的主机 pending 另由 CP-05 明确的 operationId 投影承载。
+MASTER→SLAVE 的同步 payload 包含已确认 `members` 与主机 `hostPending`；SLAVE 将主机待确认项存为 `hostPendingProjection`，供双机 LMS 按 operationId 读取。SLAVE apply 保留本机 `branchPending`，不发送、覆盖或清理分支登记草稿。
 
 ## 用法
 

@@ -20,6 +20,7 @@
     "@catering-v2s/kernel-base-ui-state": "workspace:*",
     "@catering-v2s/ui-base-admin-shell": "workspace:*",
     "@catering-v2s/ui-base-automation-agent": "workspace:*",
+    "@catering-v2s/ui-base-feature-assembly": "workspace:*",
     "@catering-v2s/ui-base-input": "workspace:*",
     "@catering-v2s/ui-base-primitives": "workspace:*",
     "@catering-v2s/ui-base-render": "workspace:*"
@@ -30,7 +31,9 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
+    "jsdom": "^20.0.0",
     "react": "19.2.3",
+    "react-dom": "19.2.3",
     "react-native": "0.86.3",
     "typescript": "~6.0.3",
     "vitest": "4.1.10"

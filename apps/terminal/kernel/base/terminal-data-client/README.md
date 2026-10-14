@@ -10,16 +10,32 @@
 
 ## 结构
 
-`src/moduleName.ts`、`src/dependencies.ts` 与 `src/index.ts` 声明包边界；`src/generated/terminalApi.ts` 由本仓 OpenAPI 生成策略产生，禁止手改。
+`src/moduleName.ts`、`src/dependencies.ts` 与 `src/index.ts` 声明包边界；`src/generated/terminalApi.ts` 由本仓 OpenAPI 生成策略产生，禁止手改。`src/features/actors/terminalDataClientActor.ts` 保持唯一 actor 与装配入口；`features/actors/shared/installCredentialCommands.ts`、`installConnectionCommands.ts`、`installTerminalTopicCommands.ts`、`installRemoteOperationCommands.ts` 和 `installTerminalHttpCommands.ts` 分别登记本 owner 的命令处理器，`createTerminalDataClientSession.ts` 共同持有同一连接周期资源。纯 wire parser 留在 `src/foundations/parseTerminalConnectionMessage.ts`。
 
 ## 用法
 
-激活、在线/离线取消激活、建连、断连均通过本包公开 command，由 owner actor 执行。凭证、待完成激活重试、HTTP operation 语义和 TDS 业务协议只由本包持有；待完成激活的秘密仅在当前 JS runtime 的内存中供同一操作重试，runtime 重启即清除，成功建立的最终凭证才进入受保护持久化；凭证字段不由任何 selector 返回。业务协议消息和 socket 回调先转为本包内部 command，actor 才能更新 state。
+激活、在线/离线取消激活、建连、断连均通过本包公开 command，由 owner actor 执行。凭证、待完成激活重试、HTTP operation 语义和 TDS 业务协议只由本包持有；待完成激活的秘密仅在当前 JS runtime 内存中供同一操作重试，runtime 重启即清除；最终凭证由本包以明文持久化，并在主机持久化成功后作为同一凭证事实按 MASTER→SLAVE 同步。副机不独立生成或改变该凭证，不独立激活或建立 TDS 连接，但可经本机 TDC 直接请求 CBS。凭证秘密不由任何 selector 返回。业务协议消息和 socket 回调先转为本包内部 command，actor 才能更新 state。
 
-`selectActivationState`、`selectConnectionState`、`selectConnectionLatency`分别只读激活身份摘要、通用连接状态和RTT样本，不返回credentialSecret、激活码或完整wire请求。额外的`terminal-data-client.status-projection` slice只从这些owner selector生成展示所需的激活摘要、连接摘要、最新RTT和sourceNodeId；以plain owner persistence缓存并按MASTER→SLAVE同步。凭证由该包以plain owner persistence持久化，并在主机持久化成功后按MASTER→SLAVE完整投影；副机不另存凭证副本、不建立独立激活或TDS连接，但可用本机TDC直接请求CBS。投影不含deviceId、credential、pending activation、激活码或RTT历史，不用于业务资格。副机状态页仅显示sourceNodeId匹配当前peer的缓存；current peer的projection revision未apply时标为“上次主机状态（待同步）”，无匹配缓存时显示等待，不显示“未激活”。
+`selectActivationState`、`selectConnectionState`、`selectConnectionLatency`分别只读激活身份摘要、通用连接状态和RTT样本，不返回credentialSecret、激活码或完整wire请求。额外的`terminal-data-client.status-projection` slice只从这些owner selector生成展示所需的激活摘要、连接摘要、最新RTT和sourceNodeId；以plain owner persistence缓存并按MASTER→SLAVE同步。该展示投影不含deviceId、credential、pending activation、激活码或RTT历史，不用于业务资格。副机状态页仅显示sourceNodeId匹配当前peer的缓存；current peer的projection revision未apply时标为“上次主机状态（待同步）”，无匹配缓存时显示等待，不显示“未激活”。
 
-装配层注入生成凭证的安全随机源、业务服务名、通用transport command facade、版本和时钟；本包在actor内使用生成的HTTP operation client，并经transport的通用HTTP command执行，不把HTTP schema或业务错误码交给transport。地址/代理快照由composition注入transport network adapter，client不读取server-config selector、state或storage。
+装配层注入生成凭证的安全随机源、业务服务名、通用 transport command、版本和时钟。本包 actor 使用生成的 HTTP operation client，并经 transport 通用 HTTP command 执行；HTTP schema 和业务错误码不交给 transport。需要构造已认证 HTTP 请求上下文时，本包通过 `selectServerConfigServiceContext` 只读取当前服务的 `selectedSpace` 与 `serviceRevision`，不读取 server-config state、持久化内容、地址或代理配置。地址、代理及实际网络选择由 composition 注入 transport network adapter；TDC 仍是请求凭证与业务 owner。
+
+```ts
+import {createRequestId} from '@catering-v2s/kernel-base-contracts'
+import {connectTerminalCommand, selectConnectionState} from '@catering-v2s/kernel-base-terminal-data-client'
+
+await runtime.dispatchCommand(connectTerminalCommand, Object.freeze({}), {requestId: createRequestId()})
+const connection = selectConnectionState(runtime.getState())
+```
+
+`runtime` 是已装配本包并完成初始化的 Runtime；调用方请求 owner 建连并读取连接状态，不直接创建 socket。
 
 ## 在这个包上迭代时
 
 先读批次二详设 CP-03、R-9/R-10 与 TR-09～TR-11；新增命令、selector 或协议行为时同步公开导出、不变量、测试和 README。
+
+```sh
+yarn workspace @catering-v2s/kernel-base-terminal-data-client typecheck
+yarn workspace @catering-v2s/kernel-base-terminal-data-client test
+yarn workspace @catering-v2s/kernel-base-terminal-data-client lint
+```

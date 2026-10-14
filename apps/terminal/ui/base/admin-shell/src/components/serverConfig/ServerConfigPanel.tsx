@@ -361,7 +361,7 @@ export const ServerConfigPanel = ({
                   </PrimitiveCard>
                 );
               })}
-              {editable && draft.addresses.length < 4 ? (
+              {editable ? (
                 <PrimitiveButton
                   testID={testIds.addAddress}
                   appearance="admin-secondary"

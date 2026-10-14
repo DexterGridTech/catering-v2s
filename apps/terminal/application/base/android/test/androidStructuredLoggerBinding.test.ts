@@ -1,5 +1,5 @@
 import {afterEach, describe, expect, it, vi} from 'vitest';
-import {androidStructuredLoggerBinding} from '../src/foundations/androidStructuredLoggerBinding';
+import {androidStructuredLoggerBinding} from '../src/implementations/androidStructuredLoggerBinding';
 
 describe('Android structured logger binding', () => {
   afterEach(() => vi.restoreAllMocks());

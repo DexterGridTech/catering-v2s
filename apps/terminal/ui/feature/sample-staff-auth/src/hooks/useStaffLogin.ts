@@ -2,7 +2,7 @@ import {useCallback, useState} from 'react';
 import {dispatchWithRequestId, useDispatchCommand, useTrackedCommand} from '@catering-v2s/ui-base-render';
 import {useInputSnapshot} from '@catering-v2s/ui-base-input';
 import {loginCommand} from '@catering-v2s/kernel-feature-sample-staff-session';
-import {authSystemFailureObservedCommand} from '../features/commands/commands';
+import {authSystemFailureObservedCommand} from '../declarations/commands';
 
 export const operatorNameFieldId = 'sample.auth.login:operator-name';
 export const passcodeFieldId = 'sample.auth.login:passcode';

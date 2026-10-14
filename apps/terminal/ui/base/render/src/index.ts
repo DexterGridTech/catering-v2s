@@ -47,7 +47,7 @@ export {
 export type {SurfaceFocusBoundaryListener, SurfaceFocusBoundaryPhase} from './contexts/SurfaceFocusBoundaryContext';
 export {useSurfaceContext} from './contexts/SurfaceContext';
 export type {SurfaceContextValue} from './contexts/SurfaceContext';
-export {useRenderContext} from './contexts/RenderContext';
+export {useRenderContext} from './hooks/useRenderContext';
 export type {RenderContextValue} from './contexts/RenderContext';
 export {createRendererCatalog} from './foundations/createRendererCatalog';
 export {definePart, definePartPair} from './foundations/definePart';
@@ -80,6 +80,7 @@ export {useRenderStatus} from './hooks/useRenderStatus';
 export {useUiStateSelector} from './hooks/useUiStateSelector';
 export {useUiCatalogContext} from './hooks/useUiCatalogContext';
 export {useUiVariable} from './hooks/useUiVariable';
-export {useRequestInFlight, useTrackedRequest} from './hooks/useRequest';
+export {useRequestInFlight} from './hooks/useRequestInFlight';
+export {useTrackedRequest} from './hooks/useTrackedRequest';
 export {useTrackedCommand} from './hooks/useTrackedCommand';
 export type {TrackedCommand, TrackedCommandRejectionPolicy, TrackedCommandRunInput} from './hooks/useTrackedCommand';

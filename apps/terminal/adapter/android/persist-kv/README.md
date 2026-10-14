@@ -87,6 +87,10 @@ test/
 
 native 注册仍只有 `TerminalPersistKv` 一个 module；MMKV 依赖固定为 `com.tencent:mmkv:2.4.2`。
 
+`src/index.ts` 与 `terminal-invariants.json.publicExports` 一致，只公开
+`moduleName`、依赖模块名、`createAndroidPersistKvPort` 和类型
+`AndroidPersistKvStorageMode`；native wire validator 与存储实现不从包根导出。
+
 ## 迭代指引
 
 先重开需求、详设、state/platform-ports contract 与当前 assembly，再改本包。存储格式、

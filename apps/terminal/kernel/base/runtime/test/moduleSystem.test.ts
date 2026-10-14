@@ -1,11 +1,12 @@
 import {describe, expect, it} from 'vitest';
-import {createRuntime, defineActor, defineCommand, onCommand} from '../src/index';
+import {createRuntime, createRuntimeModule, defineActor, defineCommand, onCommand} from '../src/index';
 import {createActorRegistry} from '../src/foundations/createActorRegistry';
 import {describeRuntimeModule} from '../src/application/moduleManifest';
 import {resolveModuleOrder} from '../src/foundations/resolveModuleOrder';
 import {createDisplayContextModule} from '@catering-v2s/kernel-base-display-context';
 import {createTestRuntimeInput, createTestSlice} from './testSupport';
 import type {ActorCommandHandlerDefinition, ActorDefinition, RuntimeModule} from '../src/index';
+import {runtimeParameters} from '../src/declarations/parameters';
 
 const moduleWith = (moduleName: string, dependencies: RuntimeModule['dependencies'] = []): RuntimeModule => ({
   moduleName,
@@ -14,6 +15,21 @@ const moduleWith = (moduleName: string, dependencies: RuntimeModule['dependencie
 });
 
 describe('runtime module system', () => {
+  it('keeps existing runtime policy defaults in the owning parameter definitions', () => {
+    expect(Object.fromEntries(Object.entries(runtimeParameters).map(([key, value]) => [key, value.defaultValue]))).toEqual({
+      maxCommandDepth: 32,
+      maxCommandsPerRequest: 256,
+      maxActorResultBytes: 262_144,
+      requestRetentionMs: 1_800_000,
+      requestMaxResidenceMs: 10_000_000,
+      maxJournalRecords: 1_000,
+      commandTimeoutMs: 60_000,
+      postCommitConsumerTimeoutMs: 5_000,
+    });
+    expect(runtimeParameters.maxCommandDepth.validate?.(0)).toBe(false);
+    expect(runtimeParameters.maxCommandDepth.validate?.(32)).toBe(true);
+  });
+
   it('M-1 validates required, optional, duplicate, and cyclic dependency shapes', () => {
     const realDisplayContext = createDisplayContextModule();
     const registeredPrerequisites = (realDisplayContext.dependencies ?? [])
@@ -56,25 +72,8 @@ describe('runtime module system', () => {
     });
 
     const command = defineCommand<Readonly<{}>>('first', {name: 'run', visibility: 'internal'});
-    const commandModule = {
-      ...first,
-      commands: [{name: command.commandName, visibility: command.visibility}],
-      commandDefinitions: [command],
-    };
+    const commandModule = createRuntimeModule({...first, commandDefinitions: [command]});
     expect(describeRuntimeModule(commandModule).commandNames).toEqual([command.commandName]);
-    expect(() =>
-      createRuntime(
-        createTestRuntimeInput({
-          modules: [
-            {
-              ...first,
-              commands: [{name: 'run', visibility: command.visibility}],
-              commandDefinitions: [command],
-            },
-          ],
-        }),
-      ),
-    ).toThrow('Runtime command definition invalid');
   });
 
   it('M-3 rejects duplicate actors and handlers while retaining owner definition identity', () => {
@@ -109,12 +108,10 @@ describe('runtime module system', () => {
           modules: [
             {
               ...moduleWith('owner.module'),
-              commands: [{name: crossModuleCommand.commandName, visibility: 'public'}],
               commandDefinitions: [crossModuleCommand],
             },
             {
               ...moduleWith('subscriber.module'),
-              actors: [{name: 'subscriber'}],
               actorDefinitions: [crossModuleActor],
             },
           ],
@@ -129,7 +126,6 @@ describe('runtime module system', () => {
           modules: [
             {
               ...moduleWith('owner.module'),
-              commands: [{name: command.commandName, visibility: 'public'}],
               commandDefinitions: [command],
               actorDefinitions: [mismatchedActor],
             },
@@ -164,7 +160,6 @@ describe('runtime module system', () => {
           modules: [
             {
               ...moduleWith('owner.module'),
-              commands: [{name: command.commandName, visibility: 'public'}],
               commandDefinitions: [command],
               actorDefinitions: [forgedActor],
             },
@@ -189,26 +184,45 @@ describe('runtime module system', () => {
     expect(runtime.failure?.cause).toMatchObject({message: expect.stringContaining('duplicate slice name')});
   });
 
-  it('M-6 rejects command declarations that have no matching definition', () => {
-    let thrown: unknown;
-    try {
-      createRuntime(
-        createTestRuntimeInput({
-          modules: [
-            {
-              ...moduleWith('test.missing-definition'),
-              commands: [{name: 'test.missing-definition.run', visibility: 'internal'}],
-              commandDefinitions: [],
-            },
-          ],
-        }),
-      );
-    } catch (error) {
-      thrown = error;
-    }
-    expect(thrown).toMatchObject({
-      key: 'kernel.base.runtime.command_definition_invalid',
-      details: {message: 'Runtime command declaration has no definition: test.missing-definition.run'},
+  it('M-6 derives command names from concrete definitions and freezes module arrays', () => {
+    const command = defineCommand<Readonly<{}>>('derived.module', {name: 'run', visibility: 'internal'});
+    const commands = [command];
+    const module = createRuntimeModule({
+      moduleName: 'derived.module',
+      kind: 'owner',
+      commandDefinitions: commands,
     });
+
+    expect(describeRuntimeModule(module).commandNames).toEqual([command.commandName]);
+    expect('commands' in module).toBe(false);
+    expect(Object.isFrozen(module)).toBe(true);
+    expect(Object.isFrozen(module.commandDefinitions)).toBe(true);
+    expect(module.commandDefinitions).not.toBe(commands);
+  });
+
+  it('M-7 rejects actual duplicate command definitions without a second declaration list', () => {
+    const first = defineCommand<Readonly<{}>>('duplicate.module', {name: 'run', visibility: 'public'});
+    const duplicate = defineCommand<Readonly<{}>>('duplicate.module', {name: 'run', visibility: 'public'});
+    const module = createRuntimeModule({
+      moduleName: 'duplicate.module',
+      kind: 'owner',
+      commandDefinitions: [first, duplicate],
+    });
+    expect(() => createRuntime(createTestRuntimeInput({modules: [module]}))).toThrow(
+      'Runtime command definition invalid',
+    );
+  });
+
+  it('rejects a legacy parallel descriptor at the runtime boundary', () => {
+    const legacyModule = {
+      moduleName: 'legacy.module',
+      kind: 'owner' as const,
+      commandDefinitions: [],
+      commands: [{name: 'legacy.module.run', visibility: 'public' as const}],
+    } as unknown as RuntimeModule;
+
+    expect(() => createRuntime(createTestRuntimeInput({modules: [legacyModule]}))).toThrow(
+      'Runtime command definition invalid',
+    );
   });
 });

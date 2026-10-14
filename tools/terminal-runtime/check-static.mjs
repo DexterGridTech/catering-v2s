@@ -361,7 +361,8 @@ function hasBrandedHandlerDefinition(handlerDeclaration) {
   return false;
 }
 
-function runCommandMountShape({root, invariant}) {
+function runCommandMountShape({root, invariant, program}) {
+  const checker = program.getTypeChecker();
   const moduleName = readModuleNameValue(root);
   const commandPath = findFile(root, path.join('src', 'types', 'command.ts'));
   const commandSource = parseSource(commandPath);
@@ -413,36 +414,44 @@ function runCommandMountShape({root, invariant}) {
   if (!foundOnCommandCall) throw new Error('runtime must contain an onCommand definition mount');
 
   const internalPath = findFile(root, path.join('src', 'application', 'createInternalRuntimeModule.ts'));
-  const internalSource = parseSource(internalPath);
+  const internalSource = program.getSourceFile(internalPath) ?? parseSource(internalPath);
   const returned = objectReturnedByFunction(internalSource, 'createInternalRuntimeModule');
-  const commands = arrayElements(objectProperty(returned, 'commands'), 'runtime module commands');
-  const commandEntries = commands.map((element, index) => {
-    if (!ts.isObjectLiteralExpression(element))
-      throw new Error(`runtime module command ${index} must be an object literal`);
-    const visibility = stringProperty(element, 'visibility', `runtime module command ${index}`, moduleName);
-    if (!['internal', 'public'].includes(visibility)) {
-      throw new Error(`runtime module command ${index}.visibility must be internal or public`);
-    }
-    return {element, visibility};
-  });
-  const internalCommandEntries = commandEntries.filter(entry => entry.visibility === 'internal');
-  const commandNames = internalCommandEntries.map(({element}, index) =>
-    stringProperty(element, 'name', `internal command ${index}`, moduleName),
-  );
-  assertExactNames('internal command declarations', commandNames, invariant.internalCommands);
-
   const definitions = arrayElements(objectProperty(returned, 'commandDefinitions'), 'internal command definitions');
-  const allDefinitionNames = definitions.map((element, index) => {
-    if (!ts.isIdentifier(element)) throw new Error(`internal command definition ${index} must be a named definition`);
-    return element.text;
+  const duplicatedDescriptorFields = ['commands', 'actors', 'slices'].filter(name => objectProperty(returned, name));
+  if (duplicatedDescriptorFields.length)
+    throw new Error(`runtime module must not duplicate concrete definitions: ${duplicatedDescriptorFields.join(',')}`);
+  const commandFacts = definitions.map((element, index) => {
+    if (!ts.isIdentifier(element)) throw new Error(`runtime command definition ${index} must be a named definition`);
+    const symbol = checker.getSymbolAtLocation(element);
+    const resolved = symbol ? resolveAliasedSymbol(checker, symbol) : null;
+    const declaration = resolved?.declarations?.find(ts.isVariableDeclaration);
+    if (!declaration || !ts.isVariableDeclaration(declaration) || !declaration.initializer)
+      throw new Error(`runtime command definition ${element.text} must resolve to its owning declaration`);
+    const initializer = unwrapExpression(declaration.initializer);
+    if (!ts.isCallExpression(initializer) || !ts.isIdentifier(initializer.expression) || initializer.arguments.length < 2)
+      throw new Error(`runtime command definition ${element.text} must be created by defineCommand`);
+    const input = unwrapExpression(initializer.arguments[1]);
+    if (!ts.isObjectLiteralExpression(input))
+      throw new Error(`runtime command definition ${element.text} must use a literal definition`);
+    return {
+      name: stringProperty(input, 'name', `runtime command ${element.text}`, moduleName),
+      visibility: stringProperty(input, 'visibility', `runtime command ${element.text}`, moduleName),
+      identifier: element.text,
+    };
   });
-  const definitionNames = allDefinitionNames.filter((_, index) => commandEntries[index]?.visibility === 'internal');
-  assertExactNames('internal command definition mounts', definitionNames, invariant.internalCommandDefinitions);
-  if (definitions.length !== commands.length) {
-    throw new Error(
-      `internal command declaration/definition count mismatch; declarations=${commands.length} definitions=${definitions.length}`,
-    );
-  }
+  if (commandFacts.some(command => !['internal', 'public'].includes(command.visibility)))
+    throw new Error('runtime command definition visibility must be internal or public');
+  const internalCommands = commandFacts.filter(command => command.visibility === 'internal');
+  assertExactNames(
+    'internal command declarations',
+    internalCommands.map(command => `${moduleName}.${command.name}`),
+    invariant.internalCommands,
+  );
+  assertExactNames(
+    'internal command definition mounts',
+    internalCommands.map(command => command.identifier),
+    invariant.internalCommandDefinitions,
+  );
   if (!internalSource.text.includes('moduleName'))
     throw new Error('internal module must derive command ownership from moduleName');
 }
@@ -524,8 +533,8 @@ function runOwnerKind({root, graphPath = skeletonGraphPath}) {
   }
   const stateSlices = arrayElements(objectProperty(returned, 'stateSlices'), 'internal runtime stateSlices');
   if (stateSlices.length < 1) throw new Error('owner runtime module must declare at least one state slice');
-  const slices = arrayElements(objectProperty(returned, 'slices'), 'internal runtime slices');
-  if (slices.length < 1) throw new Error('owner runtime module must declare at least one slice descriptor');
+  const actorDefinitions = arrayElements(objectProperty(returned, 'actorDefinitions'), 'internal runtime actor definitions');
+  if (actorDefinitions.length < 1) throw new Error('owner runtime module must declare at least one actor definition');
   const graph = readGraphRuntimeEntry(graphPath);
   if (objectProperty(graph.entryObject, 'plannedKind')) {
     throw new Error('kernel.base.runtime must remove skeleton plannedKind after manifest kind is real');
@@ -608,7 +617,7 @@ export function runRuntimeStaticChecks({runtimePackageRoot: root = runtimeRoot, 
   if (!indexSourceFile) throw new Error(`runtime src/index.ts is missing under ${root}`);
   const checks = [
     ['context-exact-set', () => runContextExactSet({root, invariant})],
-    ['command-mount-shape', () => runCommandMountShape({root, invariant})],
+    ['command-mount-shape', () => runCommandMountShape({root, invariant, program: context.program})],
     ['owner-kind', () => runOwnerKind({root, graphPath})],
     ['restart-positive', () => runRestartPositive({root})],
     ['ledger-record-shape', () => runLedgerRecordShape({root, invariant})],

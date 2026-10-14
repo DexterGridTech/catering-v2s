@@ -8,7 +8,8 @@ import {ScrollView, TextInput, View} from 'react-native';
 import {InputScrollArea} from '../src/components/InputScrollArea';
 import {InputSurfaceFrame} from '../src/components/InputSurfaceFrame';
 import {useInputField} from '../src/hooks/useInputField';
-import {useInputKeyboardState, useInputScrollAncestor} from '../src/contexts/context';
+import {useInputKeyboardState} from '../src/hooks/useInputKeyboardState';
+import {useInputScrollAncestor} from '../src/hooks/useInputScrollAncestor';
 import {
   advanceAnimatedTimingsForTests,
   setAnimatedTimingAutoFinishForTests,

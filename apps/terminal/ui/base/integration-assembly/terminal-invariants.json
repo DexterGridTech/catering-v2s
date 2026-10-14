@@ -2,17 +2,32 @@
   "schemaVersion": 1,
   "package": "@catering-v2s/ui-base-integration-assembly",
   "owned": {
-    "test": {"kind": "REAL_TESTS", "owner": "@catering-v2s/ui-base-integration-assembly", "runner": "vitest"},
-    "lint": {"kind": "OWNED", "owner": "@catering-v2s/ui-base-integration-assembly", "runner": "eslint"},
-    "clean": {"kind": "ABSENT"}
+    "test": {
+      "kind": "REAL_TESTS",
+      "owner": "@catering-v2s/ui-base-integration-assembly",
+      "runner": "vitest"
+    },
+    "lint": {
+      "kind": "OWNED",
+      "owner": "@catering-v2s/ui-base-integration-assembly",
+      "runner": "eslint"
+    },
+    "clean": {
+      "kind": "ABSENT"
+    }
   },
   "publicExports": [
+    "AutomationAgentConfig",
     "IntegrationAssembly",
     "IntegrationAssemblyInput",
     "IntegrationSurfaceCreationInput",
     "IntegrationSurfaceDeclarations",
+    "PairReadinessInterlock",
     "PortraitSurfaceDeclarations",
-    "StateSyncSlice",
+    "StartupDiagnosticsWriter",
+    "StartupDiagnosticsWriterInput",
+    "StartupReadyActorInput",
+    "StartupReadyPayload",
     "SurfaceCreationInput",
     "SurfaceDeclarations",
     "SurfaceForm",
@@ -20,13 +35,9 @@
     "SurfaceSize",
     "TerminalSurfaceErrorOptions",
     "TerminalSurfaces",
-    "TopologyStateSyncSlice",
-    "StartupReadyActorInput",
-    "StartupReadyPayload",
-    "StartupDiagnosticsWriter",
-    "StartupDiagnosticsWriterInput",
-    "createIntegrationAssembly",
+    "createBrowserTransportNetworkAdapter",
     "createDispatchCommand",
+    "createIntegrationAssembly",
     "createStartupDiagnosticsWriter",
     "createStartupReadyActor",
     "createStartupReadyPayload",
@@ -36,8 +47,8 @@
     "devDependencyModuleNames",
     "getSurfaceDeclarations",
     "moduleName",
+    "pairReadinessInterlockTestIds",
     "readTerminalSurfaces",
-    "selectStateSyncSlices",
     "surfaceFormForOrientation"
   ]
 }

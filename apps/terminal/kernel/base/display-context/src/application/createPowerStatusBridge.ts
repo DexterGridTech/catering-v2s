@@ -1,6 +1,6 @@
 import type {RuntimeModuleContext} from '@catering-v2s/kernel-base-runtime';
 import type {LogFields, PortResult} from '@catering-v2s/kernel-base-platform-ports';
-import {powerStatusChangedCommand} from '../features/commands/powerStatusChanged';
+import {powerStatusChangedCommand} from '../declarations/commands';
 import {displayDeviceTimeoutMs} from '../foundations/displayDevice';
 import {isPowerSource, type PowerSource} from '../types/display';
 

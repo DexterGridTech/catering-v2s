@@ -29,10 +29,10 @@ export {
   requestTopologySlaveUnpairStateClearCommand,
   completeTopologySlaveUnpairStateClearCommand,
   unpairTopologyCommand,
-} from './features/commands/commands';
+} from './declarations/commands';
 export type {
   TopologyDisplayChangedPayload,
   TopologySlaveUnpairTransition,
   TopologySlaveUnpairTransitionPayload,
-} from './features/commands/commands';
+} from './declarations/commands';
 export type {TopologyState} from './types/state';

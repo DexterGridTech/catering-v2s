@@ -6,11 +6,11 @@ import {
   peerRequestLedgerSliceNameForMode,
   readLiveRequestEnvelope,
   requestLedgerSliceNameForMode,
-} from '../features/slices/requestLedger';
+} from '../foundations/requestLedgerState';
 import {selectRuntimeInstanceMode} from './selectRuntimeInstanceMode';
 import {selectRequestExecutionView} from './selectRequestExecutionView';
 import {readRequestLedgerState} from './readRequestLedgerState';
-import type {RequestExecutionCommandView, RequestExecutionView} from '../types/requestLedger';
+import type {RequestExecutionView} from '../types/requestLedger';
 import {freezeList} from '../foundations/freezeList';
 
 const selectRequestExecutionViewsImplementation = (
@@ -40,25 +40,7 @@ const selectRequestExecutionViewsImplementation = (
   );
 };
 
-const selectRequestExecutionCommandsImplementation = (
-  state: StateRoot,
-  requestId: RequestId,
-  displayMode?: 'PRIMARY' | 'SECONDARY',
-): readonly RequestExecutionCommandView[] => {
-  const view = selectRequestExecutionView(state, requestId);
-  if (view === null) return freezeList([]);
-  return freezeList(
-    view.commands.filter(
-      command => displayMode === undefined || command.displayMode === null || command.displayMode === displayMode,
-    ),
-  );
-};
-
 export const selectRequestExecutionViews = defineStateSelector(moduleName, 'selectRequestExecutionViews', {
   parameters: [{kind: 'enum', values: ['MAIN', 'BRANCH'], optional: true}],
   selector: selectRequestExecutionViewsImplementation,
-});
-export const selectRequestExecutionCommands = defineStateSelector(moduleName, 'selectRequestExecutionCommands', {
-  parameters: [{kind: 'string'}, {kind: 'enum', values: ['PRIMARY', 'SECONDARY'], optional: true}],
-  selector: selectRequestExecutionCommandsImplementation,
 });

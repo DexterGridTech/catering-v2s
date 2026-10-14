@@ -1,6 +1,6 @@
 import {nowTimestampMs} from '@catering-v2s/kernel-base-contracts';
 import {defineActor, onCommand} from '../../foundations/defineActor';
-import {recordLocalInteractionCommand} from '../commands/recordLocalInteraction';
+import {recordLocalInteractionCommand} from '../../declarations/commands';
 import {recordLocalInteractionAction} from '../slices/localInteraction';
 import {selectLastLocalInteraction} from '../../selectors/selectLastLocalInteraction';
 import {moduleName} from '../../moduleName';

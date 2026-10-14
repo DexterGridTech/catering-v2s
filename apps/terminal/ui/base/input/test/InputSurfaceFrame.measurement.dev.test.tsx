@@ -13,7 +13,9 @@ import {
 } from '@catering-v2s/ui-base-primitives';
 import {useSurfacePresentationOffset} from '@catering-v2s/ui-base-render';
 import {InputSurfaceFrame} from '../src/components/InputSurfaceFrame';
-import {useInputFieldKeyboardState, useInputKeyboardState, useInputScrollAncestor} from '../src/contexts/context';
+import {useInputFieldKeyboardState} from '../src/hooks/useInputFieldKeyboardState';
+import {useInputKeyboardState} from '../src/hooks/useInputKeyboardState';
+import {useInputScrollAncestor} from '../src/hooks/useInputScrollAncestor';
 import {useInputSurfaceGeometry} from '../src/contexts/InputSurfaceGeometryContext';
 import {useInputField} from '../src/hooks/useInputField';
 import type {InputFieldResult} from '../src/types/types';

@@ -4,6 +4,15 @@ TER 的 React Native UI 渲染 toolkit。它负责把集成层提供的只读运
 与冻结的 renderer catalog 组合成 SurfaceRoot、screen 和 layer 渲染树；它不拥有业务 Journey、命令、状态
 slice 或 Runtime module。
 
+它直接依赖 contracts、display-context、platform-ports、runtime、state、ui-state 和 primitives；sample integrations 通过 `integration-assembly` 创建并提供 RenderProvider 输入。
+
+## 源码单元
+
+`src/contexts/RenderContext.ts` 只声明 context 与值类型；`src/hooks/useRenderContext.ts` 和
+`useRenderSubscriptionContext.ts` 分别读取普通渲染值与状态订阅值。request 观察与局部 request 句柄
+分别位于 `src/hooks/useRequestInFlight.ts`、`useTrackedRequest.ts`，`useTrackedCommand.ts` 组合它们，
+不把不同 hook 的实现集中在单一文件。
+
 ## 边界
 
 `RenderProvider` 接收窄的 `stateSource`：
@@ -110,3 +119,7 @@ definePart、ui-state 的 createUiCatalog 与 selectAvailableParts，不以 mock
 
 当前依赖基于已落地的 Runtime `status/getState/subscribe` 与 ui-state `containerKeys` 契约；历史需求文档中
 关于这两项“尚未落地”的文字不构成兼容 API 的依据。
+
+## 在这个包上迭代时
+
+先复用本包已有的 selector-aware hook、request observer、catalog 和 failure boundary；不要让业务组件读取 raw Runtime/state root，也不要在 input/topology owner 复制渲染逻辑。修改后运行 `yarn workspace @catering-v2s/ui-base-render typecheck`、`test`、`lint`，并检查 `src/index.ts`、`terminal-invariants.json` 与 README 的公开面一致。

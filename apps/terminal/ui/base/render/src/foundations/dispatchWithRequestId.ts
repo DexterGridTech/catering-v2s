@@ -11,12 +11,14 @@ export const dispatchWithRequestId = <TPayload extends StateJsonValue>(
     definition: CommandDefinition<TPayload>;
     payload: TPayload;
     requestId?: RequestId;
+    onLifecycleEvent?: Parameters<DispatchCommand>[1]['onLifecycleEvent'];
     routeIntent?: Parameters<DispatchCommand>[1]['routeIntent'];
     target?: Parameters<DispatchCommand>[1]['target'];
   }>,
 ) =>
   input.dispatchCommand(createCommand(input.definition, input.payload), {
     requestId: input.requestId ?? createRequestId(),
+    ...(input.onLifecycleEvent === undefined ? {} : {onLifecycleEvent: input.onLifecycleEvent}),
     ...(input.routeIntent === undefined ? {} : {routeIntent: input.routeIntent}),
     ...(input.target === undefined ? {} : {target: input.target}),
   });

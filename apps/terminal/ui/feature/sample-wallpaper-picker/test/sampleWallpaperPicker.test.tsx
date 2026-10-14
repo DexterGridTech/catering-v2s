@@ -30,7 +30,7 @@ import {
   wallpaperPickerTestIds,
   wallpaperContentTestIds,
   wallpaperSystemNoticeTestIds,
-  sampleWallpaperPickerAssembly,
+  createSampleWallpaperPickerModule,
 } from '../src/index';
 import {WallpaperPicker} from '../src/components/laptop/WallpaperPicker';
 import {BranchWallpaperPicker} from '../src/components/laptop/BranchWallpaperPicker';
@@ -40,8 +40,8 @@ import {WallpaperSystemNotice as MobileWallpaperSystemNotice} from '../src/compo
 import expectedW1 from '../assets/w1.jpg';
 import expectedW2 from '../assets/w2.jpg';
 import expectedW3 from '../assets/w3.jpg';
-import {createWallpaperPickerActor} from '../src/features/actors/actors';
-import {wallpaperSystemFailureDismissedCommand} from '../src/features/commands/commands';
+import {createWallpaperPickerActor} from '../src/features/actors/wallpaperPickerActor';
+import {wallpaperSystemFailureDismissedCommand} from '../src/declarations/commands';
 import {queryRenderedTree} from '../../../../../../tools/terminal-shared/rntl-rendered-tree';
 
 (globalThis as {IS_REACT_ACT_ENVIRONMENT?: boolean}).IS_REACT_ACT_ENVIRONMENT = true;
@@ -148,6 +148,8 @@ const commandDispatch = (calls: Array<Readonly<{name: string; payload: unknown}>
     return completed();
   }) as RenderProviderProps['dispatchCommand'];
 
+const sampleWallpaperPickerModule = createSampleWallpaperPickerModule();
+
 describe('sample wallpaper picker', () => {
   it('exports laptop/mobile renderer siblings and one asset map', () => {
     const expectedPair = (
@@ -167,7 +169,7 @@ describe('sample wallpaper picker', () => {
         rendererKey: `${part.partKey}.${surfaceForm}`,
         surfaceForm: [surfaceForm],
       }));
-    const metadata = sampleWallpaperPickerAssembly.parts.map(({catalogEntry, rendererBinding}) => ({
+    const metadata = (sampleWallpaperPickerModule.presentationContributions.parts ?? []).map(({catalogEntry, rendererBinding}) => ({
       partKey: catalogEntry.partKey,
       rendererKey: catalogEntry.rendererKey,
       containerKeys: [...catalogEntry.containerKeys],

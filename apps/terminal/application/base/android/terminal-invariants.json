@@ -15,11 +15,8 @@
     "NativeLoadingHideResult",
     "NativeLoadingTarget",
     "createAndroidNativeLoadingCapability",
-    "createAndroidAppControlPort",
     "createAndroidAutomationUpdateTargetSourceProvider",
     "createAndroidPlatformBinding",
-    "createAndroidTopologyHostPort",
-    "createAndroidTopologyPeerChannel",
     "dependencyModuleNames",
     "devDependencyModuleNames",
     "moduleName"

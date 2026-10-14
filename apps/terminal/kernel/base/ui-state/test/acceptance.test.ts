@@ -36,7 +36,7 @@ import {
   type UiVariableDeclaration,
 } from '../src/index';
 import {createDisplayPlatformPorts, FakeDevicePort} from '../../display-context/test/testSupport';
-import {releaseRuntimeForTest} from '@catering-v2s/kernel-base-runtime/testing';
+import {releaseRuntimeForTestAsync} from '@catering-v2s/kernel-base-runtime/testing';
 import {createFakeStorage} from '../../state/test/testSupport';
 
 const createDependencies = (): readonly RuntimeModule[] => [
@@ -133,8 +133,8 @@ const currentTuple = (runtime: Runtime) => {
 describe('ui-state approved acceptance proofs', () => {
   const runtimes: Runtime[] = [];
 
-  afterEach(() => {
-    for (const runtime of runtimes.splice(0)) releaseRuntimeForTest(runtime);
+  afterEach(async () => {
+    for (const runtime of runtimes.splice(0)) await releaseRuntimeForTestAsync(runtime);
   });
 
   it('U-1 reads the explicitly requested display mode', async () => {
@@ -354,7 +354,7 @@ describe('ui-state approved acceptance proofs', () => {
     expect(hasPersistedEntry([plainStorage, protectedStorage], transient.key)).toBe(false);
     expect(hasPersistedEntry([plainStorage, protectedStorage], persisted.key)).toBe(true);
     expect(hasPersistedEntry([plainStorage, protectedStorage], persistedSibling.key)).toBe(true);
-    releaseRuntimeForTest(first.runtime);
+    await releaseRuntimeForTestAsync(first.runtime);
     const second = await createFixture({module, plainStorage, protectedStorage, persistenceKey: 'ui-state-u6'});
     runtimes.push(second.runtime);
     expect(module.selectUiVariable(second.runtime.getState(), transient)).toBe('default');
@@ -397,7 +397,7 @@ describe('ui-state approved acceptance proofs', () => {
       route(),
     );
     const expectedLayers = selectLayers(first.runtime.getState(), 'PRIMARY');
-    releaseRuntimeForTest(first.runtime);
+    await releaseRuntimeForTestAsync(first.runtime);
     const second = await createFixture({module, plainStorage, protectedStorage, persistenceKey: 'ui-state-u7'});
     runtimes.push(second.runtime);
     expect(selectScreen(second.runtime.getState(), 'PRIMARY', 'root')?.partKey).toBe('restored');

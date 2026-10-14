@@ -40,17 +40,17 @@ import {
   memberRegistrationAbandonedCommand,
   memberRegistrationRetryRequestedCommand,
   memberSubmissionWithdrawnCommand,
-} from '../../../../ui/feature/sample-member-desk/src/features/commands/commands';
+} from '../../../feature/sample-member-desk/src/declarations/commands';
 import {createSampleAssembly as createProductionSampleAssembly, createSurfaceForDisplayIndex} from '../src';
+import {createSampleConsoleModule} from '../src/application/module';
 import {renderTestIds} from '@catering-v2s/ui-base-render';
-import {startupReadyCommand} from '../src/application/module';
-import {createSampleDefinedParts} from '../src/assembly/assembly';
-import {adminTestIds} from '@catering-v2s/ui-base-admin-shell';
+import {startupReadyCommand} from '../src/declarations/commands';
+import {adminTestIds, createAdminShellModule} from '@catering-v2s/ui-base-admin-shell';
 import {inputTestIds} from '@catering-v2s/ui-base-input/test-ids';
-import {sampleMemberDeskAssembly} from '@catering-v2s/ui-feature-sample-member-desk';
+import {createSampleMemberDeskModule} from '@catering-v2s/ui-feature-sample-member-desk';
 import {sampleMemberDeskTestId} from '@catering-v2s/ui-feature-sample-member-desk/test-ids';
-import {sampleStaffAuthAssembly, sampleStaffAuthTestIds} from '@catering-v2s/ui-feature-sample-staff-auth';
-import {needToActivateTerminalCommand} from '@catering-v2s/ui-base-terminal-activation';
+import {createSampleStaffAuthModule, sampleStaffAuthTestIds} from '@catering-v2s/ui-feature-sample-staff-auth';
+import {createTerminalActivationModule, needToActivateTerminalCommand} from '@catering-v2s/ui-base-terminal-activation';
 import {activateTerminalCommand} from '@catering-v2s/kernel-base-terminal-data-client';
 import {
   createReadyTerminalNetworkAdapter,
@@ -703,6 +703,16 @@ describe('sample-console real assembly', () => {
         expect(selectScreen(assembly.runtime.getState(), item.routeContext.displayMode, 'main')?.partKey).toBe(
           item.expected,
         );
+        if (index === 0) {
+          const contentState = assembly.runtime.getState()[contentStateSliceName('MAIN')];
+          const repeated = await assembly.runtime.dispatchCommand(
+            needToActivateTerminalCommand,
+            {},
+            {requestId: createRequestId(), routeContext: item.routeContext},
+          );
+          expect(repeated.status).toBe('completed');
+          expect(assembly.runtime.getState()[contentStateSliceName('MAIN')]).toBe(contentState);
+        }
       }
     } finally {
       await releaseRuntimeForTestAsync(assembly.runtime);
@@ -758,17 +768,28 @@ describe('sample-console real assembly', () => {
     const developmentSpace = integrationDefaults.spaces.find(space => space.name === integrationDefaults.selectedSpace);
     expect(developmentSpace?.servers.map(server => server.serverName).sort()).toEqual([
       'business',
+      'livekit',
       'terminal-data-server',
     ]);
     expect(developmentSpace?.servers.find(server => server.serverName === 'terminal-data-server')?.addresses).toEqual([
       {addressName: 'haproxy-entry-one', baseUrl: 'ws://127.0.0.1:28180', timeoutMs: 10000},
       {addressName: 'haproxy-entry-two', baseUrl: 'ws://127.0.0.1:28181', timeoutMs: 10000},
     ]);
-    const defaultsAssembly = await createSampleAssembly({
-      platformPorts: createTestPlatformPorts(),
-      persistenceKey: `sample-console-server-defaults-${Date.now()}`,
-      surfaceForm: 'mobile',
-    });
+    const defaultsEvents: LogEvent[] = [];
+    let defaultsAssembly: Awaited<ReturnType<typeof createSampleAssembly>>;
+    try {
+      defaultsAssembly = await createSampleAssembly({
+        platformPorts: createTestPlatformPorts({events: defaultsEvents}),
+        persistenceKey: `sample-console-server-defaults-${Date.now()}`,
+        surfaceForm: 'mobile',
+      });
+    } catch (error) {
+      const cause = error instanceof Error ? {name: error.name, message: error.message, stack: error.stack, cause: error.cause} : error;
+      throw new Error(
+        `sample-console defaults assembly failed; cause=${JSON.stringify(cause)}; events=${JSON.stringify(defaultsEvents)}`,
+        {cause: error},
+      );
+    }
     const fixture: TransportServerConfig = {
       selectedSpace: 'sample-console-fixture',
       spaces: [
@@ -779,14 +800,23 @@ describe('sample-console real assembly', () => {
               serverName: 'business',
               addresses: [{addressName: 'fixture', baseUrl: 'https://sample-console.invalid/api', timeoutMs: 3210}],
             },
+            {
+              serverName: 'livekit',
+              addresses: [{addressName: 'fixture', baseUrl: 'wss://sample-console.invalid', timeoutMs: 3210}],
+            },
+            {
+              serverName: 'terminal-data-server',
+              addresses: [{addressName: 'fixture', baseUrl: 'wss://sample-console.invalid/tds', timeoutMs: 3210}],
+            },
           ],
         },
       ],
     };
     let fixtureAssembly: Awaited<ReturnType<typeof createSampleAssembly>> | undefined;
+    const fixtureEvents: LogEvent[] = [];
     try {
       fixtureAssembly = await createSampleAssembly({
-        platformPorts: createTestPlatformPorts(),
+        platformPorts: createTestPlatformPorts({events: fixtureEvents}),
         persistenceKey: `sample-console-server-fixture-${Date.now()}`,
         surfaceForm: 'mobile',
         serverSpaces: fixture,
@@ -802,12 +832,22 @@ describe('sample-console real assembly', () => {
       expect(fixtureState['kernel.base.server-config.configuration']).toMatchObject({
         selectedSpace: fixture.selectedSpace,
       });
-      expect(selectServerConfiguration(fixtureState, fixture).spaces).toMatchObject([
-        {
-          name: 'sample-console-fixture',
-          servers: [{serverName: 'business', addresses: fixture.spaces[0]!.servers[0]!.addresses}],
-        },
+      const fixtureSpace = selectServerConfiguration(fixtureState, fixture).spaces[0];
+      expect(fixtureSpace?.name).toBe('sample-console-fixture');
+      expect(fixtureSpace?.servers.map(server => server.serverName).sort()).toEqual([
+        'business',
+        'livekit',
+        'terminal-data-server',
       ]);
+      expect(fixtureSpace?.servers.find(server => server.serverName === 'business')?.addresses).toEqual(
+        fixture.spaces[0]!.servers.find(server => server.serverName === 'business')!.addresses,
+      );
+    } catch (error) {
+      const cause = error instanceof Error ? {name: error.name, message: error.message, stack: error.stack, cause: error.cause} : error;
+      throw new Error(
+        `sample-console serverSpaces assertion failed; cause=${JSON.stringify(cause)}; defaultEvents=${JSON.stringify(defaultsEvents)}; fixtureEvents=${JSON.stringify(fixtureEvents)}`,
+        {cause: error},
+      );
     } finally {
       await releaseRuntimeForTestAsync(defaultsAssembly.runtime);
       if (fixtureAssembly !== undefined) await releaseRuntimeForTestAsync(fixtureAssembly.runtime);
@@ -1096,7 +1136,7 @@ describe('sample-console real assembly', () => {
     }
   });
 
-  it('non-production catalog unit exposes the injected sample section', async () => {
+  it('non-production sample-console module contributes its diagnostic admin section', () => {
     const context = {
       displayMode: 'PRIMARY' as const,
       workspace: 'MAIN' as const,
@@ -1104,45 +1144,25 @@ describe('sample-console real assembly', () => {
       surfaceForm: 'laptop' as const,
     };
     const mobileContext = {...context, surfaceForm: 'mobile' as const};
-    const withSampleLaptop = createUiCatalog(
-      createSampleDefinedParts()
-        .filter(({catalogEntry}) => catalogEntry.surfaceForm.includes('laptop'))
-        .map(({catalogEntry}) => catalogEntry),
+    const laptopCatalog = createUiCatalog(
+      (createSampleConsoleModule('laptop').presentationContributions.parts ?? []).map(({catalogEntry}) => catalogEntry),
     );
-    const withSampleMobile = createUiCatalog(
-      createSampleDefinedParts()
-        .filter(({catalogEntry}) => catalogEntry.surfaceForm.includes('mobile'))
-        .map(({catalogEntry}) => catalogEntry),
+    const mobileCatalog = createUiCatalog(
+      (createSampleConsoleModule('mobile').presentationContributions.parts ?? []).map(({catalogEntry}) => catalogEntry),
     );
-    const withoutSampleLaptop = createUiCatalog(
-      createSampleDefinedParts(false)
-        .filter(({catalogEntry}) => catalogEntry.surfaceForm.includes('laptop'))
-        .map(({catalogEntry}) => catalogEntry),
-    );
-    const withoutSampleMobile = createUiCatalog(
-      createSampleDefinedParts(false)
-        .filter(({catalogEntry}) => catalogEntry.surfaceForm.includes('mobile'))
-        .map(({catalogEntry}) => catalogEntry),
-    );
-    expect(selectAvailableParts(withSampleLaptop, 'admin.sections', context).map(entry => entry.partKey)).toContain(
+    expect(selectAvailableParts(laptopCatalog, 'admin.sections', context).map(entry => entry.partKey)).toContain(
       'sample.console.admin-test',
     );
     expect(
-      selectAvailableParts(withSampleMobile, 'admin.sections', mobileContext).map(entry => entry.partKey),
+      selectAvailableParts(mobileCatalog, 'admin.sections', mobileContext).map(entry => entry.partKey),
     ).toContain('sample.console.admin-test');
-    expect(
-      selectAvailableParts(withoutSampleLaptop, 'admin.sections', context).map(entry => entry.partKey),
-    ).not.toContain('sample.console.admin-test');
-    expect(
-      selectAvailableParts(withoutSampleMobile, 'admin.sections', mobileContext).map(entry => entry.partKey),
-    ).not.toContain('sample.console.admin-test');
   });
 
-  it('registers separate laptop and mobile renderer siblings for every sample business part', async () => {
-    const definedParts = createSampleDefinedParts(false).filter(
-      ({catalogEntry}) =>
-        catalogEntry.partKey.startsWith('sample.auth.') || catalogEntry.partKey.startsWith('sample.desk.'),
-    );
+  it('keeps separate laptop and mobile renderer siblings in the staff and member owners', () => {
+    const definedParts = [
+      ...(createSampleStaffAuthModule().presentationContributions.parts ?? []),
+      ...(createSampleMemberDeskModule().presentationContributions.parts ?? []),
+    ];
     const groups = new Map<string, (typeof definedParts)[number][]>();
     for (const part of definedParts) {
       const siblings = groups.get(part.catalogEntry.partKey) ?? [];
@@ -1163,24 +1183,30 @@ describe('sample-console real assembly', () => {
     }
   });
 
-  it('keeps exact metadata for the integration-owned part and composes feature parts unchanged', async () => {
-    const definedParts = createSampleDefinedParts();
-    const featureParts = [...sampleStaffAuthAssembly.parts, ...sampleMemberDeskAssembly.parts];
-
-    const activationParts = createSampleDefinedParts(false).filter(({catalogEntry}) =>
-      catalogEntry.partKey.startsWith('terminal.activation.'),
+  it('keeps exact integration-owned metadata in the owning presentation modules', () => {
+    const serverSpaces = packageJson.serverSpaces as TransportServerConfig;
+    const activationParts = createTerminalActivationModule(serverSpaces, 'laptop').presentationContributions.parts ?? [];
+    expect(activationParts.map(({catalogEntry}) => catalogEntry.partKey).sort()).toEqual(
+      [
+        'terminal.activation.mmp',
+        'terminal.activation.lmp',
+        'terminal.activation.lms',
+        'terminal.activation.lsp',
+        'terminal.activation.admin.status',
+      ].sort(),
     );
-    expect(activationParts.map(({catalogEntry}) => catalogEntry.partKey)).toEqual([
-      'terminal.activation.mmp',
-      'terminal.activation.lmp',
-      'terminal.activation.lms',
-      'terminal.activation.lsp',
-      'terminal.activation.admin.status',
+    const definedParts = [
+      ...(createAdminShellModule(serverSpaces).presentationContributions.parts ?? []),
+      ...(createSampleConsoleModule('laptop').presentationContributions.parts ?? []),
+    ];
+    const integrationPartIds = new Set([
+      'terminal.server-config.admin',
+      'terminal.update.install-reminder',
+      'sample.console.admin-test',
     ]);
-    expect(definedParts.slice(0, featureParts.length)).toEqual(featureParts);
-    expect(definedParts).toHaveLength(featureParts.length + 9);
-    expect(
-      definedParts.slice(featureParts.length + 5).map(({catalogEntry, rendererBinding}) => ({
+    const actualIntegrationParts = definedParts
+      .filter(({catalogEntry}) => integrationPartIds.has(catalogEntry.partKey))
+      .map(({catalogEntry, rendererBinding}) => ({
         partKey: catalogEntry.partKey,
         rendererKey: catalogEntry.rendererKey,
         containerKeys: [...catalogEntry.containerKeys],
@@ -1191,8 +1217,8 @@ describe('sample-console real assembly', () => {
         surfaceForm: [...catalogEntry.surfaceForm],
         layerTier: rendererBinding.layerTier,
         layerGuard: rendererBinding.layerGuard,
-      })),
-    ).toEqual([
+      }));
+    const expectedIntegrationParts = [
       {
         partKey: 'terminal.server-config.admin',
         rendererKey: 'terminal.server-config.admin',
@@ -1241,13 +1267,20 @@ describe('sample-console real assembly', () => {
         layerTier: 'standard',
         layerGuard: 'dismissible',
       },
-    ]);
+    ];
+    const byNormalizedPartIdentity = (
+      left: (typeof expectedIntegrationParts)[number],
+      right: (typeof expectedIntegrationParts)[number],
+    ): number => `${left.partKey}\u0000${left.rendererKey}`.localeCompare(`${right.partKey}\u0000${right.rendererKey}`);
+    expect(actualIntegrationParts.sort(byNormalizedPartIdentity)).toEqual(
+      expectedIntegrationParts.sort(byNormalizedPartIdentity),
+    );
   });
 
-  it('allows only the member desk customer surfaces on a topology secondary', async () => {
+  it('allows only member desk customer parts on a topology secondary', () => {
     const secondaryMemberParts = [
       ...new Set(
-        createSampleDefinedParts(false)
+        (createSampleMemberDeskModule().presentationContributions.parts ?? [])
           .filter(
             ({catalogEntry}) =>
               catalogEntry.partKey.startsWith('sample.desk.') &&
@@ -2349,11 +2382,12 @@ describe('sample-console real assembly', () => {
           'ui.feature.sample-member-desk',
           'ui.base.terminal-activation',
           'kernel.base.terminal-data-client',
+          'kernel.base.remote-control',
           'ui.base.automation-agent',
           'ui.integration.sample-console',
         ]),
       );
-      expect(assembly.runtime.descriptors).toHaveLength(17);
+      expect(assembly.runtime.descriptors).toHaveLength(19);
     } finally {
       await releaseRuntimeForTestAsync(assembly.runtime);
     }

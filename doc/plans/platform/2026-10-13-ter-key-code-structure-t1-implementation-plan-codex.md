@@ -2,13 +2,15 @@
 
 ## 0 · 当前授权和产物
 
-本计划基于同目录`2026-10-13-ter-key-code-structure-t1-implementation-design-codex.md`及`…-owner-and-source-appendix-codex.md`，需求SHA `b92a34101871a53341b334d02235bd301e03ebbebe840d39438302e21712443e`。当前只授权文档，`IMPLEMENTATION_AUTHORITY=false`。下列命令、数据操作、设备矩阵和cleanup均**计划/NOT_RUN**；不可据本计划执行。需求cycle已关闭，本详设另cycle两轮。
+本计划基于同目录`2026-10-13-ter-key-code-structure-t1-implementation-design-codex.md`及`…-owner-and-source-appendix-codex.md`，需求SHA `b92a34101871a53341b334d02235bd301e03ebbebe840d39438302e21712443e`。Dexter最新明确授权：确认问题修订完成后由Codex实施本批全部目标并最终交Dexter/Claude review，`IMPLEMENTATION_AUTHORITY=DEXTER_AUTHORIZED_AFTER_DOCUMENT_FIXES`。本作者会话仅完成文档修订，下列生成、编译、测试、设备矩阵和cleanup尚为计划/NOT_RUN。必要C/F/W/D与受管DEV已获授权；reset/seed、后台L2、UAT、部署不自动附带。需求cycle及两轮详设cycle已关闭，不因局部修订重开。
 
 没有新增UI，因此不重新请求逐屏确认；既有Journey、admin与业务行为仍在验证范围。没有CBS新operation/DBshape，backend新acceptance与browserL2非本批；真实TERWeb/device不是后台L2。
 
 ## 1 · 实施进入条件
 
-1. Dexter对当前完整设计包给予实施授权；确认本批全包/原生新增能力包/规范模板同步与明确运行范围。设计GO不是授权。
+详设§11a是唯一V01～V18验收落点表，已逐行写具体文件、场景ID、档位和业务oracle；本计划实施每一行，不维护第二份可漂移路径表。现有文件须在所属CP扩例，拟新增文件先建并注册才可执行；不能因旧测试文件存在而宣称新机制被覆盖。尤其CP01/04的transport/parameters.test.ts、CP02的integration-assembly/moduleContributions.test.ts与state/syncRegistration.test.ts、CP04的server-config/environmentResolver.test.ts及automation/serverConfigEnvironmentWiring.test.ts、CP03的updateOwnerFlow.ts均为未来产物，完整路径以该表明确住址为准。静态owner/README责任需独立源码review，不能用机械计数门代替。
+
+1. Dexter已明确授权修订完成后进入实施，范围为本批全包/两个真实native能力新增包/规范模板门同步与计划C/F/W/D。Codex先读本轮外部intake确认修订位置，再开始CP01；不要求重复取得相同实施授权，也不把最新授权或作者CLOSED改写成独立设计GO。
 2. 主agent重开当前AGENTS/BLUPRINT/kernel/六维route全部原文、原需求及詳设，确认currentbytes；重枚举实际手写调用者/生成/原生/driver，不把旧导航JSON当真相。
 3. native实际解析图、设备serial/API≥29、现managedDEV/seed/LiveKit前提在需用前关闭；没有即停具体执行面报告，不自动seed或猜账号。
 4. 第一个实际变更前只准备当前点所需输入，逐点双读；main唯一写，readonly子agent做每完整CP对账。不存在逐文件独立关卡。
@@ -18,17 +20,17 @@
 1. 按详设§8.1和附件§2迁declarations，在同一CP改全部imports/rootexports/invariants/tests和实际目录checker/模板；retain moduleName/dependencies/index；无emptyfile义务。
 2. RuntimeModule只concrete输入、describe/validate派生；createRuntimeModule共用现注册，brands/owner/duplicate/internal/依赖排序不削弱。现UIfeaturefactory迁通用Runtimefactory，UI字段暂保留现能力，不建第二catalog。
 3. State persistence IO与autoflush职责具名，State.dispose登记Runtime资源registry；失败/retry/reset无旧timer写；requestledger两slice及公开selectors具名分开。
-4. 当前真实默认策略抽ParameterDefinition但值/单位不改；constructError/domainreject/PortResult三边界明确；标准正本相应declarations/privateshape更新属于未来本CP授权，不先改当前正本。
+4. 当前真实默认策略抽ParameterDefinition但值/单位不改；constructError/business rejection/PortResult边界明确。规范目标基线已按补充授权同步，当前源码/模板/机械门未跟进；本CP同步实际生产形状、模板和红例，不重复改已对齐的规范，也不把当前规范写入当这些能力PASS。
 5. focused：改动所有包`yarn workspace <package.name> typecheck`及其当前owned test；runtime/state module/lifecycle/visibility/persist/sync tests；目录/brand/duplicate红。调用当前package.json脚本，不绕过dev-matrix wrapper。
 6. 完整CP fresh三维对账，MATCHED才CP02。修复只重开实际影响行及其共同机制，未动已核点不重复。
 
 ## 3 · CP-02：模块自闭环、UI/sync和assembly
 
-1. UiRuntimeModule presentationContributions只UI层；各pkg parts/variables/dismissal自返回，adminSections是parts，不新registry。服务配置admin贡献由server-config-panel自身提供。
+1. UiRuntimeModule presentationContributions只UI层；各pkg parts/variables自返回，dismissals沿现Readonly<Record<string,RenderLayerDismissal>>保留partKey→owner函数；收集逐键拒绝重复，不无键数组/spread覆盖；adminSections是parts，不新registry。服务配置section保留admin-shell，由其自身module提供贡献，不新开server-config-panel包。
 2. 两integration模块先构造，catalog→uiState→Runtime；retry重新module闭包及整bundle原子replace，surface/inputs/namespace/theme/App选择外部传入；migration所有callers后删三UI转发assembly及手工parts列表。
 3. State资格view→RuntimeModuleContext→topology install；删stateSyncSlices参数/helper；同步稳定projection引用由State负责，topology不rawslice读。两Apprequiredprojection不改，无关sync不阻塞。
 4. activation等通用呈现进本包；integration仅stage/required/Apppolicy；projectcandidate matching移project公开selector，remoteconfig由remoteowner消费，crossbase canPair只窄selector绑定不造循环。
-5. focused：featureAssembly、runtimeOwner/partSelection/startupReady、uiState、topology.sync、两App businessInterlock/ownerStageRegression；loaded/unloaded/retry/nooverlap与unknown/isolated、stale/force/inflight/latest投影反例。将旧stateSyncSlices.test迁真实State/Runtime路径，不在测试重造同步实现。
+5. focused：featureAssembly、runtimeOwner/partSelection/startupReady、uiState、topology.sync、两App businessInterlock/ownerStageRegression；三feature失败层完整变体。会员MAIN/BRANCH两个partKey均映射现owner关闭命令，memberDesk.test.tsx与render/layerStack.test.tsx分别验证按钮/back/backdrop后层关闭且pending/list不误清；runtimeOwner.test.ts验证重复dismissal键拒绝/retry新bundle；loaded/unloaded/retry/nooverlap与unknown/isolated、stale/force/inflight/latest投影反例。将旧stateSyncSlices.test迁真实State/Runtime路径，不在测试重造同步实现。
 6. CP02 fresh三维MATCHED。
 
 ## 4 · CP-03：API消费ownership
@@ -36,10 +38,10 @@
 1. 修改现policy/generator/template/check union；15operation五targets按附件§3；canonicalproblem/success/status闭包、仓根/symlink/重复/漏项红；只经generator产物，当前不能手改generated。
 2. TDC新增executeTerminalHttpCommand及secret-freecontext、server-config serviceContext selector（仅现credentialRevision/readiness，无RuntimeID），executor从ActorExecutionContext.runtimeId组装expectedContext；pre/post现epoch/credential/config/role复核，原transportgateway和有限pending/late机制保持。response receipt每次携带，删除acceptedResponse单槽；地址偏好同profile/currentrevision，不能把地址优化失败当业务失败。
 3. store/project/update/remote使用自身privateclient；原handlergeneration/snapshot/task/session fences保留。cancel仍TDC内部捕获credential完成，不因cancelling不能走普通HTTPready而卡死。
-4. 全callers移完删TDC五businesscommands/DTOunion/operation解析/rootgeneratedexport/alias；publicDTO只确有业务command/selector需要的type导出。staticprivate边界红覆盖root/reexport/deep/relative/alias/dynamic/require，不加新semanticgate。
+4. 全callers移完删TDC五businesscommands/DTOunion/operation解析/rootgeneratedexport/alias；publicDTO只确有业务command/selector需要的type导出。staticprivate边界红覆盖root/reexport/deep/relative/alias/dynamic/require，不加新semanticgate。scripts/test/terminal-client-generation.test.mjs当前单输出/13op断言要迁五owner/完整15op，TDC generatedTerminalApi/actor旧业务断言随owner迁移，不能沿用旧测试形状假绿。
 5. focused：现`terminal-client-generation`测试、五owner真实actor→generated→TDC→transport tests；known/unknown problem/HTTPstatus/nonJSON、并发A/B关联、role/reset/config迟到、写timeout未知。`C`生成检查和typecheck与`F`运行分报。
-6. CP03先完成详设§11b的`updateOwnerFlow.ts`及existing update suite/runner `update.owner-flow`注册与F：实际project候选→fixedtarget→真实grant/report/运营readback，automation-only typed UpdatePort fixture仅替代平台；不把artifact生成当W。CP05补完共享步骤所有UI/配置相依变更，日志preflight后CP06实际W→D。
-6. CP03 fresh三维MATCHED。
+6. CP03先完成详设§11b的`updateOwnerFlow.ts`及existing update suite/runner `update.owner-flow`注册与F：实际project候选→fixedtarget→真实grant/report/运营readback。同步修改现automationFixture.ts：prepare保留实际source.artifact，apply/readAction保留同prepared/kind/task/action/publication身份，release精确释放；模拟readFacts与同artifact一致，非全a及不同FULL/HOT身份正反测试先完成。automation-only typed UpdatePort fixture仅替代平台，不注入synthetic sourceProvider、不弱化生产身份校验，不把artifact生成当W。CP05补完共享步骤所有UI/配置相依变更，日志preflight后CP06实际W→D。
+7. CP03 fresh三维MATCHED。
 
 ## 5 · CP-04：环境集合和原生能力
 
@@ -76,6 +78,7 @@ node scripts/test/terminal-automation.mjs --phase journey --platform web --shape
 node scripts/test/terminal-automation.mjs --phase journey --platform web --shape dual --sample console --case normal --age 37
 node scripts/test/terminal-automation.mjs --phase journey --platform web --shape mobile --sample wallpaper
 node scripts/test/terminal-automation.mjs --phase remote --platform web --remote-topology mobile-single --sample console --case remote.main
+node scripts/test/terminal-automation.mjs --phase remote --platform web --remote-topology mobile-single --sample wallpaper --case remote.main
 node scripts/test/terminal-automation.mjs --phase update --platform web --shape mobile --case update.artifacts
 node scripts/test/terminal-automation.mjs --phase update --platform web --shape mobile --sample console --case update.owner-flow
 node scripts/test/terminal-automation.mjs --phase update --platform web --shape mobile --sample wallpaper --case update.owner-flow
@@ -90,7 +93,9 @@ node scripts/test/terminal-automation.mjs --phase remote --platform android --re
 
 设备四形态run集合与详设§11一致；以上命令含同一设备集合的不同业务suite，不称“总共只运行4命令”。如果要合并避免重复build/install，复用当前runner的suite/subcase组合能力，不能新造pairrunner。两App远控Web及mobile/pair当前CLI支持面以currentparser读回，无支持时不能自行猜参数，先补现runner注册和focused红。主sharedscenario常量/fixture在currentmainSampleJourney及sampleConsoleJourney/sampleWallpaperJourney，update/remote使用其现suite；不要另写一份samebusiness脚本。
 
-TR16：非adapter同清单W通过才D；update.artifacts是产物构建，不等同Web验证project→update/报告，所以CP03/05先用实际integrationRuntime+owner directtests/ExpoWeb共享步骤证明固定/HTTP业务接缝。确切新增落点为详设§11b `updateOwnerFlow.ts`，由当前update.test及Android两update suites共同调用；CP03/05已完成代码与F/前置诊断，CP06按上述update.owner-flow命令运行两App W，再执行D共享断言。此case当前尚不存在，不能假称CLI已支持。配对/installer/capture系统行为直接D，F只闭codec/owner，Web unavailable不硬模拟原生配对。
+TR16：非adapter同清单W通过才D；update.artifacts是产物构建，不等同Web验证project→update/报告，所以CP03/05先用实际integrationRuntime+owner directtests/ExpoWeb共享步骤证明固定/HTTP业务接缝。确切新增落点为详设§11b `updateOwnerFlow.ts`，由当前update.test及Android两update suites共同调用；CP03/05已完成代码与F/前置诊断，CP06按上述update.owner-flow命令运行两App W，再执行D共享断言。当前 parser 已注册该 case，执行前仍按当前 parser 和 suite 映射读回。配对/installer/capture系统行为直接D，F只闭codec/owner，Web unavailable不硬模拟原生配对。
+
+两个 Web `update.owner-flow` suite 必须使用受管环境注入的 `TERMINAL_AUTOMATION_WEB_ORIGIN` 启动 Expo 并以同一 origin 打开页面，因为 DEV 只放行清单中的精确浏览器 origin；不得另分配临时端口后把预检失败误作 CBS/业务失败。只访问本地 driver、且不访问受此 CORS 控制的 DEV API 的 artifact/visual suite 可继续使用临时端口。
 
 ### 7.3 · 结果与收敛
 

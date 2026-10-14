@@ -2,14 +2,16 @@ import {describe, expect, it} from 'vitest';
 import type {ActorExecutionContext} from '@catering-v2s/kernel-base-runtime';
 import type {StateJsonValue, StateRoot} from '@catering-v2s/kernel-base-state';
 import {
-  readTerminalDataCommand,
+  executeTerminalHttpCommand,
   selectActivationState,
   selectTerminalTopicSubscriptions,
   type TerminalTopicSubscription,
   type TerminalTopicKey,
-  type TerminalReadOperationId,
-  type TerminalStoreOrganizationPathRead,
 } from '@catering-v2s/kernel-base-terminal-data-client';
+import type {
+  TerminalOperationId,
+  TerminalStoreOrganizationPathRead,
+} from '../src/generated/terminalApi';
 import {requestTerminalUpdateCommand, type TerminalUpdateTask} from '@catering-v2s/kernel-base-terminal-update';
 import {serverConfigSliceName} from '@catering-v2s/kernel-base-server-config';
 import {topologySliceName} from '@catering-v2s/kernel-base-topology';
@@ -19,46 +21,57 @@ import {
   type StoreBasicBinding,
   type StoreBasicState,
 } from '@catering-v2s/kernel-feature-store-basic';
-import {
-  selectCommercialGroup,
-  selectProject,
-  selectProjectBasicLoadReadiness,
-  selectProjectBasicState,
-  selectProjectOrganizationPath,
-  selectProjectBasicTopicState,
-  selectProjectTerminalUpdateContextFacts,
-  selectProjectFixedTerminalUpdateContextFacts,
-  selectProjectTerminalUpdateCandidate,
-  selectProjectTerminalUpdateRules,
-  selectRegion,
-} from '../src/selectors/selectors';
-import {createProjectBasicActors} from '../src/features/actors/actors';
-import {evaluateProjectTerminalUpdateCommand} from '../src/features/commands/commands';
+import {selectCommercialGroup} from '../src/selectors/selectCommercialGroup';
+import {selectProject} from '../src/selectors/selectProject';
+import {selectProjectBasicLoadReadiness} from '../src/selectors/selectProjectBasicLoadReadiness';
+import {selectProjectBasicState} from '../src/selectors/selectProjectBasicState';
+import {selectProjectOrganizationPath} from '../src/selectors/selectProjectOrganizationPath';
+import {selectProjectBasicTopicState} from '../src/selectors/selectProjectBasicTopicState';
+import {selectProjectTerminalUpdateContextFacts} from '../src/selectors/selectProjectTerminalUpdateContextFacts';
+import {selectProjectFixedTerminalUpdateContextFacts} from '../src/selectors/selectProjectFixedTerminalUpdateContextFacts';
+import {selectProjectTerminalUpdateCandidate} from '../src/selectors/selectProjectTerminalUpdateCandidate';
+import {selectCurrentProjectTerminalUpdateTarget} from '../src/selectors/selectCurrentProjectTerminalUpdateTarget';
+import {fixedTargetFromProjectCandidate} from '../src/selectors/fixedTargetFromProjectCandidate';
+import {selectProjectTerminalUpdateRules} from '../src/selectors/selectProjectTerminalUpdateRules';
+import {selectRegion} from '../src/selectors/selectRegion';
+import {createProjectBasicActor} from '../src/features/actors/projectBasicActor';
+import {evaluateProjectTerminalUpdateCommand} from '../src/declarations/commands';
 import {
   getProjectBasicSyncEntries,
   initialProjectBasicState,
   projectBasicReducer,
   projectBasicSliceName,
-} from '../src/features/slices/slice';
-import {
-  refreshProjectBasicTopicCommand,
-  refreshProjectTerminalUpdateRulesCommand,
-} from '../src/features/commands/commands';
+} from '../src/features/slices/projectBasicState';
+import {refreshProjectBasicTopicCommand, refreshProjectTerminalUpdateRulesCommand} from '../src/declarations/commands';
 import {createProjectBasicModule} from '../src/application/module';
 import type {ProjectBasicState} from '../src/types/types';
 
+type TerminalReadOperationId = Extract<TerminalOperationId, `terminalRead${string}`>;
+const storeRef = '00000000-0000-4000-8000-000000000014';
+const projectRef = '00000000-0000-4000-8000-000000000011';
+const regionRef = '00000000-0000-4000-8000-000000000012';
+const commercialGroupRef = '00000000-0000-4000-8000-000000000013';
+const fullArtifactRef = '00000000-0000-4000-8000-000000000015';
+const hotArtifactRef = '00000000-0000-4000-8000-000000000016';
+const operationForPayload = (payload: unknown): TerminalReadOperationId => {
+  const path = (payload as {request: {pathAndQuery: string}}).request.pathAndQuery.split('?', 1)[0];
+  if (/^\/stores\/[^/]+\/organization-path$/.test(path)) return 'terminalReadStoreOrganizationPath';
+  if (/^\/update-rules\/projects\/[^/]+$/.test(path)) return 'terminalReadProjectUpdateRuleSnapshotPage';
+  throw new Error(`Unexpected project owner path: ${path}`);
+};
+
 const binding: StoreBasicBinding = Object.freeze({
   terminalRef: 'terminal-1',
-  storeRef: 'store-1',
+  storeRef,
   groupWorkspaceKey: 'workspace-1',
   bindingGeneration: 7,
 });
 const organizationPath: TerminalStoreOrganizationPathRead = Object.freeze({
-  projectRef: 'project-1',
+  projectRef,
   projectName: 'Project',
-  regionRef: 'region-1',
+  regionRef,
   regionName: 'Region',
-  commercialGroupRef: 'group-1',
+  commercialGroupRef,
   commercialGroupName: 'Group',
   projectUpdatedAtEpochMillis: 101,
   regionUpdatedAtEpochMillis: 102,
@@ -66,7 +79,7 @@ const organizationPath: TerminalStoreOrganizationPathRead = Object.freeze({
 });
 const artifact = (kind: 'FULL' | 'HOT') =>
   Object.freeze({
-    artifactRef: `artifact-${kind.toLowerCase()}`,
+    artifactRef: kind === 'FULL' ? fullArtifactRef : hotArtifactRef,
     kind,
     applicationId: 'com.example.console',
     runtimeVersion: '1.0.0',
@@ -82,7 +95,7 @@ const artifact = (kind: 'FULL' | 'HOT') =>
 const ruleItem = Object.freeze({
   ruleRef: '10000000-0000-4000-8000-000000000007',
   targetMode: 'STORE_REFS',
-  storeRefs: ['store-1'],
+  storeRefs: [storeRef],
   applicationId: 'com.example.console',
   createdAtEpochMillis: 201,
   full: artifact('FULL'),
@@ -103,7 +116,7 @@ const failedPersistenceResult = () => ({
 });
 
 const createHarness = () => {
-  const actor = createProjectBasicActors()[0];
+  const actor = createProjectBasicActor()[0];
   if (actor === undefined) throw new Error('project-basic actor missing');
   let projectState = projectBasicReducer(undefined, {type: 'test/init'});
   let instanceMode: 'MASTER' | 'SLAVE' = 'MASTER';
@@ -111,12 +124,15 @@ const createHarness = () => {
     binding,
     loadReadiness: Object.freeze({runtimeId: 'runtime-1', binding, storeStatus: 'flushed'}),
     store: Object.freeze({
-      value: Object.freeze({id: 'store-1', groupWorkspaceKey: 'workspace-1', project: {id: 'project-1'}}),
+      value: Object.freeze({id: storeRef, groupWorkspaceKey: 'workspace-1', project: {id: projectRef}}),
       updatedAtEpochMillis: 100,
     }),
   } as unknown as StoreBasicState;
   const clientState = {
     credential: {...binding, deviceId: 'device-1', credentialSecret: 'secret'},
+    credentialRevision: 1,
+    credentialReadyRevision: 1,
+    credentialReadyInstanceMode: 'MASTER',
     activationStatus: 'active',
     connection: {status: 'stopped', addressName: null, nodeId: null, lastCloseReason: null},
     pendingActivations: {},
@@ -160,7 +176,7 @@ const createHarness = () => {
       'kernel.base.runtime.instance-mode': {instanceMode},
       'kernel.base.terminal-data-client.client': clientState,
       'kernel.base.terminal-update.state': updateState,
-      [serverConfigSliceName]: {selectedSpace: 'development'},
+      [serverConfigSliceName]: {selectedSpace: 'development', serviceRevisions: {business: 0}},
       [topologySliceName]: {
         peerReachable: instanceMode === 'SLAVE',
         peerIdentity: instanceMode === 'SLAVE' ? {moduleName: 'sample-console', instanceMode: 'MASTER'} : null,
@@ -177,12 +193,23 @@ const createHarness = () => {
   const success = (result: StateJsonValue) => ({status: 'completed', actorResults: [{status: 'completed', result}]});
   const dispatchCommand = async (definition: {commandName: string}, payload: unknown): Promise<unknown> => {
     calls.push(Object.freeze({name: definition.commandName, payload}));
-    if (definition.commandName === readTerminalDataCommand.commandName) {
-      const operationId = (payload as {operationId: TerminalReadOperationId}).operationId;
+    if (definition.commandName === executeTerminalHttpCommand.commandName) {
+      const operationId = operationForPayload(payload);
       if (operationId === 'terminalReadStoreOrganizationPath' && failOrganizationRead)
-        return success({kind: 'business-rejection', errorCode: 'ORGANIZATION_PATH_UNAVAILABLE'});
+        return success({kind: 'failure', category: 'delivered-failure', code: 'ORGANIZATION_PATH_UNAVAILABLE'});
       if (operationId === 'terminalReadProjectUpdateRuleSnapshotPage' && rejectRuleSnapshotReads)
-        return success({kind: 'business-rejection', errorCode: 'TERMINAL_UPDATE_SNAPSHOT_CHANGED'});
+        return success({
+          kind: 'response',
+          status: 409,
+          body: {
+            type: 'urn:problem:terminal-update-snapshot-changed',
+            title: 'Snapshot changed',
+            status: 409,
+            detail: 'The current update-rule snapshot changed.',
+            errorCode: 'TERMINAL_UPDATE_SNAPSHOT_CHANGED',
+            correlationId: 'test-correlation-1',
+          },
+        });
       const body =
         operationId === 'terminalReadStoreOrganizationPath'
           ? organizationPathReader === null
@@ -193,7 +220,7 @@ const createHarness = () => {
             : null;
       return body === null
         ? success({kind: 'failure', category: 'not-delivered', code: 'UNEXPECTED_READ'})
-        : success({kind: 'success', status: 200, body: body as unknown as StateJsonValue});
+        : success({kind: 'response', status: 200, body: body as unknown as StateJsonValue});
     }
     if (definition.commandName === requestTerminalUpdateCommand.commandName) {
       requestedTargets.push((payload as {target: unknown}).target);
@@ -236,7 +263,9 @@ const createHarness = () => {
       },
       dispatchCommand,
       flushPersistence: () => flushPersistence(),
-      platformPorts: {logger: {scope: () => ({info: (entry: unknown) => logEntries.push(entry), error: () => undefined})}},
+      platformPorts: {
+        logger: {scope: () => ({info: (entry: unknown) => logEntries.push(entry), error: () => undefined})},
+      },
     }) as unknown as ActorExecutionContext;
   const applySlaveProjection = (entries: ReturnType<typeof getProjectBasicSyncEntries>): void => {
     instanceMode = 'SLAVE';
@@ -330,7 +359,7 @@ describe('project-basic owner', () => {
     expect(selectActivationState(state).status).toBe('active');
     expect(selectProjectTerminalUpdateRules(state)).toMatchObject({
       status: 'ready',
-      projectRef: 'project-1',
+      projectRef,
       collectionHash: 'a'.repeat(64),
     });
     expect(
@@ -339,18 +368,38 @@ describe('project-basic owner', () => {
         .map(item => [item.topicKey, item.ownerRef])
         .sort(),
     ).toEqual([
-      ['COMMERCIAL_GROUP', 'group-1'],
-      ['PROJECT', 'project-1'],
-      ['REGION', 'region-1'],
-      ['TERMINAL_UPDATE_RULES', 'project-1'],
+      ['COMMERCIAL_GROUP', commercialGroupRef],
+      ['PROJECT', projectRef],
+      ['REGION', regionRef],
+      ['TERMINAL_UPDATE_RULES', projectRef],
     ]);
-    const candidate = selectProjectTerminalUpdateCandidate(state, 'com.example.console', 'store-1');
+    const candidate = selectProjectTerminalUpdateCandidate(state, 'com.example.console', storeRef);
     expect(candidate).toMatchObject({
       collectionHash: 'a'.repeat(64),
-      storeRef: 'store-1',
+      storeRef,
       rule: {ruleRef: ruleItem.ruleRef},
     });
-    expect(selectProjectTerminalUpdateCandidate(state, 'com.example.wallpaper', 'store-1')).toBeNull();
+    expect(selectProjectTerminalUpdateCandidate(state, 'com.example.wallpaper', storeRef)).toBeNull();
+    if (candidate === null) throw new Error('expected current project terminal-update candidate');
+    const target = fixedTargetFromProjectCandidate(candidate);
+    expect(
+      selectCurrentProjectTerminalUpdateTarget(
+        state,
+        target.applicationId,
+        target.ruleRef,
+        target.collectionHash,
+        target.selectionContext.contextIdentity,
+      ),
+    ).toEqual(target);
+    expect(
+      selectCurrentProjectTerminalUpdateTarget(
+        state,
+        target.applicationId,
+        target.ruleRef,
+        'b'.repeat(64),
+        target.selectionContext.contextIdentity,
+      ),
+    ).toBeNull();
 
     const evaluate = harness.actor.handlers.find(
       item => item.commandName === evaluateProjectTerminalUpdateCommand.commandName,
@@ -369,8 +418,8 @@ describe('project-basic owner', () => {
     expect(
       harness.calls.find(
         call =>
-          call.name === readTerminalDataCommand.commandName &&
-          (call.payload as {operationId?: string}).operationId === 'terminalReadStoreOrganizationPath',
+          call.name === executeTerminalHttpCommand.commandName &&
+          operationForPayload(call.payload) === 'terminalReadStoreOrganizationPath',
       ),
     ).toBeDefined();
   });
@@ -393,9 +442,7 @@ describe('project-basic owner', () => {
     ).resolves.toEqual({status: 'no-update'});
 
     expect(harness.requestedTargets).toEqual([null]);
-    expect(
-      harness.calls.filter(call => call.name === requestTerminalUpdateCommand.commandName),
-    ).toHaveLength(1);
+    expect(harness.calls.filter(call => call.name === requestTerminalUpdateCommand.commandName)).toHaveLength(1);
   });
 
   it('records a typed terminal-update rejection reason without logging target contents', async () => {
@@ -431,7 +478,7 @@ describe('project-basic owner', () => {
     );
     if (load === undefined || refresh === undefined) throw new Error('project-basic load/refresh handler missing');
     await load.handle(harness.makeContext(storeBasicInformationLoadedCommand.commandName, binding));
-    expect(selectProjectTerminalUpdateCandidate(harness.getState(), 'com.example.console', 'store-1')).not.toBeNull();
+    expect(selectProjectTerminalUpdateCandidate(harness.getState(), 'com.example.console', storeRef)).not.toBeNull();
 
     let releaseFlush!: (result: Awaited<ReturnType<ActorExecutionContext['flushPersistence']>>) => void;
     let markFlushStarted!: () => void;
@@ -449,10 +496,10 @@ describe('project-basic owner', () => {
     const refreshing = refresh.handle(harness.makeContext(refreshProjectTerminalUpdateRulesCommand.commandName, {}));
     await flushStarted;
     expect(harness.getProjectState().ruleSnapshotStatus.status).toBe('loading');
-    expect(selectProjectTerminalUpdateCandidate(harness.getState(), 'com.example.console', 'store-1')).toBeNull();
+    expect(selectProjectTerminalUpdateCandidate(harness.getState(), 'com.example.console', storeRef)).toBeNull();
     releaseFlush(successfulPersistenceResult());
     await expect(refreshing).resolves.toMatchObject({status: 'ready'});
-    expect(selectProjectTerminalUpdateCandidate(harness.getState(), 'com.example.console', 'store-1')).not.toBeNull();
+    expect(selectProjectTerminalUpdateCandidate(harness.getState(), 'com.example.console', storeRef)).not.toBeNull();
 
     harness.setFlushPersistence(async () => successfulPersistenceResult());
     await refresh.handle(harness.makeContext(refreshProjectTerminalUpdateRulesCommand.commandName, {}));
@@ -461,7 +508,7 @@ describe('project-basic owner', () => {
       refresh.handle(harness.makeContext(refreshProjectTerminalUpdateRulesCommand.commandName, {})),
     ).resolves.toMatchObject({status: 'persistence-failed'});
     expect(harness.getProjectState().ruleSnapshotStatus.status).toBe('failed');
-    expect(selectProjectTerminalUpdateCandidate(harness.getState(), 'com.example.console', 'store-1')).toBeNull();
+    expect(selectProjectTerminalUpdateCandidate(harness.getState(), 'com.example.console', storeRef)).toBeNull();
   });
 
   it('tombstones retained organization and rules while an authoritative organization refresh is unavailable, then restores the projection', async () => {
@@ -482,7 +529,7 @@ describe('project-basic owner', () => {
         notificationId,
         subscriptionId: 'subscription-1',
         topicKey: 'PROJECT' as const,
-        ownerRef: 'project-1',
+        ownerRef: projectRef,
         topicTimeEpochMillis: 202,
       });
     const originalOrganization = harness.getProjectState().organizationPath;
@@ -504,7 +551,7 @@ describe('project-basic owner', () => {
       organization: {tombstone: true},
       rules: {tombstone: true},
     });
-    expect(selectProjectTerminalUpdateCandidate(harness.getState(), 'com.example.console', 'store-1')).toBeNull();
+    expect(selectProjectTerminalUpdateCandidate(harness.getState(), 'com.example.console', storeRef)).toBeNull();
 
     harness.setOrganizationReadFailure(false);
     await expect(
@@ -519,7 +566,7 @@ describe('project-basic owner', () => {
       organization: {value: originalOrganization},
       rules: {value: originalRules},
     });
-    expect(selectProjectTerminalUpdateCandidate(harness.getState(), 'com.example.console', 'store-1')).toMatchObject({
+    expect(selectProjectTerminalUpdateCandidate(harness.getState(), 'com.example.console', storeRef)).toMatchObject({
       rule: {ruleRef: ruleItem.ruleRef},
     });
   });
@@ -546,7 +593,7 @@ describe('project-basic owner', () => {
             notificationId: 'notification-stale',
             subscriptionId: 'subscription-1',
             topicKey: 'TERMINAL_UPDATE_RULES',
-            ownerRef: 'project-1',
+            ownerRef: projectRef,
             topicTimeEpochMillis: 202,
           }),
         }),
@@ -604,7 +651,7 @@ describe('project-basic owner', () => {
           notificationId: 'notification-project-old',
           subscriptionId: 'subscription-project',
           topicKey: 'PROJECT',
-          ownerRef: 'project-1',
+          ownerRef: projectRef,
           topicTimeEpochMillis: 202,
         }),
       }),
@@ -617,16 +664,22 @@ describe('project-basic owner', () => {
           notificationId: 'notification-region-new',
           subscriptionId: 'subscription-region',
           topicKey: 'REGION',
-          ownerRef: 'region-1',
+          ownerRef: regionRef,
           topicTimeEpochMillis: 203,
         }),
       }),
     );
     await newerStartedPromise;
-    const latestPath = Object.freeze({...organizationPath, regionRef: 'region-new', regionName: 'New Region'});
+    const latestPath = Object.freeze({
+      ...organizationPath,
+      regionRef: '00000000-0000-4000-8000-000000000021',
+      regionName: 'New Region',
+    });
     releaseNewer(latestPath);
     await expect(newerRefresh).resolves.toEqual({status: 'refreshed'});
-    releaseOlder(Object.freeze({...organizationPath, regionRef: 'region-old', regionName: 'Old Region'}));
+    releaseOlder(
+      Object.freeze({...organizationPath, regionRef: '00000000-0000-4000-8000-000000000022', regionName: 'Old Region'}),
+    );
     await expect(olderRefresh).resolves.toEqual({status: 'stale-result'});
 
     expect(selectProjectOrganizationPath(harness.getState())).toMatchObject({value: latestPath});
@@ -661,7 +714,7 @@ describe('project-basic owner', () => {
             notificationId: 'notification-project-flush-failed',
             subscriptionId: 'subscription-project',
             topicKey: 'PROJECT',
-            ownerRef: 'project-1',
+            ownerRef: projectRef,
             topicTimeEpochMillis: 202,
           }),
         }),
@@ -685,8 +738,9 @@ describe('project-basic owner', () => {
     );
     if (load === undefined || refresh === undefined) throw new Error('project-basic load/refresh handler missing');
     await load.handle(harness.makeContext(storeBasicInformationLoadedCommand.commandName, binding));
-    harness.setOrganizationPathRead(Object.freeze({...organizationPath, regionRef: 'region-new'}));
-    harness.failTopicSubscriptionFor('region-new');
+    const nextRegionRef = '00000000-0000-4000-8000-000000000021';
+    harness.setOrganizationPathRead(Object.freeze({...organizationPath, regionRef: nextRegionRef}));
+    harness.failTopicSubscriptionFor(nextRegionRef);
 
     await expect(
       refresh.handle(
@@ -696,7 +750,7 @@ describe('project-basic owner', () => {
             notificationId: 'notification-project-subscribe-failed',
             subscriptionId: 'subscription-project',
             topicKey: 'PROJECT',
-            ownerRef: 'project-1',
+            ownerRef: projectRef,
             topicTimeEpochMillis: 202,
           }),
         }),
@@ -725,8 +779,8 @@ describe('project-basic owner', () => {
     ).resolves.toEqual({status: 'ready'});
     const snapshotReadsBefore = harness.calls.filter(
       call =>
-        call.name === readTerminalDataCommand.commandName &&
-        (call.payload as {operationId?: string}).operationId === 'terminalReadProjectUpdateRuleSnapshotPage',
+        call.name === executeTerminalHttpCommand.commandName &&
+        operationForPayload(call.payload) === 'terminalReadProjectUpdateRuleSnapshotPage',
     ).length;
     harness.setRuleSnapshotChanged(true);
 
@@ -736,8 +790,8 @@ describe('project-basic owner', () => {
 
     const snapshotReadsAfter = harness.calls.filter(
       call =>
-        call.name === readTerminalDataCommand.commandName &&
-        (call.payload as {operationId?: string}).operationId === 'terminalReadProjectUpdateRuleSnapshotPage',
+        call.name === executeTerminalHttpCommand.commandName &&
+        operationForPayload(call.payload) === 'terminalReadProjectUpdateRuleSnapshotPage',
     ).length;
     expect(snapshotReadsAfter - snapshotReadsBefore).toBe(3);
     expect(selectProjectTerminalUpdateRules(harness.getState())).toMatchObject({
@@ -748,7 +802,7 @@ describe('project-basic owner', () => {
       status: 'failed',
       errorCode: 'SNAPSHOT_COLLECTION_CHANGED',
     });
-    expect(selectProjectTerminalUpdateCandidate(harness.getState(), 'com.example.console', 'store-1')).toBeNull();
+    expect(selectProjectTerminalUpdateCandidate(harness.getState(), 'com.example.console', storeRef)).toBeNull();
   });
 
   it('starts local updates from current SLAVE project projections without master activation or remote reads', async () => {
@@ -771,10 +825,10 @@ describe('project-basic owner', () => {
       bindingGeneration: binding.bindingGeneration,
       selectedSpace: binding.groupWorkspaceKey,
       storeRef: binding.storeRef,
-      projectRef: 'project-1',
+      projectRef,
       projectUpdatedAtEpochMillis: organizationPath.projectUpdatedAtEpochMillis,
     });
-    expect(selectProjectTerminalUpdateCandidate(state, 'com.example.console', 'store-1')).toMatchObject({
+    expect(selectProjectTerminalUpdateCandidate(state, 'com.example.console', storeRef)).toMatchObject({
       rule: {ruleRef: ruleItem.ruleRef},
     });
 
@@ -813,13 +867,13 @@ describe('project-basic owner', () => {
     expect(selectProjectFixedTerminalUpdateContextFacts(changedCredentialState)).toBeNull();
 
     const readCountBeforeEvaluation = harness.calls.filter(
-      call => call.name === readTerminalDataCommand.commandName,
+      call => call.name === executeTerminalHttpCommand.commandName,
     ).length;
     await expect(
       evaluate.handle(harness.makeContext(evaluateProjectTerminalUpdateCommand.commandName, {})),
     ).resolves.toEqual({status: 'no-update'});
     expect(harness.requestedTargets).toHaveLength(1);
-    expect(harness.calls.filter(call => call.name === readTerminalDataCommand.commandName)).toHaveLength(
+    expect(harness.calls.filter(call => call.name === executeTerminalHttpCommand.commandName)).toHaveLength(
       readCountBeforeEvaluation,
     );
 

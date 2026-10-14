@@ -1,34 +1,38 @@
 import packageJson from '../../package.json';
 import * as Crypto from 'expo-crypto';
 import {moduleName as integrationModuleName} from '../moduleName';
-import type {EnvironmentMode, NativeLoadingCapability, PlatformPorts} from '@catering-v2s/kernel-base-platform-ports';
-import {definePart, type SurfaceHostMeasurementSource} from '@catering-v2s/ui-base-render';
+import type {
+  EnvironmentMode,
+  NativeLoadingCapability,
+  PlatformPorts,
+  TransportNetworkAdapter,
+  TransportNetworkSnapshot,
+} from '@catering-v2s/kernel-base-platform-ports';
+import type {SurfaceHostMeasurementSource} from '@catering-v2s/ui-base-render';
 import {
   createIntegrationAssembly,
   createStartupReadyPayload,
   createSurfaceForDisplayIndex as createSharedSurfaceForDisplayIndex,
   createBrowserTransportNetworkAdapter,
   PairReadinessInterlock,
-  selectStateSyncSlices,
   type IntegrationAssembly,
   type AutomationAgentConfig,
 } from '@catering-v2s/ui-base-integration-assembly';
-import {sampleMemberDeskAssembly} from '@catering-v2s/ui-feature-sample-member-desk';
-import {sampleStaffAuthAssembly} from '@catering-v2s/ui-feature-sample-staff-auth';
+import {createSampleMemberDeskModule} from '@catering-v2s/ui-feature-sample-member-desk';
+import {createSampleStaffAuthModule} from '@catering-v2s/ui-feature-sample-staff-auth';
 import {createSampleMemberRegistryModule} from '@catering-v2s/kernel-feature-sample-member-registry';
 import {createSampleStaffSessionModule} from '@catering-v2s/kernel-feature-sample-staff-session';
 import {createStoreBasicModule, selectStoreBasicBinding} from '@catering-v2s/kernel-feature-store-basic';
 import {
   createProjectBasicModule,
-  fixedTargetFromProjectCandidate,
-  selectProjectTerminalUpdateCandidate,
+  selectCurrentProjectTerminalUpdateTarget,
   selectProjectTerminalUpdateContextFacts,
   selectProjectFixedTerminalUpdateContextFacts,
 } from '@catering-v2s/kernel-feature-project-basic';
 import {createServerConfigModule} from '@catering-v2s/kernel-base-server-config';
 import {createTerminalUpdateModule, type UpdateTargetSourceProvider} from '@catering-v2s/kernel-base-terminal-update';
 import {createRemoteControlModule} from '@catering-v2s/kernel-base-remote-control';
-import {resolveServerNetworkSnapshot, selectServerConfiguration} from '@catering-v2s/kernel-base-server-config';
+import {resolveServerNetworkSnapshot} from '@catering-v2s/kernel-base-server-config';
 import type {TransportServerConfig} from '@catering-v2s/kernel-base-contracts';
 import {
   createTopologyAdminCapability,
@@ -39,20 +43,14 @@ import {
 import {
   createTopologyIdentityClient,
   createTransportModule,
-  type TransportNetworkAdapter,
-  type TransportNetworkSnapshot,
-  type TopologyPeerChannel,
 } from '@catering-v2s/kernel-base-transport';
+import type {TopologyPeerChannel} from '@catering-v2s/kernel-base-platform-ports';
 import {
-  ADMIN_SECTION_CONTAINER_KEY,
-  SampleSection,
-  createServerConfigPanelParts,
-  createTerminalUpdateInstallReminderParts,
+  createAdminShellModule,
 } from '@catering-v2s/ui-base-admin-shell';
 import {
   createCredentialSecret,
   createTerminalActivationModule,
-  createTerminalActivationParts,
 } from '@catering-v2s/ui-base-terminal-activation';
 import {
   createTerminalDataClientModule,
@@ -61,13 +59,12 @@ import {
 } from '@catering-v2s/kernel-base-terminal-data-client';
 import {
   createSampleConsoleModule,
-  selectSampleConsoleBusinessInterlockActive,
-  selectSampleConsoleBusinessMutationAllowed,
-  selectSampleConsoleStaffLoginAllowed,
-  startupReadyCommand,
-  type SampleConsoleReadyPayload,
 } from '../application/module';
-export {selectSampleConsoleBusinessInterlockActive} from '../application/module';
+import {selectSampleConsoleBusinessInterlockActive} from '../selectors/selectSampleConsoleBusinessInterlockActive';
+import {selectSampleConsoleBusinessMutationAllowed} from '../selectors/selectSampleConsoleBusinessMutationAllowed';
+import {selectSampleConsoleStaffLoginAllowed} from '../selectors/selectSampleConsoleStaffLoginAllowed';
+import {startupReadyCommand, type SampleConsoleReadyPayload} from '../declarations/commands';
+export {selectSampleConsoleBusinessInterlockActive} from '../selectors/selectSampleConsoleBusinessInterlockActive';
 import {
   getSurfaceDeclarations,
   terminalSurfaces,
@@ -76,33 +73,6 @@ import {
 } from '../application/terminalSurfaces';
 
 const defaultPersistenceKey = 'sample-console';
-
-const sampleAdminTestPart = definePart({
-  partKey: 'sample.console.admin-test',
-  rendererKey: 'sample.console.admin-test',
-  containerKeys: [ADMIN_SECTION_CONTAINER_KEY] as const,
-  displayModes: ['PRIMARY', 'SECONDARY'] as const,
-  workspaces: ['MAIN', 'BRANCH'] as const,
-  instanceModes: ['MASTER', 'SLAVE'] as const,
-  surfaceForm: ['laptop', 'mobile'] as const,
-  title: '示例诊断',
-  description: '由 sample-console 通过生产 catalog 注册的标题占位 section',
-  component: SampleSection,
-});
-
-export const createSampleDefinedParts = (
-  includeSampleAdminSection = true,
-  serverSpaces: TransportServerConfig = packageJson.serverSpaces as TransportServerConfig,
-) => {
-  const baseParts = [...sampleStaffAuthAssembly.parts, ...sampleMemberDeskAssembly.parts];
-  return Object.freeze([
-    ...baseParts,
-    ...createTerminalActivationParts(serverSpaces),
-    ...createServerConfigPanelParts(serverSpaces),
-    ...createTerminalUpdateInstallReminderParts(),
-    ...(includeSampleAdminSection ? [sampleAdminTestPart] : []),
-  ]);
-};
 
 export type SampleAssembly = IntegrationAssembly;
 
@@ -154,18 +124,12 @@ export async function createSampleAssembly(input: SampleAssemblyInput): Promise<
     showAdminPassword: input.showAdminPassword ?? packageJson.showAdminPassword,
     selectBusinessInterlockActive: selectSampleConsoleBusinessInterlockActive,
     renderBusinessInterlock: () => <PairReadinessInterlock />,
-    parts: createSampleDefinedParts(true, input.serverSpaces ?? (packageJson.serverSpaces as TransportServerConfig)),
-    layerDismissals: Object.freeze({
-      ...sampleStaffAuthAssembly.layerDismissals,
-      ...sampleMemberDeskAssembly.layerDismissals,
-    }),
-    variables: [...sampleStaffAuthAssembly.variables],
     surfaceHostSourcesByDisplayIndex: input.surfaceHostSourcesByDisplayIndex,
     startupReadyCommand,
     createStartupReadyPayload,
     resolveCommandTarget: resolveTopologyCommandTarget,
     createTopologyAdminCapability,
-    createApplicationModules: ({uiStateModule}) => {
+    createApplicationModules: () => {
       const memberRegistryModule = createSampleMemberRegistryModule({
         canMutate: selectSampleConsoleBusinessMutationAllowed,
       });
@@ -204,14 +168,14 @@ export async function createSampleAssembly(input: SampleAssemblyInput): Promise<
           sourceProvider: input.terminalUpdateSourceProvider,
           readTerminalUpdateContextFacts: selectProjectTerminalUpdateContextFacts,
           readFixedTerminalUpdateContextFacts: selectProjectFixedTerminalUpdateContextFacts,
-          readCurrentTarget: (state, requested) => {
-            const binding = selectStoreBasicBinding(state);
-            if (binding === null) return null;
-            const candidate = selectProjectTerminalUpdateCandidate(state, requested.applicationId, binding.storeRef);
-            if (candidate === null) return null;
-            const target = fixedTargetFromProjectCandidate(candidate);
-            return JSON.stringify(target) === JSON.stringify(requested) ? target : null;
-          },
+          readCurrentTarget: (state, requested) =>
+            selectCurrentProjectTerminalUpdateTarget(
+              state,
+              requested.applicationId,
+              requested.ruleRef,
+              requested.collectionHash,
+              requested.selectionContext.contextIdentity,
+            ),
           readNetworkSnapshot: (state, serverName) => resolveServerNetworkSnapshot(state, serverSpaces, serverName),
         }),
         createTopologyModule({
@@ -228,34 +192,22 @@ export async function createSampleAssembly(input: SampleAssemblyInput): Promise<
               (connection.status === 'stopped' || connection.status === 'disconnected')
             );
           },
-          stateSyncSlices: selectStateSyncSlices([
-            ...(uiStateModule.stateSlices ?? []),
-            ...(staffSessionModule.stateSlices ?? []),
-            ...(memberRegistryModule.stateSlices ?? []),
-            ...(serverConfigModule.stateSlices ?? []),
-            ...(terminalDataClientModule.stateSlices ?? []),
-            ...(storeBasicModule.stateSlices ?? []),
-            ...(projectBasicModule.stateSlices ?? []),
-          ]),
         }),
         createRemoteControlModule({
           topologyModuleName: integrationModuleName,
           port: input.platformPorts.remoteControl,
-          readSignalConfiguration: state => {
-            const snapshot = resolveServerNetworkSnapshot(state, serverSpaces, 'livekit');
-            const url = snapshot.addresses[0]?.baseUrl;
-            return url === undefined ? null : Object.freeze({url, identity: `${selectServerConfiguration(state, serverSpaces).selectedSpace}:${snapshot.revision}`});
-          },
+          serverSpaces,
         }),
         createSampleConsoleModule(surfaceForm),
-        createTerminalActivationModule(),
+        createTerminalActivationModule(serverSpaces, surfaceForm),
+        createAdminShellModule(serverSpaces),
         terminalDataClientModule,
         storeBasicModule,
         projectBasicModule,
         staffSessionModule,
         memberRegistryModule,
-        sampleStaffAuthAssembly.createModule(),
-        sampleMemberDeskAssembly.createModule(),
+        createSampleStaffAuthModule(),
+        createSampleMemberDeskModule(),
       ];
     },
   });

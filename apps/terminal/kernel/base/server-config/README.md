@@ -12,7 +12,7 @@ server-config 不保存终端凭证，也不负责连接重试或 TDS 业务协�
 
 组合层通过 `createServerConfigModule(defaults)` 注入不可变 defaults。defaults 按环境列出服务地址及可选 HTTP proxy；地址覆盖按服务全量写入，必须给每个地址提供唯一名称、完整 URL 与正 timeout。环境切换、设置/清除服务覆盖、恢复全部 defaults 都经本包 command。非法配置整次拒绝，不部分写入。
 
-`selectServerConfiguration` 返回当前与默认配置、覆盖服务列表及 `passwordConfigured`，不返回密码。网络 adapter 专用入口位于包子路径 `@catering-v2s/kernel-base-server-config/network-adapter`；仅组合层可将其 `resolveServerNetworkSnapshot(state, defaults, serverName)` 注入 transport 的网络 provider。terminal-data-client 不消费这个快照。
+`selectServerConfiguration` 返回当前与默认配置、覆盖服务列表及 `passwordConfigured`，不返回密码。环境解析由 owner 的 `@catering-v2s/kernel-base-server-config/environment` 子路径公开给受管 Node 工具；运行时使用 Node 原生 TypeScript stripping 时，该入口和它的相对运行时依赖必须带文件扩展名。网络 adapter 专用入口位于包子路径 `@catering-v2s/kernel-base-server-config/network-adapter`；仅组合层可将其 `resolveServerNetworkSnapshot(state, defaults, serverName)` 注入 transport 的网络 provider。terminal-data-client 不消费这个快照。
 
 按本专项正式需求，代理密码是普通字符串字段，使用 `persistKv` 明文持久化，并随主机配置通过现有 topology state sync 明文复制到副机。普通 selector、日志与错误仍不包含原文；覆盖代理仍是完整服务设置，不继承 defaults 的代理密码。主机 package defaults（包括默认代理凭证）与当前选择/覆盖作为一份配置快照同步；副机将其作为本地持久缓存，不能编辑或反向提交。
 

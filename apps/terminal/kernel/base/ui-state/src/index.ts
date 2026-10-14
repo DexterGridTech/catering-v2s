@@ -16,12 +16,13 @@ export {
   openLayerCommand,
   setUiVariablesCommand,
   showScreenCommand,
-} from './features/commands';
-export {selectLayers, selectScreen} from './selectors/selectContent';
+} from './declarations/commands';
+export {selectLayers} from './selectors/selectLayers';
+export {selectScreen} from './selectors/selectScreen';
+export {isCurrentWorkspaceOwnedByInstance} from './selectors/isCurrentWorkspaceOwnedByInstance';
 export {contentStateSliceName} from './foundations/workspaceSlices';
 export {createModuleUiVariableFactory, createUiVariableWrite} from './foundations/uiVariable';
 export {
-  isCurrentWorkspaceOwnedByInstance,
   isWorkspaceOwnedByInstanceMode,
   workspaceOwnedByInstanceMode,
 } from './foundations/workspaceOwnership';

@@ -16,12 +16,10 @@ import {
   terminalTransportEventCommand,
   refreshTerminalClientStatusProjectionCommand,
   terminalDataHeartbeatCommand,
-  readTerminalDataCommand,
-  submitTerminalUpdateReportCommand,
-  requestTerminalUpdateDownloadGrantCommand,
-  registerTerminalRemoteControlCommand,
-  reportTerminalRemoteControlCommand,
-} from '../src/features/commands/terminalDataClientCommands';
+  executeTerminalHttpCommand,
+} from '../src/declarations/commands';
+import {serverConfigSliceName} from '@catering-v2s/kernel-base-server-config';
+import {selectTerminalHttpContext} from '../src/selectors/selectTerminalHttpContext';
 import {
   completeTopologySlaveUnpairStateClearCommand,
   requestTopologySlaveUnpairStateClearCommand,
@@ -41,15 +39,14 @@ import {
   createTerminalDataClientActor,
   terminalConnectionCloseReasons,
 } from '../src/features/actors/terminalDataClientActor';
-import {
-  selectActivationState,
-  selectConnectionLatency,
-  selectConnectionState,
-  selectTerminalTopicSubscriptions,
-} from '../src/selectors/selectTerminalDataClientState';
+import {selectActivationState} from '../src/selectors/selectActivationState';
+import {selectConnectionLatency} from '../src/selectors/selectConnectionLatency';
+import {selectConnectionState} from '../src/selectors/selectConnectionState';
+import {selectTerminalTopicSubscriptions} from '../src/selectors/selectTerminalTopicSubscriptions';
 import type {ActorExecutionContext, CommandDefinition} from '@catering-v2s/kernel-base-runtime';
 import type {StateJsonValue, StateRoot} from '@catering-v2s/kernel-base-state';
-import type {TransportConnectionEvent, TransportHttpExecutionResult} from '@catering-v2s/kernel-base-transport';
+import type {TransportConnectionEvent} from '@catering-v2s/kernel-base-platform-ports';
+import type {TransportHttpExecutionResult} from '@catering-v2s/kernel-base-transport';
 import type {RemoteOperationFact} from '../src/types/client';
 
 const createActivationTestLogger = () => {
@@ -87,6 +84,7 @@ const actorState = (
   ({
     [terminalDataClientStateSlice.name]: clientState,
     [terminalClientStatusProjectionSliceName]: projectionState,
+    [serverConfigSliceName]: {selectedSpace: 'development', serviceRevisions: {'terminal-business-api': 4, business: 4}},
     'kernel.base.runtime.instance-mode': {instanceMode},
   }) as StateRoot;
 
@@ -253,85 +251,6 @@ const createRemoteOperationHarness = (options?: {
   };
 };
 
-describe('terminal-data-client update report command', () => {
-  it('correlates a completed report request with its stable report and task identities', async () => {
-    const harness = createRemoteOperationHarness();
-    const reportId = '00000000-0000-4000-8000-000000000101';
-    const taskId = '00000000-0000-4000-8000-000000000102';
-    harness.transport.executeHttp.mockResolvedValueOnce({
-      kind: 'response',
-      status: 200,
-      addressName: 'dev',
-      configRevision: 4,
-      requestId: 'edge-request-1',
-      correlationId: 'edge-correlation-1',
-      body: {reportId, taskId, acceptedSequence: 11, outcome: 'ACCEPTED'},
-    });
-    const body = {
-      reportId,
-      reportSequence: 11,
-      taskId,
-      actual: {
-        apkVersion: '1.0.0', nativeBuildNumber: 1, applicationId: 'com.example.console', runtimeVersion: '1',
-        jsVersion: '1.0.0', publicationId: 'a'.repeat(64), apkSha256: 'b'.repeat(64), bundleSha256: null,
-        entryKind: 'INSTALLED_APK', unknownReason: null,
-      },
-      recent: {
-        state: 'SUCCEEDED', reason: 'NONE', changedAtEpochMillis: 123, ruleRef: null,
-        fullArtifactRef: null, hotArtifactRef: null,
-      },
-    };
-    const handler = harness.actor.actor.handlers.find(
-      item => item.commandName === submitTerminalUpdateReportCommand.commandName,
-    );
-
-    await expect(handler!.handle(harness.makeContext(submitTerminalUpdateReportCommand.commandName, {
-      idempotencyKey: reportId,
-      body,
-    }))).resolves.toMatchObject({kind: 'success', body: {reportId, taskId, acceptedSequence: 11}});
-    expect(harness.diagnostics).toContainEqual(expect.objectContaining({
-      category: 'terminal.update.report',
-      event: 'report-submit-completed',
-      data: expect.objectContaining({
-        reportId, taskId, reportSequence: 11, resultKind: 'success',
-        requestId: 'edge-request-1', correlationId: 'edge-correlation-1',
-      }),
-    }));
-    expect(JSON.stringify(harness.diagnostics)).not.toContain('R'.repeat(43));
-    harness.dispose();
-  });
-
-  it('rejects non-UUID report identities before HTTP and records a safe diagnostic', async () => {
-    const harness = createRemoteOperationHarness();
-    const handler = harness.actor.actor.handlers.find(
-      item => item.commandName === submitTerminalUpdateReportCommand.commandName,
-    );
-    if (handler === undefined) throw new Error('terminal update report handler missing');
-
-    await expect(
-      handler.handle(
-        harness.makeContext(submitTerminalUpdateReportCommand.commandName, {
-          idempotencyKey: 'req_01test',
-          body: {reportId: 'req_01test', reportSequence: 1},
-        }),
-      ),
-    ).resolves.toEqual({
-      kind: 'failure',
-      category: 'not-delivered',
-      code: 'INVALID_TERMINAL_UPDATE_REPORT',
-    });
-    expect(harness.transport.executeHttp).not.toHaveBeenCalled();
-    expect(harness.diagnostics).toContainEqual(
-      expect.objectContaining({
-        category: 'terminal.update.report',
-        event: 'report-submit-rejected',
-        data: {code: 'INVALID_TERMINAL_UPDATE_REPORT'},
-      }),
-    );
-    harness.dispose();
-  });
-});
-
 describe('terminal-data-client activation command actor', () => {
   it('projects the topology identity rather than the Runtime-local node identity', async () => {
     const actorRuntime = createTerminalDataClientActor({
@@ -394,13 +313,18 @@ describe('terminal-data-client activation command actor', () => {
     await actorRuntime.dispose();
   });
 
-  it('injects the active credential into generated read operations and replaces caller store identity', async () => {
+  it('executes an owner-shaped HTTP request with the current credential and configuration context', async () => {
     const secret = 'A'.repeat(43);
-    const executeHttp = vi.fn(async (_request: unknown) => ({
-      kind: 'failure' as const,
-      category: 'not-delivered' as const,
-      code: 'BROWSER_TRANSPORT_PROXY_UNSUPPORTED',
+    const executeHttp = vi.fn(async () => ({
+      kind: 'response' as const,
+      status: 200,
+      addressName: 'dev',
+      configRevision: 4,
+      requestId: 'transport-request-1',
+      correlationId: 'transport-correlation-1',
+      body: {accepted: true},
     }));
+    const reportHttpAddressAvailable = vi.fn(async () => undefined);
     const actorRuntime = createTerminalDataClientActor({
       transport: {
         start: vi.fn(),
@@ -408,7 +332,7 @@ describe('terminal-data-client activation command actor', () => {
         invalid: vi.fn(),
         stop: vi.fn(),
         executeHttp,
-        reportHttpAddressAvailable: vi.fn(),
+        reportHttpAddressAvailable,
       },
       businessServerName: 'terminal-business-api',
       createCredentialSecret: () => secret,
@@ -416,9 +340,9 @@ describe('terminal-data-client activation command actor', () => {
       appVersion: 'test',
       surfaceForm: 'laptop',
     });
-    const state = terminalDataClientReducer(undefined, {type: 'test/init'});
-    let activeState = terminalDataClientReducer(
-      state,
+    let activeState = terminalDataClientReducer(undefined, {type: 'test/init'});
+    activeState = terminalDataClientReducer(
+      activeState,
       terminalDataClientActions.replaceCredential({
         groupWorkspaceKey: 'workspace-1',
         terminalRef: 'terminal-1',
@@ -435,27 +359,39 @@ describe('terminal-data-client activation command actor', () => {
         instanceMode: 'MASTER',
       }),
     );
+    const root = actorState(activeState);
+    const scope = selectTerminalHttpContext(root, {serviceName: 'terminal-business-api'});
+    if (scope === null) throw new Error('terminal HTTP context fixture was not ready');
     const handler = actorRuntime.actor.handlers.find(
-      candidate => candidate.commandName === readTerminalDataCommand.commandName,
+      candidate => candidate.commandName === executeTerminalHttpCommand.commandName,
     );
-    if (handler === undefined) throw new Error('terminal data read handler missing');
+    if (handler === undefined) throw new Error('terminal generic HTTP handler missing');
     const testLogger = createActivationTestLogger();
     const context = {
       runtimeId: 'test-runtime',
       localNodeId: 'test-node',
       platformPorts: {logger: testLogger.logger},
       command: {
-        commandName: readTerminalDataCommand.commandName,
-        commandId: 'read-store',
-        requestId: 'read-store',
-        payload: {operationId: 'terminalReadStoreBasic', pathParameters: {storeRef: 'caller-store'}},
+        commandName: executeTerminalHttpCommand.commandName,
+        commandId: 'owner-read',
+        requestId: 'owner-request',
+        payload: {
+          expectedContext: {runtimeId: 'test-runtime', scope},
+          request: {
+            method: 'GET',
+            pathAndQuery: '/stores/store-authoritative/basic',
+            headers: {'If-None-Match': 'revision-10'},
+            body: {kind: 'empty'},
+            safeRetryable: false,
+          },
+        },
       },
       actor: {
         actorKey: actorRuntime.actor.actorKey,
         moduleName: actorRuntime.actor.moduleName,
         actorName: actorRuntime.actor.actorName,
       },
-      getState: () => actorState(activeState),
+      getState: () => root,
       dispatchAction: (action: unknown) => action as never,
       flushPersistence: async () => ({status: 'succeeded'}),
       subscribeState: () => () => undefined,
@@ -464,228 +400,140 @@ describe('terminal-data-client activation command actor', () => {
     } as unknown as ActorExecutionContext;
 
     await expect(handler.handle(context)).resolves.toMatchObject({
-      kind: 'failure',
-      code: 'BROWSER_TRANSPORT_PROXY_UNSUPPORTED',
+      kind: 'response',
+      status: 200,
+      body: {accepted: true},
+      execution: {
+        addressName: 'dev',
+        configRevision: 4,
+        requestId: 'transport-request-1',
+        correlationId: 'transport-correlation-1',
+      },
+    });
+    expect(executeHttp).toHaveBeenCalledWith({
+      profileId: 'terminal-data-client:http',
+      serverName: 'terminal-business-api',
+      method: 'GET',
+      pathAndQuery: '/stores/store-authoritative/basic',
+      headers: {
+        'If-None-Match': 'revision-10',
+        Authorization: `Terminal 9.${secret}`,
+        'X-Terminal-Ref': 'terminal-1',
+      },
+      safeRetryable: false,
+    });
+    expect(reportHttpAddressAvailable).toHaveBeenCalledWith({
+      profileId: 'terminal-data-client:http',
+      serverName: 'terminal-business-api',
+      addressName: 'dev',
+      configRevision: 4,
     });
     expect(testLogger.events).toContainEqual(
       expect.objectContaining({
-        event: 'terminal-read-completed',
-        data: expect.objectContaining({code: 'BROWSER_TRANSPORT_PROXY_UNSUPPORTED'}),
+        category: 'terminal.http.command',
+        event: 'request-completed',
+        context: expect.objectContaining({commandId: 'owner-read', requestId: 'owner-request'}),
+        data: expect.objectContaining({status: 200, serviceName: 'terminal-business-api'}),
       }),
     );
-    expect(executeHttp).toHaveBeenCalledWith(
-      expect.objectContaining({
-        serverName: 'terminal-business-api',
-        method: 'GET',
-        pathAndQuery: '/stores/store-authoritative/basic',
-        headers: {
-          Authorization: `Terminal 9.${secret}`,
-          'X-Terminal-Ref': 'terminal-1',
-        },
-      }),
-    );
-    expect(executeHttp.mock.calls[0]?.[0]).not.toHaveProperty('body');
     actorRuntime.dispose();
   });
 
-  it('routes remote-control registration and status through generated HTTP using the TDC credential', async () => {
+  it('rejects a response when configuration changes during the final address-bookkeeping await', async () => {
     const secret = 'A'.repeat(43);
-    const sessionId = '00000000-0000-4000-8000-000000000019';
-    const endpointId = '00000000-0000-4000-8000-000000000020';
-    const description = {
-      sessionId,
-      roomName: `rc_${sessionId}`,
-      controllerIdentity: 'controller-1',
-      topologyKind: 'MOBILE_SINGLE',
-      masterEndpointId: endpointId,
-      endpoints: [{endpointId, participantIdentity: 'terminal-1'}],
-      screens: [{screen: 'main', endpointId}],
-    };
-    const grant = {
-      endpointId,
-      roomName: `rc_${sessionId}`,
-      participantIdentity: 'terminal-1',
-      token: 'transient-room-token',
-      expiresAtEpochMillis: 1_800_000_030_000,
-    };
-    const executeHttp = vi
-      .fn()
-      .mockResolvedValueOnce({
-        kind: 'response',
-        addressName: 'dev',
-        configRevision: 4,
-        status: 200,
-        body: {description, remainingLeaseMs: 30_000, grants: [grant]},
-      })
-      .mockResolvedValueOnce({
-        kind: 'response',
-        addressName: 'dev',
-        configRevision: 4,
-        status: 200,
-        body: {sessionId, state: 'ACTIVE', reason: null, remainingLeaseMs: 28_000},
-      })
-      .mockResolvedValueOnce({
-        kind: 'response',
-        addressName: 'dev',
-        configRevision: 4,
-        status: 500,
-        requestId: 'edge-register-request',
-        correlationId: 'edge-register-correlation',
-        body: {errorCode: 'INTERNAL_ERROR', detail: 'private-response-body'},
-      })
-      .mockRejectedValueOnce(new Error('fixture HTTP exception'));
+    let releaseAddressReport!: () => void;
+    let markAddressReportStarted!: () => void;
+    const addressReportGate = new Promise<void>(resolve => {
+      releaseAddressReport = resolve;
+    });
+    const addressReportStarted = new Promise<void>(resolve => {
+      markAddressReportStarted = resolve;
+    });
     const actorRuntime = createTerminalDataClientActor({
       transport: {
         start: vi.fn(),
         ready: vi.fn(),
         invalid: vi.fn(),
         stop: vi.fn(),
-        executeHttp,
-        reportHttpAddressAvailable: vi.fn(),
+        executeHttp: vi.fn(async () => ({
+          kind: 'response' as const,
+          status: 200,
+          addressName: 'dev',
+          configRevision: 4,
+          body: {accepted: true},
+        })),
+        reportHttpAddressAvailable: async () => {
+          markAddressReportStarted();
+          await addressReportGate;
+        },
       },
-      businessServerName: 'business',
+      businessServerName: 'terminal-business-api',
       createCredentialSecret: () => secret,
       now: () => 10,
       appVersion: 'test',
-      surfaceForm: 'mobile',
+      surfaceForm: 'laptop',
     });
-    let clientState = terminalDataClientReducer(undefined, {type: 'test/init'});
-    clientState = terminalDataClientReducer(
-      clientState,
+    let state = terminalDataClientReducer(undefined, {type: 'test/init'});
+    state = terminalDataClientReducer(
+      state,
       terminalDataClientActions.replaceCredential({
         groupWorkspaceKey: 'workspace-1',
         terminalRef: 'terminal-1',
-        storeRef: 'store-1',
+        storeRef: 'store-authoritative',
         deviceId: 'device-1',
         bindingGeneration: 9,
         credentialSecret: secret,
       }),
     );
-    clientState = terminalDataClientReducer(
-      clientState,
-      terminalDataClientActions.markCredentialReady({
-        credentialRevision: clientState.credentialRevision,
-        instanceMode: 'MASTER',
-      }),
+    state = terminalDataClientReducer(
+      state,
+      terminalDataClientActions.markCredentialReady({credentialRevision: state.credentialRevision, instanceMode: 'MASTER'}),
     );
-    const diagnostics = createActivationTestLogger();
-    const contextFor = (commandName: string, commandId: string, payload: unknown) =>
-      ({
-        runtimeId: 'test-runtime',
-        localNodeId: 'test-node',
-        platformPorts: {logger: diagnostics.logger},
-        command: {commandName, commandId, requestId: commandId, payload} as never,
-        actor: {
-          actorKey: actorRuntime.actor.actorKey,
-          moduleName: actorRuntime.actor.moduleName,
-          actorName: actorRuntime.actor.actorName,
+    let configRevision = 4;
+    const getRoot = () => ({
+      ...actorState(state),
+      [serverConfigSliceName]: {selectedSpace: 'development', serviceRevisions: {'terminal-business-api': configRevision}},
+    }) as StateRoot;
+    const initialRoot = getRoot();
+    const scope = selectTerminalHttpContext(initialRoot, {serviceName: 'terminal-business-api'});
+    if (scope === null) throw new Error('terminal HTTP context fixture was not ready');
+    const handler = actorRuntime.actor.handlers.find(item => item.commandName === executeTerminalHttpCommand.commandName);
+    if (handler === undefined) throw new Error('terminal generic HTTP handler missing');
+    const context = {
+      runtimeId: 'test-runtime',
+      localNodeId: 'test-node',
+      platformPorts: {logger: createActivationTestLogger().logger},
+      command: {
+        commandName: executeTerminalHttpCommand.commandName,
+        commandId: 'owner-read-final-await',
+        requestId: 'owner-request-final-await',
+        payload: {
+          expectedContext: {runtimeId: 'test-runtime', scope},
+          request: {method: 'GET', pathAndQuery: '/stores/store-authoritative/basic', headers: {}, body: {kind: 'empty'}, safeRetryable: false},
         },
-        getState: () => actorState(clientState),
-        dispatchAction: (action: unknown) => action as never,
-        flushPersistence: async () => ({status: 'succeeded'}),
-        subscribeState: () => () => undefined,
-        dispatchCommand: async () => ({status: 'completed'}),
-        requestApplicationReset: vi.fn(),
-      }) as unknown as ActorExecutionContext;
-    const handlerFor = (commandName: string) => {
-      const handler = actorRuntime.actor.handlers.find(candidate => candidate.commandName === commandName);
-      if (handler === undefined) throw new Error(`missing TDC command handler: ${commandName}`);
-      return handler;
-    };
-
-    await expect(
-      handlerFor(registerTerminalRemoteControlCommand.commandName).handle(
-        contextFor(registerTerminalRemoteControlCommand.commandName, 'register', {
-          sessionId,
-          body: {sessionId, topologyKind: 'MOBILE_SINGLE', peerIdentity: null},
-        }),
-      ),
-    ).resolves.toMatchObject({kind: 'success', body: {description, grants: [grant]}});
-    await expect(
-      handlerFor(reportTerminalRemoteControlCommand.commandName).handle(
-        contextFor(reportTerminalRemoteControlCommand.commandName, 'report', {
-          sessionId,
-          body: {sessionId, state: 'ACTIVE', reason: null, readyScreens: []},
-        }),
-      ),
-    ).resolves.toMatchObject({kind: 'success', body: {sessionId, state: 'ACTIVE'}});
-    await expect(
-      handlerFor(registerTerminalRemoteControlCommand.commandName).handle(
-        contextFor(registerTerminalRemoteControlCommand.commandName, 'register-failed', {
-          sessionId,
-          body: {sessionId, topologyKind: 'MOBILE_SINGLE', peerIdentity: null},
-        }),
-      ),
-    ).resolves.toEqual({kind: 'failure', category: 'delivered-failure', code: 'HTTP_DELIVERED_FAILURE', status: 500});
-    await expect(
-      handlerFor(reportTerminalRemoteControlCommand.commandName).handle(
-        contextFor(reportTerminalRemoteControlCommand.commandName, 'report-failed', {
-          sessionId,
-          body: {sessionId, state: 'ACTIVE', reason: null, readyScreens: []},
-        }),
-      ),
-    ).rejects.toThrow('fixture HTTP exception');
-
-    expect(executeHttp).toHaveBeenNthCalledWith(
-      1,
-      expect.objectContaining({
-        serverName: 'business',
-        method: 'POST',
-        pathAndQuery: `/remote-control-sessions/${sessionId}/registration`,
-        headers: {Authorization: `Terminal 9.${secret}`, 'X-Terminal-Ref': 'terminal-1'},
-        body: {sessionId, topologyKind: 'MOBILE_SINGLE', peerIdentity: null},
-      }),
-    );
-    expect(executeHttp).toHaveBeenNthCalledWith(
-      2,
-      expect.objectContaining({
-        serverName: 'business',
-        method: 'POST',
-        pathAndQuery: `/remote-control-sessions/${sessionId}/status`,
-        headers: {Authorization: `Terminal 9.${secret}`, 'X-Terminal-Ref': 'terminal-1'},
-        body: {sessionId, state: 'ACTIVE', reason: null, readyScreens: []},
-      }),
-    );
-    expect(diagnostics.events).toContainEqual(expect.objectContaining({
-      category: 'terminal.remote-control.register',
-      event: 'register-completed',
-      context: expect.objectContaining({commandId: 'register-failed', requestId: 'register-failed'}),
-      data: expect.objectContaining({
-        sessionId,
-        resultKind: 'failure',
-        failureCategory: 'delivered-failure',
-        code: 'HTTP_DELIVERED_FAILURE',
-        status: 500,
-        requestId: 'edge-register-request',
-        correlationId: 'edge-register-correlation',
-      }),
-    }));
-    expect(diagnostics.events).toContainEqual(expect.objectContaining({
-      category: 'terminal.remote-control.report',
-      event: 'report-command-received',
-      context: expect.objectContaining({commandId: 'report', requestId: 'report'}),
-      data: expect.objectContaining({sessionId, state: 'ACTIVE', readyScreenCount: 0}),
-    }));
-    expect(diagnostics.events).toContainEqual(expect.objectContaining({
-      category: 'terminal.remote-control.report',
-      event: 'report-http-started',
-      data: expect.objectContaining({sessionId, state: 'ACTIVE', readyScreenCount: 0}),
-    }));
-    expect(diagnostics.events).toContainEqual(expect.objectContaining({
-      category: 'terminal.remote-control.report',
-      event: 'report-completed',
-      data: expect.objectContaining({sessionId, state: 'ACTIVE', resultKind: 'success'}),
-    }));
-    expect(diagnostics.events).toContainEqual(expect.objectContaining({
-      category: 'terminal.remote-control.report',
-      event: 'report-http-threw',
-      context: expect.objectContaining({commandId: 'report-failed', requestId: 'report-failed'}),
-      data: expect.objectContaining({sessionId, state: 'ACTIVE', errorName: 'Error'}),
-    }));
-    expect(JSON.stringify(diagnostics.events)).not.toContain(secret);
-    expect(JSON.stringify(diagnostics.events)).not.toContain('private-response-body');
-    expect(JSON.stringify(diagnostics.events)).not.toContain('fixture HTTP exception');
-    actorRuntime.dispose();
+      },
+      actor: {
+        actorKey: actorRuntime.actor.actorKey,
+        moduleName: actorRuntime.actor.moduleName,
+        actorName: actorRuntime.actor.actorName,
+      },
+      getState: getRoot,
+      dispatchAction: (action: unknown) => action as never,
+      flushPersistence: async () => ({status: 'succeeded'}),
+      subscribeState: () => () => undefined,
+      dispatchCommand: async () => ({status: 'completed'}),
+      requestApplicationReset: vi.fn(),
+    } as unknown as ActorExecutionContext;
+    const result = handler.handle(context);
+    await addressReportStarted;
+    configRevision = 5;
+    releaseAddressReport();
+    await expect(result).resolves.toEqual({
+      kind: 'failure',
+      category: 'delivered-failure',
+      code: 'TERMINAL_HTTP_CONTEXT_CHANGED',
+    });
+    await actorRuntime.dispose();
   });
 
   it('rejects activation while a topology transition is in progress before reading device identity', async () => {
@@ -746,7 +594,7 @@ describe('terminal-data-client activation command actor', () => {
     actorRuntime.dispose();
   });
 
-  it('keeps SLAVE inactive and TDS-stopped while allowing saved-credential CBS reads and download grants', async () => {
+  it('keeps SLAVE inactive and TDS-stopped while allowing owner HTTP through its saved credential', async () => {
     const secret = 'A'.repeat(43);
     let state = terminalDataClientReducer(undefined, {type: 'test/init'});
     state = terminalDataClientReducer(
@@ -849,30 +697,27 @@ describe('terminal-data-client activation command actor', () => {
       reason: 'TERMINAL_CLIENT_HOST_ROLE_REQUIRED',
     });
     expect(
-      await findHandler(submitTerminalUpdateReportCommand.commandName).handle(
-        makeContext(submitTerminalUpdateReportCommand.commandName, {}),
-      ),
-    ).toMatchObject({kind: 'failure', category: 'not-delivered'});
-
-    expect(
       await findHandler(disconnectTerminalCommand.commandName).handle(
         makeContext(disconnectTerminalCommand.commandName, {}),
       ),
     ).toEqual({
       status: 'disconnected',
     });
+    const root = actorState(state, 'SLAVE');
+    const scope = selectTerminalHttpContext(root, {serviceName: 'terminal-business-api'});
+    if (scope === null) throw new Error('SLAVE HTTP context fixture was not ready');
+    const ownerHttpHandler = findHandler(executeTerminalHttpCommand.commandName);
     await expect(
-      findHandler(readTerminalDataCommand.commandName).handle(
-        makeContext(readTerminalDataCommand.commandName, {
-          operationId: 'terminalReadStoreBasic',
-          pathParameters: {storeRef: 'caller-store'},
-        }),
-      ),
-    ).resolves.toMatchObject({kind: 'failure', code: 'BROWSER_TRANSPORT_PROXY_UNSUPPORTED'});
-    await expect(
-      findHandler(requestTerminalUpdateDownloadGrantCommand.commandName).handle(
-        makeContext(requestTerminalUpdateDownloadGrantCommand.commandName, {
-          artifactRef: '00000000-0000-4000-8000-000000000004',
+      ownerHttpHandler.handle(
+        makeContext(executeTerminalHttpCommand.commandName, {
+          expectedContext: {runtimeId: 'slave-runtime', scope},
+          request: {
+            method: 'GET',
+            pathAndQuery: '/owner-resource',
+            headers: {},
+            body: {kind: 'empty'},
+            safeRetryable: false,
+          },
         }),
       ),
     ).resolves.toMatchObject({kind: 'failure', code: 'BROWSER_TRANSPORT_PROXY_UNSUPPORTED'});
@@ -882,18 +727,15 @@ describe('terminal-data-client activation command actor', () => {
     });
     expect(state).toMatchObject({credential: {deviceId: 'device-1', credentialSecret: secret}});
     expect(transport.start).not.toHaveBeenCalled();
-    expect(executeHttp).toHaveBeenCalledTimes(2);
+    expect(executeHttp).toHaveBeenCalledTimes(1);
     expect(executeHttp.mock.calls[0]?.[0]).toMatchObject({
-      headers: {Authorization: `Terminal 8.${secret}`, 'X-Terminal-Ref': 'terminal-1'},
-    });
-    expect(executeHttp.mock.calls[1]?.[0]).toMatchObject({
       headers: {Authorization: `Terminal 8.${secret}`, 'X-Terminal-Ref': 'terminal-1'},
     });
     expect(transport.stop).toHaveBeenCalledTimes(1);
     actor.dispose();
   });
 
-  it('discards a download-grant response when the credential changes while HTTP is pending', async () => {
+  it('discards an owner HTTP response when the credential changes while HTTP is pending', async () => {
     const originalSecret = 'A'.repeat(43);
     const diagnostics = createActivationTestLogger();
     let state = terminalDataClientReducer(undefined, {type: 'test/init'});
@@ -939,17 +781,17 @@ describe('terminal-data-client activation command actor', () => {
       appVersion: '1.0.0',
       surfaceForm: 'laptop',
     });
-    const handler = actor.actor.handlers.find(
-      item => item.commandName === requestTerminalUpdateDownloadGrantCommand.commandName,
-    );
-    if (handler === undefined) throw new Error('terminal download-grant handler missing');
+    const handler = actor.actor.handlers.find(item => item.commandName === executeTerminalHttpCommand.commandName);
+    if (handler === undefined) throw new Error('terminal generic HTTP handler missing');
+    const scope = selectTerminalHttpContext(actorState(state), {serviceName: 'terminal-business-api'});
+    if (scope === null) throw new Error('owner HTTP context fixture was not ready');
     const context = (payload: unknown): ActorExecutionContext =>
       ({
         runtimeId: 'grant-race-runtime',
         localNodeId: 'grant-race-node',
         platformPorts: {device: {getDeviceInfo: vi.fn()}, logger: diagnostics.logger},
         command: {
-          commandName: requestTerminalUpdateDownloadGrantCommand.commandName,
+          commandName: executeTerminalHttpCommand.commandName,
           payload,
           requestId: 'grant-race-request',
           commandId: 'grant-race-command',
@@ -966,7 +808,18 @@ describe('terminal-data-client activation command actor', () => {
         requestApplicationReset: vi.fn(),
       }) as unknown as ActorExecutionContext;
 
-    const pending = handler.handle(context({artifactRef: '00000000-0000-4000-8000-000000000099'}));
+    const pending = handler.handle(
+      context({
+        expectedContext: {runtimeId: 'grant-race-runtime', scope},
+        request: {
+          method: 'GET',
+          pathAndQuery: '/owner-resource',
+          headers: {},
+          body: {kind: 'empty'},
+          safeRetryable: false,
+        },
+      }),
+    );
     await vi.waitFor(() => expect(executeHttp).toHaveBeenCalledOnce());
     state = terminalDataClientReducer(
       state,
@@ -980,15 +833,17 @@ describe('terminal-data-client activation command actor', () => {
       }),
     );
     resolveHttp({
-      kind: 'failure',
-      category: 'not-delivered',
-      code: 'BROWSER_TRANSPORT_PROXY_UNSUPPORTED',
+      kind: 'response',
+      status: 200,
+      body: {accepted: true},
+      addressName: 'dev',
+      configRevision: 4,
     });
 
     await expect(pending).resolves.toMatchObject({
       kind: 'failure',
-      category: 'not-delivered',
-      code: 'TERMINAL_CREDENTIAL_CHANGED',
+      category: 'delivered-failure',
+      code: 'TERMINAL_HTTP_CONTEXT_CHANGED',
     });
     expect(executeHttp).toHaveBeenCalledOnce();
     actor.dispose();
@@ -3552,23 +3407,25 @@ describe('terminal-data-client activation command actor', () => {
         {scope: 'fixture'},
         expect.objectContaining({target: 'local'}),
       );
-      expect(diagnostics.events).toEqual(expect.arrayContaining([
-        expect.objectContaining({
-          category: 'terminal.remote-control.execution',
-          event: 'remote-command.received',
-          data: expect.objectContaining({commandKind: 'OTHER', sessionReady: true}),
-        }),
-        expect.objectContaining({
-          category: 'terminal.remote-control.execution',
-          event: 'remote-command.dispatch-started',
-          data: expect.objectContaining({phase: 'STARTED'}),
-        }),
-        expect.objectContaining({
-          category: 'terminal.remote-control.execution',
-          event: 'remote-command.dispatch-completed',
-          data: expect.objectContaining({dispatchStatus: 'completed', actorResultCount: 1}),
-        }),
-      ]));
+      expect(diagnostics.events).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            category: 'terminal.remote-control.execution',
+            event: 'remote-command.received',
+            data: expect.objectContaining({commandKind: 'OTHER', sessionReady: true}),
+          }),
+          expect.objectContaining({
+            category: 'terminal.remote-control.execution',
+            event: 'remote-command.dispatch-started',
+            data: expect.objectContaining({phase: 'STARTED'}),
+          }),
+          expect.objectContaining({
+            category: 'terminal.remote-control.execution',
+            event: 'remote-command.dispatch-completed',
+            data: expect.objectContaining({dispatchStatus: 'completed', actorResultCount: 1}),
+          }),
+        ]),
+      );
       expect(JSON.stringify(diagnostics.events)).not.toContain(secret);
       expect(Object.values(state.remoteOperations)).toHaveLength(1);
       expect(Object.values(state.remoteOperations)[0]).toMatchObject({phase: 'COMPLETED', configRevision: 4});

@@ -73,6 +73,7 @@ export const createJourneyFailureDiagnostics = (input: Readonly<{
   readonly write?: (line: string) => void;
 }>) => {
   let currentStep = 'journey.start';
+  let lastKnownGoodStep: string | null = null;
   let lastPush: SafePush | null = null;
   const inProgressRequestIds = new Set<string>();
   const requestStartedAt = new Map<string, number>();
@@ -97,6 +98,14 @@ export const createJourneyFailureDiagnostics = (input: Readonly<{
 
   return Object.freeze({
     markStep: (step: string): void => {
+      if (
+        currentStep !== 'journey.start' &&
+        !currentStep.endsWith('.failed') &&
+        !step.endsWith('.failed')
+      ) {
+        lastKnownGoodStep = currentStep;
+        emit('step.completed', {step: currentStep});
+      }
       currentStep = safeIdentifier(step) ? step : 'journey.step.unclassified';
       emit('step.started');
     },
@@ -119,12 +128,18 @@ export const createJourneyFailureDiagnostics = (input: Readonly<{
       }
     },
     report: (error: unknown): void => {
+      const errorDetails = error instanceof Error
+        ? {errorName: error.name, errorMessage: error.message, errorStack: error.stack ?? null}
+        : {errorName: 'NON_ERROR_THROWN', errorMessage: String(error), errorStack: null};
       write(
         `TERMINAL_AUTOMATION_JOURNEY_FAILURE ${JSON.stringify({
           at: new Date().toISOString(),
           ...(safeRunId === undefined ? {} : {runId: safeRunId}),
           step: currentStep,
+          lastKnownGoodStep,
+          brokenBoundary: currentStep,
           failureCode: failureCodeOf(error),
+          ...errorDetails,
           inProgressRequestIds: [...inProgressRequestIds],
           lastRelevantPush: lastPush,
           screenshot: 'NOT_SAVED_REDACTION_UNAVAILABLE',

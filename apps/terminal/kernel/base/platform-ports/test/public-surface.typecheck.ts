@@ -134,7 +134,6 @@ const requestSnapshot: RequestLifecycleSnapshot<typeof resultPayload> = {
 const moduleDescription: AppModule = {
   moduleName: 'fixture.module',
   kind: 'toolkit',
-  parameterDefinitions: [],
 };
 
 const consumeResult = <TValue>(result: PortResult<TValue>): TValue | undefined => {

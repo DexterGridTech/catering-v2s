@@ -170,9 +170,9 @@ export const createTopologyStateSyncController = (
     const topology = state[topologySliceName];
     if (topology === undefined || !input.isPeerAccepted() || input.getSession() === undefined) return;
     if (declaration.syncIntent !== outgoingDirectionFor(state)) return;
-    const sliceState = state[declaration.name];
-    if (sliceState === undefined || typeof sliceState !== 'object' || sliceState === null) return;
-    const reference = sliceState as object;
+    const payload = context.createFullSyncPayload(declaration.name);
+    if (payload.status !== 'ready') return;
+    const reference = payload.payload as object;
     const sendState = sendStates.get(declaration.name) ?? {
       revision: 0,
       inFlight: false,
@@ -189,8 +189,6 @@ export const createTopologyStateSyncController = (
       }
       return;
     }
-    const payload = context.createFullSyncPayload(declaration.name);
-    if (payload.status !== 'ready') return;
     const session = input.getSession();
     if (session === undefined) return;
     const value = payload.payload as unknown as TopologyJsonValue;

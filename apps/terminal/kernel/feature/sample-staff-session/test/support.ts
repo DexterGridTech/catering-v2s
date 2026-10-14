@@ -148,7 +148,6 @@ export const createEventRecorderModule = (
     moduleName,
     kind: 'toolkit' as const,
     dependencies: [{moduleName: 'kernel.base.runtime'}],
-    actors: [{name: actor.actorName}],
     actorDefinitions: [actor],
   });
 };
