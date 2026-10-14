@@ -9,6 +9,7 @@ import type {Client} from '@devicefarmer/adbkit';
 import {adminTestIds} from '@catering-v2s/ui-base-admin-shell/test-ids';
 import {
   androidAutomationBuildIdentity,
+  androidAutomationBuildFailureCode,
   androidAutomationGradleArguments,
   createAndroidAdbClient,
   createAndroidAutomationConnection,
@@ -141,10 +142,7 @@ const streamBuild = async (args: readonly string[]): Promise<void> => {
   }
   if (timedOut) throw new Error('TERMINAL_AUTOMATION_ANDROID_BUILD_TIMEOUT');
   if (code !== 0) {
-    const failure = output.includes('TERMINAL_AUTOMATION_')
-      ? output.match(/TERMINAL_AUTOMATION_[A-Z0-9_]+/u)?.[0]
-      : null;
-    throw new Error(failure ?? `TERMINAL_AUTOMATION_ANDROID_BUILD_EXIT_${code ?? 'UNKNOWN'}`);
+    throw new Error(androidAutomationBuildFailureCode(output, code));
   }
 };
 

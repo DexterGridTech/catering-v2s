@@ -1,3 +1,5 @@
+import {digestSha256Bytes} from './browserCrypto';
+
 function stableJson(value: unknown, inArray = false): string {
   if (value === null) return 'null';
   if (typeof value === 'string' || typeof value === 'boolean') return JSON.stringify(value);
@@ -25,8 +27,8 @@ function bytesToHex(bytes: Uint8Array) {
 }
 
 export async function digestFileContent(file: Blob): Promise<string> {
-  const digest = await globalThis.crypto.subtle.digest('SHA-256', await file.arrayBuffer());
-  return bytesToHex(new Uint8Array(digest));
+  const digest = await digestSha256Bytes(new Uint8Array(await file.arrayBuffer()));
+  return bytesToHex(digest);
 }
 
 /**
@@ -36,6 +38,6 @@ export async function digestFileContent(file: Blob): Promise<string> {
  */
 export async function createContentIdempotencyKey(operationId: string, payload: unknown): Promise<string> {
   const canonical = `${operationId}\n${stableJson(payload)}`;
-  const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(canonical));
-  return `ui-content-${bytesToHex(new Uint8Array(digest))}`;
+  const digest = await digestSha256Bytes(new TextEncoder().encode(canonical));
+  return `ui-content-${bytesToHex(digest)}`;
 }

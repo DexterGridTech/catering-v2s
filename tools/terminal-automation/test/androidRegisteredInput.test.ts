@@ -405,6 +405,72 @@ describe('tapRegisteredAndroidNode', () => {
     expect(server.request).toHaveBeenCalledTimes(4);
   });
 
+  it('confirms every press in a rapid registered-node tap sequence', async () => {
+    let listener: ((message: ReturnType<typeof envelope>) => void) | null = null;
+    let subscriptionId = '';
+    const request = vi.fn(async (_sessionId: string, type: string, body?: unknown) => {
+      if (type === 'controls.query') return envelope('response', {result: {nodes: [node]}});
+      if (type === 'controls.bounds') {
+        return envelope('response', {
+          result: {nodeInstanceId: 'node-1', layoutRevision: 7, bounds: {x: 10, y: 20, width: 100, height: 50}},
+        });
+      }
+      if (type === 'controls.subscribe') {
+        subscriptionId = (body as {subscriptionId: string}).subscriptionId;
+        return envelope('response', {result: {subscriptionId, nodes: [node]}});
+      }
+      return envelope('response', {result: {released: true}});
+    });
+    const server = {
+      request,
+      onMessage: vi.fn((_sessionId: string, callback: (message: ReturnType<typeof envelope>) => void) => {
+        listener = callback;
+        return () => {
+          listener = null;
+        };
+      }),
+    } as unknown as AutomationDriverServer;
+    const android: AndroidInput = {
+      discoverDisplays: vi.fn(),
+      runPacedClick: async action => ({result: await action(() => undefined), waitMs: 0}),
+      tap: vi.fn(),
+      tapBounds: vi.fn(async (_surface, _bounds, _position, _clickPacing, markClickStarted, repeatCount) => {
+        markClickStarted?.();
+        for (let index = 0; index < (repeatCount ?? 1); index += 1) {
+          listener?.(envelope('event', {subscriptionId, interaction: {node, phase: 'press-in'}}));
+        }
+        return {x: 60, y: 25};
+      }),
+    };
+
+    await expect(
+      tapRegisteredAndroidNode({
+        server,
+        sessionId: 'session-1',
+        android,
+        testID: 'member.confirm',
+        surface: 'secondary',
+        displayIndex: 1,
+        clickPacing: 'intentional-overlap',
+        repeatCount: 5,
+      }),
+    ).resolves.toMatchObject({nodeInstanceId: 'node-1', layoutRevision: 7});
+    expect(android.tapBounds).toHaveBeenCalledWith(
+      'secondary',
+      {x: 10, y: 20, width: 100, height: 50},
+      undefined,
+      'intentional-overlap',
+      expect.any(Function),
+      5,
+    );
+    expect(request.mock.calls.map(call => call[1])).toEqual([
+      'controls.query',
+      'controls.bounds',
+      'controls.subscribe',
+      'controls.unsubscribe',
+    ]);
+  });
+
   it('waits until the keyboard key itself becomes enabled before measuring and tapping it', async () => {
     const keyboardTestID = 'ui.base.input:virtual-keyboard:text-a';
     const disabledKeyboardNode = {...node, testID: keyboardTestID, accessibilityState: {disabled: true}};

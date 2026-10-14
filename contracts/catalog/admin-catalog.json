@@ -1989,7 +1989,7 @@
       "page": {
         "kind": "BUSINESS"
       },
-      "workspaceRequirement": "GLOBAL_OR_OPTIONAL",
+      "workspaceRequirement": "REQUIRED",
       "navigation": {
         "order": 90,
         "iconKey": "PACKAGE"
@@ -2007,7 +2007,8 @@
       },
       "navigation": {
         "groupKey": "NAV-CATALOG-SERVICES",
-        "order": 315
+        "order": 315,
+        "menuLabel": "项目终端管理"
       },
       "pageAccess": {
         "pageAccessManaged": true,

@@ -343,6 +343,12 @@ describe('sales menu IA static trace', () => {
       expect(modeSource).toContain(`testId(salesMenuTestIds.mode('${mode}'))`);
   });
 
+  it('only exposes sales-section editing controls in draft mode', () => {
+    expect(sectionSource).toContain("read.mode === 'DRAFT' ? (");
+    expect(sectionSource).toContain("{read.mode === 'DRAFT' && (");
+    expect(sectionSource).not.toContain("read.mode === 'PUBLISHED' ? (");
+  });
+
   it('exposes the selected section state on the exact section action node', () => {
     expect(sectionSource).toContain("aria-current={active ? 'true' : undefined}");
     expect(sectionSource).toContain('testId(salesMenuTestIds.section(section.salesSectionRef))');

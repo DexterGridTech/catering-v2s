@@ -1,4 +1,4 @@
-import {describe, expect, it} from 'vitest';
+import {describe, expect, it, vi} from 'vitest';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {createElement, type ReactElement, type ReactNode} from 'react';
 import {platformHttpProtocol} from './http/platformHttpProtocol';
@@ -36,6 +36,7 @@ import {
 } from './extension/invalidFilter';
 import {CursorPagination} from './list/cursorPagination';
 import {createContentIdempotencyKey, digestFileContent} from './behavior/contentIdempotencyKey';
+import {createBrowserUuid, digestSha256Bytes} from './behavior/browserCrypto';
 import {
   createCursorQueryIdentity,
   createPageQueryIdentity,
@@ -181,6 +182,42 @@ describe('admin UI foundation contract and lifecycle primitives', () => {
     await expect(digestFileContent(new Blob(['hello']))).resolves.toBe(
       '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824',
     );
+  });
+
+  it('keeps SHA-256 available without SubtleCrypto on plain HTTP', async () => {
+    const digest = await digestSha256Bytes(new TextEncoder().encode('hello'), null);
+    expect(Array.from(digest, value => value.toString(16).padStart(2, '0')).join('')).toBe(
+      '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824',
+    );
+  });
+
+  it('uses SubtleCrypto when the browser context provides it', async () => {
+    const expected = Uint8Array.from(
+      '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824'.match(/.{2}/g) ?? [],
+      value => Number.parseInt(value, 16),
+    );
+    const digest = vi.fn(async (algorithm: AlgorithmIdentifier, data: BufferSource) => {
+      expect(algorithm).toBe('SHA-256');
+      expect(new TextDecoder().decode(data as ArrayBuffer)).toBe('hello');
+      return expected.buffer;
+    });
+    const actual = await digestSha256Bytes(new TextEncoder().encode('hello'), {digest});
+    expect(digest).toHaveBeenCalledOnce();
+    expect(Array.from(actual)).toEqual(Array.from(expected));
+  });
+
+  it('uses native UUID where available and secure random bytes otherwise', () => {
+    const randomUUID = vi.fn(() => '123e4567-e89b-42d3-a456-426614174000' as const);
+    expect(createBrowserUuid({getRandomValues: vi.fn(), randomUUID})).toBe('123e4567-e89b-42d3-a456-426614174000');
+    expect(randomUUID).toHaveBeenCalledOnce();
+
+    const insecureContextCrypto = {
+      getRandomValues: <T extends ArrayBufferView>(array: T) => {
+        new Uint8Array(array.buffer, array.byteOffset, array.byteLength).fill(0);
+        return array;
+      },
+    };
+    expect(createBrowserUuid(insecureContextCrypto)).toBe('00000000-0000-4000-8000-000000000000');
   });
 
   it('moves cursor pages by truncating known history and appending only the owner cursor', () => {

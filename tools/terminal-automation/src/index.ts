@@ -1,5 +1,9 @@
 export {createAndroidAdbClient, requireReadyAndroidDevice} from './androidAdb.js';
-export {androidAutomationBuildIdentity, androidAutomationGradleArguments} from './androidBuild.js';
+export {
+  androidAutomationBuildFailureCode,
+  androidAutomationBuildIdentity,
+  androidAutomationGradleArguments,
+} from './androidBuild.js';
 export {createAndroidDeviceSession, managedDevServiceReverses} from './androidDevice.js';
 export type {AndroidDeviceSession, ManagedServiceReverse} from './androidDevice.js';
 export {

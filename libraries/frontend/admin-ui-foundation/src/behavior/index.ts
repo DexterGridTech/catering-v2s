@@ -6,6 +6,7 @@ export type {
 } from './useDrawerFormLifecycle';
 export {useDrawerFormLifecycle} from './useDrawerFormLifecycle';
 export {createContentIdempotencyKey, digestFileContent} from './contentIdempotencyKey';
+export {createBrowserUuid} from './browserCrypto';
 export {useSubmissionLifecycle} from './useSubmissionLifecycle';
 export type {AsyncGenerationGuard} from './asyncGeneration';
 export {createAsyncGenerationGuard, useAsyncGenerationGuard} from './asyncGeneration';

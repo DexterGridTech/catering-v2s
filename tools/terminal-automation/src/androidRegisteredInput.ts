@@ -1,5 +1,5 @@
 import {randomUUID} from 'node:crypto';
-import {filter, firstValueFrom, ReplaySubject, Subject, take, timeout} from 'rxjs';
+import {filter, firstValueFrom, ReplaySubject, Subject, take, timeout, toArray} from 'rxjs';
 import type {AutomationDriverServer} from './server.js';
 import type {AndroidClickPacing, AndroidInput, AndroidSurface} from './androidInput.js';
 import type {AndroidLogicalBounds, AndroidTapPosition} from './androidWindow.js';
@@ -297,6 +297,7 @@ export const tapRegisteredAndroidNode = async (
     readonly displayIndex: 0 | 1;
     readonly position?: AndroidTapPosition;
     readonly clickPacing?: AndroidClickPacing;
+    readonly repeatCount?: number;
     readonly interactionTimeoutMs?: number;
   }>,
 ): Promise<
@@ -309,6 +310,13 @@ export const tapRegisteredAndroidNode = async (
 > => {
   const surfaceName = input.surface === 'primary' ? 'PRIMARY' : 'SECONDARY';
   const filterBody = {testID: input.testID, surface: surfaceName, displayIndex: input.displayIndex};
+  const repeatCount = input.repeatCount ?? 1;
+  if (!Number.isSafeInteger(repeatCount) || repeatCount < 1) {
+    throw new Error('TERMINAL_AUTOMATION_ANDROID_TAP_REPEAT_COUNT_INVALID');
+  }
+  if (repeatCount > 1 && input.clickPacing !== 'intentional-overlap') {
+    throw new Error('TERMINAL_AUTOMATION_ANDROID_TAP_REPEAT_REQUIRES_INTENTIONAL_OVERLAP');
+  }
   const subscriptionId = `android-input-${randomUUID()}`;
   const interactions = new Subject<Readonly<{readonly phase: string}>>();
   const observedPhases: string[] = [];
@@ -382,7 +390,8 @@ export const tapRegisteredAndroidNode = async (
       const observed = firstValueFrom(
         interactions.pipe(
           filter(interaction => interaction.phase === 'press-in'),
-          take(1),
+          take(repeatCount),
+          toArray(),
           timeout({first: input.interactionTimeoutMs ?? 2_000}),
         ),
       )
@@ -396,13 +405,23 @@ export const tapRegisteredAndroidNode = async (
           throw error;
         });
       diagnostics.observed = observed;
-      const tapPoint = await input.android.tapBounds(
-        input.surface,
-        resolvedBounds,
-        input.position,
-        'paced',
-        markClickStarted,
-      );
+      const tapPoint =
+        repeatCount === 1
+          ? await input.android.tapBounds(
+              input.surface,
+              resolvedBounds,
+              input.position,
+              input.clickPacing ?? 'paced',
+              markClickStarted,
+            )
+          : await input.android.tapBounds(
+              input.surface,
+              resolvedBounds,
+              input.position,
+              input.clickPacing ?? 'paced',
+              markClickStarted,
+              repeatCount,
+            );
       diagnostics.tapPoint = tapPoint;
       return Object.freeze({node: resolvedNode, bounds: resolvedBounds, tapPoint, observed});
     };

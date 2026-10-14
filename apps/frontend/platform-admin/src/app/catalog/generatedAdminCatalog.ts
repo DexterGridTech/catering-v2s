@@ -69,7 +69,7 @@ export const adminCatalog = {
       "title": "终端更新包管理",
       "iconKey": "PACKAGE",
       "menuOrder": 90,
-      "workspaceRequirement": "GLOBAL_OR_OPTIONAL"
+      "workspaceRequirement": "REQUIRED"
     }
   ],
   "platformShellCopy": {

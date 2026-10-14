@@ -4,6 +4,12 @@ import {describe, expect, it} from 'vitest';
 const source = readFileSync(new URL('./ProjectTerminalUpdatePage.tsx', import.meta.url), 'utf8');
 
 describe('terminal update detail pagination wiring', () => {
+  it('shows the terminal-reported applicationId in the version list and detail', () => {
+    expect(source).toContain("title: '实际 applicationId'");
+    expect(source).toContain('latestActual.applicationId');
+    expect(source).toContain('<Descriptions.Item label="实际 applicationId">{latestApplicationId}</Descriptions.Item>');
+  });
+
   it('uses foundation cursor pagination for rule stores and report history without appending duplicate pages', () => {
     expect(source).toContain('useCursorStack({resetKey: `${contextKey}:${detail?.ruleRef ?? \'\'}`})');
     expect(source).toContain('useCursorStack({resetKey: `${contextKey}:${versionDetail?.terminalRef ?? \'\'}`})');

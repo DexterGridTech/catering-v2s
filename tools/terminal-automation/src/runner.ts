@@ -71,7 +71,7 @@ export const readBoundedLogTail = (logPath: string, maximumBytes = androidDiagno
   }
 };
 type AutomationPlatform = 'web' | 'android';
-type AutomationPhase = 'feasibility' | 'capabilities' | 'journey' | 'skill' | 'f4' | 'update' | 'remote';
+type AutomationPhase = 'feasibility' | 'capabilities' | 'journey' | 'skill' | 'f4' | 'update' | 'remote' | 'activation';
 const remoteTopologies = new Set<TerminalAutomationRemoteTopology>([
   'mobile-single',
   'laptop-single',
@@ -132,6 +132,7 @@ const phaseSuite: Readonly<Record<AutomationPlatform, Readonly<Partial<Record<Au
       feasibility: 'journeys/geometry.android.test.ts',
       capabilities: 'journeys/agentCapabilities.android.test.ts',
       journey: 'journeys/sampleConsole.android.test.ts',
+      activation: 'journeys/sampleConsole.android.test.ts',
       f4: 'journeys/f4Performance.android.test.ts',
       skill: 'journeys/skill.android.test.ts',
       update: 'journeys/update.android.test.ts',
@@ -952,7 +953,8 @@ export const parseAutomationRunArguments = (argv: readonly string[]): TerminalAu
     phaseValue !== 'skill' &&
     phaseValue !== 'f4' &&
     phaseValue !== 'update' &&
-    phaseValue !== 'remote'
+    phaseValue !== 'remote' &&
+    phaseValue !== 'activation'
   )
     fail('TERMINAL_AUTOMATION_PHASE_INVALID');
   const phase = phaseValue as AutomationPhase;
@@ -982,7 +984,12 @@ export const parseAutomationRunArguments = (argv: readonly string[]): TerminalAu
   const caseName = values.get('--case');
   const age = values.get('--age');
   const sample = values.get('--sample');
-  if (phase === 'remote') {
+  if (phase === 'activation') {
+    if (platform !== 'android') fail('TERMINAL_AUTOMATION_ACTIVATION_REQUIRES_ANDROID');
+    if (shape !== 'dual') fail('TERMINAL_AUTOMATION_ACTIVATION_REQUIRES_DUAL');
+    if (sample !== 'console') fail('TERMINAL_AUTOMATION_ACTIVATION_REQUIRES_CONSOLE');
+    if (caseName !== undefined || age !== undefined) fail('TERMINAL_AUTOMATION_CASE_NOT_APPLICABLE');
+  } else if (phase === 'remote') {
     if (caseName !== 'remote.main' || (sample !== 'console' && sample !== 'wallpaper')) {
       fail('TERMINAL_AUTOMATION_REMOTE_CASE_INVALID');
     }

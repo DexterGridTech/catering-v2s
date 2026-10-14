@@ -266,14 +266,17 @@ export const createReportPayload = (
             ? 'OTHER'
             : null,
     }),
-    recent: Object.freeze({
-      state: toReportState(status.state, task),
-      reason: toReportReason(status.reason),
-      changedAtEpochMillis: Number(status.changedAt),
-      ruleRef: task?.target.ruleRef ?? status.ruleRef ?? null,
-      fullArtifactRef: task?.target.full?.artifactRef ?? status.fullArtifactRef ?? null,
-      hotArtifactRef: task?.target.hot?.artifactRef ?? status.hotArtifactRef ?? null,
-    }),
+    recent:
+      task === null && status.taskId === null && status.state === 'idle'
+        ? null
+        : Object.freeze({
+            state: toReportState(status.state, task),
+            reason: toReportReason(status.reason),
+            changedAtEpochMillis: Number(status.changedAt),
+            ruleRef: task?.target.ruleRef ?? status.ruleRef ?? null,
+            fullArtifactRef: task?.target.full?.artifactRef ?? status.fullArtifactRef ?? null,
+            hotArtifactRef: task?.target.hot?.artifactRef ?? status.hotArtifactRef ?? null,
+          }),
   });
   return Object.freeze({idempotencyKey: reportId, body});
 };

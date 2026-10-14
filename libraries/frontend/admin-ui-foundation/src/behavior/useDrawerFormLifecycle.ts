@@ -1,5 +1,6 @@
 import {App} from 'antd';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {createBrowserUuid} from './browserCrypto';
 import {useDirtyFormLock, useOverlayLock} from '../overlay/overlayLock';
 
 export type DirtyGuardTestIds = {
@@ -160,7 +161,7 @@ export function useDrawerFormLifecycle({
   }, [diagnostic, open]);
 
   const getIdempotencyKey = useCallback(() => {
-    if (!idempotencyKey.current) idempotencyKey.current = `ui-${crypto.randomUUID()}`;
+    if (!idempotencyKey.current) idempotencyKey.current = `ui-${createBrowserUuid()}`;
     return idempotencyKey.current;
   }, []);
 

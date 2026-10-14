@@ -1,4 +1,4 @@
-import {LIFECYCLE_LABELS, lifecycleColor} from '@catering-v2s/admin-ui-foundation';
+import {createBrowserUuid, LIFECYCLE_LABELS, lifecycleColor} from '@catering-v2s/admin-ui-foundation';
 import type {
   StoreTerminalConfiguration,
   StoreTerminalConfigurationInput,
@@ -194,7 +194,7 @@ export type StoreTerminalEditor =
 
 export function newTerminalFunction(functionKey: StoreTerminalFunctionKey = 'ORDERING_CASHIER'): TerminalFunctionForm {
   return {
-    clientKey: `function-${crypto.randomUUID()}`,
+    clientKey: `function-${createBrowserUuid()}`,
     functionKey,
     selectedRangeKeys: [],
     tableAreaAll: false,
@@ -229,7 +229,7 @@ export function clearTerminalSceneConfiguration(current: TerminalFunctionForm, s
 
 export function newTerminalPrinter(): TerminalPrinterForm {
   return {
-    clientKey: `printer-${crypto.randomUUID()}`,
+    clientKey: `printer-${createBrowserUuid()}`,
     name: '',
     brandKey: '',
     modelKey: '',

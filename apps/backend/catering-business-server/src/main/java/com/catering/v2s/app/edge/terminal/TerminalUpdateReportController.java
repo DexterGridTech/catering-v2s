@@ -1,9 +1,10 @@
 package com.catering.v2s.app.edge.terminal;
 
 import com.catering.v2s.app.edge.generated.wire.TerminalUpdateReportReceipt;
+import com.catering.v2s.app.edge.generated.wire.TerminalUpdateReportRecent;
 import com.catering.v2s.app.edge.generated.wire.TerminalUpdateReportRequest;
-import com.catering.v2s.app.edge.diagnostic.RequestCompletionDiagnosticState;
 import com.catering.v2s.app.edge.problem.ContractProblemAdvice;
+import com.catering.v2s.app.edge.session.EdgeRequestContext;
 import com.catering.v2s.platform.foundation.security.Sha256Hex;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.Verification;
@@ -38,28 +39,29 @@ public final class TerminalUpdateReportController {
     }
 
     @PostMapping
-    ResponseEntity<TerminalUpdateReportReceipt> submit(jakarta.servlet.http.HttpServletRequest servletRequest,
+    ResponseEntity<TerminalUpdateReportReceipt> submit(EdgeRequestContext requestContext,
             @PathVariable String groupWorkspaceKey,
             @RequestHeader(value = "Authorization", required = false) String authorization,
             @RequestHeader(value = "X-Terminal-Ref", required = false) String terminalRef,
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
             @RequestBody TerminalUpdateReportRequest request) {
+        TerminalUpdateReportRecent recent = recent(request == null ? null : request.recent());
         if (request == null || request.reportId() == null || request.reportSequence() == null
-                || request.actual() == null || request.recent() == null
+                || request.actual() == null || (recent == null && request.taskId() != null)
                 || idempotencyKey == null || idempotencyKey.length() < 16 || idempotencyKey.length() > 128
                 || !idempotencyKey.equals(request.reportId().toString())) throw new InvalidReportException();
         Verification binding = TerminalCredentialEdgeVerifier.verify(credentials, groupWorkspaceKey,
                 authorization, terminalRef);
-        validate(request);
+        validate(request, recent);
         String actualJson = json(request.actual());
-        String recentJson = json(request.recent());
+        String recentJson = recent == null ? null : json(recent);
         String bodyHash = Sha256Hex.digest(json(request));
         ReportInput input = new ReportInput(request.reportId(), request.reportSequence(), request.taskId(),
-                binding.bindingDeviceId(), actualJson, recentJson, request.recent().changedAtEpochMillis(), bodyHash);
+                binding.bindingDeviceId(), actualJson, recentJson,
+                recent == null ? 0 : recent.changedAtEpochMillis(), bodyHash);
         var receipt = reports.record(binding, input);
-        RequestCompletionDiagnosticState completion = RequestCompletionDiagnosticState.find(servletRequest);
-        String requestId = completion == null ? "unavailable" : completion.requestId();
-        String correlationId = completion == null ? "unavailable" : completion.correlationId();
+        String requestId = requestContext.requestId();
+        String correlationId = requestContext.correlationId();
         log.atInfo().addKeyValue("event", "TERMINAL_UPDATE_REPORT_ACCEPTED")
                 .addKeyValue("operationId", "submitTerminalUpdateReport")
                 .addKeyValue("requestId", requestId)
@@ -83,14 +85,14 @@ public final class TerminalUpdateReportController {
 
     @ExceptionHandler(InvalidReportException.class)
     ResponseEntity<ContractProblemAdvice.Problem> invalid(InvalidReportException failure,
-            jakarta.servlet.http.HttpServletRequest request) {
+            EdgeRequestContext request) {
         return ContractProblemAdvice.problem(HttpStatus.UNPROCESSABLE_ENTITY,
                 "PLATFORM_COMMON_VALIDATION_FAILED", "终端更新报告无效", request);
     }
 
     @ExceptionHandler(TerminalUpdateReportOwnerApi.IdentityConflictException.class)
     ResponseEntity<ContractProblemAdvice.Problem> conflict(TerminalUpdateReportOwnerApi.IdentityConflictException failure,
-            jakarta.servlet.http.HttpServletRequest request) {
+            EdgeRequestContext request) {
         return ContractProblemAdvice.problem(HttpStatus.CONFLICT,
                 "TERMINAL_UPDATE_REPORT_IDENTITY_CONFLICT", "终端更新报告身份冲突", request);
     }
@@ -98,7 +100,7 @@ public final class TerminalUpdateReportController {
     @ExceptionHandler(TerminalUpdateReportOwnerApi.BindingNoLongerActiveException.class)
     ResponseEntity<ContractProblemAdvice.Problem> inactiveBinding(
             TerminalUpdateReportOwnerApi.BindingNoLongerActiveException failure,
-            jakarta.servlet.http.HttpServletRequest request) {
+            EdgeRequestContext request) {
         return ContractProblemAdvice.problem(HttpStatus.FORBIDDEN,
                 "TERMINAL_BINDING_CREDENTIAL_INVALID", "终端凭证无效", request);
     }
@@ -108,15 +110,22 @@ public final class TerminalUpdateReportController {
         catch (tools.jackson.core.JacksonException malformed) { throw new InvalidReportException(); }
     }
 
-    private static void validate(TerminalUpdateReportRequest request) {
+    private static TerminalUpdateReportRecent recent(tools.jackson.databind.JsonNode value) {
+        if (value == null || value.isNull()) return null;
+        try { return JSON.treeToValue(value, TerminalUpdateReportRecent.class); }
+        catch (tools.jackson.core.JacksonException malformed) { throw new InvalidReportException(); }
+    }
+
+    private static void validate(TerminalUpdateReportRequest request, TerminalUpdateReportRecent recent) {
         if (request.reportSequence() < 1 || request.reportSequence() > 9_007_199_254_740_991L
-                || request.recent().changedAtEpochMillis() == null || request.recent().changedAtEpochMillis() < 0
-                || !oneOf(request.recent().state(), "WAITING_USER", "DOWNLOADING", "VERIFYING", "WAITING_IDLE",
-                        "ADMISSION_REJECTED", "INSTALLING", "APPLYING_HOT", "SUCCEEDED", "FAILED", "CANCELLED",
-                        "UNKNOWN")
-                || !oneOf(request.recent().reason(), "NONE", "NETWORK", "HTTP_REJECTED", "HASH_MISMATCH",
-                        "PREPARE_FAILED", "INSTALLER_CANCELLED", "INCOMPATIBLE", "WOULD_DOWNGRADE",
-                        "FAILED_ARTIFACT", "INSTALL_FAILED", "HOT_APPLY_FAILED", "UNKNOWN")
+                || (recent != null && (recent.changedAtEpochMillis() == null
+                        || recent.changedAtEpochMillis() < 0
+                        || !oneOf(recent.state(), "WAITING_USER", "DOWNLOADING", "VERIFYING", "WAITING_IDLE",
+                                "ADMISSION_REJECTED", "INSTALLING", "APPLYING_HOT", "SUCCEEDED", "FAILED", "CANCELLED",
+                                "UNKNOWN")
+                        || !oneOf(recent.reason(), "NONE", "NETWORK", "HTTP_REJECTED", "HASH_MISMATCH",
+                                "PREPARE_FAILED", "INSTALLER_CANCELLED", "INCOMPATIBLE", "WOULD_DOWNGRADE",
+                                "FAILED_ARTIFACT", "INSTALL_FAILED", "HOT_APPLY_FAILED", "UNKNOWN")))
                 || !oneOf(request.actual().entryKind(), "INSTALLED_APK", "EMBEDDED_BUNDLE", "HOT_BUNDLE", "UNKNOWN")
                 || !oneOfNullable(request.actual().unknownReason(), "READBACK_UNAVAILABLE", "NOT_INSTALLED", "MISMATCH", "OTHER")
                 || !nullableText(request.actual().apkVersion()) || !nullableText(request.actual().jsVersion())

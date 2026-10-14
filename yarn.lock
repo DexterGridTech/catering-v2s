@@ -1331,6 +1331,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@catering-v2s/admin-ui-foundation@workspace:libraries/frontend/admin-ui-foundation"
   dependencies:
+    "@noble/hashes": "npm:2.0.1"
     "@reduxjs/toolkit": "npm:2.12.0"
     "@types/node": "npm:24.10.1"
     "@types/react": "npm:19.2.17"
@@ -1354,29 +1355,9 @@ __metadata:
   resolution: "@catering-v2s/application-android-sample-terminal@workspace:apps/terminal/application/android/sample-terminal"
   dependencies:
     "@catering-v2s/application-base-android": "workspace:*"
-    "@catering-v2s/kernel-base-server-config": "workspace:*"
-    "@catering-v2s/kernel-base-terminal-update": "workspace:*"
-    "@catering-v2s/ui-base-input": "workspace:*"
-    "@catering-v2s/ui-base-primitives": "workspace:*"
-    "@catering-v2s/ui-base-render": "workspace:*"
-    "@catering-v2s/ui-integration-sample-console": "workspace:*"
     "@config-plugins/react-native-webrtc": "npm:15.0.2"
-    "@livekit/react-native": "npm:3.0.0"
     "@livekit/react-native-expo-plugin": "npm:1.0.3"
-    "@livekit/react-native-webrtc": "npm:144.2.0"
-    "@types/react": "npm:~19.2.2"
-    babel-preset-expo: "npm:~57.0.0"
     expo: "npm:~57.0.18"
-    expo-modules-core: "npm:~57.0.14"
-    livekit-client: "npm:2.22.4"
-    nativewind: "npm:4.2.6"
-    react: "npm:19.2.3"
-    react-native: "npm:0.86.3"
-    react-native-reanimated: "npm:4.5.1"
-    react-native-svg: "npm:15.15.4"
-    react-native-worklets: "npm:0.10.1"
-    tailwindcss: "npm:3.4.19"
-    typescript: "npm:~6.0.3"
   languageName: unknown
   linkType: soft
 
@@ -1385,29 +1366,9 @@ __metadata:
   resolution: "@catering-v2s/application-android-sample-wallpaper-terminal@workspace:apps/terminal/application/android/sample-wallpaper-terminal"
   dependencies:
     "@catering-v2s/application-base-android": "workspace:*"
-    "@catering-v2s/kernel-base-server-config": "workspace:*"
-    "@catering-v2s/kernel-base-terminal-update": "workspace:*"
-    "@catering-v2s/ui-base-input": "workspace:*"
-    "@catering-v2s/ui-base-primitives": "workspace:*"
-    "@catering-v2s/ui-base-render": "workspace:*"
-    "@catering-v2s/ui-integration-sample-wallpaper-console": "workspace:*"
     "@config-plugins/react-native-webrtc": "npm:15.0.2"
-    "@livekit/react-native": "npm:3.0.0"
     "@livekit/react-native-expo-plugin": "npm:1.0.3"
-    "@livekit/react-native-webrtc": "npm:144.2.0"
-    "@types/react": "npm:~19.2.2"
-    babel-preset-expo: "npm:~57.0.0"
     expo: "npm:~57.0.18"
-    expo-modules-core: "npm:~57.0.14"
-    livekit-client: "npm:2.22.4"
-    nativewind: "npm:4.2.6"
-    react: "npm:19.2.3"
-    react-native: "npm:0.86.3"
-    react-native-reanimated: "npm:4.5.1"
-    react-native-svg: "npm:15.15.4"
-    react-native-worklets: "npm:0.10.1"
-    tailwindcss: "npm:3.4.19"
-    typescript: "npm:~6.0.3"
   languageName: unknown
   linkType: soft
 
@@ -1484,6 +1445,7 @@ __metadata:
     "@catering-v2s/kernel-base-display-context": "workspace:*"
     "@catering-v2s/kernel-base-platform-ports": "workspace:*"
     "@catering-v2s/kernel-base-runtime": "workspace:*"
+    "@catering-v2s/kernel-base-server-config": "workspace:*"
     "@catering-v2s/kernel-base-state": "workspace:*"
     "@catering-v2s/kernel-base-terminal-data-client": "workspace:*"
     "@catering-v2s/kernel-base-topology": "workspace:*"
@@ -1755,6 +1717,7 @@ __metadata:
     "@catering-v2s/ui-base-admin-shell": "workspace:*"
     "@catering-v2s/ui-base-automation-agent": "workspace:*"
     "@catering-v2s/ui-base-input": "workspace:*"
+    "@catering-v2s/ui-base-terminal-activation": "workspace:*"
     "@catering-v2s/ui-feature-sample-member-desk": "workspace:*"
     "@catering-v2s/ui-feature-sample-staff-auth": "workspace:*"
     "@catering-v2s/ui-feature-sample-wallpaper-picker": "workspace:*"
@@ -1780,6 +1743,7 @@ __metadata:
   resolution: "@catering-v2s/terminal@workspace:apps/terminal"
   dependencies:
     react: "npm:19.2.3"
+    react-native-svg: "npm:15.15.4"
     use-sync-external-store: "npm:^1.6.0"
   languageName: unknown
   linkType: soft
@@ -2079,7 +2043,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@catering-v2s/ui-integration-sample-console@workspace:*, @catering-v2s/ui-integration-sample-console@workspace:apps/terminal/ui/integration/sample-console":
+"@catering-v2s/ui-integration-sample-console@workspace:apps/terminal/ui/integration/sample-console":
   version: 0.0.0-use.local
   resolution: "@catering-v2s/ui-integration-sample-console@workspace:apps/terminal/ui/integration/sample-console"
   dependencies:
@@ -2133,7 +2097,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@catering-v2s/ui-integration-sample-wallpaper-console@workspace:*, @catering-v2s/ui-integration-sample-wallpaper-console@workspace:apps/terminal/ui/integration/sample-wallpaper-console":
+"@catering-v2s/ui-integration-sample-wallpaper-console@workspace:apps/terminal/ui/integration/sample-wallpaper-console":
   version: 0.0.0-use.local
   resolution: "@catering-v2s/ui-integration-sample-wallpaper-console@workspace:apps/terminal/ui/integration/sample-wallpaper-console"
   dependencies:
@@ -3643,6 +3607,13 @@ __metadata:
     "@emnapi/core": ^1.7.1
     "@emnapi/runtime": ^1.7.1
   checksum: 10c0/344518bf3ef65051dda4c00969f293aa4a21ab7dc7822b3f48519b17cd5eaa3f0bc34898d115d50ba59b1817a0cb905d46f7a7223c8249239cd14c28db388e10
+  languageName: node
+  linkType: hard
+
+"@noble/hashes@npm:2.0.1":
+  version: 2.0.1
+  resolution: "@noble/hashes@npm:2.0.1"
+  checksum: 10c0/e81769ce21c3b1c80141a3b99bd001f17edea09879aa936692ae39525477386d696101cd573928a304806efb2b9fa751e1dd83241c67d0c84d30091e85c79bdb
   languageName: node
   linkType: hard
 

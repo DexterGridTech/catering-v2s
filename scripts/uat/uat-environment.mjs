@@ -397,8 +397,557 @@ function renderDeploymentFiles(credentials, trust, runId, remoteRunRoot, diagnos
 
 async function buildArtifacts(runDirectory) {
   await runLogged('./gradlew', ['--no-daemon', ':apps:backend:catering-business-server:bootJar', ':apps:backend:terminal-data-server:bootJar'], {runDirectory, name: 'build-backend'});
-  await runLogged('yarn', ['workspace', '@catering-v2s/platform-admin', 'build'], {runDirectory, name: 'build-platform-admin', env: {...process.env, VITE_OPERATIONS_ADMIN_ORIGIN: UAT_ENDPOINTS.operationsAdmin}});
+  await buildFrontendArtifacts(runDirectory);
+}
+
+async function buildFrontendArtifacts(runDirectory) {
+  const operationsAdminOrigin = new URL(UAT_ENDPOINTS.operationsAdmin).host;
+  await runLogged('yarn', ['workspace', '@catering-v2s/platform-admin', 'build'], {
+    runDirectory,
+    name: 'build-platform-admin',
+    env: {...process.env, VITE_OPERATIONS_ADMIN_ORIGIN: `//${operationsAdminOrigin}`},
+  });
   await runLogged('yarn', ['workspace', '@catering-v2s/operations-admin', 'build'], {runDirectory, name: 'build-operations-admin'});
+}
+
+function createFrontendInventory(app, runDirectory) {
+  if (!['platform-admin', 'operations-admin'].includes(app)) fail('UAT_FRONTEND_APP_INVALID');
+  const dist = path.join(root, 'apps/frontend', app, 'dist');
+  const expectedDist = path.join(realpathSync(root), 'apps/frontend', app, 'dist');
+  let rootInfo;
+  try { rootInfo = lstatSync(dist); } catch { fail(`UAT_FRONTEND_DIST_MISSING:${app}`); }
+  if (rootInfo.isSymbolicLink() || !rootInfo.isDirectory() || realpathSync(dist) !== expectedDist) {
+    fail(`UAT_FRONTEND_DIST_IDENTITY_INVALID:${app}`);
+  }
+
+  const entries = [];
+  const visit = (directory, prefix = '') => {
+    for (const item of readdirSync(directory, {withFileTypes: true}).sort((left, right) => left.name.localeCompare(right.name))) {
+      const relative = prefix ? `${prefix}/${item.name}` : item.name;
+      if (!/^[A-Za-z0-9._/-]+$/.test(relative) || relative.split('/').includes('..')) {
+        fail(`UAT_FRONTEND_DIST_PATH_INVALID:${app}:${relative}`);
+      }
+      const file = path.join(directory, item.name);
+      const info = lstatSync(file);
+      if (info.isSymbolicLink()) fail(`UAT_FRONTEND_DIST_SYMLINK_FORBIDDEN:${app}:${relative}`);
+      if (info.isDirectory()) visit(file, relative);
+      else if (info.isFile()) {
+        const digest = createHash('sha256').update(readFileSync(file)).digest('hex');
+        entries.push({relative, digest, size: info.size});
+      } else fail(`UAT_FRONTEND_DIST_ENTRY_TYPE_INVALID:${app}:${relative}`);
+    }
+  };
+  visit(dist);
+  if (!entries.some(entry => entry.relative === 'index.html')) fail(`UAT_FRONTEND_INDEX_MISSING:${app}`);
+  const checksumPath = path.join(runDirectory, `${app}.sha256`);
+  writeFileSync(checksumPath, `${entries.map(entry => `${entry.digest}  ${entry.relative}`).join('\n')}\n`, {mode: 0o600, flag: 'wx'});
+  return {app, dist, checksumPath, entries, totalBytes: entries.reduce((sum, entry) => sum + entry.size, 0)};
+}
+
+async function publishUatFrontends() {
+  const runId = isoRunId('uat-publish-frontends');
+  const runDirectory = path.join(runtime, runId);
+  mkdirSync(runDirectory, {recursive: true, mode: 0o700});
+  chmodSync(runDirectory, 0o700);
+  const runManifestPath = path.join(runDirectory, 'run-manifest.json');
+  const eventsPath = path.join(runDirectory, 'events.jsonl');
+  const manifest = {
+    schemaVersion: 1,
+    kind: 'uat-frontend-publish-run-manifest',
+    environmentKind: 'uat',
+    runId,
+    phase: 'PREFLIGHT',
+    status: 'RUNNING',
+    startedAt: new Date().toISOString(),
+    localIdentity: {pid: process.pid, startToken: startToken(process.pid), commandSha256: sha256(process.argv.join('\0'))},
+    logs: {events: eventsPath},
+    business: 'NOT_RUN',
+    cleanup: 'NOT_RUN',
+  };
+  writeJson(runManifestPath, manifest);
+  const record = event => {
+    const at = new Date().toISOString();
+    manifest.updatedAt = at;
+    writeAtomicJson(runManifestPath, manifest);
+    appendFileSync(eventsPath, `${JSON.stringify({at, runId, ...event})}\n`, {mode: 0o600});
+  };
+
+  let environmentManifest;
+  let trust;
+  let remoteStage;
+  let remoteStageMayExist = false;
+  let failure;
+  try {
+    environmentManifest = JSON.parse(readFileSync(environmentManifestPath, 'utf8'));
+    if (environmentManifest.kind !== 'uat-environment-run-manifest' || environmentManifest.environmentKind !== 'uat' ||
+        environmentManifest.status !== 'READY' || environmentManifest.business !== 'PASS_SEED_IMPORTED' || environmentManifest.seed !== 'PASS' ||
+        environmentManifest.seedAllowed !== false || environmentManifest.remoteDeployment?.remoteRunRoot !== `${UAT_REMOTE_ROOT}/runs/${environmentManifest.runId}`) {
+      fail('UAT_FRONTEND_PUBLISH_REQUIRES_READY_SEEDED_MANIFEST');
+    }
+    trust = resolveUatHost();
+    if (trust.host !== environmentManifest.remoteHostTrust?.host || trust.fingerprint !== environmentManifest.remoteHostTrust?.fingerprint ||
+        !/^[a-f0-9-]{36}$/i.test(environmentManifest.remoteHostIdentity?.bootId ?? '')) {
+      fail('UAT_FRONTEND_PUBLISH_HOST_IDENTITY_MISMATCH');
+    }
+    const nginx = environmentManifest.resources?.containers?.nginx;
+    if (!nginx?.id || !/^[a-f0-9]{64}$/.test(nginx.id) || nginx.status !== 'RUNNING' ||
+        nginx.hostFingerprint !== trust.fingerprint || nginx.configSha256 !== environmentManifest.remoteDeployment.configDigest ||
+        !/^[a-f0-9]{64}$/.test(environmentManifest.remoteDeployment.configDigest ?? '')) {
+      fail('UAT_FRONTEND_PUBLISH_NGINX_MANIFEST_IDENTITY_INVALID');
+    }
+    const apps = ['platform-admin', 'operations-admin'];
+    remoteStage = `${environmentManifest.remoteDeployment.remoteRunRoot}/results/frontend-publish-${runId}`;
+    Object.assign(manifest, {
+      environmentRunId: environmentManifest.runId,
+      remoteHostTrust: trust,
+      remoteHostBootId: environmentManifest.remoteHostIdentity.bootId,
+      remoteStage,
+      nginxContainerId: nginx.id,
+      artifacts: [],
+      phase: 'BUILD_FRONTENDS',
+    });
+    record({event: 'uat_frontend_publish_started', environmentRunId: environmentManifest.runId, apps});
+
+    await buildFrontendArtifacts(runDirectory);
+    const rebuiltApps = ['platform-admin', 'operations-admin'].map(app => createFrontendInventory(app, runDirectory));
+    manifest.artifacts = rebuiltApps.map(({app, entries, totalBytes: bytes}) => ({app, fileCount: entries.length, bytes, indexSha256: entries.find(entry => entry.relative === 'index.html').digest}));
+    const rebuiltTotalBytes = rebuiltApps.reduce((sum, app) => sum + app.totalBytes, 0);
+    manifest.logs = {
+      events: eventsPath,
+      buildPlatformStdout: path.join(runDirectory, 'build-platform-admin.stdout.log'),
+      buildPlatformStderr: path.join(runDirectory, 'build-platform-admin.stderr.log'),
+      buildOperationsStdout: path.join(runDirectory, 'build-operations-admin.stdout.log'),
+      buildOperationsStderr: path.join(runDirectory, 'build-operations-admin.stderr.log'),
+      remotePublishRunDirectory: runDirectory,
+    };
+    record({event: 'uat_frontend_build_complete', apps: manifest.artifacts, totalBytes: rebuiltTotalBytes});
+
+    const bootId = environmentManifest.remoteHostIdentity.bootId;
+    const rootPath = UAT_REMOTE_ROOT;
+    const runRoot = environmentManifest.remoteDeployment.remoteRunRoot;
+    const nginxId = nginx.id;
+    const preflight = [
+      'set -euo pipefail',
+      `root=${shellQuote(rootPath)}`,
+      `run_root=${shellQuote(runRoot)}`,
+      `stage=${shellQuote(remoteStage)}`,
+      `boot=${shellQuote(bootId)}`,
+      `fingerprint=${shellQuote(trust.fingerprint)}`,
+      `config_sha=${shellQuote(environmentManifest.remoteDeployment.configDigest)}`,
+      `nginx=${shellQuote(nginxId)}`,
+      `required_bytes=${rebuiltTotalBytes * 2 + 5 * 1024 * 1024}`,
+      'test "$(cat /proc/sys/kernel/random/boot_id)" = "$boot" || { echo UAT_FRONTEND_PUBLISH_HOST_BOOT_MISMATCH; exit 74; }',
+      'test ! -L "$root" && test "$(realpath "$root")" = "$root" && test ! -L "$root/current" && test "$(realpath "$root/current")" = "$root/current" || { echo UAT_FRONTEND_PUBLISH_ROOT_IDENTITY_INVALID; exit 75; }',
+      'test -d "$run_root/results" && test ! -L "$run_root" && test "$(realpath "$run_root")" = "$run_root" || { echo UAT_FRONTEND_PUBLISH_RUN_ROOT_INVALID; exit 75; }',
+      'grep -Fx "V2S_UAT_HOST_FINGERPRINT=$fingerprint" "$root/current/.env" >/dev/null && grep -Fx "V2S_UAT_CONFIG_SHA256=$config_sha" "$root/current/.env" >/dev/null || { echo UAT_FRONTEND_PUBLISH_BUNDLE_IDENTITY_MISMATCH; exit 76; }',
+      `actual=$(docker inspect -f '{{.Id}}|{{.State.Running}}|{{index .Config.Labels "${UAT_DOCKER_ROOT_LABEL}"}}|{{index .Config.Labels "${UAT_DOCKER_NAMESPACE_LABEL}"}}|{{index .Config.Labels "com.catering-v2s.host-fingerprint"}}|{{index .Config.Labels "com.catering-v2s.config-sha256"}}' "$nginx")`,
+      `test "$actual" = ${shellQuote(`${nginxId}|true|${UAT_REMOTE_ROOT}|${UAT_NAMESPACE}|${trust.fingerprint}|${environmentManifest.remoteDeployment.configDigest}`)} || { echo UAT_FRONTEND_PUBLISH_NGINX_IDENTITY_MISMATCH; exit 77; }`,
+      `docker inspect -f '{{range .Mounts}}{{.Source}}|{{.Destination}}{{"\\n"}}{{end}}' "$nginx" | grep -Fx ${shellQuote(`${UAT_REMOTE_ROOT}/current/published/platform-admin|/usr/share/nginx/html/platform-admin`)} >/dev/null || { echo UAT_FRONTEND_PUBLISH_PLATFORM_MOUNT_MISMATCH; exit 78; }`,
+      `docker inspect -f '{{range .Mounts}}{{.Source}}|{{.Destination}}{{"\\n"}}{{end}}' "$nginx" | grep -Fx ${shellQuote(`${UAT_REMOTE_ROOT}/current/published/operations-admin|/usr/share/nginx/html/operations-admin`)} >/dev/null || { echo UAT_FRONTEND_PUBLISH_OPERATIONS_MOUNT_MISMATCH; exit 78; }`,
+      ...['platform-admin', 'operations-admin'].map(app => `target="$root/current/published/${app}"; test -d "$target" && test ! -L "$target" && test "$(realpath "$target")" = "$target" || { echo UAT_FRONTEND_PUBLISH_TARGET_INVALID:${app}; exit 79; }`),
+      'available_bytes=$(df -Pk "$root" | awk "NR==2 {print \\$4 * 1024}"); test "$available_bytes" -ge "$required_bytes" || { echo UAT_FRONTEND_PUBLISH_DISK_BUDGET_INSUFFICIENT; exit 80; }',
+      'test ! -e "$stage" && test ! -L "$stage" || { echo UAT_FRONTEND_PUBLISH_STAGE_COLLISION; exit 81; }',
+      'mkdir -m 700 "$stage"',
+      `printf '%s\\n' ${shellQuote(`${environmentManifest.runId}|${runId}|${bootId}|${trust.fingerprint}`)} > "$stage/.owner"`,
+      'chmod 600 "$stage/.owner"',
+      'mkdir -m 700 "$stage/platform-admin" "$stage/operations-admin"',
+      `printf 'UAT_FRONTEND_PUBLISH_STAGE=PASS; RUN_ID=%s; BOOT_ID=%s; REQUIRED_BYTES=%s; AVAILABLE_BYTES=%s\\n' ${shellQuote(runId)} "$boot" "$required_bytes" "$available_bytes"`,
+    ].join('\n');
+    remoteStageMayExist = true;
+    manifest.phase = 'REMOTE_PREFLIGHT_AND_UPLOAD';
+    record({event: 'uat_frontend_publish_remote_preflight_started', remoteStage});
+    await remoteRun(trust.host, preflight, {runDirectory, name: 'frontend-publish-preflight-create-owned-stage'});
+
+    for (const app of rebuiltApps) {
+      await runLogged('scp', ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10', '-o', 'StrictHostKeyChecking=yes', '-r', `${app.dist}/.`, `${trust.host}:${remoteStage}/${app.app}/`], {runDirectory, name: `upload-${app.app}-dist`});
+      await runLogged('scp', ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10', '-o', 'StrictHostKeyChecking=yes', app.checksumPath, `${trust.host}:${remoteStage}/${app.app}.sha256`], {runDirectory, name: `upload-${app.app}-checksum`});
+    }
+
+    const appPublish = (app, port, route) => [
+      `app=${shellQuote(app)}`,
+      `port=${Number(port)}`,
+      `route=${shellQuote(route)}`,
+      'source="$stage/$app"',
+      'target="$root/current/published/$app"',
+      'checksums="$stage/$app.sha256"',
+      'test -d "$source" && test ! -L "$source" && test -f "$checksums" && test ! -L "$checksums" || { echo UAT_FRONTEND_PUBLISH_STAGE_CONTENT_INVALID; exit 82; }',
+      '(cd "$source" && sha256sum -c "$checksums")',
+      'while read -r expected relative; do if test "$relative" != "index.html"; then install -D -m 0644 "$source/$relative" "$target/$relative"; fi; done < "$checksums"',
+      'index_expected=$(awk \'$2 == "index.html" {print $1}\' "$checksums")',
+      'install -m 0644 "$source/index.html" "$target/.index.html-uat-publish"',
+      'mv -f "$target/.index.html-uat-publish" "$target/index.html"',
+      '(cd "$target" && sha256sum -c "$checksums")',
+      'body="$stage/readback-$app.html"',
+      'status=$(curl --connect-timeout 2 --max-time 10 -sS -o "$body" -w "%{http_code}" "http://127.0.0.1:$port$route")',
+      'served_index=$(sha256sum "$body" | awk \'{print $1}\'); test "$status" = 200 && test "$served_index" = "$index_expected" || { echo UAT_FRONTEND_PUBLISH_INDEX_READBACK_MISMATCH:$app; exit 83; }',
+      'while read -r expected relative; do if test "$relative" != "index.html"; then actual=$(curl --connect-timeout 2 --max-time 10 -fsS "http://127.0.0.1:$port/$relative" | sha256sum | awk \'{print $1}\'); test "$actual" = "$expected" || { echo UAT_FRONTEND_PUBLISH_ASSET_READBACK_MISMATCH:$app:$relative; exit 84; }; fi; done < "$checksums"',
+      'rm -f "$body"',
+      'printf "UAT_FRONTEND_APP=PASS; APP=%s; PORT=%s; INDEX_SHA256=%s; SPA_ROUTE=%s\\n" "$app" "$port" "$served_index" "$route"',
+    ];
+    const publish = [
+      'set -euo pipefail',
+      'umask 022',
+      `root=${shellQuote(rootPath)}`,
+      `stage=${shellQuote(remoteStage)}`,
+      `boot=${shellQuote(bootId)}`,
+      `fingerprint=${shellQuote(trust.fingerprint)}`,
+      `nginx=${shellQuote(nginxId)}`,
+      `expected_owner=${shellQuote(`${environmentManifest.runId}|${runId}|${bootId}|${trust.fingerprint}`)}`,
+      'test "$(cat /proc/sys/kernel/random/boot_id)" = "$boot" || { echo UAT_FRONTEND_PUBLISH_HOST_BOOT_MISMATCH; exit 74; }',
+      'test -d "$stage" && test ! -L "$stage" && test "$(cat "$stage/.owner")" = "$expected_owner" || { echo UAT_FRONTEND_PUBLISH_STAGE_OWNER_MISMATCH; exit 81; }',
+      `actual=$(docker inspect -f '{{.Id}}|{{.State.Running}}|{{index .Config.Labels "${UAT_DOCKER_ROOT_LABEL}"}}|{{index .Config.Labels "${UAT_DOCKER_NAMESPACE_LABEL}"}}|{{index .Config.Labels "com.catering-v2s.host-fingerprint"}}' "$nginx")`,
+      `test "$actual" = ${shellQuote(`${nginxId}|true|${UAT_REMOTE_ROOT}|${UAT_NAMESPACE}|${trust.fingerprint}`)} || { echo UAT_FRONTEND_PUBLISH_NGINX_IDENTITY_MISMATCH; exit 77; }`,
+      ...appPublish('platform-admin', UAT_PORTS.platformAdmin, '/platform/login'),
+      ...appPublish('operations-admin', UAT_PORTS.operationsAdmin, '/operations/login'),
+      `for port in ${UAT_PORTS.platformAdmin} ${UAT_PORTS.operationsAdmin}; do curl --connect-timeout 2 --max-time 5 -fsS "http://127.0.0.1:$port/healthz" >/dev/null; done`,
+      'echo UAT_FRONTEND_PUBLISH=PASS; HTTP=PASS; SPA_READBACK=PASS; ASSET_READBACK=PASS; NGINX=UNCHANGED; DATABASE=UNTOUCHED; SEED=NOT_RUN',
+    ].join('\n');
+    manifest.phase = 'INSTALL_AND_READBACK';
+    record({event: 'uat_frontend_publish_install_started'});
+    await remoteRun(trust.host, publish, {runDirectory, name: 'install-both-frontends-and-http-readback'});
+    manifest.business = 'PASS_FRONTENDS_PUBLISHED_AND_READ_BACK';
+    manifest.status = 'PASS';
+    manifest.completedAt = new Date().toISOString();
+    record({event: 'uat_frontend_publish_business_pass'});
+  } catch (error) {
+    failure = error;
+    manifest.business = 'FAIL_FRONTEND_PUBLISH';
+    manifest.status = 'FAIL';
+    manifest.firstFailure = error.code ?? error.message;
+    manifest.completedAt = new Date().toISOString();
+    try { record({event: 'uat_frontend_publish_failed', firstFailure: manifest.firstFailure, phase: manifest.phase}); } catch {}
+  }
+
+  try {
+    if (remoteStageMayExist && trust && remoteStage && environmentManifest) {
+      const cleanup = [
+        'set -euo pipefail',
+        `stage=${shellQuote(remoteStage)}`,
+        `boot=${shellQuote(environmentManifest.remoteHostIdentity.bootId)}`,
+        `expected_owner=${shellQuote(`${environmentManifest.runId}|${runId}|${environmentManifest.remoteHostIdentity.bootId}|${trust.fingerprint}`)}`,
+        'test "$(cat /proc/sys/kernel/random/boot_id)" = "$boot" || { echo UAT_FRONTEND_PUBLISH_CLEANUP_HOST_BOOT_MISMATCH; exit 74; }',
+        'if test ! -e "$stage" && test ! -L "$stage"; then echo UAT_FRONTEND_PUBLISH_STAGE_CLEANUP=ALREADY_ABSENT; exit 0; fi',
+        'test -d "$stage" && test ! -L "$stage" && test "$(cat "$stage/.owner")" = "$expected_owner" || { echo UAT_FRONTEND_PUBLISH_CLEANUP_OWNER_MISMATCH; exit 85; }',
+        'rm -rf -- "$stage"',
+        'test ! -e "$stage" && test ! -L "$stage" || { echo UAT_FRONTEND_PUBLISH_STAGE_CLEANUP_FAILED; exit 86; }',
+        'echo UAT_FRONTEND_PUBLISH_STAGE_CLEANUP=PASS',
+      ].join('\n');
+      await remoteRun(trust.host, cleanup, {runDirectory, name: 'cleanup-exact-run-owned-frontend-stage'});
+    }
+    manifest.cleanup = 'PASS_RUN_OWNED_STAGE_REMOVED_OR_NOT_CREATED';
+  } catch (error) {
+    manifest.cleanup = 'FAIL_RUN_OWNED_STAGE';
+    manifest.cleanupFailure = error.code ?? error.message;
+    if (!failure) failure = error;
+  }
+  manifest.completedAt ??= new Date().toISOString();
+  manifest.status = failure ? 'FAIL' : 'PASS';
+  try { record({event: 'uat_frontend_publish_cleanup_complete', cleanup: manifest.cleanup, cleanupFailure: manifest.cleanupFailure ?? null}); } catch {}
+
+  if (environmentManifest) {
+    environmentManifest.phases.push({at: new Date().toISOString(), phase: 'PUBLISH_FRONTENDS', status: failure ? 'FAIL' : 'PASS', publishRunId: runId, business: manifest.business, cleanup: manifest.cleanup});
+    if (!failure) environmentManifest.frontendPublication = {runId, completedAt: manifest.completedAt, apps: manifest.artifacts, httpReadback: 'PASS', httpsCompatibility: 'SCHEME_NEUTRAL_APP_ORIGIN_AND_WEBCRYPTO_FALLBACK'};
+    writeAtomicJson(environmentManifestPath, environmentManifest);
+  }
+  process.stdout.write(`UAT_FRONTEND_PUBLISH=${failure ? 'FAIL' : 'PASS'}; RUN_ID=${runId}; BUSINESS=${manifest.business}; CLEANUP=${manifest.cleanup}; SEED=NOT_RUN\nMANIFEST=${runManifestPath}\n`);
+  if (failure) throw failure;
+}
+
+async function publishUatCbs() {
+  const runId = isoRunId('uat-publish-cbs');
+  const runDirectory = path.join(runtime, runId);
+  mkdirSync(runDirectory, {recursive: true, mode: 0o700});
+  chmodSync(runDirectory, 0o700);
+  const runManifestPath = path.join(runDirectory, 'run-manifest.json');
+  const eventsPath = path.join(runDirectory, 'events.jsonl');
+  const manifest = {
+    schemaVersion: 1,
+    kind: 'uat-cbs-publish-run-manifest',
+    environmentKind: 'uat',
+    runId,
+    phase: 'PREFLIGHT',
+    status: 'RUNNING',
+    startedAt: new Date().toISOString(),
+    localIdentity: {pid: process.pid, startToken: startToken(process.pid), commandSha256: sha256(process.argv.join('\0'))},
+    logs: {events: eventsPath},
+    business: 'NOT_RUN',
+    cleanup: 'NOT_RUN',
+  };
+  writeJson(runManifestPath, manifest);
+  const record = event => {
+    const at = new Date().toISOString();
+    manifest.updatedAt = at;
+    writeAtomicJson(runManifestPath, manifest);
+    appendFileSync(eventsPath, `${JSON.stringify({at, runId, ...event})}\n`, {mode: 0o600});
+  };
+
+  let environmentManifest;
+  let trust;
+  let remoteStage;
+  let remoteStageMayExist = false;
+  let oldJarSha256;
+  let newJarSha256;
+  let cbsStopped = false;
+  let failure;
+  try {
+    environmentManifest = JSON.parse(readFileSync(environmentManifestPath, 'utf8'));
+    if (environmentManifest.kind !== 'uat-environment-run-manifest' || environmentManifest.environmentKind !== 'uat' ||
+        environmentManifest.status !== 'READY' || environmentManifest.business !== 'PASS_SEED_IMPORTED' ||
+        environmentManifest.seed !== 'PASS' || environmentManifest.seedAllowed !== false ||
+        environmentManifest.remoteDeployment?.remoteRunRoot !== `${UAT_REMOTE_ROOT}/runs/${environmentManifest.runId}` ||
+        !environmentManifest.processes?.cbs || !environmentManifest.resources?.containers?.postgresql?.id) {
+      fail('UAT_CBS_PUBLISH_REQUIRES_READY_SEEDED_MANIFEST');
+    }
+    trust = resolveUatHost();
+    if (trust.host !== environmentManifest.remoteHostTrust?.host ||
+        trust.fingerprint !== environmentManifest.remoteHostTrust?.fingerprint ||
+        !/^[a-f0-9-]{36}$/i.test(environmentManifest.remoteHostIdentity?.bootId ?? '') ||
+        environmentManifest.processes.cbs.service !== 'cbs' ||
+        environmentManifest.processes.cbs.remoteRoot !== UAT_REMOTE_ROOT ||
+        environmentManifest.processes.cbs.bootId !== environmentManifest.remoteHostIdentity.bootId) {
+      fail('UAT_CBS_PUBLISH_HOST_OR_PROCESS_IDENTITY_MISMATCH');
+    }
+    Object.assign(manifest, {
+      environmentRunId: environmentManifest.runId,
+      remoteHostTrust: trust,
+      remoteHostBootId: environmentManifest.remoteHostIdentity.bootId,
+      phase: 'BUILD_CBS',
+    });
+    record({event: 'uat_cbs_publish_started', environmentRunId: environmentManifest.runId});
+
+    await runLogged('./gradlew', ['--no-daemon', ':apps:backend:catering-business-server:bootJar'], {
+      runDirectory,
+      name: 'build-cbs-boot-jar',
+      env: {...process.env, V2S_BACKEND_PERFORMANCE_PROJECTION_MODE: 'IDENTITY_ONLY'},
+    });
+    const jarPath = resolveBootJar('apps/backend/catering-business-server', 'catering-business-server');
+    const jarBytes = readFileSync(jarPath);
+    newJarSha256 = sha256(jarBytes);
+    if (!/^[a-f0-9]{64}$/.test(newJarSha256) || jarBytes.length === 0) fail('UAT_CBS_ARTIFACT_INVALID');
+    manifest.artifact = {fileName: path.basename(jarPath), bytes: jarBytes.length, sha256: newJarSha256};
+    manifest.logs.buildStdout = path.join(runDirectory, 'build-cbs-boot-jar.stdout.log');
+    manifest.logs.buildStderr = path.join(runDirectory, 'build-cbs-boot-jar.stderr.log');
+    record({event: 'uat_cbs_build_complete', artifact: manifest.artifact});
+
+    const rootPath = UAT_REMOTE_ROOT;
+    const bootId = environmentManifest.remoteHostIdentity.bootId;
+    const configSha = environmentManifest.remoteDeployment.configDigest;
+    const currentControl = environmentManifest.processes.cbs;
+    const postgres = environmentManifest.resources.containers.postgresql;
+    remoteStage = `${environmentManifest.remoteDeployment.remoteRunRoot}/results/cbs-publish-${runId}`;
+    Object.assign(manifest, {remoteStage, phase: 'REMOTE_PREFLIGHT'});
+    const preflight = [
+      'set -euo pipefail',
+      `root=${shellQuote(rootPath)}`,
+      `stage=${shellQuote(remoteStage)}`,
+      `run_root=${shellQuote(environmentManifest.remoteDeployment.remoteRunRoot)}`,
+      `boot=${shellQuote(bootId)}`,
+      `fingerprint=${shellQuote(trust.fingerprint)}`,
+      `config_sha=${shellQuote(configSha)}`,
+      `cbs_pid=${Number(currentControl.pid)}`,
+      `cbs_ticks=${shellQuote(currentControl.startTicks)}`,
+      `cbs_cmd_sha=${shellQuote(currentControl.commandSha256)}`,
+      `cbs_control=${shellQuote(`${UAT_REMOTE_ROOT}/control/cbs.json`)}`,
+      `postgres_id=${shellQuote(postgres.id)}`,
+      `required_bytes=${jarBytes.length * 2 + 5 * 1024 * 1024}`,
+      'test "$(cat /proc/sys/kernel/random/boot_id)" = "$boot" || { echo UAT_CBS_PUBLISH_HOST_BOOT_MISMATCH; exit 74; }',
+      'test ! -L "$root" && test "$(realpath "$root")" = "$root" && test ! -L "$root/current" && test "$(realpath "$root/current")" = "$root/current" || { echo UAT_CBS_PUBLISH_ROOT_IDENTITY_INVALID; exit 75; }',
+      'test -d "$run_root/results" && test ! -L "$run_root" && test "$(realpath "$run_root")" = "$run_root" || { echo UAT_CBS_PUBLISH_RUN_ROOT_INVALID; exit 75; }',
+      `grep -Fx "V2S_UAT_HOST_FINGERPRINT=$fingerprint" "$root/current/.env" >/dev/null && grep -Fx "V2S_UAT_CONFIG_SHA256=$config_sha" "$root/current/.env" >/dev/null || { echo UAT_CBS_PUBLISH_BUNDLE_IDENTITY_MISMATCH; exit 76; }`,
+      `actual_pg=$(docker inspect -f '{{.Id}}|{{.State.Running}}|{{index .Config.Labels "${UAT_DOCKER_ROOT_LABEL}"}}|{{index .Config.Labels "${UAT_DOCKER_NAMESPACE_LABEL}"}}|{{index .Config.Labels "com.catering-v2s.host-fingerprint"}}|{{index .Config.Labels "com.catering-v2s.config-sha256"}}' "$postgres_id")`,
+      `test "$actual_pg" = ${shellQuote(`${postgres.id}|true|${UAT_REMOTE_ROOT}|${UAT_NAMESPACE}|${trust.fingerprint}|${configSha}`)} || { echo UAT_CBS_PUBLISH_POSTGRES_IDENTITY_MISMATCH; exit 77; }`,
+      `python3 - "$cbs_control" "$cbs_pid" "$cbs_ticks" "$cbs_cmd_sha" "$boot" ${shellQuote(environmentManifest.runId)} <<'PY'
+import json, pathlib, sys
+control_path, pid, ticks, command_sha, boot, run_id = sys.argv[1:]
+value=json.loads(pathlib.Path(control_path).read_text())
+expected={'kind':'uat-java-process-control','service':'cbs','remoteRoot':'${UAT_REMOTE_ROOT}','runId':run_id,'bootId':boot,'pid':int(pid),'startTicks':ticks,'commandSha256':command_sha}
+if any(value.get(key) != item for key,item in expected.items()): raise SystemExit('UAT_CBS_PUBLISH_CONTROL_IDENTITY_MISMATCH')
+stat=pathlib.Path('/proc')/pid/'stat'
+if not stat.is_file(): raise SystemExit('UAT_CBS_PUBLISH_PROCESS_NOT_RUNNING')
+fields=stat.read_text().split()
+if fields[21] != ticks: raise SystemExit('UAT_CBS_PUBLISH_PROCESS_START_TICKS_MISMATCH')
+
+PY`,
+      String.raw`actual_cmd=$(tr "\\0" " " < "/proc/$cbs_pid/cmdline" | sed "s/[[:space:]]*$//")`,
+      String.raw`actual_sha=$(printf "%s" "$actual_cmd" | sha256sum | awk '{print $1}')`,
+      String.raw`test "$actual_sha" = "$cbs_cmd_sha" || { printf "UAT_CBS_PUBLISH_PROCESS_COMMAND_MISMATCH expected=%s actual=%s\n" "$cbs_cmd_sha" "$actual_sha"; exit 77; }`,
+      `jar=\"$root/current/artifacts/catering-business-server.jar\"; test -f "$jar" && test ! -L "$jar" || { echo UAT_CBS_PUBLISH_CURRENT_ARTIFACT_INVALID; exit 78; }; old_sha=$(sha256sum "$jar" | awk '{print $1}'); [[ "$old_sha" =~ ^[a-f0-9]{64}$ ]] || { echo UAT_CBS_PUBLISH_CURRENT_ARTIFACT_DIGEST_INVALID; exit 78; }; printf 'UAT_CBS_PUBLISH_CURRENT_ARTIFACT=PASS; SHA256=%s\n' "$old_sha"`,
+      'available_bytes=$(df -Pk "$root" | awk "NR==2 {print \\$4 * 1024}"); test "$available_bytes" -ge "$required_bytes" || { echo UAT_CBS_PUBLISH_DISK_BUDGET_INSUFFICIENT; exit 80; }; printf "UAT_CBS_PUBLISH_DISK=PASS; REQUIRED_BYTES=%s; AVAILABLE_BYTES=%s\\n" "$required_bytes" "$available_bytes"',
+      `http_status=$(curl --connect-timeout 2 --max-time 5 -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:${UAT_PORTS.businessInternal}/actuator/health); [[ "$http_status" =~ ^[1-4][0-9]{2}$ ]] || { echo UAT_CBS_PUBLISH_CBS_NOT_READY; exit 78; }; printf 'UAT_CBS_PUBLISH_CBS_READY=PASS; HTTP_STATUS=%s\\n' "$http_status"`,
+      'test ! -e "$stage" && test ! -L "$stage" || { echo UAT_CBS_PUBLISH_STAGE_COLLISION; exit 79; }',
+      'mkdir -m 700 "$stage"',
+      `printf '%s\n' ${shellQuote(`${environmentManifest.runId}|${runId}|${bootId}|${trust.fingerprint}`)} > "$stage/.owner"`,
+      'chmod 600 "$stage/.owner"',
+      'echo UAT_CBS_PUBLISH_STAGE=PASS',
+    ].join('\n');
+    remoteStageMayExist = true;
+    record({event: 'uat_cbs_remote_preflight_started', remoteStage});
+    const preflightResult = await remoteRun(trust.host, preflight, {runDirectory, name: 'cbs-publish-preflight-create-owned-stage'});
+    const oldArtifactLine = readFileSync(preflightResult.stdoutPath, 'utf8').split(/\r?\n/).find(line => line.startsWith('UAT_CBS_PUBLISH_CURRENT_ARTIFACT=PASS; SHA256='));
+    oldJarSha256 = oldArtifactLine?.split('SHA256=')[1];
+    if (!/^[a-f0-9]{64}$/.test(oldJarSha256 ?? '')) fail('UAT_CBS_PUBLISH_OLD_ARTIFACT_READBACK_INVALID');
+    manifest.previousArtifactSha256 = oldJarSha256;
+
+    await runLogged('scp', ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10', '-o', 'StrictHostKeyChecking=yes', jarPath,
+      `${trust.host}:${remoteStage}/cbs-new.jar`], {runDirectory, name: 'upload-cbs-artifact'});
+    await remoteRun(trust.host, [
+      'set -euo pipefail',
+      `stage=${shellQuote(remoteStage)}`,
+      `expected_sha=${shellQuote(newJarSha256)}`,
+      `expected_owner=${shellQuote(`${environmentManifest.runId}|${runId}|${bootId}|${trust.fingerprint}`)}`,
+      `test "$(cat /proc/sys/kernel/random/boot_id)" = ${shellQuote(bootId)} || { echo UAT_CBS_PUBLISH_HOST_BOOT_MISMATCH; exit 74; }`,
+      'test -d "$stage" && test ! -L "$stage" && test "$(cat "$stage/.owner")" = "$expected_owner" || { echo UAT_CBS_PUBLISH_STAGE_OWNER_MISMATCH; exit 81; }',
+      'test -f "$stage/cbs-new.jar" && test ! -L "$stage/cbs-new.jar" || { echo UAT_CBS_PUBLISH_UPLOADED_ARTIFACT_MISSING; exit 82; }',
+      'actual_sha=$(sha256sum "$stage/cbs-new.jar" | awk \'{print $1}\'); test "$actual_sha" = "$expected_sha" || { echo UAT_CBS_PUBLISH_UPLOADED_ARTIFACT_DIGEST_MISMATCH; exit 83; }',
+      'echo UAT_CBS_PUBLISH_ARTIFACT_READBACK=PASS',
+    ].join('\n'), {runDirectory, name: 'verify-uploaded-cbs-artifact'});
+
+    manifest.phase = 'STOP_AND_SWAP_CBS';
+    record({event: 'uat_cbs_stop_started', previousProcess: currentControl});
+    await stopRemoteProcess(trust.host, currentControl, runDirectory, 'stop-cbs-for-update');
+    cbsStopped = true;
+    environmentManifest.processes = {...environmentManifest.processes};
+    delete environmentManifest.processes.cbs;
+    environmentManifest.readiness = (environmentManifest.readiness ?? []).filter(item => item.service !== 'cbs');
+    writeAtomicJson(environmentManifestPath, environmentManifest);
+
+    const install = [
+      'set -euo pipefail',
+      `root=${shellQuote(rootPath)}`,
+      `stage=${shellQuote(remoteStage)}`,
+      `boot=${shellQuote(bootId)}`,
+      `fingerprint=${shellQuote(trust.fingerprint)}`,
+      `config_sha=${shellQuote(configSha)}`,
+      `expected_owner=${shellQuote(`${environmentManifest.runId}|${runId}|${bootId}|${trust.fingerprint}`)}`,
+      `old_sha=${shellQuote(oldJarSha256)}`,
+      `new_sha=${shellQuote(newJarSha256)}`,
+      'test "$(cat /proc/sys/kernel/random/boot_id)" = "$boot" || { echo UAT_CBS_PUBLISH_HOST_BOOT_MISMATCH; exit 74; }',
+      'test -d "$stage" && test ! -L "$stage" && test "$(cat "$stage/.owner")" = "$expected_owner" || { echo UAT_CBS_PUBLISH_STAGE_OWNER_MISMATCH; exit 81; }',
+      `grep -Fx "V2S_UAT_HOST_FINGERPRINT=$fingerprint" "$root/current/.env" >/dev/null && grep -Fx "V2S_UAT_CONFIG_SHA256=$config_sha" "$root/current/.env" >/dev/null || { echo UAT_CBS_PUBLISH_BUNDLE_IDENTITY_MISMATCH; exit 76; }`,
+      'jar="$root/current/artifacts/catering-business-server.jar"',
+      'actual_old=$(sha256sum "$jar" | awk \'{print $1}\'); test "$actual_old" = "$old_sha" || { echo UAT_CBS_PUBLISH_OLD_ARTIFACT_CHANGED; exit 84; }',
+      'cp -p "$jar" "$stage/cbs-previous.jar"',
+      'backup_sha=$(sha256sum "$stage/cbs-previous.jar" | awk \'{print $1}\'); test "$backup_sha" = "$old_sha" || { echo UAT_CBS_PUBLISH_BACKUP_DIGEST_MISMATCH; exit 85; }',
+      'chmod 0644 "$stage/cbs-new.jar"',
+      'mv -f "$stage/cbs-new.jar" "$jar"',
+      'actual_new=$(sha256sum "$jar" | awk \'{print $1}\'); test "$actual_new" = "$new_sha" || { echo UAT_CBS_PUBLISH_INSTALLED_ARTIFACT_DIGEST_MISMATCH; exit 86; }',
+      'printf "UAT_CBS_ARTIFACT_SWAP=PASS; PREVIOUS_SHA256=%s; CURRENT_SHA256=%s\\n" "$old_sha" "$actual_new"',
+    ].join('\n');
+    manifest.phase = 'INSTALL_CBS_ARTIFACT';
+    record({event: 'uat_cbs_artifact_swap_started', newSha256: newJarSha256});
+    await remoteRun(trust.host, install, {runDirectory, name: 'install-cbs-artifact-atomically'});
+
+    const readiness = await launchService(trust.host, environmentManifest, 'cbs', 'catering-business-server.jar',
+      'cbs.env', UAT_PORTS.businessInternal, runDirectory);
+    environmentManifest.readiness = [...(environmentManifest.readiness ?? []).filter(item => item.service !== 'cbs'), readiness];
+    environmentManifest.status = 'READY';
+    environmentManifest.business = 'PASS_SEED_IMPORTED';
+    environmentManifest.cbsArtifact = {runId, sha256: newJarSha256, bytes: jarBytes.length, publishedAt: new Date().toISOString()};
+    environmentManifest.phases.push({at: new Date().toISOString(), phase: 'PUBLISH_CBS', status: 'PASS', publishRunId: runId, sha256: newJarSha256});
+    writeAtomicJson(environmentManifestPath, environmentManifest);
+    manifest.business = 'PASS_CBS_PUBLISHED_AND_READY';
+    manifest.phase = 'CLEANUP';
+    record({event: 'uat_cbs_ready', readiness, sha256: newJarSha256});
+
+    await remoteRun(trust.host, [
+      'set -euo pipefail',
+      `stage=${shellQuote(remoteStage)}`,
+      `boot=${shellQuote(bootId)}`,
+      `expected_owner=${shellQuote(`${environmentManifest.runId}|${runId}|${bootId}|${trust.fingerprint}`)}`,
+      `expected_sha=${shellQuote(newJarSha256)}`,
+      'test "$(cat /proc/sys/kernel/random/boot_id)" = "$boot" || { echo UAT_CBS_PUBLISH_CLEANUP_HOST_BOOT_MISMATCH; exit 74; }',
+      'test -d "$stage" && test ! -L "$stage" && test "$(cat "$stage/.owner")" = "$expected_owner" || { echo UAT_CBS_PUBLISH_CLEANUP_OWNER_MISMATCH; exit 81; }',
+      `actual=$(sha256sum ${shellQuote(`${UAT_REMOTE_ROOT}/current/artifacts/catering-business-server.jar`)} | awk '{print $1}')`,
+      'test "$actual" = "$expected_sha" || { echo UAT_CBS_PUBLISH_CLEANUP_ARTIFACT_CHANGED; exit 87; }',
+      'rm -rf -- "$stage"',
+      'test ! -e "$stage" && test ! -L "$stage" || { echo UAT_CBS_PUBLISH_STAGE_CLEANUP_FAILED; exit 88; }',
+      'echo UAT_CBS_PUBLISH_STAGE_CLEANUP=PASS',
+    ].join('\n'), {runDirectory, name: 'cleanup-owned-cbs-stage-and-backup'});
+    remoteStageMayExist = false;
+    manifest.status = 'PASS';
+    manifest.phase = 'COMPLETE';
+    manifest.completedAt = new Date().toISOString();
+    record({event: 'uat_cbs_publish_complete'});
+  } catch (error) {
+    failure = error;
+    manifest.status = 'FAIL';
+    manifest.business = 'FAIL_CBS_PUBLISH';
+    manifest.firstFailure = error.code ?? error.message;
+    manifest.phase = 'ROLLBACK_IF_REQUIRED';
+    manifest.completedAt = new Date().toISOString();
+    try { record({event: 'uat_cbs_publish_failed', firstFailure: manifest.firstFailure}); } catch {}
+    if (cbsStopped && environmentManifest && trust && remoteStage && oldJarSha256) {
+      try {
+        const newControl = environmentManifest.processes?.cbs;
+        if (newControl?.service === 'cbs') await stopRemoteProcess(trust.host, newControl, runDirectory, 'stop-failed-cbs-update');
+        const rollback = [
+          'set -euo pipefail',
+          `root=${shellQuote(UAT_REMOTE_ROOT)}`,
+          `stage=${shellQuote(remoteStage)}`,
+          `boot=${shellQuote(environmentManifest.remoteHostIdentity.bootId)}`,
+          `expected_owner=${shellQuote(`${environmentManifest.runId}|${runId}|${environmentManifest.remoteHostIdentity.bootId}|${trust.fingerprint}`)}`,
+          `old_sha=${shellQuote(oldJarSha256)}`,
+          `new_sha=${shellQuote(newJarSha256 ?? '')}`,
+          'test "$(cat /proc/sys/kernel/random/boot_id)" = "$boot" || { echo UAT_CBS_ROLLBACK_HOST_BOOT_MISMATCH; exit 74; }',
+          'test -d "$stage" && test ! -L "$stage" && test "$(cat "$stage/.owner")" = "$expected_owner" || { echo UAT_CBS_ROLLBACK_STAGE_OWNER_MISMATCH; exit 81; }',
+          'jar="$root/current/artifacts/catering-business-server.jar"',
+          'current_sha=$(sha256sum "$jar" | awk \'{print $1}\')',
+          'if test "$current_sha" = "$new_sha"; then test -f "$stage/cbs-previous.jar" && test ! -L "$stage/cbs-previous.jar" || { echo UAT_CBS_ROLLBACK_BACKUP_MISSING; exit 89; }; backup_sha=$(sha256sum "$stage/cbs-previous.jar" | awk \'{print $1}\'); test "$backup_sha" = "$old_sha" || { echo UAT_CBS_ROLLBACK_BACKUP_DIGEST_MISMATCH; exit 90; }; mv -f "$stage/cbs-previous.jar" "$jar"; elif test "$current_sha" != "$old_sha"; then echo UAT_CBS_ROLLBACK_CURRENT_ARTIFACT_UNKNOWN; exit 91; fi',
+          'echo UAT_CBS_ARTIFACT_ROLLBACK=PASS',
+        ].join('\n');
+        await remoteRun(trust.host, rollback, {runDirectory, name: 'rollback-cbs-artifact-if-new-readiness-failed'});
+        const readiness = await launchService(trust.host, environmentManifest, 'cbs', 'catering-business-server.jar',
+          'cbs.env', UAT_PORTS.businessInternal, runDirectory);
+        environmentManifest.readiness = [...(environmentManifest.readiness ?? []).filter(item => item.service !== 'cbs'), readiness];
+        environmentManifest.status = 'READY';
+        environmentManifest.business = 'PASS_SEED_IMPORTED';
+        environmentManifest.phases.push({at: new Date().toISOString(), phase: 'PUBLISH_CBS_ROLLBACK', status: 'PASS', publishRunId: runId, sha256: oldJarSha256});
+        writeAtomicJson(environmentManifestPath, environmentManifest);
+        manifest.rollback = 'PASS_OLD_CBS_RESTORED_AND_READY';
+      } catch (rollbackError) {
+        environmentManifest.status = 'UPDATE_FAILED';
+        environmentManifest.business = 'FAIL_CBS_UPDATE_AND_ROLLBACK';
+        environmentManifest.firstFailure = rollbackError.code ?? rollbackError.message;
+        environmentManifest.phases.push({at: new Date().toISOString(), phase: 'PUBLISH_CBS_ROLLBACK', status: 'FAIL', publishRunId: runId, firstFailure: environmentManifest.firstFailure});
+        writeAtomicJson(environmentManifestPath, environmentManifest);
+        manifest.rollback = 'FAIL';
+        manifest.rollbackFailure = rollbackError.code ?? rollbackError.message;
+        try { record({event: 'uat_cbs_rollback_failed', failure: manifest.rollbackFailure}); } catch {}
+      }
+    }
+  }
+
+  try {
+    if (remoteStageMayExist && trust && remoteStage && environmentManifest) {
+      const cleanup = [
+        'set -euo pipefail',
+        `stage=${shellQuote(remoteStage)}`,
+        `boot=${shellQuote(environmentManifest.remoteHostIdentity.bootId)}`,
+        `expected_owner=${shellQuote(`${environmentManifest.runId}|${runId}|${environmentManifest.remoteHostIdentity.bootId}|${trust.fingerprint}`)}`,
+        'test "$(cat /proc/sys/kernel/random/boot_id)" = "$boot" || { echo UAT_CBS_PUBLISH_CLEANUP_HOST_BOOT_MISMATCH; exit 74; }',
+        'if test ! -e "$stage" && test ! -L "$stage"; then echo UAT_CBS_PUBLISH_STAGE_CLEANUP=ALREADY_ABSENT; exit 0; fi',
+        'test -d "$stage" && test ! -L "$stage" && test "$(cat "$stage/.owner")" = "$expected_owner" || { echo UAT_CBS_PUBLISH_CLEANUP_OWNER_MISMATCH; exit 81; }',
+        'rm -rf -- "$stage"',
+        'test ! -e "$stage" && test ! -L "$stage" || { echo UAT_CBS_PUBLISH_STAGE_CLEANUP_FAILED; exit 88; }',
+        'echo UAT_CBS_PUBLISH_STAGE_CLEANUP=PASS',
+      ].join('\n');
+      await remoteRun(trust.host, cleanup, {runDirectory, name: 'cleanup-exact-cbs-publish-stage'});
+    }
+    manifest.cleanup = 'PASS_RUN_OWNED_STAGE_REMOVED_OR_NOT_CREATED';
+  } catch (error) {
+    manifest.cleanup = 'FAIL_RUN_OWNED_STAGE';
+    manifest.cleanupFailure = error.code ?? error.message;
+    if (!failure) failure = error;
+  }
+  manifest.completedAt ??= new Date().toISOString();
+  manifest.status = failure ? 'FAIL' : 'PASS';
+  try { record({event: 'uat_cbs_publish_cleanup_complete', cleanup: manifest.cleanup, cleanupFailure: manifest.cleanupFailure ?? null}); } catch {}
+  if (environmentManifest) {
+    environmentManifest.phases.push({at: new Date().toISOString(), phase: 'PUBLISH_CBS', status: failure ? 'FAIL' : 'PASS', publishRunId: runId, business: manifest.business, cleanup: manifest.cleanup, sha256: newJarSha256 ?? null});
+    writeAtomicJson(environmentManifestPath, environmentManifest);
+  }
+  process.stdout.write(`UAT_CBS_PUBLISH=${failure ? 'FAIL' : 'PASS'}; RUN_ID=${runId}; BUSINESS=${manifest.business}; ROLLBACK=${manifest.rollback ?? 'NOT_NEEDED'}; CLEANUP=${manifest.cleanup}; SEED=NOT_RUN\nMANIFEST=${runManifestPath}\n`);
+  if (failure) throw failure;
 }
 
 function resolveBootJar(moduleDirectory, artifactPrefix) {
@@ -1723,6 +2272,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const command = process.argv[2];
   const execute = command === 'preflight' ? () => runHostPreflight()
     : command === 'build' ? buildOnly
+    : command === 'publish-frontends' ? publishUatFrontends
+    : command === 'publish-cbs' ? publishUatCbs
     : command === 'init' ? () => initializeEnvironment({resumeCompose: process.argv.includes('--resume-compose')})
     : command === 'continue-init' ? continueFailedInitialization
     : command === 'start' ? startEnvironment
@@ -1736,7 +2287,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     }
     : command === 'bootstrap' ? managedUatBootstrap
     : null;
-  if (!execute) fail('UAT_USAGE_CHECK_BUILD_INIT_CONTINUE_INIT_START_STOP_STATUS_SEED');
+  if (!execute) fail('UAT_USAGE_CHECK_BUILD_PUBLISH_FRONTENDS_PUBLISH_CBS_INIT_CONTINUE_INIT_START_STOP_STATUS_SEED');
   Promise.resolve().then(execute).catch(error => {
     process.stderr.write(`UAT_COMMAND=FAIL; COMMAND=${command}; FIRST_FAILURE=${error.code ?? error.message}\n`);
     process.exitCode = 2;

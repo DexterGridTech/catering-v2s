@@ -112,7 +112,7 @@
     },
     {
       "path": "contracts/openapi-source/terminal-update.schemas.json",
-      "sha256": "4e94bafc93c0f9327c3cb0ef57e35a73e2d914c2692d350f3a9ab0adefa92c46"
+      "sha256": "436854a50e9fdf4445c1f49ac6cf7f5fcb584406209c03c0a7ae2c65f41ace92"
     },
     {
       "path": "contracts/openapi-source/terminal-remote-control.schemas.json",

@@ -7,7 +7,7 @@ public record TerminalUpdateReportRequest(
     Long reportSequence,
     java.util.UUID taskId,
     TerminalUpdateReportActual actual,
-    TerminalUpdateReportRecent recent
+    tools.jackson.databind.JsonNode recent
 ) {
 
 
@@ -21,7 +21,7 @@ public record TerminalUpdateReportRequest(
       Long reportSequence = null;
       java.util.UUID taskId = null;
       TerminalUpdateReportActual actual = null;
-      TerminalUpdateReportRecent recent = null;
+      tools.jackson.databind.JsonNode recent = null;
       java.util.Set<String> seen = new java.util.HashSet<>();
       tools.jackson.core.JsonToken token = parser.nextToken();
       while (token != null && token != tools.jackson.core.JsonToken.END_OBJECT) {
@@ -38,7 +38,7 @@ public record TerminalUpdateReportRequest(
           case "reportSequence" -> reportSequence = context.readValue(parser, Long.class);
           case "taskId" -> taskId = (parser.currentToken() == tools.jackson.core.JsonToken.VALUE_NULL ? null : context.readValue(parser, java.util.UUID.class));
           case "actual" -> actual = context.readValue(parser, TerminalUpdateReportActual.class);
-          case "recent" -> recent = context.readValue(parser, TerminalUpdateReportRecent.class);
+          case "recent" -> recent = (parser.currentToken() == tools.jackson.core.JsonToken.VALUE_NULL ? null : context.readTree(parser));
           default -> {
             parser.skipChildren();
             return context.reportInputMismatch(TerminalUpdateReportRequest.class, "unknown property " + property);
@@ -52,7 +52,7 @@ public record TerminalUpdateReportRequest(
       if (reportSequence == null) return context.reportInputMismatch(TerminalUpdateReportRequest.class, "missing required property reportSequence");
       if (!seen.contains("taskId")) return context.reportInputMismatch(TerminalUpdateReportRequest.class, "missing required property taskId");
       if (actual == null) return context.reportInputMismatch(TerminalUpdateReportRequest.class, "missing required property actual");
-      if (recent == null) return context.reportInputMismatch(TerminalUpdateReportRequest.class, "missing required property recent");
+      if (!seen.contains("recent")) return context.reportInputMismatch(TerminalUpdateReportRequest.class, "missing required property recent");
       return new TerminalUpdateReportRequest(reportId, reportSequence, taskId, actual, recent);
     }
   }

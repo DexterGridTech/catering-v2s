@@ -1,4 +1,5 @@
 import {useCallback, useMemo, useRef} from 'react';
+import {createBrowserUuid} from './browserCrypto';
 
 /**
  * Keeps one idempotency key for one non-Drawer business submission. A caller
@@ -8,7 +9,7 @@ import {useCallback, useMemo, useRef} from 'react';
 export function useSubmissionLifecycle() {
   const key = useRef<string | undefined>(undefined);
   const getIdempotencyKey = useCallback(() => {
-    if (!key.current) key.current = `ui-${globalThis.crypto.randomUUID()}`;
+    if (!key.current) key.current = `ui-${createBrowserUuid()}`;
     return key.current;
   }, []);
   const markBusinessIntentChanged = useCallback(() => {

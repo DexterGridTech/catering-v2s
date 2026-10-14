@@ -1,5 +1,26 @@
 import {describe, expect, it} from 'vitest';
-import {androidAutomationBuildIdentity, androidAutomationGradleArguments} from '../src/androidBuild.js';
+import {
+  androidAutomationBuildFailureCode,
+  androidAutomationBuildIdentity,
+  androidAutomationGradleArguments,
+} from '../src/androidBuild.js';
+
+describe('Android automation build failures', () => {
+  it('ignores progress markers and preserves a real build failure marker', () => {
+    expect(
+      androidAutomationBuildFailureCode(
+        'TERMINAL_AUTOMATION_REACT_NATIVE_AUTOLINKING_STAGE_STARTED\nMetro failed\n',
+        1,
+      ),
+    ).toBe('TERMINAL_AUTOMATION_ANDROID_BUILD_EXIT_1');
+    expect(
+      androidAutomationBuildFailureCode(
+        'TERMINAL_AUTOMATION_REACT_NATIVE_AUTOLINKING_STAGE_STARTED\nTERMINAL_AUTOMATION_REACT_NATIVE_AUTOLINKING_STAGE_READBACK_FAILED\n',
+        1,
+      ),
+    ).toBe('TERMINAL_AUTOMATION_REACT_NATIVE_AUTOLINKING_STAGE_READBACK_FAILED');
+  });
+});
 
 describe('android automation build identity', () => {
   it('derives a collision-resistant package suffix from the managed run UUID', () => {

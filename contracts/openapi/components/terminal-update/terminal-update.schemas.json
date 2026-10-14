@@ -1445,7 +1445,12 @@
             "$ref": "#/components/schemas/TerminalUpdateReportActual"
           },
           "recent": {
-            "$ref": "#/components/schemas/TerminalUpdateReportRecent"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TerminalUpdateReportRecent"
+              }
+            ],
+            "nullable": true
           }
         }
       },

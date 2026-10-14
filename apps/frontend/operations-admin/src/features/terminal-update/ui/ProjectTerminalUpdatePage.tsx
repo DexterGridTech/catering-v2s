@@ -92,7 +92,7 @@ type Candidate = TerminalUpdateArtifactSummary;
 
 export function ProjectTerminalUpdatePage(props: OperationsPageProps) {
   const projectRef = props.queryContext.scopeRef;
-  if (!projectRef) return <Card title="项目终端版本管理">请选择项目数据节点。</Card>;
+  if (!projectRef) return <Card>请选择项目数据节点。</Card>;
   return <ProjectTerminalUpdateContent {...props} projectRef={projectRef} />;
 }
 
@@ -113,7 +113,7 @@ function ProjectTerminalUpdateContent({
   const versionRequestId = useRef(0);
   const historyPageRequestId = useRef(0);
   const historyPageLoadingRef = useRef(false);
-  const [tab, setTab] = useState('rules');
+  const [tab, setTab] = useState('reports');
   const [rules, setRules] = useState<readonly TerminalUpdateRuleSummary[]>([]);
   const [ruleFilters, setRuleFilters] = useState<TerminalUpdateRuleFilters>({});
   const [ruleNext, setRuleNext] = useState<string | null>(null);
@@ -174,7 +174,7 @@ function ProjectTerminalUpdateContent({
   latestReportCursor.current = reportPager.cursor;
   latestRuleRef.current = detail?.ruleRef;
   const reportStores = useOrganizationCandidates({
-    open: tab === 'reports',
+    open: true,
     queryContext,
     subjectType: 'STORE',
     projectId: projectRef,
@@ -720,7 +720,7 @@ function ProjectTerminalUpdateContent({
       search: false,
       render: (_, row) => (
         <Button type="link" onClick={() => void openRule(row)} {...testId(terminalUpdateTestIds.ruleOpen(row.ruleRef))}>
-          {ruleTargetTitle(row)}
+          {ruleTargetLines(row)}
         </Button>
       ),
     },
@@ -799,6 +799,12 @@ function ProjectTerminalUpdateContent({
         filterOption: false,
         onSearch: reportStores.setStoreSearch,
         onPopupScroll: reportStores.onPopupScroll,
+        loading: reportStores.isFetching,
+        notFoundContent: reportStores.isFetching
+          ? '正在加载门店…'
+          : reportStores.error
+            ? '门店读取失败，请刷新页面后重试'
+            : '暂无匹配门店',
         options: reportStores.items.map(item => ({value: item.id, label: `${item.name} · ${item.code}`})),
         ...testId(terminalUpdateTestIds.reportStore),
       },
@@ -833,6 +839,13 @@ function ProjectTerminalUpdateContent({
       render: (_, row) => (row.actual ? String(row.actual.apkVersion ?? '未知') : '—'),
     },
     {
+      title: '实际 applicationId',
+      search: false,
+      width: 260,
+      ellipsis: true,
+      render: (_, row) => (row.actual ? jsonString(row.actual, 'applicationId') ?? '未知' : '—'),
+    },
+    {
       title: '实际 JS',
       dataIndex: 'currentJsVersion',
       fieldProps: testId(terminalUpdateTestIds.reportJs),
@@ -847,6 +860,8 @@ function ProjectTerminalUpdateContent({
   ];
   const latestActual = versionDetail?.latest?.actual;
   const latestRecent = versionDetail?.latest?.recent;
+  const latestApplicationId =
+    jsonObject(latestActual) && typeof latestActual.applicationId === 'string' ? latestActual.applicationId : '未知';
   const latestApk =
     jsonObject(latestActual) && typeof latestActual.apkVersion === 'string' ? latestActual.apkVersion : '未知';
   const latestJs =
@@ -855,7 +870,11 @@ function ProjectTerminalUpdateContent({
     jsonObject(latestActual) && typeof latestActual.runtimeVersion === 'string' ? latestActual.runtimeVersion : '未知';
   const latestActualUnknownReason =
     jsonObject(latestActual) ? terminalUpdateActualUnknownReasonLabel(latestActual.unknownReason) : null;
-  const latestStatus = jsonObject(latestRecent) ? reportStateLabel(jsonString(latestRecent, 'state')) : '尚无报告';
+  const latestStatus = jsonObject(latestRecent)
+    ? reportStateLabel(jsonString(latestRecent, 'state'))
+    : versionDetail?.hasReport
+      ? '已上报，暂无任务报告'
+      : '尚无报告';
   const latestReason = jsonObject(latestRecent) ? reportReasonLabel(jsonString(latestRecent, 'reason')) : '—';
   const latestChangedAt = jsonNumber(latestRecent, 'changedAtEpochMillis');
   const latestReferences = versionDetail?.latestReferences;
@@ -869,15 +888,79 @@ function ProjectTerminalUpdateContent({
     jsonString(latestRecent, 'hotArtifactRef'), latestReferences?.hotArtifactIdentity, '无',
   );
   return (
-    <Card title="项目终端版本管理" {...testId(terminalUpdateTestIds.page)}>
+    <Card {...testId(terminalUpdateTestIds.page)}>
       {problem && <Alert type="error" showIcon message={problem} />}
       <Tabs
         activeKey={tab}
         onChange={setTab}
         items={[
           {
+            key: 'reports',
+            label: <span {...testId(terminalUpdateTestIds.reportsTabLabel)}>门店终端列表</span>,
+            children: (
+              <>
+                <ProTable<TerminalUpdateVersionReportItem>
+                  rowKey="terminalRef"
+                  {...adminListState({
+                    loading: reportLoading,
+                    failed: Boolean(problem),
+                    emptyText: '暂无版本报告',
+                    testIdPrefix: terminalUpdateTestIds.reportList,
+                  })}
+                  dataSource={reportRows}
+                  columns={reportColumns}
+                  onRow={row =>
+                    testId(terminalUpdateTestIds.reportRow(row.terminalRef)) as HTMLAttributes<HTMLTableRowElement>
+                  }
+                  search={{
+                    labelWidth: 'auto',
+                    optionRender: searchConfig => [
+                      <Button
+                        key="query"
+                        type="primary"
+                        onClick={() => searchConfig.form?.submit()}
+                        {...testId(terminalUpdateTestIds.reportQuerySubmit)}
+                      >
+                        查询
+                      </Button>,
+                      <Button
+                        key="reset"
+                        onClick={() => {
+                          searchConfig.form?.resetFields();
+                          resetReportFilters();
+                        }}
+                        {...testId(terminalUpdateTestIds.reportQueryReset)}
+                      >
+                        重置
+                      </Button>,
+                    ],
+                  }}
+                  onSubmit={values =>
+                    setAppliedReportFilters({
+                      query: textValue(values.queryText),
+                      apk: textValue(values.currentApkVersion),
+                      js: textValue(values.currentJsVersion),
+                      runtime: textValue(values.runtimeVersion),
+                      storeRef: textValue(values.storeRef),
+                    })
+                  }
+                  onReset={resetReportFilters}
+                  options={false}
+                  toolBarRender={false}
+                  pagination={false}
+                  {...testId(terminalUpdateTestIds.reportList)}
+                />
+                <CursorPagination
+                  state={reportPager}
+                  nextCursor={reportNext ?? undefined}
+                  testIdPrefix={terminalUpdateTestIds.reportPagination}
+                />
+              </>
+            ),
+          },
+          {
             key: 'rules',
-            label: <span {...testId(terminalUpdateTestIds.rulesTabLabel)}>更新规则</span>,
+            label: <span {...testId(terminalUpdateTestIds.rulesTabLabel)}>终端版本更新规则</span>,
             children: (
               <>
                 <Space style={{marginBottom: 16}}>
@@ -949,70 +1032,6 @@ function ProjectTerminalUpdateContent({
                   state={rulePager}
                   nextCursor={ruleNext ?? undefined}
                   testIdPrefix="terminal-update-rule-pagination"
-                />
-              </>
-            ),
-          },
-          {
-            key: 'reports',
-            label: <span {...testId(terminalUpdateTestIds.reportsTabLabel)}>终端更新状态</span>,
-            children: (
-              <>
-                <ProTable<TerminalUpdateVersionReportItem>
-                  rowKey="terminalRef"
-                  {...adminListState({
-                    loading: reportLoading,
-                    failed: Boolean(problem),
-                    emptyText: '暂无版本报告',
-                    testIdPrefix: terminalUpdateTestIds.reportList,
-                  })}
-                  dataSource={reportRows}
-                  columns={reportColumns}
-                  onRow={row =>
-                    testId(terminalUpdateTestIds.reportRow(row.terminalRef)) as HTMLAttributes<HTMLTableRowElement>
-                  }
-                  search={{
-                    labelWidth: 'auto',
-                    optionRender: searchConfig => [
-                      <Button
-                        key="query"
-                        type="primary"
-                        onClick={() => searchConfig.form?.submit()}
-                        {...testId(terminalUpdateTestIds.reportQuerySubmit)}
-                      >
-                        查询
-                      </Button>,
-                      <Button
-                        key="reset"
-                        onClick={() => {
-                          searchConfig.form?.resetFields();
-                          resetReportFilters();
-                        }}
-                        {...testId(terminalUpdateTestIds.reportQueryReset)}
-                      >
-                        重置
-                      </Button>,
-                    ],
-                  }}
-                  onSubmit={values =>
-                    setAppliedReportFilters({
-                      query: textValue(values.queryText),
-                      apk: textValue(values.currentApkVersion),
-                      js: textValue(values.currentJsVersion),
-                      runtime: textValue(values.runtimeVersion),
-                      storeRef: textValue(values.storeRef),
-                    })
-                  }
-                  onReset={resetReportFilters}
-                  options={false}
-                  toolBarRender={false}
-                  pagination={false}
-                  {...testId(terminalUpdateTestIds.reportList)}
-                />
-                <CursorPagination
-                  state={reportPager}
-                  nextCursor={reportNext ?? undefined}
-                  testIdPrefix={terminalUpdateTestIds.reportPagination}
                 />
               </>
             ),
@@ -1195,6 +1214,7 @@ function ProjectTerminalUpdateContent({
                 <Descriptions.Item label="绑定状态">上次绑定报告</Descriptions.Item>
               )}
               <Descriptions.Item label="实际 APK">{latestApk}</Descriptions.Item>
+              <Descriptions.Item label="实际 applicationId">{latestApplicationId}</Descriptions.Item>
               <Descriptions.Item label="实际 JS">{latestJs}</Descriptions.Item>
               <Descriptions.Item label="Runtime">{latestRuntime}</Descriptions.Item>
               <Descriptions.Item label="实际版本未知原因">{latestActualUnknownReason ?? '—'}</Descriptions.Item>
@@ -1329,6 +1349,15 @@ function ruleTargetTitle(rule: RuleTarget): string {
   const full = artifactIdentityLabel(rule.fullArtifactIdentity);
   const hot = rule.hotArtifactIdentity ? artifactIdentityLabel(rule.hotArtifactIdentity) : undefined;
   return hot ? `${full} + ${hot}` : full;
+}
+
+function ruleTargetLines(rule: RuleTarget) {
+  return (
+    <Space direction="vertical" size={0} style={{alignItems: 'flex-start'}}>
+      <span>{artifactIdentityLabel(rule.fullArtifactIdentity)}</span>
+      {rule.hotArtifactIdentity && <span>{artifactIdentityLabel(rule.hotArtifactIdentity)}</span>}
+    </Space>
+  );
 }
 
 function artifactIdentityLabel(

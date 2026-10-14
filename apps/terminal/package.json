@@ -2,6 +2,7 @@
   "name": "@catering-v2s/terminal",
   "private": true,
   "dependencies": {
+    "react-native-svg": "15.15.4",
     "use-sync-external-store": "^1.6.0"
   },
   "devDependencies": {

@@ -46,7 +46,7 @@ public final class EdgeRequestContextArgumentResolver implements HandlerMethodAr
                 PasswordRecoveryFlowCredential.fromEdgeCookie(cookie(servlet, "V2S_PLATFORM_PASSWORD_RECOVERY")),
                 RecoveryFlowCredential.fromEdgeCookie(cookie(servlet, "V2S_OPERATIONS_RECOVERY_FLOW")),
                 RecoveryGrantCredential.fromEdgeCookie(cookie(servlet, "V2S_OPERATIONS_RECOVERY_GRANT")),
-                servlet.getHeader("X-Request-Id"),
+                completion == null ? servlet.getHeader("X-Request-Id") : completion.requestId(),
                 trustedBrand == null ? servlet.getHeader("X-Workspace-Brand-Ref") : trustedBrand.toString(),
                 servlet.getHeader("X-Catalog-Test-Failure-Point"),
                 servlet.getHeader("X-Catalog-Asset-Bind-Grants"),

@@ -655,6 +655,11 @@ function loadAdminCatalog(base = root) {
   const operationsPages = operationsNodes.map(node => {
     if (!navigationByKey.has(node.navigation?.groupKey) || !Number.isInteger(node.navigation?.order))
       fail('R5_ADMIN_CATALOG_NAVIGATION_BINDING_DRIFT', node.key);
+    if (
+      node.navigation.menuLabel !== undefined &&
+      (typeof node.navigation.menuLabel !== 'string' || node.navigation.menuLabel.length === 0)
+    )
+      fail('R5_ADMIN_CATALOG_NAVIGATION_MENU_LABEL_INVALID', node.key);
     const experience = experienceOf(node);
     if (node.page.kind === 'ROLE_HOME') {
       if (
@@ -671,7 +676,7 @@ function loadAdminCatalog(base = root) {
         menuGroupKey: node.navigation.groupKey,
         menuGroupIconKey: navigationByKey.get(node.navigation.groupKey).navigation.iconKey,
         menuGroupLabel: navigationByKey.get(node.navigation.groupKey).display.label,
-        menuLabel: node.display.label,
+        menuLabel: node.navigation.menuLabel ?? node.display.label,
         pageTitle: node.display.label,
         contentTabLabel: node.display.label,
         ...experience,
@@ -699,7 +704,7 @@ function loadAdminCatalog(base = root) {
       menuGroupKey: node.navigation.groupKey,
       menuGroupIconKey: navigationByKey.get(node.navigation.groupKey).navigation.iconKey,
       menuGroupLabel: navigationByKey.get(node.navigation.groupKey).display.label,
-      menuLabel: node.display.label,
+      menuLabel: node.navigation.menuLabel ?? node.display.label,
       pageTitle: node.display.label,
       contentTabLabel: node.display.label,
       ...experience,
@@ -886,6 +891,34 @@ function tsAdminCatalog(face, base = root) {
       : '';
   return `// Generated from ${adminCatalogPath}; do not edit.\nexport const adminCatalog = ${JSON.stringify(body, null, 2)} as const;\nexport const ${keyName} = ${JSON.stringify(keys, null, 2)} as const;\n${shellCopyExports}export type AdminCatalog = typeof adminCatalog;\nexport type ${face === 'platform-admin' ? 'Platform' : 'Operations'}PageDesignKey = typeof ${keyName}[keyof typeof ${keyName}];\n${actionExports}${userManagementLookup}`;
 }
+
+function adminCatalogOutputs(base = root) {
+  return new Map([
+    [targets.platformAdminCatalogTs, tsAdminCatalog('platform-admin', base)],
+    [targets.operationsAdminCatalogTs, tsAdminCatalog('operations-admin', base)],
+  ]);
+}
+
+function writeAdminCatalogOutputs(base = root) {
+  const outputs = adminCatalogOutputs(base);
+  for (const [relative, value] of outputs) {
+    const absolute = path.join(base, relative);
+    fs.mkdirSync(path.dirname(absolute), {recursive: true});
+    fs.writeFileSync(absolute, value);
+  }
+  return outputs.size;
+}
+
+function checkAdminCatalogOutputs(base = root) {
+  const outputs = adminCatalogOutputs(base);
+  for (const [relative, expected] of outputs) {
+    const absolute = path.join(base, relative);
+    if (!fs.existsSync(absolute) || fs.readFileSync(absolute, 'utf8') !== expected)
+      fail('R5_ADMIN_CATALOG_GENERATED_DRIFT', relative);
+  }
+  return outputs.size;
+}
+
 function javaString(value) {
   return JSON.stringify(value);
 }
@@ -2854,6 +2887,10 @@ function selfTest() {
 try {
   const argumentsAfterScript = process.argv.slice(2);
   if (argumentsAfterScript.length === 1 && argumentsAfterScript[0] === '--self-test') selfTest();
+  else if (argumentsAfterScript.length === 1 && argumentsAfterScript[0] === '--write-admin-catalogs')
+    process.stdout.write(`R5_ADMIN_CATALOG_WRITE=PASS\nFILES=${writeAdminCatalogOutputs()}\n`);
+  else if (argumentsAfterScript.length === 1 && argumentsAfterScript[0] === '--check-admin-catalogs')
+    process.stdout.write(`R5_ADMIN_CATALOG_CHECK=PASS\nFILES=${checkAdminCatalogOutputs()}\n`);
   else if (argumentsAfterScript.length === 1 && argumentsAfterScript[0] === '--check')
     process.stdout.write(`R5_EDGE_CODEGEN_CHECK=PASS\nFILES=${checkOutputs()}\n`);
   else if (argumentsAfterScript.length === 1 && argumentsAfterScript[0] === '--write') {

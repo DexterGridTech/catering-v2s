@@ -142,6 +142,66 @@ describe('createAndroidInput', () => {
     expect(calls.some(call => call.includes('11529215047789101945'))).toBe(false);
   });
 
+  it('resolves a registered target once before dispatching a rapid tap sequence', async () => {
+    const calls: string[][] = [];
+    const logical = [
+      'Display id 0: DisplayInfo{"Internal", real 2560 x 1600, uniqueId "primary", rotation 0, flags=FLAG_DEFAULT}',
+      'Display id 2: DisplayInfo{"Presentation", real 1280 x 720, uniqueId "secondary", rotation 0, flags=FLAG_PRESENTATION}',
+    ].join('\n');
+    const surfaceFlinger = [
+      'Display 4619827259835644672 (HWC display 0, primary, "Internal")',
+      'activeMode={id=1, resolution=2560x1600}',
+      'Virtual Display 11529215047789101945',
+      'name="Presentation"',
+      'activeMode={id=2, resolution=1280x720}',
+    ].join('\n');
+    const host =
+      'I/TerminalDualScreen( 456): event=primary-window-post-layout displayIndex=0 displayId=0 ' +
+      'leftPx=0 topPx=0 widthPx=2560 heightPx=1600';
+    const surfaceSnapshot =
+      'I/TerminalDualScreen( 456): event=surface-host-snapshot-ready surfaceKey=PRIMARY generation=1 displayId=0 ' +
+      'windowIdentity=primary currentWidthPx=2560 currentHeightPx=1600 surfaceDensity=2.0';
+    const input = createAndroidInput({
+      adbPath: '/android/sdk/platform-tools/adb',
+      serial: 'emulator-5554',
+      shape: 'dual',
+      runCommand: async (_adbPath, args) => {
+        calls.push([...args]);
+        if (args.at(-1) === 'display') return logical;
+        if (args.includes('--displays')) return surfaceFlinger;
+        if (args.includes('logcat')) return `${host}\n${surfaceSnapshot}`;
+        return '';
+      },
+    });
+
+    await input.tapBounds(
+      'primary',
+      {x: 10, y: 20, width: 100, height: 50},
+      {x: 0.1, y: 0},
+      'intentional-overlap',
+      () => undefined,
+      5,
+    );
+
+    expect(calls.filter(call => call.includes('input') && call.includes('tap'))).toHaveLength(5);
+    expect(calls.filter(call => call.at(-1) === 'display')).toHaveLength(1);
+    expect(calls.filter(call => call.includes('--displays'))).toHaveLength(1);
+    expect(calls.filter(call => call.includes('logcat'))).toHaveLength(1);
+  });
+
+  it('requires explicit intentional overlap for repeated taps', async () => {
+    const input = createAndroidInput({
+      adbPath: '/android/sdk/platform-tools/adb',
+      serial: 'emulator-5554',
+      shape: 'dual',
+      runCommand: vi.fn(async () => ''),
+    });
+
+    await expect(
+      input.tapBounds('primary', {x: 10, y: 20, width: 100, height: 50}, undefined, 'paced', undefined, 5),
+    ).rejects.toThrow('TERMINAL_AUTOMATION_ANDROID_TAP_REPEAT_REQUIRES_INTENTIONAL_OVERLAP');
+  });
+
   it('discovers the current display after waiting for the shared click interval', async () => {
     let releaseFirstClick!: () => void;
     let firstClickStarted!: () => void;

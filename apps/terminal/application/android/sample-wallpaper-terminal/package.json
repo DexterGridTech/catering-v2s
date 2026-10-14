@@ -11,7 +11,9 @@
   "type": "module",
   "expo": {
     "autolinking": {
-      "searchPaths": ["../../../node_modules"]
+      "searchPaths": [
+        "../../../node_modules"
+      ]
     }
   },
   "exports": {
@@ -44,90 +46,90 @@
     "sessionToken": ""
   },
   "serverSpaces": {
-  "selectedSpace": "development",
-  "spaces": [
-    {
-      "name": "development",
-      "servers": [
-        {
-          "serverName": "business",
-          "addresses": [
-            {
-              "addressName": "primary",
-              "baseUrl": "http://127.0.0.1:28080/api/terminal/group-workspaces/aurora",
-              "timeoutMs": 10000
-            }
-          ]
-        },
-        {
-          "serverName": "livekit",
-          "addresses": [
-            {
-              "addressName": "primary",
-              "baseUrl": "ws://47.106.121.27:7880",
-              "timeoutMs": 10000
-            }
-          ]
-        },
-        {
-          "serverName": "terminal-data-server",
-          "addresses": [
-            {
-              "addressName": "haproxy-entry-one",
-              "baseUrl": "ws://127.0.0.1:28180",
-              "timeoutMs": 10000
-            },
-            {
-              "addressName": "haproxy-entry-two",
-              "baseUrl": "ws://127.0.0.1:28181",
-              "timeoutMs": 10000
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "uat",
-      "servers": [
-        {
-          "serverName": "business",
-          "addresses": [
-            {
-              "addressName": "primary",
-              "baseUrl": "http://47.106.121.27:19182/api/terminal/group-workspaces/aurora",
-              "timeoutMs": 10000
-            }
-          ]
-        },
-        {
-          "serverName": "livekit",
-          "addresses": [
-            {
-              "addressName": "primary",
-              "baseUrl": "ws://47.106.121.27:19184",
-              "timeoutMs": 10000
-            }
-          ]
-        },
-        {
-          "serverName": "terminal-data-server",
-          "addresses": [
-            {
-              "addressName": "haproxy-entry-one",
-              "baseUrl": "ws://47.106.121.27:19190",
-              "timeoutMs": 10000
-            },
-            {
-              "addressName": "haproxy-entry-two",
-              "baseUrl": "ws://47.106.121.27:19191",
-              "timeoutMs": 10000
-            }
-          ]
-        }
-      ]
-    }
-  ]
-},
+    "selectedSpace": "development",
+    "spaces": [
+      {
+        "name": "development",
+        "servers": [
+          {
+            "serverName": "business",
+            "addresses": [
+              {
+                "addressName": "primary",
+                "baseUrl": "http://127.0.0.1:28080/api/terminal/group-workspaces/aurora",
+                "timeoutMs": 10000
+              }
+            ]
+          },
+          {
+            "serverName": "livekit",
+            "addresses": [
+              {
+                "addressName": "primary",
+                "baseUrl": "ws://47.106.121.27:7880",
+                "timeoutMs": 10000
+              }
+            ]
+          },
+          {
+            "serverName": "terminal-data-server",
+            "addresses": [
+              {
+                "addressName": "haproxy-entry-one",
+                "baseUrl": "ws://127.0.0.1:28180",
+                "timeoutMs": 10000
+              },
+              {
+                "addressName": "haproxy-entry-two",
+                "baseUrl": "ws://127.0.0.1:28181",
+                "timeoutMs": 10000
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "uat",
+        "servers": [
+          {
+            "serverName": "business",
+            "addresses": [
+              {
+                "addressName": "primary",
+                "baseUrl": "http://47.106.121.27:19182/api/terminal/group-workspaces/aurora",
+                "timeoutMs": 10000
+              }
+            ]
+          },
+          {
+            "serverName": "livekit",
+            "addresses": [
+              {
+                "addressName": "primary",
+                "baseUrl": "ws://47.106.121.27:19184",
+                "timeoutMs": 10000
+              }
+            ]
+          },
+          {
+            "serverName": "terminal-data-server",
+            "addresses": [
+              {
+                "addressName": "haproxy-entry-one",
+                "baseUrl": "ws://47.106.121.27:19190",
+                "timeoutMs": 10000
+              },
+              {
+                "addressName": "haproxy-entry-two",
+                "baseUrl": "ws://47.106.121.27:19191",
+                "timeoutMs": 10000
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
   "scripts": {
     "lint": "node ../../../../../tools/terminal-shared/run-owned-lint.mjs",
     "package:install": "node ../../../../../scripts/build/terminal-update-artifact.mjs --app sample-wallpaper-terminal --kind install",
@@ -138,5 +140,11 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "typecheck": "tsc --project tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@catering-v2s/application-base-android": "workspace:*",
+    "@config-plugins/react-native-webrtc": "15.0.2",
+    "@livekit/react-native-expo-plugin": "1.0.3",
+    "expo": "~57.0.18"
   }
 }

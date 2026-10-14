@@ -2,6 +2,7 @@ package com.catering.v2s.app.edge.terminal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -15,6 +16,7 @@ import com.catering.v2s.app.edge.generated.wire.TerminalUpdateReportActual;
 import com.catering.v2s.app.edge.generated.wire.TerminalUpdateReportReceipt;
 import com.catering.v2s.app.edge.generated.wire.TerminalUpdateReportRecent;
 import com.catering.v2s.app.edge.generated.wire.TerminalUpdateReportRequest;
+import com.catering.v2s.app.edge.session.EdgeRequestContext;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.Outcome;
 import com.catering.v2s.terminalbinding.api.TerminalCredentialVerificationApi.Verification;
@@ -23,8 +25,6 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
-import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.mock.web.MockHttpServletResponse;
 
 class TerminalUpdateReportControllerTest {
     @Test
@@ -65,13 +65,14 @@ class TerminalUpdateReportControllerTest {
         };
 
         for (int i = 0; i < currentValues.length; i++) {
-            MockHttpServletRequest servletRequest = servletRequest(i);
+            EdgeRequestContext requestContext = requestContext(i);
             UUID reportId = UUID.randomUUID();
             TerminalUpdateReportRecent recent = new TerminalUpdateReportRecent(
                     currentValues[i][0], currentValues[i][1], 100L + i, null, null, null);
             TerminalUpdateReportRequest request = new TerminalUpdateReportRequest(
-                    reportId, (long) i + 1, taskId, actual, recent);
-            var response = controller.submit(servletRequest, groupKey, authorization, terminalRef.toString(), reportId.toString(), request);
+                    reportId, (long) i + 1, taskId, actual,
+                    new tools.jackson.databind.ObjectMapper().valueToTree(recent));
+            var response = controller.submit(requestContext, groupKey, authorization, terminalRef.toString(), reportId.toString(), request);
             assertEquals(HttpStatus.OK, response.getStatusCode());
             TerminalUpdateReportReceipt receipt = response.getBody();
             assertEquals(reportId, receipt.reportId());
@@ -101,15 +102,53 @@ class TerminalUpdateReportControllerTest {
         }
     }
 
-    private static MockHttpServletRequest servletRequest(int index) {
-        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/terminal/group-workspaces/test/update-reports");
-        request.addHeader("X-Correlation-Id", "correlation-report-test-" + index);
-        MockHttpServletResponse response = new MockHttpServletResponse();
-        response.setHeader("X-Request-Id", "request-report-test-" + index);
-        com.catering.v2s.app.edge.diagnostic.RequestCompletionDiagnosticState.getOrCreate(
-                request, response, new com.catering.v2s.app.edge.diagnostic.EdgeRouteFaceRegistry.Definition(
-                        "submitTerminalUpdateReport", "POST", "/api/terminal/group-workspaces/{groupWorkspaceKey}/update-reports",
-                        "terminal-update", "terminal"));
-        return request;
+    @Test
+    void acceptsActualVersionObservationWithoutInventingRecentUpdateState() throws Exception {
+        String groupKey = "terminal-report-observation-test";
+        UUID terminalRef = UUID.randomUUID();
+        UUID workspaceRef = UUID.randomUUID();
+        UUID storeRef = UUID.randomUUID();
+        var credentials = mock(TerminalCredentialVerificationApi.class);
+        var reports = mock(TerminalUpdateReportOwnerApi.class);
+        when(credentials.verifyBusinessCredential(any())).thenReturn(new Verification(
+                Outcome.VERIFIED, workspaceRef, groupKey, storeRef, terminalRef, 1, 10, "device-test"));
+        when(reports.record(any(), any())).thenAnswer(invocation -> {
+            TerminalUpdateReportOwnerApi.ReportInput input = invocation.getArgument(1);
+            assertNull(input.taskId());
+            assertNull(input.recentJson());
+            assertEquals(0L, input.changedAtEpochMillis());
+            return new TerminalUpdateReportOwnerApi.ReportReceipt(
+                    input.reportId(), input.taskId(), input.reportSequence(), "ACCEPTED");
+        });
+        var controller = new TerminalUpdateReportController(credentials, reports);
+        String secret = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(new byte[32]);
+        String authorization = "Terminal 1." + secret;
+        UUID reportId = UUID.randomUUID();
+        TerminalUpdateReportActual actual = new TerminalUpdateReportActual(
+                tools.jackson.databind.node.JsonNodeFactory.instance.textNode("1.0.0"),
+                tools.jackson.databind.node.JsonNodeFactory.instance.numberNode(1),
+                "com.example.terminal", "1", tools.jackson.databind.node.NullNode.getInstance(),
+                tools.jackson.databind.node.JsonNodeFactory.instance.textNode("a".repeat(64)),
+                tools.jackson.databind.node.JsonNodeFactory.instance.textNode("b".repeat(64)),
+                tools.jackson.databind.node.NullNode.getInstance(), "INSTALLED_APK", null);
+        var json = new tools.jackson.databind.ObjectMapper().writeValueAsString(new TerminalUpdateReportRequest(
+                reportId, 1L, null, actual, tools.jackson.databind.node.NullNode.getInstance()));
+        TerminalUpdateReportRequest request = new tools.jackson.databind.ObjectMapper()
+                .readValue(json, TerminalUpdateReportRequest.class);
+        assertNull(request.recent());
+
+        var response = controller.submit(requestContext(9), groupKey, authorization, terminalRef.toString(),
+                reportId.toString(), request);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(reportId, response.getBody().reportId());
+        verify(reports).record(any(), any());
+    }
+
+    private static EdgeRequestContext requestContext(int index) {
+        EdgeRequestContext context = mock(EdgeRequestContext.class);
+        when(context.requestId()).thenReturn("request-report-test-" + index);
+        when(context.correlationId()).thenReturn("correlation-report-test-" + index);
+        return context;
     }
 }

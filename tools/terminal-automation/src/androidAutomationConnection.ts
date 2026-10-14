@@ -51,6 +51,7 @@ export type AndroidAutomationConnection = Readonly<{
       readonly displayIndex: 0 | 1;
       readonly position?: AndroidTapPosition;
       readonly clickPacing?: AndroidClickPacing;
+      readonly repeatCount?: number;
     }>,
   ) => ReturnType<typeof tapRegisteredAndroidNode>;
   readonly tapRegisteredInput: (
@@ -262,6 +263,7 @@ export const createAndroidAutomationConnection = async (
           displayIndex: tapInput.displayIndex,
           ...(tapInput.position === undefined ? {} : {position: tapInput.position}),
           ...(tapInput.clickPacing === undefined ? {} : {clickPacing: tapInput.clickPacing}),
+          ...(tapInput.repeatCount === undefined ? {} : {repeatCount: tapInput.repeatCount}),
         }),
       tapRegisteredInput: inputForFocus =>
         tapRegisteredAndroidInput({

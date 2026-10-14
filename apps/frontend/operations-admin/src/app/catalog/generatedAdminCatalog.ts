@@ -751,7 +751,7 @@ export const adminCatalog = {
       "menuGroupKey": "NAV-CATALOG-SERVICES",
       "menuGroupIconKey": "CATALOG_SERVICES",
       "menuGroupLabel": "商品与服务",
-      "menuLabel": "项目终端版本管理",
+      "menuLabel": "项目终端管理",
       "pageTitle": "项目终端版本管理",
       "contentTabLabel": "项目终端版本管理",
       "pageDescription": "按当前项目维护终端更新规则并查看终端实际版本与报告。",

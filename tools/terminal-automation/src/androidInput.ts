@@ -28,6 +28,7 @@ export type AndroidInput = Readonly<{
     position?: AndroidTapPosition,
     clickPacing?: AndroidClickPacing,
     clickStarted?: () => void,
+    repeatCount?: number,
   ) => Promise<Readonly<{readonly x: number; readonly y: number}>>;
 }>;
 
@@ -202,7 +203,14 @@ export const createAndroidInput = (
     position?: AndroidTapPosition,
     clickPacing: AndroidClickPacing = 'paced',
     clickStarted?: () => void,
+    repeatCount = 1,
   ): Promise<Readonly<{readonly x: number; readonly y: number}>> => {
+    if (!Number.isSafeInteger(repeatCount) || repeatCount < 1) {
+      throw new Error('TERMINAL_AUTOMATION_ANDROID_TAP_REPEAT_COUNT_INVALID');
+    }
+    if (repeatCount > 1 && clickPacing !== 'intentional-overlap') {
+      throw new Error('TERMINAL_AUTOMATION_ANDROID_TAP_REPEAT_REQUIRES_INTENTIONAL_OVERLAP');
+    }
     let point: Readonly<{readonly x: number; readonly y: number}> | undefined;
     const action = async (markClickStarted: () => void): Promise<void> => {
       const mapping = await discoverDisplays();
@@ -230,10 +238,8 @@ export const createAndroidInput = (
       const resolvedPoint = androidTapPoint(physicalBounds, window, position);
       point = resolvedPoint;
       markClickStarted();
-      await runCommand(
-        input.adbPath,
-        buildAndroidTapArguments(input.serial, mapping, surface, resolvedPoint.x, resolvedPoint.y),
-      );
+      const args = buildAndroidTapArguments(input.serial, mapping, surface, resolvedPoint.x, resolvedPoint.y);
+      for (let index = 0; index < repeatCount; index += 1) await runCommand(input.adbPath, args);
     };
     if (clickStarted !== undefined) {
       await action(clickStarted);

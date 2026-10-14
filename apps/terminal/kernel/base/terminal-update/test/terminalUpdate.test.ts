@@ -1416,11 +1416,7 @@ describe('terminal-update local owner', () => {
     expect(initial?.body).toMatchObject({
       taskId: null,
       reportSequence: 1,
-      recent: {
-        ruleRef: null,
-        fullArtifactRef: null,
-        hotArtifactRef: null,
-      },
+      recent: null,
       actual: {
         applicationId: facts.actual?.applicationId,
         runtimeVersion: facts.actual?.runtimeVersion,

@@ -30,6 +30,12 @@ type Props = {
   onChanged: (entry: WorkspaceSessionEntry) => void;
 };
 
+type ScopeTriggerLine = {
+  key: Exclude<RequiredDataNodeType, 'NONE'>;
+  label: string;
+  node: WorkspaceScopeNode | null | undefined;
+};
+
 const scopeProblem = '暂时无法更新管理范围，请重试';
 const label = (node: WorkspaceScopeNode, emphasizeName = false) => (
   <NameCodeText name={node.dataNodeName} code={node.dataNodeCode} emphasizeName={emphasizeName} />
@@ -52,6 +58,28 @@ const scopeName = (type: RequiredDataNodeType) =>
   type === 'REGION' ? '大区' : type === 'PROJECT' ? '项目' : type === 'STORE' ? '门店' : '总公司';
 const selectionPrompt = (type: RequiredDataNodeType) => `请选择${scopeName(type)}`;
 const noCandidatePromptFor = (type: RequiredDataNodeType) => `当前角色没有可选择的${scopeName(type)}`;
+
+export function scopeTriggerLinesFor(
+  type: RequiredDataNodeType,
+  context: WorkspaceSessionEntry['scopeContext'],
+  cascadeLevelLabels: readonly string[],
+): ScopeTriggerLine[] {
+  const cascadeLabel = (index: number, fallback: string) => cascadeLevelLabels[index] ?? fallback;
+  if (type === 'REGION') return [{key: 'REGION', label: cascadeLabel(0, '大区'), node: context?.region}];
+  if (type === 'PROJECT')
+    return [
+      {key: 'REGION', label: cascadeLabel(0, '大区'), node: context?.region},
+      {key: 'PROJECT', label: cascadeLabel(1, '项目'), node: context?.project},
+    ];
+  if (type === 'STORE')
+    return [
+      {key: 'REGION', label: cascadeLabel(0, '大区'), node: context?.region},
+      {key: 'PROJECT', label: cascadeLabel(1, '项目'), node: context?.project},
+      {key: 'STORE', label: cascadeLabel(2, '门店'), node: context?.store},
+    ];
+  if (type === 'HEAD_COMPANY') return [{key: 'HEAD_COMPANY', label: '总公司', node: context?.headCompany}];
+  return [];
+}
 
 /** App-owned display selector; owner candidates and scopeContext are the only selection truth. */
 export function DataScopeSelector({entry, page, collapsed = false, disabled = false, onChanged}: Props) {
@@ -164,24 +192,9 @@ export function DataScopeSelector({entry, page, collapsed = false, disabled = fa
   const noDataNodePrompt = selectionPrompt(type);
   const noCandidatePrompt = noCandidatePromptFor(type);
   const cascadeLevelLabels = page?.cascadeLevelLabels ?? [];
-  const cascadeLabel = (index: number, fallback: string) => cascadeLevelLabels[index] ?? fallback;
-  const triggerLines: Array<[string, WorkspaceScopeNode | null | undefined]> =
-    type === 'REGION'
-      ? [[cascadeLabel(0, '大区'), region]]
-      : type === 'PROJECT'
-        ? [
-            [cascadeLabel(0, '大区'), region],
-            [cascadeLabel(1, '项目'), project],
-          ]
-        : type === 'STORE'
-          ? [
-              [cascadeLabel(0, '大区'), region],
-              [cascadeLabel(1, '项目'), project],
-              [cascadeLabel(2, '门店'), store],
-            ]
-          : [['总公司', headCompany]];
+  const triggerLines = scopeTriggerLinesFor(type, context, cascadeLevelLabels);
   const scopeSummary = triggerLines
-    .map(([name, node]) => `${name}：${node ? plainLabel(node as WorkspaceScopeNode) : '未选择'}`)
+    .map(({label: lineLabel, node}) => `${lineLabel}：${node ? plainLabel(node) : '未选择'}`)
     .join('；');
   const option = (nodes: WorkspaceScopeNode[]): Option[] =>
     nodes.map(node => ({
@@ -329,13 +342,13 @@ export function DataScopeSelector({entry, page, collapsed = false, disabled = fa
     >
       {collapsed ? null : (
         <span className="operations-scope-trigger-summary">
-          {triggerLines.map(([name, node]) => (
-            <span key={name} className="operations-scope-trigger-line">
+          {triggerLines.map(({key, label: lineLabel, node}) => (
+            <span key={key} className="operations-scope-trigger-line">
               <Typography.Text type="secondary" className="operations-scope-trigger-type">
-                {name}：
+                {lineLabel}：
               </Typography.Text>
               <span className="operations-scope-trigger-value">
-                {node ? label(node as WorkspaceScopeNode) : <Typography.Text type="secondary">未选择</Typography.Text>}
+                {node ? label(node) : <Typography.Text type="secondary">未选择</Typography.Text>}
               </span>
             </span>
           ))}

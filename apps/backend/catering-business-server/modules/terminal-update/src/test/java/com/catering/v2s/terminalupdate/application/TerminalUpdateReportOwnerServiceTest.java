@@ -35,4 +35,24 @@ final class TerminalUpdateReportOwnerServiceTest {
         verifyNoInteractions(persistence);
         verifyNoInteractions(time);
     }
+
+    @Test
+    void acceptsActualOnlyObservationWithoutARecentTaskState() {
+        TerminalUpdateReportPersistence persistence = mock(TerminalUpdateReportPersistence.class);
+        TerminalCredentialVerificationApi credentials = mock(TerminalCredentialVerificationApi.class);
+        TimeProvider time = mock(TimeProvider.class);
+        var owner = new TerminalUpdateReportOwnerService(persistence, credentials, time);
+        var binding = new Verification(Outcome.VERIFIED, UUID.randomUUID(), "group-1", UUID.randomUUID(),
+                UUID.randomUUID(), 5, 1, "device-1");
+        var input = new TerminalUpdateReportOwnerApi.ReportInput(UUID.randomUUID(), 1, null, "device-1",
+                "{\"applicationId\":\"com.example.terminal\"}", null, 0, "a".repeat(64));
+        when(credentials.lockCurrentActiveBinding(binding)).thenReturn(true);
+        when(persistence.facts(binding, input)).thenReturn(
+                new TerminalUpdateReportPersistence.ReportFacts(0, null, null, null));
+        when(time.currentEpochMillis()).thenReturn(100L);
+
+        owner.record(binding, input);
+
+        verify(persistence).insert(binding, input, 100L);
+    }
 }

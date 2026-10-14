@@ -7,6 +7,7 @@ export type {
 export {useDrawerFormLifecycle} from './behavior/useDrawerFormLifecycle';
 export {useSubmissionLifecycle} from './behavior/useSubmissionLifecycle';
 export {createContentIdempotencyKey, digestFileContent} from './behavior/contentIdempotencyKey';
+export {createBrowserUuid} from './behavior/browserCrypto';
 export type {AsyncGenerationGuard} from './behavior/asyncGeneration';
 export {createAsyncGenerationGuard, useAsyncGenerationGuard} from './behavior/asyncGeneration';
 export type {AdminErrorBoundaryProps, ErrorRecoveryProps} from './behavior/AdminErrorBoundary';

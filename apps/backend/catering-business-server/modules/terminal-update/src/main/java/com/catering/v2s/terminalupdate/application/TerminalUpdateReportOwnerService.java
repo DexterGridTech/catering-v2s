@@ -97,7 +97,8 @@ public class TerminalUpdateReportOwnerService implements TerminalUpdateReportOwn
     private static void validate(ReportInput input) {
         if (input == null || input.reportId() == null || input.reportSequence() < 1 || input.deviceId() == null
                 || input.deviceId().isBlank() || input.deviceId().length() > 128
-                || input.actualJson() == null || input.recentJson() == null || input.changedAtEpochMillis() < 0
+                || input.actualJson() == null || (input.recentJson() == null && input.taskId() != null)
+                || "null".equals(input.recentJson()) || input.changedAtEpochMillis() < 0
                 || input.bodyHash() == null || !input.bodyHash().matches("[a-f0-9]{64}"))
             throw new InvalidQueryException();
     }

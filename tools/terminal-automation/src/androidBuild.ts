@@ -7,6 +7,11 @@ export type AndroidAutomationBuildIdentity = Readonly<{
 
 export type AndroidAutomationBuildType = 'debug' | 'release';
 
+export const androidAutomationBuildFailureCode = (output: string, exitCode: number | null): string => {
+  const failure = output.match(/TERMINAL_AUTOMATION_[A-Z0-9_]+_(?:FAILED|FAILURE|ERROR)\b/u)?.[0];
+  return failure ?? `TERMINAL_AUTOMATION_ANDROID_BUILD_EXIT_${exitCode ?? 'UNKNOWN'}`;
+};
+
 export const androidAutomationBuildIdentity = (
   runId: string,
   sample: 'console' | 'wallpaper' = 'console',

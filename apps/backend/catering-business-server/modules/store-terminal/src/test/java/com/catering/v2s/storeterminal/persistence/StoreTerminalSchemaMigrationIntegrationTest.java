@@ -739,7 +739,7 @@ class StoreTerminalSchemaMigrationIntegrationTest {
                 "INSERT INTO store_terminal.terminal "
                         + "(terminal_ref, workspace_uuid, group_workspace_key, store_ref, name, name_normalized, "
                         + "device_type, status, version, activation_code, configuration, created_at_epoch_millis, "
-                        + "updated_at_epoch_millis) VALUES (?, ?, ?, ?, ?, ?, 'TABLETOP', ?, 1, ?, ?::jsonb, 1, 1)",
+                        + "updated_at_epoch_millis) VALUES (?, ?, ?, ?, ?, ?, 'laptop', ?, 1, ?, ?::jsonb, 1, 1)",
                 terminalRef,
                 workspace,
                 group,

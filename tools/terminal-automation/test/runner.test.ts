@@ -845,6 +845,47 @@ describe('run-owned generated artifact cleanup', () => {
 });
 
 describe('parseAutomationRunArguments', () => {
+  it('accepts only the console dual-screen Android activation run', () => {
+    const execution = parseAutomationRunArguments([
+      '--phase',
+      'activation',
+      '--platform',
+      'android',
+      '--shape',
+      'dual',
+      '--sample',
+      'console',
+      '--device-serial',
+      'D409P5C2J0285',
+    ]);
+    expect(execution).toEqual({
+      phase: 'activation',
+      platform: 'android',
+      shape: 'dual',
+      sample: 'console',
+      deviceSerial: 'D409P5C2J0285',
+    });
+    expect(resolveAutomationSuite(execution)).toBe('journeys/sampleConsole.android.test.ts');
+
+    expect(() =>
+      parseAutomationRunArguments([
+        '--phase', 'activation', '--platform', 'web', '--shape', 'dual', '--sample', 'console',
+      ]),
+    ).toThrow('TERMINAL_AUTOMATION_ACTIVATION_REQUIRES_ANDROID');
+    expect(() =>
+      parseAutomationRunArguments([
+        '--phase', 'activation', '--platform', 'android', '--shape', 'mobile', '--sample', 'console',
+        '--device-serial', 'D409P5C2J0285',
+      ]),
+    ).toThrow('TERMINAL_AUTOMATION_ACTIVATION_REQUIRES_DUAL');
+    expect(() =>
+      parseAutomationRunArguments([
+        '--phase', 'activation', '--platform', 'android', '--shape', 'dual', '--sample', 'wallpaper',
+        '--device-serial', 'D409P5C2J0285',
+      ]),
+    ).toThrow('TERMINAL_AUTOMATION_ACTIVATION_REQUIRES_CONSOLE');
+  });
+
   it('accepts a focused normal journey with an explicit age fixture', () => {
     expect(
       parseAutomationRunArguments([
@@ -1143,6 +1184,7 @@ describe('resolveAutomationSuite', () => {
           shape: 'mobile',
         })),
       ),
+      {phase: 'activation', platform: 'android', shape: 'dual', sample: 'console'},
       {phase: 'update', platform: 'web', shape: 'mobile'},
       {phase: 'update', platform: 'android', shape: 'mobile'},
       {phase: 'update', platform: 'android', shape: 'mobile', case: 'update.pair'},

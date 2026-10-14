@@ -1,4 +1,5 @@
 import {useCallback} from 'react';
+import {createBrowserUuid} from '@catering-v2s/admin-ui-foundation';
 import type {Dispatch, SetStateAction} from 'react';
 import type {useCatalogItemEditorSession} from '../model/useCatalogItemEditorSession';
 import type {MediaDraft, SkuRowDraft} from '../model/catalogItemEditorDraftAdapters';
@@ -55,7 +56,7 @@ export function useCatalogItemEditorMediaActions({
         setProblem(`单张图片不能超过 ${Math.floor(mediaLimits.maxImageBytes / 1024 / 1024)}MB。`);
         return;
       }
-      const id = existingId ?? globalThis.crypto.randomUUID();
+      const id = existingId ?? createBrowserUuid();
       setProblem(undefined);
       const previous = existingId ? mediaDraft.find(asset => asset.id === existingId) : undefined;
       setMediaDraft(current =>
@@ -225,7 +226,7 @@ export function useCatalogItemEditorMediaActions({
         (replaceAssetRef
           ? {assetRef: replaceAssetRef, version: previousStaged?.version, staged: previousStaged?.staged ?? false}
           : undefined);
-      const id = retryId ?? globalThis.crypto.randomUUID();
+      const id = retryId ?? createBrowserUuid();
       const pending: MediaDraft = {
         id,
         skuEditorId,

@@ -177,15 +177,17 @@ function SalesMenuSectionPanel({
       size="small"
       title="销售分区"
       extra={
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={onCreate}
-          disabled={!canEdit}
-          {...testId(salesMenuTestIds.sectionCreate)}
-        >
-          新建分区
-        </Button>
+        read.mode === 'DRAFT' ? (
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={onCreate}
+            disabled={!canEdit}
+            {...testId(salesMenuTestIds.sectionCreate)}
+          >
+            新建分区
+          </Button>
+        ) : null
       }
       {...testId(salesMenuTestIds.sectionList)}
     >
@@ -251,17 +253,19 @@ function SalesMenuSectionPanel({
               >
                 {section.name} <Typography.Text type="secondary">({section.itemCount})</Typography.Text>
               </Button>
-              <AdminRowActionMenu
-                items={menuItems}
-                ariaLabel="更多分区操作"
-                icon={<MoreOutlined />}
-                triggerTestId={salesMenuTestIds.sectionAction(section.salesSectionRef)}
-                onClick={event => {
-                  if (event.key === 'rename') onRename(section);
-                  if (event.key === 'delete') onDelete(section);
-                  if (event.key === 'up' || event.key === 'down') onMove(section, event.key === 'up' ? 'UP' : 'DOWN');
-                }}
-              />
+              {read.mode === 'DRAFT' && (
+                <AdminRowActionMenu
+                  items={menuItems}
+                  ariaLabel="更多分区操作"
+                  icon={<MoreOutlined />}
+                  triggerTestId={salesMenuTestIds.sectionAction(section.salesSectionRef)}
+                  onClick={event => {
+                    if (event.key === 'rename') onRename(section);
+                    if (event.key === 'delete') onDelete(section);
+                    if (event.key === 'up' || event.key === 'down') onMove(section, event.key === 'up' ? 'UP' : 'DOWN');
+                  }}
+                />
+              )}
             </div>
           );
         })}

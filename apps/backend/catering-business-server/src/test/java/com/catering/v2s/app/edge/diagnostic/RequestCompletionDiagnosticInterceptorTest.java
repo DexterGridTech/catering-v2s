@@ -143,6 +143,7 @@ class RequestCompletionDiagnosticInterceptorTest {
                     .resolveArgument(parameter, null, new ServletWebRequest(request), null);
 
             assertEquals(RequestCompletionDiagnosticState.find(request).correlationId(), resolved.correlationId());
+            assertEquals(RequestCompletionDiagnosticState.find(request).requestId(), resolved.requestId());
         }
     }
 
