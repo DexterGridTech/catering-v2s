@@ -1,3 +1,5 @@
+import {extensionFormTestIds} from '../../app/automation/adminStructureTestIds';
+
 export const storeManagementTestIds = {
   editDrawer: 'operations-store-edit-drawer',
   editCancel: 'operations-store-edit-cancel',
@@ -10,7 +12,9 @@ export const storeManagementTestIds = {
   editName: 'operations-store-edit-name',
   editHeadCompany: 'operations-store-edit-head-company',
   editNotes: 'operations-store-edit-notes',
-  editExtension: (key: string) => `operations-store-edit-extension-${key}`,
+  editExtension: (key: string) => extensionFormTestIds.field('store', key),
+  editDirtyCancel: extensionFormTestIds.dirtyCancel('store'),
+  editDirtyConfirm: extensionFormTestIds.dirtyConfirm('store'),
   operatingRuleGroup: 'operations-store-edit-operating-rules',
   editOperatingRuleTree: 'operations-store-edit-operating-rules-tree',
   detailOperatingRuleGroup: 'operations-store-detail-operating-rules',

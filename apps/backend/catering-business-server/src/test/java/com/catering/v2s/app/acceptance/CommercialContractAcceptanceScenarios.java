@@ -60,7 +60,7 @@ final class CommercialContractAcceptanceScenarios {
                             "items",
                             List.of(Map.of("code", "PAGE-ITEM-" + index, "name", "Page item " + index)),
                             "extensionValues",
-                            List.of()),
+                            Map.of()),
                     Set.of(201));
         }
         BackendAcceptanceTest.Fixture foreign = host.fixture("PROJECT", Set.of("BC-CONTRACT-CREATE"));
@@ -78,7 +78,7 @@ final class CommercialContractAcceptanceScenarios {
                         "effectiveTo", "2026-12-31",
                         "note", "foreign-workspace",
                         "items", List.of(Map.of("code", "FOREIGN", "name", "Foreign")),
-                        "extensionValues", List.of()),
+                        "extensionValues", Map.of()),
                 Set.of(201));
 
         Set<String> actualContractNos = new java.util.LinkedHashSet<>();
@@ -285,7 +285,7 @@ final class CommercialContractAcceptanceScenarios {
                                 Map.of("code", "LATTE", "name", "Latte"),
                                 Map.of("code", "ESPRESSO", "name", "Espresso")),
                         "extensionValues",
-                        List.of()),
+                        Map.of()),
                 Set.of(201));
         String contractId = created.json().path("id").asText();
         UUID contractRef = UUID.fromString(contractId);
@@ -324,7 +324,7 @@ final class CommercialContractAcceptanceScenarios {
                                 Map.of("code", "LATTE", "name", "Latte Updated"),
                                 Map.of("code", "ESPRESSO", "name", "Espresso Updated")),
                         "extensionValues",
-                        List.of(),
+                        Map.of(),
                         "expectedVersion",
                         1),
                 Set.of(200));
@@ -437,7 +437,7 @@ final class CommercialContractAcceptanceScenarios {
                         "effectiveTo", "2026-12-31",
                         "note", "nullable-phase-fixture",
                         "items", List.of(Map.of("code", "MOCHA", "name", "Mocha")),
-                        "extensionValues", List.of()),
+                        "extensionValues", Map.of()),
                 Set.of(201));
         String nullPhaseContractId = nullPhaseContract.json().path("id").asText();
         assertEquals(
@@ -556,7 +556,7 @@ final class CommercialContractAcceptanceScenarios {
                             "items",
                             List.of(Map.of("code", "BLOCKED-STORE-" + status, "name", "Blocked Store")),
                             "extensionValues",
-                            List.of()),
+                            Map.of()),
                     Set.of(422));
             assertEquals(
                     "PLATFORM_COMMON_VALIDATION_FAILED",
@@ -594,7 +594,7 @@ final class CommercialContractAcceptanceScenarios {
                             "items",
                             List.of(Map.of("code", "BLOCKED-TENANT-" + status, "name", "Blocked Tenant")),
                             "extensionValues",
-                            List.of()),
+                            Map.of()),
                     Set.of(422));
             assertEquals(
                     "PLATFORM_COMMON_VALIDATION_FAILED",
@@ -640,7 +640,7 @@ final class CommercialContractAcceptanceScenarios {
                         "items",
                         List.of(Map.of("code", "LATTE", "name", "Latte")),
                         "extensionValues",
-                        List.of()),
+                        Map.of()),
                 Set.of(201));
         String contractId = created.json().path("id").asText();
         BackendAcceptanceTest.Response updated = context.patch(
@@ -659,7 +659,7 @@ final class CommercialContractAcceptanceScenarios {
                         "items",
                         List.of(Map.of("code", "LATTE", "name", "Latte")),
                         "extensionValues",
-                        List.of(),
+                        Map.of(),
                         "expectedVersion",
                         1),
                 Set.of(200));
@@ -683,7 +683,7 @@ final class CommercialContractAcceptanceScenarios {
                         "items",
                         List.of(Map.of("code", "LATTE", "name", "Latte")),
                         "extensionValues",
-                        List.of(),
+                        Map.of(),
                         "expectedVersion",
                         1),
                 Set.of(409));
@@ -740,7 +740,7 @@ final class CommercialContractAcceptanceScenarios {
                         "items",
                         List.of(Map.of("code", "LATTE", "name", "Latte")),
                         "extensionValues",
-                        List.of()),
+                        Map.of()),
                 Set.of(201));
         String contractId = created.json().path("id").asText();
         BackendAcceptanceTest.Response operating = context.get(

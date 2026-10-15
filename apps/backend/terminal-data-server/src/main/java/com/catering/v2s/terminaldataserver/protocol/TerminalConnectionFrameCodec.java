@@ -21,20 +21,6 @@ import tools.jackson.databind.node.ObjectNode;
 @Component
 public final class TerminalConnectionFrameCodec {
     private static final long MAX_SAFE_INTEGER = 9_007_199_254_740_991L;
-    private static final Set<String> TOPIC_KEYS = Set.of(
-            "STORE",
-            "PROJECT",
-            "REGION",
-            "COMMERCIAL_GROUP",
-            "STORE_OPERATING_RULE",
-            "VALID_CONTRACT_COLLECTION",
-            "CONTRACT",
-            "SERVICE_POINT_AREA_COLLECTION",
-            "SERVICE_POINT_AREA",
-            "SERVICE_POINT_COLLECTION",
-            "SERVICE_POINT",
-            "TERMINAL_UPDATE_RULES");
-
     private final ObjectMapper objectMapper;
     private final TerminalConnectionProtocol protocol;
 
@@ -279,14 +265,14 @@ public final class TerminalConnectionFrameCodec {
         }
     }
 
-    private static String topicKey(JsonNode message) {
+    private String topicKey(JsonNode message) {
         String value = requiredUtf8Text(message, "topicKey", 1, 40);
         requireTopicKey(value);
         return value;
     }
 
-    private static void requireTopicKey(String value) {
-        if (!TOPIC_KEYS.contains(value)) throw invalidMessage();
+    private void requireTopicKey(String value) {
+        if (!protocol.topicKeys().contains(value)) throw invalidMessage();
     }
 
     private static long nonNegativeSafeInteger(JsonNode parent, String field) {

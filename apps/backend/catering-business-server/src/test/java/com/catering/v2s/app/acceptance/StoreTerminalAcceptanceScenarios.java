@@ -155,7 +155,7 @@ final class StoreTerminalAcceptanceScenarios {
         update.put("name", updatedName);
         update.put("headCompanyId", null);
         update.put("notes", "tds-topic-acceptance-update");
-        update.put("extensionValues", List.of());
+        update.put("extensionValues", Map.of());
         update.put("extensionRuleRevision", 0);
         update.put("expectedVersion", expectedVersion);
         update.put("operatingRuleSwitches", BackendAcceptanceTest.acceptanceStoreOperatingRuleSwitches());
@@ -421,7 +421,7 @@ final class StoreTerminalAcceptanceScenarios {
                         "items",
                         List.of(Map.of("code", "TDP-READ-ITEM", "name", "TDP read item")),
                         "extensionValues",
-                        List.of()),
+                        Map.of()),
                 idempotency(),
                 CREATED);
         String contractRef = createdContract.json().path("id").asText();

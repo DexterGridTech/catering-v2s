@@ -48,13 +48,11 @@ class OperationsContractControllerScopeAndCandidateTest {
         StoreContractCreateRequest request = JSON.readValue(
                 "{\"storeId\":\"00000000-0000-0000-0000-000000000002\",\"phaseName\":\"常规\","
                         + "\"contractNo\":\"HT-001\",\"effectiveFrom\":\"2026-08-01\","
-                        + "\"effectiveTo\":\"2026-12-31\",\"extensionValues\":[{\"fieldKey\":\"remark\","
-                        + "\"valueJson\":\"\\\"test\\\"\",\"mode\":\"SET\"}],"
+                        + "\"effectiveTo\":\"2026-12-31\",\"extensionValues\":{\"remark\":\"test\"},"
                         + "\"items\":[{\"code\":\"SKU-1\",\"name\":\"商品一\"}]}",
                 StoreContractCreateRequest.class);
 
-        assertEquals(
-                "\"test\"", request.extensionValues().path(0).path("valueJson").asText());
+        assertEquals("test", request.extensionValues().path("remark").asText());
     }
 
     @Test
@@ -208,7 +206,7 @@ class OperationsContractControllerScopeAndCandidateTest {
                         "2026-07-30",
                         null,
                         "备注",
-                        JSON.createArrayNode(),
+                        JSON.createObjectNode(),
                         null,
                         List.of(new StoreContractItem("SKU-1", "货号一")),
                         "一期"));
@@ -259,11 +257,7 @@ class OperationsContractControllerScopeAndCandidateTest {
                                 "2026-07-30",
                                 null,
                                 "备注",
-                                JSON.createArrayNode()
-                                        .addObject()
-                                        .put("fieldKey", "remark")
-                                        .put("valueJson", "\"test\"")
-                                        .put("mode", "SET"),
+                                JSON.createObjectNode().put("remark", "test"),
                                 null,
                                 3L,
                                 List.of(new StoreContractItem("SKU-1", "货号一")),

@@ -1,4 +1,13 @@
-import {remoteControlMessageTypes, type RemoteControlMessage} from '../generated/terminalRemoteControlProtocol';
+import {
+  remoteControlInputResultReasonValues,
+  remoteControlInputResultStatusValues,
+  remoteControlMessageTypes,
+  remoteControlPointerPhaseValues,
+  remoteControlPointerScreenValues,
+  remoteControlScreenReadyScreenValues,
+  remoteControlSessionEndReasonValues,
+  type RemoteControlMessage,
+} from '../generated/terminalRemoteControlProtocol';
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -10,39 +19,8 @@ const isUuid = (value: unknown): value is string =>
 const isFiniteUnit = (value: unknown): value is number =>
   typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1;
 
-const sessionEndReasons = new Set([
-  'ADMIN_ENDED',
-  'WORKSPACE_CLOSED',
-  'START_TIMEOUT',
-  'START_FAILED',
-  'CONTROLLER_DISCONNECTED',
-  'SCREEN_DISCONNECTED',
-  'PAIR_DISCONNECTED',
-  'TDP_DISCONNECTED',
-  'ACTIVATION_INVALID',
-  'AUTHORIZATION_INVALID',
-  'CONFIG_CHANGED',
-  'APP_RESTARTED',
-  'LEASE_EXPIRED',
-  'CAPTURE_FAILED',
-  'INPUT_RESULT_UNKNOWN',
-  'INPUT_UNAVAILABLE',
-  'UNSUPPORTED_PROTOCOL',
-]);
-
-const inputResultReasons = new Set([
-  'NOT_READY',
-  'SESSION_ENDED',
-  'STALE_STREAM',
-  'WRONG_TARGET',
-  'INVALID_MESSAGE',
-  'OUT_OF_BOUNDS',
-  'INVALID_GESTURE',
-  'DUPLICATE',
-  'INPUT_CONFLICT',
-  'GESTURE_EXPIRED',
-  'UNSUPPORTED_SURFACE',
-]);
+const enumValue = (values: readonly string[], value: unknown): value is string =>
+  typeof value === 'string' && values.includes(value);
 
 export type ParsedRemoteMessage =
   | Readonly<{kind: 'message'; message: RemoteControlMessage}>
@@ -70,14 +48,14 @@ export const parseRemoteControlMessage = (bytes: readonly number[]): ParsedRemot
       return invalidInput();
     }
     if (value.type === 'SESSION_END') {
-      if (typeof body.reason === 'string' && sessionEndReasons.has(body.reason))
+      if (enumValue(remoteControlSessionEndReasonValues, body.reason))
         return {kind: 'message', message: value as unknown as RemoteControlMessage};
       return invalidInput();
     }
     if (value.type === 'SCREEN_READY') {
       if (
         isUuid(body.endpointId) &&
-        (body.screen === 'main' || body.screen === 'secondary') &&
+        enumValue(remoteControlScreenReadyScreenValues, body.screen) &&
         isUuid(body.streamId) &&
         typeof body.trackSid === 'string' &&
         body.trackSid.length > 0 &&
@@ -92,15 +70,14 @@ export const parseRemoteControlMessage = (bytes: readonly number[]): ParsedRemot
       return invalidInput();
     }
     if (value.type === 'POINTER') {
-      const phaseValid =
-        body.phase === 'down' || body.phase === 'move' || body.phase === 'up' || body.phase === 'cancel';
+      const phaseValid = enumValue(remoteControlPointerPhaseValues, body.phase);
       const hasU = body.u !== undefined;
       const hasV = body.v !== undefined;
       const coordinatesValid =
         hasU === hasV && (hasU ? isFiniteUnit(body.u) && isFiniteUnit(body.v) : body.phase === 'cancel');
       if (
         isUuid(body.endpointId) &&
-        (body.screen === 'main' || body.screen === 'secondary') &&
+        enumValue(remoteControlPointerScreenValues, body.screen) &&
         isUuid(body.streamId) &&
         isUuid(body.gestureId) &&
         phaseValid &&
@@ -112,12 +89,12 @@ export const parseRemoteControlMessage = (bytes: readonly number[]): ParsedRemot
     }
     if (value.type === 'INPUT_RESULT') {
       const reasonValid =
-        body.reason === null || (typeof body.reason === 'string' && inputResultReasons.has(body.reason));
+        body.reason === null || enumValue(remoteControlInputResultReasonValues, body.reason);
       if (
         Number.isSafeInteger(body.forSeq) &&
         (body.forSeq as number) > 0 &&
         isUuid(body.gestureId) &&
-        (body.status === 'DISPATCHED' || body.status === 'REJECTED' || body.status === 'CANCELLED') &&
+        enumValue(remoteControlInputResultStatusValues, body.status) &&
         reasonValid
       ) {
         return {kind: 'message', message: value as unknown as RemoteControlMessage};

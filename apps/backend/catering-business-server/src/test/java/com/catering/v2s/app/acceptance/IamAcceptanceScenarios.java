@@ -1643,7 +1643,7 @@ final class IamAcceptanceScenarios {
                         "expectedVersion",
                         1,
                         "extensionValues",
-                        List.of()),
+                        Map.of()),
                 Set.of(403));
         assertTrue(
                 denied.problemCode().contains("ACCESS") || denied.problemCode().contains("AUTH"),

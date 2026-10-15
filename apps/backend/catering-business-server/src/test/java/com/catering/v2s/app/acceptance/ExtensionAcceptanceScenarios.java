@@ -299,12 +299,12 @@ final class ExtensionAcceptanceScenarios {
                         "remark",
                         "typed-filter",
                         "extensionValues",
-                        List.of(
-                                extensionSet("brandText", "\"Alpha!%_\""),
-                                extensionSet("brandNumber", "12.50"),
-                                extensionSet("brandDate", "\"2026-09-15\""),
-                                extensionSet("brandBoolean", "true"),
-                                extensionSet("brandSelect", "\"直营\""))),
+                        Map.of(
+                                "brandText", "Alpha!%_",
+                                "brandNumber", 12.5,
+                                "brandDate", "2026-09-15",
+                                "brandBoolean", true,
+                                "brandSelect", "直营")),
                 Set.of(201));
         String listBase = "/api/operations/group-workspaces/" + fixture.groupWorkspaceKey()
                 + "/organization/brands?expectedContextVersion=" + operations.contextVersion()
@@ -479,13 +479,13 @@ final class ExtensionAcceptanceScenarios {
                 filterField(prefix + "Disabled", "禁用字段", "TEXT", List.of(), 5, false, false, "DISABLED"));
     }
 
-    static List<Map<String, Object>> typedExtensionValues(String prefix, String textValue) {
-        return List.of(
-                extensionSet(prefix + "Text", jsonQuote(textValue)),
-                extensionSet(prefix + "Number", "12.50"),
-                extensionSet(prefix + "Date", jsonQuote("2026-09-15")),
-                extensionSet(prefix + "Boolean", "true"),
-                extensionSet(prefix + "Select", jsonQuote("直营")));
+    static Map<String, Object> typedExtensionValues(String prefix, String textValue) {
+        return Map.of(
+                prefix + "Text", textValue,
+                prefix + "Number", 12.5,
+                prefix + "Date", "2026-09-15",
+                prefix + "Boolean", true,
+                prefix + "Select", "直营");
     }
 
     static FilterSpec[] typedFilterSpecs(String prefix, String textValue) {
@@ -518,10 +518,6 @@ final class ExtensionAcceptanceScenarios {
         field.put("status", status);
         field.put("displayOrder", displayOrder);
         return field;
-    }
-
-    static Map<String, Object> extensionSet(String fieldKey, String valueJson) {
-        return Map.of("fieldKey", fieldKey, "valueJson", valueJson, "mode", "SET");
     }
 
     static String filterWire(FilterSpec... filters) {

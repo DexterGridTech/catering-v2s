@@ -39,11 +39,12 @@ import {ContractEditDrawer} from './ContractEditDrawer';
 import {ContractInvalidateModal} from './ContractInvalidateModal';
 import {useContractStoreCandidates} from './useContractStoreCandidates';
 import {useOrganizationCandidates} from '../../../app/queries/useOrganizationCandidates';
-import {extensionListAndSearchColumns, extensionQueryValues} from '../../extension-fields/model/extensionList';
+import {extensionListAndSearchColumns, extensionQueryValues} from '../../extension-fields';
 import {
   extensionListInvalidSummaryTestId,
   extensionListRecoveryNoticeTestId,
 } from '../../../app/automation/extensionListTestIds';
+import {operationsDetailDrawerTestIds} from '../../../app/automation/operationsDetailDrawerTestIds';
 
 type ContractFilters = {
   storeId?: string;
@@ -246,7 +247,7 @@ export function ContractManagementPage({queryContext, actionCapabilityKeys}: Ope
                 type="link"
                 className="operations-contract-number-link"
                 onClick={() => detail.open(row)}
-                {...testId('operations-contract-detail-open')}
+                {...testId(operationsDetailDrawerTestIds.contract.open(row.id))}
               >
                 <span className="operations-contract-number-label">{value}</span>
               </Button>

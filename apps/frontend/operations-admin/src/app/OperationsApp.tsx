@@ -1,10 +1,7 @@
 import {
   ApartmentOutlined,
-  BankOutlined,
-  ClusterOutlined,
   DashboardOutlined,
   DownOutlined,
-  FileTextOutlined,
   FullscreenExitOutlined,
   FullscreenOutlined,
   LogoutOutlined,
@@ -37,6 +34,7 @@ import {
   registerOperationsSessionRecovery,
 } from './api/OperationsTransport';
 import {operationsAdminRtkRequest} from './api/generated/operations-edge.rtk';
+import {operationsNavigationTestIds} from './automation/adminStructureTestIds';
 import {PublicInvitationEntry} from '../features/invitation-acceptance/ui/PublicInvitationEntry';
 import {OperationsLoginPage} from '../features/authentication/ui/OperationsLoginPage';
 import * as RecoveryCompletePageModule from '../features/authentication/ui/OperationsPasswordRecoveryCompletePage';
@@ -47,13 +45,14 @@ import {OperationsPasswordChangeResult} from '../features/authentication/ui/Oper
 import {OperationsForcedPasswordChangePage} from '../features/authentication/ui/OperationsForcedPasswordChangePage';
 import {RoleContextSelector} from '../features/role-home-bootstrap/ui/RoleContextSelector';
 import {DataScopeSelector} from '../features/role-home-bootstrap/ui/DataScopeSelector';
-import {adminCatalog, operationsPageDesignKeys} from './catalog/generatedAdminCatalog';
+import {adminCatalog} from './catalog/generatedAdminCatalog';
 import {
   matchOperationsRoute,
   operationsPageRegistry,
   parseOperationsPageDesignKey,
   routeForOperationsPage,
 } from './routing/pageRegistry';
+import {selectAccessibleOperationsPages} from './routing/accessibleOperationsPages';
 import type {OperationsPageDesignKey} from './catalog/generatedAdminCatalog';
 import type {OperationsSession as Session} from './state/OperationsSession';
 import {operationsStore} from './state/OperationsStore';
@@ -65,35 +64,6 @@ import '../styles.css';
 
 const {OperationsPasswordRecoveryCompletePage} = RecoveryCompletePageModule;
 const {OperationsPasswordRecoveryPasswordPage} = RecoveryPasswordPageModule;
-
-const menuIconByKey = {
-  [operationsPageDesignKeys.HomeGroup]: <DashboardOutlined />,
-  [operationsPageDesignKeys.HomeRegion]: <DashboardOutlined />,
-  [operationsPageDesignKeys.HomeProject]: <DashboardOutlined />,
-  [operationsPageDesignKeys.HomeHeadCompany]: <DashboardOutlined />,
-  [operationsPageDesignKeys.HomeStore]: <DashboardOutlined />,
-  [operationsPageDesignKeys.PgOrgStructure]: <ApartmentOutlined />,
-  [operationsPageDesignKeys.PgOrgBrand]: <TagsOutlined />,
-  [operationsPageDesignKeys.PgOrgTenant]: <BankOutlined />,
-  [operationsPageDesignKeys.PgOrgHeadCompany]: <ClusterOutlined />,
-  [operationsPageDesignKeys.PgOrgStoreManage]: <ShopOutlined />,
-  [operationsPageDesignKeys.PgContractStoreManage]: <FileTextOutlined />,
-  [operationsPageDesignKeys.PgIamGroupUsers]: <TeamOutlined />,
-  [operationsPageDesignKeys.PgIamRegionUsers]: <TeamOutlined />,
-  [operationsPageDesignKeys.PgIamProjectUsers]: <TeamOutlined />,
-  [operationsPageDesignKeys.PgIamHeadCompanyUsers]: <TeamOutlined />,
-  [operationsPageDesignKeys.PgIamStoreUsers]: <TeamOutlined />,
-  [operationsPageDesignKeys.PgStoreProfile]: <ShopOutlined />,
-  [operationsPageDesignKeys.PgBusinessChannelProject]: <ShopOutlined />,
-  [operationsPageDesignKeys.PgBusinessChannelStore]: <ShopOutlined />,
-  [operationsPageDesignKeys.PgCatalogStoreItems]: <TagsOutlined />,
-  [operationsPageDesignKeys.PgInventoryStoreStatus]: <ShopOutlined />,
-  [operationsPageDesignKeys.PgCatalogBrandItems]: <TagsOutlined />,
-  [operationsPageDesignKeys.PgSalesMenuStore]: <TagsOutlined />,
-  [operationsPageDesignKeys.PgStoreServicePointQr]: <ShopOutlined />,
-  [operationsPageDesignKeys.PgStoreTerminals]: <ShopOutlined />,
-  [operationsPageDesignKeys.PgProjectTerminalVersionRules]: <ReloadOutlined />,
-} satisfies Partial<Record<OperationsPageDesignKey, ReactNode>>;
 
 const navigationIconByKey = {
   WORKBENCH: <DashboardOutlined />,
@@ -128,29 +98,25 @@ function Shell({
   const [siderCollapsed, setSiderCollapsed] = useState(false);
   const [brandLogoBroken, setBrandLogoBroken] = useState(false);
   const catalogByKey = useMemo(() => new Map(adminCatalog.operationsPages.map(page => [page.pageDesignKey, page])), []);
-  const accessiblePages = useMemo<
-    Array<{key: OperationsPageDesignKey; page: (typeof adminCatalog.operationsPages)[number]}>
-  >(
-    () =>
-      session.pageAccessKeys
-        .flatMap(key => {
-          const page = catalogByKey.get(key);
-          return page ? [{key, page}] : [];
-        })
-        .sort((left, right) => left.page.menuOrder - right.page.menuOrder),
+  const accessiblePages = useMemo(
+    () => selectAccessibleOperationsPages(session.pageAccessKeys, catalogByKey, operationsPageRegistry),
     [catalogByKey, session.pageAccessKeys],
   );
-  const accessibleMenuPages = useMemo(() => accessiblePages.filter(({key}) => menuIconByKey[key]), [accessiblePages]);
   const menuItems = useMemo<MenuProps['items']>(() => {
-    type MenuChild = {key: OperationsPageDesignKey; icon: ReactNode; label: string; disabled?: boolean};
+    type MenuChild = {key: OperationsPageDesignKey; icon: ReactNode; label: ReactNode; disabled?: boolean};
     const groups = new Map<string, {label: string; icon: ReactNode; children: MenuChild[]}>();
-    for (const item of accessibleMenuPages) {
+    for (const item of accessiblePages) {
       const group = groups.get(item.page.menuGroupKey) ?? {
         label: item.page.menuGroupLabel,
         icon: navigationIconByKey[item.page.menuGroupIconKey as keyof typeof navigationIconByKey],
         children: [] as MenuChild[],
       };
-      group.children.push({key: item.key, icon: menuIconByKey[item.key], label: item.page.menuLabel, disabled: locked});
+      group.children.push({
+        key: item.key,
+        icon: item.registration.icon,
+        label: <span {...testId(operationsNavigationTestIds.page(item.key))}>{item.page.menuLabel}</span>,
+        disabled: locked,
+      });
       groups.set(item.page.menuGroupKey, group);
     }
     return [...groups].map(([key, group]) => ({
@@ -160,7 +126,7 @@ function Shell({
       label: group.label,
       children: group.children,
     }));
-  }, [accessibleMenuPages, locked]);
+  }, [accessiblePages, locked]);
   const basePath = `/operations/${encodeURIComponent(session.groupWorkspaceKey)}`;
   const routeSegment = location.pathname.startsWith(`${basePath}/`) ? location.pathname.slice(basePath.length + 1) : '';
   const routeMatch = matchOperationsRoute(routeSegment);

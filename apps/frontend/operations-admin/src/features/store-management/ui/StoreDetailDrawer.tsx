@@ -1,11 +1,11 @@
 import {Alert, Card, Descriptions, Drawer, Skeleton} from 'antd';
+import {CloseOutlined} from '@ant-design/icons';
 import {
   AdminDetailActionLabel,
   AdminDetailActionMenu,
   adminDetailDescriptionsProps,
   adminDrawerSurfaceProps,
   displayFieldValue,
-  formatTypedExtensionValue,
   NameCodeText,
   testId,
   useDetailDrawer,
@@ -13,14 +13,15 @@ import {
 } from '@catering-v2s/admin-ui-foundation';
 import {useEffect, useMemo} from 'react';
 import {operationsRtk} from '../../../app/api/OperationsTransport';
-import type {ExtensionDefinition, JsonValue, OrganizationStore} from '../../../app/api/generated/operations-edge';
+import type {OrganizationStore} from '../../../app/api/generated/operations-edge';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {operationsDetailDrawerTestIds} from '../../../app/automation/operationsDetailDrawerTestIds';
+import {extensionDetailItems} from '../../extension-fields';
 import {
   organizationStoreStatusLabels,
   toggleOrganizationStoreStatus,
-} from '../../organization-structure/model/organizationStatus';
+} from '../../organization-structure';
 import {storeManagementTestIds} from '../storeManagementTestIds';
 import {StoreOperatingRuleTree, completeStoreOperatingRuleValues} from './StoreOperatingRuleTree';
 
@@ -34,17 +35,6 @@ type Props = {
   onStatus: (store: OrganizationStore) => void;
   onAudit: () => void;
 };
-
-function extensionItems(definition: ExtensionDefinition | undefined, values: Record<string, JsonValue> | undefined) {
-  return (definition?.definitions ?? [])
-    .filter(field => field.status !== 'DISABLED')
-    .sort((left, right) => (left.displayOrder ?? 0) - (right.displayOrder ?? 0))
-    .map(field => ({
-      key: `extension-${field.key}`,
-      label: field.label,
-      children: formatTypedExtensionValue(values?.[field.key], field),
-    }));
-}
 
 export function StoreDetailDrawer({
   store,
@@ -152,6 +142,7 @@ export function StoreDetailDrawer({
       size={620}
       destroyOnHidden
       maskClosable
+      closeIcon={<span {...testId(operationsDetailDrawerTestIds.store.close)}><CloseOutlined /></span>}
       {...adminDrawerSurfaceProps}
       {...testId('operations-store-detail-drawer')}
       extra={
@@ -213,7 +204,7 @@ export function StoreDetailDrawer({
               },
               {key: 'status', label: '状态', children: organizationStoreStatusLabels[selected.status]},
               {key: 'notes', label: '备注', children: displayFieldValue(selected.notes)},
-              ...extensionItems(definition.currentData, selected.extensionValues),
+              ...extensionDetailItems(definition.currentData, selected.extensionValues),
             ]}
           />
           <Card

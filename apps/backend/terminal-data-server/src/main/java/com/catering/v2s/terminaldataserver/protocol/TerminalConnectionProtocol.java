@@ -19,6 +19,7 @@ public final class TerminalConnectionProtocol {
     private static final String RESOURCE = "protocol/terminal-connection-protocol.json";
 
     private final Map<String, MessageDefinition> messages;
+    private final Set<String> topicKeys;
     private final int applicationCloseCode;
     private final Set<String> applicationCloseReasons;
     private final Set<Integer> standardCloseCodes;
@@ -86,6 +87,9 @@ public final class TerminalConnectionProtocol {
             throw invalidContract("generated message schema differs from canonical protocol");
         }
 
+        topicKeys = readUniqueTextArray(contract, "topicKeys");
+        if (topicKeys.isEmpty()) throw invalidContract("topic keys are empty");
+
         JsonNode close = requiredObject(contract, "close");
         JsonNode application = requiredObject(close, "application");
         applicationCloseCode = requiredPositiveInteger(application, "code");
@@ -119,6 +123,10 @@ public final class TerminalConnectionProtocol {
 
     public Set<String> messageTypes() {
         return messages.keySet();
+    }
+
+    public Set<String> topicKeys() {
+        return topicKeys;
     }
 
     public Close applicationClose(String reason) {

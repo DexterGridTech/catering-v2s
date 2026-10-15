@@ -143,6 +143,59 @@ class TerminalConnectionFrameCodecTest {
     }
 
     @Test
+    void roundTripsEveryCanonicalTopicThroughSubscribeUnsubscribeAcceptAndChanged() throws Exception {
+        UUID subscriptionId = UUID.randomUUID();
+        UUID ownerRef = UUID.randomUUID();
+        UUID notificationId = UUID.randomUUID();
+
+        for (String topicKey : protocol.topicKeys()) {
+            var subscribe = codec.topicSubscribe("{\"type\":\"TOPIC_SUBSCRIBE\",\"subscriptionId\":\""
+                    + subscriptionId + "\",\"topicKey\":\"" + topicKey + "\",\"ownerRef\":\"" + ownerRef
+                    + "\",\"lastAcceptedTimeEpochMillis\":0}");
+            assertThat(subscribe.topicKey()).isEqualTo(topicKey);
+
+            var unsubscribe = codec.topicUnsubscribe("{\"type\":\"TOPIC_UNSUBSCRIBE\",\"subscriptionId\":\""
+                    + subscriptionId + "\",\"topicKey\":\"" + topicKey + "\",\"ownerRef\":\"" + ownerRef
+                    + "\"}");
+            assertThat(unsubscribe.topicKey()).isEqualTo(topicKey);
+
+            var accept = codec.topicAccept("{\"type\":\"TOPIC_ACCEPT\",\"notificationId\":\"" + notificationId
+                    + "\",\"subscriptionId\":\"" + subscriptionId + "\",\"topicKey\":\"" + topicKey
+                    + "\",\"ownerRef\":\"" + ownerRef + "\",\"acceptedTimeEpochMillis\":12}");
+            assertThat(accept.topicKey()).isEqualTo(topicKey);
+
+            JsonNode changed = mapper.readTree(codec.topicChanged(
+                    notificationId.toString(), subscriptionId.toString(), topicKey, ownerRef, 12));
+            assertFieldsMatchProtocol("TOPIC_CHANGED", changed);
+            assertThat(changed.path("topicKey").asString()).isEqualTo(topicKey);
+        }
+    }
+
+    @Test
+    void rejectsUnknownTopicsAcrossAllTopicCodecOperations() {
+        UUID subscriptionId = UUID.randomUUID();
+        UUID ownerRef = UUID.randomUUID();
+        UUID notificationId = UUID.randomUUID();
+        String unknownTopic = "FUTURE_TOPIC";
+
+        assertThatIllegalArgumentException()
+                .isThrownBy(() -> codec.topicSubscribe("{\"type\":\"TOPIC_SUBSCRIBE\",\"subscriptionId\":\""
+                        + subscriptionId + "\",\"topicKey\":\"" + unknownTopic + "\",\"ownerRef\":\""
+                        + ownerRef + "\",\"lastAcceptedTimeEpochMillis\":0}"));
+        assertThatIllegalArgumentException()
+                .isThrownBy(() -> codec.topicUnsubscribe("{\"type\":\"TOPIC_UNSUBSCRIBE\",\"subscriptionId\":\""
+                        + subscriptionId + "\",\"topicKey\":\"" + unknownTopic + "\",\"ownerRef\":\""
+                        + ownerRef + "\"}"));
+        assertThatIllegalArgumentException()
+                .isThrownBy(() -> codec.topicAccept("{\"type\":\"TOPIC_ACCEPT\",\"notificationId\":\""
+                        + notificationId + "\",\"subscriptionId\":\"" + subscriptionId + "\",\"topicKey\":\""
+                        + unknownTopic + "\",\"ownerRef\":\"" + ownerRef
+                        + "\",\"acceptedTimeEpochMillis\":12}"));
+        assertThatIllegalArgumentException().isThrownBy(() -> codec.topicChanged(
+                notificationId.toString(), subscriptionId.toString(), unknownTopic, ownerRef, 12));
+    }
+
+    @Test
     void rejectsUnknownTopicAndNonCanonicalSubscriptionIds() {
         UUID ownerRef = UUID.randomUUID();
         String id = UUID.randomUUID().toString();

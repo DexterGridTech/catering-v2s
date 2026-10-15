@@ -41,7 +41,7 @@ import {OPERATIONS_ADMIN_OPERATION_IDS} from '../../../app/api/generated/operati
 import {OperationsStoreCatalogManagementDisabledSurface} from '../../../app/components/OperationsStoreCatalogManagementDisabledSurface';
 import {ACTION_CAPABILITIES} from '../../../app/catalog/generatedAdminCatalog';
 import type {OperationsPageProps} from '../../../app/routing/model';
-import {useStoreOperatingRuleGate} from '../../store-operating-rules/model/useStoreOperatingRuleGate';
+import {useStoreOperatingRuleGate} from '../../store-operating-rules';
 import {
   type AreaEditor,
   type AreaFormValues,

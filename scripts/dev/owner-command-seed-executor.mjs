@@ -584,18 +584,9 @@ export function resolveExtensionValues(definitionFixture, ownerReadback, fixture
   return result;
 }
 
-/**
- * The seven operations-admin extension-host create requests use the M1 typed
- * submission contract.  Keep fixture/readback values as their owner-visible
- * map, but serialize the HTTP submission explicitly: omission is absent,
- * SET carries canonical JSON text, and CLEAR is never inferred from null.
- */
-function extensionSubmission(values) {
-  return Object.entries(values).filter(([, value]) => value !== null && value !== undefined).map(([fieldKey, value]) => ({
-    fieldKey,
-    valueJson: JSON.stringify(value),
-    mode: 'SET',
-  }));
+/** Keeps owner-visible extension values in the JSON-object shape used by HTTP requests. */
+export function extensionValuesForRequest(values) {
+  return Object.fromEntries(Object.entries(values).filter(([, value]) => value !== null && value !== undefined));
 }
 
 function assertExtensionValueReadback(created, expectedValues) {
@@ -774,22 +765,22 @@ async function executeFormalSeed() {
     // every created id is retained only in memory and verified by later owner reads.
     for (const region of fixture.stableFixtures.organization.regions) {
       const extensionValues = extensionValuesFor('gw-aurora', 'REGION', region.extensionValues ?? {});
-      const created = await request(`region-${region.key}`, 'createOperationsOrganizationRegion', {groupWorkspaceKey: aurora}, {cookie: operationsCookie, expected: [201], body: {code: region.code, name: region.name, extensionValues: extensionSubmission(extensionValues)}}); assertExtensionValueReadback(created, extensionValues); extensionReadback.REGION += 1; ids.region[region.key] = created.json;
+      const created = await request(`region-${region.key}`, 'createOperationsOrganizationRegion', {groupWorkspaceKey: aurora}, {cookie: operationsCookie, expected: [201], body: {code: region.code, name: region.name, extensionValues: extensionValuesForRequest(extensionValues)}}); assertExtensionValueReadback(created, extensionValues); extensionReadback.REGION += 1; ids.region[region.key] = created.json;
     }
     for (const project of fixture.stableFixtures.organization.projects) {
       const parent = fixture.stableFixtures.organization.regions.find((entry) => entry.key === project.parent);
       const extensionValues = extensionValuesFor('gw-aurora', 'PROJECT', project.extensionValues ?? {});
-      const created = await request(`project-${project.key}`, 'createOperationsOrganizationProject', {groupWorkspaceKey: aurora, regionId: requireValue(ids.region[parent.key]?.id, 'SEED_REGION_ID')}, {cookie: operationsCookie, expected: [201], body: {code: project.code, name: project.name, phases: project.phases.map((name) => ({name})), extensionValues: extensionSubmission(extensionValues)}}); assertExtensionValueReadback(created, extensionValues); extensionReadback.PROJECT += 1; ids.project[project.key] = created.json;
+      const created = await request(`project-${project.key}`, 'createOperationsOrganizationProject', {groupWorkspaceKey: aurora, regionId: requireValue(ids.region[parent.key]?.id, 'SEED_REGION_ID')}, {cookie: operationsCookie, expected: [201], body: {code: project.code, name: project.name, phases: project.phases.map((name) => ({name})), extensionValues: extensionValuesForRequest(extensionValues)}}); assertExtensionValueReadback(created, extensionValues); extensionReadback.PROJECT += 1; ids.project[project.key] = created.json;
     }
-    for (const brand of fixture.stableFixtures.organization.brands) { const extensionValues = extensionValuesFor('gw-aurora', 'BRAND', brand.extensionValues); const created = await request(`brand-${brand.key}`, 'createOperationsOrganizationBrand', {groupWorkspaceKey: aurora}, {cookie: operationsCookie, expected: [201], body: {code: brand.code, name: brand.name, extensionValues: extensionSubmission(extensionValues)}}); assertExtensionValueReadback(created, extensionValues); extensionReadback.BRAND += 1; ids.brand[brand.key] = created.json; }
-    for (const tenant of fixture.stableFixtures.organization.tenants) { const extensionValues = extensionValuesFor('gw-aurora', 'TENANT', tenant.extensionValues); const created = await request(`tenant-${tenant.key}`, 'createOperationsOrganizationTenant', {groupWorkspaceKey: aurora}, {cookie: operationsCookie, expected: [201], body: {code: tenant.code, name: tenant.name, legalName: `${tenant.name}有限公司`, unifiedSocialCreditCode: `91310000${tenant.code.replaceAll('-', '').padEnd(8, '0')}A`, extensionValues: extensionSubmission(extensionValues)}}); assertExtensionValueReadback(created, extensionValues); extensionReadback.TENANT += 1; ids.tenant[tenant.key] = created.json; }
-    for (const head of fixture.stableFixtures.organization.headCompanies) { const extensionValues = extensionValuesFor('gw-aurora', 'HEAD_COMPANY', head.extensionValues); const created = await request(`head-company-${head.key}`, 'createOperationsOrganizationHeadCompany', {groupWorkspaceKey: aurora}, {cookie: operationsCookie, expected: [201], body: {code: head.code, name: head.name, legalName: `${head.name}有限公司`, unifiedSocialCreditCode: `91320000${head.code.replaceAll('-', '').padEnd(8, '0')}B`, extensionValues: extensionSubmission(extensionValues)}}); assertExtensionValueReadback(created, extensionValues); extensionReadback.HEAD_COMPANY += 1; ids.headCompany[head.key] = created.json; }
+    for (const brand of fixture.stableFixtures.organization.brands) { const extensionValues = extensionValuesFor('gw-aurora', 'BRAND', brand.extensionValues); const created = await request(`brand-${brand.key}`, 'createOperationsOrganizationBrand', {groupWorkspaceKey: aurora}, {cookie: operationsCookie, expected: [201], body: {code: brand.code, name: brand.name, extensionValues: extensionValuesForRequest(extensionValues)}}); assertExtensionValueReadback(created, extensionValues); extensionReadback.BRAND += 1; ids.brand[brand.key] = created.json; }
+    for (const tenant of fixture.stableFixtures.organization.tenants) { const extensionValues = extensionValuesFor('gw-aurora', 'TENANT', tenant.extensionValues); const created = await request(`tenant-${tenant.key}`, 'createOperationsOrganizationTenant', {groupWorkspaceKey: aurora}, {cookie: operationsCookie, expected: [201], body: {code: tenant.code, name: tenant.name, legalName: `${tenant.name}有限公司`, unifiedSocialCreditCode: `91310000${tenant.code.replaceAll('-', '').padEnd(8, '0')}A`, extensionValues: extensionValuesForRequest(extensionValues)}}); assertExtensionValueReadback(created, extensionValues); extensionReadback.TENANT += 1; ids.tenant[tenant.key] = created.json; }
+    for (const head of fixture.stableFixtures.organization.headCompanies) { const extensionValues = extensionValuesFor('gw-aurora', 'HEAD_COMPANY', head.extensionValues); const created = await request(`head-company-${head.key}`, 'createOperationsOrganizationHeadCompany', {groupWorkspaceKey: aurora}, {cookie: operationsCookie, expected: [201], body: {code: head.code, name: head.name, legalName: `${head.name}有限公司`, unifiedSocialCreditCode: `91320000${head.code.replaceAll('-', '').padEnd(8, '0')}B`, extensionValues: extensionValuesForRequest(extensionValues)}}); assertExtensionValueReadback(created, extensionValues); extensionReadback.HEAD_COMPANY += 1; ids.headCompany[head.key] = created.json; }
     for (const authorization of fixture.stableFixtures.organization.brandAuthorizations) await request(`brand-authorization-${authorization.headCompany}-${authorization.brand}`, 'addOperationsOrganizationHeadCompanyBrandAuthorization', {groupWorkspaceKey: aurora, headCompanyId: requireValue(ids.headCompany[authorization.headCompany]?.id, 'SEED_HEAD_COMPANY_ID')}, {cookie: operationsCookie, expected: [204], body: {brandId: requireValue(ids.brand[authorization.brand]?.id, 'SEED_BRAND_ID')}});
     for (const store of fixture.stableFixtures.organization.stores) {
       await selectDataNodeScope({dataNodeType: 'PROJECT', dataNodeRef: requireValue(ids.project[store.project]?.id, 'SEED_PROJECT_ID'), stage: `project-select-store-${store.key}`});
       const extensionValues = extensionValuesFor('gw-aurora', 'STORE', store.extensionValues);
       const operatingRuleSwitches = storeOperatingRuleValuesForSeed(store);
-      const created = await request(`store-${store.key}`, 'createOperationsOrganizationStore', {groupWorkspaceKey: aurora}, {cookie: operationsCookie, expected: [201], body: {brandId: requireValue(ids.brand[store.brand]?.id, 'SEED_BRAND_ID'), tenantId: requireValue(ids.tenant[store.tenant]?.id, 'SEED_TENANT_ID'), headCompanyId: requireValue(ids.headCompany[store.headCompany]?.id, 'SEED_HEAD_COMPANY_ID'), code: store.code, name: store.name, extensionValues: extensionSubmission(extensionValues), operatingRuleSwitches}});
+      const created = await request(`store-${store.key}`, 'createOperationsOrganizationStore', {groupWorkspaceKey: aurora}, {cookie: operationsCookie, expected: [201], body: {brandId: requireValue(ids.brand[store.brand]?.id, 'SEED_BRAND_ID'), tenantId: requireValue(ids.tenant[store.tenant]?.id, 'SEED_TENANT_ID'), headCompanyId: requireValue(ids.headCompany[store.headCompany]?.id, 'SEED_HEAD_COMPANY_ID'), code: store.code, name: store.name, extensionValues: extensionValuesForRequest(extensionValues), operatingRuleSwitches}});
       assertStoreOperatingRuleReadback(created, store.key, operatingRuleSwitches);
       assertExtensionValueReadback(created, extensionValues); extensionReadback.STORE += 1; ids.store[store.key] = created.json;
     }
@@ -952,7 +943,7 @@ async function executeFormalSeed() {
       const store = fixture.stableFixtures.organization.stores.find((entry) => entry.key === contract.store);
       await selectDataNodeScope({dataNodeType: 'PROJECT', dataNodeRef: requireValue(ids.project[store.project]?.id, 'SEED_CONTRACT_PROJECT_ID'), stage: `project-select-contract-${contract.key}`});
       const extensionValues = extensionValuesFor('gw-aurora', 'CONTRACT', contract.extensionValues);
-      const created = await request(`contract-${contract.key}`, 'createOperationsContract', {groupWorkspaceKey: aurora}, {cookie: operationsCookie, expected: [201], body: {storeId: requireValue(ids.store[store.key]?.id, 'SEED_CONTRACT_STORE_ID'), phaseName: contract.phaseNameSnapshot ?? null, phaseNameSnapshot: contract.phaseNameSnapshot ?? null, contractNo: contract.contractNo, effectiveFrom: contract.effectiveFrom, effectiveTo: contract.effectiveTo, note: null, extensionValues: extensionSubmission(extensionValues), items: contract.items}});
+      const created = await request(`contract-${contract.key}`, 'createOperationsContract', {groupWorkspaceKey: aurora}, {cookie: operationsCookie, expected: [201], body: {storeId: requireValue(ids.store[store.key]?.id, 'SEED_CONTRACT_STORE_ID'), phaseName: contract.phaseNameSnapshot ?? null, phaseNameSnapshot: contract.phaseNameSnapshot ?? null, contractNo: contract.contractNo, effectiveFrom: contract.effectiveFrom, effectiveTo: contract.effectiveTo, note: null, extensionValues: extensionValuesForRequest(extensionValues), items: contract.items}});
       assertExtensionValueReadback(created, extensionValues); extensionReadback.CONTRACT += 1;
       contracts[contract.key] = created.json;
       if (contract.status === 'INVALID') {
@@ -1018,7 +1009,7 @@ function selfTest() {
   };
   const expect = (code, callback) => {
     try { callback(); throw new Error(`SELF_TEST_RED_NOT_DETECTED:${code}`); }
-    catch (error) { if (!(error instanceof FormalSeedFailure) || error.code !== code) throw error; }
+    catch (error) { if (error?.code !== code) throw error; }
   };
   const plan = resolveInvitationCreationPlan(fixture);
   if (plan.length !== 2 || plan[0].targetOrganizationType !== 'STORE') throw new Error('SELF_TEST_PLAN_RESOLUTION_FAILED');
@@ -1037,6 +1028,7 @@ function selfTest() {
   if (managedEnvironment.V2S_DEV_DATABASE_URL !== 'jdbc:postgresql://127.0.0.1:5432/catering_v2s_dev_r5_full'
     || managedEnvironment.V2S_DEV_HTTP_BASE_URL !== 'http://127.0.0.1:28080'
     || managedEnvironment.V2S_DEV_NAMESPACE !== 'v2s-dev-r5-full'
+    || managedEnvironment.V2S_SEED_ASSET_ROOT !== validManagedManifest.assetRoot
     || managedEnvironment.V2S_RUNTIME_DIR !== runtimeRoot) throw new Error('SELF_TEST_MANAGED_ENVIRONMENT_BINDING_FAILED');
   expect('SEED_MANAGED_DATABASE_BINDING_INVALID', () => managedSeedEnvironment({...validManagedManifest, database: 'jdbc:postgresql://127.0.0.1:25432/not-allowlisted'}, {}));
   expect('SEED_INVITATION_PLAN_REQUIRED', () => resolveInvitationCreationPlan({...fixture, executionPlan: {}}));

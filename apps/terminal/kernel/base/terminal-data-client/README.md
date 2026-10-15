@@ -2,7 +2,7 @@
 
 ## 定位
 
-本包独占终端凭证、激活与取消激活 command、TDS 业务协议和激活/连接/延时 selectors。
+本包独占终端凭证、激活与取消激活 command、TDS 业务协议，以及激活、连接、延时、订阅、展示投影和 HTTP 上下文 selectors。
 
 ## 作用
 
@@ -16,7 +16,16 @@
 
 激活、在线/离线取消激活、建连、断连均通过本包公开 command，由 owner actor 执行。凭证、待完成激活重试、HTTP operation 语义和 TDS 业务协议只由本包持有；待完成激活的秘密仅在当前 JS runtime 内存中供同一操作重试，runtime 重启即清除；最终凭证由本包以明文持久化，并在主机持久化成功后作为同一凭证事实按 MASTER→SLAVE 同步。副机不独立生成或改变该凭证，不独立激活或建立 TDS 连接，但可经本机 TDC 直接请求 CBS。凭证秘密不由任何 selector 返回。业务协议消息和 socket 回调先转为本包内部 command，actor 才能更新 state。
 
-`selectActivationState`、`selectConnectionState`、`selectConnectionLatency`分别只读激活身份摘要、通用连接状态和RTT样本，不返回credentialSecret、激活码或完整wire请求。额外的`terminal-data-client.status-projection` slice只从这些owner selector生成展示所需的激活摘要、连接摘要、最新RTT和sourceNodeId；以plain owner persistence缓存并按MASTER→SLAVE同步。该展示投影不含deviceId、credential、pending activation、激活码或RTT历史，不用于业务资格。副机状态页仅显示sourceNodeId匹配当前peer的缓存；current peer的projection revision未apply时标为“上次主机状态（待同步）”，无匹配缓存时显示等待，不显示“未激活”。
+公开 selectors：
+
+- `selectActivationState`：读取激活摘要。
+- `selectConnectionState`：读取连接状态及当前连接身份。
+- `selectConnectionLatency`：读取最新 RTT 与有限时间窗内的样本。
+- `selectTerminalTopicSubscriptions`：读取 TDC 持有的订阅记录，供业务 feature 协调其订阅意图。
+- `selectTerminalClientStatusProjection`：读取给终端状态界面使用的有限展示投影。
+- `selectTerminalHttpContext`：按服务名读取当前凭证、binding、实例角色和服务配置版本组成的请求上下文；HTTP owner 用它判断请求资格，不读取凭证秘密。
+
+以上 selector 不返回 credentialSecret、激活码或完整 wire 请求。`terminal-data-client.status-projection` slice只从本包 owner selector生成展示所需的激活摘要、连接摘要、最新RTT和sourceNodeId；以plain owner persistence缓存并按MASTER→SLAVE同步。该展示投影不含deviceId、credential、pending activation、激活码或RTT历史，不用于业务资格。副机状态页仅显示sourceNodeId匹配当前peer的缓存；current peer的projection revision未apply时标为“上次主机状态（待同步）”，无匹配缓存时显示等待，不显示“未激活”。
 
 装配层注入生成凭证的安全随机源、业务服务名、通用 transport command、版本和时钟。本包 actor 使用生成的 HTTP operation client，并经 transport 通用 HTTP command 执行；HTTP schema 和业务错误码不交给 transport。需要构造已认证 HTTP 请求上下文时，本包通过 `selectServerConfigServiceContext` 只读取当前服务的 `selectedSpace` 与 `serviceRevision`，不读取 server-config state、持久化内容、地址或代理配置。地址、代理及实际网络选择由 composition 注入 transport network adapter；TDC 仍是请求凭证与业务 owner。
 

@@ -3,7 +3,6 @@ import {
   adminDetailDescriptionsProps,
   adminDrawerSurfaceProps,
   displayFieldValue,
-  formatTypedExtensionValue,
   formatCanonicalDateTime,
   NameCodeText,
   testId,
@@ -16,6 +15,7 @@ import {operationsRtk} from '../../../app/api/OperationsTransport';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
 import type {StoreContract} from '../../../app/api/generated/operations-edge';
 import type {OperationsPageContext} from '../../../app/routing/model';
+import {extensionDetailItems} from '../../extension-fields';
 
 type Props = {
   contract?: StoreContract;
@@ -40,14 +40,7 @@ export function FixedStoreContractDetailDrawer({contract, queryContext, onClose}
   const definition = operationsRtk.useGetOperationsContractExtensionDefinitionQuery(definitionRequest, {
     skip: !selected,
   });
-  const extensionItems = [...(definition.data?.definitions ?? [])]
-    .filter(field => field.status !== 'DISABLED')
-    .sort((left, right) => (left.displayOrder ?? 0) - (right.displayOrder ?? 0))
-    .map(field => ({
-      key: `extension-${field.key}`,
-      label: field.label,
-      children: formatTypedExtensionValue(selected?.extensionValues?.[field.key], field),
-    }));
+  const extensionItems = extensionDetailItems(definition.data, selected?.extensionValues);
 
   useEffect(() => {
     if (contract) openDetail(contract);

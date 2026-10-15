@@ -15,13 +15,10 @@ import {
   type StoreContract,
 } from '../../../app/api/generated/operations-edge';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
+import {extensionFormTestIds} from '../../../app/automation/adminStructureTestIds';
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {useContractStoreCandidates} from './useContractStoreCandidates';
-import {
-  extensionValuesForGeneratedRequest,
-  serializeOrganizationExtensionValues,
-  type OrganizationExtensionFormValues,
-} from '../../organization-structure/model/organizationExtensionValues';
+import {enabledExtensionFields, serializeExtensionFormValues, type ExtensionFormValues} from '../../extension-fields';
 
 type ContractItemValues = {code: string; name: string};
 type Values = {
@@ -30,25 +27,22 @@ type Values = {
   effectiveTo?: string;
   note?: string;
   items: ContractItemValues[];
-  extensionValues?: OrganizationExtensionFormValues;
+  extensionValues?: ExtensionFormValues;
 };
 
 function extensionFields(definition?: ExtensionDefinition) {
-  return (definition?.definitions ?? [])
-    .filter(field => field.status !== 'DISABLED')
-    .sort((left, right) => (left.displayOrder ?? 0) - (right.displayOrder ?? 0))
-    .map(field => {
+  return enabledExtensionFields(definition).map(field => {
       const control =
         field.type === 'NUMBER' ? (
-          <InputNumber style={{width: '100%'}} />
+          <InputNumber style={{width: '100%'}} {...testId(extensionFormTestIds.field('contract', field.key))} />
         ) : field.type === 'BOOLEAN' ? (
-          <Switch />
+          <Switch {...testId(extensionFormTestIds.field('contract', field.key))} />
         ) : field.type === 'DATE' ? (
-          <Input type="date" />
+          <Input type="date" {...testId(extensionFormTestIds.field('contract', field.key))} />
         ) : field.type === 'SELECT' ? (
-          <Select options={field.options.map(option => ({value: option, label: option}))} />
+          <Select options={field.options.map(option => ({value: option, label: option}))} {...testId(extensionFormTestIds.field('contract', field.key))} />
         ) : (
-          <Input />
+          <Input {...testId(extensionFormTestIds.field('contract', field.key))} />
         );
       return (
         <Form.Item
@@ -86,6 +80,10 @@ export function ContractEditDrawer({
       if (!next) onClose();
     },
     dirtyMessage: '已修改的合同资料不会保存。',
+    dirtyGuardTestIds: {
+      confirm: testId(extensionFormTestIds.dirtyConfirm('contract')),
+      cancel: testId(extensionFormTestIds.dirtyCancel('contract')),
+    },
     idempotencyKey: true,
     diagnosticOperationId: OPERATIONS_ADMIN_OPERATION_IDS.updateOperationsContract,
   });
@@ -128,12 +126,10 @@ export function ContractEditDrawer({
             effectiveTo: value.effectiveTo || null,
             note: value.note?.trim() || null,
             items: value.items.map(item => ({code: item.code.trim(), name: item.name.trim()})),
-            extensionValues: extensionValuesForGeneratedRequest(
-              serializeOrganizationExtensionValues(
-                definition.currentData,
-                value.extensionValues,
-                contract.extensionValues,
-              ),
+            extensionValues: serializeExtensionFormValues(
+              definition.currentData,
+              value.extensionValues,
+              contract.extensionValues,
             ),
             expectedVersion: contract.revision,
           },

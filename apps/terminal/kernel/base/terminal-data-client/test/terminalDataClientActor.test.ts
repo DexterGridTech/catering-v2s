@@ -46,6 +46,7 @@ import {selectTerminalTopicSubscriptions} from '../src/selectors/selectTerminalT
 import type {ActorExecutionContext, CommandDefinition} from '@catering-v2s/kernel-base-runtime';
 import type {StateJsonValue, StateRoot} from '@catering-v2s/kernel-base-state';
 import type {TransportConnectionEvent} from '@catering-v2s/kernel-base-platform-ports';
+import {transportParameters} from '@catering-v2s/kernel-base-transport';
 import type {TransportHttpExecutionResult} from '@catering-v2s/kernel-base-transport';
 import type {RemoteOperationFact} from '../src/types/client';
 
@@ -1970,6 +1971,7 @@ describe('terminal-data-client activation command actor', () => {
         profileId: 'terminal-data-client',
         serverName: 'terminal-data-server',
         endpointPathAndQuery: '/tdp/workspace-1/ws',
+        reconnectPolicy: transportParameters.reconnectPolicy.defaultValue,
       }),
     );
     await findHandler(terminalTransportEventCommand.commandName).handle(

@@ -19,6 +19,7 @@ import {CommercialGroupEditDrawer} from './CommercialGroupEditDrawer';
 import {OrganizationStatusModal} from './OrganizationStatusModal';
 import {ProjectCreateDrawer} from './ProjectCreateDrawer';
 import {RegionCreateDrawer} from './RegionCreateDrawer';
+import {extensionDetailItems} from '../../extension-fields';
 import {
   issue,
   nodeTypeLabel,
@@ -30,7 +31,7 @@ import {
   type HierarchyRow,
   organizationStructurePageTitle,
 } from './organizationStructureShared';
-import {organizationExtensionDetailItems, useOrganizationExtensionDefinition} from './OrganizationExtensionFields';
+import {useOrganizationExtensionDefinition} from './OrganizationExtensionFields';
 
 function treeNodeTitle(row: HierarchyRow) {
   return (
@@ -263,7 +264,7 @@ export function OrganizationStructurePage({queryContext, actionCapabilityKeys}: 
                   ...(selected.nodeType === 'PROJECT'
                     ? [{key: 'phases', label: '项目分期名称', children: selected.phases.join('、') || '—'}]
                     : []),
-                  ...organizationExtensionDetailItems(definition.data, selected.extensionValues),
+                  ...extensionDetailItems(definition.data, selected.extensionValues),
                 ]}
               />
             </>

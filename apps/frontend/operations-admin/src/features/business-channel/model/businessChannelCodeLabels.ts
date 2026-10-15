@@ -4,8 +4,6 @@ import type {
   BusinessChannelView,
   BusinessChannelTemplateStoreVisibilityScope,
 } from '../../../app/api/generated/operations-edge';
-export {organizationStoreStatusLabels} from '../../organization-structure/model/organizationStatus';
-
 type AccessKind = BusinessChannelTemplateView['accessKind'];
 type OperatorKind = BusinessChannelTemplateView['operatorKind'];
 type OrderKind = BusinessChannelTemplateView['orderKind'];

@@ -11,15 +11,10 @@ import {operationsClient} from '../../../app/api/OperationsTransport';
 import {OPERATIONS_ADMIN_OPERATION_IDS, type OrganizationNode} from '../../../app/api/generated/operations-edge';
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {issue, organizationRegionCreateLabel, type HierarchyRow} from './organizationStructureShared';
-import {
-  extensionValuesForGeneratedRequest,
-  OrganizationExtensionFields,
-  serializeOrganizationExtensionValues,
-  type OrganizationExtensionFormValues,
-  useOrganizationExtensionDefinition,
-} from './OrganizationExtensionFields';
+import {serializeExtensionFormValues, type ExtensionFormValues} from '../../extension-fields';
+import {OrganizationExtensionFields, useOrganizationExtensionDefinition} from './OrganizationExtensionFields';
 
-type FormValues = {code: string; name: string; notes?: string; extensionValues?: OrganizationExtensionFormValues};
+type FormValues = {code: string; name: string; notes?: string; extensionValues?: ExtensionFormValues};
 
 export function RegionCreateDrawer({
   open,
@@ -68,9 +63,7 @@ export function RegionCreateDrawer({
             code: values.code.trim(),
             name: values.name.trim(),
             notes: values.notes?.trim() || null,
-            extensionValues: extensionValuesForGeneratedRequest(
-              serializeOrganizationExtensionValues(definition.data, values.extensionValues),
-            ),
+            extensionValues: serializeExtensionFormValues(definition.data, values.extensionValues),
           },
           headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()},
         },

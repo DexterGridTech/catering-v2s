@@ -4,19 +4,7 @@ import {operationsRtk} from '../../../app/api/OperationsTransport';
 import {type ExtensionDefinition, type ExtensionEntityType} from '../../../app/api/generated/operations-edge';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
 import type {OperationsPageProps} from '../../../app/routing/model';
-import {enabledOrganizationExtensionFields} from '../model/organizationExtensionValues';
-
-export {
-  extensionValuesForGeneratedRequest,
-  hydrateOrganizationExtensionValues,
-  organizationExtensionDetailItems,
-  serializeOrganizationExtensionValues,
-} from '../model/organizationExtensionValues';
-export type {ExtensionSubmissionField, OrganizationExtensionFormValues} from '../model/organizationExtensionValues';
-
-function enabledFields(definition?: ExtensionDefinition) {
-  return enabledOrganizationExtensionFields(definition);
-}
+import {enabledExtensionFields} from '../../extension-fields';
 
 export function useOrganizationExtensionDefinition({
   queryContext,
@@ -47,7 +35,7 @@ export function OrganizationExtensionFields({
 }) {
   return (
     <>
-      {enabledFields(definition).map(field => {
+      {enabledExtensionFields(definition).map(field => {
         const control =
           field.type === 'NUMBER' ? (
             <InputNumber style={{width: '100%'}} data-testid={`${testIdPrefix}-${field.key}`} />

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {FormalSeedFailure, assertStoreOperatingRuleReadback, createDataNodeScopeSelector, createProjectScopeSelector, readSeedAssetFixtureBytes, resolveExtensionValues, resolveInvitationCreationPlan, validateCatalogInventorySeedPrerequisite, validateExtensionDefinitionRevisionChangeCoverage, validateExtensionDefinitionSeedCoverage, validateFormalSeedStaticInputs, validateStoreOperatingRuleSeedCoverage, validateStoreServicePointSeedCoverage, validateThreeStateSeedCoverage, invocationKeyForTest, managedSeedProcessValidationTargets} from './owner-command-seed-executor.mjs';
+import {FormalSeedFailure, assertStoreOperatingRuleReadback, createDataNodeScopeSelector, createProjectScopeSelector, extensionValuesForRequest, readSeedAssetFixtureBytes, resolveExtensionValues, resolveInvitationCreationPlan, validateCatalogInventorySeedPrerequisite, validateExtensionDefinitionRevisionChangeCoverage, validateExtensionDefinitionSeedCoverage, validateFormalSeedStaticInputs, validateStoreOperatingRuleSeedCoverage, validateStoreServicePointSeedCoverage, validateThreeStateSeedCoverage, invocationKeyForTest, managedSeedProcessValidationTargets} from './owner-command-seed-executor.mjs';
 import {loadGeneratedOperationRegistry, materializeGeneratedOperationPath, resolveGeneratedOperationById} from '../test/seed-report.mjs';
 
 const generatedRegistry = loadGeneratedOperationRegistry(new URL('../../apps/backend/catering-business-server/src/main/resources/generated/edge-route-face-registry.json', import.meta.url));
@@ -210,7 +210,7 @@ test('formal seed maps only a role to a node of the same owner type and preserve
 });
 
 test('only generated owner operations may satisfy the executor input', async () => {
-  const ids = ['platformPasswordLogin', 'getCurrentPlatformSession', 'createWorkspaceInvitation', 'getWorkspaceInvitations', 'cancelWorkspaceInvitation', 'reissueWorkspaceInvitation', 'acceptPublicInvitation', 'sendPublicInvitationOtp', 'verifyPublicInvitationOtp', 'savePublicInvitationCredentials', 'completePublicInvitation', 'revokePlatformWorkspaceAssignment', 'transitionWorkspaceRoleStatus', 'getOperationsWorkspaceSessionEntry', 'selectOperationsWorkspaceSessionContext', 'selectOperationsWorkspaceSessionDataNode', 'createOperationsOrganizationStore', 'transitionOperationsOrganizationStoreStatus', 'createOperationsContract', 'invalidateOperationsContract', 'stagePlatformTerminalUpdateArtifact', 'registerPlatformTerminalUpdateArtifact', 'getPlatformTerminalUpdateArtifactDetail', 'operationsWorkspacePasswordLogin', 'createOperationsProjectTerminalUpdateRule', 'getOperationsProjectTerminalUpdateRuleDetail', 'releasePlatformTerminalUpdateArtifactStage'];
+  const ids = ['platformPasswordLogin', 'getCurrentPlatformSession', 'createWorkspaceInvitation', 'getWorkspaceInvitation', 'getWorkspaceInvitations', 'cancelWorkspaceInvitation', 'reissueWorkspaceInvitation', 'acceptPublicInvitation', 'sendPublicInvitationOtp', 'verifyPublicInvitationOtp', 'savePublicInvitationCredentials', 'completePublicInvitation', 'revokePlatformWorkspaceAssignment', 'transitionWorkspaceRoleStatus', 'getOperationsWorkspaceSessionEntry', 'selectOperationsWorkspaceSessionContext', 'selectOperationsWorkspaceSessionDataNode', 'createOperationsOrganizationStore', 'transitionOperationsOrganizationStoreStatus', 'createOperationsContract', 'invalidateOperationsContract', 'stagePlatformTerminalUpdateArtifact', 'registerPlatformTerminalUpdateArtifact', 'getPlatformTerminalUpdateArtifactDetail', 'operationsWorkspacePasswordLogin', 'createOperationsProjectTerminalUpdateRule', 'getOperationsProjectTerminalUpdateRuleDetail', 'releasePlatformTerminalUpdateArtifactStage'];
   const registry = [...ids, 'getOperationsStoreServicePointAreas', 'postOperationsStoreServicePointArea', 'postOperationsStoreServicePoint', 'postOperationsStoreServicePointStatus', 'postOperationsStoreServicePointAreaStatus', 'getOperationsStoreServicePoint', 'stageStoreServicePointImage', 'getOperationsStoreQrConfiguration', 'getOperationsStoreTerminals', 'getOperationsStoreTerminal', 'getOperationsStoreTerminalAreaCandidates', 'getOperationsStoreTerminalTagCandidates', 'postOperationsStoreTerminal', 'putOperationsStoreTerminal', 'postOperationsStoreTerminalStatus'].map((operationId) => ({operationId}));
   const actual = JSON.parse(await import('node:fs/promises').then((fs) => fs.readFile(new URL('../../doc/plans/platform/2026-07-25-v2s-r5-full-dev-seed-fixture-contract.json', import.meta.url), 'utf8')));
   assert.equal(validateFormalSeedStaticInputs({fixture: actual, registry}).invitationPlan.length, 20);
@@ -412,9 +412,20 @@ test('formal seed defines and reads back every extension host before creating ow
   assert.match(source, /assertExtensionValueReadback\(created, extensionValues\)/);
   assert.ok(source.indexOf('for (const definition of fixture.stableFixtures.extensionDefinitions)') < source.indexOf('for (const group of fixture.stableFixtures.organization.commercialGroups)'));
   assert.match(source, /definitions: definition\.fields\.map\(\(field, displayOrder\) => \(\{[\s\S]*type: field\.type,[\s\S]*status: field\.status,[\s\S]*displayOrder: field\.displayOrder/);
-  assert.match(source, /function extensionSubmission\(values\)[\s\S]*valueJson: JSON\.stringify\(value\)[\s\S]*mode: 'SET'/);
-  assert.equal((source.match(/extensionValues: extensionSubmission\(extensionValues\)/g) ?? []).length, 7);
   assert.match(source, /initializeCommercialGroup[\s\S]*body: \{groupCode: group\.code, groupName: group\.name, extensionValues,/);
   assert.match(source, /extensionValuesFor\(group\.workspace, 'COMMERCIAL_GROUP', group\.extensionValues\)/);
   assert.doesNotMatch(source, /extensionValuesFor\(group\.workspace, 'COMMERCIAL_GROUP', group\.extensionValues \?\? \{\}\)/);
+});
+
+test('formal seed sends owner extension values as an object and keeps false, zero, and DATE', () => {
+  const requestValues = extensionValuesForRequest({
+    text: 'enabled',
+    falseValue: false,
+    zeroValue: 0,
+    dateValue: '2026-10-15',
+    empty: null,
+    omitted: undefined,
+  });
+  assert.deepEqual(requestValues, {text: 'enabled', falseValue: false, zeroValue: 0, dateValue: '2026-10-15'});
+  assert.equal(Array.isArray(requestValues), false);
 });

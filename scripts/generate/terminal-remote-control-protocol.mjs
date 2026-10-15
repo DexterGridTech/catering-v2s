@@ -24,6 +24,10 @@ function fail(code) {
   throw new Error(code);
 }
 
+function requireOutputPaths(paths) {
+  if (!Array.isArray(paths) || paths.length === 0) fail('TERMINAL_REMOTE_PROTOCOL_OUTPUT_PATHS_EMPTY');
+}
+
 function isInside(root, candidate) {
   const relative = path.relative(root, candidate);
   return relative === '' || (relative !== '..' && !relative.startsWith(`..${path.sep}`));
@@ -69,13 +73,21 @@ function resolveOutputInsideRoot(relativePath, root) {
 }
 
 function validSchema(schema, fieldName) {
-  if (!schema || typeof schema !== 'object' || Array.isArray(schema) ||
-      !['uuid', 'string', 'integer', 'number'].includes(schema.type)) {
+  if (
+    !schema ||
+    typeof schema !== 'object' ||
+    Array.isArray(schema) ||
+    !['uuid', 'string', 'integer', 'number'].includes(schema.type)
+  ) {
     fail('TERMINAL_REMOTE_PROTOCOL_FIELD_INVALID');
   }
-  if (schema.enum !== undefined &&
-      (!Array.isArray(schema.enum) || schema.enum.length === 0 ||
-        schema.enum.some(value => typeof value !== 'string') || new Set(schema.enum).size !== schema.enum.length)) {
+  if (
+    schema.enum !== undefined &&
+    (!Array.isArray(schema.enum) ||
+      schema.enum.length === 0 ||
+      schema.enum.some(value => typeof value !== 'string') ||
+      new Set(schema.enum).size !== schema.enum.length)
+  ) {
     fail('TERMINAL_REMOTE_PROTOCOL_ENUM_INVALID');
   }
   if (schema.optional !== undefined && typeof schema.optional !== 'boolean') {
@@ -93,13 +105,22 @@ function validSchema(schema, fieldName) {
   if (schema.minLength !== undefined && schema.maxLength !== undefined && schema.minLength > schema.maxLength) {
     fail('TERMINAL_REMOTE_PROTOCOL_BOUND_INVALID');
   }
-  if (schema.type === 'uuid' && (schema.enum || schema.nullable || schema.optional || schema.minimum || schema.maximum)) {
+  if (
+    schema.type === 'uuid' &&
+    (schema.enum || schema.nullable || schema.optional || schema.minimum || schema.maximum)
+  ) {
     fail('TERMINAL_REMOTE_PROTOCOL_UUID_SCHEMA_INVALID');
   }
-  if (schema.type === 'string' && (schema.minimum !== undefined || schema.maximum !== undefined || schema.const !== undefined)) {
+  if (
+    schema.type === 'string' &&
+    (schema.minimum !== undefined || schema.maximum !== undefined || schema.const !== undefined)
+  ) {
     fail('TERMINAL_REMOTE_PROTOCOL_STRING_SCHEMA_INVALID');
   }
-  if (['integer', 'number'].includes(schema.type) && (schema.enum || schema.nullable || schema.minLength !== undefined || schema.maxLength !== undefined)) {
+  if (
+    ['integer', 'number'].includes(schema.type) &&
+    (schema.enum || schema.nullable || schema.minLength !== undefined || schema.maxLength !== undefined)
+  ) {
     fail('TERMINAL_REMOTE_PROTOCOL_NUMBER_SCHEMA_INVALID');
   }
   if (fieldName === 'reason' && schema.type !== 'string') fail('TERMINAL_REMOTE_PROTOCOL_REASON_SCHEMA_INVALID');
@@ -113,9 +134,15 @@ function readContract(root) {
     if (error?.message?.startsWith('TERMINAL_REMOTE_PROTOCOL_')) throw error;
     fail('TERMINAL_REMOTE_PROTOCOL_JSON_INVALID');
   }
-  if (contract?.protocolVersion !== 1 || contract.topic !== 'ter.remote-control.v1' ||
-      contract.maxMessageBytes !== 4096 || contract.envelope?.additionalFields !== 'ignore' ||
-      !contract.envelope?.fields || Array.isArray(contract.envelope.fields) || !Array.isArray(contract.messages)) {
+  if (
+    contract?.protocolVersion !== 1 ||
+    contract.topic !== 'ter.remote-control.v1' ||
+    contract.maxMessageBytes !== 4096 ||
+    contract.envelope?.additionalFields !== 'ignore' ||
+    !contract.envelope?.fields ||
+    Array.isArray(contract.envelope.fields) ||
+    !Array.isArray(contract.messages)
+  ) {
     fail('TERMINAL_REMOTE_PROTOCOL_CONTRACT_INVALID');
   }
   const envelopeNames = Object.keys(contract.envelope.fields);
@@ -123,17 +150,27 @@ function readContract(root) {
     fail('TERMINAL_REMOTE_PROTOCOL_ENVELOPE_INVALID');
   }
   for (const [name, schema] of Object.entries(contract.envelope.fields)) validSchema(schema, name);
-  if (contract.envelope.fields.v.const !== 1 || contract.envelope.fields.sessionId.type !== 'uuid' ||
-      contract.envelope.fields.seq.type !== 'integer' || contract.envelope.fields.seq.minimum !== 1) {
+  if (
+    contract.envelope.fields.v.const !== 1 ||
+    contract.envelope.fields.sessionId.type !== 'uuid' ||
+    contract.envelope.fields.seq.type !== 'integer' ||
+    contract.envelope.fields.seq.minimum !== 1
+  ) {
     fail('TERMINAL_REMOTE_PROTOCOL_ENVELOPE_INVALID');
   }
 
   if (contract.messages.length !== requiredMessages.length) fail('TERMINAL_REMOTE_PROTOCOL_MESSAGE_CLOSURE_INVALID');
   for (const [index, [type, direction]] of requiredMessages.entries()) {
     const message = contract.messages[index];
-    if (message?.type !== type || message.direction !== direction || message.additionalFields !== 'ignore' ||
-        message.body?.additionalFields !== 'ignore' || !message.body.fields ||
-        typeof message.body.fields !== 'object' || Array.isArray(message.body.fields)) {
+    if (
+      message?.type !== type ||
+      message.direction !== direction ||
+      message.additionalFields !== 'ignore' ||
+      message.body?.additionalFields !== 'ignore' ||
+      !message.body.fields ||
+      typeof message.body.fields !== 'object' ||
+      Array.isArray(message.body.fields)
+    ) {
       fail('TERMINAL_REMOTE_PROTOCOL_MESSAGE_CLOSURE_INVALID');
     }
     for (const [name, schema] of Object.entries(message.body.fields)) {
@@ -144,10 +181,14 @@ function readContract(root) {
   return contract;
 }
 
-function tsType(schema) {
+function enumArrayName(messageType, fieldName) {
+  return `remoteControl${typeName(messageType)}${typeName(fieldName)}Values`;
+}
+
+function tsType(schema, runtimeEnumName) {
   let type;
   if (schema.type === 'uuid' || schema.type === 'string') {
-    type = schema.enum ? schema.enum.map(value => JSON.stringify(value)).join(' | ') : 'string';
+    type = schema.enum ? `typeof ${runtimeEnumName}[number]` : 'string';
   } else {
     type = 'number';
   }
@@ -155,27 +196,53 @@ function tsType(schema) {
 }
 
 function typeName(type) {
-  return type.toLowerCase().split('_').map(part => part[0].toUpperCase() + part.slice(1)).join('');
+  return type
+    .toLowerCase()
+    .split('_')
+    .map(part => part[0].toUpperCase() + part.slice(1))
+    .join('');
 }
 
 function renderContract(contract) {
-  const types = contract.messages.map(message => {
-    const bodyFields = Object.entries(message.body.fields).map(([name, schema]) =>
-      `  readonly ${name}${schema.optional ? '?' : ''}: ${tsType(schema)};`).join('\n');
-    const name = typeName(message.type);
-    return `export type ${name}Body = Readonly<{\n${bodyFields}\n}>;\n\n` +
-      `export type ${name}Message = RemoteControlEnvelope<${JSON.stringify(message.type)}, ${name}Body>;`;
-  }).join('\n\n');
+  const enumArrays = contract.messages
+    .flatMap(message =>
+      Object.entries(message.body.fields)
+        .filter(([, schema]) => schema.enum)
+        .map(
+          ([fieldName, schema]) =>
+            `export const ${enumArrayName(message.type, fieldName)} = [\n` +
+            `${schema.enum.map(value => `  ${JSON.stringify(value)},`).join('\n')}\n] as const;`,
+        ),
+    )
+    .join('\n\n');
+  const types = contract.messages
+    .map(message => {
+      const bodyFields = Object.entries(message.body.fields)
+        .map(
+          ([name, schema]) =>
+            `  readonly ${name}${schema.optional ? '?' : ''}: ${tsType(schema, schema.enum ? enumArrayName(message.type, name) : undefined)};`,
+        )
+        .join('\n');
+      const name = typeName(message.type);
+      return (
+        `export type ${name}Body = Readonly<{\n${bodyFields}\n}>;\n\n` +
+        `export type ${name}Message = RemoteControlEnvelope<${JSON.stringify(message.type)}, ${name}Body>;`
+      );
+    })
+    .join('\n\n');
   const members = contract.messages.map(message => `  ${typeName(message.type)}Message`).join(' |\n');
   const messageTypes = contract.messages.map(message => `  ${JSON.stringify(message.type)},`).join('\n');
-  return `// Generated by scripts/generate/terminal-remote-control-protocol.mjs. Do not edit.\n\n` +
+  return (
+    `// Generated by scripts/generate/terminal-remote-control-protocol.mjs. Do not edit.\n\n` +
     `export const remoteControlTopic = ${JSON.stringify(contract.topic)} as const;\n` +
     `export const remoteControlProtocolMaxMessageBytes = ${contract.maxMessageBytes} as const;\n` +
     `export const remoteControlMessageTypes = [\n${messageTypes}\n] as const;\n` +
+    `${enumArrays}\n\n` +
     `export type RemoteControlMessageType = (typeof remoteControlMessageTypes)[number];\n\n` +
     `export type RemoteControlEnvelope<T extends RemoteControlMessageType, B> = Readonly<{\n` +
     `  readonly v: 1;\n  readonly type: T;\n  readonly sessionId: string;\n  readonly seq: number;\n  readonly body: B;\n}>;\n\n` +
-    `${types}\n\nexport type RemoteControlMessage =\n${members};\n`;
+    `${types}\n\nexport type RemoteControlMessage =\n${members};\n`
+  );
 }
 
 export function selfTest(root = repoRoot) {
@@ -191,17 +258,62 @@ export function selfTest(root = repoRoot) {
   if (!closureRejected) fail('TERMINAL_REMOTE_PROTOCOL_MESSAGE_CLOSURE_RED');
 
   const outside = path.join(os.tmpdir(), `terminal-remote-protocol-${process.pid}-outside`);
-  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'terminal-remote-protocol-'));
+  const tempRoot = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'terminal-remote-protocol-')));
   try {
+    const additive = structuredClone(contract);
+    const additiveCases = [
+      ['SCREEN_READY', 'screen', 'screen-ready-additive'],
+      ['POINTER', 'screen', 'pointer-screen-additive'],
+      ['POINTER', 'phase', 'pointer-phase-additive'],
+      ['INPUT_RESULT', 'status', 'input-status-additive'],
+      ['INPUT_RESULT', 'reason', 'input-reason-additive'],
+      ['SESSION_END', 'reason', 'session-end-reason-additive'],
+    ];
+    for (const [messageType, fieldName, value] of additiveCases) {
+      const message = additive.messages.find(candidate => candidate.type === messageType);
+      const schema = message?.body?.fields?.[fieldName];
+      if (!Array.isArray(schema?.enum)) fail('TERMINAL_REMOTE_PROTOCOL_ADDITIVE_ENUM_FIXTURE_INVALID');
+      schema.enum.push(value);
+    }
+    const fixturePath = path.join(tempRoot, contractPath);
+    fs.mkdirSync(path.dirname(fixturePath), {recursive: true});
+    fs.writeFileSync(fixturePath, `${JSON.stringify(additive, null, 2)}\n`);
+    const additiveGenerated = renderContract(readContract(tempRoot));
+    for (const [messageType, fieldName, value] of additiveCases) {
+      const expectedArray = enumArrayName(messageType, fieldName);
+      if (
+        !additiveGenerated.includes(`${JSON.stringify(value)},`) ||
+        !additiveGenerated.includes(`typeof ${expectedArray}[number]`)
+      ) {
+        fail('TERMINAL_REMOTE_PROTOCOL_ADDITIVE_ENUM_RED');
+      }
+    }
+    requireOutputPaths(outputPaths);
+    for (const outputPath of outputPaths) {
+      const target = resolveOutputInsideRoot(outputPath, tempRoot);
+      fs.mkdirSync(path.dirname(target), {recursive: true});
+      fs.writeFileSync(target, additiveGenerated);
+    }
+    const generatedTargets = outputPaths.map(outputPath =>
+      fs.readFileSync(resolveOutputInsideRoot(outputPath, tempRoot), 'utf8'),
+    );
+    if (generatedTargets.some(target => target !== additiveGenerated)) {
+      fail('TERMINAL_REMOTE_PROTOCOL_OUTPUT_RENDER_RED');
+    }
+
     fs.mkdirSync(outside, {recursive: true});
     fs.symlinkSync(outside, path.join(tempRoot, 'escape'));
     let symlinkRejected = false;
-    try { resolveInputInsideRoot('escape', tempRoot); } catch (error) {
+    try {
+      resolveInputInsideRoot('escape', tempRoot);
+    } catch (error) {
       symlinkRejected = error?.message === 'TERMINAL_REMOTE_PROTOCOL_INPUT_PATH_ESCAPE';
     }
     if (!symlinkRejected) fail('TERMINAL_REMOTE_PROTOCOL_SYMLINK_ESCAPE_RED');
     let absoluteRejected = false;
-    try { resolveInputInsideRoot(outside, tempRoot); } catch (error) {
+    try {
+      resolveInputInsideRoot(outside, tempRoot);
+    } catch (error) {
       absoluteRejected = error?.message === 'TERMINAL_REMOTE_PROTOCOL_INPUT_PATH_ESCAPE';
     }
     if (!absoluteRejected) fail('TERMINAL_REMOTE_PROTOCOL_ABSOLUTE_PATH_RED');
@@ -209,16 +321,25 @@ export function selfTest(root = repoRoot) {
     fs.rmSync(tempRoot, {recursive: true, force: true});
     fs.rmSync(outside, {recursive: true, force: true});
   }
-  return Object.freeze({messages: contract.messages.length, generatedBytes: Buffer.byteLength(renderContract(contract)), rootEscape: 'PASS'});
+  return Object.freeze({
+    messages: contract.messages.length,
+    generatedBytes: Buffer.byteLength(renderContract(contract)),
+    additiveEnums: 6,
+    configuredOutputs: 'PASS',
+    rootEscape: 'PASS',
+  });
 }
 
 function run(mode) {
   if (!['--write', '--check', '--self-test'].includes(mode)) fail('TERMINAL_REMOTE_PROTOCOL_USAGE');
   if (mode === '--self-test') {
     const result = selfTest();
-    process.stdout.write(`TERMINAL_REMOTE_PROTOCOL_SELF_TEST=PASS MESSAGES=${result.messages} ROOT_ESCAPE=${result.rootEscape}\n`);
+    process.stdout.write(
+      `TERMINAL_REMOTE_PROTOCOL_SELF_TEST=PASS MESSAGES=${result.messages} ADDITIVE_ENUMS=${result.additiveEnums} CONFIGURED_OUTPUTS=${result.configuredOutputs} ROOT_ESCAPE=${result.rootEscape}\n`,
+    );
     return;
   }
+  requireOutputPaths(outputPaths);
   const generated = renderContract(readContract(repoRoot));
   const targets = outputPaths.map(outputPath => ({
     outputPath,
@@ -244,10 +365,12 @@ function run(mode) {
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  try { run(process.argv[2]); }
-  catch (error) {
-    process.stderr.write(`${error?.message?.startsWith('TERMINAL_REMOTE_PROTOCOL_') ? error.message : 'TERMINAL_REMOTE_PROTOCOL_FAILED'}\n`);
+  try {
+    run(process.argv[2]);
+  } catch (error) {
+    process.stderr.write(
+      `${error?.message?.startsWith('TERMINAL_REMOTE_PROTOCOL_') ? error.message : 'TERMINAL_REMOTE_PROTOCOL_FAILED'}\n`,
+    );
     process.exitCode = 1;
   }
 }
-

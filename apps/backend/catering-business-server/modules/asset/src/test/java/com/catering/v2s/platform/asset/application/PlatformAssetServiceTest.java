@@ -1,7 +1,7 @@
 package com.catering.v2s.platform.asset.application;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -112,6 +112,7 @@ class PlatformAssetServiceTest {
     @Test
     void terminalUpdatePackageUsesPrivateBucketAndRequiresScopeAndClaimBeforeActiveRead() throws Exception {
         byte[] zip = new byte[] {'P', 'K', 3, 4, 1, 2, 3, 4};
+        Set<Path> temporaryBefore = temporaryAssetUploads();
         var firstStage = assets.stageTerminalUpdatePackage(
                 workspaceId,
                 "asset-flow",
@@ -135,8 +136,10 @@ class PlatformAssetServiceTest {
         assertEquals("release.zip", staged.fileName());
         assertEquals(sha256(zip), staged.sha256());
         assertTrue(objects.privateObjects.containsKey("terminal-update/" + sha256(zip) + ".zip"));
-        assertThrows(PlatformAssetService.AssetIdempotencyConflictException.class, () ->
-                assets.stageTerminalUpdatePackage(
+        assertEquals(temporaryBefore, temporaryAssetUploads(), "ZIP materialization must be removed after staging");
+        assertThrows(
+                PlatformAssetService.AssetIdempotencyConflictException.class,
+                () -> assets.stageTerminalUpdatePackage(
                         workspaceId,
                         "asset-flow",
                         "renamed.zip",
@@ -145,21 +148,57 @@ class PlatformAssetServiceTest {
                         new ByteArrayInputStream(zip),
                         "terminal-update-package-stage-001",
                         "asset-stage-request-001"));
-        assertThrows(PlatformAssetService.AssetClaimRejectedException.class, () -> assets.openTerminalUpdatePackage(
-                secondWorkspaceId, "asset-flow-b", staged.assetRef(), true));
+        assertThrows(
+                PlatformAssetService.AssetClaimRejectedException.class,
+                () -> assets.openTerminalUpdatePackage(secondWorkspaceId, "asset-flow-b", staged.assetRef(), true));
         try (var content = assets.openTerminalUpdatePackage(workspaceId, "asset-flow", staged.assetRef(), true)) {
             assertArrayEquals(zip, content.content().readAllBytes());
             assertEquals("application/zip", content.contentType());
         }
         assets.claimTerminalUpdatePackage(
                 workspaceId, "asset-flow", staged.assetRef(), staged.bindGrant(), staged.sha256());
-        assertThrows(PlatformAssetService.AssetClaimRejectedException.class, () -> assets.openTerminalUpdatePackage(
-                workspaceId, "asset-flow", staged.assetRef(), true));
+        assertThrows(
+                PlatformAssetService.AssetClaimRejectedException.class,
+                () -> assets.openTerminalUpdatePackage(workspaceId, "asset-flow", staged.assetRef(), true));
         try (var content = assets.openTerminalUpdatePackage(workspaceId, "asset-flow", staged.assetRef(), false)) {
             assertArrayEquals(zip, content.content().readAllBytes());
         }
-        assertThrows(PlatformAssetService.AssetNotFoundException.class,
+        assertThrows(
+                PlatformAssetService.AssetNotFoundException.class,
                 () -> assets.requireActivePublicReference(staged.assetRef()));
+    }
+
+    @Test
+    void failedTerminalPackageReadClosesSourceAndDeletesItsOwnTemporaryFile() {
+        Set<Path> before = temporaryAssetUploads();
+        boolean[] closed = {false};
+        IOException readFailure = new IOException("fixture-read-failure");
+        InputStream failingSource = new InputStream() {
+            @Override
+            public int read() throws IOException {
+                throw readFailure;
+            }
+
+            @Override
+            public void close() {
+                closed[0] = true;
+            }
+        };
+
+        PlatformAssetService.AssetStorageUnavailableException failure = assertThrows(
+                PlatformAssetService.AssetStorageUnavailableException.class,
+                () -> assets.stageTerminalUpdatePackage(
+                        workspaceId,
+                        "asset-flow",
+                        "read-failure.zip",
+                        "0".repeat(64),
+                        4,
+                        failingSource,
+                        "terminal-package-read-failure-001",
+                        "terminal-package-read-failure-request-001"));
+        assertTrue(containsCause(failure, readFailure));
+        assertTrue(closed[0], "failed read must close the caller-owned stream");
+        assertEquals(before, temporaryAssetUploads(), "failed ZIP materialization must be removed");
     }
 
     @Test
@@ -1524,26 +1563,26 @@ class PlatformAssetServiceTest {
             assertEquals(before, temporaryAssetUploads(), "storage failure must not retain the materialized upload");
         } finally {
             objects.clearFailure();
-            deleteTemporaryAssetUploadsCreatedAfter(before);
         }
     }
 
     private static Set<Path> temporaryAssetUploads() {
         try (var paths = Files.list(Path.of(System.getProperty("java.io.tmpdir")))) {
-            return paths.filter(path -> path.getFileName().toString().startsWith("catering-v2s-asset-"))
+            return paths.filter(path -> {
+                        String name = path.getFileName().toString();
+                        return name.startsWith("catering-v2s-asset-")
+                                || name.startsWith("catering-v2s-terminal-update-");
+                    })
                     .collect(Collectors.toUnmodifiableSet());
         } catch (IOException failure) {
             throw new IllegalStateException("cannot inspect asset temporary uploads", failure);
         }
     }
 
-    private static void deleteTemporaryAssetUploadsCreatedAfter(Set<Path> before) {
-        temporaryAssetUploads().stream().filter(path -> !before.contains(path)).forEach(path -> {
-            try {
-                Files.deleteIfExists(path);
-            } catch (IOException ignored) {
-            }
-        });
+    private static boolean containsCause(Throwable failure, Throwable expected) {
+        for (Throwable current = failure; current != null; current = current.getCause())
+            if (current == expected) return true;
+        return false;
     }
 
     private static class MemoryObjects implements AssetObjectStorage, TerminalUpdatePrivateObjectStorage {
@@ -1643,8 +1682,9 @@ class PlatformAssetServiceTest {
         @Override
         public InputStream openPrivate(String key) {
             byte[] value = privateObjects.get(key);
-            if (value == null) throw new AssetObjectStorageUnavailableException(
-                    "private-object.read", new IllegalStateException("missing private object"));
+            if (value == null)
+                throw new AssetObjectStorageUnavailableException(
+                        "private-object.read", new IllegalStateException("missing private object"));
             return new ByteArrayInputStream(value);
         }
 

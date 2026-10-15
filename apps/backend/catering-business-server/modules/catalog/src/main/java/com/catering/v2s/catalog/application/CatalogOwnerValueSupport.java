@@ -19,6 +19,18 @@ import java.util.UUID;
 final class CatalogOwnerValueSupport {
     private CatalogOwnerValueSupport() {}
 
+    static boolean skuPreparationDiffers(JsonNode sections, JsonNode itemProfile) {
+        JsonNode normalizedItem = itemProfile == null || itemProfile.isNull() ? null : itemProfile;
+        JsonNode skus = sections.path("skus");
+        if (!skus.isArray()) return false;
+        for (JsonNode sku : skus) {
+            JsonNode effective = sku.path("effectivePreparation");
+            JsonNode normalizedSku = effective.isMissingNode() || effective.isNull() ? null : effective;
+            if (!java.util.Objects.equals(normalizedItem, normalizedSku)) return true;
+        }
+        return false;
+    }
+
     static void validateItemPageQuery(ObjectNode request) {
         if (request == null) return;
         Set<String> allowed = Set.of(

@@ -7,7 +7,6 @@ import {
   dineInFormLabels,
   lifecycleStatusLabels,
   operatorKindLabels,
-  organizationStoreStatusLabels,
   orderKindLabels,
   ownerNodeTypeLabels,
   storeVisibilityScopeLabels,
@@ -23,7 +22,6 @@ describe('business-channel code labels', () => {
     expect(Object.keys(ownerNodeTypeLabels).sort()).toEqual(['PROJECT', 'STORE']);
     expect(Object.keys(bindingStatusLabels).sort()).toEqual(['BOUND', 'NOT_REQUIRED', 'UNBOUND']);
     expect(Object.keys(storeVisibilityScopeLabels).sort()).toEqual(['ALL_PROJECT_STORES', 'SELECTED_PROJECT_STORES']);
-    expect(Object.keys(organizationStoreStatusLabels).sort()).toEqual(['DISABLED', 'ENABLED', 'VOIDED']);
   });
 
   it('keeps business wording in the shared grouped export', () => {

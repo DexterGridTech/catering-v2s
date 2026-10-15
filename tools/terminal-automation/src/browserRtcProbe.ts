@@ -109,7 +109,7 @@ export const attachLiveKitSignalDiagnostics = (page: Page, label: 'operations' |
       attempt: attemptId,
       protocol,
       reason: safeBrowserRequestFailureReason(errorText),
-      detail: errorText.slice(0, 4_096),
+      detail: errorText,
     }));
     socket.on('close', () => log(`${label}.livekit.signal.socket-closed`, {
       attempt: attemptId,

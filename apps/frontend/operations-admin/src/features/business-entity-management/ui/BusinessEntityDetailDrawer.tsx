@@ -5,7 +5,6 @@ import {
   adminDetailDescriptionsProps,
   adminDrawerSurfaceProps,
   displayFieldValue,
-  formatTypedExtensionValue,
   formatCanonicalDateTime,
   testId,
   useDetailDrawer,
@@ -22,6 +21,7 @@ import {
 } from '../../../app/catalog/generatedAdminCatalog';
 import type {OperationsPageContext} from '../../../app/routing/model';
 import {OperationsAuditHistoryModal} from '../../audit-history';
+import {extensionDetailItems} from '../../extension-fields';
 import {
   businessEntityLifecycleLabels,
   canManageBusinessEntity,
@@ -158,10 +158,6 @@ export function BusinessEntityDetailDrawer({
     kind === 'HEAD_COMPANY' &&
     actionCapabilityKeys.includes(brandAuthorizationCapability) &&
     Boolean(onAuthorizeBrands);
-  const enabledDefinitions = [...(definitionResult.currentData?.definitions ?? [])]
-    .filter(definition => definition.status !== 'DISABLED')
-    .sort((left, right) => (left.displayOrder ?? 0) - (right.displayOrder ?? 0));
-
   const closeThen = (next: (current: BusinessEntity) => void) => {
     if (!detailReady || !selected) return;
     clearLatestDetail();
@@ -274,11 +270,7 @@ export function BusinessEntityDetailDrawer({
               {key: 'status', label: '状态', children: businessEntityLifecycleLabels[selected.status]},
               {key: 'remark', label: '备注', children: displayFieldValue(selected.remark)},
               {key: 'updatedAt', label: '更新时间', children: displayTime(selected.updatedAt)},
-              ...enabledDefinitions.map(definition => ({
-                key: `extension-${definition.key}`,
-                label: definition.label,
-                children: formatTypedExtensionValue(selected.extensionValues[definition.key], definition),
-              })),
+              ...extensionDetailItems(definitionResult.currentData, selected.extensionValues),
             ]}
           />
         )}

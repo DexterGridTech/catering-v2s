@@ -48,6 +48,24 @@ class TerminalConnectionProtocolTest {
     }
 
     @Test
+    void loadsTheCompleteTopicKeySetFromTheSharedProtocolResource() {
+        assertThat(protocol.topicKeys())
+                .containsExactlyInAnyOrder(
+                        "STORE",
+                        "PROJECT",
+                        "REGION",
+                        "COMMERCIAL_GROUP",
+                        "STORE_OPERATING_RULE",
+                        "VALID_CONTRACT_COLLECTION",
+                        "CONTRACT",
+                        "SERVICE_POINT_AREA_COLLECTION",
+                        "SERVICE_POINT_AREA",
+                        "SERVICE_POINT_COLLECTION",
+                        "SERVICE_POINT",
+                        "TERMINAL_UPDATE_RULES");
+    }
+
+    @Test
     void loadsApplicationAndStandardCloseTuplesFromTheSharedResource() {
         assertThat(protocol.protocolVersion()).isEqualTo(1);
         assertThat(protocol.endpointMethod()).isEqualTo("GET");

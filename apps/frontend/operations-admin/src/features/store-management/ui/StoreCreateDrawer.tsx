@@ -16,11 +16,7 @@ import {
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {useOrganizationCandidates} from '../../../app/queries/useOrganizationCandidates';
-import {
-  extensionValuesForGeneratedRequest,
-  serializeOrganizationExtensionValues,
-  type OrganizationExtensionFormValues,
-} from '../../organization-structure/model/organizationExtensionValues';
+import {enabledExtensionFields, serializeExtensionFormValues, type ExtensionFormValues} from '../../extension-fields';
 
 type Values = {
   brandId?: string;
@@ -29,14 +25,11 @@ type Values = {
   code: string;
   name: string;
   notes?: string;
-  extensionValues?: OrganizationExtensionFormValues;
+  extensionValues?: ExtensionFormValues;
 };
 
 function extensionFields(definition?: ExtensionDefinition) {
-  return (definition?.definitions ?? [])
-    .filter(field => field.status !== 'DISABLED')
-    .sort((left, right) => (left.displayOrder ?? 0) - (right.displayOrder ?? 0))
-    .map(field => {
+  return enabledExtensionFields(definition).map(field => {
       const control =
         field.type === 'NUMBER' ? (
           <InputNumber style={{width: '100%'}} {...testId(`operations-store-create-extension-${field.key}`)} />
@@ -175,9 +168,7 @@ export function StoreCreateDrawer({
             code: value.code.trim(),
             name: value.name.trim(),
             notes: value.notes?.trim() || null,
-            extensionValues: extensionValuesForGeneratedRequest(
-              serializeOrganizationExtensionValues(definition.currentData, value.extensionValues),
-            ),
+            extensionValues: serializeExtensionFormValues(definition.currentData, value.extensionValues),
           },
           headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()},
         },

@@ -132,7 +132,7 @@ const safeFailureCode = (error: unknown): string => {
   return match?.[0] ?? error.name;
 };
 
-const diagnosticText = (value: string): string => value.slice(0, 4_096);
+const diagnosticText = (value: string): string => value;
 
 const readVideoReadback = async (video: Locator) =>
   video.evaluate(element => {

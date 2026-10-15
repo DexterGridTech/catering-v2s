@@ -7,6 +7,7 @@ import {
   roleHomeDataScopeOptionPrefix,
   roleHomeTestIds,
 } from '../../../apps/frontend/operations-admin/src/features/role-home-bootstrap/roleHomeTestIds.ts';
+import {readAdminStructureProjectContext} from './adminStructureDevUi.ts';
 
 type ArtifactReadback = Readonly<{
   artifactRef: string;
@@ -22,7 +23,10 @@ type ArtifactReadback = Readonly<{
 
 export type TerminalUpdateSupplyUi = Readonly<{
   browser: Browser;
+  platformPage: Page;
   operationsPage: Page;
+  projectRef: string;
+  contextVersion: number;
   full: ArtifactReadback;
   hot: ArtifactReadback;
   ruleRef: string;
@@ -57,25 +61,24 @@ const canonicalDatePattern = /\d{4}年\d{1,2}月\d{1,2}日/u;
 const supplyLog = (runId: string, stage: string, detail = ''): void => {
   process.stdout.write(`TERMINAL_AUTOMATION_SUPPLY run=${runId} stage=${stage}${detail ? ` ${detail}` : ''}\n`);
 };
-const safeProblemSummary = async (response: import('playwright').Response): Promise<string> => {
+const observePageWaiterRejection = (runId: string, phase: string, waiter: Promise<unknown>): void => {
+  void waiter.catch(error => {
+    const details = error instanceof Error ? `${error.name}: ${error.message}\n${error.stack ?? ''}` : String(error);
+    supplyLog(runId, 'page.waiter.rejected', `phase=${phase} error=${JSON.stringify(details)}`);
+  });
+};
+const problemSummary = async (response: import('playwright').Response): Promise<string> => {
   const problem: unknown = await response.json().catch(() => undefined);
   const code =
     isRecord(problem) && typeof problem.errorCode === 'string'
       ? problem.errorCode
       : isRecord(problem) && typeof problem.title === 'string'
-        ? problem.title.replace(/[^A-Za-z0-9_-]/gu, '_').slice(0, 64)
+        ? problem.title
         : 'UNKNOWN';
   const correlationId =
     isRecord(problem) && typeof problem.correlationId === 'string' ? problem.correlationId : 'unavailable';
-  return `status=${response.status()} code=${code} correlationId=${correlationId}`;
+  return `status=${response.status()} code=${JSON.stringify(code)} correlationId=${JSON.stringify(correlationId)}`;
 };
-
-const safeBrowserError = (message: string): string =>
-  message
-    .replace(/https?:\/\/[^\s)]+/gu, '[URL]')
-    .replace(/\b(password|token|secret|authorization|cookie)\b\s*[:=]\s*[^\s,;]+/giu, '$1=[REDACTED]')
-    .replace(/\s+/gu, ' ')
-    .slice(0, 200);
 
 const supplyApiOperation = (request: Request): string | undefined => {
   let pathname: string;
@@ -133,11 +136,15 @@ const attachSupplyPageDiagnostics = (page: Page, runId: string, surface: 'platfo
     supplyLog(
       runId,
       `${surface}.http.failed`,
-      `request=${requestId} method=${request.method()} operation=${operation} elapsedMs=${start === undefined ? 'unknown' : Date.now() - start} reason=${safeBrowserError(request.failure()?.errorText ?? 'UNKNOWN')}`,
+      `request=${requestId} method=${request.method()} operation=${operation} elapsedMs=${start === undefined ? 'unknown' : Date.now() - start} reason=${JSON.stringify(request.failure()?.errorText ?? 'UNKNOWN')}`,
     );
   });
   page.on('pageerror', error => {
-    supplyLog(runId, `${surface}.page.error`, `name=${error.name} message=${safeBrowserError(error.message)}`);
+    supplyLog(
+      runId,
+      `${surface}.page.error`,
+      `name=${JSON.stringify(error.name)} message=${JSON.stringify(error.message)}`,
+    );
   });
 };
 
@@ -159,21 +166,60 @@ const clickOptionByTestId = async (page: Page, controlTestId: string, optionTest
 };
 
 const clickOptionByTestIdPrefix = async (
+  runId: string,
   page: Page,
   controlTestId: string,
-  _optionTestIdPrefix: string,
+  optionTestIdPrefix: string,
   expectedLabel: RegExp,
+  keyboardSelection = false,
 ): Promise<void> => {
   const control = page.getByTestId(controlTestId);
   const input = control.locator('input').first();
-  await input.waitFor({state: 'visible'});
-  await input.click();
+  await control.waitFor({state: 'visible'});
+  await input.waitFor({state: 'attached'});
+  const inputEnabled = await input.isEnabled();
+  const ariaControls = await input.getAttribute('aria-controls');
+  supplyLog(
+    runId,
+    'selector.open.begin',
+    `control=${controlTestId} inputEnabled=${inputEnabled} ariaControls=${ariaControls ?? 'missing'}`,
+  );
+  if (!inputEnabled) {
+    const selectedText = (await control.innerText().catch(() => '')).replace(/\s+/gu, ' ').trim();
+    throw new Error(`TERMINAL_UPDATE_SUPPLY_SELECTOR_DISABLED:${controlTestId}:selected=${selectedText}`);
+  }
+  await control.click();
+  await expect(input).toHaveAttribute('aria-expanded', 'true', {timeout: 5_000});
+  const visibleDropdownCount = await page
+    .locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden):visible')
+    .count();
+  supplyLog(
+    runId,
+    'selector.open.completed',
+    `control=${controlTestId} visibleDropdownCount=${visibleDropdownCount}`,
+  );
   const dropdown = await activeSelectDropdown(page, input);
   await dropdown.waitFor({state: 'visible', timeout: 30_000});
-  const matching = dropdown.locator('.ant-select-item-option:visible').filter({hasText: expectedLabel});
+  if (optionTestIdPrefix !== '' && !/^[a-zA-Z0-9_-]+$/u.test(optionTestIdPrefix))
+    throw new Error(`TERMINAL_UPDATE_SUPPLY_OPTION_PREFIX_INVALID:${controlTestId}`);
+  const matching =
+    optionTestIdPrefix === ''
+      ? dropdown.locator('.ant-select-item-option:visible').filter({hasText: expectedLabel})
+      : dropdown.locator(`[data-testid^="${optionTestIdPrefix}"]`).filter({hasText: expectedLabel});
   try {
-    await expect(matching.first()).toBeVisible({timeout: 5_000});
+    await expect(matching).toHaveCount(1, {timeout: 5_000});
   } catch {
+    // Ant Design can expose the expanded dropdown before its options finish rendering.
+  }
+  const count = await matching.count();
+  const visibleOptions = dropdown.locator('.ant-select-item-option:visible');
+  const visibleOptionCountAtRead = await visibleOptions.count();
+  supplyLog(
+    runId,
+    'selector.options.readback',
+    `control=${controlTestId} prefix=${optionTestIdPrefix || 'none'} matchedCount=${count} visibleOptionCountAtRead=${visibleOptionCountAtRead}`,
+  );
+  if (count !== 1) {
     const visibleLabels: string[] = [];
     const visibleOptions = dropdown.locator('.ant-select-item-option:visible');
     for (let index = 0; index < Math.min(await visibleOptions.count(), 20); index += 1) {
@@ -181,18 +227,50 @@ const clickOptionByTestIdPrefix = async (
     }
     const dropdownText = (await dropdown.innerText().catch(() => '')).replace(/\s+/gu, ' ').trim();
     throw new Error(
-      `TERMINAL_UPDATE_SUPPLY_OPTION_NOT_FOUND:${controlTestId}:${expectedLabel.source}:${visibleLabels.join('|')}:${dropdownText.slice(0, 200)}`,
+      `TERMINAL_UPDATE_SUPPLY_OPTION_COUNT_MISMATCH:${controlTestId}:prefix=${optionTestIdPrefix || 'none'}:expected=${expectedLabel.source}:actual=${count}:${visibleLabels.join('|')}:${dropdownText.slice(0, 200)}`,
     );
   }
-  const count = await matching.count();
-  const option = matching.last();
-  await option.scrollIntoViewIfNeeded();
-  await option.click();
-  await page.waitForTimeout(75);
-  if ((await input.getAttribute('aria-expanded').catch(() => null)) === 'true') await page.keyboard.press('Escape');
+  const option = matching.first();
+  await expect(option).toBeVisible({timeout: 5_000});
+  if (keyboardSelection) {
+    const targetOptionLabel = (
+      (await option.getAttribute('aria-label')) ?? (await option.innerText())
+    )
+      .replace(/\s+/gu, ' ')
+      .trim();
+    const targetOptionIndex = await option.evaluate(element => {
+      const parent = element.parentElement;
+      if (!parent) return -1;
+      return Array.from(parent.querySelectorAll('.ant-select-item-option')).indexOf(element as HTMLElement);
+    });
+    if (!targetOptionLabel || targetOptionIndex < 0)
+      throw new Error(`TERMINAL_UPDATE_SUPPLY_OPTION_POSITION_MISSING:${controlTestId}`);
+    await input.focus();
+    await input.press('Home');
+    for (let index = 0; index < targetOptionIndex; index += 1) await input.press('ArrowDown');
+    const activeId = await input.getAttribute('aria-activedescendant');
+    const activeLabel = activeId
+      ? await page
+          .locator(`#${activeId}`)
+          .evaluate(element => (element.getAttribute('aria-label') ?? element.textContent ?? '').replace(/\s+/gu, ' ').trim())
+          .catch(() => '')
+      : '';
+    supplyLog(
+      runId,
+      'selector.keyboard-target.readback',
+      `control=${controlTestId} target=${targetOptionLabel} activeOptionId=${activeId ?? 'missing'} activeLabel=${activeLabel || 'missing'}`,
+    );
+    if (activeLabel !== targetOptionLabel)
+      throw new Error(`TERMINAL_UPDATE_SUPPLY_OPTION_KEYBOARD_TARGET_MISMATCH:${controlTestId}`);
+    await input.press('Enter');
+  } else {
+    await option.click();
+  }
+  await expect(input).toHaveAttribute('aria-expanded', 'false', {timeout: 5_000});
   if (!expectedLabel.test(await control.innerText())) {
     throw new Error(`TERMINAL_UPDATE_SUPPLY_OPTION_SELECTION_MISMATCH:${controlTestId}`);
   }
+  supplyLog(runId, 'selector.selection.completed', `control=${controlTestId}`);
 };
 
 const waitForPage = async (page: Page, testId: string): Promise<void> => {
@@ -227,8 +305,22 @@ const waitForPage = async (page: Page, testId: string): Promise<void> => {
   }
 };
 
-const activeSelectDropdown = (_page: Page, _input: Locator): Locator =>
-  _page.locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden):visible').last();
+const activeSelectDropdown = async (page: Page, input: Locator): Promise<Locator> => {
+  const listboxId = await input.getAttribute('aria-controls');
+  if (listboxId) {
+    const listbox = page.locator(`[id=${JSON.stringify(listboxId)}]`);
+    const ownerDropdown = listbox
+      .locator('xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " ant-select-dropdown ")]')
+      .first();
+    if (
+      (await ownerDropdown.count()) > 0 &&
+      (await ownerDropdown.isVisible()) &&
+      (await ownerDropdown.locator('.ant-select-item-option:visible').count()) > 0
+    )
+      return ownerDropdown;
+  }
+  return page.locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden):visible').last();
+};
 
 const assertText = async (page: Page, testId: string, expected: RegExp): Promise<void> => {
   const target = page.getByTestId(testId);
@@ -328,7 +420,7 @@ const registerArtifact = async (
     page.off('requestfailed', stageRequestFailedListener);
   }
   if (!stageResponse.ok()) {
-    const problem = await safeProblemSummary(stageResponse);
+    const problem = await problemSummary(stageResponse);
     supplyLog(input.runId, 'artifact.parse.reject', `kind=${input.kind} ${problem}`);
     throw new Error(`TERMINAL_UPDATE_SUPPLY_PARSE_HTTP_${problem.replaceAll(' ', ':')}`);
   }
@@ -352,10 +444,11 @@ const registerArtifact = async (
     response =>
       response.request().method() === 'POST' && new URL(response.url()).pathname.endsWith('/terminal-update-artifacts'),
   );
+  observePageWaiterRejection(input.runId, `artifact.register.${input.kind}`, savedResponse);
   await page.getByTestId(platformIds.save).click();
   const response = await savedResponse;
   if (!response.ok()) {
-    const problem = await safeProblemSummary(response);
+    const problem = await problemSummary(response);
     supplyLog(input.runId, 'artifact.register.reject', `kind=${input.kind} ${problem}`);
     throw new Error(`TERMINAL_UPDATE_SUPPLY_REGISTER_HTTP_${problem.replaceAll(' ', ':')}`);
   }
@@ -451,6 +544,7 @@ export const createTerminalUpdateSupplyUi = async (
     supplyLog(input.runId, 'artifact.chain.verified', `full=${full.artifactRef} hot=${hot.artifactRef}`);
 
     const operationsPage = await context.newPage();
+    await operationsPage.setViewportSize({width: 1440, height: 900});
     attachSupplyPageDiagnostics(operationsPage, input.runId, 'operations');
     await operationsPage.goto(new URL('/operations/aurora/login', input.operationsOrigin).toString());
     await operationsPage.getByTestId('operations-login-name').fill('r5-account-multi-role');
@@ -458,6 +552,7 @@ export const createTerminalUpdateSupplyUi = async (
     await operationsPage.getByTestId('operations-login-submit').click();
     await operationsPage.getByTestId('operations-role-context-select').waitFor({state: 'visible', timeout: 30_000});
     await clickOptionByTestIdPrefix(
+      input.runId,
       operationsPage,
       'operations-role-context-select',
       roleHomeTestIds.roleContext.optionPrefix,
@@ -471,12 +566,14 @@ export const createTerminalUpdateSupplyUi = async (
     await scope.waitFor({state: 'visible', timeout: 30_000});
     await scope.click();
     await clickOptionByTestIdPrefix(
+      input.runId,
       operationsPage,
       roleHomeTestIds.dataScope.region,
       roleHomeDataScopeOptionPrefix('REGION'),
       /华北大区/u,
     );
     await clickOptionByTestIdPrefix(
+      input.runId,
       operationsPage,
       roleHomeTestIds.dataScope.project,
       roleHomeDataScopeOptionPrefix('PROJECT'),
@@ -484,7 +581,17 @@ export const createTerminalUpdateSupplyUi = async (
     );
     await operationsPage.getByTestId(roleHomeTestIds.dataScope.confirm).click();
     await waitForPage(operationsPage, operationsIds.page);
+    const projectContext = await readAdminStructureProjectContext({
+      page: operationsPage,
+      operationsOrigin: input.operationsOrigin,
+      storeRef: input.storeRef,
+      runId: input.runId,
+    });
     if (input.verifyIdleDuration) {
+      supplyLog(input.runId, 'operations.rule-tab.activate.started');
+      await operationsPage.getByTestId(operationsIds.rulesTabLabel).click();
+      await operationsPage.getByTestId(operationsIds.rulesTab).waitFor({state: 'visible'});
+      supplyLog(input.runId, 'operations.rule-tab.activate.completed');
       await operationsPage.getByTestId(operationsIds.createRule).click();
       await assertText(operationsPage, operationsIds.initialStatus, /^停用$/u);
       await clickOptionByTestId(operationsPage, operationsIds.targetMode, operationsIds.targetModeOption('STORE_REFS'));
@@ -518,10 +625,12 @@ export const createTerminalUpdateSupplyUi = async (
       const idleRequestPromise = operationsPage.waitForRequest(
         request => request.method() === 'POST' && new URL(request.url()).pathname.endsWith('/terminal-update-rules'),
       );
+      observePageWaiterRejection(input.runId, 'rule.create.idle.request', idleRequestPromise);
       const idleResponsePromise = operationsPage.waitForResponse(
         response =>
           response.request().method() === 'POST' && new URL(response.url()).pathname.endsWith('/terminal-update-rules'),
       );
+      observePageWaiterRejection(input.runId, 'rule.create.idle.response', idleResponsePromise);
       await operationsPage.getByTestId(operationsIds.createRuleSubmit).click();
       const idleRequest = await idleRequestPromise;
       const idleRequestBody: unknown = idleRequest.postDataJSON();
@@ -535,7 +644,7 @@ export const createTerminalUpdateSupplyUi = async (
         throw new Error('TERMINAL_UPDATE_SUPPLY_IDLE_MINUTES_REQUEST_MISMATCH');
       const idleResponse = await idleResponsePromise;
       if (!idleResponse.ok()) {
-        const problem = await safeProblemSummary(idleResponse);
+        const problem = await problemSummary(idleResponse);
         supplyLog(input.runId, 'rule.idle.create.reject', problem);
         throw new Error(`TERMINAL_UPDATE_SUPPLY_IDLE_RULE_CREATE_HTTP_${problem.replaceAll(' ', ':')}`);
       }
@@ -580,9 +689,11 @@ export const createTerminalUpdateSupplyUi = async (
       response =>
         response.request().method() === 'POST' && new URL(response.url()).pathname.endsWith('/terminal-update-rules'),
     );
+    observePageWaiterRejection(input.runId, 'rule.create.request-response', ruleResponsePromise);
     const ruleRequestPromise = operationsPage.waitForRequest(
       request => request.method() === 'POST' && new URL(request.url()).pathname.endsWith('/terminal-update-rules'),
     );
+    observePageWaiterRejection(input.runId, 'rule.create.request', ruleRequestPromise);
     await operationsPage.getByTestId(operationsIds.createRuleSubmit).click();
     const ruleRequest = await ruleRequestPromise;
     const ruleRequestBody: unknown = ruleRequest.postDataJSON();
@@ -596,7 +707,7 @@ export const createTerminalUpdateSupplyUi = async (
       throw new Error('TERMINAL_UPDATE_SUPPLY_RULE_STORE_IDENTITY_MISMATCH');
     const ruleResponse = await ruleResponsePromise;
     if (!ruleResponse.ok()) {
-      const problem = await safeProblemSummary(ruleResponse);
+      const problem = await problemSummary(ruleResponse);
       supplyLog(input.runId, 'rule.create.reject', problem);
       throw new Error(`TERMINAL_UPDATE_SUPPLY_RULE_CREATE_HTTP_${problem.replaceAll(' ', ':')}`);
     }
@@ -629,17 +740,55 @@ export const createTerminalUpdateSupplyUi = async (
     const title = ruleTitle(full, hot);
     const ruleRow = operationsPage.getByTestId(operationsIds.ruleRow(ruleRef));
     await ruleRow.waitFor({state: 'visible'});
-    await assertText(operationsPage, operationsIds.ruleRow(ruleRef), new RegExp(escaped(title), 'u'));
+    await assertText(operationsPage, operationsIds.ruleRow(ruleRef), new RegExp(escaped(artifactTitle(full)), 'u'));
+    await assertText(operationsPage, operationsIds.ruleRow(ruleRef), new RegExp(escaped(artifactTitle(hot)), 'u'));
     await expect(ruleRow.locator('.ant-tag')).toHaveClass(/ant-tag-warning/u);
+    const ruleStatusFilter = operationsPage.getByTestId(operationsIds.ruleStatusFilter);
+    if (!(await ruleStatusFilter.isVisible().catch(() => false))) {
+      const expandRuleFilters = operationsPage
+        .getByRole('tabpanel', {name: '终端版本更新规则'})
+        .getByText('展开', {exact: true});
+      supplyLog(input.runId, 'rule.filters.expand.started');
+      await expandRuleFilters.waitFor({state: 'visible'});
+      await expandRuleFilters.click();
+      await ruleStatusFilter.waitFor({state: 'visible'});
+      supplyLog(input.runId, 'rule.filters.expand.completed');
+    }
+    await clickOptionByTestIdPrefix(input.runId, operationsPage, operationsIds.ruleStatusFilter, '', /^停用$/u, true);
+    const disabledQueryResponsePromise = operationsPage.waitForResponse(response => {
+      if (response.request().method() !== 'GET') return false;
+      const url = new URL(response.url());
+      return url.pathname.endsWith('/terminal-update-rules') && url.searchParams.get('status') === 'DISABLED';
+    });
+    observePageWaiterRejection(input.runId, 'rule.filter.disabled', disabledQueryResponsePromise);
+    await operationsPage.getByTestId(operationsIds.ruleQuerySubmit).click();
+    const disabledQueryResponse = await disabledQueryResponsePromise;
+    if (!disabledQueryResponse.ok())
+      throw new Error(`TERMINAL_UPDATE_SUPPLY_RULE_FILTER_HTTP_${disabledQueryResponse.status()}`);
+    await ruleRow.waitFor({state: 'visible'});
+    await expect(ruleRow.locator('.ant-tag')).toHaveClass(/ant-tag-warning/u);
+    supplyLog(input.runId, 'rule.filter.disabled.readback', `ruleRef=${ruleRef} status=DISABLED`);
+    const resetQueryResponsePromise = operationsPage.waitForResponse(response => {
+      if (response.request().method() !== 'GET') return false;
+      const url = new URL(response.url());
+      return url.pathname.endsWith('/terminal-update-rules') && !url.searchParams.has('status');
+    });
+    observePageWaiterRejection(input.runId, 'rule.filter.reset', resetQueryResponsePromise);
+    await operationsPage.getByTestId(operationsIds.ruleQueryReset).click();
+    const resetQueryResponse = await resetQueryResponsePromise;
+    if (!resetQueryResponse.ok())
+      throw new Error(`TERMINAL_UPDATE_SUPPLY_RULE_RESET_HTTP_${resetQueryResponse.status()}`);
+    await ruleRow.waitFor({state: 'visible'});
     const ruleStoresResponsePromise = operationsPage.waitForResponse(
       response =>
         response.request().method() === 'GET' &&
         new URL(response.url()).pathname.endsWith(`/terminal-update-rules/${ruleRef}/stores`),
     );
+    observePageWaiterRejection(input.runId, 'rule.stores.readback', ruleStoresResponsePromise);
     await operationsPage.getByTestId(operationsIds.ruleOpen(ruleRef)).click();
     const ruleStoresResponse = await ruleStoresResponsePromise;
     if (!ruleStoresResponse.ok()) {
-      const problem = await safeProblemSummary(ruleStoresResponse);
+      const problem = await problemSummary(ruleStoresResponse);
       supplyLog(input.runId, 'rule.stores.reject', `ruleRef=${ruleRef} ${problem}`);
       throw new Error(`TERMINAL_UPDATE_SUPPLY_RULE_STORES_HTTP_${problem.replaceAll(' ', ':')}`);
     }
@@ -677,10 +826,11 @@ export const createTerminalUpdateSupplyUi = async (
         response.request().method() === 'POST' &&
         new URL(response.url()).pathname.endsWith(`/terminal-update-rules/${ruleRef}/status`),
     );
+    observePageWaiterRejection(input.runId, 'rule.enable', statusResponsePromise);
     await operationsPage.getByTestId(operationsIds.ruleStatusConfirm).click();
     const statusResponse = await statusResponsePromise;
     if (!statusResponse.ok()) {
-      const problem = await safeProblemSummary(statusResponse);
+      const problem = await problemSummary(statusResponse);
       supplyLog(input.runId, 'rule.enable.reject', `ruleRef=${ruleRef} ${problem}`);
       throw new Error(`TERMINAL_UPDATE_SUPPLY_RULE_ENABLE_HTTP_${problem.replaceAll(' ', ':')}`);
     }
@@ -694,22 +844,74 @@ export const createTerminalUpdateSupplyUi = async (
     await assertText(operationsPage, operationsIds.ruleDetail, /状态\s*启用/u);
     await operationsPage.getByTestId(operationsIds.ruleDetailActions).click();
     await assertText(operationsPage, operationsIds.enableRuleAction, /停用规则/u);
+    await operationsPage.getByTestId(operationsIds.enableRuleAction).click();
+    await assertText(
+      operationsPage,
+      'terminal-update-rule-status-confirmation',
+      new RegExp(`停用“${escaped(title)}”？`, 'u'),
+    );
+    const disableResponsePromise = operationsPage.waitForResponse(
+      response =>
+        response.request().method() === 'POST' &&
+        new URL(response.url()).pathname.endsWith(`/terminal-update-rules/${ruleRef}/status`),
+    );
+    observePageWaiterRejection(input.runId, 'rule.disable', disableResponsePromise);
+    await operationsPage.getByTestId(operationsIds.ruleStatusConfirm).click();
+    const disableResponse = await disableResponsePromise;
+    if (!disableResponse.ok()) throw new Error(`TERMINAL_UPDATE_SUPPLY_RULE_DISABLE_HTTP_${disableResponse.status()}`);
+    const disabledRule: unknown = await disableResponse.json();
+    if (
+      !isRecord(disabledRule) ||
+      text(disabledRule, 'ruleRef') !== ruleRef ||
+      text(disabledRule, 'status') !== 'DISABLED'
+    )
+      throw new Error('TERMINAL_UPDATE_SUPPLY_RULE_DISABLE_READBACK_MISMATCH');
+    await assertText(operationsPage, operationsIds.ruleDetail, /状态\s*停用/u);
+    await operationsPage.getByTestId(operationsIds.ruleDetailActions).click();
+    await operationsPage.getByTestId(operationsIds.enableRuleAction).click();
+    await assertText(
+      operationsPage,
+      'terminal-update-rule-status-confirmation',
+      new RegExp(`启用“${escaped(title)}”？`, 'u'),
+    );
+    const reenableResponsePromise = operationsPage.waitForResponse(
+      response =>
+        response.request().method() === 'POST' &&
+        new URL(response.url()).pathname.endsWith(`/terminal-update-rules/${ruleRef}/status`),
+    );
+    observePageWaiterRejection(input.runId, 'rule.reenable', reenableResponsePromise);
+    await operationsPage.getByTestId(operationsIds.ruleStatusConfirm).click();
+    const reenableResponse = await reenableResponsePromise;
+    if (!reenableResponse.ok())
+      throw new Error(`TERMINAL_UPDATE_SUPPLY_RULE_REENABLE_HTTP_${reenableResponse.status()}`);
+    const reenabledRule: unknown = await reenableResponse.json();
+    if (
+      !isRecord(reenabledRule) ||
+      text(reenabledRule, 'ruleRef') !== ruleRef ||
+      text(reenabledRule, 'status') !== 'ENABLED'
+    )
+      throw new Error('TERMINAL_UPDATE_SUPPLY_RULE_REENABLE_READBACK_MISMATCH');
+    await assertText(operationsPage, operationsIds.ruleDetail, /状态\s*启用/u);
+    await operationsPage.getByTestId(operationsIds.ruleDetailActions).click();
     await operationsPage.getByTestId(operationsIds.ruleHistoryAction).click();
     const auditList = operationsPage.getByTestId('operations-audit-history-list');
     await auditList.waitFor({state: 'visible', timeout: 30_000});
     const auditItems = auditList.locator('[data-testid^="operations-audit-history-item-"]');
+    const expectedAuditItemCount = 4; // CREATE, ENABLE, DISABLE, ENABLE.
     try {
-      await expect(auditItems).toHaveCount(2, {timeout: 5_000});
+      await expect(auditItems).toHaveCount(expectedAuditItemCount, {timeout: 5_000});
     } catch {
       const observedCount = await auditItems.count();
       supplyLog(
         input.runId,
         'rule.audit-history.mismatch',
-        `ruleRef=${ruleRef} expectedItems=2 observedItems=${observedCount}`,
+        `ruleRef=${ruleRef} expectedItems=${expectedAuditItemCount} observedItems=${observedCount}`,
       );
-      throw new Error(`TERMINAL_UPDATE_SUPPLY_RULE_AUDIT_HISTORY_COUNT_MISMATCH:expected=2:observed=${observedCount}`);
+      throw new Error(
+        `TERMINAL_UPDATE_SUPPLY_RULE_AUDIT_HISTORY_COUNT_MISMATCH:expected=${expectedAuditItemCount}:observed=${observedCount}`,
+      );
     }
-    supplyLog(input.runId, 'rule.audit-history.readback', `ruleRef=${ruleRef} items=2`);
+    supplyLog(input.runId, 'rule.audit-history.readback', `ruleRef=${ruleRef} items=${expectedAuditItemCount}`);
     await operationsPage.keyboard.press('Escape');
     await operationsPage.getByTestId('operations-audit-history-modal').waitFor({state: 'hidden'});
     supplyLog(input.runId, 'rule.audit-history.closed', `ruleRef=${ruleRef}`);
@@ -717,8 +919,20 @@ export const createTerminalUpdateSupplyUi = async (
     await operationsPage.getByTestId(operationsIds.ruleDetail).locator('button.ant-drawer-close').click();
     await operationsPage.getByTestId(operationsIds.ruleDetail).waitFor({state: 'hidden'});
     supplyLog(input.runId, 'rule.detail.closed', `ruleRef=${ruleRef}`);
+    const ruleRefreshResponsePromise = operationsPage.waitForResponse(response => {
+      if (response.request().method() !== 'GET') return false;
+      const url = new URL(response.url());
+      return url.pathname.endsWith('/terminal-update-rules') && !url.searchParams.has('status');
+    });
+    observePageWaiterRejection(input.runId, 'rule.refresh', ruleRefreshResponsePromise);
+    await operationsPage.getByTestId(operationsIds.ruleRefresh).click();
+    const ruleRefreshResponse = await ruleRefreshResponsePromise;
+    if (!ruleRefreshResponse.ok())
+      throw new Error(`TERMINAL_UPDATE_SUPPLY_RULE_REFRESH_HTTP_${ruleRefreshResponse.status()}`);
+    await expect(ruleRow.locator('.ant-tag')).toHaveClass(/ant-tag-success/u);
+    supplyLog(input.runId, 'rule.refresh.readback', `ruleRef=${ruleRef} status=ENABLED`);
     await operationsPage.getByTestId(operationsIds.reportsTabLabel).click();
-    await assertText(operationsPage, operationsIds.reportsTabLabel, /^终端更新状态$/u);
+    await assertText(operationsPage, operationsIds.reportsTabLabel, /^门店终端列表$/u);
     supplyLog(input.runId, 'reports.tab.opened', `ruleRef=${ruleRef}`);
     await waitForPage(operationsPage, operationsIds.reportList);
     process.stdout.write(
@@ -726,7 +940,10 @@ export const createTerminalUpdateSupplyUi = async (
     );
     return Object.freeze({
       browser,
+      platformPage,
       operationsPage,
+      projectRef: projectContext.projectRef,
+      contextVersion: projectContext.contextVersion,
       full,
       hot,
       ruleRef,
@@ -755,6 +972,8 @@ export const assertTerminalUpdateReportInUi = async (
     apkVersion: string;
     jsVersion: string;
     runtimeVersion: string;
+    contextVersion: number;
+    controlledHistory?: boolean;
     runId: string;
   }>,
 ): Promise<void> => {
@@ -787,22 +1006,23 @@ export const assertTerminalUpdateReportInUi = async (
   );
   await assertText(page, operationsIds.reportRow(input.terminalRef), /更新已完成/u);
   await assertText(page, operationsIds.reportRow(input.terminalRef), canonicalDatePattern);
-  const historyResponsePromise = page.waitForResponse(response => {
-    if (response.request().method() !== 'GET') return false;
-    try {
-      return new URL(response.url()).pathname.endsWith(
-        `/terminal-versions/${input.terminalRef}/update-reports`,
-      );
-    } catch {
-      return false;
-    }
-  }, {timeout: 60_000});
+  const historyResponsePromise = page.waitForResponse(
+    response => {
+      if (response.request().method() !== 'GET') return false;
+      try {
+        return new URL(response.url()).pathname.endsWith(`/terminal-versions/${input.terminalRef}/update-reports`);
+      } catch {
+        return false;
+      }
+    },
+    {timeout: 60_000},
+  );
+  observePageWaiterRejection(input.runId, 'report.history.real.first-page', historyResponsePromise);
   await page.getByTestId(operationsIds.reportOpen(input.terminalRef)).click();
   const historyResponse = await historyResponsePromise;
   if (!historyResponse.ok())
     throw new Error(`TERMINAL_UPDATE_SUPPLY_REPORT_HISTORY_HTTP_FAILURE:${historyResponse.status()}`);
-  const safeResponseDiagnosticId = (value: string | undefined): string =>
-    value !== undefined && /^[A-Za-z0-9_.:-]{1,160}$/u.test(value) ? value : 'unavailable';
+  const responseDiagnosticId = (value: string | undefined): string => value ?? 'unavailable';
   const readHistoryPage = async (
     response: import('playwright').Response,
   ): Promise<Readonly<{items: unknown[]; nextCursor: string | null; requestId: string; correlationId: string}>> => {
@@ -817,8 +1037,8 @@ export const assertTerminalUpdateReportInUi = async (
     return {
       items: payload.items,
       nextCursor: payload.nextCursor,
-      requestId: safeResponseDiagnosticId(headers['x-request-id']),
-      correlationId: safeResponseDiagnosticId(headers['x-correlation-id']),
+      requestId: responseDiagnosticId(headers['x-request-id']),
+      correlationId: responseDiagnosticId(headers['x-correlation-id']),
     };
   };
   const history = page.getByTestId(operationsIds.reportHistory);
@@ -862,22 +1082,25 @@ export const assertTerminalUpdateReportInUi = async (
   logHistoryPage();
   while (taskIndex < 0 && historyPage.nextCursor !== null) {
     const cursor = historyPage.nextCursor;
-    if (requestedCursors.has(cursor))
-      throw new Error('TERMINAL_UPDATE_SUPPLY_REPORT_HISTORY_CURSOR_REPEATED');
+    if (requestedCursors.has(cursor)) throw new Error('TERMINAL_UPDATE_SUPPLY_REPORT_HISTORY_CURSOR_REPEATED');
     requestedCursors.add(cursor);
     const nextPageNumber = historyPageNumber + 1;
-    const nextHistoryResponsePromise = page.waitForResponse(response => {
-      if (response.request().method() !== 'GET') return false;
-      try {
-        const url = new URL(response.url());
-        return (
-          url.pathname.endsWith(`/terminal-versions/${input.terminalRef}/update-reports`) &&
-          url.searchParams.get('cursor') === cursor
-        );
-      } catch {
-        return false;
-      }
-    }, {timeout: 60_000});
+    const nextHistoryResponsePromise = page.waitForResponse(
+      response => {
+        if (response.request().method() !== 'GET') return false;
+        try {
+          const url = new URL(response.url());
+          return (
+            url.pathname.endsWith(`/terminal-versions/${input.terminalRef}/update-reports`) &&
+            url.searchParams.get('cursor') === cursor
+          );
+        } catch {
+          return false;
+        }
+      },
+      {timeout: 60_000},
+    );
+    observePageWaiterRejection(input.runId, `report.history.real.cursor=${cursor}`, nextHistoryResponsePromise);
     await page.getByTestId(`${operationsIds.reportHistoryPagination}-next`).click();
     const nextHistoryResponse = await nextHistoryResponsePromise;
     if (!nextHistoryResponse.ok())
@@ -956,6 +1179,291 @@ export const assertTerminalUpdateReportInUi = async (
   await expect(taskRow).toContainText(/更新已完成/u);
   await expect(taskRow).toContainText(/无/u);
   await expect(taskRow).toContainText(canonicalDatePattern);
+  if (input.controlledHistory === true) {
+    const historyUrl = new URL(historyResponse.url());
+    const historyPath = historyUrl.pathname;
+    const cursorFromUrl = (url: URL): string | null => {
+      const cursor = url.searchParams.get('cursor');
+      return cursor === null || cursor.trim() === '' ? null : cursor;
+    };
+    const fixtureCursor = 't1-controlled-history-page-2';
+    const fixtureTaskIds = ['90000000-0000-4000-8000-000000000001', '90000000-0000-4000-8000-000000000002'] as const;
+    const fixtureItems = fixtureTaskIds.map((taskId, index) => {
+      const item = structuredClone(taskItem) as Record<string, unknown>;
+      if (!isRecord(item.actual)) throw new Error('TERMINAL_UPDATE_SUPPLY_CONTROLLED_HISTORY_FIXTURE_ACTUAL_INVALID');
+      item.reportId = index === 0 ? '91000000-0000-4000-8000-000000000001' : '91000000-0000-4000-8000-000000000002';
+      item.taskId = taskId;
+      item.reportSequence = integer(taskItem, 'reportSequence') + index + 1;
+      item.receivedAtEpochMillis = integer(taskItem, 'receivedAtEpochMillis') + (index + 1) * 1000;
+      item.actual.apkVersion = `${input.apkVersion}-history-page-${index + 1}`;
+      return item;
+    });
+    if (new Set(fixtureTaskIds).size !== 2 || fixtureTaskIds.some(taskId => taskId === input.taskId))
+      throw new Error('TERMINAL_UPDATE_SUPPLY_CONTROLLED_HISTORY_FIXTURE_IDENTITY_INVALID');
+    const controlledPage = (
+      pageNumber: 0 | 1,
+    ): Readonly<{items: Record<string, unknown>[]; nextCursor: string | null}> => ({
+      items: [fixtureItems[pageNumber]!],
+      nextCursor: pageNumber === 0 ? fixtureCursor : null,
+    });
+    const controlledRequests: Array<string | null> = [];
+    const inFlightRouteHandlers = new Set<Promise<void>>();
+    const routeHandlerFailures: unknown[] = [];
+    let routeHandlerStarted = 0;
+    let routeHandlerSettled = 0;
+    const routeHandler = (route: import('playwright').Route): Promise<void> => {
+      const handlerPromise = (async (): Promise<void> => {
+        const request = route.request();
+        const url = new URL(request.url());
+        const rawCursor = url.searchParams.get('cursor');
+        const cursor = cursorFromUrl(url);
+        supplyLog(
+          input.runId,
+          'report.history.controlled-pagination.request',
+          `method=${request.method()} contextMatches=${url.searchParams.get('expectedContextVersion') === String(input.contextVersion)} cursorEncoding=${rawCursor === null ? 'absent' : rawCursor.trim() === '' ? 'empty' : 'opaque'} page=${cursor === null ? 'first' : 'later'}`,
+        );
+        if (
+          request.method() !== 'GET' ||
+          url.origin !== historyUrl.origin ||
+          url.pathname !== historyPath ||
+          url.searchParams.get('expectedContextVersion') !== String(input.contextVersion)
+        ) {
+          await route.continue();
+          return;
+        }
+        controlledRequests.push(cursor);
+        if (cursor === null) {
+          await route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify(controlledPage(0))});
+        } else if (cursor === fixtureCursor) {
+          await route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify(controlledPage(1))});
+        } else {
+          await route.continue();
+        }
+      })();
+      routeHandlerStarted += 1;
+      inFlightRouteHandlers.add(handlerPromise);
+      void handlerPromise.then(
+        () => {
+          routeHandlerSettled += 1;
+          inFlightRouteHandlers.delete(handlerPromise);
+        },
+        error => {
+          routeHandlerSettled += 1;
+          routeHandlerFailures.push(error);
+          inFlightRouteHandlers.delete(handlerPromise);
+        },
+      );
+      return handlerPromise;
+    };
+    const waitForControlledPage = (cursor: string | null) => {
+      const responsePromise = page.waitForResponse(
+        response => {
+          if (response.request().method() !== 'GET') return false;
+          const url = new URL(response.url());
+          return (
+            url.origin === historyUrl.origin &&
+            url.pathname === historyPath &&
+            url.searchParams.get('expectedContextVersion') === String(input.contextVersion) &&
+            cursorFromUrl(url) === cursor
+          );
+        },
+        {timeout: 30_000},
+      );
+      return responsePromise;
+    };
+    const clickAndWaitForPageResponse = async (
+      responsePromise: Promise<import('playwright').Response>,
+      click: () => Promise<void>,
+      phase: string,
+    ) => {
+      observePageWaiterRejection(input.runId, `report.history.controlled-pagination.${phase}`, responsePromise);
+      const [, response] = await Promise.all([click(), responsePromise]);
+      return response;
+    };
+    const clickAndWaitForControlledPage = async (
+      cursor: string | null,
+      locator: import('playwright').Locator,
+    ) => {
+      return clickAndWaitForPageResponse(
+        waitForControlledPage(cursor),
+        () => locator.click(),
+        `controlled-cursor=${cursor ?? 'first'}`,
+      );
+    };
+    const historyRouteMatcher = (url: URL): boolean => url.origin === historyUrl.origin && url.pathname === historyPath;
+    const fixtureHistoryRows = page.getByTestId(operationsIds.reportHistory).locator('tbody tr');
+    await page.getByTestId(operationsIds.reportDetailClose).click();
+    await page.getByTestId(operationsIds.reportDetail).waitFor({state: 'hidden'});
+    await page.route(historyRouteMatcher, routeHandler);
+    let controlledHistoryFailure: unknown;
+    let routeReleaseFailure: unknown;
+    let exactUnrouteCompleted = false;
+    let ownerPageClosedForCleanup = false;
+    let inFlightAtUnroute = 0;
+    try {
+      const firstFixtureResponse = await clickAndWaitForControlledPage(
+        null,
+        page.getByTestId(operationsIds.reportOpen(input.terminalRef)),
+      );
+      if (!firstFixtureResponse.ok())
+        throw new Error(`TERMINAL_UPDATE_SUPPLY_CONTROLLED_HISTORY_HTTP_${firstFixtureResponse.status()}`);
+      await expect(page.getByTestId(operationsIds.reportHistoryPagination)).toContainText('第 1 页');
+      await expect(fixtureHistoryRows).toHaveCount(1);
+      await expect(fixtureHistoryRows.first()).toContainText(`${input.apkVersion}-history-page-1`);
+      await expect(fixtureHistoryRows.first()).not.toContainText(`${input.apkVersion}-history-page-2`);
+
+      const secondFixtureResponse = await clickAndWaitForControlledPage(
+        fixtureCursor,
+        page.getByTestId(operationsIds.reportHistoryNext),
+      );
+      if (!secondFixtureResponse.ok())
+        throw new Error(`TERMINAL_UPDATE_SUPPLY_CONTROLLED_HISTORY_HTTP_${secondFixtureResponse.status()}`);
+      await expect(page.getByTestId(operationsIds.reportHistoryPagination)).toContainText('第 2 页');
+      await expect(fixtureHistoryRows).toHaveCount(1);
+      await expect(fixtureHistoryRows.first()).toContainText(`${input.apkVersion}-history-page-2`);
+      await expect(fixtureHistoryRows.first()).not.toContainText(`${input.apkVersion}-history-page-1`);
+
+      const previousFixtureResponse = await clickAndWaitForControlledPage(
+        null,
+        page.getByTestId(operationsIds.reportHistoryPrevious),
+      );
+      if (!previousFixtureResponse.ok())
+        throw new Error(`TERMINAL_UPDATE_SUPPLY_CONTROLLED_HISTORY_HTTP_${previousFixtureResponse.status()}`);
+      await expect(page.getByTestId(operationsIds.reportHistoryPagination)).toContainText('第 1 页');
+      await expect(fixtureHistoryRows.first()).toContainText(`${input.apkVersion}-history-page-1`);
+
+      await page.getByTestId(operationsIds.reportDetailClose).click();
+      await page.getByTestId(operationsIds.reportDetail).waitFor({state: 'hidden'});
+      const reportListRefreshPromise = page.waitForResponse(
+        response => {
+          if (response.request().method() !== 'GET') return false;
+          const url = new URL(response.url());
+          return (
+            url.origin === historyUrl.origin &&
+            url.pathname.endsWith('/terminal-versions') &&
+            url.searchParams.get('expectedContextVersion') === String(input.contextVersion)
+          );
+        },
+        {timeout: 30_000},
+      );
+      const [, reportListRefreshResponse] = await Promise.all([
+        page.getByTestId('operations-shell-refresh-current').click(),
+        reportListRefreshPromise,
+      ]);
+      if (!reportListRefreshResponse.ok())
+        throw new Error(`TERMINAL_UPDATE_SUPPLY_REPORT_LIST_REFRESH_HTTP_${reportListRefreshResponse.status()}`);
+      const refreshFixtureResponse = await clickAndWaitForControlledPage(
+        null,
+        page.getByTestId(operationsIds.reportOpen(input.terminalRef)),
+      );
+      if (!refreshFixtureResponse.ok())
+        throw new Error(`TERMINAL_UPDATE_SUPPLY_CONTROLLED_HISTORY_HTTP_${refreshFixtureResponse.status()}`);
+      await expect(page.getByTestId(operationsIds.reportHistoryPagination)).toContainText('第 1 页');
+      await expect(fixtureHistoryRows.first()).toContainText(`${input.apkVersion}-history-page-1`);
+      expect(controlledRequests).toEqual([null, fixtureCursor, null, null]);
+      supplyLog(
+        input.runId,
+        'report.history.controlled-pagination',
+        `terminalRef=${input.terminalRef} pageTaskIds=${fixtureTaskIds.join(',')} cursorRequests=${controlledRequests.map(value => value ?? 'first').join(',')} duplicateTasks=0`,
+      );
+    } catch (error) {
+      controlledHistoryFailure = error;
+    } finally {
+      try {
+        await page.unroute(historyRouteMatcher, routeHandler);
+        exactUnrouteCompleted = true;
+      } catch (error) {
+        routeReleaseFailure = error;
+      }
+      inFlightAtUnroute = inFlightRouteHandlers.size;
+      if (!exactUnrouteCompleted || (controlledHistoryFailure !== undefined && inFlightAtUnroute > 0)) {
+        try {
+          await page.close();
+          ownerPageClosedForCleanup = true;
+        } catch (error) {
+          routeReleaseFailure ??= error;
+        }
+      }
+      const settledHandlers: PromiseSettledResult<void>[] = [];
+      while (inFlightRouteHandlers.size > 0) {
+        settledHandlers.push(...(await Promise.allSettled([...inFlightRouteHandlers])));
+      }
+      if (controlledHistoryFailure === undefined && routeHandlerFailures.length > 0)
+        controlledHistoryFailure = routeHandlerFailures[0];
+      const handlerReleased = (exactUnrouteCompleted || ownerPageClosedForCleanup) && inFlightRouteHandlers.size === 0;
+      if (!handlerReleased)
+        routeReleaseFailure ??= new Error('TERMINAL_UPDATE_SUPPLY_CONTROLLED_HISTORY_HANDLER_NOT_RELEASED');
+      const handlerFailureDetails = routeHandlerFailures.map(error =>
+        error instanceof Error
+          ? {name: error.name, message: error.message, stack: error.stack}
+          : {value: String(error)},
+      );
+      supplyLog(
+        input.runId,
+        'report.history.controlled-pagination.route-released',
+        `terminalRef=${input.terminalRef} routeHandlerStarted=${routeHandlerStarted} routeHandlerSettled=${routeHandlerSettled} inFlightAtUnroute=${inFlightAtUnroute} cleanupSettled=${settledHandlers.length} handlerFailureCount=${routeHandlerFailures.length} handlerFailureDetails=${JSON.stringify(handlerFailureDetails)} exactUnrouteCompleted=${exactUnrouteCompleted} ownerPageClosedForCleanup=${ownerPageClosedForCleanup} handlerReleased=${handlerReleased}`,
+      );
+      if (routeReleaseFailure !== undefined)
+        supplyLog(input.runId, 'report.history.controlled-pagination.route-release-failed', String(routeReleaseFailure));
+    }
+    if (controlledHistoryFailure !== undefined) throw controlledHistoryFailure;
+    if (routeReleaseFailure !== undefined) throw routeReleaseFailure;
+
+    await page.getByTestId(operationsIds.reportDetailClose).click();
+    await page.getByTestId(operationsIds.reportDetail).waitFor({state: 'hidden'});
+    const restoredHistoryResponsePromise = page.waitForResponse(
+      response => {
+        if (response.request().method() !== 'GET') return false;
+        const url = new URL(response.url());
+        return (
+          url.origin === historyUrl.origin &&
+          url.pathname === historyPath &&
+          url.searchParams.get('expectedContextVersion') === String(input.contextVersion) &&
+          cursorFromUrl(url) === null
+        );
+      },
+      {timeout: 60_000},
+    );
+    let restoredResponse = await clickAndWaitForPageResponse(
+      restoredHistoryResponsePromise,
+      () => page.getByTestId(operationsIds.reportOpen(input.terminalRef)).click(),
+      'restore-first-page',
+    );
+    let restoredPage = await readHistoryPage(restoredResponse);
+    let restoredTaskFound = restoredPage.items.some(item => isRecord(item) && item.taskId === input.taskId);
+    const restoredCursors = new Set<string>();
+    while (!restoredTaskFound && restoredPage.nextCursor !== null) {
+      const cursor = restoredPage.nextCursor;
+      if (restoredCursors.has(cursor)) throw new Error('TERMINAL_UPDATE_SUPPLY_RESTORED_HISTORY_CURSOR_REPEATED');
+      restoredCursors.add(cursor);
+      const restoredNextResponsePromise = page.waitForResponse(
+        response => {
+          if (response.request().method() !== 'GET') return false;
+          const url = new URL(response.url());
+          return (
+            url.origin === historyUrl.origin &&
+            url.pathname === historyPath &&
+            url.searchParams.get('expectedContextVersion') === String(input.contextVersion) &&
+            cursorFromUrl(url) === cursor
+          );
+        },
+        {timeout: 60_000},
+      );
+      restoredResponse = await clickAndWaitForPageResponse(
+        restoredNextResponsePromise,
+        () => page.getByTestId(operationsIds.reportHistoryNext).click(),
+        `restore-cursor=${cursor}`,
+      );
+      restoredPage = await readHistoryPage(restoredResponse);
+      restoredTaskFound = restoredPage.items.some(item => isRecord(item) && item.taskId === input.taskId);
+    }
+    if (!restoredTaskFound) throw new Error('TERMINAL_UPDATE_SUPPLY_RESTORED_REAL_TASK_NOT_FOUND');
+    supplyLog(
+      input.runId,
+      'report.history.real-owner-restored',
+      `terminalRef=${input.terminalRef} taskId=${input.taskId} found=true controlledHandlerRemoved=true`,
+    );
+  }
   process.stdout.write(
     `TERMINAL_AUTOMATION_SUPPLY_REPORT_READBACK run=${input.runId} terminal=matched taskId=${input.taskId} historyPage=${historyPageNumber} currentTaskFound=1 visibleHistoryRows=${visibleHistoryRows}\n`,
   );

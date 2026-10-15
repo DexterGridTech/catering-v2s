@@ -1,22 +1,6 @@
-import {
-  Alert,
-  Button,
-  Card,
-  Descriptions,
-  Drawer,
-  Form,
-  Input,
-  InputNumber,
-  Select,
-  Space,
-  Table,
-  Tabs,
-  Tag,
-  Tooltip,
-  Typography,
-  message,
-} from 'antd';
+import {Alert, Button, Card, Descriptions, Drawer, Space, Table, Tabs, Tag, Tooltip, Typography, message} from 'antd';
 import {ProTable, type ProColumns} from '@ant-design/pro-components';
+import {CloseOutlined} from '@ant-design/icons';
 import {
   AdminDetailActionLabel,
   AdminDetailActionMenu,
@@ -25,34 +9,26 @@ import {
   adminDetailDescriptionsProps,
   adminDrawerSurfaceProps,
   adminListState,
-  createContentIdempotencyKey,
   formatCanonicalDateTime,
+  LIFECYCLE_LABELS,
   testId,
   useCursorStack,
-  useCursorCandidates,
-  useDrawerFormLifecycle,
   useOverlayLock,
   useRefreshVersion,
   useSubmissionLifecycle,
 } from '@catering-v2s/admin-ui-foundation';
-import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import type {HTMLAttributes} from 'react';
 import {
   operationsClient,
   operationsContentTabRefreshSignal,
   operationsLogger,
   operationsProblemOf,
-  operationsRtk,
 } from '../../../app/api/OperationsTransport';
-import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
 import {
   OPERATIONS_ADMIN_OPERATION_IDS,
   type JsonValue,
-  type TerminalUpdateArtifactSummary,
-  type TerminalUpdateRuleDetail,
   type TerminalUpdateRuleSummary,
-  type TerminalRemoteControlStartResponse,
-  type TerminalUpdateVersionDetail,
   type TerminalUpdateVersionReportItem,
 } from '../../../app/api/generated/operations-edge';
 import {wireUuid} from '../../../app/api/wireUuid';
@@ -60,16 +36,26 @@ import type {OperationsPageProps} from '../../../app/routing/model';
 import {useOrganizationCandidates} from '../../../app/queries/useOrganizationCandidates';
 import {terminalUpdateTestIds} from '../../../app/automation/terminalUpdateTestIds';
 import {OperationsAuditHistoryModal} from '../../audit-history';
-import {idleMinutesToSeconds, idleSecondsToMinutes} from '../model/terminalUpdateDuration';
-import {terminalUpdateCandidateQuery} from '../model/terminalUpdateCandidateQuery';
-import {terminalUpdateRuleFilters, type TerminalUpdateRuleFilterForm, type TerminalUpdateRuleFilters} from '../model/terminalUpdateRuleFilters';
+import {idleSecondsToMinutes} from '../model/terminalUpdateDuration';
+import {
+  terminalUpdateRuleDetailLabel,
+  terminalUpdateRuleStoreLabel,
+  terminalUpdateRuleTablePresentation,
+} from '../model/terminalUpdateLifecyclePresentation';
+import {
+  terminalUpdateRuleFilters,
+  type TerminalUpdateRuleFilterForm,
+  type TerminalUpdateRuleFilters,
+} from '../model/terminalUpdateRuleFilters';
 import {terminalUpdateActualUnknownReasonLabel} from '../model/terminalUpdateActualUnknownReason';
 import {remoteControlTestIds} from '../../../app/automation/remoteControlTestIds';
-import {
-  createRemoteControlUuid,
-  RemoteControlWorkspace,
-  type RemoteControlTarget,
-} from '../../remote-control';
+import {RemoteControlWorkspace, type RemoteControlTarget} from '../../remote-control';
+import {useRemoteControlLauncher} from '../../remote-control';
+import {RuleCreateDrawer} from './RuleCreateDrawer';
+import {useTerminalUpdateRules} from '../model/useTerminalUpdateRules';
+import {useTerminalUpdateRuleDetail} from '../model/useTerminalUpdateRuleDetail';
+import {useTerminalUpdateReports} from '../model/useTerminalUpdateReports';
+import {useTerminalUpdateReportDetail} from '../model/useTerminalUpdateReportDetail';
 import {
   isTerminalUpdateVersionConflict,
   terminalUpdateStatusActionLabel,
@@ -77,18 +63,16 @@ import {
   terminalUpdateStatusConfirmTitle,
 } from '../model/terminalUpdateRuleStatus';
 
-type RuleForm = {
-  targetMode: 'ALL' | 'STORE_REFS';
-  status: 'ENABLED' | 'DISABLED';
-  storeRefs?: string[];
-  fullArtifactRef: string;
-  hotArtifactRef?: string;
-  nMinutes: number;
-  hotStrategy?: 'IMMEDIATE' | 'IDLE';
-  mMinutes?: number;
-  description?: string;
+const remoteControlErrorDiagnostics = (error: unknown): Record<string, string> => {
+  const debugDetails = import.meta.env.DEV || import.meta.env.VITE_FRONTEND_DEBUG_LOGS === 'true';
+  if (error instanceof Error) {
+    return {
+      errorName: error.name,
+      ...(debugDetails ? {errorMessage: error.message, errorStack: error.stack ?? ''} : {}),
+    };
+  }
+  return {errorName: typeof error, ...(debugDetails ? {errorMessage: String(error)} : {})};
 };
-type Candidate = TerminalUpdateArtifactSummary;
 
 export function ProjectTerminalUpdatePage(props: OperationsPageProps) {
   const projectRef = props.queryContext.scopeRef;
@@ -105,21 +89,8 @@ function ProjectTerminalUpdateContent({
   const contextKey = `${queryContext.groupWorkspaceKey}:${projectRef}:${queryContext.expectedContextVersion}`;
   const latestContextKey = useRef(contextKey);
   latestContextKey.current = contextKey;
-  const rulesRequestId = useRef(0);
-  const reportsRequestId = useRef(0);
-  const ruleDetailRequestId = useRef(0);
-  const ruleStorePageRequestId = useRef(0);
-  const ruleStorePageLoadingRef = useRef(false);
-  const versionRequestId = useRef(0);
-  const historyPageRequestId = useRef(0);
-  const historyPageLoadingRef = useRef(false);
   const [tab, setTab] = useState('reports');
-  const [rules, setRules] = useState<readonly TerminalUpdateRuleSummary[]>([]);
   const [ruleFilters, setRuleFilters] = useState<TerminalUpdateRuleFilters>({});
-  const [ruleNext, setRuleNext] = useState<string | null>(null);
-  const [ruleLoading, setRuleLoading] = useState(false);
-  const [reportRows, setReportRows] = useState<readonly TerminalUpdateVersionReportItem[]>([]);
-  const [reportNext, setReportNext] = useState<string | null>(null);
   const [appliedReportFilters, setAppliedReportFilters] = useState({
     query: '',
     apk: '',
@@ -127,30 +98,8 @@ function ProjectTerminalUpdateContent({
     runtime: '',
     storeRef: '',
   });
-  const [reportLoading, setReportLoading] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
-  const [detail, setDetail] = useState<TerminalUpdateRuleDetail>();
-  const latestRuleRef = useRef<string | undefined>(undefined);
-  const latestVersionTerminalRef = useRef<string | undefined>(undefined);
-  const [versionDetail, setVersionDetail] = useState<TerminalUpdateVersionDetail>();
-  const [remoteStartLoading, setRemoteStartLoading] = useState(false);
-  const remoteStartLoadingRef = useRef(false);
-  const remoteStartRequestVersion = useRef(0);
   const [remoteControlProblem, setRemoteControlProblem] = useState<string>();
-  const [remoteWorkspace, setRemoteWorkspace] = useState<{
-    target: RemoteControlTarget;
-    start: TerminalRemoteControlStartResponse;
-  }>();
-  const [history, setHistory] = useState<
-    import('../../../app/api/generated/operations-edge').TerminalUpdateReportHistoryPage['items']
-  >([]);
-  const [historyCursor, setHistoryCursor] = useState<string | null>(null);
-  const [historyPageLoading, setHistoryPageLoading] = useState(false);
-  const [ruleStores, setRuleStores] = useState<
-    import('../../../app/api/generated/operations-edge').TerminalUpdateRuleStorePage['items']
-  >([]);
-  const [ruleStoresCursor, setRuleStoresCursor] = useState<string | null>(null);
-  const [ruleStorePageLoading, setRuleStorePageLoading] = useState(false);
   const [auditOpen, setAuditOpen] = useState(false);
   const [problem, setProblem] = useState<string>();
   const [statusTarget, setStatusTarget] = useState<TerminalUpdateRuleSummary>();
@@ -160,19 +109,33 @@ function ProjectTerminalUpdateContent({
   const statusSubmittingRef = useRef(false);
   const statusSubmission = useSubmissionLifecycle();
   const contentTabRefreshVersion = useRefreshVersion(operationsContentTabRefreshSignal);
-  const latestRuleFilters = useRef(ruleFilters);
-  const latestReportFilters = useRef(appliedReportFilters);
-  latestRuleFilters.current = ruleFilters;
-  latestReportFilters.current = appliedReportFilters;
   const rulePager = useCursorStack({resetKey: `${contextKey}:${JSON.stringify(ruleFilters)}`});
   const reportPager = useCursorStack({resetKey: `${contextKey}:${JSON.stringify(appliedReportFilters)}`});
-  const ruleStoresPager = useCursorStack({resetKey: `${contextKey}:${detail?.ruleRef ?? ''}`});
-  const historyPager = useCursorStack({resetKey: `${contextKey}:${versionDetail?.terminalRef ?? ''}`});
-  const latestRuleCursor = useRef(rulePager.cursor);
-  const latestReportCursor = useRef(reportPager.cursor);
-  latestRuleCursor.current = rulePager.cursor;
-  latestReportCursor.current = reportPager.cursor;
-  latestRuleRef.current = detail?.ruleRef;
+  const rulesRead = useTerminalUpdateRules({queryContext, projectRef, filters: ruleFilters, cursor: rulePager.cursor});
+  const reportsRead = useTerminalUpdateReports({
+    queryContext,
+    projectRef,
+    filters: appliedReportFilters,
+    cursor: reportPager.cursor,
+  });
+  const ruleDetailRead = useTerminalUpdateRuleDetail({queryContext, projectRef});
+  const reportDetailRead = useTerminalUpdateReportDetail({queryContext, projectRef});
+  const {items: rules, nextCursor: ruleNext, loading: ruleLoading, problem: rulesProblem, load: loadRules} = rulesRead;
+  const {
+    items: reportRows,
+    nextCursor: reportNext,
+    loading: reportLoading,
+    problem: reportsProblem,
+    load: loadReports,
+  } = reportsRead;
+  const detail = ruleDetailRead.detail;
+  const ruleStores = ruleDetailRead.stores;
+  const ruleStoresCursor = ruleDetailRead.storesCursor;
+  const ruleStorePageLoading = ruleDetailRead.storesLoading;
+  const versionDetail = reportDetailRead.detail;
+  const history = reportDetailRead.history;
+  const historyCursor = reportDetailRead.historyCursor;
+  const historyPageLoading = reportDetailRead.historyLoading;
   const reportStores = useOrganizationCandidates({
     open: true,
     queryContext,
@@ -181,10 +144,21 @@ function ProjectTerminalUpdateContent({
     pageSize: 50,
   });
   const canControlRemote = actionCapabilityKeys.includes('CONTROL_PROJECT_TERMINAL');
-  useOverlayLock(createOpen || Boolean(detail) || Boolean(versionDetail) || Boolean(statusTarget) || auditOpen || Boolean(remoteWorkspace));
-  const path = useMemo(
-    () => ({groupWorkspaceKey: queryContext.groupWorkspaceKey, projectRef}),
-    [projectRef, queryContext.groupWorkspaceKey],
+  const remoteLauncher = useRemoteControlLauncher(contextKey);
+  const invalidatePendingStart = remoteLauncher.invalidatePendingStart;
+  const remoteWorkspace = remoteLauncher.currentSession;
+  const remoteStartLoading = remoteLauncher.isStarting;
+  const selectedReadRefs = useRef<{ruleRef?: string; terminalRef?: string}>({});
+  selectedReadRefs.current = {ruleRef: ruleDetailRead.ruleRef, terminalRef: reportDetailRead.terminalRef};
+  const pageReadProblem =
+    problem || rulesProblem || reportsProblem || ruleDetailRead.problem || reportDetailRead.problem;
+  useOverlayLock(
+    createOpen ||
+      Boolean(detail) ||
+      Boolean(versionDetail) ||
+      Boolean(statusTarget) ||
+      auditOpen ||
+      Boolean(remoteWorkspace),
   );
   const resetReportFilters = () => {
     const cleared = {query: '', apk: '', js: '', runtime: '', storeRef: ''};
@@ -192,188 +166,45 @@ function ProjectTerminalUpdateContent({
     reportPager.reset();
   };
 
-  const loadRules = useCallback(
-    async (cursor?: string, append = false) => {
-      const requestContextKey = contextKey;
-      const requestFilters = ruleFilters;
-      const requestCursor = cursor || undefined;
-      const requestId = ++rulesRequestId.current;
-      setRuleLoading(true);
-      setProblem(undefined);
-      try {
-        const page = await operationsClient.getOperationsProjectTerminalUpdateRulePage(path, {
-          query: {
-            expectedContextVersion: queryContext.expectedContextVersion,
-            ...ruleFilters,
-            cursor: requestCursor,
-            limit: 50,
-          },
-        });
-        if (
-          latestContextKey.current !== requestContextKey ||
-          rulesRequestId.current !== requestId ||
-          latestRuleFilters.current !== requestFilters ||
-          latestRuleCursor.current !== requestCursor
-        )
-          return;
-        setRules(current => (append ? [...current, ...page.items] : page.items));
-        setRuleNext(page.nextCursor);
-      } catch (error) {
-        if (
-          latestContextKey.current === requestContextKey &&
-          rulesRequestId.current === requestId &&
-          latestRuleFilters.current === requestFilters &&
-          latestRuleCursor.current === requestCursor
-        )
-          setProblem(operationsProblemOf(error).detail || '读取更新规则失败');
-      } finally {
-        if (
-          latestContextKey.current === requestContextKey &&
-          rulesRequestId.current === requestId &&
-          latestRuleFilters.current === requestFilters &&
-          latestRuleCursor.current === requestCursor
-        )
-          setRuleLoading(false);
-      }
-    },
-    [contextKey, path, queryContext.expectedContextVersion, ruleFilters],
-  );
-  const loadReports = useCallback(
-    async (cursor?: string, append = false) => {
-      const requestContextKey = contextKey;
-      const requestFilters = appliedReportFilters;
-      const requestCursor = cursor || undefined;
-      const requestId = ++reportsRequestId.current;
-      setReportLoading(true);
-      setProblem(undefined);
-      try {
-        const page = await operationsClient.getOperationsProjectTerminalVersionPage(path, {
-          query: {
-            expectedContextVersion: queryContext.expectedContextVersion,
-            queryText: appliedReportFilters.query || undefined,
-            currentApkVersion: appliedReportFilters.apk || undefined,
-            currentJsVersion: appliedReportFilters.js || undefined,
-            runtimeVersion: appliedReportFilters.runtime || undefined,
-            storeRef: appliedReportFilters.storeRef ? wireUuid(appliedReportFilters.storeRef) : undefined,
-            cursor: requestCursor,
-            limit: 50,
-          },
-        });
-        if (
-          latestContextKey.current !== requestContextKey ||
-          reportsRequestId.current !== requestId ||
-          latestReportFilters.current !== requestFilters ||
-          latestReportCursor.current !== requestCursor
-        )
-          return;
-        setReportRows(current => (append ? [...current, ...page.items] : page.items));
-        setReportNext(page.nextCursor);
-      } catch (error) {
-        if (
-          latestContextKey.current === requestContextKey &&
-          reportsRequestId.current === requestId &&
-          latestReportFilters.current === requestFilters &&
-          latestReportCursor.current === requestCursor
-        )
-          setProblem(operationsProblemOf(error).detail || '读取终端版本报告失败');
-      } finally {
-        if (
-          latestContextKey.current === requestContextKey &&
-          reportsRequestId.current === requestId &&
-          latestReportFilters.current === requestFilters &&
-          latestReportCursor.current === requestCursor
-        )
-          setReportLoading(false);
-      }
-    },
-    [appliedReportFilters, contextKey, path, queryContext.expectedContextVersion],
-  );
   useEffect(() => {
-    versionRequestId.current += 1;
-    historyPageRequestId.current += 1;
-    remoteStartRequestVersion.current += 1;
-    remoteStartLoadingRef.current = false;
-    historyPageLoadingRef.current = false;
-    ruleStorePageRequestId.current += 1;
-    ruleStorePageLoadingRef.current = false;
-    setRules([]);
-    setRuleNext(null);
-    setReportRows([]);
-    setReportNext(null);
-    setDetail(undefined);
-    setVersionDetail(undefined);
-    latestVersionTerminalRef.current = undefined;
-    setHistory([]);
-    setHistoryCursor(null);
-    setHistoryPageLoading(false);
-    setRuleStores([]);
-    setRuleStoresCursor(null);
-    setRuleStorePageLoading(false);
+    invalidatePendingStart();
     setAuditOpen(false);
-    setRemoteStartLoading(false);
     setProblem(undefined);
-  }, [contextKey]);
-  useEffect(() => {
-    void loadRules(rulePager.cursor);
-  }, [loadRules, rulePager.cursor, rulePager.page]);
-  useEffect(() => {
-    void loadReports(reportPager.cursor);
-  }, [loadReports, reportPager.cursor, reportPager.page]);
+    statusSubmittingRef.current = false;
+    setStatusSubmitting(false);
+    setStatusTarget(undefined);
+    setStatusIntent(undefined);
+    setStatusProblem(undefined);
+  }, [contextKey, invalidatePendingStart]);
 
-  const openRule = async (row: Pick<TerminalUpdateRuleSummary, 'ruleRef'>) => {
-    const requestContextKey = contextKey;
-    const requestId = ++ruleDetailRequestId.current;
-    ruleStorePageRequestId.current += 1;
-    ruleStorePageLoadingRef.current = false;
-    setRuleStorePageLoading(false);
-    ruleStoresPager.reset();
-    setRuleStores([]);
-    setRuleStoresCursor(null);
+  const openRule = (row: Pick<TerminalUpdateRuleSummary, 'ruleRef'>) => {
+    selectedReadRefs.current = {...selectedReadRefs.current, ruleRef: row.ruleRef};
     setProblem(undefined);
-    try {
-      const loaded = await operationsClient.getOperationsProjectTerminalUpdateRuleDetail(
-        {...path, ruleRef: wireUuid(row.ruleRef)},
-        {query: {expectedContextVersion: queryContext.expectedContextVersion}},
-      );
-      if (latestContextKey.current !== requestContextKey || ruleDetailRequestId.current !== requestId) return;
-      setDetail(loaded);
-      latestRuleRef.current = loaded.ruleRef;
-      if (loaded.targetMode === 'STORE_REFS') {
-        const stores = await operationsClient.getOperationsProjectTerminalUpdateRuleStorePage(
-          {...path, ruleRef: wireUuid(row.ruleRef)},
-          {query: {expectedContextVersion: queryContext.expectedContextVersion, limit: 50}},
-        );
-        if (latestContextKey.current !== requestContextKey || ruleDetailRequestId.current !== requestId) return;
-        setRuleStores(stores.items);
-        setRuleStoresCursor(stores.nextCursor);
-        ruleStoresPager.reset();
-      } else {
-        setRuleStores([]);
-        setRuleStoresCursor(null);
-      }
-    } catch (error) {
-      if (latestContextKey.current === requestContextKey && ruleDetailRequestId.current === requestId)
-        setProblem(operationsProblemOf(error).detail || '读取规则详情失败');
-    }
+    return ruleDetailRead.open(row.ruleRef);
   };
+
+  const closeRule = () => {
+    selectedReadRefs.current = {...selectedReadRefs.current, ruleRef: undefined};
+    ruleDetailRead.close();
+  };
+
   const changeStatus = async (target: TerminalUpdateRuleSummary, status: 'ENABLED' | 'DISABLED') => {
     if (statusSubmittingRef.current) return;
     statusSubmittingRef.current = true;
     setStatusSubmitting(true);
     setStatusProblem(undefined);
     const requestContextKey = contextKey;
+    const requestedRuleRef = target.ruleRef;
     try {
-      const body = {revision: target.revision, status};
-      const path = {
-        groupWorkspaceKey: queryContext.groupWorkspaceKey,
-        projectRef: wireUuid(projectRef),
-        ruleRef: wireUuid(target.ruleRef),
-      };
       await operationsClient.changeOperationsProjectTerminalUpdateRuleStatus(
-        path,
+        {
+          groupWorkspaceKey: queryContext.groupWorkspaceKey,
+          projectRef: wireUuid(projectRef),
+          ruleRef: wireUuid(target.ruleRef),
+        },
         {
           query: {expectedContextVersion: queryContext.expectedContextVersion},
-          body,
+          body: {revision: target.revision, status},
           headers: {'Idempotency-Key': statusSubmission.getIdempotencyKey()},
         },
       );
@@ -381,166 +212,73 @@ function ProjectTerminalUpdateContent({
       setStatusTarget(undefined);
       setStatusIntent(undefined);
       statusSubmission.reset();
-      await loadRules(rulePager.cursor);
-      if (latestContextKey.current === requestContextKey && latestRuleRef.current === target.ruleRef)
-        await openRule(target);
+      await loadRules();
+      if (latestContextKey.current === requestContextKey && selectedReadRefs.current.ruleRef === requestedRuleRef)
+        await ruleDetailRead.open(requestedRuleRef);
       if (latestContextKey.current === requestContextKey)
         message.success(status === 'ENABLED' ? '规则已启用' : '规则已停用');
     } catch (error) {
       if (latestContextKey.current === requestContextKey) {
         const failure = operationsProblemOf(error);
-        if (isTerminalUpdateVersionConflict(failure) && statusIntent !== undefined) {
-          try {
-            const latest = await operationsClient.getOperationsProjectTerminalUpdateRuleDetail(
-              {...path, ruleRef: wireUuid(target.ruleRef)},
-              {query: {expectedContextVersion: queryContext.expectedContextVersion}},
-            );
-            if (latestContextKey.current === requestContextKey) {
-              setDetail(latest);
-              setRules(current => current.map(item => item.ruleRef === latest.ruleRef
-                ? {...item, status: latest.status, revision: latest.revision}
-                : item));
-              statusSubmission.reset();
-              if (terminalUpdateStatusAlreadyApplied(latest.status, statusIntent)) {
-                setStatusTarget(undefined);
-                setStatusIntent(undefined);
-                setStatusProblem(undefined);
-                message.info(`规则已被其他操作${terminalUpdateStatusActionLabel(statusIntent)}。`);
-              } else {
-                setStatusTarget(latest);
-                setStatusProblem('规则已被其他操作修改。已读取当前状态，请核对后再次确认。');
-              }
+        if (
+          isTerminalUpdateVersionConflict(failure) &&
+          statusIntent !== undefined &&
+          selectedReadRefs.current.ruleRef === requestedRuleRef
+        ) {
+          const latest = await ruleDetailRead.open(requestedRuleRef);
+          if (
+            latestContextKey.current === requestContextKey &&
+            selectedReadRefs.current.ruleRef === requestedRuleRef &&
+            latest
+          ) {
+            statusSubmission.reset();
+            if (terminalUpdateStatusAlreadyApplied(latest.status, statusIntent)) {
+              setStatusTarget(undefined);
+              setStatusIntent(undefined);
+              setStatusProblem(undefined);
+              message.info(`规则已被其他操作${terminalUpdateStatusActionLabel(statusIntent)}。`);
+            } else {
+              setStatusTarget(latest);
+              setStatusProblem('规则已被其他操作修改。已读取当前状态，请核对后再次确认。');
             }
-          } catch (readError) {
-            if (latestContextKey.current === requestContextKey)
-              setStatusProblem(operationsProblemOf(readError).detail || '状态冲突后读取当前规则失败，请关闭并刷新。');
+          } else if (
+            latestContextKey.current === requestContextKey &&
+            selectedReadRefs.current.ruleRef === requestedRuleRef
+          ) {
+            setStatusProblem(ruleDetailRead.problem || '状态冲突后读取当前规则失败，请关闭并刷新。');
           }
         } else {
           setStatusProblem(failure.detail || '规则状态更新失败');
         }
       }
     } finally {
-      statusSubmittingRef.current = false;
-      setStatusSubmitting(false);
+      if (latestContextKey.current === requestContextKey) {
+        statusSubmittingRef.current = false;
+        setStatusSubmitting(false);
+      }
     }
   };
-  const openVersion = async (row: Pick<TerminalUpdateVersionReportItem, 'terminalRef'>) => {
-    latestVersionTerminalRef.current = row.terminalRef;
-    const requestContextKey = contextKey;
-    const requestId = ++versionRequestId.current;
-    historyPageRequestId.current += 1;
-    historyPageLoadingRef.current = false;
-    setHistoryPageLoading(false);
-    historyPager.reset();
-    setVersionDetail(undefined);
-    setHistory([]);
-    setHistoryCursor(null);
+
+  const openVersion = (row: Pick<TerminalUpdateVersionReportItem, 'terminalRef'>) => {
+    selectedReadRefs.current = {...selectedReadRefs.current, terminalRef: row.terminalRef};
+    setRemoteControlProblem(undefined);
     setProblem(undefined);
-    try {
-      const result = await operationsClient.getOperationsProjectTerminalVersionDetail(
-        {...path, terminalRef: wireUuid(row.terminalRef)},
-        {query: {expectedContextVersion: queryContext.expectedContextVersion}},
-      );
-      if (latestContextKey.current !== requestContextKey || versionRequestId.current !== requestId) return;
-      setVersionDetail(result);
-      const page = await operationsClient.getOperationsProjectTerminalUpdateReportHistoryPage(
-        {...path, terminalRef: wireUuid(row.terminalRef)},
-        {query: {expectedContextVersion: queryContext.expectedContextVersion, limit: 20}},
-      );
-      if (latestContextKey.current !== requestContextKey || versionRequestId.current !== requestId) return;
-      setHistory(page.items);
-      setHistoryCursor(page.nextCursor);
-      historyPager.reset();
-    } catch (error) {
-      if (latestContextKey.current === requestContextKey && versionRequestId.current === requestId)
-        setProblem(operationsProblemOf(error).detail || '读取终端报告详情失败');
-    }
+    return reportDetailRead.open(row.terminalRef);
   };
 
   const closeVersionDrawer = () => {
-    versionRequestId.current += 1;
-    historyPageRequestId.current += 1;
-    historyPageLoadingRef.current = false;
-    setHistoryPageLoading(false);
-    historyPager.reset();
-    latestVersionTerminalRef.current = undefined;
-    setVersionDetail(undefined);
-    setHistory([]);
-    setHistoryCursor(null);
+    selectedReadRefs.current = {...selectedReadRefs.current, terminalRef: undefined};
+    invalidatePendingStart();
+    reportDetailRead.close();
     setRemoteControlProblem(undefined);
-  };
-
-  const startRemoteSession = async (target: RemoteControlTarget) => {
-    const requestId = wireUuid(createRemoteControlUuid());
-    operationsLogger.info({
-      event: 'frontend.remote_control.start',
-      phase: 'remote_control',
-      outcome: 'STARTED',
-      operationId: OPERATIONS_ADMIN_OPERATION_IDS.startOperationsTerminalRemoteControl,
-      diagnostic: {projectRef: target.projectRef, terminalRef: target.terminalRef},
-    });
-    const started = await operationsClient.startOperationsTerminalRemoteControl(
-      {
-        groupWorkspaceKey: target.groupWorkspaceKey,
-        projectRef: wireUuid(target.projectRef),
-        terminalRef: wireUuid(target.terminalRef),
-      },
-      {
-        query: {expectedContextVersion: target.expectedContextVersion},
-        body: {requestId},
-      },
-    );
-    operationsLogger.info({
-      event: 'frontend.remote_control.start',
-      phase: 'remote_control',
-      outcome: 'SUCCEEDED',
-      operationId: OPERATIONS_ADMIN_OPERATION_IDS.startOperationsTerminalRemoteControl,
-      diagnostic: {sessionId: started.sessionId, state: started.state},
-    });
-    return started;
-  };
-
-  const closeStaleRemoteStart = async (target: RemoteControlTarget, start: TerminalRemoteControlStartResponse) => {
-    try {
-      await operationsClient.endOperationsTerminalRemoteControl(
-        {
-          groupWorkspaceKey: target.groupWorkspaceKey,
-          projectRef: wireUuid(target.projectRef),
-          terminalRef: wireUuid(target.terminalRef),
-          sessionId: start.sessionId,
-        },
-        {query: {expectedContextVersion: target.expectedContextVersion}, body: {reason: 'WORKSPACE_CLOSED'}},
-      );
-      operationsLogger.info({
-        event: 'frontend.remote_control.stale_start_closed',
-        phase: 'remote_control',
-        outcome: 'SUCCEEDED',
-        operationId: OPERATIONS_ADMIN_OPERATION_IDS.endOperationsTerminalRemoteControl,
-        diagnostic: {sessionId: start.sessionId},
-      });
-    } catch (error) {
-      const failure = operationsProblemOf(error);
-      operationsLogger.error({
-        event: 'frontend.remote_control.stale_start_close_failed',
-        phase: 'cleanup',
-        outcome: 'ERROR',
-        operationId: OPERATIONS_ADMIN_OPERATION_IDS.endOperationsTerminalRemoteControl,
-        errorCode: failure.errorCode,
-        status: failure.status,
-        diagnostic: {sessionId: start.sessionId},
-      });
-    }
   };
 
   const startRemoteFromDrawer = async () => {
     const current = versionDetail;
-    if (!canControlRemote || !current || current.connectionStatus !== 'ONLINE' || remoteStartLoadingRef.current) return;
-    remoteStartLoadingRef.current = true;
-    setRemoteStartLoading(true);
+    if (!canControlRemote || !current || current.connectionStatus !== 'ONLINE' || remoteLauncher.isStarting) return;
     setRemoteControlProblem(undefined);
-    const requestContextKey = contextKey;
+    const requestedContextKey = contextKey;
     const requestedTerminalRef = current.terminalRef;
-    const requestVersion = ++remoteStartRequestVersion.current;
     const target: RemoteControlTarget = {
       groupWorkspaceKey: queryContext.groupWorkspaceKey,
       projectRef,
@@ -548,21 +286,21 @@ function ProjectTerminalUpdateContent({
       terminalName: current.terminalName,
       storeName: current.storeName,
       expectedContextVersion: queryContext.expectedContextVersion,
-      contextKey: requestContextKey,
+      contextKey: requestedContextKey,
     };
     try {
-      const start = await startRemoteSession(target);
-      const stillCurrent = latestContextKey.current === requestContextKey &&
-        remoteStartRequestVersion.current === requestVersion &&
-        latestVersionTerminalRef.current === requestedTerminalRef;
-      if (!stillCurrent) {
-        await closeStaleRemoteStart(target, start);
-        return;
-      }
-      setRemoteWorkspace({target, start});
-      closeVersionDrawer();
+      const session = await remoteLauncher.start(
+        target,
+        () =>
+          latestContextKey.current === requestedContextKey &&
+          selectedReadRefs.current.terminalRef === requestedTerminalRef,
+      );
+      if (session && latestContextKey.current === requestedContextKey) closeVersionDrawer();
     } catch (error) {
-      if (latestContextKey.current === requestContextKey && remoteStartRequestVersion.current === requestVersion) {
+      if (
+        latestContextKey.current === requestedContextKey &&
+        selectedReadRefs.current.terminalRef === requestedTerminalRef
+      ) {
         const failure = operationsProblemOf(error);
         setRemoteControlProblem(failure.detail || '远程控制发起失败，请核对终端状态后重试。');
         operationsLogger.error({
@@ -572,145 +310,49 @@ function ProjectTerminalUpdateContent({
           operationId: OPERATIONS_ADMIN_OPERATION_IDS.startOperationsTerminalRemoteControl,
           errorCode: failure.errorCode,
           status: failure.status,
-          diagnostic: {terminalRef: requestedTerminalRef},
+          diagnostic: {terminalRef: requestedTerminalRef, ...remoteControlErrorDiagnostics(error)},
         });
-      }
-    } finally {
-      if (remoteStartRequestVersion.current === requestVersion) {
-        remoteStartLoadingRef.current = false;
-        setRemoteStartLoading(false);
       }
     }
   };
 
-  const closeRemoteWorkspace = (workspace: NonNullable<typeof remoteWorkspace>, result: {endFailed: boolean; cleanupFailed: boolean}) => {
-    setRemoteWorkspace(undefined);
+  const closeRemoteWorkspace = (
+    target: RemoteControlTarget,
+    sessionId: string,
+    result: {endFailed: boolean; cleanupFailed: boolean},
+  ) => {
+    remoteLauncher.clear(sessionId);
     if (result.endFailed) message.error('远程会话结束请求失败，终端占用状态需要刷新核对。');
     if (result.cleanupFailed) message.error('浏览器媒体连接未能完整释放，请检查本次远控日志。');
     requestAnimationFrame(() => {
-      const testIdValue = latestContextKey.current === workspace.target.contextKey
-        ? terminalUpdateTestIds.reportOpen(workspace.target.terminalRef)
-        : terminalUpdateTestIds.reportQuerySubmit;
+      const testIdValue =
+        latestContextKey.current === target.contextKey
+          ? terminalUpdateTestIds.reportOpen(target.terminalRef)
+          : terminalUpdateTestIds.reportQuerySubmit;
       document.querySelector<HTMLElement>(`[data-testid="${testIdValue}"]`)?.focus();
     });
   };
 
-  const loadHistoryPage = async (
-    terminalRef: string,
-    versionRequest: number,
-    requestedPage: number,
-    suppliedCursor?: string,
-  ) => {
-    if (historyPageLoadingRef.current) return;
-    const cursor = requestedPage < historyPager.page
-      ? historyPager.cursorStack[requestedPage - 1]
-      : suppliedCursor;
-    if (requestedPage > 1 && !cursor) return;
-    const requestContextKey = contextKey;
-    const requestId = ++historyPageRequestId.current;
-    historyPageLoadingRef.current = true;
-    setHistoryPageLoading(true);
-    try {
-      const page = await operationsClient.getOperationsProjectTerminalUpdateReportHistoryPage(
-        {...path, terminalRef: wireUuid(terminalRef)},
-        {query: {expectedContextVersion: queryContext.expectedContextVersion, cursor: cursor || undefined, limit: 20}},
-      );
-      if (
-        latestContextKey.current !== requestContextKey ||
-        versionRequestId.current !== versionRequest ||
-        historyPageRequestId.current !== requestId ||
-        latestVersionTerminalRef.current !== terminalRef
-      )
-        return;
-      setHistory(page.items);
-      setHistoryCursor(page.nextCursor);
-      historyPager.goToPage(requestedPage, cursor);
-    } catch (error) {
-      if (
-        latestContextKey.current === requestContextKey &&
-        versionRequestId.current === versionRequest &&
-        historyPageRequestId.current === requestId &&
-        latestVersionTerminalRef.current === terminalRef
-      )
-        setProblem(operationsProblemOf(error).detail || '读取终端报告历史失败');
-    } finally {
-      if (historyPageRequestId.current === requestId) {
-        historyPageLoadingRef.current = false;
-        setHistoryPageLoading(false);
-      }
-    }
+  const historyPaginationState = reportDetailRead.pagination;
+  const ruleStoresPaginationState = ruleDetailRead.pagination;
+  const refreshCallbacks = useRef({
+    loadRules,
+    loadReports,
+    refreshRule: ruleDetailRead.refresh,
+    refreshReport: reportDetailRead.refresh,
+  });
+  refreshCallbacks.current = {
+    loadRules,
+    loadReports,
+    refreshRule: ruleDetailRead.refresh,
+    refreshReport: reportDetailRead.refresh,
   };
-  const loadRuleStoresPage = async (
-    ruleRef: string,
-    detailRequest: number,
-    requestedPage: number,
-    suppliedCursor?: string,
-  ) => {
-    if (ruleStorePageLoadingRef.current) return;
-    const cursor = requestedPage < ruleStoresPager.page
-      ? ruleStoresPager.cursorStack[requestedPage - 1]
-      : suppliedCursor;
-    if (requestedPage > 1 && !cursor) return;
-    const requestContextKey = contextKey;
-    const requestRuleRef = ruleRef;
-    const requestId = ++ruleStorePageRequestId.current;
-    ruleStorePageLoadingRef.current = true;
-    setRuleStorePageLoading(true);
-    try {
-      const page = await operationsClient.getOperationsProjectTerminalUpdateRuleStorePage(
-        {...path, ruleRef: wireUuid(requestRuleRef)},
-        {query: {expectedContextVersion: queryContext.expectedContextVersion, cursor: cursor || undefined, limit: 50}},
-      );
-      if (
-        latestContextKey.current !== requestContextKey ||
-        latestRuleRef.current !== requestRuleRef ||
-        ruleDetailRequestId.current !== detailRequest ||
-        ruleStorePageRequestId.current !== requestId
-      )
-        return;
-      setRuleStores(page.items);
-      setRuleStoresCursor(page.nextCursor);
-      ruleStoresPager.goToPage(requestedPage, cursor);
-    } catch (error) {
-      if (
-        latestContextKey.current === requestContextKey &&
-        latestRuleRef.current === requestRuleRef &&
-        ruleDetailRequestId.current === detailRequest &&
-        ruleStorePageRequestId.current === requestId
-      )
-        setProblem(operationsProblemOf(error).detail || '读取规则门店失败');
-    } finally {
-      if (ruleStorePageRequestId.current === requestId) {
-        ruleStorePageLoadingRef.current = false;
-        setRuleStorePageLoading(false);
-      }
-    }
-  };
-  const historyPaginationState = {
-    page: historyPager.page,
-    canPrevious: historyPager.canPrevious && !historyPageLoading,
-    goToPage: (page: number, nextCursor?: string) => {
-      const terminalRef = latestVersionTerminalRef.current;
-      if (terminalRef) void loadHistoryPage(terminalRef, versionRequestId.current, page, nextCursor);
-    },
-  };
-  const ruleStoresPaginationState = {
-    page: ruleStoresPager.page,
-    canPrevious: ruleStoresPager.canPrevious && !ruleStorePageLoading,
-    goToPage: (page: number, nextCursor?: string) => {
-      const ruleRef = latestRuleRef.current;
-      if (ruleRef) void loadRuleStoresPage(ruleRef, ruleDetailRequestId.current, page, nextCursor);
-    },
-  };
-  const refreshCallbacks = useRef({loadRules, loadReports, openRule, openVersion});
-  refreshCallbacks.current = {loadRules, loadReports, openRule, openVersion};
   useEffect(() => {
     if (contentTabRefreshVersion === 0) return;
-    void refreshCallbacks.current.loadRules(latestRuleCursor.current);
-    void refreshCallbacks.current.loadReports(latestReportCursor.current);
-    if (latestRuleRef.current) void refreshCallbacks.current.openRule({ruleRef: wireUuid(latestRuleRef.current)});
-    if (latestVersionTerminalRef.current)
-      void refreshCallbacks.current.openVersion({terminalRef: wireUuid(latestVersionTerminalRef.current)});
+    void refreshCallbacks.current.loadRules();
+    void refreshCallbacks.current.loadReports();
+    if (selectedReadRefs.current.ruleRef) void refreshCallbacks.current.refreshRule();
+    if (selectedReadRefs.current.terminalRef) void refreshCallbacks.current.refreshReport();
   }, [contentTabRefreshVersion]);
 
   const ruleColumns: ProColumns<TerminalUpdateRuleSummary>[] = [
@@ -753,11 +395,12 @@ function ProjectTerminalUpdateContent({
       title: '状态',
       dataIndex: 'status',
       valueType: 'select',
-      valueEnum: {ENABLED: '启用', DISABLED: '停用'},
-      fieldProps: {...testId('terminal-update-rule-status-filter'), allowClear: true},
-      render: (_, row) => (
-        <Tag color={row.status === 'ENABLED' ? 'success' : 'warning'}>{row.status === 'ENABLED' ? '启用' : '停用'}</Tag>
-      ),
+      valueEnum: {ENABLED: LIFECYCLE_LABELS.ENABLED, DISABLED: LIFECYCLE_LABELS.DISABLED},
+      fieldProps: {...testId(terminalUpdateTestIds.ruleStatusFilter), allowClear: true},
+      render: (_, row) => {
+        const presentation = terminalUpdateRuleTablePresentation(row.status);
+        return <Tag color={presentation.color}>{presentation.label}</Tag>;
+      },
     },
     {
       title: '创建时间',
@@ -772,7 +415,11 @@ function ProjectTerminalUpdateContent({
       dataIndex: 'queryText',
       fieldProps: testId(terminalUpdateTestIds.reportQuery),
       render: (_, row) => (
-        <Button type="link" onClick={() => void openVersion(row)} {...testId(terminalUpdateTestIds.reportOpen(row.terminalRef))}>
+        <Button
+          type="link"
+          onClick={() => void openVersion(row)}
+          {...testId(terminalUpdateTestIds.reportOpen(row.terminalRef))}
+        >
           {row.terminalName}
         </Button>
       ),
@@ -783,7 +430,9 @@ function ProjectTerminalUpdateContent({
       search: false,
       render: (_, row) => (
         <Tag
-          color={row.connectionStatus === 'ONLINE' ? 'success' : row.connectionStatus === 'OFFLINE' ? 'warning' : 'default'}
+          color={
+            row.connectionStatus === 'ONLINE' ? 'success' : row.connectionStatus === 'OFFLINE' ? 'warning' : 'default'
+          }
           {...testId(remoteControlTestIds.onlineStatus(row.terminalRef))}
         >
           {row.connectionStatus === 'ONLINE' ? '在线' : row.connectionStatus === 'OFFLINE' ? '离线' : '未激活'}
@@ -843,7 +492,7 @@ function ProjectTerminalUpdateContent({
       search: false,
       width: 260,
       ellipsis: true,
-      render: (_, row) => (row.actual ? jsonString(row.actual, 'applicationId') ?? '未知' : '—'),
+      render: (_, row) => (row.actual ? (jsonString(row.actual, 'applicationId') ?? '未知') : '—'),
     },
     {
       title: '实际 JS',
@@ -868,8 +517,9 @@ function ProjectTerminalUpdateContent({
     jsonObject(latestActual) && typeof latestActual.jsVersion === 'string' ? latestActual.jsVersion : '未知';
   const latestRuntime =
     jsonObject(latestActual) && typeof latestActual.runtimeVersion === 'string' ? latestActual.runtimeVersion : '未知';
-  const latestActualUnknownReason =
-    jsonObject(latestActual) ? terminalUpdateActualUnknownReasonLabel(latestActual.unknownReason) : null;
+  const latestActualUnknownReason = jsonObject(latestActual)
+    ? terminalUpdateActualUnknownReasonLabel(latestActual.unknownReason)
+    : null;
   const latestStatus = jsonObject(latestRecent)
     ? reportStateLabel(jsonString(latestRecent, 'state'))
     : versionDetail?.hasReport
@@ -878,18 +528,20 @@ function ProjectTerminalUpdateContent({
   const latestReason = jsonObject(latestRecent) ? reportReasonLabel(jsonString(latestRecent, 'reason')) : '—';
   const latestChangedAt = jsonNumber(latestRecent, 'changedAtEpochMillis');
   const latestReferences = versionDetail?.latestReferences;
-  const latestRuleReference = reportRuleTargetLabel(
-    jsonString(latestRecent, 'ruleRef'), latestReferences?.ruleTarget,
-  );
+  const latestRuleReference = reportRuleTargetLabel(jsonString(latestRecent, 'ruleRef'), latestReferences?.ruleTarget);
   const latestFullReference = reportArtifactReferenceLabel(
-    jsonString(latestRecent, 'fullArtifactRef'), latestReferences?.fullArtifactIdentity, '—',
+    jsonString(latestRecent, 'fullArtifactRef'),
+    latestReferences?.fullArtifactIdentity,
+    '—',
   );
   const latestHotReference = reportArtifactReferenceLabel(
-    jsonString(latestRecent, 'hotArtifactRef'), latestReferences?.hotArtifactIdentity, '无',
+    jsonString(latestRecent, 'hotArtifactRef'),
+    latestReferences?.hotArtifactIdentity,
+    '无',
   );
   return (
     <Card {...testId(terminalUpdateTestIds.page)}>
-      {problem && <Alert type="error" showIcon message={problem} />}
+      {pageReadProblem && <Alert type="error" showIcon message={pageReadProblem} />}
       <Tabs
         activeKey={tab}
         onChange={setTab}
@@ -903,7 +555,7 @@ function ProjectTerminalUpdateContent({
                   rowKey="terminalRef"
                   {...adminListState({
                     loading: reportLoading,
-                    failed: Boolean(problem),
+                    failed: Boolean(problem || reportsProblem),
                     emptyText: '暂无版本报告',
                     testIdPrefix: terminalUpdateTestIds.reportList,
                   })}
@@ -964,7 +616,11 @@ function ProjectTerminalUpdateContent({
             children: (
               <>
                 <Space style={{marginBottom: 16}}>
-                  <Button onClick={() => void loadRules(rulePager.cursor)} loading={ruleLoading}>
+                  <Button
+                    onClick={() => void loadRules()}
+                    loading={ruleLoading}
+                    {...testId(terminalUpdateTestIds.ruleRefresh)}
+                  >
                     刷新
                   </Button>
                   {writable && (
@@ -982,7 +638,7 @@ function ProjectTerminalUpdateContent({
                   dateFormatter={false}
                   {...adminListState({
                     loading: ruleLoading,
-                    failed: Boolean(problem),
+                    failed: Boolean(problem || rulesProblem),
                     emptyText: '暂无更新规则',
                     testIdPrefix: terminalUpdateTestIds.ruleList,
                   })}
@@ -998,7 +654,7 @@ function ProjectTerminalUpdateContent({
                         key="query"
                         type="primary"
                         onClick={() => searchConfig.form?.submit()}
-                        {...testId('terminal-update-rule-filter-query')}
+                        {...testId(terminalUpdateTestIds.ruleQuerySubmit)}
                       >
                         查询
                       </Button>,
@@ -1009,7 +665,7 @@ function ProjectTerminalUpdateContent({
                           setRuleFilters({});
                           rulePager.reset();
                         }}
-                        {...testId('terminal-update-rule-filter-reset')}
+                        {...testId(terminalUpdateTestIds.ruleQueryReset)}
                       >
                         重置
                       </Button>,
@@ -1046,22 +702,13 @@ function ProjectTerminalUpdateContent({
         onClose={() => setCreateOpen(false)}
         onCreated={async () => {
           setCreateOpen(false);
-          await loadRules(rulePager.cursor);
+          await loadRules();
         }}
       />
       <Drawer
         title={detail ? `${ruleTargetTitle(detail)} · 版本规则详情` : '版本规则详情'}
         open={Boolean(detail)}
-        onClose={() => {
-          ruleDetailRequestId.current += 1;
-          ruleStorePageRequestId.current += 1;
-          ruleStorePageLoadingRef.current = false;
-          setRuleStorePageLoading(false);
-          ruleStoresPager.reset();
-          setDetail(undefined);
-          setRuleStores([]);
-          setRuleStoresCursor(null);
-        }}
+        onClose={closeRule}
         width={720}
         {...adminDrawerSurfaceProps}
         extra={
@@ -1105,7 +752,7 @@ function ProjectTerminalUpdateContent({
         {detail && (
           <>
             <Descriptions {...adminDetailDescriptionsProps}>
-              <Descriptions.Item label="状态">{ruleStatusLabel(detail.status)}</Descriptions.Item>
+              <Descriptions.Item label="状态">{terminalUpdateRuleDetailLabel(detail.status)}</Descriptions.Item>
               <Descriptions.Item label="范围">
                 {detail.targetMode === 'ALL' ? '项目全部门店' : '指定门店'}
               </Descriptions.Item>
@@ -1144,20 +791,13 @@ function ProjectTerminalUpdateContent({
                     {
                       title: '状态',
                       dataIndex: 'status',
-                      render: (status: string) =>
-                        status === 'UNKNOWN'
-                          ? '未知'
-                          : status === 'VOIDED'
-                            ? '已作废'
-                            : status === 'DISABLED'
-                              ? '停用'
-                              : '启用',
+                      render: terminalUpdateRuleStoreLabel,
                     },
                   ]}
                 />
                 <CursorPagination
                   state={ruleStoresPaginationState}
-                  nextCursor={ruleStorePageLoading ? undefined : ruleStoresCursor ?? undefined}
+                  nextCursor={ruleStorePageLoading ? undefined : (ruleStoresCursor ?? undefined)}
                   testIdPrefix={terminalUpdateTestIds.ruleStoresPagination}
                 />
               </>
@@ -1170,32 +810,41 @@ function ProjectTerminalUpdateContent({
         open={Boolean(versionDetail)}
         onClose={closeVersionDrawer}
         width={720}
+        closeIcon={
+          <span {...testId(terminalUpdateTestIds.reportDetailClose)}>
+            <CloseOutlined />
+          </span>
+        }
         {...adminDrawerSurfaceProps}
-        extra={canControlRemote && versionDetail ? (
-          <AdminDetailActionMenu
-            triggerTestId={remoteControlTestIds.detailActions(versionDetail.terminalRef)}
-            loading={remoteStartLoading}
-            items={[
-              {
-                key: 'remote-control',
-                'data-testid': remoteControlTestIds.start(versionDetail.terminalRef),
-                disabled: versionDetail.connectionStatus !== 'ONLINE' || remoteStartLoading,
-                label: (
-                  <Tooltip
-                    title={versionDetail.connectionStatus === 'NOT_ACTIVATED'
-                      ? '终端未激活'
-                      : versionDetail.connectionStatus === 'OFFLINE'
-                        ? '终端离线'
-                        : undefined}
-                  >
-                    <span>远程控制</span>
-                  </Tooltip>
-                ),
-                onClick: () => void startRemoteFromDrawer(),
-              },
-            ]}
-          />
-        ) : null}
+        extra={
+          canControlRemote && versionDetail ? (
+            <AdminDetailActionMenu
+              triggerTestId={remoteControlTestIds.detailActions(versionDetail.terminalRef)}
+              loading={remoteStartLoading}
+              items={[
+                {
+                  key: 'remote-control',
+                  'data-testid': remoteControlTestIds.start(versionDetail.terminalRef),
+                  disabled: versionDetail.connectionStatus !== 'ONLINE' || remoteStartLoading,
+                  label: (
+                    <Tooltip
+                      title={
+                        versionDetail.connectionStatus === 'NOT_ACTIVATED'
+                          ? '终端未激活'
+                          : versionDetail.connectionStatus === 'OFFLINE'
+                            ? '终端离线'
+                            : undefined
+                      }
+                    >
+                      <span>远程控制</span>
+                    </Tooltip>
+                  ),
+                  onClick: () => void startRemoteFromDrawer(),
+                },
+              ]}
+            />
+          ) : null
+        }
         {...testId(terminalUpdateTestIds.reportDetail)}
       >
         {versionDetail && (
@@ -1204,8 +853,20 @@ function ProjectTerminalUpdateContent({
               <Descriptions.Item label="终端">{versionDetail.terminalName}</Descriptions.Item>
               <Descriptions.Item label="门店">{versionDetail.storeName}</Descriptions.Item>
               <Descriptions.Item label="连接状态">
-                <Tag color={versionDetail.connectionStatus === 'ONLINE' ? 'success' : versionDetail.connectionStatus === 'OFFLINE' ? 'warning' : 'default'}>
-                  {versionDetail.connectionStatus === 'ONLINE' ? '在线' : versionDetail.connectionStatus === 'OFFLINE' ? '离线' : '未激活'}
+                <Tag
+                  color={
+                    versionDetail.connectionStatus === 'ONLINE'
+                      ? 'success'
+                      : versionDetail.connectionStatus === 'OFFLINE'
+                        ? 'warning'
+                        : 'default'
+                  }
+                >
+                  {versionDetail.connectionStatus === 'ONLINE'
+                    ? '在线'
+                    : versionDetail.connectionStatus === 'OFFLINE'
+                      ? '离线'
+                      : '未激活'}
                 </Tag>
               </Descriptions.Item>
               <Descriptions.Item label="连接观察时间">{versionDetail.observedAt ?? '—'}</Descriptions.Item>
@@ -1241,13 +902,24 @@ function ProjectTerminalUpdateContent({
                 dataSource={history}
                 loading={historyPageLoading}
                 columns={[
-                  {title: '规则', render: (_, row) => reportRuleTargetLabel(row.recent.ruleRef, row.references.ruleTarget)},
-                  {title: 'FULL 工件', render: (_, row) => reportArtifactReferenceLabel(
-                    row.recent.fullArtifactRef, row.references.fullArtifactIdentity, '—',
-                  )},
-                  {title: 'HOT 工件', render: (_, row) => reportArtifactReferenceLabel(
-                    row.recent.hotArtifactRef, row.references.hotArtifactIdentity, '无',
-                  )},
+                  {
+                    title: '规则',
+                    render: (_, row) => reportRuleTargetLabel(row.recent.ruleRef, row.references.ruleTarget),
+                  },
+                  {
+                    title: 'FULL 工件',
+                    render: (_, row) =>
+                      reportArtifactReferenceLabel(
+                        row.recent.fullArtifactRef,
+                        row.references.fullArtifactIdentity,
+                        '—',
+                      ),
+                  },
+                  {
+                    title: 'HOT 工件',
+                    render: (_, row) =>
+                      reportArtifactReferenceLabel(row.recent.hotArtifactRef, row.references.hotArtifactIdentity, '无'),
+                  },
                   {title: '报告状态', render: (_, row) => reportStateLabel(row.recent.state)},
                   {title: '原因', render: (_, row) => reportReasonLabel(row.recent.reason)},
                   {title: '实际 APK', render: (_, row) => row.actual.apkVersion ?? '未知'},
@@ -1264,7 +936,7 @@ function ProjectTerminalUpdateContent({
               />
               <CursorPagination
                 state={historyPaginationState}
-                nextCursor={historyPageLoading ? undefined : historyCursor ?? undefined}
+                nextCursor={historyPageLoading ? undefined : (historyCursor ?? undefined)}
                 testIdPrefix={terminalUpdateTestIds.reportHistoryPagination}
               />
             </Space>
@@ -1288,9 +960,7 @@ function ProjectTerminalUpdateContent({
           setStatusProblem(undefined);
           statusSubmission.reset();
         }}
-        onConfirm={() =>
-          statusTarget && statusIntent && void changeStatus(statusTarget, statusIntent)
-        }
+        onConfirm={() => statusTarget && statusIntent && void changeStatus(statusTarget, statusIntent)}
         confirmTestId={terminalUpdateTestIds.ruleStatusConfirm}
         cancelTestId="terminal-update-rule-status-cancel"
         modalTestId="terminal-update-rule-status-confirmation"
@@ -1307,12 +977,14 @@ function ProjectTerminalUpdateContent({
       />
       {remoteWorkspace && (
         <RemoteControlWorkspace
-          key={remoteWorkspace.start.sessionId}
           target={remoteWorkspace.target}
-          initialStart={remoteWorkspace.start}
+          currentStart={remoteWorkspace.start}
           contextCurrent={remoteWorkspace.target.contextKey === contextKey}
-          onRestart={() => startRemoteSession(remoteWorkspace.target)}
-          onClose={result => closeRemoteWorkspace(remoteWorkspace, result)}
+          onRestart={async () => {
+            await remoteLauncher.restart(remoteWorkspace.target);
+          }}
+          onCloseRequested={sessionId => remoteLauncher.cancelRestart(sessionId)}
+          onClose={(sessionId, result) => closeRemoteWorkspace(remoteWorkspace.target, sessionId, result)}
         />
       )}
     </Card>
@@ -1329,10 +1001,6 @@ function jsonString(value: JsonValue | undefined, key: string): string | undefin
 
 function jsonNumber(value: JsonValue | undefined, key: string): number | undefined {
   return jsonObject(value) && typeof value[key] === 'number' ? (value[key] as number) : undefined;
-}
-
-function ruleStatusLabel(value: string): string {
-  return value === 'ENABLED' ? '启用' : value === 'DISABLED' ? '停用' : '状态未知';
 }
 
 function hotStrategyLabel(value: string | null | undefined): string {
@@ -1368,7 +1036,10 @@ function artifactIdentityLabel(
   return `${identity.applicationId} · ${kind} · ${identity.version}`;
 }
 
-function reportRuleTargetLabel(ruleRef: string | null | undefined, target: ReportRuleTarget | null | undefined): string {
+function reportRuleTargetLabel(
+  ruleRef: string | null | undefined,
+  target: ReportRuleTarget | null | undefined,
+): string {
   if (!ruleRef) return '—';
   return target ? ruleTargetTitle(target) : '关联更新资料暂不可读取';
 }
@@ -1444,430 +1115,4 @@ function reportReasonLabel(value: string | undefined): string {
 
 function textValue(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
-}
-
-function RuleCreateDrawer({
-  open,
-  queryContext,
-  projectRef,
-  onClose,
-  onCreated,
-}: {
-  open: boolean;
-  queryContext: OperationsPageProps['queryContext'];
-  projectRef: string;
-  onClose: () => void;
-  onCreated: () => Promise<void>;
-}) {
-  const [form] = Form.useForm<RuleForm>();
-  const lifecycle = useDrawerFormLifecycle({
-    open,
-    onOpenChange: next => {
-      if (!next) onClose();
-    },
-    dirtyMessage: '填写中的更新规则不会保存。',
-    idempotencyKey: true,
-  });
-  const [problem, setProblem] = useState<string>();
-  const [fullCandidateSearch, setFullCandidateSearch] = useState('');
-  const [hotCandidateSearch, setHotCandidateSearch] = useState('');
-  const targetMode = Form.useWatch('targetMode', form) ?? 'ALL';
-  const fullArtifactRef = Form.useWatch('fullArtifactRef', form);
-  const hotArtifactRef = Form.useWatch('hotArtifactRef', form);
-  const hotStrategy = Form.useWatch('hotStrategy', form);
-  const candidateContextKey = `${queryContext.groupWorkspaceKey}:${projectRef}:${queryContext.expectedContextVersion}`;
-  const latestCandidateContextKey = useRef(candidateContextKey);
-  latestCandidateContextKey.current = candidateContextKey;
-  const candidateRequestId = useRef(0);
-  const hotCandidateRequestId = useRef(0);
-  const fullCandidateState = useCursorCandidates<Candidate>({
-    queryText: fullCandidateSearch,
-    resetKey: `${open}|${candidateContextKey}`,
-    pageSize: 50,
-    keyOf: item => item.artifactRef,
-  });
-  const hotCandidateState = useCursorCandidates<Candidate>({
-    queryText: hotCandidateSearch,
-    resetKey: `${open}|${candidateContextKey}|${fullArtifactRef ?? ''}`,
-    pageSize: 50,
-    keyOf: item => item.artifactRef,
-  });
-  const {
-    items: fullCandidates,
-    acceptPage: acceptFullCandidatePage,
-    cursor: fullCandidateCursor,
-    debouncedQueryText: fullCandidateQueryText,
-    pageSize: fullCandidatePageSize,
-    nextCursor: fullCandidateNextCursor,
-    loadNext: loadNextFullCandidatePage,
-    onPopupScroll: onFullCandidatePopupScroll,
-  } = fullCandidateState;
-  const {
-    items: hotCandidates,
-    acceptPage: acceptHotCandidatePage,
-    cursor: hotCandidateCursor,
-    debouncedQueryText: hotCandidateQueryText,
-    pageSize: hotCandidatePageSize,
-    nextCursor: hotCandidateNextCursor,
-    loadNext: loadNextHotCandidatePage,
-    onPopupScroll: onHotCandidatePopupScroll,
-  } = hotCandidateState;
-  const [fetchFullCandidatePage, fullCandidateQuery] =
-    operationsRtk.useLazyGetOperationsTerminalUpdateArtifactCandidatePageQuery();
-  const [fetchHotCandidatePage, hotCandidateQuery] =
-    operationsRtk.useLazyGetOperationsTerminalUpdateArtifactCandidatePageQuery();
-  const loadingCandidates = fullCandidateQuery.isFetching || hotCandidateQuery.isFetching;
-  const stores = useOrganizationCandidates({
-    open: open && targetMode === 'STORE_REFS',
-    queryContext,
-    subjectType: 'STORE',
-    projectId: projectRef,
-    pageSize: 50,
-  });
-  useOverlayLock(open);
-  useEffect(() => {
-    if (!open) return;
-    candidateRequestId.current += 1;
-    form.resetFields();
-    form.setFieldsValue({targetMode: 'ALL', status: 'DISABLED', nMinutes: 5, hotStrategy: 'IMMEDIATE'});
-    setProblem(undefined);
-    setFullCandidateSearch('');
-    setHotCandidateSearch('');
-    return () => {
-      candidateRequestId.current += 1;
-    };
-  }, [
-    candidateContextKey,
-    form,
-    open,
-    projectRef,
-    queryContext.expectedContextVersion,
-    queryContext.groupWorkspaceKey,
-  ]);
-  useEffect(() => {
-    if (!open) return;
-    const requestContextKey = candidateContextKey;
-    const requestId = ++candidateRequestId.current;
-    const request = operationsAdminRtkRequest.getOperationsTerminalUpdateArtifactCandidatePage(
-      {groupWorkspaceKey: queryContext.groupWorkspaceKey},
-      {
-        query: terminalUpdateCandidateQuery({
-          expectedContextVersion: queryContext.expectedContextVersion,
-          projectRef: wireUuid(projectRef),
-          kind: 'FULL',
-          queryText: fullCandidateQueryText,
-          cursor: fullCandidateCursor,
-          limit: fullCandidatePageSize,
-        }),
-      },
-    );
-    void fetchFullCandidatePage(request).unwrap()
-      .then(page => {
-        if (latestCandidateContextKey.current === requestContextKey && candidateRequestId.current === requestId)
-          acceptFullCandidatePage(page.items, {nextCursor: page.nextCursor});
-      })
-      .catch(error => {
-        if (latestCandidateContextKey.current === requestContextKey && candidateRequestId.current === requestId)
-          setProblem(operationsProblemOf(error).detail || '读取 FULL 更新包候选失败');
-      });
-    return () => {
-      if (candidateRequestId.current === requestId) candidateRequestId.current += 1;
-    };
-  }, [
-    candidateContextKey,
-    fetchFullCandidatePage,
-    acceptFullCandidatePage,
-    fullCandidateCursor,
-    fullCandidatePageSize,
-    fullCandidateQueryText,
-    open,
-    projectRef,
-    queryContext.expectedContextVersion,
-    queryContext.groupWorkspaceKey,
-  ]);
-  const submit = async (values: RuleForm) => {
-    if (lifecycle.submitting) return;
-    setProblem(undefined);
-    lifecycle.setSubmitting(true);
-    try {
-      const body = {
-        targetMode: values.targetMode,
-        ...(values.targetMode === 'STORE_REFS' ? {storeRefs: (values.storeRefs ?? []).map(wireUuid)} : {}),
-        fullArtifactRef: wireUuid(values.fullArtifactRef),
-        ...(values.hotArtifactRef ? {hotArtifactRef: wireUuid(values.hotArtifactRef)} : {}),
-        status: values.status,
-        nSeconds: Math.round(values.nMinutes * 60),
-        ...(values.hotArtifactRef
-          ? {
-              hotStrategy: values.hotStrategy ?? 'IMMEDIATE',
-              ...(values.hotStrategy === 'IDLE' && values.mMinutes !== undefined
-                ? {mSeconds: idleMinutesToSeconds(values.mMinutes)}
-                : {}),
-            }
-          : {}),
-        description: values.description?.trim() || undefined,
-      };
-      const idempotencyKey = await createContentIdempotencyKey(
-        OPERATIONS_ADMIN_OPERATION_IDS.createOperationsProjectTerminalUpdateRule,
-        body,
-      );
-      await operationsClient.createOperationsProjectTerminalUpdateRule(
-        {groupWorkspaceKey: queryContext.groupWorkspaceKey, projectRef: wireUuid(projectRef)},
-        {
-          query: {expectedContextVersion: queryContext.expectedContextVersion},
-          body,
-          headers: {'Idempotency-Key': idempotencyKey},
-        },
-      );
-      lifecycle.setDirty(false);
-      lifecycle.closeAfterSuccess();
-      await onCreated();
-      message.success(`更新规则已创建，当前为${values.status === 'ENABLED' ? '启用' : '停用'}状态`);
-    } catch (error) {
-      setProblem(operationsProblemOf(error).detail || '保存更新规则失败');
-    } finally {
-      lifecycle.setSubmitting(false);
-    }
-  };
-  useEffect(() => {
-    if (!open || !fullArtifactRef) return;
-    const requestContextKey = candidateContextKey;
-    const requestId = ++hotCandidateRequestId.current;
-    const request = operationsAdminRtkRequest.getOperationsTerminalUpdateArtifactCandidatePage(
-      {groupWorkspaceKey: queryContext.groupWorkspaceKey},
-      {
-        query: terminalUpdateCandidateQuery({
-          expectedContextVersion: queryContext.expectedContextVersion,
-          projectRef: wireUuid(projectRef),
-          kind: 'HOT',
-          minimumFullArtifactRef: wireUuid(fullArtifactRef),
-          queryText: hotCandidateQueryText,
-          cursor: hotCandidateCursor,
-          limit: hotCandidatePageSize,
-        }),
-      },
-    );
-    void fetchHotCandidatePage(request).unwrap()
-      .then(page => {
-        if (latestCandidateContextKey.current === requestContextKey &&
-          hotCandidateRequestId.current === requestId && form.getFieldValue('fullArtifactRef') === fullArtifactRef)
-          acceptHotCandidatePage(page.items, {nextCursor: page.nextCursor});
-      })
-      .catch(error => {
-        if (latestCandidateContextKey.current === requestContextKey &&
-          hotCandidateRequestId.current === requestId && form.getFieldValue('fullArtifactRef') === fullArtifactRef)
-          setProblem(operationsProblemOf(error).detail || '读取 HOT 更新包候选失败');
-      });
-    return () => {
-      if (hotCandidateRequestId.current === requestId) hotCandidateRequestId.current += 1;
-    };
-  }, [
-    candidateContextKey,
-    fetchHotCandidatePage,
-    form,
-    fullArtifactRef,
-    acceptHotCandidatePage,
-    hotCandidateCursor,
-    hotCandidatePageSize,
-    hotCandidateQueryText,
-    open,
-    projectRef,
-    queryContext.expectedContextVersion,
-    queryContext.groupWorkspaceKey,
-  ]);
-  return (
-    <Drawer
-      title="新建终端更新规则"
-      open={open}
-      onClose={lifecycle.requestClose}
-      afterOpenChange={lifecycle.afterOpenChange}
-      maskClosable={!lifecycle.submitting}
-      keyboard={!lifecycle.submitting}
-      width={720}
-      destroyOnHidden
-      {...adminDrawerSurfaceProps}
-      footer={(
-        <Space>
-          <Button onClick={lifecycle.requestClose} disabled={lifecycle.submitting}>取消</Button>
-          <Button
-            type="primary"
-            htmlType="submit"
-            form="terminal-update-rule-create-form"
-            loading={lifecycle.submitting}
-            disabled={lifecycle.submitting}
-            {...testId(terminalUpdateTestIds.createRuleSubmit)}
-          >
-            保存并创建
-          </Button>
-        </Space>
-      )}
-    >
-      {problem && <Alert type="error" showIcon message={problem} />}
-      <Form
-        id="terminal-update-rule-create-form"
-        form={form}
-        layout="vertical"
-        onFinish={submit}
-        onValuesChange={() => lifecycle.setDirty(true)}
-        disabled={lifecycle.submitting}
-      >
-        <Form.Item name="targetMode" label="应用范围" rules={[{required: true}]}>
-          <Select
-            options={[
-              {value: 'ALL', label: '项目全部门店'},
-              {value: 'STORE_REFS', label: '指定门店'},
-            ]}
-            optionRender={option => (
-              <span {...testId(terminalUpdateTestIds.targetModeOption(option.value as 'ALL' | 'STORE_REFS'))}>
-                {option.label}
-              </span>
-            )}
-            {...testId(terminalUpdateTestIds.targetMode)}
-          />
-        </Form.Item>
-        <Form.Item name="status" label="初始状态" rules={[{required: true}]}>
-          <Select
-            options={[
-              {value: 'DISABLED', label: '停用'},
-              {value: 'ENABLED', label: '启用'},
-            ]}
-            {...testId(terminalUpdateTestIds.initialStatus)}
-          />
-        </Form.Item>
-        {targetMode === 'STORE_REFS' && (
-          <Form.Item name="storeRefs" label="门店" rules={[{required: true}]}>
-            <Select
-              mode="multiple"
-              showSearch
-              filterOption={false}
-              onSearch={stores.setStoreSearch}
-              onPopupScroll={stores.onPopupScroll}
-              loading={stores.isFetching}
-              options={stores.items.map(item => ({value: item.id, label: `${item.name} · ${item.code}`}))}
-              optionRender={option => (
-                <span {...testId(terminalUpdateTestIds.storeRefOption(String(option.value)))}>{option.label}</span>
-              )}
-              {...testId(terminalUpdateTestIds.storeRefs)}
-            />
-          </Form.Item>
-        )}
-        <Form.Item name="fullArtifactRef" label="FULL 更新包" rules={[{required: true}]}>
-          <Select
-            showSearch
-            loading={loadingCandidates}
-            options={fullCandidates.map(item => ({
-              value: item.artifactRef,
-              label: `${item.applicationId} · ${item.apkVersion} · ${item.runtimeVersion}`,
-            }))}
-            filterOption={false}
-            onSearch={setFullCandidateSearch}
-            onPopupScroll={event => onFullCandidatePopupScroll(event, fullCandidateQuery.isFetching)}
-            dropdownRender={menu => (
-              <>
-                {menu}
-                {fullCandidateNextCursor && (
-                  <Button
-                    type="link"
-                    loading={fullCandidateQuery.isFetching}
-                    onMouseDown={event => event.preventDefault()}
-                    onClick={() => loadNextFullCandidatePage(fullCandidateQuery.isFetching)}
-                    {...testId(terminalUpdateTestIds.fullArtifactLoadMore)}
-                  >
-                    加载更多
-                  </Button>
-                )}
-              </>
-            )}
-            optionRender={option => (
-              <span {...testId(terminalUpdateTestIds.fullArtifactOption(String(option.value)))}>{option.label}</span>
-            )}
-            onChange={value => {
-              hotCandidateRequestId.current += 1;
-              form.setFieldValue('hotArtifactRef', undefined);
-              setHotCandidateSearch('');
-              if (!value) setProblem(undefined);
-            }}
-            {...testId(terminalUpdateTestIds.fullArtifact)}
-          />
-        </Form.Item>
-        <Form.Item name="hotArtifactRef" label="HOT 更新包">
-          <Select
-            allowClear
-            showSearch
-            loading={loadingCandidates}
-            filterOption={false}
-            onSearch={setHotCandidateSearch}
-            onPopupScroll={event => onHotCandidatePopupScroll(event, hotCandidateQuery.isFetching)}
-            options={hotCandidates.map(item => ({
-              value: item.artifactRef,
-              label: `${item.applicationId} · ${item.jsVersion} · ${item.runtimeVersion}`,
-            }))}
-            onChange={value => {
-              form.setFieldValue('mMinutes', undefined);
-              form.setFieldValue('hotStrategy', value ? (form.getFieldValue('hotStrategy') ?? 'IMMEDIATE') : undefined);
-            }}
-            optionRender={option => (
-              <span {...testId(terminalUpdateTestIds.hotArtifactOption(String(option.value)))}>{option.label}</span>
-            )}
-            dropdownRender={menu => (
-              <>
-                {menu}
-                {hotCandidateNextCursor && (
-                  <Button
-                    type="link"
-                    loading={hotCandidateQuery.isFetching}
-                    onMouseDown={event => event.preventDefault()}
-                    onClick={() => loadNextHotCandidatePage(hotCandidateQuery.isFetching)}
-                    {...testId(terminalUpdateTestIds.hotArtifactLoadMore)}
-                  >
-                    加载更多
-                  </Button>
-                )}
-              </>
-            )}
-            {...testId(terminalUpdateTestIds.hotArtifact)}
-          />
-        </Form.Item>
-        <Form.Item name="nMinutes" label="安装提醒间隔（分钟）" rules={[{required: true}]}>
-          <InputNumber
-            min={1}
-            max={1440}
-            precision={0}
-            style={{width: '100%'}}
-            {...testId(terminalUpdateTestIds.nMinutes)}
-          />
-        </Form.Item>
-        {hotArtifactRef && (
-          <Form.Item name="hotStrategy" label="HOT 执行策略" rules={[{required: true}]} preserve={false}>
-            <Select
-              options={[
-                {value: 'IMMEDIATE', label: '立即执行'},
-                {value: 'IDLE', label: '空闲时执行'},
-              ]}
-              optionRender={option => (
-                <span {...testId(terminalUpdateTestIds.hotStrategyOption(option.value as 'IMMEDIATE' | 'IDLE'))}>
-                  {option.label}
-                </span>
-              )}
-              {...testId(terminalUpdateTestIds.hotStrategy)}
-            />
-          </Form.Item>
-        )}
-        {hotArtifactRef && hotStrategy === 'IDLE' && (
-          <Form.Item name="mMinutes" label="空闲时长（分钟）" rules={[{required: true}]} preserve={false}>
-            <InputNumber
-              min={1}
-              max={1440}
-              precision={0}
-              style={{width: '100%'}}
-              {...testId(terminalUpdateTestIds.mMinutes)}
-            />
-          </Form.Item>
-        )}
-        <Form.Item name="description" label="说明">
-          <Input.TextArea maxLength={500} {...testId(terminalUpdateTestIds.description)} />
-        </Form.Item>
-      </Form>
-    </Drawer>
-  );
 }

@@ -20,20 +20,18 @@ import {
   type HierarchyRow,
 } from './organizationStructureShared';
 import {
-  extensionValuesForGeneratedRequest,
-  hydrateOrganizationExtensionValues,
-  OrganizationExtensionFields,
-  serializeOrganizationExtensionValues,
-  type OrganizationExtensionFormValues,
-  useOrganizationExtensionDefinition,
-} from './OrganizationExtensionFields';
+  hydrateExtensionFormValues,
+  serializeExtensionFormValues,
+  type ExtensionFormValues,
+} from '../../extension-fields';
+import {OrganizationExtensionFields, useOrganizationExtensionDefinition} from './OrganizationExtensionFields';
 
 type FormValues = {
   code: string;
   name: string;
   notes?: string;
   phaseDrafts?: Array<{name?: string}>;
-  extensionValues?: OrganizationExtensionFormValues;
+  extensionValues?: ExtensionFormValues;
 };
 
 export function OrganizationEditDrawer({
@@ -74,7 +72,7 @@ export function OrganizationEditDrawer({
       name: node.name,
       notes: node.notes ?? undefined,
       phaseDrafts: projectPhaseDrafts(node.phases),
-      extensionValues: hydrateOrganizationExtensionValues(definition.data, node.extensionValues),
+      extensionValues: hydrateExtensionFormValues(definition.data, node.extensionValues),
     });
     setProblem(undefined);
     lifecycle.reset();
@@ -95,9 +93,7 @@ export function OrganizationEditDrawer({
             parentId: node.parentId,
             phases: node.nodeType === 'PROJECT' ? projectPhasePayload(values.phaseDrafts) : [],
             notes: values.notes?.trim() || null,
-            extensionValues: extensionValuesForGeneratedRequest(
-              serializeOrganizationExtensionValues(definition.data, values.extensionValues, node.extensionValues),
-            ),
+            extensionValues: serializeExtensionFormValues(definition.data, values.extensionValues, node.extensionValues),
             expectedVersion: node.revision,
           },
           headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()},

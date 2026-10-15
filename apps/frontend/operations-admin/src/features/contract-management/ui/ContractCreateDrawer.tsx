@@ -16,11 +16,7 @@ import {
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {useContractStoreCandidates} from './useContractStoreCandidates';
-import {
-  extensionValuesForGeneratedRequest,
-  serializeOrganizationExtensionValues,
-  type OrganizationExtensionFormValues,
-} from '../../organization-structure/model/organizationExtensionValues';
+import {enabledExtensionFields, serializeExtensionFormValues, type ExtensionFormValues} from '../../extension-fields';
 
 type ContractItemValues = {code: string; name: string};
 type Values = {
@@ -31,14 +27,11 @@ type Values = {
   effectiveTo?: string;
   note?: string;
   items: ContractItemValues[];
-  extensionValues?: OrganizationExtensionFormValues;
+  extensionValues?: ExtensionFormValues;
 };
 
 function extensionFields(definition?: ExtensionDefinition) {
-  return (definition?.definitions ?? [])
-    .filter(field => field.status !== 'DISABLED')
-    .sort((left, right) => (left.displayOrder ?? 0) - (right.displayOrder ?? 0))
-    .map(field => {
+  return enabledExtensionFields(definition).map(field => {
       const control =
         field.type === 'NUMBER' ? (
           <InputNumber style={{width: '100%'}} />
@@ -132,9 +125,7 @@ export function ContractCreateDrawer({
             effectiveTo: value.effectiveTo || null,
             note: value.note?.trim() || null,
             items: value.items.map(item => ({code: item.code.trim(), name: item.name.trim()})),
-            extensionValues: extensionValuesForGeneratedRequest(
-              serializeOrganizationExtensionValues(definition.currentData, value.extensionValues),
-            ),
+            extensionValues: serializeExtensionFormValues(definition.currentData, value.extensionValues),
           },
           headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()},
         },

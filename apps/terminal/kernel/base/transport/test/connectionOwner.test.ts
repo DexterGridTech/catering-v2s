@@ -78,6 +78,27 @@ describe('transport connection owner', () => {
     expect(transportReconnectDelayMs(291, {jitter: 0.5, cap: 0.8}, reconnectPolicy)).toBe(290_000);
   });
 
+  it('rejects an invalid reconnect policy before reading network addresses', async () => {
+    const readSnapshot = vi.fn(async () => snapshot(['primary']));
+    const connect = vi.fn(async () => makeConnection());
+    const owner = createTransportConnectionOwner({
+      adapter: {readSnapshot, connect},
+      dispatchInternal: () => undefined,
+    });
+
+    await expect(
+      owner.start({
+        profileId: 'ter',
+        serverName: 'terminal-data-server',
+        reconnectPolicy: {...reconnectPolicy, initialDelayMs: 0},
+      }),
+    ).rejects.toThrow('TRANSPORT_RECONNECT_POLICY_INVALID');
+
+    expect(readSnapshot).not.toHaveBeenCalled();
+    expect(connect).not.toHaveBeenCalled();
+    await owner.dispose();
+  });
+
   it('rotates handshake failures, then keeps the ready address preferred after REDIRECT_TO_NEXT_NODE', async () => {
     const timers = new ControlledTimers();
     const connection = makeConnection();

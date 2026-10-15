@@ -3,7 +3,6 @@ import {
   adminListState,
   contextScopedQueryArgs,
   createPageQueryIdentity,
-  formatTypedExtensionValue,
   NameCodeText,
   testId,
   ValidityStatus,
@@ -13,8 +12,6 @@ import {
 import {useMemo, useState} from 'react';
 import {operationsRtk} from '../../../app/api/OperationsTransport';
 import type {
-  ExtensionDefinition,
-  JsonValue,
   OrganizationStore,
   StoreContract,
   StoreContractViewState,
@@ -24,7 +21,8 @@ import {adminCatalog, operationsPageDesignKeys} from '../../../app/catalog/gener
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
 import {FixedStoreContractDetailDrawer} from './FixedStoreContractDetailDrawer';
-import {organizationStoreStatusLabels} from '../../organization-structure/model/organizationStatus';
+import {organizationStoreStatusLabels} from '../../organization-structure';
+import {extensionDetailItems} from '../../extension-fields';
 
 const storeProfilePage = adminCatalog.operationsPages.find(
   page => page.pageDesignKey === operationsPageDesignKeys.PgStoreProfile,
@@ -38,17 +36,6 @@ const contractViewTabs: Array<{key: StoreContractViewState; label: string; empty
   {key: 'HISTORY', label: '历史', emptyText: '当前没有历史合同'},
   {key: 'INVALID', label: '已作废', emptyText: '当前没有已作废合同'},
 ];
-
-function extensionItems(definition: ExtensionDefinition | undefined, values: Record<string, JsonValue> | undefined) {
-  return (definition?.definitions ?? [])
-    .filter(field => field.status !== 'DISABLED')
-    .sort((left, right) => (left.displayOrder ?? 0) - (right.displayOrder ?? 0))
-    .map(field => ({
-      key: `extension-${field.key}`,
-      label: field.label,
-      children: formatTypedExtensionValue(values?.[field.key], field),
-    }));
-}
 
 function queryIssue(error: unknown, fallback: string) {
   return error ? fallback : undefined;
@@ -199,7 +186,7 @@ export function StoreProfilePage({queryContext}: OperationsPageProps) {
             ),
           },
           {key: 'status', label: '门店状态', children: organizationStoreStatusLabels[store.status]},
-          ...extensionItems(definition.currentData, store.extensionValues),
+              ...extensionDetailItems(definition.currentData, store.extensionValues),
         ]}
         {...testId('operations-store-profile-fields')}
       />

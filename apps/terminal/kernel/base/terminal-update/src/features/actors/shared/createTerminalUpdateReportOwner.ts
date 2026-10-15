@@ -269,7 +269,7 @@ export const createTerminalUpdateReportOwner = ({
     logLifecycle(context, 'report-submit-started', {
       attemptId,
       reportSequence: payload.body.reportSequence,
-      reportState: payload.body.recent.state,
+      reportState: payload.body.recent?.state ?? null,
       taskIdPresent: payload.body.taskId !== null,
       taskMatchesCurrentTask: payload.body.taskId !== null && payload.body.taskId === state.currentTask?.taskId,
       taskMatchesRecentStatus: payload.body.taskId === state.recentStatus.taskId,

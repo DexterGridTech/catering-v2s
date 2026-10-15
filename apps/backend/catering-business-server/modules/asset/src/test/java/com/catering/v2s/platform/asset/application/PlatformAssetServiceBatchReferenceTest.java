@@ -34,7 +34,7 @@ class PlatformAssetServiceBatchReferenceTest {
                     org.springframework.jdbc.core.ResultSetExtractor<T> extractor) {
                 queryCount.incrementAndGet();
                 assertEquals(
-                        "SELECT asset_ref, object_key, content_type, sha256 FROM platform_asset.staged_asset WHERE "
+                        "SELECT asset_ref, usage, object_key, content_type, sha256 FROM platform_asset.staged_asset WHERE "
                                 + "status='ACTIVE' AND asset_ref IN (?,?)",
                         sql);
                 try {
@@ -80,6 +80,8 @@ class PlatformAssetServiceBatchReferenceTest {
                 new Class<?>[] {ResultSet.class},
                 (proxy, method, arguments) -> {
                     if ("next".equals(method.getName())) return row.incrementAndGet() < 2;
+                    if ("getString".equals(method.getName()) && "usage".equals(arguments[0]))
+                        return "CATALOG_ITEM_IMAGE";
                     if ("getObject".equals(method.getName())
                             && arguments.length == 2
                             && "asset_ref".equals(arguments[0])) return row.get() == 0 ? first : second;

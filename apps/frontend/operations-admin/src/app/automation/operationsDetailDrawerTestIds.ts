@@ -15,6 +15,8 @@ export const operationsDetailDrawerTestIds = {
     reissue: 'operations-workspace-invitation-reissue',
   },
   contract: {
+    open: (contractRef: string) => `operations-contract-detail-open-${contractRef}`,
+    close: 'operations-contract-detail-close',
     actionMenu: 'operations-contract-detail-action-menu',
     audit: 'operations-contract-detail-audit-history',
     edit: 'operations-contract-detail-edit',
@@ -28,6 +30,7 @@ export const operationsDetailDrawerTestIds = {
     configure: 'inventory-action-configure',
   },
   store: {
+    close: 'operations-store-detail-close',
     actionMenu: 'operations-store-detail-action-menu',
     audit: 'operations-store-detail-audit',
     edit: 'operations-store-detail-edit',

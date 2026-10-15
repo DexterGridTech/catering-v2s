@@ -27,7 +27,7 @@ import {
   projectTerminalRuntimeRemoteControlLog,
   liveKitSignalSocketProtocol,
   operationsRemoteControlOperationOfPath,
-  safeTerminalBrowserPolicyFailure,
+  terminalBrowserPolicyFailure,
   safeBrowserRequestFailureReason,
   terminalRemoteControlOperationOfPath,
 } from '../src/browserNetworkDiagnostics.js';
@@ -178,6 +178,7 @@ const attachPageDiagnostics = (
       operation: operationOf(request.url()) ?? 'admin-api.other',
       elapsedMs: Date.now() - start,
       reason: safeBrowserRequestFailureReason(request.failure()?.errorText),
+      errorText: request.failure()?.errorText ?? 'No browser failure detail',
     });
   });
   page.on('websocket', socket => {
@@ -188,13 +189,18 @@ const attachPageDiagnostics = (
     let sentFrames = 0;
     let receivedFrames = 0;
     safeLog(`${label}.livekit.signal.socket-observed`, {attempt, protocol});
-    socket.on('framesent', () => { sentFrames += 1; });
-    socket.on('framereceived', () => { receivedFrames += 1; });
+    socket.on('framesent', () => {
+      sentFrames += 1;
+    });
+    socket.on('framereceived', () => {
+      receivedFrames += 1;
+    });
     socket.on('socketerror', errorText => {
       safeLog(`${label}.livekit.signal.socket-error`, {
         attempt,
         protocol,
         reason: safeBrowserRequestFailureReason(errorText),
+        errorText,
       });
     });
     socket.on('close', () => {
@@ -232,15 +238,13 @@ const attachPageDiagnostics = (
       if (message.type() !== 'error') return;
       const failedUrl = message.text().match(/https?:\/\/[^\s'"]+/u)?.[0];
       if (failedUrl === undefined) return;
-      const failure = safeTerminalBrowserPolicyFailure(failedUrl, message.text());
+      const failure = terminalBrowserPolicyFailure(failedUrl, message.text());
       if (failure === undefined) return;
       safeLog('terminal.browser.http.policy-failed', failure);
     });
   }
-  page.on('pageerror', error => safeLog(`${label}.page.error`, {errorName: error.name}));
+  page.on('pageerror', error => safeLog(`${label}.page.error`, {errorName: error.name, errorMessage: error.message}));
 };
-
-
 
 const activeSelectDropdown = async (page: Page, input: Locator): Promise<Locator> => {
   const listboxId = await input.getAttribute('aria-controls');
@@ -298,8 +302,14 @@ const selectOption = async (page: Page, controlTestId: string, optionPrefix: str
   if (matchWaitFailure !== 'NONE' || labelMatchCount !== 1) {
     const [visibleOptionCount, allDropdownCount, emptyStateCount] = await Promise.all([
       options.count().catch(() => -1),
-      page.locator('.ant-select-dropdown').count().catch(() => -1),
-      page.getByTestId('operations-role-context-empty').count().catch(() => -1),
+      page
+        .locator('.ant-select-dropdown')
+        .count()
+        .catch(() => -1),
+      page
+        .getByTestId('operations-role-context-empty')
+        .count()
+        .catch(() => -1),
     ]);
     const ariaExpanded = await input.getAttribute('aria-expanded').catch(() => null);
     safeLog('operations.role-context.option.match-failed', {
@@ -424,8 +434,14 @@ describe(`TER remote control ${sample} on Expo Web`, () => {
     });
     await once(expo, 'spawn');
     if (expo.pid === undefined) throw new Error('TERMINAL_AUTOMATION_EXPO_PID_UNAVAILABLE');
-    expo.stdout?.on('data', value => expoOutput.push('stdout', value));
-    expo.stderr?.on('data', value => expoOutput.push('stderr', value));
+    expo.stdout?.on('data', value => {
+      safeLog('expo.web.output.chunk', {stream: 'stdout', text: value.toString('utf8')});
+      expoOutput.push('stdout', value);
+    });
+    expo.stderr?.on('data', value => {
+      safeLog('expo.web.output.chunk', {stream: 'stderr', text: value.toString('utf8')});
+      expoOutput.push('stderr', value);
+    });
     expoIdentity = processIdentity(expo.pid);
     safeLog('expo.web.process.started', {pid: expoIdentity.pid, processIdentityBound: true});
     await waitForExpo(webOrigin.origin, expo);
@@ -435,7 +451,8 @@ describe(`TER remote control ${sample} on Expo Web`, () => {
     await installBrowserRtcProbe(terminalPage, 'terminal', safeLog);
     await installBrowserRtcProbe(operationsPage, 'operations', safeLog);
     attachPageDiagnostics(terminalPage, 'terminal', event => {
-      const registrationRejected = event.event === 'remote-control.session-registration-rejected' ||
+      const registrationRejected =
+        event.event === 'remote-control.session-registration-rejected' ||
         (event.event === 'register-completed' && event.resultKind === 'failure');
       if (event.event !== 'remote-control.start-rejected' && !registrationRejected) return;
       observedRemoteStartFailure = event;
@@ -649,11 +666,14 @@ describe(`TER remote control ${sample} on Expo Web`, () => {
       const failureSignal = remoteStartFailureSignal;
       if (failureSignal === undefined) throw new Error('TERMINAL_AUTOMATION_REMOTE_FAILURE_OBSERVER_MISSING');
       const workAreaResult = await Promise.race([
-        operationsPage.getByTestId(remoteControlTestIds.workArea).waitFor({state: 'visible', timeout: 30_000})
-          .then(() => ({kind: 'visible'} as const)),
-        failureSignal.then(event => ({kind: 'rejected', event} as const)),
+        operationsPage
+          .getByTestId(remoteControlTestIds.workArea)
+          .waitFor({state: 'visible', timeout: 30_000})
+          .then(() => ({kind: 'visible'}) as const),
+        failureSignal.then(event => ({kind: 'rejected', event}) as const),
       ]);
       if (workAreaResult.kind === 'rejected') throwRemoteStartFailure(workAreaResult.event);
+      await expect(operationsPage.getByTestId(remoteControlTestIds.header)).toBeFocused();
       const remoteStatus = await subscribeSelector(
         driver.transport,
         sessionId,
@@ -661,13 +681,13 @@ describe(`TER remote control ${sample} on Expo Web`, () => {
         [],
       );
       let activeWaitResult:
-        | {kind: 'active'}
-        | {kind: 'rejected'; event: Readonly<Record<string, string | number | boolean>>};
+        {kind: 'active'} | {kind: 'rejected'; event: Readonly<Record<string, string | number | boolean>>};
       try {
         activeWaitResult = await Promise.race([
-          remoteStatus.waitFor(value => isRecord(value) && value.phase === 'active', 30_000)
-            .then(() => ({kind: 'active'} as const)),
-          failureSignal.then(event => ({kind: 'rejected', event} as const)),
+          remoteStatus
+            .waitFor(value => isRecord(value) && value.phase === 'active', 30_000)
+            .then(() => ({kind: 'active'}) as const),
+          failureSignal.then(event => ({kind: 'rejected', event}) as const),
         ]);
       } catch (error) {
         const latest = remoteStatus.latest();
@@ -680,9 +700,7 @@ describe(`TER remote control ${sample} on Expo Web`, () => {
           terminalRef,
           remoteSessionId: observed && typeof observed.sessionId === 'string' ? observed.sessionId : 'UNKNOWN',
           observedPhase: observed && typeof observed.phase === 'string' ? observed.phase : 'UNKNOWN',
-          ...(observed && typeof observed.reason === 'string'
-            ? {observedReason: observed.reason}
-            : {}),
+          ...(observed && typeof observed.reason === 'string' ? {observedReason: observed.reason} : {}),
           ...(observed && typeof observed.topologyKind === 'string' ? {topologyKind: observed.topologyKind} : {}),
           observationState: latest?.state ?? 'NO_EVENT',
           readyScreenCount: readyScreens,
@@ -700,7 +718,8 @@ describe(`TER remote control ${sample} on Expo Web`, () => {
       }
       const latest = remoteStatus.latest();
       const activeStatus = latest?.state === 'JSON' && isRecord(latest.value) ? latest.value : undefined;
-      const readyScreens = activeStatus && Array.isArray(activeStatus.readyScreens) ? activeStatus.readyScreens.length : 0;
+      const readyScreens =
+        activeStatus && Array.isArray(activeStatus.readyScreens) ? activeStatus.readyScreens.length : 0;
       if (activeStatus && typeof activeStatus.sessionId === 'string' && activeStatus.sessionId.length > 0) {
         remoteControlSessionId = activeStatus.sessionId;
       }
@@ -714,6 +733,112 @@ describe(`TER remote control ${sample} on Expo Web`, () => {
         expectedScreenCount: 1,
         terminalRef,
       });
+
+      const firstSessionId = remoteControlSessionId;
+      if (firstSessionId === null) throw new Error('TERMINAL_AUTOMATION_REMOTE_SESSION_ID_MISSING');
+      await operationsPage.getByTestId(remoteControlTestIds.end).click();
+      const firstEndedStatus = await waitForSelector(
+        driver.transport,
+        sessionId,
+        'kernel.base.remote-control.selectRemoteControlStatus',
+        [],
+        value =>
+          isRecord(value) &&
+          value.sessionId === firstSessionId &&
+          value.phase === 'ended' &&
+          isRecord(value.cleanup) &&
+          value.cleanup.roomLeft === true &&
+          value.cleanup.inputCancelled === true &&
+          typeof value.cleanup.tracksReleased === 'number' &&
+          value.cleanup.tracksReleased >= 1,
+        30_000,
+      );
+      safeLog('remote-control.first-session-ended.readback', {
+        sessionId: firstSessionId,
+        phase:
+          isRecord(firstEndedStatus) && typeof firstEndedStatus.phase === 'string' ? firstEndedStatus.phase : 'UNKNOWN',
+        roomLeft:
+          isRecord(firstEndedStatus) &&
+          isRecord(firstEndedStatus.cleanup) &&
+          firstEndedStatus.cleanup.roomLeft === true,
+        inputCancelled:
+          isRecord(firstEndedStatus) &&
+          isRecord(firstEndedStatus.cleanup) &&
+          firstEndedStatus.cleanup.inputCancelled === true,
+        tracksReleased:
+          isRecord(firstEndedStatus) &&
+          isRecord(firstEndedStatus.cleanup) &&
+          typeof firstEndedStatus.cleanup.tracksReleased === 'number'
+            ? firstEndedStatus.cleanup.tracksReleased
+            : 0,
+      });
+      await expect(operationsPage.getByTestId(remoteControlTestIds.status)).toContainText('远程控制已结束');
+
+      await operationsPage.getByTestId(remoteControlTestIds.restart).click();
+      const restartedStatus = await waitForSelector(
+        driver.transport,
+        sessionId,
+        'kernel.base.remote-control.selectRemoteControlStatus',
+        [],
+        value =>
+          isRecord(value) &&
+          value.phase === 'active' &&
+          value.sessionId !== firstSessionId &&
+          Array.isArray(value.readyScreens) &&
+          value.readyScreens.length === 1,
+        30_000,
+      );
+      if (
+        !isRecord(restartedStatus) ||
+        typeof restartedStatus.sessionId !== 'string' ||
+        typeof restartedStatus.phase !== 'string' ||
+        !Array.isArray(restartedStatus.readyScreens)
+      )
+        throw new Error('TERMINAL_AUTOMATION_REMOTE_RESTART_SESSION_ID_MISSING');
+      remoteControlSessionId = restartedStatus.sessionId;
+      safeLog('remote-control.manual-restart.readback', {
+        previousSessionId: firstSessionId,
+        sessionId: remoteControlSessionId,
+        phase: restartedStatus.phase,
+        readyScreenCount: restartedStatus.readyScreens.length,
+        newSession: true,
+      });
+
+      await operationsPage.getByTestId(remoteControlTestIds.end).click();
+      const secondEndedStatus = await waitForSelector(
+        driver.transport,
+        sessionId,
+        'kernel.base.remote-control.selectRemoteControlStatus',
+        [],
+        value =>
+          isRecord(value) &&
+          value.sessionId === remoteControlSessionId &&
+          value.phase === 'ended' &&
+          isRecord(value.cleanup) &&
+          value.cleanup.roomLeft === true &&
+          value.cleanup.inputCancelled === true &&
+          typeof value.cleanup.tracksReleased === 'number' &&
+          value.cleanup.tracksReleased >= 1,
+        30_000,
+      );
+      safeLog('remote-control.restarted-session-ended.readback', {
+        sessionId: remoteControlSessionId,
+        phase:
+          isRecord(secondEndedStatus) && typeof secondEndedStatus.phase === 'string'
+            ? secondEndedStatus.phase
+            : 'UNKNOWN',
+        resourcesReleased:
+          isRecord(secondEndedStatus) &&
+          isRecord(secondEndedStatus.cleanup) &&
+          secondEndedStatus.cleanup.roomLeft === true &&
+          secondEndedStatus.cleanup.inputCancelled === true &&
+          typeof secondEndedStatus.cleanup.tracksReleased === 'number' &&
+          secondEndedStatus.cleanup.tracksReleased >= 1,
+      });
+      await operationsPage.getByTestId(remoteControlTestIds.close).click();
+      await operationsPage.getByTestId(remoteControlTestIds.workArea).waitFor({state: 'hidden', timeout: 15_000});
+      await expect(terminalLink).toBeFocused();
+      safeLog('remote-control.exit-focus.readback', {terminalRef, focusReturnedToTerminalEntry: true});
     } catch (error) {
       if (remoteStartAttempted && terminalPage !== undefined && operationsPage !== undefined) {
         await Promise.allSettled([
@@ -725,8 +850,6 @@ describe(`TER remote control ${sample} on Expo Web`, () => {
       safeLog('business.failed', {errorCode: sanitizedErrorCode(error)});
       throw error;
     }
-    process.stdout.write(
-      `TERMINAL_AUTOMATION_WEB_HARNESS_BUSINESS_PASS runId=${runId} suite=remote.${sample}\n`,
-    );
+    process.stdout.write(`TERMINAL_AUTOMATION_WEB_HARNESS_BUSINESS_PASS runId=${runId} suite=remote.${sample}\n`);
   }, 120_000);
 });

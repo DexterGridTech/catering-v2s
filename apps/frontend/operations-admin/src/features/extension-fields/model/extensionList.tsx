@@ -13,6 +13,7 @@ import {
   type TypedExtensionField,
 } from '@catering-v2s/admin-ui-foundation';
 import {extensionListSearchTestId} from '../../../app/automation/extensionListTestIds';
+import {enabledExtensionFields} from './extensionFormValues';
 
 type ExtensionRow = {extensionValues?: Record<string, JsonValue>};
 type SearchValue = Record<string, unknown>;
@@ -32,7 +33,7 @@ const extensionFilterWireContractCheck: BidirectionallyAssignable<GeneratedExten
 void extensionFilterWireContractCheck;
 
 export function orderedExtensionFields(definition?: ExtensionDefinition) {
-  return orderTypedExtensionFields((definition?.definitions ?? []).filter(field => field.status !== 'DISABLED'));
+  return orderTypedExtensionFields(enabledExtensionFields(definition));
 }
 
 export function extensionListAndSearchColumns<Row extends ExtensionRow>(

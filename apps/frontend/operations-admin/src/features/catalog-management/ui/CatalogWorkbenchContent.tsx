@@ -2,7 +2,7 @@ import {Alert, Button} from 'antd';
 import {testId} from '@catering-v2s/admin-ui-foundation';
 import type {ComponentProps} from 'react';
 import {catalogTestIds} from '../catalogTestIds';
-import type {StoreOperatingRuleGateState} from '../../store-operating-rules/model/useStoreOperatingRuleGate';
+import type {StoreOperatingRuleGateState} from '../../store-operating-rules';
 import {OperationsStoreCatalogManagementDisabledSurface} from '../../../app/components/OperationsStoreCatalogManagementDisabledSurface';
 import type {CatalogSurface} from './controllers/CatalogWorkbenchController';
 import {CatalogWorkbenchItemList} from './CatalogWorkbenchItemList';

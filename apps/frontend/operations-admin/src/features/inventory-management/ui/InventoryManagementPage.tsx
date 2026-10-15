@@ -24,7 +24,7 @@ import {ACTION_CAPABILITIES} from '../../../app/catalog/generatedAdminCatalog';
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {InventoryDetailDrawer} from './InventoryDetailDrawer';
 import {OperationsStoreCatalogManagementDisabledSurface} from '../../../app/components/OperationsStoreCatalogManagementDisabledSurface';
-import {useStoreOperatingRuleGate} from '../../store-operating-rules/model/useStoreOperatingRuleGate';
+import {useStoreOperatingRuleGate} from '../../store-operating-rules';
 import {inventoryStockViewTestId} from '../inventoryTestIds';
 import {
   envelopeData,

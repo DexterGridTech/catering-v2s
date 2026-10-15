@@ -93,7 +93,9 @@ test('operations shell delegates dirty ownership to Drawer lifecycle without a d
   );
   assert.match(app, /const shellLock = useShellInteractionLock\(\)/);
   assert.match(app, /const locked = shellLock\.locked/);
-  assert.doesNotMatch(app, /dirtyDraftPrompt|dirtyLocked|operations-shell-dirty-guard|请先保存或放弃当前修改/);
+  assert.doesNotMatch(app, /shellLock\.dirtyLocked/);
+  assert.match(app, /disabled=\{locked \|\| !currentPageKey\}/);
+  assert.doesNotMatch(app, /dirtyDraftPrompt|operations-shell-dirty-guard|请先保存或放弃当前修改/);
   assert.match(editDrawer, /useDrawerFormLifecycle/);
   assert.match(editDrawer, /lifecycle\.setDirty\(true\)/);
   assert.doesNotMatch(ruleTree, /setDirty|useDirtyFormLock|Modal\.confirm|dirtyMessage|请先保存|放弃当前修改/);

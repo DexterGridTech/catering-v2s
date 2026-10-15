@@ -2,6 +2,9 @@ import {readFileSync} from 'node:fs';
 import {describe, expect, it} from 'vitest';
 
 const source = readFileSync(new URL('./ProjectTerminalUpdatePage.tsx', import.meta.url), 'utf8');
+const ruleDetailSource = readFileSync(new URL('../model/useTerminalUpdateRuleDetail.ts', import.meta.url), 'utf8');
+const reportDetailSource = readFileSync(new URL('../model/useTerminalUpdateReportDetail.ts', import.meta.url), 'utf8');
+const remoteLauncherSource = readFileSync(new URL('../../remote-control/model/useRemoteControlLauncher.ts', import.meta.url), 'utf8');
 
 describe('terminal update detail pagination wiring', () => {
   it('shows the terminal-reported applicationId in the version list and detail', () => {
@@ -11,20 +14,18 @@ describe('terminal update detail pagination wiring', () => {
   });
 
   it('uses foundation cursor pagination for rule stores and report history without appending duplicate pages', () => {
-    expect(source).toContain('useCursorStack({resetKey: `${contextKey}:${detail?.ruleRef ?? \'\'}`})');
-    expect(source).toContain('useCursorStack({resetKey: `${contextKey}:${versionDetail?.terminalRef ?? \'\'}`})');
+    expect(ruleDetailSource).toContain('useCursorStack({resetKey: `${contextKey}:${ruleRef ?? \'\'}`})');
+    expect(reportDetailSource).toContain('useCursorStack({resetKey: `${contextKey}:${terminalRef ?? \'\'}`})');
     expect(source).toContain('testIdPrefix={terminalUpdateTestIds.ruleStoresPagination}');
     expect(source).toContain('testIdPrefix={terminalUpdateTestIds.reportHistoryPagination}');
-    expect(source).toContain('setRuleStores(page.items)');
-    expect(source).toContain('setHistory(page.items)');
-    expect(source).not.toContain('setRuleStores(current => [...current, ...page.items])');
-    expect(source).not.toContain('setHistory(current => [...current, ...page.items])');
-    expect(source).toContain('ruleStorePageLoadingRef.current');
-    expect(source).toContain('historyPageLoadingRef.current');
-    expect(source).toContain('ruleStorePageRequestId.current !== requestId');
-    expect(source).toContain('historyPageRequestId.current !== requestId');
-    expect(source).not.toContain('loadMoreRuleStores');
-    expect(source).not.toContain('loadMoreHistory');
+    expect(ruleDetailSource).toContain('setStores(page.items)');
+    expect(reportDetailSource).toContain('setHistory(page.items)');
+    expect(ruleDetailSource).not.toContain('setStores(current => [...current, ...page.items])');
+    expect(reportDetailSource).not.toContain('setHistory(current => [...current, ...page.items])');
+    expect(ruleDetailSource).toContain('storesLoadingRef.current');
+    expect(reportDetailSource).toContain('historyLoadingRef.current');
+    expect(ruleDetailSource).toContain('storePageGeneration.isCurrent(requestGeneration)');
+    expect(reportDetailSource).toContain('historyPageGeneration.isCurrent(requestGeneration)');
   });
 
   it('uses the terminal update testId source for report reset and pagination controls', () => {
@@ -50,10 +51,21 @@ describe('remote control entry wiring', () => {
   });
 
   it('starts through the generated owner API and mounts the workspace with context-bound cleanup', () => {
-    expect(source).toContain('operationsClient.startOperationsTerminalRemoteControl');
-    expect(source).toContain('operationsClient.endOperationsTerminalRemoteControl');
+    expect(remoteLauncherSource).toContain('operationsClient.startOperationsTerminalRemoteControl');
+    expect(remoteLauncherSource).toContain('operationsClient.endOperationsTerminalRemoteControl');
     expect(source).toContain('contextCurrent={remoteWorkspace.target.contextKey === contextKey}');
-    expect(source).toContain('onClose={result => closeRemoteWorkspace(remoteWorkspace, result)}');
+    expect(source).toContain('onClose={(sessionId, result) => closeRemoteWorkspace(remoteWorkspace.target, sessionId, result)}');
     expect(source).toContain('<RemoteControlWorkspace');
+  });
+
+  it('uses synchronously updated detail identity after asynchronous start and status refreshes', () => {
+    expect(source).toContain('selectedReadRefs.current = {...selectedReadRefs.current, ruleRef: row.ruleRef}');
+    expect(source).toContain('selectedReadRefs.current = {...selectedReadRefs.current, ruleRef: undefined}');
+    expect(source).toContain('selectedReadRefs.current = {...selectedReadRefs.current, terminalRef: row.terminalRef}');
+    expect(source).toContain('selectedReadRefs.current = {...selectedReadRefs.current, terminalRef: undefined}');
+    expect(source).toContain('selectedReadRefs.current.terminalRef === requestedTerminalRef');
+    expect(source).toMatch(/selectedReadRefs\.current\.terminalRef === requestedTerminalRef\s*\)\s*\{/u);
+    expect(source).toContain('selectedReadRefs.current.ruleRef === requestedRuleRef');
+    expect(source).toContain('await ruleDetailRead.open(requestedRuleRef)');
   });
 });

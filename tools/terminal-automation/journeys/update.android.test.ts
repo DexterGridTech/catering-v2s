@@ -7,12 +7,26 @@ import {
   type Server as HttpServer,
 } from 'node:http';
 import {createServer as createNetServer, type Server as NetServer} from 'node:net';
-import {closeSync, copyFileSync, createReadStream, mkdirSync, openSync, readFileSync, rmSync, statSync, writeFileSync} from 'node:fs';
+import {
+  closeSync,
+  copyFileSync,
+  createReadStream,
+  mkdirSync,
+  openSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {afterAll, beforeAll, expect, it} from 'vitest';
 import type {Client} from '@devicefarmer/adbkit';
-import {topologyTransportConfig, type CommandRouteContext, type TransportServerConfig} from '@catering-v2s/kernel-base-contracts';
+import {
+  topologyTransportConfig,
+  type CommandRouteContext,
+  type TransportServerConfig,
+} from '@catering-v2s/kernel-base-contracts';
 import {
   parseServerConfigEnvironmentJson,
   resolveServerConfigEnvironment,
@@ -131,11 +145,7 @@ const serverConfigAddress = (environment: ServerConfigEnvironment, serverName: s
 };
 const serverAddressPort = (address: Readonly<{readonly baseUrl: string}>, protocol: 'http:' | 'ws:'): number => {
   const parsed = new URL(address.baseUrl);
-  if (
-    parsed.protocol !== protocol ||
-    parsed.hostname !== '127.0.0.1' ||
-    parsed.port.length === 0
-  ) {
+  if (parsed.protocol !== protocol || parsed.hostname !== '127.0.0.1' || parsed.port.length === 0) {
     throw new Error('TERMINAL_AUTOMATION_ANDROID_SERVER_CONFIG_ENDPOINT_INVALID');
   }
   const port = Number(parsed.port);
@@ -157,7 +167,8 @@ const extractFullPackageApk = async (
     outputName: string;
   }>,
 ) => {
-  if (!runDirectory || input.artifact.apk === undefined) throw new Error('TERMINAL_AUTOMATION_FULL_PACKAGE_APK_INVALID');
+  if (!runDirectory || input.artifact.apk === undefined)
+    throw new Error('TERMINAL_AUTOMATION_FULL_PACKAGE_APK_INVALID');
   const outputRoot = path.join(runDirectory, 'update', appName);
   const packageManifest = JSON.parse(readFileSync(path.join(outputRoot, input.packageManifestName), 'utf8')) as {
     schemaVersion: number;
@@ -173,7 +184,8 @@ const extractFullPackageApk = async (
     packageManifest.apk.sha256 !== input.artifact.apk.sha256 ||
     !/^[a-f0-9]{64}$/u.test(packageManifest.zip.sha256) ||
     !/^[a-f0-9]{64}$/u.test(packageManifest.apk.sha256)
-  ) throw new Error('TERMINAL_AUTOMATION_FULL_PACKAGE_IDENTITY_INVALID');
+  )
+    throw new Error('TERMINAL_AUTOMATION_FULL_PACKAGE_IDENTITY_INVALID');
 
   const zipPath = path.join(outputRoot, input.zipName);
   if ((await sha256File(zipPath)) !== packageManifest.zip.sha256)
@@ -1141,7 +1153,8 @@ beforeAll(
     }
     const serverConfig = currentServerConfigEnvironment();
     const businessPort = serverAddressPort(serverConfigAddress(serverConfig, 'business', 'primary'), 'http:');
-    const tdsAddresses = serverConfig.servers.find(server => server.serverName === 'terminal-data-server')?.addresses ?? [];
+    const tdsAddresses =
+      serverConfig.servers.find(server => server.serverName === 'terminal-data-server')?.addresses ?? [];
     if (tdsAddresses.length === 0) throw new Error('TERMINAL_AUTOMATION_ANDROID_TDS_ADDRESSES_MISSING');
     const tdsPorts = tdsAddresses.map(address => serverAddressPort(address, 'ws:'));
     let tdsLocalPorts = tdsPorts;
@@ -2039,56 +2052,56 @@ it.skipIf(
           updateContextFacts,
           actualVersions,
         ] = await Promise.all([
-            readSelector(
-              connection.driver,
-              initial.sessionId,
-              projectTerminalUpdateCandidateSelector,
-              candidateArgs,
-            ).catch(() => null),
-            readSelector(
-              connection.driver,
-              initial.sessionId,
-              'kernel.base.terminal-data-client.selectConnectionState',
-              [],
-            ).catch(() => null),
-            readSelector(
-              connection.driver,
-              initial.sessionId,
-              'kernel.base.terminal-data-client.selectActivationState',
-              [],
-            ).catch(() => null),
-            readSelector(
-              connection.driver,
-              initial.sessionId,
-              'kernel.feature.store-basic.selectStoreBasicLoadReadiness',
-              [],
-            ).catch(() => null),
-            readSelector(
-              connection.driver,
-              initial.sessionId,
-              'kernel.feature.project-basic.selectProjectBasicLoadReadiness',
-              [],
-            ).catch(() => null),
-            readSelector(connection.driver, initial.sessionId, projectOrganizationPathSelector, []).catch(() => null),
-            readSelector(
-              connection.driver,
-              initial.sessionId,
-              'kernel.feature.project-basic.selectProjectTerminalUpdateRules',
-              [],
-            ).catch(() => null),
-            readSelector(
-              connection.driver,
-              initial.sessionId,
-              'kernel.feature.project-basic.selectProjectTerminalUpdateContextFacts',
-              [],
-            ).catch(() => null),
-            readSelector(
-              connection.driver,
-              initial.sessionId,
-              'kernel.base.terminal-update.selectTerminalUpdateActualVersions',
-              [],
-            ).catch(() => null),
-          ]);
+          readSelector(
+            connection.driver,
+            initial.sessionId,
+            projectTerminalUpdateCandidateSelector,
+            candidateArgs,
+          ).catch(() => null),
+          readSelector(
+            connection.driver,
+            initial.sessionId,
+            'kernel.base.terminal-data-client.selectConnectionState',
+            [],
+          ).catch(() => null),
+          readSelector(
+            connection.driver,
+            initial.sessionId,
+            'kernel.base.terminal-data-client.selectActivationState',
+            [],
+          ).catch(() => null),
+          readSelector(
+            connection.driver,
+            initial.sessionId,
+            'kernel.feature.store-basic.selectStoreBasicLoadReadiness',
+            [],
+          ).catch(() => null),
+          readSelector(
+            connection.driver,
+            initial.sessionId,
+            'kernel.feature.project-basic.selectProjectBasicLoadReadiness',
+            [],
+          ).catch(() => null),
+          readSelector(connection.driver, initial.sessionId, projectOrganizationPathSelector, []).catch(() => null),
+          readSelector(
+            connection.driver,
+            initial.sessionId,
+            'kernel.feature.project-basic.selectProjectTerminalUpdateRules',
+            [],
+          ).catch(() => null),
+          readSelector(
+            connection.driver,
+            initial.sessionId,
+            'kernel.feature.project-basic.selectProjectTerminalUpdateContextFacts',
+            [],
+          ).catch(() => null),
+          readSelector(
+            connection.driver,
+            initial.sessionId,
+            'kernel.base.terminal-update.selectTerminalUpdateActualVersions',
+            [],
+          ).catch(() => null),
+        ]);
         const readinessBindingMatchesActivation =
           isRecord(storeReadiness) &&
           isRecord(storeReadiness.binding) &&
@@ -2117,8 +2130,7 @@ it.skipIf(
         const appStoreRules = appRules.filter(
           rule =>
             isRecord(rule) &&
-            (rule.targetMode === 'ALL' ||
-              (Array.isArray(rule.storeRefs) && rule.storeRefs.includes(supplyStoreRef))),
+            (rule.targetMode === 'ALL' || (Array.isArray(rule.storeRefs) && rule.storeRefs.includes(supplyStoreRef))),
         );
         const contextMatchesSnapshot =
           isRecord(updateContextFacts) &&
@@ -2130,8 +2142,7 @@ it.skipIf(
           isRecord(activationState) &&
           updateContextFacts.selectedSpace === activationState.groupWorkspaceKey &&
           updateContextFacts.storeRef === activationState.storeRef;
-        const actualApplicationMatches =
-          isRecord(actualVersions) && actualVersions.applicationId === packageId;
+        const actualApplicationMatches = isRecord(actualVersions) && actualVersions.applicationId === packageId;
         const failureCode =
           error instanceof Error && /^TERMINAL_AUTOMATION_[A-Z0-9_]+$/u.test(error.message)
             ? error.message
@@ -2250,8 +2261,7 @@ it.skipIf(
       }
     } else {
       const targetSelectionContext = targetDocument?.target.selectionContext;
-      if (targetSelectionContext === undefined)
-        throw new Error('TERMINAL_AUTOMATION_UPDATE_SELECTION_CONTEXT_MISSING');
+      if (targetSelectionContext === undefined) throw new Error('TERMINAL_AUTOMATION_UPDATE_SELECTION_CONTEXT_MISSING');
       const acceptedTarget = await dispatchUpdateCommand(commandName, {selectionContext: targetSelectionContext});
       updateIdentity = acceptedTarget.requestId;
       updateOutcome = acceptedTarget.result;
@@ -2743,8 +2753,12 @@ it.skipIf(
           value => isRecord(value) && isRecord(value.target) && value.target.ruleRef === supplyUi!.ruleRef,
           30_000,
         );
-        if (!isRecord(updateTask) || typeof updateTask.taskId !== 'string' || !isRecord(updateTask.target) ||
-          updateTask.target.ruleRef !== supplyUi!.ruleRef)
+        if (
+          !isRecord(updateTask) ||
+          typeof updateTask.taskId !== 'string' ||
+          !isRecord(updateTask.target) ||
+          updateTask.target.ruleRef !== supplyUi!.ruleRef
+        )
           throw new Error('TERMINAL_AUTOMATION_SUPPLY_FIXED_TASK_MISSING_AFTER_FULL_RELAUNCH');
         updateIdentity = updateTask.taskId;
         process.stdout.write(
@@ -3476,6 +3490,7 @@ it.skipIf(
           apkVersion: actual.nativeVersion,
           jsVersion: actual.bundleVersion,
           runtimeVersion: actual.runtimeVersion,
+          contextVersion: supplyUi.contextVersion,
           runId,
         });
       } catch (error) {

@@ -6,6 +6,10 @@ declare module 'react-test-renderer' {
     unmount(): void;
   };
 
-  export function create(element: ReactElement): ReactTestRenderer;
+  export type ReactTestRendererOptions = {
+    createNodeMock?: (element: ReactElement) => unknown;
+  };
+
+  export function create(element: ReactElement, options?: ReactTestRendererOptions): ReactTestRenderer;
   export function act(callback: () => void | Promise<void>): Promise<void>;
 }

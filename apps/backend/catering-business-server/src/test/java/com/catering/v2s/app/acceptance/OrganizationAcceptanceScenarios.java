@@ -98,7 +98,7 @@ final class OrganizationAcceptanceScenarios {
                         "expectedVersion",
                         1,
                         "extensionValues",
-                        List.of()),
+                        Map.of()),
                 Set.of(200));
         assertEquals(
                 "Acceptance Project Updated",
@@ -149,7 +149,7 @@ final class OrganizationAcceptanceScenarios {
         createStoreBody.put("code", "acceptance-store-http");
         createStoreBody.put("name", "Acceptance HTTP Store");
         createStoreBody.put("notes", "created-by-http");
-        createStoreBody.put("extensionValues", List.of());
+        createStoreBody.put("extensionValues", Map.of());
         BackendAcceptanceTest.Response created = context.post(
                 OPERATIONS_ORGANIZATION_STORE_CREATE,
                 "/api/operations/group-workspaces/" + fixture.groupWorkspaceKey() + "/organization/stores",
@@ -169,7 +169,7 @@ final class OrganizationAcceptanceScenarios {
         updateStoreBody.put("name", "Acceptance HTTP Store Updated");
         updateStoreBody.put("headCompanyId", null);
         updateStoreBody.put("notes", "updated-by-http");
-        updateStoreBody.put("extensionValues", List.of());
+        updateStoreBody.put("extensionValues", Map.of());
         updateStoreBody.put("extensionRuleRevision", 0);
         updateStoreBody.put("expectedVersion", version);
         updateStoreBody.put("operatingRuleSwitches", acceptanceStoreOperatingRuleSwitches());
@@ -241,7 +241,7 @@ final class OrganizationAcceptanceScenarios {
         updateStoreBody.put("name", "Acceptance Store");
         updateStoreBody.put("headCompanyId", null);
         updateStoreBody.put("notes", "rule-scope-update");
-        updateStoreBody.put("extensionValues", List.of());
+        updateStoreBody.put("extensionValues", Map.of());
         updateStoreBody.put("extensionRuleRevision", 0);
         updateStoreBody.put("expectedVersion", version);
         updateStoreBody.put("operatingRuleSwitches", parentClosedChildOpen);
@@ -357,7 +357,7 @@ final class OrganizationAcceptanceScenarios {
                         "remark",
                         "brand-remark",
                         "extensionValues",
-                        List.of()),
+                        Map.of()),
                 Set.of(201));
         assertEquals("acceptance-http-brand", brand.json().path("code").asText(), "BUSINESS: brand code is written");
         assertEquals("AHB", brand.json().path("alias").asText(), "BUSINESS: brand alias is written");
@@ -379,7 +379,7 @@ final class OrganizationAcceptanceScenarios {
                         "expectedVersion",
                         1,
                         "extensionValues",
-                        List.of()),
+                        Map.of()),
                 Set.of(200));
         assertEquals(
                 "Acceptance HTTP Brand Updated",
@@ -414,7 +414,7 @@ final class OrganizationAcceptanceScenarios {
                         "remark",
                         "tenant-remark",
                         "extensionValues",
-                        List.of()),
+                        Map.of()),
                 Set.of(201));
         assertEquals(
                 "Acceptance HTTP Tenant Ltd",
@@ -452,7 +452,7 @@ final class OrganizationAcceptanceScenarios {
                         "remark",
                         "head-company-remark",
                         "extensionValues",
-                        List.of()),
+                        Map.of()),
                 Set.of(201));
         assertEquals(
                 "Acceptance HTTP Head Company Ltd",
@@ -767,7 +767,7 @@ final class OrganizationAcceptanceScenarios {
             throws Exception {
         String normalizedHost = hostType.toLowerCase().replace('_', '-');
         String name = "ExtensionFilter" + hostType + suffix;
-        List<Map<String, Object>> extensionValues = typedExtensionValues(fieldPrefix, textValue);
+        Map<String, Object> extensionValues = typedExtensionValues(fieldPrefix, textValue);
         if ("BRAND".equals(hostType)) {
             context.post(
                     OPERATIONS_ORGANIZATION_BRAND_CREATE,
@@ -905,7 +905,7 @@ final class OrganizationAcceptanceScenarios {
                         "notes",
                         "region-created-by-http",
                         "extensionValues",
-                        List.of()),
+                        Map.of()),
                 Set.of(201));
         String regionId = region.json().path("id").asText();
         assertEquals(
@@ -926,7 +926,7 @@ final class OrganizationAcceptanceScenarios {
                         "phases",
                         List.of(Map.of("name", "Opening"), Map.of("name", "Peak"), Map.of("name", "Closing")),
                         "extensionValues",
-                        List.of()),
+                        Map.of()),
                 Set.of(201));
         assertEquals(
                 regionId,

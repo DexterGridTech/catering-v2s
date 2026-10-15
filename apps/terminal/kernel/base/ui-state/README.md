@@ -41,10 +41,12 @@ src/
     valueValidation.ts          JSON-safe 输入校验与冻结副本
     workspaceSlices.ts          内容状态校验、codec、hydration 与 descriptor
     variableSlices.ts           变量校验、持久化映射与 descriptor
+  declarations/
+    commands.ts                 show/open/close/clear 内容与变量 command
+    errors.ts                   本包 typed errors
   application/
     createUiStateModule.ts      catalog、变量 registry、command/actor/registration 组装
   features/
-    commands/                   show/open/close/clear 内容 command
     actors/index.ts             显式聚合具名 actor，不承载行为
     actors/showScreenActor.ts、openLayerActor.ts、closeLayerActor.ts、clearLayersActor.ts
                                 各自拥有一个内容 command actor

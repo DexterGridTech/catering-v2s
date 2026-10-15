@@ -25,7 +25,17 @@ TER T1 原始需求：`doc/plans/platform/2026-10-13-ter-key-code-structure-t1-f
 | D-04 商品页签 | 纯页签呈现最终归前端，后台仍拥有引用、授权和业务可用性事实；契约字段移除须另立范围，本期保留 tabs 及既有消费者语义 |
 | D-05 Java 类型 | 新公开边界类型落 api；存量 FQCN、公开嵌套 record、直接构造接缝继续按 R-READ-02 保持。迁移另立范围 |
 
-本次授权仅包括本需求文档与独立审查/处置文档。需求接受不授权详设定稿、源码/测试/生成器/规范/项目记忆/依赖修改或运行；TER T1 在途工作不因本稿扩大范围。所有拟议整改与验证均为 `NOT_RUN`。
+原需求起草时授权仅包括需求与审查文档（历史）；当前实施与验证授权以§0.1最新Dexter裁定及转交话术为准。TER T1范围不因此扩大，所有尚未实施/运行项仍为NOT_RUN。
+
+## 0.1 · 2026-10-15 本批验证与实施授权裁定
+
+Dexter 最新原话：“你的话术我还没给codex，因为当前前后端代码还有些调整，请你根据当前代码情况对照详设和实施计划检查一下有没有影响，如果有影响请修改。同时修改实施计划，此次实施只在DEV环境下做动态验证，授权可以reset 和seed，但是不碰UAT环境。 最后，再重新给我一段授权codex开始实施的话术”。
+
+本批业务/owner/公开契约和R01–16目标不变。验证采用本条更新后的F＋D（受管DEV真实HTTP/浏览器/Expo Web）。Dexter 2026-10-15进一步澄清：仅明确排除UAT和真机；必要的容器、测试与资源可用，聚焦测试走现有受管入口。全量backend-acceptance与隔离L2仍不是本批目标，不因允许Testcontainers而启动全量矩阵或新增suite/P1/admission/fixture；DEV证明不写成隔离L2或全量acceptance PASS。该澄清取代此前将Testcontainers整体列为禁止执行的解释，不修改全局R-READ-07规范。原2026-10-14路线A是历史方案，不再新增三个隔离L2的suite/P1/admission/fixture。
+
+Codex 后续实施获准使用本批必要的受管DEV start/stop/restart、reset与完整r5-full seed，无需再次索要同范围reset/seed授权；reset前仍须当前完整seed dry-run和动态前整体准入，受管manifest必须为DEV。UAT配置、进程、数据库、对象存储、seed与部署均不操作；共用seed helper对象化只静态保持UAT调用兼容，不宣称UAT已验证。本次主agent实际工作仅文档修订/只读核查，不代Codex开始实施或运行。
+
+设备补充裁定（2026-10-15）：若需要验证 TER 终端功能，使用显式 serial 绑定的安卓虚拟机，禁止使用真机双屏设备；非 adapter 行为仍先 Expo Web 再必要虚拟机定向验证，不新增完整设备矩阵，不触及 UAT。
 
 ## 1 · 要解决的问题与方案取舍
 
@@ -138,8 +148,8 @@ Java owner 继续使用显式 SET/CLEAR 的 ExtensionSubmission；不改变 sche
 ### R-17 · 验证控制在真实影响范围
 
 后续授权实施后做受影响编译/类型、现生成 check、focused tests 和必要真实 HTTP/UI 验证；不要手改 generated、以文件存在/response.ok/类型检查代替业务断言，不默认跑不相关完整 verify 或未受影响设备矩阵。明确原始失败、修复字节和 proof 边界。
-CBS owner 可读性整改仍遵守后台规范 R-READ-07：最终一次受管全量 backend-acceptance 晚于全部生产/测试改动，分开给出 CONTRACT、BUSINESS、信息性 DB_OPERATIONS 与 cleanup，不能拼接 focused 或复用改码前旧 run 代替。它不扩为不相关完整 verify，也不是当前运行授权；详设/计划据此排好最终验证顺序。
-进入动态前给整条实际测试链加入必要关联调试日志，再按项目当前规则做两轮 fresh 静态对抗查漏；CP 对账按完整 CP 进行，已对账且未修改部分不重复开关卡。复用唯一受管 backend-acceptance / browser L2 及已有资源生命周期，不新造 runner。任何动态执行须由 Dexter 后续授权；本稿不要求现在运行、不以现在 NOT_RUN 判需求不成立。
+本批按§0.1的Dexter明确例外只在DEV动态验证：最终字节的完整seed、代表真实HTTP持久化读回、菜单/扩展表单和现update/remote Web主流程均给独立业务断言与cleanup；不执行全量backend-acceptance或隔离L2，不默认完整verify。确有必要直接证明受影响隔离数据库/容器接缝时，可走现有受管入口执行 focused Testcontainers 测试；其结果只证明该测试覆盖的接缝，不冒充DEV、全量acceptance或隔离L2。
+进入动态前给整条实际测试链加入必要关联调试日志，再按项目当前规则做两轮 fresh 静态对抗查漏；CP 对账按完整 CP 进行，已对账且未修改部分不重复开关卡。复用当前受管 DEV 与唯一 terminal-automation driver，不新造 runner。本次后续 Codex 实施的 DEV 动态、必要 reset/完整 seed 已由 Dexter 授权；当前作者仅改文档，不执行运行。
 
 ## 4 · 主要源码与交互导航
 
@@ -162,30 +172,29 @@ CBS owner 可读性整改仍遵守后台规范 R-READ-07：最终一次受管全
 
 ## 5 · 验收要求（未来实施义务，不是当前证据）
 
-档位：F=受影响本地类型/单元/组件及生成检查；H=受管 backend-acceptance 的真实 HTTP/业务读回，TDS 帧由同 lifecycle 既有协议入口验证；L2=每 run 隔离后端的受管浏览器 UI；W=现 terminal-automation 在受管 DEV 上的 Expo Web Journey 回归，不是隔离 L2。具体文件、场景和授权在详设/计划闭合，不新增 runner。未改变 HTTP owner/协议行为的纯提取以 F 和独立源码复核证明；详设逐项说明是否需要 H/L2及理由，不因表中 F 写成免全仓义务，也不机械全量运行。
-
+档位（2026-10-15生效）：F=受影响类型/编译、无环境的单元/组件与生成检查；D_HTTP=受管DEV上的真实owner HTTP、独立GET持久化读回与完整seed报告；D_BROWSER=同DEV两个后台的真实控件/请求/owner读回；W=现terminal-automation在DEV的两个sample update/remote Expo Web主流程（D的子集）。隔离数据库/容器的原Java集成测试默认不启动其原H环境；若直接证明受影响接缝确有必要，可用现有受管入口定向运行相关测试，并准确标记覆盖面，不把未运行项写PASS。所有原业务断言保持，具体DEVcaller、fixture和清理见当前详设/附件。
 | V | 对应要求 | 必须证明的业务/工程断言 | 适用档位 |
 |---|---|---|---|
-| V-01 | R01/R02/R07 | 所有变更保留 operation/schema/Java公开签名与实际事务、授权、幂等、审计、readback；B4/B5未偷渡；合法边界反例被明确保留 | F＋独立源码复核；改变调用链时 H |
-| V-02 | R03 | canonical全部合法topic能经过codec，未知key仍typed拒绝；不会把协议合法集当作binding/SQL权限集 | F；实际协议行为变化时 H |
+| V-01 | R01/R02/R07 | 所有变更保留 operation/schema/Java公开签名与实际事务、授权、幂等、审计、readback；B4/B5未偷渡；合法边界反例被明确保留 | F＋独立源码复核；D_HTTP代表正常链 |
+| V-02 | R03 | canonical全部合法topic能经过codec，未知key仍typed拒绝；不会把协议合法集当作binding/SQL权限集 | F＋D中真实TDS订阅链 |
 | V-03 | R04 | 类型与运行闭集同源，新增canonical合法reason不需改Web手写名单；同renderer双目标内容一致且仅additive，TER手写消费者未改；未知值/非法字段/关联/字节上限仍拒绝 | F |
-| V-04 | R05 | 当前可达ZIP/图片的摘要、prefix、各自正常限长、读取失败清理与流关闭等价；公共入口对视频仍拒绝，不因提取放开用途/格式。保留底层视频分支时不误加图片decode，不把私有分支测试当作合法上传证明 | F；影响asset提交/读回时 H |
-| V-05 | R06 | 制作差异在列表/详情、null/missing与SKU子集输入下保持；totalCount及引用/当前读取预算不丢失 | F；影响owner查询/提交时 H |
-| V-06 | R06 | 草稿校验/详情提取后原facade、CAS/receipt/审计/事务/readback仍关闭；不会因Bean/self-call改变实际事务 | F＋源码复核；代理/写路径变化时 H |
-| V-07 | R08 | 已授权且实际注册页不会因缺图标从菜单消失；未授权/未注册页仍不出现；菜单焦点/路由不改 | F；实际菜单用户路径 L2 |
+| V-04 | R05 | 当前可达ZIP/图片的摘要、prefix、各自正常限长、读取失败清理与流关闭等价；公共入口对视频仍拒绝，不因提取放开用途/格式。保留底层视频分支时不误加图片decode，不把私有分支测试当作合法上传证明 | F＋D_HTTP/seed与现更新上传 |
+| V-05 | R06 | 制作差异在列表/详情、null/missing与SKU子集输入下保持；totalCount及引用/当前读取预算不丢失 | F＋D_HTTP/seed代表catalog读回 |
+| V-06 | R06 | 草稿校验/详情提取后原facade、CAS/receipt/审计/事务/readback仍关闭；不会因Bean/self-call改变实际事务 | F＋源码复核；D_HTTP代表保存/读回 |
+| V-07 | R08 | 已授权且实际注册页不会因缺图标从菜单消失；未授权/未注册页仍不出现；菜单焦点/路由不改 | F＋D_BROWSER（DEV角色菜单） |
 | V-08 | R09/R11 | remote、extension与R09三组同根的跨feature调用及type-only import均走窄入口，无内部deep import；查询/业务owner不搬移，无空index/整目录公开导出 | F＋源码复核 |
-| V-09 | R10 | 列表/Drawer切换context、关闭/unmount后迟到响应不回写；独立Tab资源互不误取消；finally仍按现身份关闭 | F；现受管 update Web Journey 回归（DEV，非隔离 L2） |
-| V-10 | R10 | 规则门店/报告历史的cursor、加载更多、查询刷新与现表单dirty/Drawer关闭语义不变；现foundation真实被消费 | F；现受管 update Web Journey 回归（DEV，非隔离 L2），补明确跨页断言 |
-| V-11 | R11 | start成功、拒绝、快速关闭后迟到start、restart/end使用同一session身份；旧Room/track按现生命周期释放；宿主资格不变 | F；现受管 remote.web Journey 的入口/结束回归（DEV，非隔离 L2） |
-| V-12 | R12 | 十个Drawer/十四operation实际输出canonical对象；SET保留JSON类型；表单undefined/null/空字符串按原值有无转CLEAR或omission，HTTP CLEAR=null；空提交、DATE、false/0与enabled筛选正确，无掩盖cast；对象SET及CLEAR有真实持久化读回 | F；代表新建/修改真实HTTP读回 H |
-| V-13 | R12 | extension required/disabled、差量、原值不变、幂等重放与持久化语义保持；legacy实际生产提交者被核清，无生产提交者时支路及依赖fixture同步迁移，保留时有具名理由 | F＋H |
-| V-14 | R13 | 规则/门店两类状态的已知标签/色彩复用现能力；分别证明规则列表/详情及门店VOIDED/UNKNOWN/DISABLED的既有文案与fallback保持；foundation未被局部改名，报告/远控领域枚举和颜色未误套主数据词汇 | F；现受管 update Web Journey 的已知状态回归；未知/作废 fallback 由 F 证明 |
+| V-09 | R10 | 列表/Drawer切换context、关闭/unmount后迟到响应不回写；独立Tab资源互不误取消；finally仍按现身份关闭 | F＋W（DEV） |
+| V-10 | R10 | 规则门店/报告历史的cursor、加载更多、查询刷新与现表单dirty/Drawer关闭语义不变；现foundation真实被消费 | F＋W_CONTROLLED_UI（只读分页fixture） |
+| V-11 | R11 | start成功、拒绝、快速关闭后迟到start、restart/end使用同一session身份；旧Room/track按现生命周期释放；宿主资格不变 | F＋W（DEV） |
+| V-12 | R12 | 十个Drawer/十四operation实际输出canonical对象；SET保留JSON类型；表单undefined/null/空字符串按原值有无转CLEAR或omission，HTTP CLEAR=null；空提交、DATE、false/0与enabled筛选正确，无掩盖cast；对象SET及CLEAR有真实持久化读回 | F＋D_HTTP＋D_BROWSER |
+| V-13 | R12 | extension required/disabled、差量、原值不变、幂等重放与持久化语义保持；legacy实际生产提交者被核清，无生产提交者时支路及依赖fixture同步迁移，保留时有具名理由 | F＋D_HTTP |
+| V-14 | R13 | 规则/门店两类状态的已知标签/色彩复用现能力；分别证明规则列表/详情及门店VOIDED/UNKNOWN/DISABLED的既有文案与fallback保持；foundation未被局部改名，报告/远控领域枚举和颜色未误套主数据词汇 | F＋W（DEV）；未知/作废fallback由F证明 |
 | V-15 | R14 | 同一策略仅一住址，单位/消费者可追踪；合法不同值和直接构造保留，无registry/参数页/依赖容器 | F＋源码复核 |
 | V-16 | R15 | 真实README/公开入口/生成来源/适用测试与正本指针一致；如加机械门，真实red会失败且合法反例通过 | F＋源码复核 |
 | V-17 | R16 | 全部本期问题族具有明确目标、调用者、保留条件、复用比较、CP和具体测试落点；延后项不进入实施遗漏台账 | 静态详设/计划审查 |
-| V-18 | R17 | 动态前日志链与两轮静态查漏关闭；所需受管验证输出业务和cleanup分开；未运行项保留，已对账未改范围不重复 | 未来F/H/L2按授权；当前NOT_RUN |
+| V-18 | R17 | 动态前日志链与两轮静态查漏关闭；所需受管验证输出业务和cleanup分开；未运行项保留，已对账未改范围不重复 | F/D_HTTP/D_BROWSER/W；当前NOT_RUN |
 
-V-12/V-13 并不要求先为十四operation各跑完整浏览器Journey：全调用者类型/提交映射在F闭合。当前 ExtensionAcceptanceScenarios 源码以legacy数组覆盖代表SET及创建/更新，不足以证明对象SET或HTTP CLEAR；未来须在该现有场景文件补对象形状的代表SET（含false/0/DATE）及CLEAR=null的持久化读回，另证明omission/未变化语义。现owner/mapper单测的CLEAR反例不能替代HTTP链证明，测试源码也不等于本轮运行PASS。详设选择实际受影响主体/类型的必要场景并给出理由，不遗漏业务不同语义；若退役legacy，相关fixture一并迁移，不新建runner。R04只增加TER生成常量、不改其消费者行为，本期不新增Expo Web、设备或双机矩阵。
+V-12/V-13 的十四提交接缝由F完整核对；DEV代表链必须证明真实对象SET（false/0/DATE）、CLEAR=null、omission、原值保持及幂等重放，以独立owner GET和重开Drawer作读回。现完整seed创建/更新读回不单独证明CLEAR或重放，不能缩成seed PASS。STORE使用现is24Hour/storeArea/floorLabel，不造不存在的STORE DATE；CONTRACT使用renewal/depositRate/signedDate，DATE与CLEAR在合同链证明。所需权限只经现owner HTTP准备run-owned角色/assignment，不改既有seed角色授权；详设列精确操作与释放。原acceptance数组fixture仍须与mapper退出同组迁移，但本批不执行其H环境。
 
 ## 6 · 可达性、成本与非目标
 
@@ -197,10 +206,10 @@ V-12/V-13 并不要求先为十四operation各跑完整浏览器Journey：全调
 
 已完成的输入是结构定位、代表源码链读回和Dexter对五项建议的确认；分析稿不是全文件语义证明。正式需求的独立review以当前字节、独立报告和finding处置记录为准，本正文不自写review verdict。
 
-当前详设、实施计划、所有整改、依赖解析、生成、编译、测试、verify、H/L2、DEV、reset/seed、设备、UAT、部署与cleanup均未执行。无实现/性能/动态PASS。通过本需求静态review后仍须Dexter另行授权详设/计划及实施。
+当前设计文件已编写/修订；所有新整改、依赖解析、生成、编译、测试、verify、DEV、reset/seed、设备与cleanup仍NOT_RUN，无实现/性能/动态PASS。后续Codex实施按§0.1明确授权及转交话术执行；H/隔离L2和UAT不在本批动态范围。
 
 `L3_UNVERIFIED` 非空：本结构优化后的菜单准入/导航、Page列表与Drawer/cursor/dirty/迟到响应、远控start/restart/end与焦点/资源关闭、扩展字段Drawer提交及持久化语义均待未来实现和相应运行验证。本次不核验历史运行，也不据此断言既有UI从未验证。需求静态阻断关闭且仅余UI未验证时，按review-standard使用 `GO_WITH_UNVERIFIED_UI`；作者处置记录不能自授该独立verdict，旧字节报告不得升级为修订后结论。
 
-## 2026-10-14 · 验证路线裁决（Dexter）
+## 2026-10-14 · 验证路线裁决（历史，已由§0.1更新）
 
 Dexter 选择 A：隔离 admin-ui L2 只保留菜单、门店扩展、合同扩展三个 case；更新页与远控复用现受管 update Web / remote.web Journey，保留 V-09/V-10/V-11 全部 F，V-14 的未知状态与别名也仍由 F 证明。删除本批隔离 TDS、wire 新模式、报告 credential fixture 和工件到 L2 的交接；不新增 runner。现 Journey 不自动证明所有分页与竞态，详设指定显式跨页回归；异步竞态由 F 验证。首次隔离 L2 的完整 seed dry-run 义务保留，仍需要一次现受管 update.artifacts 源 run；它不是实际 seed，也不证明 owner seed 对象化。裁决仅批准设计取舍，不授权当前构建、DEV、Web 或 L2 运行。

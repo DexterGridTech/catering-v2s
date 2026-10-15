@@ -1,26 +1,29 @@
 import {Alert, Button, Modal, Space, Typography} from 'antd';
-import {Room, RoomEvent, Track, type RemoteParticipant, type RemoteTrack, type RemoteTrackPublication, type RemoteVideoTrack} from 'livekit-client';
-import {useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent} from 'react';
 import {
-  operationsClient,
-  operationsLogger,
-  operationsProblemOf,
-} from '../../../app/api/OperationsTransport';
+  Room,
+  RoomEvent,
+  Track,
+  type RemoteParticipant,
+  type RemoteTrack,
+  type RemoteTrackPublication,
+  type RemoteVideoTrack,
+} from 'livekit-client';
+import {useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent} from 'react';
+import {operationsClient, operationsLogger, operationsProblemOf} from '../../../app/api/OperationsTransport';
 import type {
   TerminalRemoteControlDescription,
   TerminalRemoteControlScreen,
   TerminalRemoteControlStartResponse,
 } from '../../../app/api/generated/operations-edge';
 import {
-  remoteControlMessageTypes,
   remoteControlProtocolMaxMessageBytes,
   remoteControlTopic,
-  type RemoteControlMessage,
   type ScreenReadyMessage,
 } from '../../../app/api/generated/terminalRemoteControlProtocol';
 import {wireUuid} from '../../../app/api/wireUuid';
 import {testId} from '@catering-v2s/admin-ui-foundation';
 import {normalizedVideoPoint} from '../model/remoteControlPointer';
+import {parseRemoteControlMessage} from '../model/parseRemoteControlMessage';
 import {createRemoteControlUuid} from '../model/remoteControlIdentity';
 import {startRemoteControlKeepalive, type RemoteControlKeepalive} from '../model/remoteControlKeepalive';
 import {remoteControlTestIds} from '../../../app/automation/remoteControlTestIds';
@@ -51,10 +54,11 @@ type Gesture = Readonly<{
 
 export type RemoteControlWorkspaceProps = Readonly<{
   target: RemoteControlTarget;
-  initialStart: TerminalRemoteControlStartResponse;
+  currentStart: TerminalRemoteControlStartResponse;
   contextCurrent: boolean;
-  onRestart: () => Promise<TerminalRemoteControlStartResponse>;
-  onClose: (result: Readonly<{endFailed: boolean; cleanupFailed: boolean}>) => void;
+  onRestart: () => Promise<void>;
+  onCloseRequested: (sessionId: string) => void;
+  onClose: (sessionId: string, result: Readonly<{endFailed: boolean; cleanupFailed: boolean}>) => void;
 }>;
 
 const SESSION_END_LABELS: Readonly<Record<string, string>> = {
@@ -84,57 +88,20 @@ const SESSION_END_LABELS: Readonly<Record<string, string>> = {
   UNSUPPORTED_PROTOCOL: '当前版本不支持远程控制，请更新后重新发起',
 };
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function isUuid(value: unknown): value is string {
-  return typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
-}
-
-function validUnit(value: unknown): value is number {
-  return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1;
-}
-
-function parseMessage(payload: Uint8Array): RemoteControlMessage | null {
-  if (payload.byteLength === 0 || payload.byteLength > remoteControlProtocolMaxMessageBytes) return null;
-  try {
-    const value: unknown = JSON.parse(new TextDecoder().decode(payload));
-    if (!isRecord(value) || value.v !== 1 || !isUuid(value.sessionId) || typeof value.type !== 'string' ||
-      !(remoteControlMessageTypes as readonly string[]).includes(value.type) ||
-      !Number.isSafeInteger(value.seq) || (value.seq as number) < 1 || !isRecord(value.body)) return null;
-    const body = value.body;
-    if (value.type === 'SCREEN_READY' && (!isUuid(body.endpointId) || !isUuid(body.streamId) ||
-      (body.screen !== 'main' && body.screen !== 'secondary') || typeof body.trackSid !== 'string' ||
-      body.trackSid.length < 1 || body.trackSid.length > 128 || !Number.isSafeInteger(body.widthPx) ||
-      (body.widthPx as number) < 1 || !Number.isSafeInteger(body.heightPx) || (body.heightPx as number) < 1)) return null;
-    if (value.type === 'POINTER') {
-      const phaseValid = body.phase === 'down' || body.phase === 'move' || body.phase === 'up' || body.phase === 'cancel';
-      const bothCoordinates = body.u === undefined && body.v === undefined;
-      const validCoordinates = validUnit(body.u) && validUnit(body.v);
-      if (!isUuid(body.endpointId) || !isUuid(body.streamId) || !isUuid(body.gestureId) ||
-        (body.screen !== 'main' && body.screen !== 'secondary') || !phaseValid ||
-        !(validCoordinates || (body.phase === 'cancel' && bothCoordinates))) return null;
-    }
-    if (value.type === 'INPUT_RESULT' && (!Number.isSafeInteger(body.forSeq) || (body.forSeq as number) < 1 ||
-      !isUuid(body.gestureId) || !['DISPATCHED', 'REJECTED', 'CANCELLED'].includes(String(body.status)) ||
-      !(body.reason === null || ['NOT_READY', 'SESSION_ENDED', 'STALE_STREAM', 'WRONG_TARGET', 'INVALID_MESSAGE',
-        'OUT_OF_BOUNDS', 'INVALID_GESTURE', 'DUPLICATE', 'INPUT_CONFLICT', 'GESTURE_EXPIRED',
-        'UNSUPPORTED_SURFACE'].includes(String(body.reason))))) return null;
-    if ((value.type === 'KEEPALIVE' || value.type === 'KEEPALIVE_ACK') && !isUuid(body.probeId)) return null;
-    if (value.type === 'SESSION_END' && !['ADMIN_ENDED', 'WORKSPACE_CLOSED', 'START_TIMEOUT', 'START_FAILED',
-      'CONTROLLER_DISCONNECTED', 'SCREEN_DISCONNECTED', 'PAIR_DISCONNECTED', 'TDP_DISCONNECTED',
-      'ACTIVATION_INVALID', 'AUTHORIZATION_INVALID', 'CONFIG_CHANGED', 'APP_RESTARTED', 'LEASE_EXPIRED',
-      'CAPTURE_FAILED', 'INPUT_RESULT_UNKNOWN', 'INPUT_UNAVAILABLE', 'UNSUPPORTED_PROTOCOL'].includes(String(body.reason))) return null;
-    return value as unknown as RemoteControlMessage;
-  } catch {
-    return null;
-  }
-}
-
 function remoteControlLabel(reason: string | null | undefined): string {
-  return reason ? SESSION_END_LABELS[reason] ?? '连接失败，请重新发起' : '远程控制已结束';
+  return reason ? (SESSION_END_LABELS[reason] ?? '连接失败，请重新发起') : '远程控制已结束';
 }
+
+const errorDiagnostics = (error: unknown): Record<string, string> => {
+  const debugDetails = import.meta.env.DEV || import.meta.env.VITE_FRONTEND_DEBUG_LOGS === 'true';
+  if (error instanceof Error) {
+    return {
+      errorName: error.name,
+      ...(debugDetails ? {errorMessage: error.message, errorStack: error.stack ?? ''} : {}),
+    };
+  }
+  return {errorName: typeof error, ...(debugDetails ? {errorMessage: String(error)} : {})};
+};
 
 function isExpectedEndpoint(description: TerminalRemoteControlDescription | undefined, identity: string): boolean {
   return description?.endpoints.some(endpoint => endpoint.participantIdentity === identity) ?? false;
@@ -208,7 +175,10 @@ function RemoteScreen({
           onPointerCancel={event => onPointerCancel(slot, event)}
         />
       ) : (
-        <div className="remote-control-video remote-control-video-pending" {...testId(remoteControlTestIds.screen(slot))}>
+        <div
+          className="remote-control-video remote-control-video-pending"
+          {...testId(remoteControlTestIds.screen(slot))}
+        >
           待连接
         </div>
       )}
@@ -216,9 +186,21 @@ function RemoteScreen({
   );
 }
 
-export function RemoteControlWorkspace({target, initialStart, contextCurrent, onRestart, onClose}: RemoteControlWorkspaceProps) {
-  const [currentStart, setCurrentStart] = useState(initialStart);
-  const [description, setDescription] = useState<TerminalRemoteControlDescription | undefined>(initialStart.description ?? undefined);
+export function RemoteControlWorkspace({
+  target,
+  currentStart,
+  contextCurrent,
+  onRestart,
+  onCloseRequested,
+  onClose,
+}: RemoteControlWorkspaceProps) {
+  const currentStartRef = useRef(currentStart);
+  currentStartRef.current = currentStart;
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  const [description, setDescription] = useState<TerminalRemoteControlDescription | undefined>(
+    currentStart.description ?? undefined,
+  );
   const [tracks, setTracks] = useState<ReadonlyMap<string, TrackEntry>>(new Map());
   const [screenReady, setScreenReady] = useState<ReadonlyMap<ScreenSlot, ScreenReadyMessage>>(new Map());
   const [visibleFrames, setVisibleFrames] = useState<ReadonlySet<string>>(new Set());
@@ -234,11 +216,13 @@ export function RemoteControlWorkspace({target, initialStart, contextCurrent, on
   const sequenceRef = useRef(0);
   const incomingSequenceRef = useRef(new Map<string, number>());
   const lifecycleRef = useRef(0);
-  const finishingRef = useRef(false);
-  const closeWorkspaceRequestedRef = useRef(false);
   const gestureRef = useRef<Gesture | null>(null);
   const cancelGestureRef = useRef<() => void>(() => undefined);
   const screenReadyRef = useRef(screenReady);
+  const roomSessionIdRef = useRef<string | undefined>(undefined);
+  const finishRef = useRef<
+    (sessionId: string, reason: string, closeWorkspace: boolean, sendEnd: boolean) => Promise<void>
+  >(async () => undefined);
   screenReadyRef.current = screenReady;
 
   const onFrameReady = useCallback((frameKey: string, ready: boolean) => {
@@ -254,64 +238,82 @@ export function RemoteControlWorkspace({target, initialStart, contextCurrent, on
   const visibleSlots = useMemo(() => {
     const result = new Map<ScreenSlot, TrackEntry>();
     for (const ready of screenReady.values()) {
-      const expected = description?.screens.find(screen => screen.screen === ready.body.screen && screen.endpointId === ready.body.endpointId);
+      const expected = description?.screens.find(
+        screen => screen.screen === ready.body.screen && screen.endpointId === ready.body.endpointId,
+      );
       const endpoint = description?.endpoints.find(item => item.endpointId === ready.body.endpointId);
       const track = tracks.get(ready.body.trackSid);
-      if (expected && endpoint && track?.identity === endpoint.participantIdentity) result.set(ready.body.screen, track);
+      if (expected && endpoint && track?.identity === endpoint.participantIdentity)
+        result.set(ready.body.screen, track);
     }
     return result;
   }, [description, screenReady, tracks]);
-  const allScreensVisible = requiredScreens.length > 0 && requiredScreens.every(screen => {
-    const ready = screenReady.get(screen.screen);
-    if (!ready || !visibleSlots.has(screen.screen)) return false;
-    return visibleFrames.has(`${screen.screen}:${ready.body.streamId}:${ready.body.trackSid}`);
-  });
-
-  const log = useCallback((event: string, outcome: string, diagnostic: Record<string, string | number | boolean | null> = {}) => {
-    operationsLogger.info({
-      event: `frontend.remote_control.${event}`,
-      phase: 'remote_control',
-      outcome,
-      operationId: 'operations-terminal-remote-control-workspace',
-      diagnostic: {sessionId: currentStart.sessionId, ...diagnostic},
+  const allScreensVisible =
+    requiredScreens.length > 0 &&
+    requiredScreens.every(screen => {
+      const ready = screenReady.get(screen.screen);
+      if (!ready || !visibleSlots.has(screen.screen)) return false;
+      return visibleFrames.has(`${screen.screen}:${ready.body.streamId}:${ready.body.trackSid}`);
     });
-  }, [currentStart.sessionId]);
 
-  const publishPointer = useCallback((gesture: Gesture, phaseValue: 'down' | 'move' | 'up' | 'cancel', point?: Readonly<{u: number; v: number}>): number | null => {
-    const room = roomRef.current;
-    if (!room || phase !== 'active') return null;
-    const message = {
-      v: 1 as const,
-      type: 'POINTER' as const,
-      sessionId: currentStart.sessionId,
-      seq: ++sequenceRef.current,
-      body: {
-        endpointId: gesture.endpointId,
-        screen: gesture.slot,
-        streamId: gesture.streamId,
-        gestureId: gesture.gestureId,
-        phase: phaseValue,
-        ...(point ? {u: point.u, v: point.v} : {}),
-      },
-    };
-    const payload = new TextEncoder().encode(JSON.stringify(message));
-    if (payload.byteLength > remoteControlProtocolMaxMessageBytes) {
-      log('pointer.rejected', 'REJECTED', {reason: 'MESSAGE_TOO_LARGE'});
-      return null;
-    }
-    void room.localParticipant.publishData(payload, {
-      reliable: true,
-      destinationIdentities: [gesture.participantIdentity],
-      topic: remoteControlTopic,
-    }).catch(error => {
-      log('pointer.send_failed', 'ERROR', {errorName: error instanceof Error ? error.name : typeof error});
-      void finishRef.current('CONTROLLER_DISCONNECTED', false, true);
-    });
-    if (phaseValue === 'down' || phaseValue === 'up' || phaseValue === 'cancel') {
-      log(`pointer.${phaseValue}`, 'SENT', {screen: gesture.slot, seq: message.seq});
-    }
-    return message.seq;
-  }, [currentStart.sessionId, log, phase]);
+  const log = useCallback(
+    (event: string, outcome: string, diagnostic: Record<string, string | number | boolean | null> = {}) => {
+      const write = outcome === 'ERROR' ? operationsLogger.error : operationsLogger.info;
+      write({
+        event: `frontend.remote_control.${event}`,
+        phase: 'remote_control',
+        outcome,
+        operationId: 'operations-terminal-remote-control-workspace',
+        diagnostic: {sessionId: currentStart.sessionId, ...diagnostic},
+      });
+    },
+    [currentStart.sessionId],
+  );
+
+  const publishPointer = useCallback(
+    (
+      gesture: Gesture,
+      phaseValue: 'down' | 'move' | 'up' | 'cancel',
+      point?: Readonly<{u: number; v: number}>,
+    ): number | null => {
+      const room = roomRef.current;
+      if (!room || roomSessionIdRef.current !== currentStart.sessionId || phase !== 'active') return null;
+      const message = {
+        v: 1 as const,
+        type: 'POINTER' as const,
+        sessionId: currentStart.sessionId,
+        seq: ++sequenceRef.current,
+        body: {
+          endpointId: gesture.endpointId,
+          screen: gesture.slot,
+          streamId: gesture.streamId,
+          gestureId: gesture.gestureId,
+          phase: phaseValue,
+          ...(point ? {u: point.u, v: point.v} : {}),
+        },
+      };
+      const payload = new TextEncoder().encode(JSON.stringify(message));
+      if (payload.byteLength > remoteControlProtocolMaxMessageBytes) {
+        log('pointer.rejected', 'REJECTED', {reason: 'MESSAGE_TOO_LARGE'});
+        return null;
+      }
+      void room.localParticipant
+        .publishData(payload, {
+          reliable: true,
+          destinationIdentities: [gesture.participantIdentity],
+          topic: remoteControlTopic,
+        })
+        .catch(error => {
+          log('pointer.send_failed', 'ERROR', errorDiagnostics(error));
+          void finishRef.current(currentStart.sessionId, 'CONTROLLER_DISCONNECTED', false, true);
+        });
+      if (phaseValue === 'down' || phaseValue === 'up' || phaseValue === 'cancel') {
+        log(`pointer.${phaseValue}`, 'SENT', {screen: gesture.slot, seq: message.seq});
+      }
+      return message.seq;
+    },
+    [currentStart.sessionId, log, phase],
+  );
 
   const cancelGesture = useCallback(() => {
     const gesture = gestureRef.current;
@@ -321,89 +323,32 @@ export function RemoteControlWorkspace({target, initialStart, contextCurrent, on
   }, [publishPointer]);
   cancelGestureRef.current = cancelGesture;
 
-  const reportEnd = useCallback(async (reason: 'ADMIN_ENDED' | 'WORKSPACE_CLOSED') => {
-    await operationsClient.endOperationsTerminalRemoteControl(
-      {
-        groupWorkspaceKey: target.groupWorkspaceKey,
-        projectRef: wireUuid(target.projectRef),
-        terminalRef: wireUuid(target.terminalRef),
-        sessionId: currentStart.sessionId,
-      },
-      {
-        query: {expectedContextVersion: target.expectedContextVersion},
-        body: {reason},
-      },
-    );
-  }, [currentStart.sessionId, target]);
-
-  const finishSession = useCallback(async (
-    reason: string,
-    closeWorkspace: boolean,
-    sendEnd: boolean,
-  ) => {
-    if (finishingRef.current) {
-      if (closeWorkspace) {
-        closeWorkspaceRequestedRef.current = true;
-        log('workspace-close-queued', 'REQUESTED', {reason});
-      }
-      return;
-    }
-    if (closeWorkspace) closeWorkspaceRequestedRef.current = true;
-    finishingRef.current = true;
-    setEnding(true);
-    setPhase('ended');
-    setProblem(current => current ?? remoteControlLabel(reason));
-    cancelGestureRef.current();
-    keepaliveRef.current?.stop();
-    keepaliveRef.current = undefined;
-    let endFailed = false;
-    let cleanupFailed = false;
-    const endRequest = sendEnd
-      ? reportEnd(reason === 'ADMIN_ENDED' ? 'ADMIN_ENDED' : 'WORKSPACE_CLOSED')
-      : Promise.resolve();
-    lifecycleRef.current += 1;
-    const room = roomRef.current;
-    if (room) {
-      try {
-        await room.disconnect();
-        log('room.disconnect', 'SUCCEEDED');
-      } catch (error) {
-        cleanupFailed = true;
-        log('room.disconnect', 'ERROR', {errorName: error instanceof Error ? error.name : typeof error});
-      } finally {
-        room.removeAllListeners();
-        if (roomRef.current === room) roomRef.current = undefined;
-      }
-    }
-    if (sendEnd) {
-      try {
-        await endRequest;
-        log('session.end_http', 'SUCCEEDED', {reason});
-      } catch (error) {
-        endFailed = true;
-        const failure = operationsProblemOf(error);
-        setProblem(failure.detail || '结束远程控制请求失败，终端会话可能仍在占用');
-        log('session.end_http', 'ERROR', {errorCode: failure.errorCode, status: failure.status});
-      }
-    }
-    setTracks(new Map());
-    setScreenReady(new Map());
-    screenReadyRef.current = new Map();
-    setVisibleFrames(new Set());
-    setEnding(false);
-    finishingRef.current = false;
-    const shouldCloseWorkspace = closeWorkspaceRequestedRef.current;
-    closeWorkspaceRequestedRef.current = false;
-    if (shouldCloseWorkspace) onClose({endFailed, cleanupFailed});
-  }, [log, onClose, reportEnd]);
+  const reportEnd = useCallback(
+    async (reason: 'ADMIN_ENDED' | 'WORKSPACE_CLOSED') => {
+      await operationsClient.endOperationsTerminalRemoteControl(
+        {
+          groupWorkspaceKey: target.groupWorkspaceKey,
+          projectRef: wireUuid(target.projectRef),
+          terminalRef: wireUuid(target.terminalRef),
+          sessionId: currentStart.sessionId,
+        },
+        {
+          query: {expectedContextVersion: target.expectedContextVersion},
+          body: {reason},
+        },
+      );
+    },
+    [currentStart.sessionId, target],
+  );
 
   useEffect(() => {
     titleRef.current?.focus();
   }, []);
 
   useEffect(() => {
-    if (!contextCurrent && phase !== 'ended') void finishRef.current('CONFIG_CHANGED', true, true);
-  }, [contextCurrent, phase]);
+    if (!contextCurrent && phase !== 'ended')
+      void finishRef.current(currentStart.sessionId, 'CONFIG_CHANGED', true, true);
+  }, [contextCurrent, currentStart.sessionId, phase]);
 
   useEffect(() => {
     if (!allScreensVisible || !dataPathReady || phase !== 'starting') return;
@@ -418,7 +363,15 @@ export function RemoteControlWorkspace({target, initialStart, contextCurrent, on
       dataPathReady,
       cleanupState: 'NOT_STARTED',
     });
-  }, [allScreensVisible, dataPathReady, description?.topologyKind, log, phase, requiredScreens.length, screenReady.size]);
+  }, [
+    allScreensVisible,
+    dataPathReady,
+    description?.topologyKind,
+    log,
+    phase,
+    requiredScreens.length,
+    screenReady.size,
+  ]);
 
   useEffect(() => {
     const generation = ++lifecycleRef.current;
@@ -426,11 +379,16 @@ export function RemoteControlWorkspace({target, initialStart, contextCurrent, on
     let room: Room | undefined;
     let keepalive: RemoteControlKeepalive | undefined;
     let activeDescription: TerminalRemoteControlDescription | undefined;
+    let sessionFinishing = false;
+    let closeRequested = false;
+    let closeNotified = false;
+    let finishResult: Readonly<{endFailed: boolean; cleanupFailed: boolean}> | undefined;
+    let roomDisconnectPromise: Promise<void> | undefined;
     incomingSequenceRef.current.clear();
     sequenceRef.current = 0;
     gestureRef.current = null;
-    finishingRef.current = false;
     setDataPathReady(false);
+    setEnding(false);
     setPhase('starting');
     setProblem(undefined);
     setGestureNotice(undefined);
@@ -447,9 +405,109 @@ export function RemoteControlWorkspace({target, initialStart, contextCurrent, on
       cleanupState: 'NOT_STARTED',
     });
 
-    const isCurrent = () => !disposed && lifecycleRef.current === generation;
-    const handleTrackSubscribed = (track: RemoteTrack, _publication: RemoteTrackPublication, participant: RemoteParticipant) => {
-      if (track.kind !== Track.Kind.Video || !isExpectedEndpoint(activeDescription, participant.identity)) return;
+    const isSessionCurrent = () => !disposed && currentStartRef.current.sessionId === currentStart.sessionId;
+    const isCurrent = () => isSessionCurrent() && lifecycleRef.current === generation && !sessionFinishing;
+    const disconnectRoom = (capturedRoom: Room) => {
+      if (!roomDisconnectPromise) {
+        log('room.disconnect', 'STARTED');
+        roomDisconnectPromise = capturedRoom.disconnect();
+      }
+      return roomDisconnectPromise;
+    };
+    const finishSession = async (reason: string, shouldCloseWorkspace: boolean, sendEnd: boolean) => {
+      if (sessionFinishing) {
+        closeRequested ||= shouldCloseWorkspace;
+        if (closeRequested && finishResult && isSessionCurrent() && !closeNotified) {
+          closeNotified = true;
+          onCloseRef.current(currentStart.sessionId, finishResult);
+        }
+        return;
+      }
+      sessionFinishing = true;
+      closeRequested ||= shouldCloseWorkspace;
+      if (isSessionCurrent()) {
+        setEnding(true);
+        setPhase('ended');
+        setProblem(current => current ?? remoteControlLabel(reason));
+        cancelGestureRef.current();
+      }
+      keepalive?.stop();
+      if (keepaliveRef.current === keepalive) keepaliveRef.current = undefined;
+      if (lifecycleRef.current === generation) lifecycleRef.current += 1;
+
+      const endOutcome = sendEnd
+        ? reportEnd(reason === 'ADMIN_ENDED' ? 'ADMIN_ENDED' : 'WORKSPACE_CLOSED').then(
+            () => ({ok: true as const}),
+            error => ({ok: false as const, error}),
+          )
+        : Promise.resolve({ok: true as const});
+      const disconnectOutcome = room
+        ? disconnectRoom(room).then(
+            () => ({ok: true as const}),
+            error => ({ok: false as const, error}),
+          )
+        : Promise.resolve({ok: true as const});
+      const [endResult, cleanupResult] = await Promise.all([endOutcome, disconnectOutcome]);
+      if (room) {
+        room.removeAllListeners();
+        if (roomRef.current === room) {
+          roomRef.current = undefined;
+          roomSessionIdRef.current = undefined;
+        }
+      }
+      const endFailed = !endResult.ok;
+      const cleanupFailed = !cleanupResult.ok;
+      if (endFailed) {
+        const failure = operationsProblemOf(endResult.error);
+        log('session.end_http', 'ERROR', {
+          errorCode: failure.errorCode,
+          status: failure.status,
+          ...errorDiagnostics(endResult.error),
+        });
+        if (isSessionCurrent() && !cleanupFailed)
+          setProblem(failure.detail || '结束远程控制请求失败，终端会话可能仍在占用');
+      } else if (sendEnd) {
+        log('session.end_http', 'SUCCEEDED', {reason});
+      }
+      if (cleanupFailed) {
+        log('room.disconnect', 'ERROR', errorDiagnostics(cleanupResult.error));
+      } else if (room) {
+        log('room.disconnect', 'SUCCEEDED');
+      }
+      if (!isSessionCurrent()) return;
+      finishResult = {endFailed, cleanupFailed};
+      setTracks(new Map());
+      setScreenReady(new Map());
+      screenReadyRef.current = new Map();
+      setVisibleFrames(new Set());
+      setEnding(false);
+      if (cleanupFailed) setProblem('远程控制已结束，资源释放失败');
+      if (closeRequested && !closeNotified) {
+        closeNotified = true;
+        onCloseRef.current(currentStart.sessionId, finishResult);
+      }
+    };
+    const finishSessionForCurrent = (
+      requestedSessionId: string,
+      reason: string,
+      shouldCloseWorkspace: boolean,
+      sendEnd: boolean,
+    ) =>
+      requestedSessionId === currentStart.sessionId
+        ? finishSession(reason, shouldCloseWorkspace, sendEnd)
+        : Promise.resolve();
+    finishRef.current = finishSessionForCurrent;
+    const handleTrackSubscribed = (
+      track: RemoteTrack,
+      _publication: RemoteTrackPublication,
+      participant: RemoteParticipant,
+    ) => {
+      if (
+        !isCurrent() ||
+        track.kind !== Track.Kind.Video ||
+        !isExpectedEndpoint(activeDescription, participant.identity)
+      )
+        return;
       const videoTrack = track as RemoteVideoTrack;
       const trackSid = videoTrack.sid;
       if (!trackSid) {
@@ -459,8 +517,12 @@ export function RemoteControlWorkspace({target, initialStart, contextCurrent, on
       setTracks(previous => new Map(previous).set(trackSid, {track: videoTrack, identity: participant.identity}));
       log('track.subscribed', 'SUCCEEDED', {trackSid, participantCount: 1});
     };
-    const handleTrackUnsubscribed = (track: RemoteTrack, _publication: RemoteTrackPublication, participant: RemoteParticipant) => {
-      if (!isExpectedEndpoint(activeDescription, participant.identity)) return;
+    const handleTrackUnsubscribed = (
+      track: RemoteTrack,
+      _publication: RemoteTrackPublication,
+      participant: RemoteParticipant,
+    ) => {
+      if (!isCurrent() || !isExpectedEndpoint(activeDescription, participant.identity)) return;
       const videoTrack = track as RemoteVideoTrack;
       const trackSid = videoTrack.sid;
       if (!trackSid) return;
@@ -470,13 +532,14 @@ export function RemoteControlWorkspace({target, initialStart, contextCurrent, on
         return next;
       });
       cancelGestureRef.current();
-      if (!disposed) void finishRef.current('SCREEN_DISCONNECTED', false, true);
+      void finishSession('SCREEN_DISCONNECTED', false, true);
       log('track.unsubscribed', 'ENDED', {trackSid});
     };
     const handleData = (payload: Uint8Array, participant?: RemoteParticipant, _kind?: unknown, topic?: string) => {
       if (!isCurrent()) return;
-      if (!participant || topic !== remoteControlTopic || !isExpectedEndpoint(activeDescription, participant.identity)) return;
-      const message = parseMessage(payload);
+      if (!participant || topic !== remoteControlTopic || !isExpectedEndpoint(activeDescription, participant.identity))
+        return;
+      const message = parseRemoteControlMessage(payload);
       if (!message || message.sessionId !== currentStart.sessionId) {
         log('data.ignored', 'REJECTED', {reason: message ? 'STALE_SESSION' : 'INVALID_MESSAGE'});
         return;
@@ -487,7 +550,9 @@ export function RemoteControlWorkspace({target, initialStart, contextCurrent, on
       if (message.type === 'KEEPALIVE_ACK') {
         const keepalive = keepaliveRef.current;
         const acknowledged = keepalive?.acknowledge(participant.identity, message.body.probeId) ?? false;
-        log('keepalive.ack', acknowledged ? 'ACCEPTED' : 'IGNORED', {reason: acknowledged ? 'MATCHED_RECENT_PROBE' : 'STALE_OR_UNEXPECTED_PROBE'});
+        log('keepalive.ack', acknowledged ? 'ACCEPTED' : 'IGNORED', {
+          reason: acknowledged ? 'MATCHED_RECENT_PROBE' : 'STALE_OR_UNEXPECTED_PROBE',
+        });
         if (acknowledged && keepalive?.hasAcknowledgedAllEndpoints()) {
           setDataPathReady(true);
           log('input-path.ready', 'SUCCEEDED', {endpointCount: activeDescription?.endpoints.length ?? 0});
@@ -495,7 +560,12 @@ export function RemoteControlWorkspace({target, initialStart, contextCurrent, on
       } else if (message.type === 'SCREEN_READY') {
         const endpoint = activeDescription?.endpoints.find(item => item.participantIdentity === participant.identity);
         const targetScreen = activeDescription?.screens.find(item => item.screen === message.body.screen);
-        if (!endpoint || endpoint.endpointId !== message.body.endpointId || targetScreen?.endpointId !== message.body.endpointId) return;
+        if (
+          !endpoint ||
+          endpoint.endpointId !== message.body.endpointId ||
+          targetScreen?.endpointId !== message.body.endpointId
+        )
+          return;
         const previous = screenReadyRef.current.get(message.body.screen);
         if (previous && previous.body.streamId !== message.body.streamId) cancelGestureRef.current();
         const nextScreenReady = new Map(screenReadyRef.current).set(message.body.screen, message);
@@ -512,8 +582,12 @@ export function RemoteControlWorkspace({target, initialStart, contextCurrent, on
         });
       } else if (message.type === 'INPUT_RESULT') {
         const activeGesture = gestureRef.current;
-        if (message.body.status === 'CANCELLED' && activeGesture !== null &&
-            activeGesture.gestureId === message.body.gestureId && activeGesture.downSequence === message.body.forSeq) {
+        if (
+          message.body.status === 'CANCELLED' &&
+          activeGesture !== null &&
+          activeGesture.gestureId === message.body.gestureId &&
+          activeGesture.downSequence === message.body.forSeq
+        ) {
           gestureRef.current = null;
           if (activeGesture.target.hasPointerCapture(activeGesture.pointerId)) {
             activeGesture.target.releasePointerCapture(activeGesture.pointerId);
@@ -522,23 +596,24 @@ export function RemoteControlWorkspace({target, initialStart, contextCurrent, on
         }
         log('input.result', message.body.status, {reason: message.body.reason ?? 'NONE', forSeq: message.body.forSeq});
         if (message.body.status !== 'DISPATCHED' && message.body.reason) {
-          const label = message.body.reason === 'INPUT_CONFLICT' || message.body.reason === 'GESTURE_EXPIRED'
-            ? '本次操作已取消，请重新操作'
-            : message.body.reason === 'UNSUPPORTED_SURFACE'
-              ? '当前界面不支持远程操作'
-              : '远程操作未执行';
+          const label =
+            message.body.reason === 'INPUT_CONFLICT' || message.body.reason === 'GESTURE_EXPIRED'
+              ? '本次操作已取消，请重新操作'
+              : message.body.reason === 'UNSUPPORTED_SURFACE'
+                ? '当前界面不支持远程操作'
+                : '远程操作未执行';
           setGestureNotice(label);
         }
       } else if (message.type === 'SESSION_END') {
         cancelGestureRef.current();
         setProblem(remoteControlLabel(message.body.reason));
-        void finishRef.current(message.body.reason, false, false);
+        void finishSession(message.body.reason, false, false);
       }
     };
     const handleDisconnected = () => {
-      if (disposed || finishingRef.current) return;
+      if (!isCurrent()) return;
       setProblem('连接已断开，请重新发起');
-      void finishRef.current('CONTROLLER_DISCONNECTED', false, true);
+      void finishSession('CONTROLLER_DISCONNECTED', false, true);
     };
 
     const delay = (milliseconds: number) => new Promise<void>(resolve => window.setTimeout(resolve, milliseconds));
@@ -587,6 +662,7 @@ export function RemoteControlWorkspace({target, initialStart, contextCurrent, on
         setDescription(grant.description);
         room = new Room();
         roomRef.current = room;
+        roomSessionIdRef.current = currentStart.sessionId;
         room.on(RoomEvent.TrackSubscribed, handleTrackSubscribed);
         room.on(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed);
         room.on(RoomEvent.DataReceived, handleData);
@@ -602,25 +678,42 @@ export function RemoteControlWorkspace({target, initialStart, contextCurrent, on
         const connection = room.connect(grant.url, grant.token);
         await connection;
         if (!isCurrent()) {
-          await room.disconnect().catch(() => undefined);
+          try {
+            await disconnectRoom(room);
+            log('room.disconnect', 'SUCCEEDED', {reason: 'STALE_CONNECT_COMPLETED'});
+          } catch (error) {
+            log('room.disconnect', 'ERROR', {
+              reason: 'STALE_CONNECT_COMPLETED',
+              ...errorDiagnostics(error),
+            });
+          }
           return;
         }
         log('room.connect', 'SUCCEEDED');
         keepalive = startRemoteControlKeepalive({
           endpointIdentities: grant.description.endpoints.map(endpoint => endpoint.participantIdentity),
-          sendProbe: probeId => room!.localParticipant.publishData(
-            new TextEncoder().encode(JSON.stringify({
-              v: 1,
-              type: 'KEEPALIVE',
-              sessionId: currentStart.sessionId,
-              seq: ++sequenceRef.current,
-              body: {probeId},
-            })),
-            {reliable: true, destinationIdentities: grant.description.endpoints.map(endpoint => endpoint.participantIdentity), topic: remoteControlTopic},
-          ).then(() => log('keepalive.sent', 'SUCCEEDED', {endpointCount: grant.description.endpoints.length})),
+          sendProbe: probeId =>
+            room!.localParticipant
+              .publishData(
+                new TextEncoder().encode(
+                  JSON.stringify({
+                    v: 1,
+                    type: 'KEEPALIVE',
+                    sessionId: currentStart.sessionId,
+                    seq: ++sequenceRef.current,
+                    body: {probeId},
+                  }),
+                ),
+                {
+                  reliable: true,
+                  destinationIdentities: grant.description.endpoints.map(endpoint => endpoint.participantIdentity),
+                  topic: remoteControlTopic,
+                },
+              )
+              .then(() => log('keepalive.sent', 'SUCCEEDED', {endpointCount: grant.description.endpoints.length})),
           onFailure: (failure, missingEndpointCount) => {
             log('keepalive.failed', 'ENDED', {reason: failure, missingEndpointCount});
-            void finishRef.current('CONTROLLER_DISCONNECTED', false, true);
+            void finishSession('CONTROLLER_DISCONNECTED', false, true);
           },
         });
         keepaliveRef.current = keepalive;
@@ -628,9 +721,10 @@ export function RemoteControlWorkspace({target, initialStart, contextCurrent, on
         if (!isCurrent()) return;
         const reason = error instanceof Error && error.message === 'START_TIMEOUT' ? 'START_TIMEOUT' : 'START_FAILED';
         const failure = operationsProblemOf(error);
-        const visible = error instanceof Error && error.message !== 'START_TIMEOUT' && error.message !== 'START_FAILED'
-          ? failure.detail || remoteControlLabel(reason)
-          : remoteControlLabel(reason);
+        const visible =
+          error instanceof Error && error.message !== 'START_TIMEOUT' && error.message !== 'START_FAILED'
+            ? failure.detail || remoteControlLabel(reason)
+            : remoteControlLabel(reason);
         setProblem(visible);
         setPhase('ended');
         const failedDescription = activeDescription ?? currentStart.description;
@@ -642,8 +736,9 @@ export function RemoteControlWorkspace({target, initialStart, contextCurrent, on
           readyScreenCount: screenReadyRef.current.size,
           expectedScreenCount: failedDescription?.screens.length ?? 0,
           cleanupState: 'PENDING',
+          ...errorDiagnostics(error),
         });
-        void finishRef.current(reason, false, true);
+        void finishSession(reason, false, true);
       }
     };
     void start();
@@ -657,100 +752,139 @@ export function RemoteControlWorkspace({target, initialStart, contextCurrent, on
         room.off(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed);
         room.off(RoomEvent.DataReceived, handleData);
         room.off(RoomEvent.Disconnected, handleDisconnected);
-        void room.disconnect().catch(() => undefined);
+        if (roomRef.current === room) {
+          roomRef.current = undefined;
+          roomSessionIdRef.current = undefined;
+        }
+        void disconnectRoom(room).then(
+          () => log('room.disconnect', 'SUCCEEDED', {reason: 'EFFECT_CLEANUP'}),
+          error =>
+            log('room.disconnect', 'ERROR', {reason: 'EFFECT_CLEANUP', ...errorDiagnostics(error)}),
+        );
       }
+      if (finishRef.current === finishSessionForCurrent)
+        finishRef.current = async (_sessionId, _reason, _shouldCloseWorkspace, _sendEnd) => undefined;
     };
-  }, [currentStart, log, target]);
-
-  const finishRef = useRef<(reason: string, closeWorkspace: boolean, sendEnd: boolean) => Promise<void>>(async () => undefined);
-  finishRef.current = finishSession;
+  }, [currentStart, log, reportEnd, target]);
 
   const activeDescription = description;
-  const onPointerDown = useCallback((slot: ScreenSlot, event: ReactPointerEvent<HTMLVideoElement>, frame: VideoFrame | null) => {
-    if (phase !== 'active' || !frame || gestureRef.current) return;
-    const point = normalizedVideoPoint(event.clientX, event.clientY, event.currentTarget.getBoundingClientRect(), frame);
-    if (!point) return;
-    const ready = screenReady.get(slot);
-    const endpoint = ready && activeDescription?.endpoints.find(item => item.endpointId === ready.body.endpointId);
-    if (!ready || !endpoint) return;
-    const gesture: Gesture = {
-      slot,
-      pointerId: event.pointerId,
-      gestureId: createRemoteControlUuid(),
-      downSequence: null,
-      target: event.currentTarget,
-      endpointId: ready.body.endpointId,
-      participantIdentity: endpoint.participantIdentity,
-      streamId: ready.body.streamId,
-    };
-    gestureRef.current = gesture;
-    event.currentTarget.setPointerCapture(event.pointerId);
-    setGestureNotice(undefined);
-    const downSequence = publishPointer(gesture, 'down', point);
-    if (downSequence === null) {
+  const onPointerDown = useCallback(
+    (slot: ScreenSlot, event: ReactPointerEvent<HTMLVideoElement>, frame: VideoFrame | null) => {
+      if (phase !== 'active' || !frame || gestureRef.current) return;
+      const point = normalizedVideoPoint(
+        event.clientX,
+        event.clientY,
+        event.currentTarget.getBoundingClientRect(),
+        frame,
+      );
+      if (!point) return;
+      const ready = screenReady.get(slot);
+      const endpoint = ready && activeDescription?.endpoints.find(item => item.endpointId === ready.body.endpointId);
+      if (!ready || !endpoint) return;
+      const gesture: Gesture = {
+        slot,
+        pointerId: event.pointerId,
+        gestureId: createRemoteControlUuid(),
+        downSequence: null,
+        target: event.currentTarget,
+        endpointId: ready.body.endpointId,
+        participantIdentity: endpoint.participantIdentity,
+        streamId: ready.body.streamId,
+      };
+      gestureRef.current = gesture;
+      event.currentTarget.setPointerCapture(event.pointerId);
+      setGestureNotice(undefined);
+      const downSequence = publishPointer(gesture, 'down', point);
+      if (downSequence === null) {
+        gestureRef.current = null;
+        if (event.currentTarget.hasPointerCapture(event.pointerId))
+          event.currentTarget.releasePointerCapture(event.pointerId);
+        return;
+      }
+      gestureRef.current = {...gesture, downSequence};
+    },
+    [activeDescription, phase, publishPointer, screenReady],
+  );
+
+  const onPointerMove = useCallback(
+    (slot: ScreenSlot, event: ReactPointerEvent<HTMLVideoElement>, frame: VideoFrame | null) => {
+      const gesture = gestureRef.current;
+      if (!gesture || gesture.slot !== slot || gesture.pointerId !== event.pointerId) return;
+      const point = frame
+        ? normalizedVideoPoint(event.clientX, event.clientY, event.currentTarget.getBoundingClientRect(), frame)
+        : null;
+      if (!point) {
+        cancelGesture();
+        if (event.currentTarget.hasPointerCapture(event.pointerId))
+          event.currentTarget.releasePointerCapture(event.pointerId);
+        return;
+      }
+      publishPointer(gesture, 'move', point);
+    },
+    [cancelGesture, publishPointer],
+  );
+
+  const onPointerUp = useCallback(
+    (slot: ScreenSlot, event: ReactPointerEvent<HTMLVideoElement>, frame: VideoFrame | null) => {
+      const gesture = gestureRef.current;
+      if (!gesture || gesture.slot !== slot || gesture.pointerId !== event.pointerId) return;
+      const point = frame
+        ? normalizedVideoPoint(event.clientX, event.clientY, event.currentTarget.getBoundingClientRect(), frame)
+        : null;
       gestureRef.current = null;
-      if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
-      return;
-    }
-    gestureRef.current = {...gesture, downSequence};
-  }, [activeDescription, phase, publishPointer, screenReady]);
+      publishPointer(gesture, point ? 'up' : 'cancel', point ?? undefined);
+      if (event.currentTarget.hasPointerCapture(event.pointerId))
+        event.currentTarget.releasePointerCapture(event.pointerId);
+    },
+    [publishPointer],
+  );
 
-  const onPointerMove = useCallback((slot: ScreenSlot, event: ReactPointerEvent<HTMLVideoElement>, frame: VideoFrame | null) => {
-    const gesture = gestureRef.current;
-    if (!gesture || gesture.slot !== slot || gesture.pointerId !== event.pointerId) return;
-    const point = frame
-      ? normalizedVideoPoint(event.clientX, event.clientY, event.currentTarget.getBoundingClientRect(), frame)
-      : null;
-    if (!point) {
+  const onPointerCancel = useCallback(
+    (slot: ScreenSlot, event: ReactPointerEvent<HTMLVideoElement>) => {
+      const gesture = gestureRef.current;
+      if (!gesture || gesture.slot !== slot || gesture.pointerId !== event.pointerId) return;
       cancelGesture();
-      if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
-      return;
-    }
-    publishPointer(gesture, 'move', point);
-  }, [cancelGesture, publishPointer]);
-
-  const onPointerUp = useCallback((slot: ScreenSlot, event: ReactPointerEvent<HTMLVideoElement>, frame: VideoFrame | null) => {
-    const gesture = gestureRef.current;
-    if (!gesture || gesture.slot !== slot || gesture.pointerId !== event.pointerId) return;
-    const point = frame
-      ? normalizedVideoPoint(event.clientX, event.clientY, event.currentTarget.getBoundingClientRect(), frame)
-      : null;
-    gestureRef.current = null;
-    publishPointer(gesture, point ? 'up' : 'cancel', point ?? undefined);
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
-  }, [publishPointer]);
-
-  const onPointerCancel = useCallback((slot: ScreenSlot, event: ReactPointerEvent<HTMLVideoElement>) => {
-    const gesture = gestureRef.current;
-    if (!gesture || gesture.slot !== slot || gesture.pointerId !== event.pointerId) return;
-    cancelGesture();
-  }, [cancelGesture]);
+    },
+    [cancelGesture],
+  );
 
   const handleRestart = async () => {
     if (restarting) return;
+    const requestedSessionId = currentStart.sessionId;
     setRestarting(true);
     setProblem(undefined);
     try {
-      const next = await onRestart();
-      setCurrentStart(next);
+      await onRestart();
     } catch (error) {
-      setProblem(operationsProblemOf(error).detail || '连接失败，请重新发起');
-      log('session.restart_failed', 'ERROR', {errorCode: operationsProblemOf(error).errorCode});
+      if (currentStartRef.current.sessionId === requestedSessionId) {
+        setProblem(operationsProblemOf(error).detail || '连接失败，请重新发起');
+        log('session.restart_failed', 'ERROR', {
+          errorCode: operationsProblemOf(error).errorCode,
+          ...errorDiagnostics(error),
+        });
+      }
     } finally {
-      setRestarting(false);
+      if (currentStartRef.current.sessionId === requestedSessionId) setRestarting(false);
     }
   };
 
-  const closeWorkspace = () => void finishSession('WORKSPACE_CLOSED', true, phase !== 'ended');
-  const endWorkspace = () => void finishSession('ADMIN_ENDED', false, true);
+  useEffect(() => {
+    setRestarting(false);
+  }, [currentStart.sessionId]);
+
+  const closeWorkspace = () => {
+    onCloseRequested(currentStart.sessionId);
+    void finishRef.current(currentStart.sessionId, 'WORKSPACE_CLOSED', true, phase !== 'ended');
+  };
+  const endWorkspace = () => void finishRef.current(currentStart.sessionId, 'ADMIN_ENDED', false, true);
 
   useEffect(() => {
     const deadline = Math.max(0, currentStart.deadlineAtEpochMillis - Date.now());
     const timeout = window.setTimeout(() => {
-      if (phase !== 'active' && phase !== 'ended') {
+      if (currentStartRef.current.sessionId === currentStart.sessionId && phase !== 'active' && phase !== 'ended') {
         setProblem(remoteControlLabel('START_TIMEOUT'));
         setPhase('ended');
-        void finishRef.current('START_TIMEOUT', false, true);
+        void finishRef.current(currentStart.sessionId, 'START_TIMEOUT', false, true);
       }
     }, deadline);
     const onBlur = () => cancelGestureRef.current();
@@ -759,20 +893,31 @@ export function RemoteControlWorkspace({target, initialStart, contextCurrent, on
       window.clearTimeout(timeout);
       window.removeEventListener('blur', onBlur);
     };
-  }, [currentStart.deadlineAtEpochMillis, phase]);
+  }, [currentStart.deadlineAtEpochMillis, currentStart.sessionId, phase]);
 
   return (
     <Modal
       open
-      title={(
-        <div className="remote-control-modal-header" ref={titleRef} tabIndex={-1}>
+      title={
+        <div
+          className="remote-control-modal-header"
+          ref={titleRef}
+          tabIndex={-1}
+          {...testId(remoteControlTestIds.header)}
+        >
           <Typography.Text strong>{`远程控制 · ${target.storeName} / ${target.terminalName}`}</Typography.Text>
           <Space>
-            {phase !== 'ended' && <Button onClick={endWorkspace} loading={ending} {...testId(remoteControlTestIds.end)}>结束远程控制</Button>}
-            <Button onClick={closeWorkspace} {...testId(remoteControlTestIds.close)}>关闭</Button>
+            {phase !== 'ended' && (
+              <Button onClick={endWorkspace} loading={ending} {...testId(remoteControlTestIds.end)}>
+                结束远程控制
+              </Button>
+            )}
+            <Button onClick={closeWorkspace} {...testId(remoteControlTestIds.close)}>
+              关闭
+            </Button>
           </Space>
         </div>
-      )}
+      }
       footer={null}
       closable={false}
       maskClosable={false}
@@ -788,8 +933,16 @@ export function RemoteControlWorkspace({target, initialStart, contextCurrent, on
       destroyOnHidden
     >
       <div className="remote-control-workspace" {...testId(remoteControlTestIds.workArea)}>
-        {phase === 'starting' && <div className="remote-control-connecting" {...testId(remoteControlTestIds.status)}>正在连接终端</div>}
-        {phase === 'ended' && <div className="remote-control-ended" {...testId(remoteControlTestIds.status)}>{problem ?? '远程控制已结束'}</div>}
+        {phase === 'starting' && (
+          <div className="remote-control-connecting" {...testId(remoteControlTestIds.status)}>
+            正在连接终端
+          </div>
+        )}
+        {phase === 'ended' && (
+          <div className="remote-control-ended" {...testId(remoteControlTestIds.status)}>
+            {problem ?? '远程控制已结束'}
+          </div>
+        )}
         {problem && phase !== 'ended' && <Alert type="error" showIcon message={problem} />}
         {gestureNotice && <Alert type="warning" showIcon message={gestureNotice} />}
         {activeDescription?.screens.map(screen => {
@@ -813,7 +966,12 @@ export function RemoteControlWorkspace({target, initialStart, contextCurrent, on
         })}
         {phase === 'ended' && (
           <Space className="remote-control-ended-actions">
-            <Button type="primary" onClick={() => void handleRestart()} loading={restarting} {...testId(remoteControlTestIds.restart)}>
+            <Button
+              type="primary"
+              onClick={() => void handleRestart()}
+              loading={restarting}
+              {...testId(remoteControlTestIds.restart)}
+            >
               重新发起
             </Button>
           </Space>

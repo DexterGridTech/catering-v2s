@@ -17,20 +17,15 @@ import {
   projectPhasePayload,
   type HierarchyRow,
 } from './organizationStructureShared';
-import {
-  extensionValuesForGeneratedRequest,
-  OrganizationExtensionFields,
-  serializeOrganizationExtensionValues,
-  type OrganizationExtensionFormValues,
-  useOrganizationExtensionDefinition,
-} from './OrganizationExtensionFields';
+import {serializeExtensionFormValues, type ExtensionFormValues} from '../../extension-fields';
+import {OrganizationExtensionFields, useOrganizationExtensionDefinition} from './OrganizationExtensionFields';
 
 type FormValues = {
   code: string;
   name: string;
   notes?: string;
   phaseDrafts?: Array<{name?: string}>;
-  extensionValues?: OrganizationExtensionFormValues;
+  extensionValues?: ExtensionFormValues;
 };
 
 export function ProjectCreateDrawer({
@@ -81,9 +76,7 @@ export function ProjectCreateDrawer({
             name: values.name.trim(),
             notes: values.notes?.trim() || null,
             phases: projectPhasePayload(values.phaseDrafts),
-            extensionValues: extensionValuesForGeneratedRequest(
-              serializeOrganizationExtensionValues(definition.data, values.extensionValues),
-            ),
+            extensionValues: serializeExtensionFormValues(definition.data, values.extensionValues),
           },
           headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()},
         },

@@ -20,9 +20,8 @@
 
 ```text
 src/
-  application/        runtime module、命令 gateway 和 owner 装配
-  features/           transport commands 与 connection actor
   application/        runtime module、命令 gateway、network-status bridge 与 owner 装配
+  features/           transport commands 与 connection actor
   foundations/        地址、退避、WebSocket 等纯机制
   types/              通用 transport 形状
   index.ts            唯一公开面

@@ -10,6 +10,63 @@ export const remoteControlMessageTypes = [
   "KEEPALIVE_ACK",
   "SESSION_END",
 ] as const;
+export const remoteControlScreenReadyScreenValues = [
+  "main",
+  "secondary",
+] as const;
+
+export const remoteControlPointerScreenValues = [
+  "main",
+  "secondary",
+] as const;
+
+export const remoteControlPointerPhaseValues = [
+  "down",
+  "move",
+  "up",
+  "cancel",
+] as const;
+
+export const remoteControlInputResultStatusValues = [
+  "DISPATCHED",
+  "REJECTED",
+  "CANCELLED",
+] as const;
+
+export const remoteControlInputResultReasonValues = [
+  "NOT_READY",
+  "SESSION_ENDED",
+  "STALE_STREAM",
+  "WRONG_TARGET",
+  "INVALID_MESSAGE",
+  "OUT_OF_BOUNDS",
+  "INVALID_GESTURE",
+  "DUPLICATE",
+  "INPUT_CONFLICT",
+  "GESTURE_EXPIRED",
+  "UNSUPPORTED_SURFACE",
+] as const;
+
+export const remoteControlSessionEndReasonValues = [
+  "ADMIN_ENDED",
+  "WORKSPACE_CLOSED",
+  "START_TIMEOUT",
+  "START_FAILED",
+  "CONTROLLER_DISCONNECTED",
+  "SCREEN_DISCONNECTED",
+  "PAIR_DISCONNECTED",
+  "TDP_DISCONNECTED",
+  "ACTIVATION_INVALID",
+  "AUTHORIZATION_INVALID",
+  "CONFIG_CHANGED",
+  "APP_RESTARTED",
+  "LEASE_EXPIRED",
+  "CAPTURE_FAILED",
+  "INPUT_RESULT_UNKNOWN",
+  "INPUT_UNAVAILABLE",
+  "UNSUPPORTED_PROTOCOL",
+] as const;
+
 export type RemoteControlMessageType = (typeof remoteControlMessageTypes)[number];
 
 export type RemoteControlEnvelope<T extends RemoteControlMessageType, B> = Readonly<{
@@ -22,7 +79,7 @@ export type RemoteControlEnvelope<T extends RemoteControlMessageType, B> = Reado
 
 export type ScreenReadyBody = Readonly<{
   readonly endpointId: string;
-  readonly screen: "main" | "secondary";
+  readonly screen: typeof remoteControlScreenReadyScreenValues[number];
   readonly streamId: string;
   readonly trackSid: string;
   readonly widthPx: number;
@@ -33,10 +90,10 @@ export type ScreenReadyMessage = RemoteControlEnvelope<"SCREEN_READY", ScreenRea
 
 export type PointerBody = Readonly<{
   readonly endpointId: string;
-  readonly screen: "main" | "secondary";
+  readonly screen: typeof remoteControlPointerScreenValues[number];
   readonly streamId: string;
   readonly gestureId: string;
-  readonly phase: "down" | "move" | "up" | "cancel";
+  readonly phase: typeof remoteControlPointerPhaseValues[number];
   readonly u?: number;
   readonly v?: number;
 }>;
@@ -46,8 +103,8 @@ export type PointerMessage = RemoteControlEnvelope<"POINTER", PointerBody>;
 export type InputResultBody = Readonly<{
   readonly forSeq: number;
   readonly gestureId: string;
-  readonly status: "DISPATCHED" | "REJECTED" | "CANCELLED";
-  readonly reason: "NOT_READY" | "SESSION_ENDED" | "STALE_STREAM" | "WRONG_TARGET" | "INVALID_MESSAGE" | "OUT_OF_BOUNDS" | "INVALID_GESTURE" | "DUPLICATE" | "INPUT_CONFLICT" | "GESTURE_EXPIRED" | "UNSUPPORTED_SURFACE" | null;
+  readonly status: typeof remoteControlInputResultStatusValues[number];
+  readonly reason: typeof remoteControlInputResultReasonValues[number] | null;
 }>;
 
 export type InputResultMessage = RemoteControlEnvelope<"INPUT_RESULT", InputResultBody>;
@@ -65,7 +122,7 @@ export type KeepaliveAckBody = Readonly<{
 export type KeepaliveAckMessage = RemoteControlEnvelope<"KEEPALIVE_ACK", KeepaliveAckBody>;
 
 export type SessionEndBody = Readonly<{
-  readonly reason: "ADMIN_ENDED" | "WORKSPACE_CLOSED" | "START_TIMEOUT" | "START_FAILED" | "CONTROLLER_DISCONNECTED" | "SCREEN_DISCONNECTED" | "PAIR_DISCONNECTED" | "TDP_DISCONNECTED" | "ACTIVATION_INVALID" | "AUTHORIZATION_INVALID" | "CONFIG_CHANGED" | "APP_RESTARTED" | "LEASE_EXPIRED" | "CAPTURE_FAILED" | "INPUT_RESULT_UNKNOWN" | "INPUT_UNAVAILABLE" | "UNSUPPORTED_PROTOCOL";
+  readonly reason: typeof remoteControlSessionEndReasonValues[number];
 }>;
 
 export type SessionEndMessage = RemoteControlEnvelope<"SESSION_END", SessionEndBody>;

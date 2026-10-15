@@ -37,7 +37,12 @@ import {
   assertOwnerFlowReportAccepted,
   assertProjectUpdateCandidate,
 } from './updateOwnerFlow.ts';
-import {assertTerminalUpdateReportInUi, createTerminalUpdateSupplyUi, type TerminalUpdateSupplyUi} from './terminalUpdateSupplyUi.ts';
+import {
+  assertTerminalUpdateReportInUi,
+  createTerminalUpdateSupplyUi,
+  type TerminalUpdateSupplyUi,
+} from './terminalUpdateSupplyUi.ts';
+import {runAdminStructureDevUi} from './adminStructureDevUi.ts';
 import type {AutomationEnvelope} from '@catering-v2s/ui-base-automation-agent/protocol';
 import type {TerminalAutomationProcessIdentity} from '../src/managedRun.ts';
 
@@ -177,8 +182,7 @@ let ownerExpoIdentity: TerminalAutomationProcessIdentity | undefined;
 let ownerSession: Awaited<ReturnType<NonNullable<typeof ownerDriver>['waitForSession']>> | undefined;
 let ownerFlowSupplyUi: TerminalUpdateSupplyUi | undefined;
 let ownerFlowIdentity:
-  | Readonly<{applicationId: string; storeRef: string; terminalRef: string; terminalName: string}>
-  | undefined;
+  Readonly<{applicationId: string; storeRef: string; terminalRef: string; terminalName: string}> | undefined;
 
 const digest = (filePath: string): string => {
   const descriptor = openSync(filePath, 'r');
@@ -472,226 +476,236 @@ it.skipIf(updateCase !== 'update.artifacts')(
   90 * 60 * 1000,
 );
 
-beforeAll(async () => {
-  if (
-    updateCase !== 'update.fixed' &&
-    updateCase !== 'update.install-result' &&
-    updateCase !== 'update.compatibility' &&
-    !isOwnerFlowCase
-  )
-    return;
-  const runId = process.env.TERMINAL_AUTOMATION_RUN_ID;
-  if (!runId) throw new Error('TERMINAL_AUTOMATION_RUN_ID_REQUIRED');
-  const managedDevRunId = isOwnerFlowCase ? readRequiredEnvironment('TERMINAL_AUTOMATION_MANAGED_DEV_RUN_ID') : undefined;
-  const ownerFlowPackageId = isOwnerFlowCase ? androidAutomationBuildIdentity(runId, sample).packageId : undefined;
-  if (isOwnerFlowCase) {
-    if (!runDirectory || ownerFlowPackageId === undefined) throw new Error('TERMINAL_AUTOMATION_OWNER_FLOW_RUN_CONTEXT_MISSING');
-    const releasePackage = JSON.parse(
-      readFileSync(path.join(root, 'apps/terminal/application/android', androidAppName, 'package.json'), 'utf8'),
-    ) as {terminalRelease?: {nativeBuildNumber?: number; bundleVersion?: string}};
-    const release = releasePackage.terminalRelease;
+beforeAll(
+  async () => {
     if (
-      release === undefined ||
-      typeof release.nativeBuildNumber !== 'number' ||
-      !Number.isSafeInteger(release.nativeBuildNumber) ||
-      typeof release.bundleVersion !== 'string'
+      updateCase !== 'update.fixed' &&
+      updateCase !== 'update.install-result' &&
+      updateCase !== 'update.compatibility' &&
+      !isOwnerFlowCase
     )
-      throw new Error('TERMINAL_AUTOMATION_OWNER_FLOW_RELEASE_IDENTITY_INVALID');
-    const fullNativeBuildNumber = release.nativeBuildNumber + 1;
-    runArtifactCommand(androidAppName, 'install');
-    runArtifactCommand(androidAppName, 'full', {nativeBuildNumber: fullNativeBuildNumber});
-    runArtifactCommand(androidAppName, 'hot', {
-      nativeBuildNumber: fullNativeBuildNumber,
-      bundleVersion: nextPatchVersion(release.bundleVersion),
-    });
-  }
-  logUpdateDiagnostic('web-harness-started', {integration: sampleConfig.integrationPath});
-  ownerDriver = createTerminalAutomationDriver({
-    token: testToken,
-    host: '127.0.0.1',
-    port: 0,
-    ...(managedDevRunId === undefined
-      ? {}
-      : {
-          fixtureFactory: server =>
-            createManagedActivationFixtureApi({
-              server,
-              repositoryRoot: root,
-              runId,
-              managedDevRunId,
-              sessionId: () => ownerSession?.sessionId ?? null,
-              deviceId: () => readRequiredEnvironment('EXPO_PUBLIC_TER_MANAGED_DEVICE_ID'),
-            }),
-        }),
-  });
-  await once(ownerDriver.transport.server, 'listening');
-  const address = ownerDriver.transport.server.address();
-  if (address === null || typeof address === 'string')
-    throw new Error('TERMINAL_AUTOMATION_UPDATE_DRIVER_ADDRESS_UNAVAILABLE');
-  logUpdateDiagnostic('driver-listening', {port: address.port});
-  const managedWebOrigin = isOwnerFlowCase
-    ? new URL(readRequiredEnvironment('TERMINAL_AUTOMATION_WEB_ORIGIN'))
-    : undefined;
-  if (
-    managedWebOrigin !== undefined &&
-    (managedWebOrigin.protocol !== 'http:' ||
-      (managedWebOrigin.hostname !== '127.0.0.1' && managedWebOrigin.hostname !== 'localhost') ||
-      !/^[0-9]{4,5}$/u.test(managedWebOrigin.port) ||
-      managedWebOrigin.username !== '' ||
-      managedWebOrigin.password !== '' ||
-      (managedWebOrigin.pathname !== '' && managedWebOrigin.pathname !== '/') ||
-      managedWebOrigin.search !== '' ||
-      managedWebOrigin.hash !== '')
-  ) {
-    throw new Error('TERMINAL_AUTOMATION_WEB_ORIGIN_INVALID');
-  }
-  const webPort = managedWebOrigin === undefined ? await availablePort() : Number(managedWebOrigin.port);
-  const url = managedWebOrigin === undefined ? `http://127.0.0.1:${webPort}/` : `${managedWebOrigin.origin}/`;
-  logUpdateDiagnostic('web-origin-selected', {
-    origin: new URL(url).origin,
-    managedCorsOrigin: managedWebOrigin !== undefined,
-  });
-  const expoEnvironment = {...process.env};
-  delete expoEnvironment.V2S_SEED_OPERATIONS_DEFAULT_PASSWORD;
-  delete expoEnvironment.V2S_SEED_PLATFORM_ROOT_PASSWORD;
-  ownerExpo = spawn('yarn', ['web', '--port', String(webPort)], {
-    cwd: integrationRoot,
-    detached: true,
-    env: {
-      ...expoEnvironment,
-      CI: '1',
-      NODE_ENV: 'development',
-      EXPO_PUBLIC_TER_AUTOMATION_BUILD: 'true',
-      EXPO_PUBLIC_TER_AUTOMATION_RUN_ID: runId,
-      EXPO_PUBLIC_TER_AUTOMATION_URL: `ws://127.0.0.1:${address.port}/automation`,
-      EXPO_PUBLIC_TER_AUTOMATION_TOKEN: testToken,
-      ...(isOwnerFlowCase
-        ? {
-            EXPO_PUBLIC_TER_AUTOMATION_BUILD: 'true',
-            EXPO_PUBLIC_TER_AUTOMATION_PHASE: 'update',
-            EXPO_PUBLIC_TER_AUTOMATION_CASE: 'update.owner-flow',
-            EXPO_PUBLIC_TER_AUTOMATION_RUN_ID: runId,
-            EXPO_PUBLIC_TER_AUTOMATION_ANDROID_PACKAGE_ID: ownerFlowPackageId!,
-            EXPO_PUBLIC_TER_UPDATE_OWNER_FLOW: '1',
-            EXPO_PUBLIC_TER_AUTOMATION_SURFACE_FORM: 'mobile',
-          }
-        : {}),
-    },
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
-  await once(ownerExpo, 'spawn');
-  if (ownerExpo.pid === undefined) throw new Error('TERMINAL_AUTOMATION_UPDATE_EXPO_PID_UNAVAILABLE');
-  ownerExpoIdentity = readProcessIdentity(ownerExpo.pid);
-  logUpdateDiagnostic('expo-started', {
-    pid: ownerExpoIdentity.pid,
-    startTokenPresent: ownerExpoIdentity.startToken.length > 0,
-  });
-  ownerExpo.stdout?.on('data', (chunk: Buffer) =>
-    process.stdout.write(chunk.toString('utf8').replaceAll(testToken, '[REDACTED]')),
-  );
-  ownerExpo.stderr?.on('data', (chunk: Buffer) =>
-    process.stderr.write(chunk.toString('utf8').replaceAll(testToken, '[REDACTED]')),
-  );
-  await waitForExpo(url, ownerExpo);
-  ownerBrowser = await chromium.launch({headless: true});
-  ownerPage = await ownerBrowser.newPage({viewport: {width: 1280, height: 720}});
-  ownerPage.on('console', message => {
-    if (!['info', 'warning', 'error'].includes(message.type())) return;
-    const firstArgument = message.args()[0];
-    if (firstArgument === undefined) return;
-    void firstArgument
-      .jsonValue()
-      .then(value => {
-        const projected = projectTerminalAutomationAppEvent(value);
-        if (projected === null) return;
-        logUpdateDiagnostic('app-owner-log', {
-          ownerCategory: projected.category,
-          ownerEvent: projected.event,
-          ownerRequestId: projected.requestId ?? null,
-          ownerDetails: JSON.stringify(projected),
-        });
-      })
-      .catch(() => {
-        logUpdateDiagnostic('app-owner-log-unavailable', {consoleType: message.type()});
+      return;
+    const runId = process.env.TERMINAL_AUTOMATION_RUN_ID;
+    if (!runId) throw new Error('TERMINAL_AUTOMATION_RUN_ID_REQUIRED');
+    const managedDevRunId = isOwnerFlowCase
+      ? readRequiredEnvironment('TERMINAL_AUTOMATION_MANAGED_DEV_RUN_ID')
+      : undefined;
+    const ownerFlowPackageId = isOwnerFlowCase ? androidAutomationBuildIdentity(runId, sample).packageId : undefined;
+    if (isOwnerFlowCase) {
+      if (!runDirectory || ownerFlowPackageId === undefined)
+        throw new Error('TERMINAL_AUTOMATION_OWNER_FLOW_RUN_CONTEXT_MISSING');
+      const releasePackage = JSON.parse(
+        readFileSync(path.join(root, 'apps/terminal/application/android', androidAppName, 'package.json'), 'utf8'),
+      ) as {terminalRelease?: {nativeBuildNumber?: number; bundleVersion?: string}};
+      const release = releasePackage.terminalRelease;
+      if (
+        release === undefined ||
+        typeof release.nativeBuildNumber !== 'number' ||
+        !Number.isSafeInteger(release.nativeBuildNumber) ||
+        typeof release.bundleVersion !== 'string'
+      )
+        throw new Error('TERMINAL_AUTOMATION_OWNER_FLOW_RELEASE_IDENTITY_INVALID');
+      const fullNativeBuildNumber = release.nativeBuildNumber + 1;
+      runArtifactCommand(androidAppName, 'install');
+      runArtifactCommand(androidAppName, 'full', {nativeBuildNumber: fullNativeBuildNumber});
+      runArtifactCommand(androidAppName, 'hot', {
+        nativeBuildNumber: fullNativeBuildNumber,
+        bundleVersion: nextPatchVersion(release.bundleVersion),
       });
-  });
-  const sessionReady = ownerDriver.waitForSession(value => value.appName === sampleConfig.appName, 15_000);
-  const response = await ownerPage.goto(url, {waitUntil: 'domcontentloaded', timeout: 15_000});
-  if (response === null || !response.ok()) throw new Error('TERMINAL_AUTOMATION_UPDATE_EXPO_PAGE_LOAD_FAILED');
-  ownerSession = await sessionReady;
-  if (ownerSession.appName !== sampleConfig.appName) throw new Error('TERMINAL_AUTOMATION_UPDATE_SAMPLE_MISMATCH');
-  logUpdateDiagnostic('runtime-session-ready', {appName: ownerSession.appName});
-  if (isOwnerFlowCase) {
-    if (ownerDriver.fixtures === undefined || ownerFlowPackageId === undefined || managedDevRunId === undefined)
-      throw new Error('TERMINAL_AUTOMATION_OWNER_FLOW_ACTIVATION_FIXTURE_MISSING');
-    const shape = process.env.TERMINAL_AUTOMATION_SHAPE;
-    if (shape !== 'mobile') throw new Error('TERMINAL_AUTOMATION_OWNER_FLOW_WEB_SHAPE_INVALID');
-    await prepareWebJourneySurface({page: ownerPage!, shape});
-    const deviceId = readRequiredEnvironment('EXPO_PUBLIC_TER_MANAGED_DEVICE_ID');
-    const activation = await ensureMainSampleActivated(ownerDriver.fixtures, {shape, deviceId, runId});
-    const manifestPath = readRequiredEnvironment('V2S_TERMINAL_DEV_MANIFEST');
-    const terminalName = mainSampleTerminalName(shape);
-    const {readManagedTerminalBindingByName} = await import('../../../scripts/dev/r5-dev-runner.mjs');
-    const bindings = readManagedTerminalBindingByName({
-      manifestPath,
-      runId: managedDevRunId,
-      groupWorkspaceKey: 'aurora',
-      terminalNames: [terminalName],
+    }
+    logUpdateDiagnostic('web-harness-started', {integration: sampleConfig.integrationPath});
+    ownerDriver = createTerminalAutomationDriver({
+      token: testToken,
+      host: '127.0.0.1',
+      port: 0,
+      ...(managedDevRunId === undefined
+        ? {}
+        : {
+            fixtureFactory: server =>
+              createManagedActivationFixtureApi({
+                server,
+                repositoryRoot: root,
+                runId,
+                managedDevRunId,
+                sessionId: () => ownerSession?.sessionId ?? null,
+                deviceId: () => readRequiredEnvironment('EXPO_PUBLIC_TER_MANAGED_DEVICE_ID'),
+              }),
+          }),
     });
-    const binding = bindings[0];
+    await once(ownerDriver.transport.server, 'listening');
+    const address = ownerDriver.transport.server.address();
+    if (address === null || typeof address === 'string')
+      throw new Error('TERMINAL_AUTOMATION_UPDATE_DRIVER_ADDRESS_UNAVAILABLE');
+    logUpdateDiagnostic('driver-listening', {port: address.port});
+    const managedWebOrigin = isOwnerFlowCase
+      ? new URL(readRequiredEnvironment('TERMINAL_AUTOMATION_WEB_ORIGIN'))
+      : undefined;
     if (
-      bindings.length !== 1 ||
-      binding?.bindingStatus !== 'ACTIVE' ||
-      binding.boundDeviceId !== deviceId ||
-      binding.terminalStatus !== 'ENABLED' ||
-      activation.deviceId !== deviceId ||
-      activation.seedKey !== mainSampleSeedKey(shape)
-    )
-      throw new Error('TERMINAL_AUTOMATION_OWNER_FLOW_BINDING_READBACK_MISMATCH');
-    ownerFlowIdentity = Object.freeze({
-      applicationId: ownerFlowPackageId,
-      storeRef: binding.storeRef,
-      terminalRef: binding.terminalRef,
-      terminalName,
+      managedWebOrigin !== undefined &&
+      (managedWebOrigin.protocol !== 'http:' ||
+        (managedWebOrigin.hostname !== '127.0.0.1' && managedWebOrigin.hostname !== 'localhost') ||
+        !/^[0-9]{4,5}$/u.test(managedWebOrigin.port) ||
+        managedWebOrigin.username !== '' ||
+        managedWebOrigin.password !== '' ||
+        (managedWebOrigin.pathname !== '' && managedWebOrigin.pathname !== '/') ||
+        managedWebOrigin.search !== '' ||
+        managedWebOrigin.hash !== '')
+    ) {
+      throw new Error('TERMINAL_AUTOMATION_WEB_ORIGIN_INVALID');
+    }
+    const webPort = managedWebOrigin === undefined ? await availablePort() : Number(managedWebOrigin.port);
+    const url = managedWebOrigin === undefined ? `http://127.0.0.1:${webPort}/` : `${managedWebOrigin.origin}/`;
+    logUpdateDiagnostic('web-origin-selected', {
+      origin: new URL(url).origin,
+      managedCorsOrigin: managedWebOrigin !== undefined,
     });
-    await waitForSelector(
-      ownerDriver.transport,
-      ownerSession.sessionId,
-      'kernel.feature.store-basic.selectStoreBasicLoadReadiness',
-      [],
-      value => isRecord(value) && value.storeStatus === 'flushed' && isRecord(value.binding) && value.binding.storeRef === binding.storeRef,
-      90_000,
-    );
-    await waitForSelector(
-      ownerDriver.transport,
-      ownerSession.sessionId,
-      'kernel.feature.project-basic.selectProjectBasicLoadReadiness',
-      [],
-      value => isRecord(value) && value.status === 'flushed' && isRecord(value.binding) && value.binding.storeRef === binding.storeRef,
-      90_000,
-    );
-    ownerFlowSupplyUi = await createTerminalUpdateSupplyUi({
-      platformOrigin: readRequiredEnvironment('TERMINAL_AUTOMATION_PLATFORM_ADMIN_ORIGIN'),
-      operationsOrigin: readRequiredEnvironment('TERMINAL_AUTOMATION_OPERATIONS_ADMIN_ORIGIN'),
-      platformPassword: readRequiredEnvironment('V2S_SEED_PLATFORM_ROOT_PASSWORD'),
-      operationsPassword: readRequiredEnvironment('V2S_SEED_OPERATIONS_DEFAULT_PASSWORD'),
-      fullZipPath: path.join(runDirectory!, 'update', androidAppName, `${androidAppName}-full.zip`),
-      hotZipPath: path.join(runDirectory!, 'update', androidAppName, `${androidAppName}-hot.zip`),
-      applicationId: ownerFlowPackageId,
-      storeRef: binding.storeRef,
-      runId,
-      verifyIdleDuration: androidAppName === 'sample-terminal',
+    const expoEnvironment = {...process.env};
+    delete expoEnvironment.V2S_SEED_OPERATIONS_DEFAULT_PASSWORD;
+    delete expoEnvironment.V2S_SEED_PLATFORM_ROOT_PASSWORD;
+    ownerExpo = spawn('yarn', ['web', '--port', String(webPort)], {
+      cwd: integrationRoot,
+      detached: true,
+      env: {
+        ...expoEnvironment,
+        CI: '1',
+        NODE_ENV: 'development',
+        EXPO_PUBLIC_TER_AUTOMATION_BUILD: 'true',
+        EXPO_PUBLIC_TER_AUTOMATION_RUN_ID: runId,
+        EXPO_PUBLIC_TER_AUTOMATION_URL: `ws://127.0.0.1:${address.port}/automation`,
+        EXPO_PUBLIC_TER_AUTOMATION_TOKEN: testToken,
+        ...(isOwnerFlowCase
+          ? {
+              EXPO_PUBLIC_TER_AUTOMATION_BUILD: 'true',
+              EXPO_PUBLIC_TER_AUTOMATION_PHASE: 'update',
+              EXPO_PUBLIC_TER_AUTOMATION_CASE: 'update.owner-flow',
+              EXPO_PUBLIC_TER_AUTOMATION_RUN_ID: runId,
+              EXPO_PUBLIC_TER_AUTOMATION_ANDROID_PACKAGE_ID: ownerFlowPackageId!,
+              EXPO_PUBLIC_TER_UPDATE_OWNER_FLOW: '1',
+              EXPO_PUBLIC_TER_AUTOMATION_SURFACE_FORM: 'mobile',
+            }
+          : {}),
+      },
+      stdio: ['ignore', 'pipe', 'pipe'],
     });
-    logUpdateDiagnostic('owner-flow-supply-ready', {
-      applicationId: ownerFlowIdentity.applicationId,
-      storeRef: ownerFlowIdentity.storeRef,
-      terminalRef: ownerFlowIdentity.terminalRef,
-      ruleRef: ownerFlowSupplyUi.ruleRef,
-      fullArtifactRef: ownerFlowSupplyUi.full.artifactRef,
-      hotArtifactRef: ownerFlowSupplyUi.hot.artifactRef,
+    await once(ownerExpo, 'spawn');
+    if (ownerExpo.pid === undefined) throw new Error('TERMINAL_AUTOMATION_UPDATE_EXPO_PID_UNAVAILABLE');
+    ownerExpoIdentity = readProcessIdentity(ownerExpo.pid);
+    logUpdateDiagnostic('expo-started', {
+      pid: ownerExpoIdentity.pid,
+      startTokenPresent: ownerExpoIdentity.startToken.length > 0,
     });
-  }
-}, isOwnerFlowCase ? 90 * 60_000 : 90_000);
+    ownerExpo.stdout?.on('data', (chunk: Buffer) => process.stdout.write(chunk));
+    ownerExpo.stderr?.on('data', (chunk: Buffer) => process.stderr.write(chunk));
+    await waitForExpo(url, ownerExpo);
+    ownerBrowser = await chromium.launch({headless: true});
+    ownerPage = await ownerBrowser.newPage({viewport: {width: 1280, height: 720}});
+    ownerPage.on('console', message => {
+      if (!['info', 'warning', 'error'].includes(message.type())) return;
+      const firstArgument = message.args()[0];
+      if (firstArgument === undefined) return;
+      void firstArgument
+        .jsonValue()
+        .then(value => {
+          const projected = projectTerminalAutomationAppEvent(value);
+          if (projected === null) return;
+          logUpdateDiagnostic('app-owner-log', {
+            ownerCategory: projected.category,
+            ownerEvent: projected.event,
+            ownerRequestId: projected.requestId ?? null,
+            ownerDetails: JSON.stringify(projected),
+          });
+        })
+        .catch(() => {
+          logUpdateDiagnostic('app-owner-log-unavailable', {consoleType: message.type()});
+        });
+    });
+    const sessionReady = ownerDriver.waitForSession(value => value.appName === sampleConfig.appName, 15_000);
+    const response = await ownerPage.goto(url, {waitUntil: 'domcontentloaded', timeout: 15_000});
+    if (response === null || !response.ok()) throw new Error('TERMINAL_AUTOMATION_UPDATE_EXPO_PAGE_LOAD_FAILED');
+    ownerSession = await sessionReady;
+    if (ownerSession.appName !== sampleConfig.appName) throw new Error('TERMINAL_AUTOMATION_UPDATE_SAMPLE_MISMATCH');
+    logUpdateDiagnostic('runtime-session-ready', {appName: ownerSession.appName});
+    if (isOwnerFlowCase) {
+      if (ownerDriver.fixtures === undefined || ownerFlowPackageId === undefined || managedDevRunId === undefined)
+        throw new Error('TERMINAL_AUTOMATION_OWNER_FLOW_ACTIVATION_FIXTURE_MISSING');
+      const shape = process.env.TERMINAL_AUTOMATION_SHAPE;
+      if (shape !== 'mobile') throw new Error('TERMINAL_AUTOMATION_OWNER_FLOW_WEB_SHAPE_INVALID');
+      await prepareWebJourneySurface({page: ownerPage!, shape});
+      const deviceId = readRequiredEnvironment('EXPO_PUBLIC_TER_MANAGED_DEVICE_ID');
+      const activation = await ensureMainSampleActivated(ownerDriver.fixtures, {shape, deviceId, runId});
+      const manifestPath = readRequiredEnvironment('V2S_TERMINAL_DEV_MANIFEST');
+      const terminalName = mainSampleTerminalName(shape);
+      const {readManagedTerminalBindingByName} = await import('../../../scripts/dev/r5-dev-runner.mjs');
+      const bindings = readManagedTerminalBindingByName({
+        manifestPath,
+        runId: managedDevRunId,
+        groupWorkspaceKey: 'aurora',
+        terminalNames: [terminalName],
+      });
+      const binding = bindings[0];
+      if (
+        bindings.length !== 1 ||
+        binding?.bindingStatus !== 'ACTIVE' ||
+        binding.boundDeviceId !== deviceId ||
+        binding.terminalStatus !== 'ENABLED' ||
+        activation.deviceId !== deviceId ||
+        activation.seedKey !== mainSampleSeedKey(shape)
+      )
+        throw new Error('TERMINAL_AUTOMATION_OWNER_FLOW_BINDING_READBACK_MISMATCH');
+      ownerFlowIdentity = Object.freeze({
+        applicationId: ownerFlowPackageId,
+        storeRef: binding.storeRef,
+        terminalRef: binding.terminalRef,
+        terminalName,
+      });
+      await waitForSelector(
+        ownerDriver.transport,
+        ownerSession.sessionId,
+        'kernel.feature.store-basic.selectStoreBasicLoadReadiness',
+        [],
+        value =>
+          isRecord(value) &&
+          value.storeStatus === 'flushed' &&
+          isRecord(value.binding) &&
+          value.binding.storeRef === binding.storeRef,
+        90_000,
+      );
+      await waitForSelector(
+        ownerDriver.transport,
+        ownerSession.sessionId,
+        'kernel.feature.project-basic.selectProjectBasicLoadReadiness',
+        [],
+        value =>
+          isRecord(value) &&
+          value.status === 'flushed' &&
+          isRecord(value.binding) &&
+          value.binding.storeRef === binding.storeRef,
+        90_000,
+      );
+      ownerFlowSupplyUi = await createTerminalUpdateSupplyUi({
+        platformOrigin: readRequiredEnvironment('TERMINAL_AUTOMATION_PLATFORM_ADMIN_ORIGIN'),
+        operationsOrigin: readRequiredEnvironment('TERMINAL_AUTOMATION_OPERATIONS_ADMIN_ORIGIN'),
+        platformPassword: readRequiredEnvironment('V2S_SEED_PLATFORM_ROOT_PASSWORD'),
+        operationsPassword: readRequiredEnvironment('V2S_SEED_OPERATIONS_DEFAULT_PASSWORD'),
+        fullZipPath: path.join(runDirectory!, 'update', androidAppName, `${androidAppName}-full.zip`),
+        hotZipPath: path.join(runDirectory!, 'update', androidAppName, `${androidAppName}-hot.zip`),
+        applicationId: ownerFlowPackageId,
+        storeRef: binding.storeRef,
+        runId,
+        verifyIdleDuration: androidAppName === 'sample-terminal',
+      });
+      logUpdateDiagnostic('owner-flow-supply-ready', {
+        applicationId: ownerFlowIdentity.applicationId,
+        storeRef: ownerFlowIdentity.storeRef,
+        terminalRef: ownerFlowIdentity.terminalRef,
+        ruleRef: ownerFlowSupplyUi.ruleRef,
+        fullArtifactRef: ownerFlowSupplyUi.full.artifactRef,
+        hotArtifactRef: ownerFlowSupplyUi.hot.artifactRef,
+      });
+    }
+  },
+  isOwnerFlowCase ? 90 * 60_000 : 90_000,
+);
 
 afterAll(async () => {
   if (
@@ -1033,7 +1047,10 @@ it.skipIf(updateCase !== 'update.owner-flow')(
     );
     if (!isRecord(accepted) || typeof accepted.requestId !== 'string')
       throw new Error('TERMINAL_AUTOMATION_OWNER_FLOW_REFRESH_NOT_ACCEPTED');
-    logUpdateDiagnostic('project-rules-refresh-accepted', {commandName: refreshCommandName, requestId: accepted.requestId});
+    logUpdateDiagnostic('project-rules-refresh-accepted', {
+      commandName: refreshCommandName,
+      requestId: accepted.requestId,
+    });
     const refreshMessage = await refreshCompletion;
     const refreshBody = eventBody(refreshMessage);
     if (
@@ -1057,8 +1074,8 @@ it.skipIf(updateCase !== 'update.owner-flow')(
           isRecord(value) &&
           isRecord(value.rule) &&
           value.rule.ruleRef === supplyUi.ruleRef &&
-            typeof value.collectionHash === 'string' &&
-            value.collectionHash.length > 0,
+          typeof value.collectionHash === 'string' &&
+          value.collectionHash.length > 0,
         90_000,
       ),
       {
@@ -1115,17 +1132,17 @@ it.skipIf(updateCase !== 'update.owner-flow')(
     const reportDeliverySelector = 'kernel.base.terminal-update.selectTerminalUpdateReportDelivery';
     let reportDelivery = await readUpdateSelector(reportDeliverySelector);
     const pendingReportCount =
-      isRecord(reportDelivery) && typeof reportDelivery.pendingCount === 'number'
-        ? reportDelivery.pendingCount
-        : null;
+      isRecord(reportDelivery) && typeof reportDelivery.pendingCount === 'number' ? reportDelivery.pendingCount : null;
     logUpdateDiagnostic('owner-flow-report-delivery-wait-begin', {
       taskId: completedTaskId,
       recentStatusMatchesTask: isRecord(recentStatus) && recentStatus.taskId === completedTaskId,
       pendingReportCount,
       sendPaused:
         isRecord(reportDelivery) && typeof reportDelivery.sendPaused === 'boolean' ? reportDelivery.sendPaused : null,
-      latestFailurePresent: isRecord(reportDelivery) &&
-        reportDelivery.latestDeliveryFailure !== null && reportDelivery.latestDeliveryFailure !== undefined,
+      latestFailurePresent:
+        isRecord(reportDelivery) &&
+        reportDelivery.latestDeliveryFailure !== null &&
+        reportDelivery.latestDeliveryFailure !== undefined,
       timeoutMs: 45_000,
     });
     if (typeof pendingReportCount !== 'number' || !Number.isSafeInteger(pendingReportCount))
@@ -1141,7 +1158,8 @@ it.skipIf(updateCase !== 'update.owner-flow')(
             isRecord(value) &&
             typeof value.pendingCount === 'number' &&
             Number.isSafeInteger(value.pendingCount) &&
-            (value.pendingCount === 0 || value.sendPaused === true ||
+            (value.pendingCount === 0 ||
+              value.sendPaused === true ||
               (value.latestDeliveryFailure !== null && value.latestDeliveryFailure !== undefined)),
           45_000,
         );
@@ -1149,11 +1167,10 @@ it.skipIf(updateCase !== 'update.owner-flow')(
         const latest = await readUpdateSelector(reportDeliverySelector).catch(() => null);
         logUpdateDiagnostic('owner-flow-report-delivery-wait-failed', {
           taskId: completedTaskId,
-          pendingReportCount:
-            isRecord(latest) && typeof latest.pendingCount === 'number' ? latest.pendingCount : null,
+          pendingReportCount: isRecord(latest) && typeof latest.pendingCount === 'number' ? latest.pendingCount : null,
           sendPaused: isRecord(latest) && typeof latest.sendPaused === 'boolean' ? latest.sendPaused : null,
-          latestFailurePresent: isRecord(latest) &&
-            latest.latestDeliveryFailure !== null && latest.latestDeliveryFailure !== undefined,
+          latestFailurePresent:
+            isRecord(latest) && latest.latestDeliveryFailure !== null && latest.latestDeliveryFailure !== undefined,
           error: error instanceof Error ? error.message : String(error),
         });
         throw error;
@@ -1167,8 +1184,10 @@ it.skipIf(updateCase !== 'update.owner-flow')(
           : null,
       sendPaused:
         isRecord(reportDelivery) && typeof reportDelivery.sendPaused === 'boolean' ? reportDelivery.sendPaused : null,
-      latestFailurePresent: isRecord(reportDelivery) &&
-        reportDelivery.latestDeliveryFailure !== null && reportDelivery.latestDeliveryFailure !== undefined,
+      latestFailurePresent:
+        isRecord(reportDelivery) &&
+        reportDelivery.latestDeliveryFailure !== null &&
+        reportDelivery.latestDeliveryFailure !== undefined,
     });
     const taskId = assertOwnerFlowReportAccepted({task, recentStatus, reportDelivery});
     if (
@@ -1196,8 +1215,24 @@ it.skipIf(updateCase !== 'update.owner-flow')(
       apkVersion: actual.nativeVersion,
       jsVersion: actual.bundleVersion,
       runtimeVersion: actual.runtimeVersion,
+      contextVersion: supplyUi.contextVersion,
+      controlledHistory: true,
       runId,
     });
+    if (sample === 'console') {
+      await runAdminStructureDevUi({
+        browser: supplyUi.browser,
+        platformPage: supplyUi.platformPage,
+        operationsPage: supplyUi.operationsPage,
+        platformOrigin: readRequiredEnvironment('TERMINAL_AUTOMATION_PLATFORM_ADMIN_ORIGIN'),
+        operationsOrigin: readRequiredEnvironment('TERMINAL_AUTOMATION_OPERATIONS_ADMIN_ORIGIN'),
+        operationsPassword: readRequiredEnvironment('V2S_SEED_OPERATIONS_DEFAULT_PASSWORD'),
+        projectRef: supplyUi.projectRef,
+        contextVersion: supplyUi.contextVersion,
+        storeRef: ownerFlowIdentity.storeRef,
+        runId,
+      });
+    }
     logUpdateDiagnostic('owner-flow-business-pass', {
       taskId,
       applicationId: ownerFlowIdentity.applicationId,

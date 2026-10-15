@@ -7,42 +7,58 @@ import {
   projectTerminalRuntimeRemoteControlLog,
   liveKitSignalSocketProtocol,
   projectBrowserRtcDiagnostics,
-  safeTerminalBrowserPolicyFailure,
+  terminalBrowserPolicyFailure,
   safeBrowserConsoleNetworkFailureReason,
   safeBrowserRequestFailureReason,
 } from '../src/browserNetworkDiagnostics.js';
 
 describe('browser network diagnostics', () => {
   it('classifies start, read, grant, and end session HTTP paths without matching neighboring paths', () => {
-    expect(operationsRemoteControlOperationOfPath('/api/terminal/group-workspaces/store/remote-control-sessions'))
-      .toBe('start');
-    expect(operationsRemoteControlOperationOfPath('/api/terminal/group-workspaces/store/remote-control-sessions/session-1'))
-      .toBe('read');
-    expect(operationsRemoteControlOperationOfPath('/api/terminal/group-workspaces/store/remote-control-sessions/session-1/controller-grant'))
-      .toBe('grant');
-    expect(operationsRemoteControlOperationOfPath('/api/terminal/group-workspaces/store/remote-control-sessions/session-1/end'))
-      .toBe('end');
-    expect(operationsRemoteControlOperationOfPath('/api/terminal/group-workspaces/store/remote-control-sessions/session-1/status'))
-      .toBeUndefined();
-    expect(operationsRemoteControlOperationOfPath('/api/terminal/group-workspaces/store/remote-control-sessions-extra'))
-      .toBeUndefined();
+    expect(operationsRemoteControlOperationOfPath('/api/terminal/group-workspaces/store/remote-control-sessions')).toBe(
+      'start',
+    );
+    expect(
+      operationsRemoteControlOperationOfPath('/api/terminal/group-workspaces/store/remote-control-sessions/session-1'),
+    ).toBe('read');
+    expect(
+      operationsRemoteControlOperationOfPath(
+        '/api/terminal/group-workspaces/store/remote-control-sessions/session-1/controller-grant',
+      ),
+    ).toBe('grant');
+    expect(
+      operationsRemoteControlOperationOfPath(
+        '/api/terminal/group-workspaces/store/remote-control-sessions/session-1/end',
+      ),
+    ).toBe('end');
+    expect(
+      operationsRemoteControlOperationOfPath(
+        '/api/terminal/group-workspaces/store/remote-control-sessions/session-1/status',
+      ),
+    ).toBeUndefined();
+    expect(
+      operationsRemoteControlOperationOfPath('/api/terminal/group-workspaces/store/remote-control-sessions-extra'),
+    ).toBeUndefined();
   });
 
-  it('projects the bounded operations-admin remote-control lifecycle without raw logger fields', () => {
-    const projected = projectOperationsRemoteControlLog(`[operations-admin] ${JSON.stringify({
-      service: 'operations-admin',
-      event: 'frontend.remote_control.room.connect',
-      level: 'INFO',
-      phase: 'remote_control',
-      outcome: 'STARTED',
-      diagnostic: {
-        sessionId: 'remote-session-123',
-        topologyKind: 'LAPTOP_DUAL',
-        expectedScreenCount: 2,
-        secret: 'private-secret',
-      },
-      message: 'private raw diagnostic text',
-    })}`);
+  it('projects operations remote-control errors with their original diagnostic text', () => {
+    const projected = projectOperationsRemoteControlLog(
+      `[operations-admin] ${JSON.stringify({
+        service: 'operations-admin',
+        event: 'frontend.remote_control.room.connect',
+        level: 'INFO',
+        phase: 'remote_control',
+        outcome: 'STARTED',
+        diagnostic: {
+          sessionId: 'remote-session-123',
+          topologyKind: 'LAPTOP_DUAL',
+          expectedScreenCount: 2,
+          errorMessage: 'WebSocket failed with ECONNRESET',
+          errorStack: 'Error: ECONNRESET\n at connect (remote.js:10)',
+          secret: 'private-secret',
+        },
+        message: 'private raw diagnostic text',
+      })}`,
+    );
 
     expect(projected).toEqual({
       sourceEvent: 'frontend.remote_control.room.connect',
@@ -52,32 +68,42 @@ describe('browser network diagnostics', () => {
       remoteSessionId: 'remote-session-123',
       diag_topologyKind: 'LAPTOP_DUAL',
       diag_expectedScreenCount: 2,
+      diag_errorMessage: 'WebSocket failed with ECONNRESET',
+      diag_errorStack: 'Error: ECONNRESET\n at connect (remote.js:10)',
     });
     expect(projectOperationsRemoteControlLog('[other-service] {}')).toBeUndefined();
     expect(projectOperationsRemoteControlLog('[operations-admin] not-json')).toBeUndefined();
-    expect(projectOperationsRemoteControlLog(`[operations-admin] ${JSON.stringify({
-      service: 'operations-admin',
-      event: 'frontend.other.request',
-    })}`)).toBeUndefined();
+    expect(
+      projectOperationsRemoteControlLog(
+        `[operations-admin] ${JSON.stringify({
+          service: 'operations-admin',
+          event: 'frontend.other.request',
+        })}`,
+      ),
+    ).toBeUndefined();
     expect(JSON.stringify(projected)).not.toContain('private-secret');
     expect(JSON.stringify(projected)).not.toContain('private raw diagnostic text');
   });
 
   it('projects remote pointer completion and its matching input result fields', () => {
-    const pointerUp = projectOperationsRemoteControlLog(`[operations-admin] ${JSON.stringify({
-      service: 'operations-admin',
-      event: 'frontend.remote_control.pointer.up',
-      level: 'INFO',
-      outcome: 'DISPATCHED',
-      diagnostic: {screen: 'secondary', seq: 43},
-    })}`);
-    const inputResult = projectOperationsRemoteControlLog(`[operations-admin] ${JSON.stringify({
-      service: 'operations-admin',
-      event: 'frontend.remote_control.input.result',
-      level: 'INFO',
-      outcome: 'DISPATCHED',
-      diagnostic: {forSeq: 43, reason: 'NONE'},
-    })}`);
+    const pointerUp = projectOperationsRemoteControlLog(
+      `[operations-admin] ${JSON.stringify({
+        service: 'operations-admin',
+        event: 'frontend.remote_control.pointer.up',
+        level: 'INFO',
+        outcome: 'DISPATCHED',
+        diagnostic: {screen: 'secondary', seq: 43},
+      })}`,
+    );
+    const inputResult = projectOperationsRemoteControlLog(
+      `[operations-admin] ${JSON.stringify({
+        service: 'operations-admin',
+        event: 'frontend.remote_control.input.result',
+        level: 'INFO',
+        outcome: 'DISPATCHED',
+        diagnostic: {forSeq: 43, reason: 'NONE'},
+      })}`,
+    );
 
     expect(pointerUp).toMatchObject({
       sourceEvent: 'frontend.remote_control.pointer.up',
@@ -97,14 +123,22 @@ describe('browser network diagnostics', () => {
     expect(projectExpoWebOutputLine('Starting project at /private/worktree/integration')).toEqual({
       category: 'PROJECT_STARTING',
     });
-    expect(projectExpoWebOutputLine('Web Bundled 2672ms apps/terminal/ui/integration/sample-console/index.js (1239 modules)'))
-      .toEqual({category: 'BUNDLE_SUCCEEDED', elapsedMs: 2672, moduleCount: 1239});
-    expect(projectExpoWebOutputLine('Web Bundling failed 321ms /private/path/index.js (42 modules)'))
-      .toEqual({category: 'BUNDLE_FAILED', elapsedMs: 321, moduleCount: 42});
-    expect(projectExpoWebOutputLine('Unable to resolve module "private-package" from "/private/token-path"'))
-      .toEqual({category: 'MODULE_RESOLUTION_FAILED'});
-    expect(projectExpoWebOutputLine('Authorization: Bearer private-token\n at private.module (private stack)'))
-      .toBeUndefined();
+    expect(
+      projectExpoWebOutputLine(
+        'Web Bundled 2672ms apps/terminal/ui/integration/sample-console/index.js (1239 modules)',
+      ),
+    ).toEqual({category: 'BUNDLE_SUCCEEDED', elapsedMs: 2672, moduleCount: 1239});
+    expect(projectExpoWebOutputLine('Web Bundling failed 321ms /private/path/index.js (42 modules)')).toEqual({
+      category: 'BUNDLE_FAILED',
+      elapsedMs: 321,
+      moduleCount: 42,
+    });
+    expect(projectExpoWebOutputLine('Unable to resolve module "private-package" from "/private/token-path"')).toEqual({
+      category: 'MODULE_RESOLUTION_FAILED',
+    });
+    expect(
+      projectExpoWebOutputLine('Authorization: Bearer private-token\n at private.module (private stack)'),
+    ).toBeUndefined();
   });
 
   it('frames split output separately by stream, bounds lines, and never stores raw output', () => {
@@ -135,7 +169,7 @@ describe('browser network diagnostics', () => {
     expect(JSON.stringify(diagnostics)).not.toContain('private-package');
   });
 
-  it('keeps only the browser network error code and drops the raw message', () => {
+  it('classifies browser network failures while callers retain the original failure text', () => {
     expect(safeBrowserRequestFailureReason('net::ERR_CONNECTION_RESET')).toBe('ERR_CONNECTION_RESET');
     expect(safeBrowserRequestFailureReason('net::ERR_FAILED https://host.invalid/?token=private')).toBe('ERR_FAILED');
     expect(safeBrowserRequestFailureReason('unclassified sensitive text')).toBe('UNKNOWN');
@@ -156,85 +190,99 @@ describe('browser network diagnostics', () => {
       peerCount: 1,
       overflowCount: 0,
       token: 'private-token',
-      peers: [{
-        peerId: 1,
-        connectionState: 'failed',
-        iceConnectionState: 'checking',
-        iceGatheringState: 'complete',
-        signalingState: 'stable',
-        candidateCounts: {hostUdp: 1, srflxUdp: 1, relayUdp: 0, rawCandidate: 'candidate:private'},
-        transitions: [{
-          event: 'iceconnectionstatechange',
-          elapsedMs: 15_000,
+      peers: [
+        {
+          peerId: 1,
           connectionState: 'failed',
-          iceConnectionState: 'failed',
+          iceConnectionState: 'checking',
           iceGatheringState: 'complete',
           signalingState: 'stable',
-          address: '192.0.2.44',
-        }],
-        candidatePairs: [{
-          state: 'succeeded',
-          selected: true,
-          nominated: true,
-          localType: 'host',
-          localProtocol: 'udp',
-          localAddress: '192.0.2.44',
-          localPort: 7882,
-          remoteType: 'srflx',
-          remoteProtocol: 'udp',
-          remoteAddress: '198.51.100.7',
-          remotePort: 51000,
-          bytesSent: 2048,
-          bytesReceived: 4096,
-          roundTripTimeMs: 14,
-          candidate: 'candidate:private',
-          ip: '192.0.2.44',
-          port: 7882,
-          usernameFragment: 'private-fragment',
-        }],
-        videoRtpReports: [{
-          direction: 'inbound',
-          mid: '0',
-          packets: 42,
-          bytes: 8192,
-          framesReceived: 18,
-          framesDecoded: 16,
-          framesPerSecond: 14,
-          frameWidth: 1280,
-          frameHeight: 720,
-          ssrc: 'private-ssrc',
-        }],
-      }],
+          candidateCounts: {hostUdp: 1, srflxUdp: 1, relayUdp: 0, rawCandidate: 'candidate:private'},
+          transitions: [
+            {
+              event: 'iceconnectionstatechange',
+              elapsedMs: 15_000,
+              connectionState: 'failed',
+              iceConnectionState: 'failed',
+              iceGatheringState: 'complete',
+              signalingState: 'stable',
+              address: '192.0.2.44',
+            },
+          ],
+          candidatePairs: [
+            {
+              state: 'succeeded',
+              selected: true,
+              nominated: true,
+              localType: 'host',
+              localProtocol: 'udp',
+              localAddress: '192.0.2.44',
+              localPort: 7882,
+              remoteType: 'srflx',
+              remoteProtocol: 'udp',
+              remoteAddress: '198.51.100.7',
+              remotePort: 51000,
+              bytesSent: 2048,
+              bytesReceived: 4096,
+              roundTripTimeMs: 14,
+              candidate: 'candidate:private',
+              ip: '192.0.2.44',
+              port: 7882,
+              usernameFragment: 'private-fragment',
+            },
+          ],
+          videoRtpReports: [
+            {
+              direction: 'inbound',
+              mid: '0',
+              packets: 42,
+              bytes: 8192,
+              framesReceived: 18,
+              framesDecoded: 16,
+              framesPerSecond: 14,
+              frameWidth: 1280,
+              frameHeight: 720,
+              ssrc: 'private-ssrc',
+            },
+          ],
+        },
+      ],
     });
 
     expect(projected).toMatchObject({
       probeStatus: 'INSTALLED',
       peerCount: 1,
-      peers: [{
-        connectionState: 'failed',
-        iceConnectionState: 'checking',
-        candidateCounts: {hostUdp: 1, srflxUdp: 1},
-        candidatePairs: [{
-          selected: true,
-          localProtocol: 'udp',
-          localAddress: '192.0.2.44',
-          remoteProtocol: 'udp',
-          remoteAddress: '198.51.100.7',
-          localPort: 7882,
-          remotePort: 51000,
-          bytesReceived: 4096,
-        }],
-        videoRtpReports: [{
-          direction: 'inbound',
-          packets: 42,
-          bytes: 8192,
-          framesReceived: 18,
-          framesDecoded: 16,
-          framesPerSecond: 14,
-          frameWidth: 1280,
-          frameHeight: 720,
-        }],
-      }],
+      peers: [
+        {
+          connectionState: 'failed',
+          iceConnectionState: 'checking',
+          candidateCounts: {hostUdp: 1, srflxUdp: 1},
+          candidatePairs: [
+            {
+              selected: true,
+              localProtocol: 'udp',
+              localAddress: '192.0.2.44',
+              remoteProtocol: 'udp',
+              remoteAddress: '198.51.100.7',
+              localPort: 7882,
+              remotePort: 51000,
+              bytesReceived: 4096,
+            },
+          ],
+          videoRtpReports: [
+            {
+              direction: 'inbound',
+              packets: 42,
+              bytes: 8192,
+              framesReceived: 18,
+              framesDecoded: 16,
+              framesPerSecond: 14,
+              frameWidth: 1280,
+              frameHeight: 720,
+            },
+          ],
+        },
+      ],
     });
     const serialized = JSON.stringify(projected);
     expect(serialized).toContain('192.0.2.44');
@@ -251,25 +299,25 @@ describe('browser network diagnostics', () => {
     expect(safeBrowserConsoleNetworkFailureReason('Failed to execute unrelated script')).toBeUndefined();
   });
 
-  it('identifies CORS failures on both terminal remote-control POST paths without retaining request data', () => {
+  it('identifies CORS failures on both terminal remote-control POST paths and retains the raw browser error', () => {
     const consoleMessage =
       "Access to fetch at 'http://host.invalid/api/terminal/group-workspaces/private/remote-control-sessions/id/status' from origin 'http://localhost:19006' has been blocked by CORS policy";
-    const failure = safeTerminalBrowserPolicyFailure(
+    const failure = terminalBrowserPolicyFailure(
       'http://host.invalid/api/terminal/group-workspaces/private/remote-control-sessions/id/status',
       consoleMessage,
     );
 
-    expect(failure).toEqual({operation: 'remote-control.status', reason: 'CORS_BLOCKED'});
-    expect(JSON.stringify(failure)).not.toContain('host.invalid');
-    expect(JSON.stringify(failure)).not.toContain('private');
+    expect(failure).toEqual({operation: 'remote-control.status', reason: 'CORS_BLOCKED', consoleMessage});
+    expect(JSON.stringify(failure)).toContain('host.invalid');
+    expect(JSON.stringify(failure)).toContain('private');
     expect(
-      safeTerminalBrowserPolicyFailure(
+      terminalBrowserPolicyFailure(
         'http://host.invalid/api/terminal/group-workspaces/private/remote-control-sessions/id/registration',
         consoleMessage,
       ),
-    ).toEqual({operation: 'remote-control.registration', reason: 'CORS_BLOCKED'});
+    ).toEqual({operation: 'remote-control.registration', reason: 'CORS_BLOCKED', consoleMessage});
     expect(
-      safeTerminalBrowserPolicyFailure(
+      terminalBrowserPolicyFailure(
         'http://host.invalid/api/terminal/group-workspaces/private/remote-control-sessions/id/status',
         'Failed to execute unrelated script',
       ),
@@ -318,24 +366,30 @@ describe('browser network diagnostics', () => {
     expect(serialized).not.toContain('private-token');
     expect(serialized).not.toContain('private-secret');
     expect(serialized).not.toContain('private exception');
-    expect(projectTerminalRuntimeRemoteControlLog({
-      category: 'terminal.remote-control.register',
-      event: 'register-completed',
-      scope: {moduleName: 'unrelated.module'},
-      security: {containsSensitiveRaw: false},
-    })).toBeUndefined();
-    expect(projectTerminalRuntimeRemoteControlLog({
-      category: 'terminal.remote-control.register',
-      event: 'unapproved-event',
-      scope: {moduleName: 'kernel.base.terminal-data-client'},
-      security: {containsSensitiveRaw: false},
-    })).toBeUndefined();
-    expect(projectTerminalRuntimeRemoteControlLog({
-      category: 'terminal.remote-control.register',
-      event: 'register-completed',
-      scope: {moduleName: 'kernel.base.terminal-data-client'},
-      security: {containsSensitiveRaw: false, maskingMode: 'unverified'},
-    })).toBeUndefined();
+    expect(
+      projectTerminalRuntimeRemoteControlLog({
+        category: 'terminal.remote-control.register',
+        event: 'register-completed',
+        scope: {moduleName: 'unrelated.module'},
+        security: {containsSensitiveRaw: false},
+      }),
+    ).toBeUndefined();
+    expect(
+      projectTerminalRuntimeRemoteControlLog({
+        category: 'terminal.remote-control.register',
+        event: 'unapproved-event',
+        scope: {moduleName: 'kernel.base.terminal-data-client'},
+        security: {containsSensitiveRaw: false},
+      }),
+    ).toBeUndefined();
+    expect(
+      projectTerminalRuntimeRemoteControlLog({
+        category: 'terminal.remote-control.register',
+        event: 'register-completed',
+        scope: {moduleName: 'kernel.base.terminal-data-client'},
+        security: {containsSensitiveRaw: false, maskingMode: 'unverified'},
+      }),
+    ).toBeUndefined();
   });
 
   it('preserves whitelisted endpoint, screen and gesture failure facts without payloads', () => {
@@ -400,13 +454,15 @@ describe('browser network diagnostics', () => {
       generation: 9,
     });
 
-    expect(projectTerminalRuntimeRemoteControlLog({
-      category: 'terminal.remote-control',
-      event: 'remote-control.report-failed',
-      scope: {moduleName: 'kernel.base.remote-control'},
-      data: {sessionId: 'session-2', state: 'ENDED', dispatchStatus: 'completed'},
-      security: {containsSensitiveRaw: false, maskingMode: 'masked'},
-    })).toMatchObject({state: 'ENDED', dispatchStatus: 'completed'});
+    expect(
+      projectTerminalRuntimeRemoteControlLog({
+        category: 'terminal.remote-control',
+        event: 'remote-control.report-failed',
+        scope: {moduleName: 'kernel.base.remote-control'},
+        data: {sessionId: 'session-2', state: 'ENDED', dispatchStatus: 'completed'},
+        security: {containsSensitiveRaw: false, maskingMode: 'masked'},
+      }),
+    ).toMatchObject({state: 'ENDED', dispatchStatus: 'completed'});
   });
 
   it.each([
@@ -497,30 +553,36 @@ describe('browser network diagnostics', () => {
     expect(JSON.stringify(endpointFailure)).not.toContain('private-host');
     expect(JSON.stringify(endpointFailure)).not.toContain('private-token');
     expect(JSON.stringify(endpointFailure)).not.toContain('private error text');
-    expect(projectTerminalRuntimeRemoteControlLog({
-      category: 'terminal.automation.remote-control',
-      event: 'room.connect.failed',
-      scope: {moduleName: 'unrelated.module'},
-      data: {runId: 'run-remote-1'},
-      security: {containsSensitiveRaw: false, maskingMode: 'masked'},
-    })).toBeUndefined();
-    expect(projectTerminalRuntimeRemoteControlLog({
-      category: 'terminal.automation.remote-control',
-      event: 'room.connect.failed',
-      scope: {moduleName: 'ui.integration.sample-wallpaper-console.test-expo'},
-      data: {runId: 'run-remote-2', errorCode: 'LIVEKIT_TIMEOUT'},
-      security: {containsSensitiveRaw: false, maskingMode: 'masked'},
-    })).toMatchObject({
+    expect(
+      projectTerminalRuntimeRemoteControlLog({
+        category: 'terminal.automation.remote-control',
+        event: 'room.connect.failed',
+        scope: {moduleName: 'unrelated.module'},
+        data: {runId: 'run-remote-1'},
+        security: {containsSensitiveRaw: false, maskingMode: 'masked'},
+      }),
+    ).toBeUndefined();
+    expect(
+      projectTerminalRuntimeRemoteControlLog({
+        category: 'terminal.automation.remote-control',
+        event: 'room.connect.failed',
+        scope: {moduleName: 'ui.integration.sample-wallpaper-console.test-expo'},
+        data: {runId: 'run-remote-2', errorCode: 'LIVEKIT_TIMEOUT'},
+        security: {containsSensitiveRaw: false, maskingMode: 'masked'},
+      }),
+    ).toMatchObject({
       moduleName: 'ui.integration.sample-wallpaper-console.test-expo',
       runId: 'run-remote-2',
       errorCode: 'LIVEKIT_TIMEOUT',
     });
-    expect(projectTerminalRuntimeRemoteControlLog({
-      category: 'terminal.remote-control',
-      event: 'room.connect.failed',
-      scope: {moduleName: 'ui.integration.sample-console.test-expo'},
-      data: {runId: 'run-remote-1'},
-      security: {containsSensitiveRaw: false, maskingMode: 'masked'},
-    })).toBeUndefined();
+    expect(
+      projectTerminalRuntimeRemoteControlLog({
+        category: 'terminal.remote-control',
+        event: 'room.connect.failed',
+        scope: {moduleName: 'ui.integration.sample-console.test-expo'},
+        data: {runId: 'run-remote-1'},
+        security: {containsSensitiveRaw: false, maskingMode: 'masked'},
+      }),
+    ).toBeUndefined();
   });
 });

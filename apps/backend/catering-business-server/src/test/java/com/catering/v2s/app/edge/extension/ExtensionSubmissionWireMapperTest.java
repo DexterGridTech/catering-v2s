@@ -3,6 +3,7 @@ package com.catering.v2s.app.edge.extension;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.catering.v2s.app.edge.problem.InvalidEdgeRequestException;
 import com.catering.v2s.extension.api.ExtensionSubmission;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -24,19 +25,13 @@ class ExtensionSubmissionWireMapperTest {
     }
 
     @Test
-    void preservesLegacyFieldListPayload() throws Exception {
-        ExtensionSubmission result = ExtensionSubmissionWireMapper.toSubmission(
-                JSON.readTree("[{\"fieldKey\":\"remark\",\"valueJson\":\"\\\"test\\\"\",\"mode\":\"SET\"}]"));
-
-        assertEquals(
-                List.of(new ExtensionSubmission.ExtensionFieldValue(
-                        "remark", "\"test\"", ExtensionSubmission.Mode.SET)),
-                result.fields());
-    }
-
-    @Test
-    void rejectsMalformedPayloadShape() throws Exception {
+    void rejectsLegacyArrayPayloadAndMalformedShapes() throws Exception {
         assertThrows(
-                IllegalArgumentException.class, () -> ExtensionSubmissionWireMapper.toSubmission(JSON.readTree("[1]")));
+                InvalidEdgeRequestException.class,
+                () -> ExtensionSubmissionWireMapper.toSubmission(
+                        JSON.readTree("[{\"fieldKey\":\"remark\",\"valueJson\":\"\\\"test\\\"\",\"mode\":\"SET\"}]")));
+        assertThrows(
+                InvalidEdgeRequestException.class,
+                () -> ExtensionSubmissionWireMapper.toSubmission(JSON.readTree("[1]")));
     }
 }

@@ -813,7 +813,7 @@ final class P2ReadConnectionScopeScenarios {
                         "alias", "CAL-BRAND",
                         "remark", "performance calibration",
                         "expectedVersion", 1,
-                        "extensionValues", List.of()),
+                        "extensionValues", Map.of()),
                 headers("calibration-brand-update-" + UUID.randomUUID()),
                 PROBE_STATUSES);
         context.patch(
@@ -829,7 +829,7 @@ final class P2ReadConnectionScopeScenarios {
                         "unifiedSocialCreditCode", "91310000CALIBRATION",
                         "remark", "performance calibration",
                         "expectedVersion", 1,
-                        "extensionValues", List.of()),
+                        "extensionValues", Map.of()),
                 headers("calibration-tenant-update-" + UUID.randomUUID()),
                 PROBE_STATUSES);
         context.patch(
@@ -868,7 +868,7 @@ final class P2ReadConnectionScopeScenarios {
                         "unifiedSocialCreditCode", "91310000HEADCAL",
                         "remark", "performance calibration",
                         "expectedVersion", 1,
-                        "extensionValues", List.of()),
+                        "extensionValues", Map.of()),
                 headers("calibration-head-company-update-" + UUID.randomUUID()),
                 PROBE_STATUSES);
 
@@ -920,7 +920,7 @@ final class P2ReadConnectionScopeScenarios {
                         "items",
                         List.of(Map.of("code", "CAL-PERF-ITEM", "name", "Calibration item")),
                         "extensionValues",
-                        List.of()),
+                        Map.of()),
                 Set.of(201));
 
         host.ensurePlatformAdministrator();

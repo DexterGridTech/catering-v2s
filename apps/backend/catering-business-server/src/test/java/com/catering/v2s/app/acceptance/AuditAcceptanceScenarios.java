@@ -121,7 +121,7 @@ final class AuditAcceptanceScenarios {
             updateStoreBody.put("name", "Acceptance audit store " + index);
             updateStoreBody.put("headCompanyId", null);
             updateStoreBody.put("notes", "operations-page-boundary-" + index);
-            updateStoreBody.put("extensionValues", List.of());
+            updateStoreBody.put("extensionValues", Map.of());
             updateStoreBody.put("extensionRuleRevision", 0);
             updateStoreBody.put("expectedVersion", storeVersion);
             updateStoreBody.put("operatingRuleSwitches", acceptanceStoreOperatingRuleSwitches());

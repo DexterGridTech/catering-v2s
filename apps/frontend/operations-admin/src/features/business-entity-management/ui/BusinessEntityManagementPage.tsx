@@ -40,7 +40,7 @@ import {BusinessEntityEditDrawer} from './BusinessEntityEditDrawer';
 import {BusinessEntityStatusModal} from './BusinessEntityStatusModal';
 import {HeadCompanyBrandAuthorizationDrawer} from './HeadCompanyBrandAuthorizationDrawer';
 import {businessEntityLifecycleLabels} from './businessEntityLifecycle';
-import {extensionListAndSearchColumns, extensionQueryValues} from '../../extension-fields/model/extensionList';
+import {extensionListAndSearchColumns, extensionQueryValues} from '../../extension-fields';
 import {
   extensionListInvalidSummaryTestId,
   extensionListRecoveryNoticeTestId,

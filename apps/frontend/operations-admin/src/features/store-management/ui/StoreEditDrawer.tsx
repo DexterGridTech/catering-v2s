@@ -34,25 +34,22 @@ import {useOrganizationCandidates} from '../../../app/queries/useOrganizationCan
 import {storeManagementTestIds} from '../storeManagementTestIds';
 import {StoreOperatingRuleTree, completeStoreOperatingRuleValues} from './StoreOperatingRuleTree';
 import {
-  extensionValuesForGeneratedRequest,
-  hydrateOrganizationExtensionValues,
-  serializeOrganizationExtensionValues,
-  type OrganizationExtensionFormValues,
-} from '../../organization-structure/model/organizationExtensionValues';
+  enabledExtensionFields,
+  hydrateExtensionFormValues,
+  serializeExtensionFormValues,
+  type ExtensionFormValues,
+} from '../../extension-fields';
 
 type Values = {
   name: string;
   headCompanyId?: string;
   notes?: string;
-  extensionValues?: OrganizationExtensionFormValues;
+  extensionValues?: ExtensionFormValues;
   operatingRuleSwitches?: OrganizationStoreOperatingRuleValues;
 };
 
 function extensionFields(definition?: ExtensionDefinition) {
-  return (definition?.definitions ?? [])
-    .filter(field => field.status !== 'DISABLED')
-    .sort((left, right) => (left.displayOrder ?? 0) - (right.displayOrder ?? 0))
-    .map(field => {
+  return enabledExtensionFields(definition).map(field => {
       const control =
         field.type === 'NUMBER' ? (
           <InputNumber style={{width: '100%'}} {...testId(storeManagementTestIds.editExtension(field.key))} />
@@ -110,6 +107,10 @@ export function StoreEditDrawer({
       if (!next) onClose();
     },
     dirtyMessage: '已修改的门店资料不会保存。',
+    dirtyGuardTestIds: {
+      confirm: testId(storeManagementTestIds.editDirtyConfirm),
+      cancel: testId(storeManagementTestIds.editDirtyCancel),
+    },
     idempotencyKey: true,
     diagnosticOperationId: OPERATIONS_ADMIN_OPERATION_IDS.updateOperationsOrganizationStore,
   });
@@ -150,7 +151,7 @@ export function StoreEditDrawer({
       name: store.name,
       headCompanyId: store.headCompany?.id,
       notes: store.notes ?? undefined,
-      extensionValues: hydrateOrganizationExtensionValues(definition.currentData, store.extensionValues),
+      extensionValues: hydrateExtensionFormValues(definition.currentData, store.extensionValues),
       operatingRuleSwitches: completeStoreOperatingRuleValues(store.operatingRuleSwitches),
     });
     if (storeChanged) {
@@ -183,12 +184,10 @@ export function StoreEditDrawer({
             name: value.name.trim(),
             headCompanyId: value.headCompanyId || null,
             notes: value.notes?.trim() || null,
-            extensionValues: extensionValuesForGeneratedRequest(
-              serializeOrganizationExtensionValues(
-                definition.currentData,
-                value.extensionValues,
-                store.extensionValues,
-              ),
+            extensionValues: serializeExtensionFormValues(
+              definition.currentData,
+              value.extensionValues,
+              store.extensionValues,
             ),
             extensionRuleRevision: store.extensionRuleRevision,
             expectedVersion: store.revision,

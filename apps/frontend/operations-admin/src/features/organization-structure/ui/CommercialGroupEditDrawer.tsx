@@ -11,15 +11,13 @@ import {OPERATIONS_ADMIN_OPERATION_IDS, type CommercialGroupRoot} from '../../..
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {issue, organizationGroupEditLabel, type HierarchyRow} from './organizationStructureShared';
 import {
-  extensionValuesForGeneratedRequest,
-  hydrateOrganizationExtensionValues,
-  OrganizationExtensionFields,
-  serializeOrganizationExtensionValues,
-  type OrganizationExtensionFormValues,
-  useOrganizationExtensionDefinition,
-} from './OrganizationExtensionFields';
+  hydrateExtensionFormValues,
+  serializeExtensionFormValues,
+  type ExtensionFormValues,
+} from '../../extension-fields';
+import {OrganizationExtensionFields, useOrganizationExtensionDefinition} from './OrganizationExtensionFields';
 
-type FormValues = {code: string; name: string; extensionValues?: OrganizationExtensionFormValues};
+type FormValues = {code: string; name: string; extensionValues?: ExtensionFormValues};
 
 export function CommercialGroupEditDrawer({
   group,
@@ -55,7 +53,7 @@ export function CommercialGroupEditDrawer({
     form.setFieldsValue({
       code: group.code,
       name: group.name,
-      extensionValues: hydrateOrganizationExtensionValues(definition.data, group.extensionValues),
+      extensionValues: hydrateExtensionFormValues(definition.data, group.extensionValues),
     });
     setProblem(undefined);
     lifecycle.reset();
@@ -73,9 +71,7 @@ export function CommercialGroupEditDrawer({
           body: {
             groupCode: values.code.trim(),
             groupName: values.name.trim(),
-            extensionValues: extensionValuesForGeneratedRequest(
-              serializeOrganizationExtensionValues(definition.data, values.extensionValues, group.extensionValues),
-            ),
+            extensionValues: serializeExtensionFormValues(definition.data, values.extensionValues, group.extensionValues),
             expectedVersion: group.revision,
           },
           headers: {'Idempotency-Key': lifecycle.getIdempotencyKey()},

@@ -1084,6 +1084,11 @@ test('DEV start terminal evidence uses explicit phase boundaries', () => {
   assert.match(runnerSource, /cleanupEvidence: \{remoteRoot: remoteRootCleanupEvidence\}/);
 });
 
+test('DEV start manifest records the complete r5-full seed target identity', () => {
+  assert.match(runnerSource, /kind: 'r5-dev-run-manifest',[\s\S]*?runId,[\s\S]*?profile: env\.environment\.V2S_DEV_PROFILE,[\s\S]*?namespace: env\.namespace,/);
+  assert.match(runnerSource, /assetBaseUrl: `http:\/\/127\.0\.0\.1:\$\{tunnelPorts\.asset\}`,[\s\S]*?assetRoot: env\.environment\.V2S_DEV_ASSET_ROOT,/);
+});
+
 test('remote Java binds the selected HTTP port instead of assuming one shared listener', () => {
   assert.match(runnerSource, /httpPort = env\.environment\.V2S_DEV_REMOTE_HTTP_PORT/);
   assert.match(runnerSource, /SERVER_PORT: String\(httpPort\)/);

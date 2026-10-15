@@ -22,11 +22,7 @@ import {
 } from '../../../app/catalog/generatedAdminCatalog';
 import type {OperationsPageContext} from '../../../app/routing/model';
 import type {BusinessEntity, BusinessEntityKind} from './BusinessEntityDetailDrawer';
-import {
-  extensionValuesForGeneratedRequest,
-  serializeOrganizationExtensionValues,
-  type OrganizationExtensionFormValues,
-} from '../../organization-structure/model/organizationExtensionValues';
+import {enabledExtensionFields, serializeExtensionFormValues, type ExtensionFormValues} from '../../extension-fields';
 import {canManageBusinessEntity} from './businessEntityLifecycle';
 
 type BusinessEntityFormValues = {
@@ -36,7 +32,7 @@ type BusinessEntityFormValues = {
   legalName?: string;
   unifiedSocialCreditCode?: string;
   remark?: string;
-  extensionValues?: OrganizationExtensionFormValues;
+  extensionValues?: ExtensionFormValues;
 };
 
 export type BusinessEntityEditDrawerProps = {
@@ -74,11 +70,8 @@ function requiredValue(value?: string) {
   return value?.trim() ?? '';
 }
 
-function enabledExtensionFields(definition?: ExtensionDefinition) {
-  return (definition?.definitions ?? [])
-    .filter(field => field.status !== 'DISABLED')
-    .sort((left, right) => (left.displayOrder ?? 0) - (right.displayOrder ?? 0))
-    .map(field => {
+function renderExtensionFields(definition?: ExtensionDefinition) {
+  return enabledExtensionFields(definition).map(field => {
       const control =
         field.type === 'NUMBER' ? (
           <InputNumber style={{width: '100%'}} />
@@ -158,8 +151,10 @@ export function BusinessEntityEditDrawer({
     setCommandProblem(undefined);
     try {
       const headers = {'Idempotency-Key': lifecycle.getIdempotencyKey()};
-      const extensionValues = extensionValuesForGeneratedRequest(
-        serializeOrganizationExtensionValues(definitionQuery.data, value.extensionValues, entity.extensionValues),
+      const extensionValues = serializeExtensionFormValues(
+        definitionQuery.data,
+        value.extensionValues,
+        entity.extensionValues,
       );
       const entityReadback =
         kind === 'BRAND'
@@ -310,7 +305,7 @@ export function BusinessEntityEditDrawer({
         <Form.Item name="remark" label="备注">
           <Input.TextArea rows={3} maxLength={2000} />
         </Form.Item>
-        {enabledExtensionFields(definitionQuery.data)}
+        {renderExtensionFields(definitionQuery.data)}
       </Form>
     </Drawer>
   );

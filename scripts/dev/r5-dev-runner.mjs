@@ -3093,6 +3093,8 @@ async function start() {
           kind: 'r5-dev-run-manifest',
           createdAtEpochMillis: Date.now(),
           runId,
+          profile: env.environment.V2S_DEV_PROFILE,
+          namespace: env.namespace,
           topology: {
             java: 'REMOTE_TRUSTED_HOST',
             tds: 'REMOTE_TRUSTED_HOST',
@@ -3120,6 +3122,7 @@ async function start() {
             two: `ws://127.0.0.1:${env.environment.V2S_DEV_REMOTE_TDS_ENTRY_TWO_PORT}`,
           },
           assetBaseUrl: `http://127.0.0.1:${tunnelPorts.asset}`,
+          assetRoot: env.environment.V2S_DEV_ASSET_ROOT,
           seedEventsPath,
           dbOperationsPath,
           statementDictionaryPath,

@@ -1316,20 +1316,11 @@ public class CatalogWorkbenchReadService {
                     .put("owner", "catalog");
         setNullableJson(result, "profile", preparationProfile);
         result.putObject("skuVariation")
-                .put("varies", skuFacts.totalCount() > 0 && skuPreparationDiffers(sections, preparationProfile));
+                .put(
+                        "varies",
+                        skuFacts.totalCount() > 0
+                                && CatalogOwnerValueSupport.skuPreparationDiffers(sections, preparationProfile));
         return result;
-    }
-
-    private boolean skuPreparationDiffers(JsonNode sections, JsonNode itemProfile) {
-        JsonNode normalizedItem = itemProfile == null || itemProfile.isNull() ? null : itemProfile;
-        JsonNode skus = sections.path("skus");
-        if (!skus.isArray()) return false;
-        for (JsonNode sku : skus) {
-            JsonNode effective = sku.path("effectivePreparation");
-            JsonNode normalizedSku = effective.isMissingNode() || effective.isNull() ? null : effective;
-            if (!java.util.Objects.equals(normalizedItem, normalizedSku)) return true;
-        }
-        return false;
     }
 
     /** Product rule: the first ordered item-image relation is the primary image. */

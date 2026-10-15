@@ -29,6 +29,10 @@ const nodeTestFiles = Object.freeze([
   'scripts/dev/seed-http-client.test.mjs',
   'scripts/dev/store-terminal-seed-executor.test.mjs',
   'scripts/dev/terminal-fixture-state.test.mjs',
+  'scripts/dev/r5-fixture-contract.test.mjs',
+  'scripts/dev/r5-livekit-resident.test.mjs',
+  'scripts/dev/terminal-update-seed-executor.test.mjs',
+  'scripts/dev/terminal-update-seed-plan.test.mjs',
   'scripts/test/backend-acceptance-structure.test.mjs',
   'scripts/test/backend-performance-event-verifier.test.mjs',
   'scripts/test/backend-performance-operation-counts.test.mjs',
@@ -65,6 +69,7 @@ const nodeTestFiles = Object.freeze([
   'scripts/test/terminal-client-dev-acceptance.test.mjs',
   'scripts/test/terminal-update-artifact.test.mjs',
   'scripts/test/terminal-automation.test.mjs',
+  'scripts/test/terminal-remote-control-protocol.test.mjs',
   'scripts/test/test-health-entry-runner.test.mjs',
 ]);
 

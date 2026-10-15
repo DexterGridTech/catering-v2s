@@ -10,7 +10,7 @@ import {CatalogWorkbenchContent} from '../CatalogWorkbenchContent';
 import {CatalogWorkbenchTaskSurfaces} from '../CatalogWorkbenchTaskSurfaces';
 import {useCatalogWorkbenchTaskCoordinator} from './useCatalogWorkbenchTaskCoordinator';
 import {useCatalogWorkbenchReadModel} from './useCatalogWorkbenchReadModel';
-import {useStoreOperatingRuleGate} from '../../../store-operating-rules/model/useStoreOperatingRuleGate';
+import {useStoreOperatingRuleGate} from '../../../store-operating-rules';
 
 export type CatalogSurface = 'store' | 'brand';
 

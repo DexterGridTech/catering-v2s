@@ -37,8 +37,8 @@ import {StoreCreateDrawer} from './StoreCreateDrawer';
 import {StoreDetailDrawer} from './StoreDetailDrawer';
 import {StoreEditDrawer} from './StoreEditDrawer';
 import {StoreStatusModal} from './StoreStatusModal';
-import {extensionListAndSearchColumns, extensionQueryValues} from '../../extension-fields/model/extensionList';
-import {organizationStoreStatusLabels} from '../../organization-structure/model/organizationStatus';
+import {extensionListAndSearchColumns, extensionQueryValues} from '../../extension-fields';
+import {organizationStoreStatusLabels} from '../../organization-structure';
 import {
   extensionListInvalidSummaryTestId,
   extensionListRecoveryNoticeTestId,

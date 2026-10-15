@@ -3,7 +3,7 @@ import {useEffect, useState} from 'react';
 import {operationsClient, operationsProblemOf} from '../../../app/api/OperationsTransport';
 import type {OrganizationStore} from '../../../app/api/generated/operations-edge';
 import type {OperationsPageProps} from '../../../app/routing/model';
-import {toggleOrganizationStoreStatus} from '../../organization-structure/model/organizationStatus';
+import {toggleOrganizationStoreStatus} from '../../organization-structure';
 
 type Props = {
   store?: OrganizationStore;

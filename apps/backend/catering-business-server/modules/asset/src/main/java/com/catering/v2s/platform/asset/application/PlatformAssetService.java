@@ -66,6 +66,7 @@ public class PlatformAssetService
     private static final long MAX_SALES_MENU_IMAGE_BYTES = 2L * 1024 * 1024;
     /** Video is deliberately not capped at the image/logo limit; future approved video usage stays streaming. */
     private static final long MAX_VIDEO_BYTES = 512L * 1024 * 1024;
+
     private static final long MAX_TERMINAL_UPDATE_PACKAGE_BYTES = 256L * 1024 * 1024;
 
     private static final String SALES_MENU_IMAGE_USAGE = SalesMenuAssetUsage.SALES_MENU_ITEM_IMAGE.name();
@@ -98,7 +99,10 @@ public class PlatformAssetService
             TimeProvider time,
             AssetObjectStorage objects,
             PlatformTransactionManager transactions) {
-        this(persistence, time, objects,
+        this(
+                persistence,
+                time,
+                objects,
                 objects instanceof TerminalUpdatePrivateObjectStorage privateStorage ? privateStorage : null,
                 transactions);
     }
@@ -127,12 +131,20 @@ public class PlatformAssetService
             InputStream content,
             String idempotencyKey,
             String requestId) {
-        if (workspaceUuid == null || groupWorkspaceKey == null || groupWorkspaceKey.isBlank()
-                || fileName == null || !fileName.toLowerCase(java.util.Locale.ROOT).endsWith(".zip")
-                || expectedSha256 == null || !expectedSha256.matches("[a-f0-9]{64}")
-                || idempotencyKey == null || idempotencyKey.length() < 16 || idempotencyKey.length() > 128
-                || declaredSizeBytes < 4 || declaredSizeBytes > MAX_TERMINAL_UPDATE_PACKAGE_BYTES
-                || content == null || privateObjects == null) throw new AssetInputInvalidException();
+        if (workspaceUuid == null
+                || groupWorkspaceKey == null
+                || groupWorkspaceKey.isBlank()
+                || fileName == null
+                || !fileName.toLowerCase(java.util.Locale.ROOT).endsWith(".zip")
+                || expectedSha256 == null
+                || !expectedSha256.matches("[a-f0-9]{64}")
+                || idempotencyKey == null
+                || idempotencyKey.length() < 16
+                || idempotencyKey.length() > 128
+                || declaredSizeBytes < 4
+                || declaredSizeBytes > MAX_TERMINAL_UPDATE_PACKAGE_BYTES
+                || content == null
+                || privateObjects == null) throw new AssetInputInvalidException();
         StageResult staged = stageContentResult(
                 "TERMINAL_UPDATE_PACKAGE",
                 "application/zip",
@@ -161,10 +173,11 @@ public class PlatformAssetService
             UUID workspaceUuid, String groupWorkspaceKey, UUID assetRef, boolean requireStaged) {
         if (workspaceUuid == null || groupWorkspaceKey == null || assetRef == null || privateObjects == null)
             throw new AssetClaimRejectedException();
-        PlatformAssetPersistence.TerminalUpdateAsset asset = persistence.readTerminalUpdateAsset(
-                assetRef, workspaceUuid, groupWorkspaceKey);
+        PlatformAssetPersistence.TerminalUpdateAsset asset =
+                persistence.readTerminalUpdateAsset(assetRef, workspaceUuid, groupWorkspaceKey);
         String expectedStatus = requireStaged ? "STAGED" : "ACTIVE";
-        if (asset == null || !expectedStatus.equals(asset.status())
+        if (asset == null
+                || !expectedStatus.equals(asset.status())
                 || !privateObjects.privateBucketName().equals(asset.bucketName())
                 || !privateObjects.ownsPrivateObjectKey(asset.objectKey())) throw new AssetClaimRejectedException();
         return new TerminalUpdateAssetStorage.PackageContent(
@@ -175,13 +188,18 @@ public class PlatformAssetService
     @Transactional
     public void claimTerminalUpdatePackage(
             UUID workspaceUuid, String groupWorkspaceKey, UUID assetRef, String bindGrant, String expectedSha256) {
-        if (workspaceUuid == null || groupWorkspaceKey == null || assetRef == null
-                || bindGrant == null || bindGrant.isBlank() || expectedSha256 == null
+        if (workspaceUuid == null
+                || groupWorkspaceKey == null
+                || assetRef == null
+                || bindGrant == null
+                || bindGrant.isBlank()
+                || expectedSha256 == null
                 || !expectedSha256.matches("[a-f0-9]{64}")) throw new AssetClaimRejectedException();
         long now = time.currentEpochMillis();
         String grantHash = sha256(bindGrant.getBytes(StandardCharsets.UTF_8));
-        if (persistence.claimTerminalUpdateAsset(now, assetRef, workspaceUuid, groupWorkspaceKey,
-                expectedSha256, grantHash) != 1) throw new AssetClaimRejectedException();
+        if (persistence.claimTerminalUpdateAsset(
+                        now, assetRef, workspaceUuid, groupWorkspaceKey, expectedSha256, grantHash)
+                != 1) throw new AssetClaimRejectedException();
         persistence.markStagedBindGrantConsumed(now, assetRef, grantHash);
     }
 
@@ -189,8 +207,11 @@ public class PlatformAssetService
     @Transactional
     public void releaseTerminalUpdatePackage(
             UUID workspaceUuid, String groupWorkspaceKey, UUID assetRef, String bindGrant) {
-        if (workspaceUuid == null || groupWorkspaceKey == null || assetRef == null
-                || bindGrant == null || bindGrant.isBlank()) throw new AssetClaimRejectedException();
+        if (workspaceUuid == null
+                || groupWorkspaceKey == null
+                || assetRef == null
+                || bindGrant == null
+                || bindGrant.isBlank()) throw new AssetClaimRejectedException();
         long now = time.currentEpochMillis();
         String grantHash = sha256(bindGrant.getBytes(StandardCharsets.UTF_8));
         if (persistence.releaseTerminalUpdateStage(now, assetRef, workspaceUuid, groupWorkspaceKey, grantHash) != 1)
@@ -199,50 +220,23 @@ public class PlatformAssetService
     }
 
     private MaterializedContent materializeTerminalUpdatePackage(long declaredSizeBytes, InputStream source) {
-        Path file;
-        try {
-            file = Files.createTempFile("catering-v2s-terminal-update-", ".zip");
-        } catch (IOException failure) {
-            throw new AssetStorageUnavailableException("local.upload-materialization", failure);
-        }
-        long size = 0;
-        byte[] prefix = new byte[4];
-        int prefixLength = 0;
-        MessageDigest digest;
-        try {
-            digest = MessageDigest.getInstance("SHA-256");
-        } catch (Exception failure) {
-            deleteQuietly(file);
-            throw new IllegalStateException(failure);
-        }
-        try (InputStream input = new BufferedInputStream(source); var output = Files.newOutputStream(file)) {
-            byte[] buffer = new byte[8192];
-            for (int read; (read = input.read(buffer)) != -1;) {
-                size += read;
-                if (size > MAX_TERMINAL_UPDATE_PACKAGE_BYTES) throw new AssetInputInvalidException();
-                int copied = Math.min(read, prefix.length - prefixLength);
-                if (copied > 0) {
-                    System.arraycopy(buffer, 0, prefix, prefixLength, copied);
-                    prefixLength += copied;
-                }
-                digest.update(buffer, 0, read);
-                output.write(buffer, 0, read);
-            }
-        } catch (AssetInputInvalidException failure) {
-            deleteQuietly(file);
-            throw failure;
-        } catch (IOException failure) {
-            deleteQuietly(file);
-            throw new AssetStorageUnavailableException("local.upload-materialization", failure);
-        }
-        boolean zipSignature = prefixLength == 4 && prefix[0] == 'P' && prefix[1] == 'K'
-                && ((prefix[2] == 3 && prefix[3] == 4) || (prefix[2] == 5 && prefix[3] == 6)
-                    || (prefix[2] == 7 && prefix[3] == 8));
+        MaterializedStream materialized = materializeStream(
+                source, MAX_TERMINAL_UPDATE_PACKAGE_BYTES, 4, "catering-v2s-terminal-update-", ".zip");
+        Path file = materialized.path();
+        long size = materialized.sizeBytes();
+        byte[] prefix = materialized.prefix();
+        int prefixLength = materialized.prefixLength();
+        boolean zipSignature = prefixLength == 4
+                && prefix[0] == 'P'
+                && prefix[1] == 'K'
+                && ((prefix[2] == 3 && prefix[3] == 4)
+                        || (prefix[2] == 5 && prefix[3] == 6)
+                        || (prefix[2] == 7 && prefix[3] == 8));
         if (size != declaredSizeBytes || !zipSignature) {
             deleteQuietly(file);
             throw new AssetInputInvalidException();
         }
-        return new MaterializedContent(file, size, HexFormat.of().formatHex(digest.digest()));
+        return new MaterializedContent(file, size, materialized.sha256());
     }
 
     /**
@@ -460,8 +454,19 @@ public class PlatformAssetService
             SalesMenuAssetTarget salesMenuTarget,
             boolean privatePackage,
             String fileName) {
-        return stageContentResult(usage, contentType, declaredSizeBytes, content, idempotencyKey, workspaceUuid,
-                groupWorkspaceKey, expectedDigest, salesMenuTarget, privatePackage, fileName, null);
+        return stageContentResult(
+                usage,
+                contentType,
+                declaredSizeBytes,
+                content,
+                idempotencyKey,
+                workspaceUuid,
+                groupWorkspaceKey,
+                expectedDigest,
+                salesMenuTarget,
+                privatePackage,
+                fileName,
+                null);
     }
 
     private StageResult stageContentResult(
@@ -477,7 +482,8 @@ public class PlatformAssetService
             boolean privatePackage,
             String fileName,
             String diagnosticRequestId) {
-        if (!(privatePackage ? validTerminalPackageContent(usage, contentType, fileName)
+        if (!(privatePackage
+                        ? validTerminalPackageContent(usage, contentType, fileName)
                         : validUsageContentType(usage, contentType))
                 || content == null
                 || declaredSizeBytes <= 0
@@ -524,29 +530,28 @@ public class PlatformAssetService
         // DataSourceTransactionManager transaction does not return that connection to its pool.
         boolean uploadedByThisAttempt = false;
         try {
-            uploadedByThisAttempt = ensurePhysicalObject(
-                    objectKey, contentType, materialized, privatePackage, diagnosticRequestId);
+            uploadedByThisAttempt =
+                    ensurePhysicalObject(objectKey, contentType, materialized, privatePackage, diagnosticRequestId);
             return runTerminalUpdateStage(
-                    diagnosticRequestId,
-                    "METADATA_WRITE",
-                    declaredSizeBytes,
-                    () -> new TransactionTemplate(transactions).execute(status -> writeStagedContent(
-                            usage,
-                            contentType,
-                            idempotencyKey,
-                            workspaceUuid,
-                            groupWorkspaceKey,
-                            materialized,
-                            requestHash,
-                            receiptScope,
-                            assetRef,
-                            digest,
-                            objectKey,
-                            bucketName,
-                            grant,
-                            now,
-                            expires,
-                            salesMenuTarget)));
+                    diagnosticRequestId, "METADATA_WRITE", declaredSizeBytes, () -> new TransactionTemplate(
+                                    transactions)
+                            .execute(status -> writeStagedContent(
+                                    usage,
+                                    contentType,
+                                    idempotencyKey,
+                                    workspaceUuid,
+                                    groupWorkspaceKey,
+                                    materialized,
+                                    requestHash,
+                                    receiptScope,
+                                    assetRef,
+                                    digest,
+                                    objectKey,
+                                    bucketName,
+                                    grant,
+                                    now,
+                                    expires,
+                                    salesMenuTarget)));
         } catch (RuntimeException failure) {
             scheduleUnreferencedUploadCleanup(bucketName, objectKey, uploadedByThisAttempt, privatePackage);
             throw failure;
@@ -1388,19 +1393,35 @@ public class PlatformAssetService
 
     private static MaterializedContent materializeAndValidate(
             String usage, String contentType, long declaredSizeBytes, InputStream source) {
+        MaterializedStream materialized =
+                materializeStream(source, maxBytes(usage, contentType), 8192, "catering-v2s-asset-", ".upload");
+        Path file = materialized.path();
+        if (materialized.sizeBytes() != declaredSizeBytes
+                || materialized.sizeBytes() == 0
+                || !matchesMagic(contentType, materialized.prefix(), materialized.prefixLength())
+                || (isImage(contentType) && !decodesImage(file))) {
+            deleteQuietly(file);
+            throw new AssetInputInvalidException();
+        }
+        return new MaterializedContent(file, materialized.sizeBytes(), materialized.sha256());
+    }
+
+    private static MaterializedStream materializeStream(
+            InputStream source, long maximumBytes, int prefixCapacity, String temporaryPrefix, String temporarySuffix) {
         Path file;
         try {
-            file = Files.createTempFile("catering-v2s-asset-", ".upload");
+            file = Files.createTempFile(temporaryPrefix, temporarySuffix);
         } catch (IOException failure) {
             throw new AssetStorageUnavailableException("local.upload-materialization", failure);
         }
         long size = 0;
-        byte[] prefix = new byte[8192];
+        byte[] prefix = new byte[prefixCapacity];
         int prefixLength = 0;
         MessageDigest digest;
         try {
             digest = MessageDigest.getInstance("SHA-256");
         } catch (Exception failure) {
+            deleteQuietly(file);
             throw new IllegalStateException(failure);
         }
         try (InputStream input = new BufferedInputStream(source);
@@ -1408,7 +1429,7 @@ public class PlatformAssetService
             byte[] buffer = new byte[8192];
             for (int read; (read = input.read(buffer)) != -1; ) {
                 size += read;
-                if (size > maxBytes(usage, contentType)) throw new AssetInputInvalidException();
+                if (size > maximumBytes) throw new AssetInputInvalidException();
                 int copied = Math.min(read, prefix.length - prefixLength);
                 if (copied > 0) {
                     System.arraycopy(buffer, 0, prefix, prefixLength, copied);
@@ -1424,14 +1445,7 @@ public class PlatformAssetService
             deleteQuietly(file);
             throw new AssetStorageUnavailableException("local.upload-materialization", failure);
         }
-        if (size != declaredSizeBytes
-                || size == 0
-                || !matchesMagic(contentType, prefix, prefixLength)
-                || (isImage(contentType) && !decodesImage(file))) {
-            deleteQuietly(file);
-            throw new AssetInputInvalidException();
-        }
-        return new MaterializedContent(file, size, HexFormat.of().formatHex(digest.digest()));
+        return new MaterializedStream(file, size, HexFormat.of().formatHex(digest.digest()), prefix, prefixLength);
     }
 
     /** Object storage can block; suspend any database transaction and its connection while it runs. */
@@ -1452,13 +1466,14 @@ public class PlatformAssetService
             if (exists) return false;
             if (privatePackage) {
                 runTerminalUpdateStage(diagnosticRequestId, "PRIVATE_OBJECT_PUT", materialized.sizeBytes(), () -> {
-                    storageAction("private-object.put", () -> privateObjects.putPrivate(
-                            objectKey, materialized.sizeBytes(), upload));
+                    storageAction(
+                            "private-object.put",
+                            () -> privateObjects.putPrivate(objectKey, materialized.sizeBytes(), upload));
                     return Boolean.TRUE;
                 });
             } else {
-                storageAction("object.put", () -> objects.put(
-                        objectKey, contentType, materialized.sizeBytes(), upload));
+                storageAction(
+                        "object.put", () -> objects.put(objectKey, contentType, materialized.sizeBytes(), upload));
             }
             return true;
         } catch (IOException failure) {
@@ -1466,8 +1481,7 @@ public class PlatformAssetService
         }
     }
 
-    private <T> T runTerminalUpdateStage(
-            String requestId, String stage, long byteSize, Supplier<T> action) {
+    private <T> T runTerminalUpdateStage(String requestId, String stage, long byteSize, Supplier<T> action) {
         if (requestId == null) return action.get();
         long startedAt = System.nanoTime();
         terminalUpdateDiagnostic(requestId, stage, "STARTED", 0, byteSize, null, false);
@@ -1476,8 +1490,14 @@ public class PlatformAssetService
             terminalUpdateDiagnostic(requestId, stage, "SUCCEEDED", elapsedMillis(startedAt), byteSize, null, false);
             return value;
         } catch (RuntimeException failure) {
-            terminalUpdateDiagnostic(requestId, stage, "FAILED", elapsedMillis(startedAt), byteSize,
-                    failure.getClass().getSimpleName(), true);
+            terminalUpdateDiagnostic(
+                    requestId,
+                    stage,
+                    "FAILED",
+                    elapsedMillis(startedAt),
+                    byteSize,
+                    failure.getClass().getSimpleName(),
+                    true);
             throw failure;
         }
     }
@@ -1938,6 +1958,8 @@ public class PlatformAssetService
     private record StageResult(StageReadback stage, AssetReadback asset) {}
 
     public record PublicAssetReference(String publicUrl, String contentType, String sha256) {}
+
+    private record MaterializedStream(Path path, long sizeBytes, String sha256, byte[] prefix, int prefixLength) {}
 
     private record MaterializedContent(Path path, long sizeBytes, String sha256) {}
 

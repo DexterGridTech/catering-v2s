@@ -1,11 +1,11 @@
 import {Alert, Descriptions, Drawer, Skeleton, Space} from 'antd';
+import {CloseOutlined} from '@ant-design/icons';
 import {
   AdminDetailActionLabel,
   AdminDetailActionMenu,
   adminDetailDescriptionsProps,
   adminDrawerSurfaceProps,
   displayFieldValue,
-  formatTypedExtensionValue,
   formatCanonicalDateTime,
   NameCodeText,
   testId,
@@ -19,6 +19,7 @@ import type {StoreContract} from '../../../app/api/generated/operations-edge';
 import type {OperationsPageProps} from '../../../app/routing/model';
 import {operationsAdminRtkRequest} from '../../../app/api/generated/operations-edge.rtk';
 import {OperationsAuditHistoryModal} from '../../audit-history';
+import {extensionDetailItems} from '../../extension-fields';
 import {operationsDetailDrawerTestIds} from '../../../app/automation/operationsDetailDrawerTestIds';
 
 type Props = {
@@ -72,14 +73,7 @@ export function ContractDetailDrawer({
     if (selected) latest.open(selected);
     else latest.close();
   }, [latest, selected]);
-  const extensionItems = [...(definitionQuery.currentData?.definitions ?? [])]
-    .filter(field => field.status !== 'DISABLED')
-    .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))
-    .map(field => ({
-      key: `extension-${field.key}`,
-      label: field.label,
-      children: formatTypedExtensionValue(selected?.extensionValues?.[field.key], field),
-    }));
+  const extensionItems = extensionDetailItems(definitionQuery.currentData, selected?.extensionValues);
   const closeThen = (next: (value: StoreContract) => void) => {
     if (!latest.target) return;
     const current = latest.target;
@@ -141,6 +135,7 @@ export function ContractDetailDrawer({
         size={640}
         destroyOnHidden
         maskClosable
+        closeIcon={<span {...testId(operationsDetailDrawerTestIds.contract.close)}><CloseOutlined /></span>}
         {...adminDrawerSurfaceProps}
         {...testId('operations-contract-detail-drawer')}
         extra={

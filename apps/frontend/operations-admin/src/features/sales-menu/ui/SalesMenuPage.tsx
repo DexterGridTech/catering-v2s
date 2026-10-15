@@ -69,12 +69,12 @@ import {
 } from '../model/salesMenuModel';
 import {useSalesMenuCommands} from '../model/useSalesMenuCommands';
 import {useSalesMenuReadModel} from '../model/useSalesMenuReadModel';
-import {accessKindLabels, orderKindLabels} from '../../business-channel/model/businessChannelCodeLabels';
+import {accessKindLabels, orderKindLabels} from '../../business-channel';
 import {salesMenuTestIds} from '../salesMenuTestIds';
 import {AssetPreview} from '../../../app/components/AssetPreview';
 import {SalesMenuTaskSurfaces} from './SalesMenuTaskSurfaces';
 import {OperationsStoreCatalogManagementDisabledSurface} from '../../../app/components/OperationsStoreCatalogManagementDisabledSurface';
-import {useStoreOperatingRuleGate} from '../../store-operating-rules/model/useStoreOperatingRuleGate';
+import {useStoreOperatingRuleGate} from '../../store-operating-rules';
 import {
   commandErrorMessage,
   formatOccurredAt,
