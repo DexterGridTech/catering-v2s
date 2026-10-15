@@ -2,6 +2,7 @@
 
 ## 当前结论
 
+- 本文件为累计记录；各旧章节中的 `NOT_RUN` 是形成当时的快照。当前 owner-CLEAR 差量与最新受管运行状态以文件末尾“当前 owner CLEAR 差量（2026-10-15）”为准。
 - 范围：按本批正式需求、详设/IA、计划、项目记忆与当前源码，对 CP-01～CP-06 的全批实施范围作整体静态三维核对，并处置首次全批盲审提出的 proof/documentation findings。
 - 主 agent 当前状态：CP-01、CP-02、CP-03、CP-05 当前有效差量均有 fresh 独立 `MATCHED`；CP-04 的代码与 focused proof 对齐，但同期逐点双读历史记录缺失，保持 `OPEN / DEXTER_WAIVED`，不得写成 MATCHED。CP-06 route-handler、supply helper 17 个 waiter 与 admin helper 3 个 waiter 差量有 fresh 完整 CP-06 `MATCHED, 0M/0S/0N`（STATIC）；typecheck 与 `adminStructureDevUi.test.ts` 10/10 主 agent focused proof 通过。全批 6b 后续 fresh reviewer 已给 `MATCHED, 0M/0S/0N`（STATIC）；该状态不覆盖 CP04 豁免，也不代表动态通过。
 - 最近一位 fresh 全批 reviewer `/root/full_batch_6b_reconcile_after_cp06` 独立判 `MATCHED, 0M/0S/0N`，核对作者记录后确认当前字节一致。此前 `/root/full_batch_6b_reconcile_current` 的 `OPEN, 0M/1S/1N` 为修复前 verdict，按原样保留。其后的两位 fresh CP-06 reviewer 对更早字节判 `OPEN`；主 agent 已完成全文件 waiter 拒绝观察修复，当前完整 CP-06 fresh `MATCHED`。历史 verdict 均不等于整批实现 GO，也不代表动态通过。
@@ -89,4 +90,31 @@ Full-batch reviewer 不需重复执行上述未受影响的测试；需独立检
   - `project-memory/operations/phase-retrospective-and-systemic-repair.md` — `1dacba6cd69d6ad893e03570717117c1b1f12e0f286e382c269ab924d198c129`
   - `project-memory/operations/test-closed-loop.md` — `da7b73adce473f8f81b842a403514f11b9342f9014ec33529c73debd1fabe322`
   - applicable sourceRef `doc/platform/browser-l2-execution-standard.md` — `38e18b288c7d2c68435cb8571809f19fae74abeafa6aee14af9a88f474282d7b`
+
+## 最新 CP-06 变更的 6b 差量收口
+
+- Fresh 独立 reviewer `/root/sixb_cp06_delta` 对本批 6b 受影响差量判定 `MATCHED, M/S/N=0/0/0, STATIC`。reviewer 先重开计划 §2、CP-06、§9–10、详设、附件 §4.1、当前 helper/test 与真实调用者，再对照既有 6b 记录；未运行命令、测试或动态任务。
+- 主 agent 核验 disposition：R1、R2 两项均为 `CONFIRMED` 并已修复。精确 store/contract ID 详情重开、ready 后编辑、clean cancel 等待两抽屉隐藏且不操作隐藏按钮，均由当前 helper 实际调用；writer context 在结束前恢复当前 run 起始字段并 owner GET readback。保存后仍通过现有 owner 页面回调重新打开详情。没有新增 runner、phase、服务、fixture 系统；CP-01～CP-05 无受影响接缝。
+- 主 agent focused evidence：`adminStructureDevUi.test.ts` 17/17 PASS；terminal-automation typecheck exit 0。该结果只证明直接 helper tests 与类型边界，不证明真实页面行为。
+- 同一轮 fresh 完整 CP-06 reviewer `/root/cp06_final_delta_reconcile` 判 `MATCHED, M/S/N=0/0/0, STATIC`。两项 CP06 独立审查的具体范围见 `2026-10-15-backend-frontend-structure-cp06-implementation-reconciliation-codex.md` 最新追加段。
+- 动态准入结论：两轮 TEST_CHAIN_PREFLIGHT 已完成；确认问题经修复后的定向 closure 复核及完整 CP-06/6b 对账后关闭。DEV 当前 manifest 身份复核通过、上一 run 资源树已结束；不需要 reset/seed。唯一下一条业务动态为受影响的 console `update.owner-flow`，不重跑未受影响的 wallpaper/remote 用例。
+- 仍保留：CP-04 历史留痕为 `OPEN / DEXTER_WAIVED`，不改写为 MATCHED；修复后 owner-flow 尚 `NOT_RUN`。历史最新 run `acbacd91-0306-4846-9676-ea7cb569da87` 的 business `FAIL`、runner cleanup `PASS` 保留，且其业务字段 cleanup 曾有 owner HTTP 403；旧 run 不因本次静态 verdict 或后续运行而改写。
+
+## 当前 owner CLEAR 差量（2026-10-15）
+
+- disposition：`CONFIRMED`。`e949b00d-3666-4e62-83e2-43b2a42b5061` 将成功 CLEAR 后字段缺失误判为 owner readback mismatch；修复只更正测试 oracle/诊断和附录，不改 owner 业务语义。
+- focused：`adminStructureDevUi.test.ts` 21/21 PASS；terminal-automation typecheck exit 0。
+- 差量独立复核：CP-06 `/root/clear_delta_cp06_fresh` 与全批 6b `/root/clear_delta_6b_fresh` 均 `MATCHED, M/S/N=0/0/0, STATIC`。
+- 定向动态：console `update.owner-flow` run `ccc67936-2758-45cf-90da-62c3474fff30`，`business=PASS`、`cleanup=PASS`、`firstFailure=NONE`；store `floorLabelPresent=false`、contract `signedDatePresent=false`，managed DEV CBS/TDS A/B/C 日志读取成功。实际包生成物均按 run manifest 清理，`generated-artifacts.cleanup.passed` 记录移除 9,103,588,356 bytes。
+- 当前 `update.owner-flow` 最新运行与最后一次通过均为该 run；历史失败（包括详情 action-menu 路径及业务恢复 403）继续保留在各自 manifest，不升级或覆盖。此前 wallpaper/remote 等未受影响 run 未重跑。
+- 计划内其他 Web 主链沿用已有证据：wallpaper `update.owner-flow` `24976967-4bca-4b09-ae00-3ae108ce551c`（business/cleanup PASS，2026-10-13）；console `remote.main` `5fe41102-e21b-405e-bb14-e32d4e9b8c73`、wallpaper `remote.main` `eb3e6a4b-9528-4121-8520-c568c9063cf9`（均 business/cleanup PASS，2026-10-13）。本轮只有 console `update.owner-flow` 因其 CLEAR oracle 修改而重跑；未重跑不受影响的三个既有 Web run。
+- 范围：只验证本差量触及的 console update owner-flow。没有 reset/seed、UAT、设备、full matrix、backend-acceptance 或无关 verify；Expo Web 不证明 Android 安装器或 Hermes/native HOT 实际应用。
+- 当前整体静态 6b 结论仍为已记录的 fresh `MATCHED`，此动态结果不改变 CP-04 的 `OPEN / DEXTER_WAIVED`，也不单独构成整批 IMPLEMENTATION GO。
+
+## 交付前当前状态（2026-10-15）
+
+- fresh 13c 逐代码与详设对账：`MATCHED`，见 `2026-10-15-backend-frontend-structure-13c-implementation-reconciliation-codex.md`。
+- fresh 整批 IMPLEMENTATION review：`GO_WITH_UNVERIFIED_UI`，`M/S/N=0/0/0`，见 `2026-10-15-backend-frontend-structure-final-implementation-review-codex.md`。
+- 最新当前字节动态运行及最后一次通过：console `update.owner-flow` `ccc67936-2758-45cf-90da-62c3474fff30`，business/cleanup PASS。修订后的 remote restart/close/焦点及 wallpaper 当前浏览器链仍是 `L3_UNVERIFIED`；不因三个 2026-10-13 历史 PASS 或 Expo Web update owner-flow 升级为当前 PASS。
+- CP-04 原始治理留痕缺失仍为 `OPEN / DEXTER_WAIVED`；豁免不伪造为 MATCHED。
 

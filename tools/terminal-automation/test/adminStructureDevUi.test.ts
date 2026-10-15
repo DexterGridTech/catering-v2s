@@ -3,7 +3,7 @@ import type {Page} from 'playwright';
 import {PLATFORM_ADMIN_OPERATIONS} from '../../../apps/frontend/platform-admin/src/app/api/generated/platform-edge.ts';
 import {OPERATIONS_ADMIN_OPERATIONS} from '../../../apps/frontend/operations-admin/src/app/api/generated/operations-edge.ts';
 import {materializeGeneratedOperationPath} from '../../../scripts/test/seed-report.mjs';
-import {cleanupRoleAssignments, observePageRequestWaiterRejection, readAdminStructureProjectContext} from '../journeys/adminStructureDevUi.ts';
+import {cleanupRoleAssignments, isOwnerExtensionFieldCleared, observePageRequestWaiterRejection, openDetailForEdit, readAdminStructureProjectContext, waitForDetailActionMenu, waitForReadbackEditToClose} from '../journeys/adminStructureDevUi.ts';
 
 const operationPath = (operationId: string, pathParameters: Record<string, string> = {}): string => {
   const operation = PLATFORM_ADMIN_OPERATIONS.find(candidate => candidate.operationId === operationId);
@@ -90,7 +90,152 @@ const makePage = (options: Readonly<{
   return {page, calls, runId, accountId, writerId, invitationId, writerName};
 };
 
+describe('owner extension CLEAR readback', () => {
+  it.each([
+    {extensionValues: {is24Hour: false, storeArea: 0}, fieldKey: 'floorLabel', expected: true},
+    {extensionValues: {signedDate: null}, fieldKey: 'signedDate', expected: false},
+    {extensionValues: {signedDate: '2026-10-15'}, fieldKey: 'signedDate', expected: false},
+    {extensionValues: null, fieldKey: 'signedDate', expected: false},
+  ])('accepts only an omitted owner field as cleared: $fieldKey', input => {
+    expect(isOwnerExtensionFieldCleared(input.extensionValues, input.fieldKey)).toBe(input.expected);
+  });
+});
+
 describe('admin structure DEV UI role cleanup', () => {
+  it.each([
+    {
+      resource: 'store' as const,
+      rowTestId: 'operations-store-open-detail-store-1',
+      drawerTestId: 'operations-store-detail-drawer',
+      actionMenuTestId: 'store-actions',
+      loadingTestId: 'operations-store-detail-loading',
+      problemTestId: 'operations-store-detail-problem',
+      editTestId: 'store-edit',
+    },
+    {
+      resource: 'contract' as const,
+      rowTestId: 'operations-contract-detail-open-contract-1',
+      drawerTestId: 'operations-contract-detail-drawer',
+      actionMenuTestId: 'contract-actions',
+      loadingTestId: 'operations-contract-detail-loading',
+      problemTestId: 'operations-contract-detail-error',
+      editTestId: 'contract-edit',
+    },
+  ])('reopens the exact $resource detail after discard before continuing to edit', async input => {
+    const callOrder: string[] = [];
+    const locators = new Map<string, {
+      waitFor: ReturnType<typeof vi.fn>;
+      click: ReturnType<typeof vi.fn>;
+      isVisible: ReturnType<typeof vi.fn>;
+      innerText: ReturnType<typeof vi.fn>;
+    }>();
+    for (const testId of [input.rowTestId, input.drawerTestId, input.actionMenuTestId, input.loadingTestId, input.problemTestId, input.editTestId]) {
+      locators.set(testId, {
+        waitFor: vi.fn(async () => { callOrder.push(`${testId}.waitFor`); }),
+        click: vi.fn(async () => { callOrder.push(`${testId}.click`); }),
+        isVisible: vi.fn(async () => false),
+        innerText: vi.fn(async () => ''),
+      });
+    }
+    const page = {getByTestId: (testId: string) => locators.get(testId)!} as unknown as Page;
+
+    await openDetailForEdit({
+      page,
+      runId: `reopen-${input.resource}-test`,
+      roleId: 'writer',
+      ...input,
+    });
+
+    expect(callOrder).toEqual([
+      `${input.rowTestId}.waitFor`,
+      `${input.rowTestId}.click`,
+      `${input.drawerTestId}.waitFor`,
+      `${input.actionMenuTestId}.waitFor`,
+      `${input.problemTestId}.waitFor`,
+      `${input.actionMenuTestId}.click`,
+      `${input.editTestId}.click`,
+    ]);
+  });
+
+  it.each([
+    {resource: 'store' as const, editDrawerTestId: 'store-edit-drawer', detailDrawerTestId: 'store-detail-drawer'},
+    {resource: 'contract' as const, editDrawerTestId: 'contract-edit-drawer', detailDrawerTestId: 'contract-detail-drawer'},
+  ])('closes the readback $resource editor without clicking its already-closed detail drawer', async input => {
+    const calls: string[] = [];
+    const locators = new Map<string, {waitFor: ReturnType<typeof vi.fn>; click: ReturnType<typeof vi.fn>}>([
+      [input.editDrawerTestId, {
+        waitFor: vi.fn(async (options: {state: string}) => { calls.push(`${input.editDrawerTestId}.waitFor.${options.state}`); }),
+        click: vi.fn(),
+      }],
+      [input.detailDrawerTestId, {
+        waitFor: vi.fn(async (options: {state: string}) => { calls.push(`${input.detailDrawerTestId}.waitFor.${options.state}`); }),
+        click: vi.fn(),
+      }],
+    ]);
+    const page = {getByTestId: (testId: string) => locators.get(testId)!} as unknown as Page;
+
+    await waitForReadbackEditToClose({
+      page,
+      runId: `readback-close-${input.resource}-test`,
+      ...input,
+    });
+
+    expect(calls).toEqual([
+      `${input.editDrawerTestId}.waitFor.hidden`,
+      `${input.detailDrawerTestId}.waitFor.hidden`,
+    ]);
+    expect(locators.get(input.detailDrawerTestId)!.click).not.toHaveBeenCalled();
+  });
+
+  it('waits for an owner-backed detail action menu instead of clicking while the detail is loading', async () => {
+    let resolveActionMenu!: () => void;
+    const actionMenu = {waitFor: vi.fn(() => new Promise<void>(resolve => {resolveActionMenu = resolve;}))};
+    const problem = {waitFor: vi.fn(() => new Promise<void>(() => undefined))};
+    const page = {
+      getByTestId: (testId: string) => testId === 'detail-action-menu' ? actionMenu : problem,
+    } as unknown as Page;
+
+    const readiness = waitForDetailActionMenu({
+      page,
+      runId: 'detail-ready-test',
+      roleId: 'writer',
+      resource: 'store',
+      drawerTestId: 'detail-drawer',
+      actionMenuTestId: 'detail-action-menu',
+      loadingTestId: 'detail-loading',
+      problemTestId: 'detail-problem',
+    });
+    await Promise.resolve();
+    expect(resolveActionMenu).toBeTypeOf('function');
+    resolveActionMenu();
+    await expect(readiness).resolves.toBeUndefined();
+    expect(actionMenu.waitFor).toHaveBeenCalledWith({state: 'visible', timeout: 15_000});
+    expect(problem.waitFor).toHaveBeenCalledWith({state: 'visible', timeout: 15_000});
+  });
+
+  it('surfaces the owner detail error when actions never become available', async () => {
+    const actionMenu = {waitFor: vi.fn(() => new Promise<void>(() => undefined))};
+    const problem = {
+      waitFor: vi.fn().mockResolvedValue(undefined),
+      innerText: vi.fn().mockResolvedValue('门店详情暂时无法获取，请关闭后重新进入。'),
+    };
+    const page = {
+      getByTestId: (testId: string) => testId === 'detail-action-menu' ? actionMenu : problem,
+    } as unknown as Page;
+
+    await expect(waitForDetailActionMenu({
+      page,
+      runId: 'detail-problem-test',
+      roleId: 'writer',
+      resource: 'store',
+      drawerTestId: 'detail-drawer',
+      actionMenuTestId: 'detail-action-menu',
+      loadingTestId: 'detail-loading',
+      problemTestId: 'detail-problem',
+    })).rejects.toThrow('ADMIN_STRUCTURE_DETAIL_OWNER_PROBLEM:store:门店详情暂时无法获取，请关闭后重新进入。');
+    expect(problem.innerText).toHaveBeenCalledOnce();
+  });
+
   it('reads project identity using the generated workspace scope field', async () => {
     const projectRef = 'project-from-data-node-ref';
     const storeRef = 'store-owned-by-fixture';

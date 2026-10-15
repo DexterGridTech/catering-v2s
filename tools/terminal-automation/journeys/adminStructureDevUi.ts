@@ -231,6 +231,140 @@ const fieldInput = async (page: Page, testId: string) => {
 const matchesGeneratedOperation = (registry: OperationRegistry, request: import('playwright').Request, operationId: string): boolean =>
   matchGeneratedL2Operation(registry, request.method(), new URL(request.url()).pathname)?.operationId === operationId;
 
+const attachRolePageDiagnostics = (page: Page, runId: string, roleId: string): void => {
+  let nextRequestSequence = 0;
+  const requests = new WeakMap<import('playwright').Request, Readonly<{
+    requestSequence: number;
+    operationId: string;
+    startedAt: number;
+  }>>();
+  const findOperation = (request: import('playwright').Request): string | undefined => {
+    const pathname = new URL(request.url()).pathname;
+    return matchGeneratedL2Operation(OPERATIONS_ADMIN_OPERATIONS, request.method(), pathname)?.operationId ??
+      matchGeneratedL2Operation(PUBLIC_OPERATIONS, request.method(), pathname)?.operationId;
+  };
+
+  page.on('request', request => {
+    const operationId = findOperation(request);
+    if (operationId === undefined) return;
+    const requestSequence = ++nextRequestSequence;
+    requests.set(request, {requestSequence, operationId, startedAt: Date.now()});
+    const headers = request.headers();
+    log(runId, 'role-ui.http.started', {
+      roleId,
+      requestSequence,
+      operationId,
+      method: request.method(),
+      requestId: headers['x-request-id'] ?? null,
+      correlationId: headers['x-correlation-id'] ?? null,
+    });
+  });
+  page.on('response', response => {
+    const request = response.request();
+    const trace = requests.get(request);
+    if (trace === undefined) return;
+    const elapsedMs = Date.now() - trace.startedAt;
+    log(runId, 'role-ui.http.completed', {
+      roleId,
+      requestSequence: trace.requestSequence,
+      operationId: trace.operationId,
+      status: response.status(),
+      elapsedMs,
+    });
+    if (response.status() < 400) return;
+    void response.text().then(responseBody => {
+      log(runId, 'role-ui.http.rejected', {
+        roleId,
+        requestSequence: trace.requestSequence,
+        operationId: trace.operationId,
+        status: response.status(),
+        elapsedMs,
+        responseBody,
+      });
+    }).catch(error => {
+      log(runId, 'role-ui.http.error-body-unavailable', {
+        roleId,
+        requestSequence: trace.requestSequence,
+        operationId: trace.operationId,
+        status: response.status(),
+        errorName: error instanceof Error ? error.name : 'UnknownError',
+        errorMessage: error instanceof Error ? error.message : String(error),
+      });
+    });
+  });
+  page.on('requestfailed', request => {
+    const trace = requests.get(request);
+    if (trace === undefined) return;
+    log(runId, 'role-ui.http.failed', {
+      roleId,
+      requestSequence: trace.requestSequence,
+      operationId: trace.operationId,
+      elapsedMs: Date.now() - trace.startedAt,
+      errorText: request.failure()?.errorText ?? 'UNKNOWN',
+    });
+  });
+  page.on('pageerror', error => log(runId, 'role-page.error', {
+    roleId,
+    errorName: error.name,
+    errorMessage: error.message,
+    errorStack: error.stack ?? null,
+  }));
+  page.on('console', message => {
+    if (message.type() !== 'error') return;
+    log(runId, 'role-page.console-error', {
+      roleId,
+      errorText: message.text(),
+      location: JSON.stringify(message.location()),
+    });
+  });
+};
+
+export const waitForDetailActionMenu = async (input: Readonly<{
+  page: Page;
+  runId: string;
+  roleId: string;
+  resource: 'store' | 'contract';
+  drawerTestId: string;
+  actionMenuTestId: string;
+  loadingTestId: string;
+  problemTestId: string;
+}>): Promise<void> => {
+  const actionMenu = input.page.getByTestId(input.actionMenuTestId);
+  const problem = input.page.getByTestId(input.problemTestId);
+  const outcome = await Promise.race([
+    actionMenu.waitFor({state: 'visible', timeout: 15_000}).then(() => 'ready' as const),
+    problem.waitFor({state: 'visible', timeout: 15_000}).then(() => 'problem' as const),
+  ]).catch(async error => {
+    const drawerVisible = await input.page.getByTestId(input.drawerTestId).isVisible().catch(() => false);
+    const loadingVisible = await input.page.getByTestId(input.loadingTestId).isVisible().catch(() => false);
+    const problemVisible = await problem.isVisible().catch(() => false);
+    const problemText = problemVisible ? await problem.innerText().catch(() => '') : '';
+    log(input.runId, 'detail.readiness.timeout', {
+      roleId: input.roleId,
+      resource: input.resource,
+      drawerVisible,
+      loadingVisible,
+      problemVisible,
+      problemText,
+      errorName: error instanceof Error ? error.name : 'UnknownError',
+      errorMessage: error instanceof Error ? error.message : String(error),
+      errorStack: error instanceof Error ? error.stack ?? null : null,
+    });
+    throw new Error(`ADMIN_STRUCTURE_DETAIL_READINESS_TIMEOUT:${input.resource}`, {cause: error});
+  });
+
+  if (outcome === 'problem') {
+    const problemText = await problem.innerText().catch(() => 'UNKNOWN_DETAIL_PROBLEM');
+    log(input.runId, 'detail.readiness.rejected', {
+      roleId: input.roleId,
+      resource: input.resource,
+      problemText,
+    });
+    throw new Error(`ADMIN_STRUCTURE_DETAIL_OWNER_PROBLEM:${input.resource}:${problemText}`);
+  }
+  log(input.runId, 'detail.ready', {roleId: input.roleId, resource: input.resource});
+};
+
 const readStore = async (page: Page, origin: string, runId: string, storeRef: string, contextVersion: number): Promise<Record<string, unknown>> =>
   assertOwnerObject(await ownerRequest(page, runId, {
     origin,
@@ -290,6 +424,95 @@ const updateContract = async (page: Page, origin: string, runId: string, contrac
   return assertOwnerObject(response, ['id', 'revision', 'extensionValues'], 'contract-update');
 };
 
+const waitForStoreDetailReady = (page: Page, runId: string): Promise<void> => waitForDetailActionMenu({
+  page,
+  runId,
+  roleId: 'writer',
+  resource: 'store',
+  drawerTestId: 'operations-store-detail-drawer',
+  actionMenuTestId: operationsDetailDrawerTestIds.store.actionMenu,
+  loadingTestId: 'operations-store-detail-loading',
+  problemTestId: 'operations-store-detail-problem',
+});
+
+const waitForContractDetailReady = (page: Page, runId: string): Promise<void> => waitForDetailActionMenu({
+  page,
+  runId,
+  roleId: 'writer',
+  resource: 'contract',
+  drawerTestId: 'operations-contract-detail-drawer',
+  actionMenuTestId: operationsDetailDrawerTestIds.contract.actionMenu,
+  loadingTestId: 'operations-contract-detail-loading',
+  problemTestId: 'operations-contract-detail-error',
+});
+
+export const openDetailForEdit = async (input: Readonly<{
+  page: Page;
+  runId: string;
+  roleId: string;
+  resource: 'store' | 'contract';
+  rowTestId: string;
+  drawerTestId: string;
+  actionMenuTestId: string;
+  loadingTestId: string;
+  problemTestId: string;
+  editTestId: string;
+}>): Promise<void> => {
+  const row = input.page.getByTestId(input.rowTestId);
+  await row.waitFor({state: 'visible', timeout: 30_000});
+  await row.click();
+  await input.page.getByTestId(input.drawerTestId).waitFor({state: 'visible'});
+  await waitForDetailActionMenu(input);
+  await input.page.getByTestId(input.actionMenuTestId).click();
+  await input.page.getByTestId(input.editTestId).click();
+  log(input.runId, 'detail.edit.opened', {
+    roleId: input.roleId,
+    resource: input.resource,
+    rowTestId: input.rowTestId,
+  });
+};
+
+export const waitForReadbackEditToClose = async (input: Readonly<{
+  page: Page;
+  runId: string;
+  resource: 'store' | 'contract';
+  editDrawerTestId: string;
+  detailDrawerTestId: string;
+}>): Promise<void> => {
+  await input.page.getByTestId(input.editDrawerTestId).waitFor({state: 'hidden'});
+  await input.page.getByTestId(input.detailDrawerTestId).waitFor({state: 'hidden'});
+  log(input.runId, 'detail.readback-edit.closed', {
+    resource: input.resource,
+    detailDrawerHidden: true,
+  });
+};
+
+const openStoreDetailForEdit = (page: Page, storeId: string, runId: string): Promise<void> => openDetailForEdit({
+  page,
+  runId,
+  roleId: 'writer',
+  resource: 'store',
+  rowTestId: `operations-store-open-detail-${storeId}`,
+  drawerTestId: 'operations-store-detail-drawer',
+  actionMenuTestId: operationsDetailDrawerTestIds.store.actionMenu,
+  loadingTestId: 'operations-store-detail-loading',
+  problemTestId: 'operations-store-detail-problem',
+  editTestId: operationsDetailDrawerTestIds.store.edit,
+});
+
+const openContractDetailForEdit = (page: Page, contractId: string, runId: string): Promise<void> => openDetailForEdit({
+  page,
+  runId,
+  roleId: 'writer',
+  resource: 'contract',
+  rowTestId: operationsDetailDrawerTestIds.contract.open(contractId),
+  drawerTestId: 'operations-contract-detail-drawer',
+  actionMenuTestId: operationsDetailDrawerTestIds.contract.actionMenu,
+  loadingTestId: 'operations-contract-detail-loading',
+  problemTestId: 'operations-contract-detail-error',
+  editTestId: operationsDetailDrawerTestIds.contract.edit,
+});
+
 const openProjectRoleSession = async (input: Readonly<{
   browser: Browser;
   operationsOrigin: string;
@@ -302,7 +525,7 @@ const openProjectRoleSession = async (input: Readonly<{
   const context = await input.browser.newContext();
   try {
     const page = await context.newPage();
-    page.on('pageerror', error => log(input.runId, 'role-page.error', {roleId: input.roleId, message: error.message, stack: error.stack ?? null}));
+    attachRolePageDiagnostics(page, input.runId, input.roleId);
     await page.goto(new URL(`/operations/${workspaceKey}/login`, input.operationsOrigin).toString());
     await page.getByTestId('operations-login-name').fill('r5-account-multi-role');
     await page.getByTestId('operations-login-password').fill(input.password);
@@ -337,7 +560,24 @@ const openProjectRoleSession = async (input: Readonly<{
     });
     return Object.freeze({context, page, contextVersion});
   } catch (error) {
-    await context.close().catch(() => undefined);
+    log(input.runId, 'role-session.open.failed', {
+      roleId: input.roleId,
+      errorName: error instanceof Error ? error.name : 'UnknownError',
+      errorMessage: error instanceof Error ? error.message : String(error),
+      errorStack: error instanceof Error ? error.stack ?? null : null,
+    });
+    try {
+      await context.close();
+      log(input.runId, 'role-session.open.cleanup.completed', {roleId: input.roleId});
+    } catch (cleanupError) {
+      log(input.runId, 'role-session.open.cleanup.failed', {
+        roleId: input.roleId,
+        errorName: cleanupError instanceof Error ? cleanupError.name : 'UnknownError',
+        errorMessage: cleanupError instanceof Error ? cleanupError.message : String(cleanupError),
+        errorStack: cleanupError instanceof Error ? cleanupError.stack ?? null : null,
+      });
+      throw new AggregateError([error, cleanupError], 'ADMIN_STRUCTURE_ROLE_SESSION_OPEN_FAILED');
+    }
     throw error;
   }
 };
@@ -385,6 +625,8 @@ const selectPage = async (page: Page, pageDesignKey: string, runId: string): Pro
 
 const isNonEmpty = (value: unknown): boolean => typeof value === 'string' && value.trim().length > 0;
 const jsonEqual = (left: unknown, right: unknown): boolean => JSON.stringify(left) === JSON.stringify(right);
+export const isOwnerExtensionFieldCleared = (extensionValues: unknown, fieldKey: string): boolean =>
+  isRecord(extensionValues) && !Object.hasOwn(extensionValues, fieldKey);
 
 type RoleFixtureState = {
   writer?: Readonly<{id: string; name: string}>;
@@ -757,12 +999,7 @@ const updateStoreFieldsInUi = async (page: Page, store: Record<string, unknown>,
   await selectPage(page, operationsPageDesignKeys.PgOrgStoreManage, runId);
   await (await fieldInput(page, 'operations-store-filter-code')).fill(requiredText(store, 'code'));
   await page.getByTestId('operations-store-filter-submit').click();
-  const rowOpen = page.getByTestId(`operations-store-open-detail-${storeId}`);
-  await rowOpen.waitFor({state: 'visible', timeout: 30_000});
-  await rowOpen.click();
-  await page.getByTestId('operations-store-detail-drawer').waitFor({state: 'visible'});
-  await page.getByTestId(operationsDetailDrawerTestIds.store.actionMenu).click();
-  await page.getByTestId(operationsDetailDrawerTestIds.store.edit).click();
+  await openStoreDetailForEdit(page, storeId, runId);
   const storeDrawer = page.getByTestId(storeManagementTestIds.editDrawer);
   await storeDrawer.waitFor({state: 'visible'});
   const bool = page.getByTestId(storeManagementTestIds.editExtension('is24Hour'));
@@ -775,8 +1012,7 @@ const updateStoreFieldsInUi = async (page: Page, store: Record<string, unknown>,
   await page.getByTestId(storeManagementTestIds.editDirtyConfirm).click();
   await storeDrawer.waitFor({state: 'hidden'});
 
-  await page.getByTestId(operationsDetailDrawerTestIds.store.actionMenu).click();
-  await page.getByTestId(operationsDetailDrawerTestIds.store.edit).click();
+  await openStoreDetailForEdit(page, storeId, runId);
   await storeDrawer.waitFor({state: 'visible'});
   const is24Hour = page.getByTestId(storeManagementTestIds.editExtension('is24Hour'));
   const storeArea = await fieldInput(page, storeManagementTestIds.editExtension('storeArea'));
@@ -801,6 +1037,7 @@ const updateStoreFieldsInUi = async (page: Page, store: Record<string, unknown>,
 
 const assertStoreFieldsAfterOwnerReadback = async (page: Page, storeId: string, runId: string): Promise<void> => {
   const storeDrawer = page.getByTestId(storeManagementTestIds.editDrawer);
+  await waitForStoreDetailReady(page, runId);
   await page.getByTestId(operationsDetailDrawerTestIds.store.actionMenu).click();
   await page.getByTestId(operationsDetailDrawerTestIds.store.edit).click();
   await storeDrawer.waitFor({state: 'visible'});
@@ -808,11 +1045,14 @@ const assertStoreFieldsAfterOwnerReadback = async (page: Page, storeId: string, 
   await expect(await fieldInput(page, storeManagementTestIds.editExtension('storeArea'))).toHaveValue('0');
   await expect(await fieldInput(page, storeManagementTestIds.editExtension('floorLabel'))).toHaveValue('');
   await page.getByTestId(storeManagementTestIds.editCancel).click();
-  await storeDrawer.waitFor({state: 'hidden'});
-  const detail = page.getByTestId('operations-store-detail-drawer');
-  await detail.getByTestId(operationsDetailDrawerTestIds.store.close).click();
-  await detail.waitFor({state: 'hidden'});
-  log(runId, 'store-extension.ui-reopened', {storeId, fields: 3});
+  await waitForReadbackEditToClose({
+    page,
+    runId,
+    resource: 'store',
+    editDrawerTestId: storeManagementTestIds.editDrawer,
+    detailDrawerTestId: 'operations-store-detail-drawer',
+  });
+  log(runId, 'store-extension.ui-readback.verified', {storeId, fields: 3, editCancelled: true});
 };
 
 const updateContractFieldsInUi = async (
@@ -824,13 +1064,7 @@ const updateContractFieldsInUi = async (
 ): Promise<void> => {
   const contractId = requiredText(contract, 'id');
   await selectPage(page, operationsPageDesignKeys.PgContractStoreManage, runId);
-  const contractOpen = page.getByTestId(operationsDetailDrawerTestIds.contract.open(contractId));
-  await contractOpen.waitFor({state: 'visible', timeout: 30_000});
-  await contractOpen.click();
-  const detail = page.getByTestId('operations-contract-detail-drawer');
-  await detail.waitFor({state: 'visible'});
-  await page.getByTestId(operationsDetailDrawerTestIds.contract.actionMenu).click();
-  await page.getByTestId(operationsDetailDrawerTestIds.contract.edit).click();
+  await openContractDetailForEdit(page, contractId, runId);
   const form = page.getByTestId('operations-contract-edit-drawer');
   await form.waitFor({state: 'visible'});
   const renewal = page.getByTestId(extensionFormTestIds.field('contract', 'renewal'));
@@ -843,8 +1077,7 @@ const updateContractFieldsInUi = async (
   await page.getByTestId(extensionFormTestIds.dirtyConfirm('contract')).click();
   await form.waitFor({state: 'hidden'});
 
-  await page.getByTestId(operationsDetailDrawerTestIds.contract.actionMenu).click();
-  await page.getByTestId(operationsDetailDrawerTestIds.contract.edit).click();
+  await openContractDetailForEdit(page, contractId, runId);
   await form.waitFor({state: 'visible'});
   const values = isRecord(contract.extensionValues) ? contract.extensionValues : {};
   if (values.renewal !== true || values.depositRate !== 0.2 || !isNonEmpty(values.signedDate))
@@ -896,6 +1129,7 @@ const updateContractFieldsInUi = async (
     revisionUnchanged: true,
   });
 
+  await waitForContractDetailReady(page, runId);
   await page.getByTestId(operationsDetailDrawerTestIds.contract.actionMenu).click();
   await page.getByTestId(operationsDetailDrawerTestIds.contract.edit).click();
   await form.waitFor({state: 'visible'});
@@ -917,6 +1151,7 @@ const updateContractFieldsInUi = async (
 
 const assertContractFieldsAfterOwnerReadback = async (page: Page, contractId: string, runId: string): Promise<void> => {
   const form = page.getByTestId('operations-contract-edit-drawer');
+  await waitForContractDetailReady(page, runId);
   await page.getByTestId(operationsDetailDrawerTestIds.contract.actionMenu).click();
   await page.getByTestId(operationsDetailDrawerTestIds.contract.edit).click();
   await form.waitFor({state: 'visible'});
@@ -927,11 +1162,14 @@ const assertContractFieldsAfterOwnerReadback = async (page: Page, contractId: st
   await expect(depositRate).toHaveValue('0');
   await expect(signedDate).toHaveValue('');
   await page.getByTestId(extensionFormTestIds.cancel('contract')).click();
-  await form.waitFor({state: 'hidden'});
-  const detail = page.getByTestId('operations-contract-detail-drawer');
-  await detail.getByTestId(operationsDetailDrawerTestIds.contract.close).click();
-  await detail.waitFor({state: 'hidden'});
-  log(runId, 'contract-extension.ui-reopened', {contractId, fields: 3});
+  await waitForReadbackEditToClose({
+    page,
+    runId,
+    resource: 'contract',
+    editDrawerTestId: 'operations-contract-edit-drawer',
+    detailDrawerTestId: 'operations-contract-detail-drawer',
+  });
+  log(runId, 'contract-extension.ui-readback.verified', {contractId, fields: 3, editCancelled: true});
 };
 
 export const runAdminStructureDevUi = async (input: Readonly<{
@@ -998,9 +1236,17 @@ export const runAdminStructureDevUi = async (input: Readonly<{
     await updateStoreFieldsInUi(writerSession.page, preparedStore, input.runId);
     const updatedStore = await readStore(writerSession.page, input.operationsOrigin, input.runId, input.storeRef, writerSession.contextVersion);
     const updatedStoreValues = isRecord(updatedStore.extensionValues) ? updatedStore.extensionValues : {};
-    if (updatedStoreValues.is24Hour !== false || updatedStoreValues.storeArea !== 0 || updatedStoreValues.floorLabel !== null || updatedStoreValues.openingHours !== storeValues.openingHours)
+    const storeFloorLabelCleared = isOwnerExtensionFieldCleared(updatedStoreValues, 'floorLabel');
+    log(input.runId, 'store-extension.owner-readback', {
+      storeRef: input.storeRef,
+      is24Hour: JSON.stringify(updatedStoreValues.is24Hour),
+      storeArea: JSON.stringify(updatedStoreValues.storeArea),
+      floorLabelPresent: Object.hasOwn(updatedStoreValues, 'floorLabel'),
+      floorLabel: JSON.stringify(updatedStoreValues.floorLabel),
+      openingHoursPreserved: updatedStoreValues.openingHours === storeValues.openingHours,
+    });
+    if (updatedStoreValues.is24Hour !== false || updatedStoreValues.storeArea !== 0 || !storeFloorLabelCleared || updatedStoreValues.openingHours !== storeValues.openingHours)
       throw new Error('ADMIN_STRUCTURE_STORE_EXTENSION_OWNER_READBACK_MISMATCH');
-    log(input.runId, 'store-extension.owner-readback', {storeRef: input.storeRef, is24Hour: false, storeArea: 0, floorLabel: null, openingHoursPreserved: true});
     await assertStoreFieldsAfterOwnerReadback(writerSession.page, input.storeRef, input.runId);
 
     const contracts = await ownerRequest(writerSession.page, input.runId, {
@@ -1026,9 +1272,17 @@ export const runAdminStructureDevUi = async (input: Readonly<{
     );
     const updatedContract = await readContract(writerSession.page, input.operationsOrigin, input.runId, contractRef, writerSession.contextVersion);
     const updatedContractValues = isRecord(updatedContract.extensionValues) ? updatedContract.extensionValues : {};
-    if (updatedContractValues.renewal !== false || updatedContractValues.depositRate !== 0 || updatedContractValues.signedDate !== null || !jsonEqual(updatedContractValues.settlementMode, contractValues.settlementMode))
+    const contractSignedDateCleared = isOwnerExtensionFieldCleared(updatedContractValues, 'signedDate');
+    log(input.runId, 'contract-extension.owner-readback', {
+      contractRef,
+      renewal: JSON.stringify(updatedContractValues.renewal),
+      depositRate: JSON.stringify(updatedContractValues.depositRate),
+      signedDatePresent: Object.hasOwn(updatedContractValues, 'signedDate'),
+      signedDate: JSON.stringify(updatedContractValues.signedDate),
+      settlementModePreserved: jsonEqual(updatedContractValues.settlementMode, contractValues.settlementMode),
+    });
+    if (updatedContractValues.renewal !== false || updatedContractValues.depositRate !== 0 || !contractSignedDateCleared || !jsonEqual(updatedContractValues.settlementMode, contractValues.settlementMode))
       throw new Error('ADMIN_STRUCTURE_CONTRACT_EXTENSION_OWNER_READBACK_MISMATCH');
-    log(input.runId, 'contract-extension.owner-readback', {contractRef, renewal: false, depositRate: 0, signedDate: null, settlementModePreserved: true});
     await assertContractFieldsAfterOwnerReadback(writerSession.page, contractRef, input.runId);
     log(input.runId, 'business.completed', {cases: 3});
   } catch (error) {
@@ -1040,11 +1294,10 @@ export const runAdminStructureDevUi = async (input: Readonly<{
     });
   } finally {
     const cleanupErrors: unknown[] = [];
-    if (writerSession) await writerSession.context.close().catch(error => cleanupErrors.push(error));
-    if (readerSession) await readerSession.context.close().catch(error => cleanupErrors.push(error));
     try {
-      if (originalStore && writerSession) {
-        const current = await readStore(input.operationsPage, input.operationsOrigin, input.runId, input.storeRef, input.contextVersion);
+      if (originalStore) {
+        if (!writerSession) throw new Error('ADMIN_STRUCTURE_STORE_CLEANUP_WRITER_SESSION_MISSING');
+        const current = await readStore(writerSession.page, input.operationsOrigin, input.runId, input.storeRef, writerSession.contextVersion);
         const beforeValues = isRecord(originalStore.extensionValues) ? originalStore.extensionValues : {};
         const currentValues = isRecord(current.extensionValues) ? current.extensionValues : {};
         const restoreValues: Record<string, unknown> = {};
@@ -1052,8 +1305,8 @@ export const runAdminStructureDevUi = async (input: Readonly<{
           if (!jsonEqual(currentValues[key], beforeValues[key])) restoreValues[key] = beforeValues[key] ?? null;
         }
         if (Object.keys(restoreValues).length) {
-          await updateStore(input.operationsPage, input.operationsOrigin, input.runId, current, restoreValues);
-          const restored = await readStore(input.operationsPage, input.operationsOrigin, input.runId, input.storeRef, input.contextVersion);
+          await updateStore(writerSession.page, input.operationsOrigin, input.runId, current, restoreValues);
+          const restored = await readStore(writerSession.page, input.operationsOrigin, input.runId, input.storeRef, writerSession.contextVersion);
           const restoredValues = isRecord(restored.extensionValues) ? restored.extensionValues : {};
           if (Object.keys(restoreValues).some(key => !jsonEqual(restoredValues[key] ?? null, beforeValues[key] ?? null)))
             throw new Error('ADMIN_STRUCTURE_STORE_CLEANUP_READBACK_MISMATCH');
@@ -1063,7 +1316,8 @@ export const runAdminStructureDevUi = async (input: Readonly<{
     } catch (error) { cleanupErrors.push(error); }
     try {
       if (originalContract && contractRef) {
-        const current = await readContract(input.operationsPage, input.operationsOrigin, input.runId, contractRef, input.contextVersion);
+        if (!writerSession) throw new Error('ADMIN_STRUCTURE_CONTRACT_CLEANUP_WRITER_SESSION_MISSING');
+        const current = await readContract(writerSession.page, input.operationsOrigin, input.runId, contractRef, writerSession.contextVersion);
         const beforeValues = isRecord(originalContract.extensionValues) ? originalContract.extensionValues : {};
         const currentValues = isRecord(current.extensionValues) ? current.extensionValues : {};
         const restoreValues: Record<string, unknown> = {};
@@ -1071,8 +1325,8 @@ export const runAdminStructureDevUi = async (input: Readonly<{
           if (!jsonEqual(currentValues[key], beforeValues[key])) restoreValues[key] = beforeValues[key] ?? null;
         }
         if (Object.keys(restoreValues).length) {
-          await updateContract(input.operationsPage, input.operationsOrigin, input.runId, current, restoreValues);
-          const restored = await readContract(input.operationsPage, input.operationsOrigin, input.runId, contractRef, input.contextVersion);
+          await updateContract(writerSession.page, input.operationsOrigin, input.runId, current, restoreValues);
+          const restored = await readContract(writerSession.page, input.operationsOrigin, input.runId, contractRef, writerSession.contextVersion);
           const restoredValues = isRecord(restored.extensionValues) ? restored.extensionValues : {};
           if (Object.keys(restoreValues).some(key => !jsonEqual(restoredValues[key] ?? null, beforeValues[key] ?? null)))
             throw new Error('ADMIN_STRUCTURE_CONTRACT_CLEANUP_READBACK_MISMATCH');
@@ -1080,6 +1334,21 @@ export const runAdminStructureDevUi = async (input: Readonly<{
         log(input.runId, 'contract.cleanup.completed', {contractRef, fieldsRestored: Object.keys(restoreValues).length});
       }
     } catch (error) { cleanupErrors.push(error); }
+    for (const [roleId, session] of [['writer', writerSession], ['reader', readerSession]] as const) {
+      if (!session) continue;
+      try {
+        await session.context.close();
+        log(input.runId, 'role-session.cleanup.completed', {roleId});
+      } catch (error) {
+        cleanupErrors.push(error);
+        log(input.runId, 'role-session.cleanup.failed', {
+          roleId,
+          errorName: error instanceof Error ? error.name : 'UnknownError',
+          errorMessage: error instanceof Error ? error.message : String(error),
+          errorStack: error instanceof Error ? error.stack ?? null : null,
+        });
+      }
+    }
     try {
       await cleanupRoleAssignments({platformPage: input.platformPage, platformOrigin: input.platformOrigin, runId: input.runId, roleState});
     } catch (error) { cleanupErrors.push(error); }

@@ -43,6 +43,14 @@
 - 按 Dexter 最新澄清，确需直接证明本批受影响隔离持久化接缝时，可使用现有受管 Testcontainers focused 入口；本 CP 不需要该证明。该许可不扩展到全量 backend-acceptance、隔离 L2，也不改变 UAT/真机禁项。
 - 本 CP 对账不替代全批 6b、13c 或 fresh 整批 `REVIEW_TARGET=IMPLEMENTATION`。
 
+## 当前 owner CLEAR 差量收口（2026-10-15）
+
+- 主 agent 根因核验与修复记录见 `2026-10-15-backend-frontend-structure-owner-extension-clear-dynamic-delta-codex.md`。
+- 当前 CP-06 字节由 fresh reviewer `/root/clear_delta_cp06_fresh` 判 `MATCHED, M/S/N=0/0/0, STATIC`；该审查核对了 typed CLEAR 到 GET key omission 的 owner 链、helper、日志、focused tests 和附录，不执行动态任务。
+- 主 agent focused proof：`adminStructureDevUi.test.ts` 21/21 PASS，terminal-automation typecheck 退出码 0。
+- 当前字节定向 DEV Web run `ccc67936-2758-45cf-90da-62c3474fff30`：business PASS、managed DEV diagnostic read PASS、runner/generated-artifact cleanup PASS。其日志分别记录门店 `floorLabelPresent=false` 与合同 `signedDatePresent=false`，同时保留其他值断言。详细状态、适用边界及历史失败保留见上述 delta intake。
+- 此差量不改变 package/owner/API/存储契约，不触及 CP-01～CP-05；CP-04 仍 `OPEN / DEXTER_WAIVED`。Web 结果不证明 Android 安装器或 Hermes/native 热加载。
+
 ## 全批 6b 差量处置（主 agent 核验）
 
 | 项 | disposition 与证据 | 最小处置及当前边界 |
@@ -96,3 +104,25 @@ SKILL_USED=cs-systematic-debugging@808fc5717aa88ad65efff312b11c186294d3e6ee301af
 - 最小修正：在 `adminStructureDevUi.ts` 内为该 helper 增加局部 `observePageRequestWaiterRejection`，每个 waiter 创建后、点击前附加关联阶段及原始错误名/message/stack 的结构化拒绝日志，同时返回原 Promise，正常路径继续 `await` 原响应。不引入通用 waiter registry，不改变 UI、请求或业务断言。
 - focused proof：`adminStructureDevUi.test.ts` 10/10 PASS，新增直接证明原 Promise 仍向 caller reject 且旁路日志保留原始错误；`yarn workspace @catering-v2s/terminal-automation typecheck` exit 0。未运行浏览器或 DEV 场景。
 - 当前状态：CP-06 仍 `OPEN / WAITING_FRESH_REVIEW`，等待 fresh reviewer 按完整 CP 范围重核 supply helper 17 处、admin helper 3 处、原 owner/readback/cleanup 接线及日志。CP-04 仍 `OPEN / DEXTER_WAIVED`；该豁免仅允许继续，不表示历史记录补齐或 CP-04 MATCHED。
+
+## CP-06 详情生命周期两轮修复及当前收口
+
+- 主 agent 独立核验：R1、R2 findings 均为 `CONFIRMED`。真实 Store/Contract detail 的 edit action 会先关闭详情；旧 helper 在 dirty discard 后未重开详情，并在 owner-readback clean cancel 后还点击隐藏详情的 close 按钮。
+- 最小修复：新增按精确 store/contract ID 从列表重开详情、等待 owner-backed action menu ready 后进入编辑的 helper；dirty discard 后复用该路径。owner-readback 编辑 clean cancel 后，只验证编辑与详情 Drawer 均隐藏，不再对已隐藏详情执行点击。同步更新附件中的实际交互顺序与验收边界。
+- 直接反例测试：`yarn workspace @catering-v2s/terminal-automation test test/adminStructureDevUi.test.ts`，17/17 PASS，覆盖两种资源的精确重开顺序与 clean cancel 不再点击隐藏 close；`yarn workspace @catering-v2s/terminal-automation typecheck` 退出码 0。测试不代表真实页面动态通过。
+- Fresh 独立 reviewer `/root/cp06_final_delta_reconcile` 对当前完整 CP-06 完成静态三维对账，结论 `MATCHED, M/S/N=0/0/0`。它核验了该差量、两个真实 Drawer 生命周期、调用顺序、既有供给 waiter/route cleanup 闭包及未变测试登记；未运行测试或动态环境。
+- 仍保留：`CP-04=OPEN / DEXTER_WAIVED`，豁免只允许继续，不追补历史留痕，也不标为 MATCHED。CP-06 的 STATIC MATCHED 不等于动态通过。
+
+## 当前字节的最近受管运行
+
+- 最近运行：`acbacd91-0306-4846-9676-ea7cb569da87`，console `update.owner-flow`，`business=FAIL`、runner `cleanup=PASS`。首败 `TERMINAL_AUTOMATION_WEB_BUSINESS_PASS_NOT_OBSERVED`，发生在后台详情 action menu 就绪等待；run log 已定位到 Store/Contract Drawer 的生命周期假设。该源码缺口已修复并由 focused tests、typecheck、fresh CP-06 STATIC MATCHED 收口；修复后的 owner-flow 尚未重跑。
+- 该旧 run 的业务 fixture helper 清理曾对 `updateOperationsOrganizationStore` 返回 403 `PLATFORM_COMMON_ACCESS_DENIED`；其角色/assignment cleanup 成功，runner 进程与生成物清理 PASS。manifest 的 runner cleanup PASS 不覆盖业务字段恢复，因此不得将该旧 run 的业务 fixture cleanup 写为 PASS。
+- 最新 helper 现使用创建该角色的 writer session 恢复并 owner-GET 验证字段，随后才关闭 session；当前一次成功 owner-flow 仍是验证该修复的必要差量。测试开始时先保存真实当前值，结束时恢复该 run 的起始值，不将 seed 基准强加给未知的既有业务值。
+- DEV manifest 仍指向本仓受管 DEV `runId=r5-dev-1792058956406-6851-f214e222-e03c-4c56-a971-93755ab883f8`、namespace `v2s-dev-r5-full`、数据库 `catering_v2s_dev_r5_full`。本轮没有执行 reset、seed、UAT 或设备操作。当前无运行中的 terminal-automation process；旧 run 树已结束。
+- 最近运行与最后一次通过：当前字节最新动态仍为上述 `FAIL / runner cleanup PASS`；修复后当前字节最后一次业务通过尚无，写 `NOT_RUN`。历史其他 run 不因本次 focused proofs 升级为当前字节通过。
+
+## 下一步边界
+
+- CP-06 当前静态阶段 `MATCHED`；2 轮 TEST_CHAIN_PREFLIGHT 已完成，确认问题修复并由定向 closure reviewer 及完整 CP-06 reviewer 核验。进入动态前仍需补全批 6b 的受影响差量核对与现有 DEV 资源预检。
+- 下一动态只重跑受影响的 console `update.owner-flow`，验证后台三项检查及现有更新供给/报告链；不会重跑完整设备矩阵、seed 或无关 verify。若该场景再失败，先读取其当前字节日志，判定首败边界和业务 fixture cleanup，再决定最小修复。
+- 其他未受影响的 CP/动态记录继续按各自原字节、原范围复用。13c 与 fresh 整批 IMPLEMENTATION review 仍未完成。
